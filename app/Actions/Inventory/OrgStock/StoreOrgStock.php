@@ -58,7 +58,6 @@ class StoreOrgStock extends OrgAction
             $orgStock = $this->associateTradeUnits($orgStock);
             $orgStock->stats()->create();
             $orgStock->intervals()->create();
-            $orgStock->salesIntervals()->create();
 
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $orgStock->timeSeries()->create(['frequency' => $frequency]);

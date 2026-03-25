@@ -17,6 +17,8 @@ use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use App\Models\SysAdmin\User;
+use Carbon\Carbon;
+use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -32,41 +34,57 @@ class PickFromMagicPlace extends OrgAction
     private DeliveryNoteItem $deliveryNoteItem;
     protected User $user;
 
-    public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): Picking|null
+    public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): ?Picking
     {
-        $toPickQuantity = $deliveryNoteItem->quantity_required - $deliveryNoteItem->quantity_picked - $deliveryNoteItem->quantity_not_picked;
-
-        if (Arr::has($modelData, 'quantity')) {
-            $quantity = Arr::get($modelData, 'quantity');
-            if ($quantity > $toPickQuantity) {
-                $quantity = $toPickQuantity;
-            }
-        } else {
-            $quantity = $toPickQuantity;
-        }
-        if ($quantity <= 0) {
+        // If locked, will skip the process
+        if ($deliveryNoteItem->locked_at && (Carbon::parse($deliveryNoteItem->locked_at)->diffInSeconds(now()) < 3)) {
             return null;
         }
 
-        data_set($modelData, 'quantity', $quantity);
+        $deliveryNoteItem->update(['locked_at'  => now()]);
 
-        data_set($modelData, 'group_id', $deliveryNoteItem->group_id);
-        data_set($modelData, 'organisation_id', $deliveryNoteItem->organisation_id);
-        data_set($modelData, 'shop_id', $deliveryNoteItem->shop_id);
-        data_set($modelData, 'delivery_note_id', $deliveryNoteItem->delivery_note_id);
-        data_set($modelData, 'org_stock_id', $deliveryNoteItem->org_stock_id);
+        try {
 
-        data_set($modelData, 'engine', PickingEngineEnum::AIKU, false);
-        data_set($modelData, 'type', PickingTypeEnum::MAGIC_PICK, false);
+            $toPickQuantity = $deliveryNoteItem->quantity_required - $deliveryNoteItem->quantity_picked - $deliveryNoteItem->quantity_not_picked;
 
-        /** @var Picking $picking */
-        $picking = $deliveryNoteItem->pickings()->create($modelData);
-        $picking->refresh();
+            if (Arr::has($modelData, 'quantity')) {
+                $quantity = Arr::get($modelData, 'quantity');
+                if ($quantity > $toPickQuantity) {
+                    $quantity = $toPickQuantity;
+                }
+            } else {
+                $quantity = $toPickQuantity;
+            }
+            if ($quantity <= 0) {
+                return null;
+            }
+
+            data_set($modelData, 'quantity', $quantity);
+
+            data_set($modelData, 'group_id', $deliveryNoteItem->group_id);
+            data_set($modelData, 'organisation_id', $deliveryNoteItem->organisation_id);
+            data_set($modelData, 'shop_id', $deliveryNoteItem->shop_id);
+            data_set($modelData, 'delivery_note_id', $deliveryNoteItem->delivery_note_id);
+            data_set($modelData, 'org_stock_id', $deliveryNoteItem->org_stock_id);
+
+            data_set($modelData, 'engine', PickingEngineEnum::AIKU, false);
+            data_set($modelData, 'type', PickingTypeEnum::MAGIC_PICK, false);
+
+            /** @var Picking $picking */
+            $picking = $deliveryNoteItem->pickings()->create($modelData);
+            $picking->refresh();
 
 
-        CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
+            CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
 
-        return $picking;
+            return $picking;
+
+        } catch (Exception $e) {
+
+            $deliveryNoteItem->update(['locked_at'  => null]);
+
+            return null;
+        }
     }
 
     public function rules(): array
@@ -100,7 +118,7 @@ class PickFromMagicPlace extends OrgAction
     //     }
     // }
 
-    public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): Picking
+    public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): ?Picking
     {
         $this->user             = $request->user();
         $this->deliveryNoteItem = $deliveryNoteItem;
@@ -109,7 +127,7 @@ class PickFromMagicPlace extends OrgAction
         return $this->handle($deliveryNoteItem, $this->validatedData);
     }
 
-    // public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): Picking
+    // public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): ?Picking
     // {
     //     $this->asAction         = true;
     //     $this->user             = $user;

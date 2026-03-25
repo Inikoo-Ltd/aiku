@@ -355,6 +355,7 @@ class EditTradeUnit extends OrgAction
                                     'value' => $tradeUnit->origin_country_id,
                                     'options' => GetCountriesOptions::run(),
                                     'valueProp' => 'id',
+                                    'searchable' => true
                                 ],
                                 'tariff_code' => [
                                     'type'  => 'input',

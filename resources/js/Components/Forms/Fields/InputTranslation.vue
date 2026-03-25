@@ -9,6 +9,7 @@ import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { trans } from "laravel-vue-i18n"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Toggle from "@/Components/Pure/Toggle.vue"
+import { faArrowToRight } from "@fal"
 
 interface Language {
   code: string
@@ -138,20 +139,25 @@ const changeValue = (async () => {
         >
         </Toggle>
       </div>
-      <div class="rounded-md border p-2 bg-white relative">
-        <div
-          class="absolute left-3 top-1/2 -translate-y-1/2
-                 h-5 w-5 flex items-center justify-center
-                 bg-indigo-100 text-[#4B0082] rounded-md"
-        >
+        <div class="p-3 rounded-md border bg-white flex gap-3 items-start">
+          <div class="h-6 w-6 flex items-center justify-center
+           rounded-md bg-indigo-100 text-[#4B0082] shrink-0">
           <FontAwesomeIcon
             :icon="faOctopusDeploy"
             v-tooltip="trans(':_fieldName of the Master', {_fieldName: capitalizeFirstLetter(props.fieldName)})"
             class="h-3.5 w-3.5"
           />
         </div>
-        <div class="h-8 pl-9 pr-2 text-sm bg-gray-50 border border-gray-200 rounded-md flex items-center text-gray-700">
+        <div class="text-sm text-gray-700 whitespace-pre-wrap leading-6 flex-1 bg-gray-50 px-4 rounded-md border">
           {{ props.fieldData.main }}
+        </div>
+          <div class="h-6 w-6 flex items-center justify-center
+           rounded-md bg-indigo-100 text-[#4B0082] shrink-0">
+          <FontAwesomeIcon
+            :icon="faArrowToRight"
+            v-tooltip="trans(':_fieldName of the Master', {_fieldName: capitalizeFirstLetter(props.fieldName)})"
+            class="h-3.5 w-3.5"
+          />
         </div>
       </div>
 

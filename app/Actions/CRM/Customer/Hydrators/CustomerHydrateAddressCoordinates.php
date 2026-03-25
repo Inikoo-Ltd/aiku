@@ -9,13 +9,12 @@ use App\Services\GeocoderService;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Illuminate\Support\Facades\Log;
 
 class CustomerHydrateAddressCoordinates implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $commandSignature = 'hydrate:customers-address-coordinates {--shop_code= : Filter by Shop Code} {--a|async : Run asynchronously in background queue}';
+    public string $commandSignature = 'hydrate:customers-address-coordinates {--shop_slug= : Filter by Shop Slug} {--a|async : Run asynchronously in background queue}';
     public string $commandDescription = 'Hydrate latitude and longitude for customer addresses';
 
     public function getJobUniqueId(int|null $customerId): string
@@ -23,19 +22,28 @@ class CustomerHydrateAddressCoordinates implements ShouldBeUnique
         return $customerId ?? 'all';
     }
 
-    public function handle(int|null $customerId): void
+    public function handle(int|null $customerId, ?Command $command = null): void
     {
         if ($customerId === null) {
             return;
         }
         $customer = Customer::with(['address', 'address.country'])->find($customerId);
 
-        if (! $customer || ! $customer->address) {
+        if (!$customer || !$customer->address) {
             return;
         }
 
         $address = $customer->address;
+
+        if ($address->failed_geo_location !== null) {
+            return;
+        }
+
         if ($address->latitude && $address->longitude) {
+            $address->update([
+                'failed_geo_location' => false
+            ]);
+
             return;
         }
 
@@ -58,19 +66,24 @@ class CustomerHydrateAddressCoordinates implements ShouldBeUnique
 
 
         $geocoder = new GeocoderService();
-        $result = $geocoder->geocodeLayered($addressData);
+        $result   = $geocoder->geocodeLayered($addressData, $command);
 
         if ($result) {
-
             $address->update([
-                'latitude'           => $result['latitude'],
-                'longitude'          => $result['longitude'],
-                'geocoding_metadata' => $result,
+                'latitude'            => $result['latitude'],
+                'longitude'           => $result['longitude'],
+                'geocoding_metadata'  => $result,
+                'failed_geo_location' => false
             ]);
-
-            // Log::info("Updated coordinates for Customer ID {$customerId}");
+            $command?->info("Hydrated coordinates for customer: $customer->name ($customer->id) Latitude: {$result['latitude']} Longitude: {$result['longitude']} ");
         } else {
-            // Log::warning("Failed to geocode Customer ID {$customerId}");
+            $command?->error("Failed to geocode address for customer: $customer->name ($customer->id)");
+            $address->update([
+                'failed_geo_location' => true
+            ]);
+        }
+        if ($command) {
+            usleep(1100000);
         }
     }
 
@@ -80,16 +93,17 @@ class CustomerHydrateAddressCoordinates implements ShouldBeUnique
 
         $query = Customer::has('address');
 
-        if ($shopCode = $command->option('shop_code')) {
-            $shop = Shop::where('code', $shopCode)->first();
+        if ($shopSlug = $command->option('shop_slug')) {
+            $shop = Shop::where('slug', $shopSlug)->first();
 
-            if (! $shop) {
-                $command->error("Shop with code '{$shopCode}' not found.");
+            if (!$shop) {
+                $command->error("Shop with slug '$shopSlug' not found.");
+
                 return;
             }
 
             $query->where('shop_id', $shop->id);
-            $command->info("Filtering by Shop: {$shop->name} ({$shopCode})");
+            $command->info("Filtering by Shop: $shop->name ($shopSlug)");
         }
 
         $async = $command->option('async');
@@ -105,7 +119,7 @@ class CustomerHydrateAddressCoordinates implements ShouldBeUnique
         $bar->start();
 
         $delayCounter = 0;
-        $query->chunkById(100, function ($customers) use ($bar, $async, &$delayCounter) {
+        $query->chunkById(100, function ($customers) use ($bar, $async, &$delayCounter, $command) {
             foreach ($customers as $customer) {
                 if ($async) {
                     static::dispatch($customer->id)
@@ -113,10 +127,9 @@ class CustomerHydrateAddressCoordinates implements ShouldBeUnique
                         ->delay(now()->addSeconds($delayCounter));
                     $delayCounter++;
                 } else {
-                    $this->handle($customer->id);
-                    usleep(1100000);
+                    $this->handle($customer->id, $command);
                 }
-                $bar->advance();
+                //$bar->advance();
             }
         });
 

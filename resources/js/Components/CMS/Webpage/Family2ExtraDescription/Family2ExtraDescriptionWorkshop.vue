@@ -36,9 +36,7 @@ const props = defineProps<{
 
 const layout: any = inject("layout", {})
 
-/* --------------------------------------------
-DESCRIPTION
--------------------------------------------- */
+
 
 const description = ref("")
 
@@ -54,17 +52,13 @@ watch(
   { immediate: true }
 )
 
-/* --------------------------------------------
-OFFERS
--------------------------------------------- */
+
 
 const bestOffer = computed(() => {
   return getBestOffer(props.modelValue?.family?.offers_data)
 })
 
-/* --------------------------------------------
-COLUMN POSITION
--------------------------------------------- */
+
 
 const columnPosition = computed(() => {
   const rawVal = get(props.modelValue, ["column_position"])
@@ -91,9 +85,19 @@ const textOrder = computed(() =>
   isImageLeft.value ? "order-2" : "order-1"
 )
 
-/* --------------------------------------------
-SAVE DESCRIPTION
--------------------------------------------- */
+
+
+const hideImageOnMobile = computed(() => props.screenType === "mobile")
+
+const textAlignClass = computed(() =>
+  props.screenType === "mobile" ? "text-center" : "text-left"
+)
+
+const buttonJustifyClass = computed(() =>
+  props.screenType === "mobile" ? "justify-center" : "justify-start"
+)
+
+
 
 const saveDescription = debounce(async (key: string, value: string) => {
   try {
@@ -110,60 +114,41 @@ const saveDescription = debounce(async (key: string, value: string) => {
 
 <template>
   <div :id="modelValue?.id || 'family-2'" class="w-full">
-    <div
-      :style="{
-        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-        ...getStyles(modelValue?.container?.properties, screenType)
-      }"
-    >
-      <div
-        class="grid w-full min-h-[250px] md:min-h-[400px] grid-cols-1"
-        :class="gridClass"
-      >
+    <div :style="{
+      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+      ...getStyles(modelValue?.container?.properties, screenType)
+    }">
+      <div class="grid w-full min-h-[250px] md:min-h-[400px] grid-cols-1" :class="gridClass">
         <!-- IMAGE -->
-        <div
-          class="relative w-full overflow-hidden cursor-pointer"
-          :class="[imageOrder, modelValue?.family?.extra_description_image ? 'h-full' : '']"
+            <div
+          class="w-full h-full flex items-center justify-center"
+          :class="[imageOrder]"
           :style="getStyles(modelValue?.image?.container?.properties, screenType)"
         >
           <Image
             :src="modelValue?.family?.extra_description_image"
             :alt="modelValue?.family?.extra_description_image?.alt || 'Image preview'"
-            :imageCover="true"
-            class="absolute inset-0 w-full h-full object-fill"
-            :height="getStyles(modelValue?.image?.container?.properties, screenType, false)?.height"
-            :width="getStyles(modelValue?.image?.container?.properties, screenType, false)?.width"
+            :imageCover="false"
+            class="max-h-full w-auto object-contain"
           />
         </div>
 
+
         <!-- TEXT -->
-        <div
-          class="flex flex-col justify-center m-auto p-4"
-          :class="textOrder"
-          :style="getStyles(modelValue?.text_block?.properties, screenType)"
-        >
-          <div class="w-full max-w-xl">
-            <EditorV2
-              v-model="description"
-              placeholder="Family Description"
-              @update:model-value="(e) => saveDescription('description_extra', e)"
-              :uploadImageRoute="{
+        <div class="flex flex-col justify-center m-auto p-4 mx-4" :class="[textOrder, textAlignClass]"
+          :style="getStyles(modelValue?.text_block?.properties, screenType)">
+          <div class="w-full">
+            <EditorV2 v-model="description" placeholder="Family Description"
+              @update:model-value="(e) => saveDescription('description_extra', e)" :uploadImageRoute="{
                 name: webpageData?.images_upload_route?.name,
                 parameters: { modelHasWebBlocks: blockData?.id }
-              }"
-            />
+              }" />
 
-            <div class="flex justify-start mt-6">
-              <LinkIris
-                :href="modelValue?.button?.link?.href"
-                :canonical_url="modelValue?.button?.link?.canonical_url"
-                :target="modelValue?.button?.link?.target"
-                :type="modelValue?.button?.link?.type"
-              >
-                <Button
-                  :label="modelValue?.button?.text"
-                  :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)"
-                />
+            <div class="flex mt-6" :class="buttonJustifyClass">
+              <LinkIris :href="modelValue?.button?.link?.href" :canonical_url="modelValue?.button?.link?.canonical_url"
+                :target="modelValue?.button?.link?.target" :type="modelValue?.button?.link?.type">
+                <Button :label="modelValue?.button?.text"
+                  :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)" />
               </LinkIris>
             </div>
           </div>

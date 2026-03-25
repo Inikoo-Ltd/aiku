@@ -112,7 +112,6 @@ class SendOrderToWarehouse extends OrgAction
                         'transaction_id'             => $transaction->id,
                         'quantity_required'          => $quantity,
                         'original_quantity_required' => $quantity,
-                        'xx'                         => $orgStock->organisation_id
                     ];
 
                     StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);

@@ -31,8 +31,11 @@ class UnsubscribeMailshot
 
     public function handle(DispatchedEmail $dispatchedEmail, ActionRequest $request): DispatchedEmail
     {
+        //  TODO: update later for prospect
         /** @var Customer|Prospect $recipient */
-        $recipient = $dispatchedEmail->recipient;
+        $customerDispatchedEmail =  DB::table('customer_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
+
+        $recipient = Customer::find($customerDispatchedEmail->customer_id);
 
         if ($recipient instanceof Prospect) {
             UpdateProspectEmailUnsubscribed::run($recipient, now());
@@ -115,11 +118,17 @@ class UnsubscribeMailshot
 
     public function jsonResponse(DispatchedEmail $dispatchedEmail): array
     {
+        $customerDispatchedEmail =  DB::table('customer_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
+        $recipientName = '';
+        if ($customerDispatchedEmail) {
+            $customer = Customer::find($customerDispatchedEmail->customer_id);
+            $recipientName = $customer->contact_name;
+        }
         return [
             'api_response_status' => 200,
             'api_response_data'   => [
                 'recipient_email' => $dispatchedEmail->emailAddress?->email,
-                'recipient_name'  => $dispatchedEmail->getName(),
+                'recipient_name'  => $recipientName,
             ]
         ];
     }

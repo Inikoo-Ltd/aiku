@@ -133,9 +133,9 @@ class StoreWebpage extends OrgAction
             $templates = [];
 
             if ($this->strict) {
-                $usedProductsTemplateCode = FetchUsedProductsWebBlock::run($this->website);
-                $usedProductTemplateCode = FetchUsedProductWebBlock::run($this->website);
-                $usedFamiliesTemplateCode = FetchUsedFamiliesWebBlock::run($this->website);
+                $usedProductsTemplateCode       = FetchUsedProductsWebBlock::run($this->website);
+                $usedProductTemplateCode        = FetchUsedProductWebBlock::run($this->website);
+                $usedFamiliesTemplateCode       = FetchUsedFamiliesWebBlock::run($this->website);
                 $usedSubDepartmentsTemplateCode = FetchUsedSubDepartmentsWebBlock::run($this->website);
 
                 if ($model instanceof Product) {
@@ -153,15 +153,26 @@ class StoreWebpage extends OrgAction
                         $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILIES, $usedFamiliesTemplateCode);
                         $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
                     } elseif ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
-                        $this->createWebBlock($webpage, 'department-description-1');
-                        $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS, $usedSubDepartmentsTemplateCode);
-                        if (data_get($modelData, 'layout_style') == 2) {
+                        if (data_get($modelData, 'layout_style') == 'families-overview') {
+                            $this->createWebBlock($webpage, 'department-description-1');
+                            $this->createWebBlock($webpage, 'families-1-overview');
+                        } else {
+                            $this->createWebBlock($webpage, 'department-description-1');
+                            $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS, $usedSubDepartmentsTemplateCode);
                             $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILIES, $usedFamiliesTemplateCode);
+                            $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
+                        }
+                    } elseif ($model->type == ProductCategoryTypeEnum::FAMILY) {
+                        $splitDescription = data_get($webpage->shop->settings, 'website.family_webpage_split_description', false);
+                        if ($splitDescription) {
+                            $this->createWebBlock($webpage, 'family-2');
+                        } else {
+                            $this->createWebBlock($webpage, 'family-1');
                         }
                         $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
-                    } elseif ($model->type == ProductCategoryTypeEnum::FAMILY) {
-                        $this->createWebBlock($webpage, 'family-1');
-                        $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
+                        if ($splitDescription) {
+                            $this->createWebBlock($webpage, 'family-2-extra-description');
+                        }
                         $this->createWebBlock($webpage, 'luigi-trends-1');
                         $this->createWebBlock($webpage, 'recommendation-customer-recently-bought-1');
                         $this->createWebBlock($webpage, 'luigi-last-seen-1');
@@ -224,13 +235,6 @@ class StoreWebpage extends OrgAction
         return $request->user()->authTo("web.{$this->shop->id}.edit");
     }
 
-    public function afterValidator($validator)
-    {
-        if ($validator->errors()->has('url') || $validator->errors()->has('code')) {
-            dd($validator);
-        }
-    }
-
     public function rules(): array
     {
         $rules = [
@@ -277,7 +281,7 @@ class StoreWebpage extends OrgAction
             'model_id'           => ['sometimes', 'integer'],
             'title'              => ['required', 'string'],
             'seo_structure_type' => ['sometimes', 'nullable', Rule::enum(WebpageSeoStructureTypeEnum::class)],
-            'layout_style'       => ['sometimes', 'integer']
+            'layout_style'       => ['sometimes', 'string']
 
         ];
 

@@ -426,10 +426,6 @@ class IndexOrders extends OrgAction
                     'navigation' => $navigation,
                 ],
 
-                OrdersTabsEnum::STATS->value => $this->tab == OrdersTabsEnum::STATS->value ?
-                    fn () => GetOrderStats::run($this->parent)
-                    : Inertia::lazy(fn () => GetOrderStats::run($this->parent)),
-
                 OrdersTabsEnum::ORDERS->value => $this->tab == OrdersTabsEnum::ORDERS->value ?
                     fn () => OrdersResource::collection($orders)
                     : Inertia::lazy(fn () => OrdersResource::collection($orders)),

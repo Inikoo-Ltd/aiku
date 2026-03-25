@@ -10,6 +10,8 @@ namespace App\Actions\Comms\Mailshot\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
+use App\Events\BroadcastMailshotStats;
+use App\Http\Resources\Mail\MailshotResource;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Mailshot;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -20,14 +22,22 @@ class MailshotHydrateDispatchedEmails implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
+    public string $jobQueue = 'analytics';
 
-    public function getJobUniqueId(Mailshot $mailshot): string
+    public function getJobUniqueId(?int $mailshotId): string
     {
-        return $mailshot->id;
+        return $mailshotId ?? 'empty';
     }
 
-    public function handle(Mailshot $mailshot): void
+    public function handle(?int $mailshotId): void
     {
+        if (!$mailshotId) {
+            return;
+        }
+        $mailshot = Mailshot::find($mailshotId);
+        if (!$mailshot) {
+            return;
+        }
         $stats = [
             'number_dispatched_emails' => $mailshot->dispatchedEmails()->count()
         ];
@@ -48,5 +58,17 @@ class MailshotHydrateDispatchedEmails implements ShouldBeUnique
 
         $mailshot->stats()->update($stats);
         MailshotHydrateCumulativeDispatchedEmails::run($mailshot);
+
+        $mailshot->refresh();
+
+        if ($mailshot->group) {
+            $resource = MailshotResource::make($mailshot)->toArray(request());
+
+            BroadcastMailshotStats::dispatch(
+                $mailshot->group,
+                $mailshot,
+                $resource['stats'] ?? []
+            );
+        }
     }
 }

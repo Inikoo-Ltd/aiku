@@ -152,7 +152,6 @@ use App\Models\HumanResources\WorkSchedule;
  * @property array<array-key, mixed>|null $forbidden_dispatch_countries
  * @property string $price_rrp_ratio
  * @property bool $is_migrating_to_aiku
- * @property \Illuminate\Support\Carbon|null $migrated_to_aiku_on
  * @property array<array-key, mixed>|null $offers_data
  * @property ShopEngineEnum $engine
  * @property array<array-key, mixed> $opening_hours
@@ -164,6 +163,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property string|null $product_price_currency_exchange
  * @property int|null $seeder_shop_id
  * @property string|null $proforma_footer
+ * @property \Illuminate\Support\Carbon|null $migrated_to_aiku_on
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -206,7 +206,6 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, OfferCampaign> $offerCampaigns
  * @property-read LaravelCollection<int, Offer> $offers
  * @property-read \App\Models\Catalogue\ShopOrderHandlingStats|null $orderHandlingStats
- * @property-read \App\Models\Catalogue\ShopOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Catalogue\ShopOrderingStats|null $orderingStats
  * @property-read LaravelCollection<int, Order> $orders
  * @property-read OrgPaymentServiceProviderShop|null $pivot
@@ -237,7 +236,6 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Rental> $rentals
  * @property-read LaravelCollection<int, Role> $roles
  * @property-read LaravelCollection<int, SalesChannel> $salesChannels
- * @property-read \App\Models\Catalogue\ShopSalesIntervals|null $salesIntervals
  * @property-read Shop|null $seederShop
  * @property-read SenderEmail|null $senderEmail
  * @property-read \App\Models\Helpers\Media|null $seoImage
@@ -365,16 +363,6 @@ class Shop extends Model implements HasMedia, Auditable
     public function orderingStats(): HasOne
     {
         return $this->hasOne(ShopOrderingStats::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(ShopSalesIntervals::class);
-    }
-
-    public function orderingIntervals(): HasOne
-    {
-        return $this->hasOne(ShopOrderingIntervals::class);
     }
 
     public function orderHandlingStats(): HasOne

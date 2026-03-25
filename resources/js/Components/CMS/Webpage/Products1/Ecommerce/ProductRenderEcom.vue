@@ -20,7 +20,7 @@ import LinkIris from '@/Components/Iris/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
 import { routeType } from '@/types/route'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
-import Prices2 from '../Prices2.vue'
+import Prices2 from '@/Components/CMS/Webpage/Products3/Prices3.vue'
 
 library.add(faStarHalfAlt, faQuestionCircle)
 

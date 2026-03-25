@@ -128,7 +128,7 @@ class SplitShopifyFulfillmentRequest extends OrgAction
                 return [];
             }
 
-            ResubmitShopifyFulfillmentRequest::run($shopifyUser, $remainingFulfillmentOrder['id']);
+            ReSubmitShopifyFulfillmentRequest::run($shopifyUser, $remainingFulfillmentOrder['id']);
 
             return [];
         } catch (\Exception $e) {

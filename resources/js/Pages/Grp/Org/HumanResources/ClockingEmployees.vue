@@ -101,7 +101,12 @@ const openRequestLeaveModal = () => {
 const handleTabUpdate = (tabSlug: string) => {
 	const url = new URL(window.location.href)
 	url.searchParams.forEach((_, key) => {
-		if (key.startsWith("timesheet_") || key === "year" || key === "month" || key.startsWith("requested_")) {
+		if (
+			key.startsWith("timesheet_") ||
+			key === "year" ||
+			key === "month" ||
+			key.startsWith("requested_")
+		) {
 			url.searchParams.delete(key)
 		}
 	})
@@ -138,9 +143,7 @@ const component = computed(() => {
 	</PageHeading>
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 
-	<EmployeeCalendar
-		v-if="currentTab === 'calendar'"
-		:calendar="calendar" />
+	<EmployeeCalendar v-if="currentTab === 'calendar'" :calendar="calendar" />
 
 	<component
 		v-else
@@ -156,6 +159,11 @@ const component = computed(() => {
 		"
 		:statistics="timesheets?.statistics"
 		:balance="leaves?.balance"
+		:typeOptions="leaves?.type_options"
+		:annualSubmittedDays="leaves?.annual_submitted_days"
+		:annualRemainingAfterSubmission="leaves?.annual_remaining_after_submission"
+		:medicalRequestCount="leaves?.medical_request_count"
+		:unpaidRequestCount="leaves?.unpaid_request_count"
 		:organisation="
 			currentTab === 'leaves'
 				? leaves?.organisation

@@ -41,8 +41,8 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         $type        = null;
         $isDelivered = false;
 
-        $quantity = $this->auroraModelData->{'Inventory Transaction Quantity'};
-
+        $quantity        = $this->auroraModelData->{'Inventory Transaction Quantity'};
+        $auditedQuantity = null;
 
         if ($this->auroraModelData->{'Inventory Transaction Type'} == 'Sale') {
             $type        = OrgStockMovementTypeEnum::PICKED;
@@ -80,14 +80,16 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Broken') {
             $type = OrgStockMovementTypeEnum::WRITE_OFF;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Associate') {
-            $quantity = 0;
-            $type     = OrgStockMovementTypeEnum::ASSOCIATE;
+            $quantity        = 0;
+            $auditedQuantity = 0;
+            $type            = OrgStockMovementTypeEnum::ASSOCIATE;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Disassociate') {
-            $quantity = 0;
-            $type     = OrgStockMovementTypeEnum::DISASSOCIATE;
+            $quantity        = 0;
+            $auditedQuantity = 0;
+            $type            = OrgStockMovementTypeEnum::DISASSOCIATE;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Audit') {
-            $quantity = $this->auroraModelData->{'Part Location Stock'};
-            $type     = OrgStockMovementTypeEnum::AUDIT;
+            $auditedQuantity = $this->auroraModelData->{'Part Location Stock'};
+            $type            = OrgStockMovementTypeEnum::AUDIT;
         }
         if (!$type) {
             dd($this->auroraModelData);
@@ -97,7 +99,8 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             $quantity = 0;
         }
 
-        if ($quantity == 0 && !in_array($type, [
+        if ($quantity == 0
+            && !in_array($type, [
                 OrgStockMovementTypeEnum::ASSOCIATE,
                 OrgStockMovementTypeEnum::DISASSOCIATE,
                 OrgStockMovementTypeEnum::AUDIT,
@@ -170,13 +173,25 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         $this->parsedData['orgStockMovement'] = [
             'is_delivered'    => $isDelivered,
             'type'            => $type,
-            'quantity'        => $quantity,
             'org_amount'      => $this->auroraModelData->{'Inventory Transaction Amount'},
             'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Inventory Transaction Key'},
             'date'            => $date,
             'fetched_at'      => now(),
             'last_fetched_at' => now()
         ];
+
+        if ($type == OrgStockMovementTypeEnum::AUDIT || $type == OrgStockMovementTypeEnum::ASSOCIATE || $type == OrgStockMovementTypeEnum::DISASSOCIATE) {
+            $this->parsedData['orgStockMovement']['audited_quantity'] = $auditedQuantity;
+            if ($type == OrgStockMovementTypeEnum::AUDIT) {
+                $this->parsedData['orgStockMovement']['quantity']         = null;
+            } else {
+                $this->parsedData['orgStockMovement']['quantity']         = 0;
+            }
+
+        } else {
+            $this->parsedData['orgStockMovement']['quantity']         = $quantity;
+            $this->parsedData['orgStockMovement']['audited_quantity'] = null;
+        }
     }
 
 
