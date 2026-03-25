@@ -324,6 +324,19 @@ const generateRouteDeliveryNote = (id: string) => {
 				</dd>
 			</dl>
 		</template>
+
+		<template #cell(country)="{ item: deliveryNote }">
+			<div v-if="deliveryNote.country" class="flex items-center gap-1.5">
+				<span class="font-mono text-xs font-medium text-gray-600">{{ deliveryNote.country.code }}</span>
+				<span class="text-sm text-gray-900">{{ deliveryNote.country.name }}</span>
+			</div>
+		</template>
+
+		<template #cell(weight_bracket)="{ item: deliveryNote }">
+			<span v-if="deliveryNote.weight_bracket" class="text-sm text-gray-700">
+				{{ deliveryNote.weight_bracket }}
+			</span>
+		</template>
 	</Table>
 
 	<Modal
