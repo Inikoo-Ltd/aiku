@@ -59,6 +59,10 @@ class StoreBundle extends OrgAction
             data_set($productData, 'is_main', true);
             data_set($productData, 'unit', 'BUNDLE');
 
+            if(! Arr::get($productData, 'code')) {
+                $productData['code'] = 'B-'.$customerSalesChannel->id.'-'.rand(1000, 9999);
+            }
+
             $product = StoreProduct::make()->action($customerSalesChannel->shop, $productData);
 
             data_set($modelData, 'group_id', $customerSalesChannel->group_id);
@@ -99,7 +103,7 @@ class StoreBundle extends OrgAction
     {
         $rules = [
             'name'        => ['required', 'string', 'max:255'],
-            'code'        => ['required', 'string', 'max:64'],
+            'code'        => ['nullable', 'string', 'max:64'],
             'description' => ['sometimes', 'nullable', 'string', 'max:65535'],
             'price'       => ['required', 'numeric', 'min:0'],
             'rrp'         => ['sometimes', 'nullable', 'numeric', 'min:0'],
