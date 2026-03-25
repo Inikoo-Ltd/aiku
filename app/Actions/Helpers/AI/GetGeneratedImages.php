@@ -2,14 +2,21 @@
 
 namespace App\Actions\Helpers\AI;
 
+use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\OrgAction;
+use App\Models\Helpers\Media;
+use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use OpenAI;
 
 class GetGeneratedImages extends OrgAction
 {
     public function handle(string $prompt, array $metadata = []): array
     {
-        $client = OpenAI::client(config('services.openai.api_key'));
+        $apiKey = config('services.openai.api_key');
+        $client = OpenAI::client($apiKey);
 
         $n = $metadata['n'] ?? 1;
         $size = $metadata['size'] ?? '1024x1024';
@@ -19,21 +26,26 @@ class GetGeneratedImages extends OrgAction
 
         if (!empty($images)) {
             $processedImages = [];
-            foreach ($images as $image) {
-                $preparedImage = $this->prepareImage($image);
-                if ($preparedImage) {
-                    $processedImages[] = $preparedImage;
+            foreach ($images as $imageId) {
+                $preparedImageUrl = $this->prepareImage($imageId);
+                if ($preparedImageUrl) {
+                    $processedImages[] = [
+                        'image_url' => $preparedImageUrl
+                    ];
                 }
             }
 
-            $response = $client->images()->edit([
-                'model' => 'dall-e-2',
-                'image' => $processedImages[0],
+            $response = Http::baseUrl('https://api.openai.com/v1')
+                ->withToken($apiKey)
+                ->post('images/edits', [
+                'model' => 'gpt-image-1.5',
+                'images' => $processedImages,
                 'prompt' => $prompt,
                 'n' => $n,
-                'size' => $size,
-                'response_format' => $format,
-            ]);
+                'size' => $size
+            ])->json();
+
+            return $response;
         } else {
             $response = $client->images()->create([
                 'model' => 'dall-e-3',
@@ -50,31 +62,29 @@ class GetGeneratedImages extends OrgAction
         })->toArray();
     }
 
-    private function prepareImage(string $image): mixed
+    private function prepareImage(string $imageId): string
     {
-        if (file_exists($image)) {
-            return fopen($image, 'r');
+        $media = Media::find($imageId);
+        $imageUrl = GetImgProxyUrl::run($media->getImage());
+
+        if(app()->isLocal()) {
+            $imageUrl = 'https://media.aiku.io/Odwk6eyl1y8D32Y9yQn98Ant9rD09RSGOcyrXEPeOhU/rs::0:600::/bG9jYWw6Ly9tZWRpYS8xUi9DRC82MFIzMEMxRzZNVktDRDFSL2Y5NGJhNDQ1LmpwZWc';
         }
 
-        if (filter_var($image, FILTER_VALIDATE_URL)) {
-            $imageContent = file_get_contents($image);
-            if ($imageContent !== false) {
-                $tmpFile = tempnam(sys_get_temp_dir(), 'ai_img_') . '.png';
-                file_put_contents($tmpFile, $imageContent);
+        return $imageUrl;
+    }
 
-                return fopen($tmpFile, 'r');
-            }
-        }
+    public $commandSignature = 'ai:generate-images {media_id}';
 
-        $decodedImage = base64_decode($image, true);
-        if ($decodedImage !== false) {
-            $tmpFile = tempnam(sys_get_temp_dir(), 'ai_img_') . '.png';
-            file_put_contents($tmpFile, $decodedImage);
+    public function asCommand(Command $command): void
+    {
+        $mediaId = $command->argument('media_id');
 
-            return fopen($tmpFile, 'r');
-        }
+        $result = $this->handle('make this image better with stunning background', [
+            'images' => [$mediaId],
+        ]);
 
-        return false;
+        dd($result);
     }
 
     public function action(string $prompt, array $metadata = []): array
