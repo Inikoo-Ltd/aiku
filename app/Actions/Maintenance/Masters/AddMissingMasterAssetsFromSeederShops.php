@@ -37,21 +37,39 @@ class AddMissingMasterAssetsFromSeederShops
      */
     public function handle(MasterShop $masterShop, Shop $seederShop, ?Command $command = null): void
     {
-        Product::where('shop_id', $seederShop->id)->orderBy('id')
+        Product::where('shop_id', $seederShop->id)->where('slug','jbb-01-eu')->orderBy('id')
             ->chunk(1000, function ($models) use ($command, $masterShop) {
                 foreach ($models as $product) {
                     $asset   = MatchAssetsToMaster::run($product->asset, $command);
                     $product = $asset->product;
 
-                    if ($product->is_main && !$product->master_product_id) {
-                        if ($command) {
-                            $command->info("Found main product with no master asset $product->slug");
-                        } else {
-                            print "Found main product with no master asset $product->slug \n";
+
+                    if ($product->is_main) {
+
+                        if(!$product->master_product_id) {
+                            if ($command) {
+                                $command->info("Found main product with no master asset $product->slug");
+                            } else {
+                                print "Found main product with no master asset $product->slug \n";
+                            }
+                            $this->upsertMasterProduct($masterShop, $product);
+                        }else{
+
+                            $foundMasterProduct=$product->masterProduct;
+                            UpdateMasterAsset::make()->action(
+                                $foundMasterProduct,
+                                [
+                                    'units'=>$product->units,
+                                ]
+                            );
+                            $foundMasterProduct->update(
+                                [
+                                    'unit'=>$product->unit,
+                                ]
+                            );
+
+
                         }
-
-
-                        $this->upsertMasterProduct($masterShop, $product);
                     }
                 }
             });
