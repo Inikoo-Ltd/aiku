@@ -117,6 +117,10 @@ const tabsBox = computed(() => {
                 value: stat.value ?? 0,
                 type: 'number',
                 icon: stat.icon,
+                icon_data: {
+                    icon: stat.icon,
+                    tooltip: stat.label,
+                },
             }
         })
 
