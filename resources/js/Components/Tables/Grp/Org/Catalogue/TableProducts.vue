@@ -16,7 +16,7 @@ import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { onMounted, onUnmounted, ref, inject, shallowRef  } from "vue"
-import { FontAwesomeLayers, FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Invoice } from "@/types/invoice"
 import { RouteParams } from "@/types/route-params"
@@ -24,7 +24,6 @@ import InputNumber from "primevue/inputnumber"
 import { faPlus } from "@far"
 import { faWarning, faXmark } from "@fortawesome/free-solid-svg-icons"
 import PureInput from "@/Components/Pure/PureInput.vue"
-import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@/Components/Image.vue"
 import { trans } from "laravel-vue-i18n"
 import { faTriangle, faEquals, faMinus, faShapes, faStar, faThumbtack} from "@fas"
@@ -50,7 +49,6 @@ const props = defineProps<{
         detach: routeType
     },
     isCheckboxProducts?: boolean
-    master?: boolean
     selectedProductsId?: {}
     variantSlugs?: Record<string, string>;
 }>()
@@ -868,8 +866,7 @@ const deleteError = (product) => {
             <Button icon="fal fa-times" type="negative" size="xs"
                 :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
-
-            <div v-if="master || editable_table">
+            <div v-if="editable_table">
                 <button v-if="!onEditOpen.includes(item.id)" class="h-9 align-bottom text-center" @click="()=>onEdit(item)">
                     <FontAwesomeIcon icon="fal fa-pencil" class="h-5 text-gray-500 hover:text-gray-700"
                         aria-hidden="true" v-tooltip="'edit'" />
