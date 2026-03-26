@@ -11,6 +11,7 @@ namespace App\Actions\Maintenance\Inventory\OrgStockMovement;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
@@ -77,6 +78,10 @@ class RepairLocationOrgStockMovements
 
     public function checkForErrors(Location $location, OrgStock $orgStock, int $totalMovements, bool $isCurrent, ?Command $command): void
     {
+        if ($totalMovements == 0) {
+            return;
+        }
+
         if ($errorData = $this->checkFirstAssociate($location, $orgStock, $totalMovements)) {
             $command?->error('error_first_associate');
             $this->fixFirstAssociate($location, $orgStock, $errorData, $command);
@@ -95,14 +100,96 @@ class RepairLocationOrgStockMovements
             $shouldHaveLastDisassociate = true;
         }
 
+        $internalDisassociates = [];
+        $internalAssociates    = [];
+
         if ($errorData = $this->checkForInternalDisassociates($location, $orgStock, $shouldHaveLastDisassociate)) {
             $command?->error('error_internal_disassociates');
-            $this->fixInternalDisassociates($location, $orgStock, $errorData['movements'], $command);
+            $internalDisassociates = $errorData['movements'];
+            $this->fixInternalDisassociates($errorData['movements'], $command);
         }
 
-        //        if ($errorData = $this->checkForHelpersContinuity($location, $orgStock)) {
-        //            $this->fixHelpersContinuity($location, $orgStock, $errorData, $command);
-        //        }
+        if ($errorData = $this->checkForInternalAssociates($location, $orgStock)) {
+            $command?->error('error_internal_associates');
+            $internalAssociates = $errorData['movements'];
+            $this->fixInternalAssociates($errorData['movements'], $command);
+        }
+
+        if (count($internalDisassociates) > 0) {
+            foreach ($internalDisassociates as $movementId) {
+                $movement = OrgStockMovement::find($movementId);
+                if ($movement) {
+                    $this->fixDisassociatePostTransactions($movement, $command);
+                }
+            }
+        }
+
+
+        $firstMovement = DB::table('org_stock_movements')->select('id', 'type', 'date','fixed_internal_helper')
+            ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO])
+            ->where('location_id', $location->id)
+            ->where('org_stock_id', $orgStock->id)
+            ->orderByRaw('date, source_id,id')->first();
+
+
+        if($firstMovement) {
+            if ($firstMovement->type != OrgStockMovementTypeEnum::ASSOCIATE->value) {
+                dd('error first associate should be fixed by now');
+            }
+            if(!$firstMovement->fixed_internal_helper){
+                array_unshift($internalAssociates, $firstMovement->id);
+            }
+        }
+
+
+        if (count($internalAssociates) > 0) {
+            foreach ($internalAssociates as $movementId) {
+                $movement = OrgStockMovement::find($movementId);
+                if ($movement) {
+                    $this->fixAssociatePostTransactions($movement, $command);
+                    //     exit;
+                }
+            }
+        }
+
+        if ($errorData = $this->checkForHelpersContinuity($location, $orgStock, $command)) {
+            $this->fixHelpersContinuity($location, $orgStock, $errorData, $command);
+            exit;
+        }
+    }
+
+    public function checkForInternalAssociates(Location $location, OrgStock $orgStock): ?array
+    {
+        $firstMovement = DB::table('org_stock_movements')->select('id', 'type', 'date')
+            ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO])
+            ->where('location_id', $location->id)
+            ->where('org_stock_id', $orgStock->id)->orderByRaw('date, source_id,id')->first();
+
+
+        if ($firstMovement->type != OrgStockMovementTypeEnum::ASSOCIATE->value) {
+            dd('error first associate should be fixed by now');
+        }
+
+
+        $query = DB::table('org_stock_movements')->select('id')
+            ->where('type', OrgStockMovementTypeEnum::ASSOCIATE->value)
+            ->where('location_id', $location->id)
+            ->where('org_stock_id', $orgStock->id)
+           // ->whereNull('fixed_internal_helper')
+            //    ->where('id',25238973)//25238869 //25238973
+            ->where('id', '!=', $firstMovement->id)
+            ->orderByRaw('date, source_id,id');
+
+        $movements = $query->pluck('id')->toArray();
+
+
+        if (count($movements) > 0) {
+            return [
+                'movements' => $movements,
+            ];
+        }
+
+        return null;
     }
 
     public function checkForInternalDisassociates(Location $location, OrgStock $orgStock, bool $shouldHaveLastDisassociate): ?array
@@ -124,7 +211,8 @@ class RepairLocationOrgStockMovements
             ->where('type', OrgStockMovementTypeEnum::DISASSOCIATE->value)
             ->where('location_id', $location->id)
             ->where('org_stock_id', $orgStock->id)
-            ->whereNull('fixed_internal_helper');
+          //  ->whereNull('fixed_internal_helper')
+            ->orderByRaw('date');
 
         if ($lastMovement) {
             $query->where('id', '!=', $lastMovement->id);
@@ -142,12 +230,22 @@ class RepairLocationOrgStockMovements
         return null;
     }
 
-    public function fixInternalDisassociates(Location $location, OrgStock $orgStock, array $movements, ?Command $command = null): void
+    public function fixInternalDisassociates(array $movements, ?Command $command = null): void
     {
         foreach ($movements as $movementId) {
             $movement = OrgStockMovement::find($movementId);
             if ($movement) {
                 $this->fixDisassociate($movement, $command);
+            }
+        }
+    }
+
+    public function fixInternalAssociates(array $movements, ?Command $command = null): void
+    {
+        foreach ($movements as $movementId) {
+            $movement = OrgStockMovement::find($movementId);
+            if ($movement) {
+                $this->fixAssociate($movement, $command);
             }
         }
     }
@@ -161,70 +259,114 @@ class RepairLocationOrgStockMovements
             ->orderByRaw('date,source_id,id')
             ->get();
 
-        $isIn          = false;
-        $expectedTypes = [OrgStockMovementTypeEnum::ASSOCIATE->value];
+        $isIn             = false;
+        $expectedTypes    = [OrgStockMovementTypeEnum::ASSOCIATE->value];
+        $previousMovement = null;
 
-        foreach ($movements as $movement) {
-            print_r($movement);
+        foreach ($movements as $movementKey => $movement) {
+            //  print_r($movement);
             $ok = true;
             if (!in_array($movement->type, $expectedTypes)) {
-                $ok = false;
-            } else {
-                if ($movement->type == OrgStockMovementTypeEnum::ASSOCIATE->value) {
-                    $isIn          = true;
-                    $expectedTypes = [
-                        OrgStockMovementTypeEnum::PURCHASE->value,
-                        OrgStockMovementTypeEnum::RETURN_DISPATCH->value,
-                        OrgStockMovementTypeEnum::RETURN_PICKED->value,
-                        OrgStockMovementTypeEnum::RETURN_CONSUMPTION->value,
-                        OrgStockMovementTypeEnum::PICKED->value,
-                        OrgStockMovementTypeEnum::LOCATION_TRANSFER->value,
-                        OrgStockMovementTypeEnum::FOUND->value,
-                        OrgStockMovementTypeEnum::CONSUMPTION->value,
-                        OrgStockMovementTypeEnum::WRITE_OFF->value,
-                        OrgStockMovementTypeEnum::ADJUSTMENT->value,
-                        OrgStockMovementTypeEnum::DISASSOCIATE->value,
-                        OrgStockMovementTypeEnum::AUDIT->value
+                $command?->warn("Movement type $movement->type should be in ".count($expectedTypes)." $movement->id");
+                exit;
 
-                    ];
-                } elseif ($movement->type == OrgStockMovementTypeEnum::DISASSOCIATE->value) {
-                    $isIn          = false;
-                    $expectedTypes = [
-                        OrgStockMovementTypeEnum::ASSOCIATE->value,
+                if ($movement->type == OrgStockMovementTypeEnum::DISASSOCIATE->value) {
+                    if ($previousMovement && $previousMovement->type == OrgStockMovementTypeEnum::DISASSOCIATE->value) {
+                        DB::table('org_stock_movements')->where('id', $movement->id)
+                            ->update(
+                                [
+                                    'class' => OrgStockMovementClassEnum::GARBAGE->value,
+                                    'fixed' => true
+                                ]
+                            );
+                        $command?->warn("Garbage Duplicate disassociates   $movement->id ");
+                    }
+                } elseif ($movement->class == OrgStockMovementClassEnum::MOVEMENT->value) {
+                    $nextMovement = Arr::get($movements, $movementKey + 1);
 
-
-                    ];
+                    if ($previousMovement->type == OrgStockMovementTypeEnum::DISASSOCIATE->value && $nextMovement && $nextMovement->type == OrgStockMovementTypeEnum::DISASSOCIATE->value) {
+                        DB::table('org_stock_movements')->where('id', $previousMovement->id)
+                            ->update(
+                                [
+                                    'class' => OrgStockMovementClassEnum::GARBAGE->value,
+                                    'fixed' => true
+                                ]
+                            );
+                        $command?->warn("Garbage duplicated  disassociates   $movement->id ");
+                    }
+                } elseif ($movement->type == OrgStockMovementTypeEnum::AUDIT->value && !$isIn) {
                 }
             }
 
+            if ($movement->type == OrgStockMovementTypeEnum::ASSOCIATE->value) {
+                $isIn          = true;
+                $expectedTypes = [
+                    OrgStockMovementTypeEnum::PURCHASE->value,
+                    OrgStockMovementTypeEnum::RETURN_DISPATCH->value,
+                    OrgStockMovementTypeEnum::RETURN_PICKED->value,
+                    OrgStockMovementTypeEnum::RETURN_CONSUMPTION->value,
+                    OrgStockMovementTypeEnum::PICKED->value,
+                    OrgStockMovementTypeEnum::LOCATION_TRANSFER->value,
+                    OrgStockMovementTypeEnum::FOUND->value,
+                    OrgStockMovementTypeEnum::CONSUMPTION->value,
+                    OrgStockMovementTypeEnum::WRITE_OFF->value,
+                    OrgStockMovementTypeEnum::ADJUSTMENT->value,
+                    OrgStockMovementTypeEnum::DISASSOCIATE->value,
+                    OrgStockMovementTypeEnum::AUDIT->value
 
-            if (!$ok) {
-                dd('shit');
+                ];
+            } elseif ($movement->type == OrgStockMovementTypeEnum::DISASSOCIATE->value) {
+                $isIn          = false;
+                $expectedTypes = [
+                    OrgStockMovementTypeEnum::ASSOCIATE->value,
+
+
+                ];
             }
-        }
 
-        dd('----------------');
+
+            $previousMovement = $movement;
+        }
     }
 
-    public function checkForHelpersContinuity(Location $location, OrgStock $orgStock): ?array
+    public function checkForHelpersContinuity(Location $location, OrgStock $orgStock, ?Command $command = null): ?array
     {
-        $movements    = DB::table('org_stock_movements')->select('type', 'date')
-            ->whereIn('type', [
-                OrgStockMovementTypeEnum::ASSOCIATE->value,
-                OrgStockMovementTypeEnum::DISASSOCIATE->value
-            ])
+        $movements     = DB::table('org_stock_movements')->select('type', 'date')
+            ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO])
             ->where('location_id', $location->id)
             ->where('org_stock_id', $orgStock->id)->orderByRaw('date,id')->get();
-        $errors       = [];
-        $expectedType = OrgStockMovementTypeEnum::ASSOCIATE->value;
+        $errors        = [];
+        $expectedTypes = [OrgStockMovementTypeEnum::ASSOCIATE->value];
         foreach ($movements as $movement) {
-            if ($movement->type != $expectedType) {
+            if (!in_array($movement->type, $expectedTypes)) {
                 $errors[] = $movement;
             }
-            if ($expectedType == OrgStockMovementTypeEnum::ASSOCIATE->value) {
-                $expectedType = OrgStockMovementTypeEnum::DISASSOCIATE->value;
-            } else {
-                $expectedType = OrgStockMovementTypeEnum::ASSOCIATE->value;
+
+
+            if ($movement->type == OrgStockMovementTypeEnum::ASSOCIATE->value) {
+                $isIn          = true;
+                $expectedTypes = [
+                    OrgStockMovementTypeEnum::PURCHASE->value,
+                    OrgStockMovementTypeEnum::RETURN_DISPATCH->value,
+                    OrgStockMovementTypeEnum::RETURN_PICKED->value,
+                    OrgStockMovementTypeEnum::RETURN_CONSUMPTION->value,
+                    OrgStockMovementTypeEnum::PICKED->value,
+                    OrgStockMovementTypeEnum::LOCATION_TRANSFER->value,
+                    OrgStockMovementTypeEnum::FOUND->value,
+                    OrgStockMovementTypeEnum::CONSUMPTION->value,
+                    OrgStockMovementTypeEnum::WRITE_OFF->value,
+                    OrgStockMovementTypeEnum::ADJUSTMENT->value,
+                    OrgStockMovementTypeEnum::DISASSOCIATE->value,
+                    OrgStockMovementTypeEnum::AUDIT->value
+
+                ];
+            } elseif ($movement->type == OrgStockMovementTypeEnum::DISASSOCIATE->value) {
+                $isIn          = false;
+                $expectedTypes = [
+                    OrgStockMovementTypeEnum::ASSOCIATE->value,
+
+
+                ];
             }
         }
 
@@ -288,8 +430,10 @@ class RepairLocationOrgStockMovements
 
     public function fixDisassociate(OrgStockMovement $orgStockMovement, ?Command $command = null): void
     {
+        $command?->warn("Fix disassociate $orgStockMovement->id ".$orgStockMovement->date->format('Y-m-d H:i:s.u'));
+
         $movements = DB::table('org_stock_movements')->select('date', 'id', 'quantity', 'audited_quantity', 'type', 'class')
-            ->where('location_id', $orgStockMovement->location_id)->where('org_stock_id', $orgStockMovement->org_tock_id)
+            ->where('location_id', $orgStockMovement->location_id)->where('org_stock_id', $orgStockMovement->org_stock_id)
             ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO])
             ->where('date', $orgStockMovement->date->format('Y-m-d H:i:s.u'))
             ->orderByRaw('source_id desc,date desc,id desc')
@@ -300,7 +444,7 @@ class RepairLocationOrgStockMovements
         $numberAdjustments   = 0;
 
         foreach ($movements as $movement) {
-            print_r($movement);
+            // print_r($movement);
             if ($movement->type == OrgStockMovementTypeEnum::ADJUSTMENT->value) {
                 $sumAdjustments += $movement->quantity;
                 $numberAdjustments++;
@@ -338,10 +482,222 @@ class RepairLocationOrgStockMovements
         }
 
         if ($numberDisassociates > 1) {
-            $garbageMultipleDisassociates = false;
             foreach ($movements as $movement) {
                 if ($movement->type == OrgStockMovementTypeEnum::DISASSOCIATE->value && $movement->id != $orgStockMovement->id) {
-                    if ($garbageMultipleDisassociates) {
+                    DB::table('org_stock_movements')->where('id', $movement->id)
+                        ->update(
+                            [
+                                'class' => OrgStockMovementClassEnum::GARBAGE->value,
+                                'fixed' => true
+                            ]
+                        );
+                    $command?->warn("Garbage Duplicate disassociates   $movement->id ");
+                }
+            }
+        }
+
+
+        if (!$orgStockMovement->fixed_internal_helper) {
+            $orgStockMovement->update([
+                'date'                  => $orgStockMovement->date->addMicroseconds(4000),
+                'fixed_internal_helper' => true,
+            ]);
+            $command?->warn("Move forward  disassociate $orgStockMovement->id a little bit (mark as fixed_internal_helper)");
+        }
+    }
+
+
+    public function fixAssociatePostTransactions(OrgStockMovement $orgStockMovement, ?Command $command = null): void
+    {
+        $command?->warn("Fix associate post transactions $orgStockMovement->id ".$orgStockMovement->date->format('Y-m-d H:i:s.u'));
+
+
+        $numberValidMovements     = 0;
+        $nextDisassociateMovement = null;
+        $dateFirstValidMovement   = null;
+
+        $nextMovements = DB::table('org_stock_movements')->select('date', 'id', 'quantity', 'audited_quantity', 'type', 'class')
+            ->where('location_id', $orgStockMovement->location_id)
+            ->where('org_stock_id', $orgStockMovement->org_stock_id)
+            ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO])
+            ->where('date', '>', $orgStockMovement->date->format('Y-m-d H:i:s.u'))
+            ->orderByRaw('date,source_id,id')
+            ->get();
+        foreach ($nextMovements as $movement) {
+            if ($movement->type == OrgStockMovementTypeEnum::DISASSOCIATE->value) {
+                $nextDisassociateMovement = $movement;
+                break;
+            }
+
+
+            if ($movement->type == OrgStockMovementTypeEnum::ASSOCIATE->value) {
+                print_r($movement);
+                DB::table('org_stock_movements')->where('id', $movement->id)
+                    ->update(
+                        [
+                            'type'             => OrgStockMovementTypeEnum::AUDIT->value,
+                            'class'            => OrgStockMovementClassEnum::HELPER->value,
+                            'fixed'            => true,
+                            'audited_quantity' => 0,
+                            'quantity'         => 0,
+                        ]
+                    );
+                $command?->warn("Transform associate to audit   $movement->id ");
+            }
+        }
+
+        if (!$orgStockMovement->fixed_internal_helper) {
+            $orgStockMovement->update([
+                'fixed_internal_helper' => true,
+            ]);
+        }
+
+
+        //   if ($numberValidMovements > 0 and $dateFirstValidMovement) {
+        // dd($dateFirstValidMovement, $nextDisassociateMovement);
+        //   }
+    }
+
+
+    public function fixDisassociatePostTransactions(OrgStockMovement $orgStockMovement, ?Command $command = null): void
+    {
+        $command?->warn("Fix disassociate post transactions $orgStockMovement->id ".$orgStockMovement->date->format('Y-m-d H:i:s.u'));
+
+
+        $numberValidMovements   = 0;
+        $nextAssociateMovement  = null;
+        $dateFirstValidMovement = null;
+
+        $nextMovements = DB::table('org_stock_movements')->select('date', 'id', 'quantity', 'audited_quantity', 'type', 'class')
+            ->where('location_id', $orgStockMovement->location_id)
+            ->where('org_stock_id', $orgStockMovement->org_stock_id)
+            ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO])
+            ->where('date', '>', $orgStockMovement->date->format('Y-m-d H:i:s.u'))
+            ->orderByRaw('date,source_id,id')
+            ->get();
+        foreach ($nextMovements as $movement) {
+            if ($movement->type == OrgStockMovementTypeEnum::ASSOCIATE->value) {
+                $nextAssociateMovement = $movement;
+                break;
+            }
+
+            if ($movement->type == OrgStockMovementTypeEnum::AUDIT->value && $movement->audited_quantity == 0) {
+                DB::table('org_stock_movements')->where('id', $movement->id)
+                    ->update(
+                        [
+                            'class' => OrgStockMovementClassEnum::GARBAGE->value,
+                            'fixed' => true
+                        ]
+                    );
+                $command?->warn("## Garbage post disassociate audits   $movement->id ");
+            }
+            if ($movement->type == OrgStockMovementTypeEnum::ADJUSTMENT->value && $movement->quantity == 0) {
+                DB::table('org_stock_movements')->where('id', $movement->id)
+                    ->update(
+                        [
+                            'class' => OrgStockMovementClassEnum::GARBAGE->value,
+                            'fixed' => true
+                        ]
+                    );
+                $command?->warn("## Garbage post disassociate adjustment   $movement->id ");
+            } elseif ($movement->type == OrgStockMovementTypeEnum::DISASSOCIATE->value) {
+                DB::table('org_stock_movements')->where('id', $movement->id)
+                    ->update(
+                        [
+                            'class' => OrgStockMovementClassEnum::GARBAGE->value,
+                            'fixed' => true
+                        ]
+                    );
+                $command?->warn("## Garbage post disassociate disassociates   $movement->id ");
+            } else {
+                $numberValidMovements++;
+                if ($dateFirstValidMovement == null) {
+                    $dateFirstValidMovement = $movement->date;
+                }
+            }
+        }
+
+        if ($numberValidMovements > 0 and $dateFirstValidMovement) {
+            $orgStock = OrgStock::withTrashed()->find($orgStockMovement->org_stock_id);
+            $location = Location::withTrashed()->find($orgStockMovement->location_id);
+
+            StoreOrgStockMovement::make()->action(
+                $orgStock,
+                $location,
+                [
+                    'quantity'         => 0,
+                    'audited_quantity' => 0,
+                    'org_amount'       => 0,
+                    'date'             => Carbon::parse($dateFirstValidMovement)->subMicroseconds(1000)->format('Y-m-d H:i:s.u'),
+                    'type'             => OrgStockMovementTypeEnum::ASSOCIATE->value,
+                    'class'            => OrgStockMovementClassEnum::HELPER->value,
+                    'flow'             => OrgStockMovementFlowEnum::AUDIT->value,
+                    'fixed'            => true,
+                ]
+            );
+            $command?->warn("## Fix disassociate post transactions add associate  $orgStockMovement->id ");
+        }
+    }
+
+
+    public function fixAssociate(OrgStockMovement $orgStockMovement, ?Command $command = null): void
+    {
+        $command?->warn("Fix associate $orgStockMovement->id ".$orgStockMovement->date->format('Y-m-d H:i:s.u'));
+
+        $movements = DB::table('org_stock_movements')->select('date', 'id', 'quantity', 'audited_quantity', 'type', 'class')
+            ->where('location_id', $orgStockMovement->location_id)->where('org_stock_id', $orgStockMovement->org_stock_id)
+            ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO])
+            ->where('date', $orgStockMovement->date->format('Y-m-d H:i:s.u'))
+            ->orderByRaw('source_id,id')
+            ->get();
+
+        $numberAssociates  = 0;
+        $sumAdjustments    = 0;
+        $numberAdjustments = 0;
+
+        foreach ($movements as $movement) {
+            //print_r($movement);
+            if ($movement->type == OrgStockMovementTypeEnum::ADJUSTMENT->value) {
+                $sumAdjustments += $movement->quantity;
+                $numberAdjustments++;
+            } elseif ($movement->type == OrgStockMovementTypeEnum::ASSOCIATE->value) {
+                $numberAssociates++;
+            } elseif ($movement->type == OrgStockMovementTypeEnum::AUDIT->value) {
+                if ($movement->audited_quantity == 0) {
+                    DB::table('org_stock_movements')->where('id', $movement->id)
+                        ->update(
+                            [
+                                'class' => OrgStockMovementClassEnum::GARBAGE->value,
+                                'fixed' => true
+                            ]
+                        );
+                    $command?->warn("Audit zero value at association  $movement->id fixed as Garbage");
+                } else {
+                    DB::table('org_stock_movements')->where('id', $movement->id)
+                        ->update(
+                            [
+                                'date'  => Carbon::parse($movement->date)->addMicroseconds(500)->format('Y-m-d H:i:s.u'),
+                                'fixed' => true
+                            ]
+                        );
+                    $command?->warn("Move audit up forward  $movement->id");
+                }
+            } elseif ($movement->class == OrgStockMovementClassEnum::MOVEMENT->value) {
+                DB::table('org_stock_movements')->where('id', $movement->id)
+                    ->update(
+                        [
+                            'date'  => Carbon::parse($movement->date)->addMicroseconds(1000)->format('Y-m-d H:i:s.u'),
+                            'fixed' => true
+                        ]
+                    );
+                $command?->warn("Edit movement date of  $movement->id");
+            }
+        }
+
+        if ($numberAdjustments > 0) {
+            if ($sumAdjustments == 0) {
+                foreach ($movements as $movement) {
+                    if ($movement->type == OrgStockMovementTypeEnum::ADJUSTMENT->value) {
                         DB::table('org_stock_movements')->where('id', $movement->id)
                             ->update(
                                 [
@@ -349,20 +705,48 @@ class RepairLocationOrgStockMovements
                                     'fixed' => true
                                 ]
                             );
-                        $command?->warn("Garbage Duplicate disassociates   $movement->id ");
-                    } else {
-                        $garbageMultipleDisassociates = true;
+                        $command?->warn("Useless Adjustment   $movement->id set as Garbage");
+                    }
+                }
+            } else {
+                foreach ($movements as $movement) {
+                    if ($movement->type == OrgStockMovementTypeEnum::ADJUSTMENT->value) {
+                        DB::table('org_stock_movements')->where('id', $movement->id)
+                            ->update(
+                                [
+                                    'date'  => Carbon::parse($movement->date)->addMicroseconds(1000)->format('Y-m-d H:i:s.u'),
+                                    'fixed' => true
+                                ]
+                            );
+                        $command?->warn("Move forward Adjustment   $movement->id ");
                     }
                 }
             }
         }
 
-        $orgStockMovement->update([
-            'date'                  => $orgStockMovement->date->addMicroseconds(4000),
-            'fixed_internal_helper' => true,
-        ]);
-        $command?->warn("Move forward  disassociate $orgStockMovement->id a little bit (mark as fixed_internal_helper)");
+        if ($numberAssociates > 1) {
+            foreach ($movements as $movement) {
+                if ($movement->type == OrgStockMovementTypeEnum::ASSOCIATE->value && $movement->id != $orgStockMovement->id) {
+                    DB::table('org_stock_movements')->where('id', $movement->id)
+                        ->update(
+                            [
+                                'class' => OrgStockMovementClassEnum::GARBAGE->value,
+                                'fixed' => true
+                            ]
+                        );
+                    $command?->warn("Garbage Duplicate disassociates   $movement->id ");
+                }
+            }
+        }
+
+        if (!$orgStockMovement->fixed_internal_helper) {
+            $orgStockMovement->update([
+                'fixed_internal_helper' => true,
+            ]);
+            $command?->warn("Mark internal associate $orgStockMovement->id a (mark as fixed_internal_helper)");
+        }
     }
+
 
     public function fixLastDisassociate(Location $location, OrgStock $orgStock, array $errorData, ?Command $command = null): void
     {
@@ -378,7 +762,7 @@ class RepairLocationOrgStockMovements
         $numberAdjustments   = 0;
 
         foreach ($movements as $movement) {
-            print_r($movement);
+            //print_r($movement);
             if ($movement->type == OrgStockMovementTypeEnum::ADJUSTMENT->value) {
                 $sumAdjustments += $movement->quantity;
                 $numberAdjustments++;
@@ -425,6 +809,8 @@ class RepairLocationOrgStockMovements
                     'org_amount'       => 0,
                     'date'             => Carbon::parse(Arr::get($errorData, 'date'))->addMicroseconds(4000)->format('Y-m-d H:i:s.u'),
                     'type'             => OrgStockMovementTypeEnum::DISASSOCIATE->value,
+                    'class'            => OrgStockMovementClassEnum::HELPER->value,
+                    'flow'             => OrgStockMovementFlowEnum::AUDIT->value,
                     'fixed'            => true,
                 ]
             );
@@ -521,7 +907,7 @@ class RepairLocationOrgStockMovements
                             'fixed' => true
                         ]
                     );
-                $command?->warn("Edit date of  $movement->id");
+                $command?->warn("Edit movement date of  $movement->id");
             }
         }
 
@@ -565,6 +951,8 @@ class RepairLocationOrgStockMovements
                     'org_amount'       => 0,
                     'date'             => Arr::get($errorData, 'date'),
                     'type'             => OrgStockMovementTypeEnum::ASSOCIATE->value,
+                    'class'            => OrgStockMovementClassEnum::HELPER->value,
+                    'flow'             => OrgStockMovementFlowEnum::AUDIT->value,
                     'fixed'            => true,
                 ]
             );
