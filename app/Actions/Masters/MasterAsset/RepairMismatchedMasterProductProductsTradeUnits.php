@@ -18,7 +18,7 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
 
-class MasterProductFixProductsTradeUnits
+class RepairMismatchedMasterProductProductsTradeUnits
 {
     use WithActionUpdate;
 
@@ -33,6 +33,11 @@ class MasterProductFixProductsTradeUnits
 
                     $products = $masterProduct->products;
                     foreach ($products as $product) {
+
+                        if ($product->shop_id != 18) {
+                            continue;
+                        }
+
                         $productTradeUnits = $product->tradeUnits->pluck('pivot.quantity', 'id');
 
                         $diffFromMaster  = $masterAssetTradeUnits->diffAssoc($productTradeUnits);
