@@ -64,7 +64,7 @@ class GetGeneratedImages extends OrgAction
             return $this->convertBase64ToFile($image['b64_json'], $model);
         })->toArray();
 
-        return UploadImagesToProduct::run($model, [
+        return UploadImagesToProduct::run($model, 'images', [
             'images' => $result
         ]);
     }
@@ -81,12 +81,13 @@ class GetGeneratedImages extends OrgAction
         return $imageUrl;
     }
 
-    public $commandSignature = 'ai:generate-images {media_id}';
+    public $commandSignature = 'ai:generate-images {product_id} {media_id}';
 
     public function asCommand(Command $command): void
     {
         $mediaId = $command->argument('media_id');
-        $model = Product::find(1);
+        $productId = $command->argument('product_id');
+        $model = Product::findOrFail($productId);
 
         $result = $this->handle($model, 'make this image better with stunning background', [
             'images' => [$mediaId]
