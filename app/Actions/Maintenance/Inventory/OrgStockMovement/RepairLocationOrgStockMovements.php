@@ -125,18 +125,20 @@ class RepairLocationOrgStockMovements
         }
 
 
-        $firstMovement = DB::table('org_stock_movements')->select('id', 'type', 'date','fixed_internal_helper')
+        $firstMovement = DB::table('org_stock_movements')->select('id', 'type', 'date', 'fixed_internal_helper')
             ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO])
             ->where('location_id', $location->id)
             ->where('org_stock_id', $orgStock->id)
             ->orderByRaw('date, source_id,id')->first();
 
 
-        if($firstMovement) {
+        if ($firstMovement) {
             if ($firstMovement->type != OrgStockMovementTypeEnum::ASSOCIATE->value) {
-                dd('error first associate should be fixed by now');
+                $command?->error('error first associate should be fixed by now');
+                return;
+
             }
-            if(!$firstMovement->fixed_internal_helper){
+            if (!$firstMovement->fixed_internal_helper) {
                 array_unshift($internalAssociates, $firstMovement->id);
             }
         }
@@ -154,7 +156,7 @@ class RepairLocationOrgStockMovements
 
         if ($errorData = $this->checkForHelpersContinuity($location, $orgStock, $command)) {
             $this->fixHelpersContinuity($location, $orgStock, $errorData, $command);
-            exit;
+            //exit;
         }
     }
 
@@ -167,7 +169,8 @@ class RepairLocationOrgStockMovements
 
 
         if ($firstMovement->type != OrgStockMovementTypeEnum::ASSOCIATE->value) {
-            dd('error first associate should be fixed by now');
+            print "Error last disassociate should be fixed by now  $firstMovement->id  $firstMovement->type  $firstMovement->date ";
+            return null;
         }
 
 
@@ -203,7 +206,9 @@ class RepairLocationOrgStockMovements
 
 
             if ($lastMovement->type != OrgStockMovementTypeEnum::DISASSOCIATE->value) {
-                dd('error last disassociate should be fixed by now');
+                print "Error last disassociate should be fixed by now  $lastMovement->id  $lastMovement->type  $lastMovement->date ";
+                return null;
+
             }
         }
 
@@ -268,7 +273,7 @@ class RepairLocationOrgStockMovements
             $ok = true;
             if (!in_array($movement->type, $expectedTypes)) {
                 $command?->warn("Movement type $movement->type should be in ".count($expectedTypes)." $movement->id");
-                exit;
+
 
                 if ($movement->type == OrgStockMovementTypeEnum::DISASSOCIATE->value) {
                     if ($previousMovement && $previousMovement->type == OrgStockMovementTypeEnum::DISASSOCIATE->value) {
