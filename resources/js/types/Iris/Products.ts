@@ -7,32 +7,40 @@
 import { Image as ImageTS } from '@/types/Image'
 
 export interface ProductResource {
-    id: number
-    name: string
-    code: string
-    state: string
-    image?: {
-        source: ImageTS
-    }
-    rrp_per_unit :number
-    rrp?: number
-    unit: string
-    stock: number
-    rating: number
-    price: number
-    url: string | null
-    units: number
-    bestseller?: boolean
-    is_favourite?: boolean
-    is_back_in_stock? : boolean
-    top_seller: number | null
-    web_images: {
-        main: {
-            original: ImageTS
-            gallery: ImageTS
-        }
-    }
-    quantity_ordered: number
-    quantity_ordered_new: number
-    transaction_id: number | null
+	id: number
+	name: string
+	code: string
+	state: string
+	image?: {
+		source: ImageTS
+	}
+	rrp_per_unit: number
+	rrp?: number
+	unit: string
+	stock: number
+	rating: number
+	price: number
+	url: string | null
+	units: number
+	bestseller?: boolean
+	is_favourite?: boolean
+	is_back_in_stock?: boolean
+	top_seller: number | null
+	web_images: {
+		main: {
+			original: ImageTS
+			gallery: ImageTS
+		}
+		all: {
+			original: ImageTS
+			gallery: ImageTS
+		}
+		secondary: {
+			original: ImageTS
+			gallery: ImageTS
+		}
+	}
+	quantity_ordered: number
+	quantity_ordered_new: number
+	transaction_id: number | null
 }
