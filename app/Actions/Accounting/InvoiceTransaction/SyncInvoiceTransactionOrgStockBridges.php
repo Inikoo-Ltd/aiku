@@ -39,13 +39,25 @@ class SyncInvoiceTransactionOrgStockBridges implements ShouldQueue, ShouldBeUniq
             return;
         }
 
-        $quantity = abs($invoiceTransaction->quantity ?? 0);
+        $orgStocks    = $product->orgStocks;
+        $stockCount   = $orgStocks->count();
 
-        foreach ($product->orgStocks as $orgStock) {
-            // Todo: need to fix unit_commercial_value in org_stocks
-            $netAmount    = ($orgStock->unit_commercial_value ?? 0) * $quantity;
-            $orgNetAmount = $invoiceTransaction->org_exchange ? $netAmount * $invoiceTransaction->org_exchange : 0;
-            $grpNetAmount = $invoiceTransaction->grp_exchange ? $netAmount * $invoiceTransaction->grp_exchange : 0;
+        if ($stockCount === 0) {
+            return;
+        }
+
+        $valueGetter = GetInvoiceTransactionItemValue::make();
+
+        $weights = [];
+        foreach ($orgStocks as $orgStock) {
+            $weights[$orgStock->id] = $valueGetter->getOrgStockValue($orgStock, $invoiceTransaction->date)
+                * ($orgStock->pivot->quantity ?? 1);
+        }
+
+        $totalWeight = array_sum($weights);
+
+        foreach ($orgStocks as $orgStock) {
+            $factor = $totalWeight > 0 ? $weights[$orgStock->id] / $totalWeight : 1 / $stockCount;
 
             InvoiceTransactionHasOrgStock::updateOrCreate(
                 [
@@ -54,9 +66,9 @@ class SyncInvoiceTransactionOrgStockBridges implements ShouldQueue, ShouldBeUniq
                 ],
                 [
                     'org_stock_family_id' => $orgStock->org_stock_family_id,
-                    'net_amount'          => $netAmount,
-                    'org_net_amount'      => $orgNetAmount,
-                    'grp_net_amount'      => $grpNetAmount,
+                    'net_amount'          => $invoiceTransaction->net_amount * $factor,
+                    'org_net_amount'      => $invoiceTransaction->org_net_amount * $factor,
+                    'grp_net_amount'      => $invoiceTransaction->grp_net_amount * $factor,
                 ]
             );
         }

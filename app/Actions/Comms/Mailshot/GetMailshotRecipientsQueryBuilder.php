@@ -66,6 +66,8 @@ class GetMailshotRecipientsQueryBuilder
         }
         $query->whereNotNull('customers.email');
 
+        $query->whereNull('customers.deleted_at');
+
         $filters = $mailshot->recipients_recipe;
 
         // Filter Registered Never Ordered

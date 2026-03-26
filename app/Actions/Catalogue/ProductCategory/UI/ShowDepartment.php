@@ -77,7 +77,7 @@ class ShowDepartment extends OrgAction
         return Inertia::render(
             'Org/Catalogue/Department',
             [
-                'title'       => __('department'),
+                'title'       => __('Department').' '.$department->code.'@'.$department->shop->code,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
