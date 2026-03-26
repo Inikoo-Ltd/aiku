@@ -162,6 +162,7 @@ class DashboardLeave extends OrgAction
                         'end_date' => $leave->end_date?->format('Y-m-d'),
                         'type' => $leave->type,
                         'type_label' => $leave->leaveType?->name ?? $leave->type,
+                        'code' => $leave->leaveType?->code ?? $leave->type,
                         'duration_days' => $leave->duration_days,
                         'reason' => $leave->reason,
                         'status' => $leave->status?->value,

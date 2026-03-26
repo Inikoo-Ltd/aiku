@@ -22,6 +22,7 @@ type LeaveItem = {
 	end_date: string
 	type: string
 	type_label: string
+	code: string
 	duration_days: number
 	reason: string
 	status: string
@@ -82,15 +83,15 @@ const props = defineProps<{
 		end: string
 	}
 	daysInMonth: number
-		monthName: string
-		employeeOptions: { value: number; label: string }[]
-		typeOptions: { value: string; label: string }[]
-		type_options?: Record<string, string | { label: string; category?: string }>
-		status_options?: Record<string, string>
-		departmentOptions?: { value: string; label: string }[]
-		holidays?: Array<{
-			id: number
-			label: string
+	monthName: string
+	employeeOptions: { value: number; label: string }[]
+	typeOptions: { value: string; label: string }[]
+	type_options?: Record<string, string | { label: string; category?: string }>
+	status_options?: Record<string, string>
+	departmentOptions?: { value: string; label: string }[]
+	holidays?: Array<{
+		id: number
+		label: string
 		from: string
 		to: string
 		type: string
@@ -264,9 +265,9 @@ const closeModal = () => {
 }
 
 const formatTypeLabel = (typeLabel: string | Record<string, any> | undefined | null): string => {
-	if (!typeLabel) return ''
-	if (typeof typeLabel === 'string') return typeLabel
-	if (typeof typeLabel === 'object' && typeLabel.label) return typeLabel.label
+	if (!typeLabel) return ""
+	if (typeof typeLabel === "string") return typeLabel
+	if (typeof typeLabel === "object" && typeLabel.label) return typeLabel.label
 	return String(typeLabel)
 }
 
@@ -409,32 +410,6 @@ const getLeaveColor = (type: string): string => {
 	}
 }
 
-const getLeaveShortCode = (type: string): string => {
-	switch (type) {
-		case "annual":
-			return "H"
-		case "medical":
-			return "S"
-		case "unpaid":
-			return "U"
-		case "halfday-morning":
-			return "HM"
-		case "halfday-afternoon":
-			return "HA"
-		case "training":
-			return "T"
-		case "leave-of-absence":
-			return "LA"
-		case "compassionate":
-			return "C"
-		case "parental":
-			return "P"
-		case "sabbatical":
-			return "SA"
-		default:
-			return "H"
-	}
-}
 
 const createLeaveSegments = (employee: EmployeeCalendarRow): Record<number, LeaveSegment[]> => {
 	const weekSegments: Record<number, LeaveSegment[]> = {}
@@ -941,7 +916,7 @@ const submitExport = () => {
 										:title="getLeaveTooltip(segment)"
 										@click="openModal(segment.leave)">
 										<span class="truncate block">{{
-											getLeaveShortCode(segment.leave.type)
+											segment.leave.code
 										}}</span>
 									</button>
 								</div>
@@ -985,7 +960,9 @@ const submitExport = () => {
 						<label class="block text-sm font-medium text-gray-500">{{
 							trans("Type")
 						}}</label>
-						<div class="mt-1 text-sm text-gray-900">{{ formatTypeLabel(selectedLeave.type_label) }}</div>
+						<div class="mt-1 text-sm text-gray-900">
+							{{ formatTypeLabel(selectedLeave.type_label) }}
+						</div>
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-500">{{
