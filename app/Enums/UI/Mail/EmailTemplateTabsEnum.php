@@ -17,6 +17,7 @@ enum EmailTemplateTabsEnum: string
     use HasTabs;
 
     case TEMPLATES = 'templates';
+    case OTHER_STORE_TEMPLATES = 'other_store_templates';
     case PREVIOUS_MAILSHOTS = 'previous_mailshots';
     case OTHER_STORE_MAILSHOTS = 'other_store_mailshots';
 
@@ -26,6 +27,10 @@ enum EmailTemplateTabsEnum: string
             EmailTemplateTabsEnum::TEMPLATES => [
                 'title' => __('Templates'),
                 'icon'  => 'fal fa-layer-group',
+            ],
+            EmailTemplateTabsEnum::OTHER_STORE_TEMPLATES => [
+               'title' => __('Other Store Templates'),
+               'icon'  => 'fal fa-layer-group',
             ],
             EmailTemplateTabsEnum::PREVIOUS_MAILSHOTS => [
                 'title' => __('Previous Mailshots'),

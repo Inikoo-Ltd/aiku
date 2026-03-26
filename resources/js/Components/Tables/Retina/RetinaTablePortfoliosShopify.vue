@@ -183,10 +183,10 @@ const onClickFilterOutOfStock = (query: string) => {
 }
 
 const onClickFilterForSale = (query: string) => {
-    let xx: string | null = 'true'
+    let xx: string | null = query
     if (compTableFilterForSale.value === query) {
         xx = null
-    } else {
+    }   else {
         xx = query
     }
 
@@ -559,10 +559,22 @@ onMounted(() => {
                 size="xs"
 				class="whitespace-nowrap"
                 :key="compTableFilterForSale"
-                :type="compTableFilterForSale ? 'secondary' : 'tertiary'"
-                :icon="compTableFilterForSale ? 'fas fa-filter' : 'fal fa-filter'"
+                :type="compTableFilterForSale === 'true' ? 'secondary' : 'tertiary'"
+                :icon="compTableFilterForSale === 'true' ? 'fas fa-filter' : 'fal fa-filter'"
                 iconRight="fal fa-times"
                 :loading="isLoadingTable == 'is-for-sale'"
+            />
+            <Button
+                @click="onClickFilterForSale('false')"
+                v-tooltip="trans('Only show products that are not for sale')"
+                :label="trans('Not For Sale')"
+                size="xs"
+                class="whitespace-nowrap"
+                :key="compTableFilterForSale + 'not'"
+                :type="compTableFilterForSale === 'false' ? 'secondary' : 'tertiary'"
+                :icon="compTableFilterForSale === 'false' ? 'fas fa-filter' : 'fal fa-filter'"
+                iconRight="fal fa-times"
+                :loading="isLoadingTable == 'not-for-sale'"
             />
             <Button
                 @click="onClickFilterOutOfStock('discontinued')"

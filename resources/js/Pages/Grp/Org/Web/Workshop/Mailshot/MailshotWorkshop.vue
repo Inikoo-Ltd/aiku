@@ -54,6 +54,7 @@ const _beefree = ref()
 const _unlayer = ref()
 const visibleEmailTestModal = ref(false)
 const visibleSAveEmailTemplateModal = ref(false)
+const visibleUnsubscribeWarningModal = ref(false)
 const email = ref('')
 const templateName = ref('')
 const temporaryData = ref()
@@ -74,11 +75,21 @@ const onSendPublish = async (data) => {
         });
 
         if (response && response.status === 200) {
-            notify({
-                title: "Success",
-                text: "Save and publish email successfully",
-                type: "success",
-            });
+            if (response.data.has_unsubscribelink === false) {
+                visibleUnsubscribeWarningModal.value = true
+
+                notify({
+                    title: "Warning",
+                    text: "Email saved and published, but no unsubscribe link was found.",
+                    type: "warning",
+                });
+            } else {
+                notify({
+                    title: "Success",
+                    text: "Save and publish email successfully",
+                    type: "success",
+                });
+            }
         }
     } catch (error) {
         console.log(error)
@@ -136,6 +147,10 @@ const sendTestToServer = () => {
     });
 };
 
+
+const closeUnsubscribeWarningModal = () => {
+    visibleUnsubscribeWarningModal.value = false
+}
 
 const saveTemplate = async () => {
     isLoading.value = true;
@@ -263,6 +278,7 @@ const handleTabUpdate = (tabSlug: string) =>
 const component = computed(() => {
     const components: Component = {
         templates: TableEmailTemplate,
+        other_store_templates: TableEmailTemplate,
         previous_mailshots: TablePreviousMailshots,
         other_store_mailshots: TableOtherStoreMailshots,
     };
@@ -343,6 +359,22 @@ watch(
             <div class="flex justify-end mt-3 gap-3">
                 <Button :type="'tertiary'" label="Cancel" @click="visibleSAveEmailTemplateModal = false"></Button>
                 <Button type="save" @click="saveTemplate"></Button>
+            </div>
+        </div>
+    </Dialog>
+
+    <Dialog v-model:visible="visibleUnsubscribeWarningModal" modal :closable="false" :showHeader="false"
+        :style="{ width: '30rem' }">
+        <div class="pt-4">
+            <div class="text-center mb-4">
+                <div class="text-amber-500 text-4xl mb-3">⚠️</div>
+                <div class="font-semibold text-lg mb-2">Missing Unsubscribe Link</div>
+                <div class="text-gray-600">This mailshot/newsletter doesn't contain an unsubscribe link. Please consider
+                    adding one to ensure compliance with email regulations and provide recipients with a clear option to
+                    unsubscribe.</div>
+            </div>
+            <div class="flex justify-center mt-4">
+                <Button @click="closeUnsubscribeWarningModal" label="OK" type="primary"></Button>
             </div>
         </div>
     </Dialog>
