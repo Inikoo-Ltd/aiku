@@ -45,7 +45,7 @@ import {
 } from "@fal"
 import { faStar, faFilter } from "@fas"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
-import { faCheck } from "@far"
+import { faCheck, faCross } from "@far"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { notify } from "@kyvg/vue3-notification"
@@ -80,7 +80,8 @@ library.add(
 	faClone,
 	faLink,
 	faScrewdriver,
-	faTools
+	faTools,
+	faCross
 )
 
 interface PlatformData {
@@ -1078,12 +1079,12 @@ const compTableFilterForSale = computed(() => {
 					@click="openEditModal(item)" />
 				<ButtonWithLink
 					v-tooltip="
-						trans('Unselect product. This will remove the product from :platform', {
+						trans('Delete Bundle', {
 							platform: props.platform_data.name,
 						})
 					"
 					type="negative"
-					icon="fal fa-skull"
+					icon="fal fa-trash-alt"
 					:routeTarget="item.delete_portfolio"
 					:method="'delete'"
 					size="xs"
@@ -1092,8 +1093,6 @@ const compTableFilterForSale = computed(() => {
 			</div>
 		</template>
 	</Table>
-
-	<!-- <pre>{{ data.data[0] }}</pre> -->
 
 	<Modal
 		:isOpen="isOpenModal"

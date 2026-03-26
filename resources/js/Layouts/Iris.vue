@@ -30,6 +30,8 @@ import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
 import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 import axios from 'axios'
 import { CustomerIdCollector } from '@/Composables/Unique/LuigiDataCollector'
+import BundleSidebar from '@/Components/Dropshipping/BundleSidebar.vue'
+import { useBundle } from '@/Composables/useBundle'
 
 interface ChatConfig {
     is_online: boolean
@@ -40,6 +42,7 @@ interface ChatConfig {
     }
 }
 
+const bundle = useBundle()
 library.add(faHome, faImage, faSparkles, faSignIn, faPlusCircle, faCandleHolder, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp)
 
 initialiseIrisApp()
@@ -172,9 +175,6 @@ const fetchHasInBasket = async () => {
     }
 };
 
-
-
-
 onBeforeMount(()=>{
 initialiseIrisVarnish(useIrisLayoutStore)
 getAnnouncements()
@@ -187,8 +187,6 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
         set(layout, 'rightbasket.show', true)
     }
 })
-
-
 </script>
 
 <template>
@@ -287,9 +285,14 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
                         :isOpen="layout.rightbasket?.show"
                     />
                 </div>
+
+                <div
+                    v-if="bundle.open.value"
+                    :class="bundle.open.value ? 'w-[400px] border-l-gray-300 sticky z-[52] border-l top-0 pointer-events-auto max-h-screen transition-all overflow-hidden' : 'w-0 border-transparent'"
+                    >
+                    <BundleSidebar />
+                </div>
             </main>
-
-
             <template v-if="propsAnnouncementsTopFooter?.length">
                 <template v-for="announcement in propsAnnouncementsTopFooter">
                     <IrisAnnouncement
@@ -316,8 +319,6 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
 
 
     <ChatButton data="null" v-if="useChat" :chatConfig="chatConfig" />
-
-
 </template>
 
 <style lang="scss">
