@@ -10,6 +10,8 @@ namespace App\Enums\Dashboards;
 
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
+use App\Http\Resources\Dashboards\DashboardBrandSalesResource;
+use App\Http\Resources\Dashboards\DashboardHeaderBrandSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderInvoiceCategoriesInGroupSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderSalesChannelsSalesResource;
@@ -19,6 +21,7 @@ use App\Http\Resources\Dashboards\DashboardOrganisationSalesResource;
 use App\Http\Resources\Dashboards\DashboardPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardSalesChannelSalesResource;
 use App\Http\Resources\Dashboards\DashboardShopSalesResource;
+use App\Http\Resources\Dashboards\DashboardTotalBrandSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalGroupInvoiceCategoriesSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalOrganisationsSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalPlatformSalesResource;
@@ -34,6 +37,7 @@ enum GroupDashboardSalesTableTabsEnum: string
 
     case ORGANISATIONS = 'organisations';
     case SHOPS = 'shops';
+    case BRANDS = 'brands';
     case INVOICE_CATEGORIES = 'invoice_categories';
     case GLOBAL_MARKETPLACES = 'global_marketplaces';
     case GLOBAL_DROPSHIPPING = 'global_dropshipping';
@@ -49,6 +53,10 @@ enum GroupDashboardSalesTableTabsEnum: string
             GroupDashboardSalesTableTabsEnum::SHOPS => [
                 'title' => __('Shops'),
                 'icon'  => 'fal fa-store-alt',
+            ],
+            GroupDashboardSalesTableTabsEnum::BRANDS => [
+                'title' => __('Brands'),
+                'icon'  => 'fal fa-copyright',
             ],
             GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => [
                 'title' => __('Invoice Categories'),
@@ -77,6 +85,7 @@ enum GroupDashboardSalesTableTabsEnum: string
 
         $organisationTimeSeriesStats = $timeSeriesData['organisations'];
         $shopTimeSeriesStats = $timeSeriesData['shops']['all'];
+        $brandTimeSeriesStats = $timeSeriesData['brands'];
         $invoiceCategoryTimeSeriesStats = $timeSeriesData['invoiceCategories'];
         $platformTimeSeriesStats = $timeSeriesData['platforms'];
         $salesChannelTimeSeriesStats = $timeSeriesData['salesChannels'];
@@ -88,6 +97,7 @@ enum GroupDashboardSalesTableTabsEnum: string
             $header = match ($this) {
                 GroupDashboardSalesTableTabsEnum::ORGANISATIONS => json_decode(DashboardHeaderOrganisationsSalesResource::make($group)->toJson(), true),
                 GroupDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardHeaderShopsSalesResource::make($group)->toJson(), true),
+                GroupDashboardSalesTableTabsEnum::BRANDS => json_decode(DashboardHeaderBrandSalesResource::make($group)->toJson(), true),
                 GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardHeaderInvoiceCategoriesInGroupSalesResource::make($group)->toJson(), true),
                 GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => json_decode(DashboardHeaderSalesChannelsSalesResource::make($group)->toJson(), true),
                 GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => json_decode(DashboardHeaderShopsSalesResource::make($group)->withContext($this)->toJson(), true),
@@ -97,6 +107,7 @@ enum GroupDashboardSalesTableTabsEnum: string
             $body = match ($this) {
                 GroupDashboardSalesTableTabsEnum::ORGANISATIONS => json_decode(DashboardOrganisationSalesResource::collection($organisationTimeSeriesStats)->toJson(), true),
                 GroupDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardShopSalesResource::collection($shopTimeSeriesStats)->toJson(), true),
+                GroupDashboardSalesTableTabsEnum::BRANDS => json_decode(DashboardBrandSalesResource::collection($brandTimeSeriesStats)->toJson(), true),
                 GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardInvoiceCategoriesInGroupSalesResource::collection($invoiceCategoryTimeSeriesStats)->toJson(), true),
                 GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => json_decode(DashboardSalesChannelSalesResource::collection($salesChannelTimeSeriesStats)->toJson(), true),
                 GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => json_decode(DashboardShopSalesResource::collection($dropshippingShopTimeSeriesStats)->toJson(), true),
@@ -106,6 +117,7 @@ enum GroupDashboardSalesTableTabsEnum: string
             $totals = match ($this) {
                 GroupDashboardSalesTableTabsEnum::ORGANISATIONS => json_decode(DashboardTotalOrganisationsSalesResource::make($organisationTimeSeriesStats)->toJson(), true),
                 GroupDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardTotalShopsTimeSeriesSalesResource::make($shopTimeSeriesStats)->toJson(), true),
+                GroupDashboardSalesTableTabsEnum::BRANDS => json_decode(DashboardTotalBrandSalesResource::make($brandTimeSeriesStats)->toJson(), true),
                 GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardTotalGroupInvoiceCategoriesSalesResource::make($invoiceCategoryTimeSeriesStats)->toJson(), true),
                 GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => json_decode(DashboardTotalSalesChannelsSalesResource::make($salesChannelTimeSeriesStats)->toJson(), true),
                 GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => json_decode(DashboardTotalShopsTimeSeriesSalesResource::make($dropshippingShopTimeSeriesStats)->withContext($this)->toJson(), true),
