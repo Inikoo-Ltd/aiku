@@ -16,6 +16,7 @@ use App\Models\Bundle;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
@@ -40,7 +41,7 @@ class GenerateRetinaProductImages extends RetinaAction
         ];
     }
 
-    public function asController(Product $product, ActionRequest $request): Bundle
+    public function asController(CustomerSalesChannel $customerSalesChannel, Product $product, ActionRequest $request): Bundle
     {
         $this->enableSanitize();
         $this->initialisation($request);
