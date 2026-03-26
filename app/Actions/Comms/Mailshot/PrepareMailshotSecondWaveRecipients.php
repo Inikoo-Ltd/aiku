@@ -59,6 +59,7 @@ class PrepareMailshotSecondWaveRecipients
         $baseQuery->where('customers.shop_id', $mailshot->shop_id);
         $baseQuery->where('mailshot_recipients.recipient_type', 'Customer');
         $baseQuery->whereNotNull('customers.email');
+        $baseQuery->whereNull('customers.deleted_at');
 
         switch ($mailshot->type) {
             case MailshotTypeEnum::NEWSLETTER:
