@@ -1,112 +1,42 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
-import Button from '../Elements/Buttons/Button.vue'
+import { useBundle } from '@/Composables/useBundle';
+import { onMounted, ref, watch, computed, inject } from 'vue'
 import { notify } from '@kyvg/vue3-notification'
-import { router } from '@inertiajs/vue3'
-import { onMounted, ref, watch, computed } from 'vue'
-import { routeType } from '@/types/route'
-import { set } from 'lodash-es'
+import { trans } from 'laravel-vue-i18n'
 import axios from 'axios'
-import EmptyState from '../Utils/EmptyState.vue'
-import LoadingIcon from '../Utils/LoadingIcon.vue'
-import BundlesSelector from './BundlesSelector.vue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { Textarea, Dialog, Checkbox, FileUpload } from "primevue"
-import { debounce } from 'lodash-es'
+import { routeType } from '@/types/route'
 import { route } from 'ziggy-js'
-import Image from '../Image.vue'
+import { debounce } from 'lodash-es'
+import Button from '../Elements/Buttons/Button.vue';
+import { InputText } from "primevue"
 import { faLayerGroup, faSparkles, faTrash,faImages } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 library.add(faLayerGroup, faSparkles, faTrash, faImages)
 
-const props = defineProps<{
-    step: {
-        current: number
-    }
-    bundle_routes:{
-        store: routeType
-        images: routeType
-        calculate: routeType
-        ai: any
-    }
-    routes: {
-        syncAllRoute: routeType
-        addPortfolioRoute: routeType
-        bulk_upload: routeType
-        itemRoute: routeType
-        updatePortfolioRoute: routeType
-        batchDeletePortfolioRoute: routeType
-    }
-    platform_data: {
-        id: number
-        code: string
-        name: string
-        type: string
-    }
-    platform_user_id: number
-    is_platform_connected: boolean
-    customerSalesChannel: {
+const layout: any = inject("layout", {})
+const bundle = useBundle()
 
-    }
-    onClickReconnect: Function
-}>()
+const step = ref<number>(1)
+const bundleDescription = ref<string>('')
+const mediaGallery = ref<string[]>([])
+const selectedMedia = ref<any[]>([])
+const selectedMediaIds = ref<number[]>([])
+const selectedMediaAIIds = ref<any[]>([])
+const selectedMediaForAI = ref<any[]>([])
+const aiPrompt = ref<string>('')
 
-const emits = defineEmits<(e: "onDone") => void>()
+const isGeneratingAI = ref<boolean>(false)
+const isStoringBundle = ref<boolean>(false)
+const showMediaModal =  ref<boolean>(false)
+const isLoadingMedia =  ref<boolean>(false)
+const showGenerateModal = ref<boolean>(false)
 
-// Section: Add portfolios
-const isLoadingSubmit = ref(false)
-const idxSubmitSuccess = ref(0)
-
-// Filter portfolios by type
-const filterList = [
-    {
-        label: trans("Product"),
-        value: "product",
-    },
-    {
-        label: trans("Department"),
-        value: "department",
-    },
-    {
-        label: trans("Sub-department"),
-        value: "sub_department",
-    },
-    {
-        label: trans("Family"),
-        value: "family",
-    }
-]
-
-const selectedList = ref(filterList[0])
-
-// Step 1: Submit
-const portfoliosList = ref([])
-const stepLoading = ref(false)
-
-const fetchIndexUnuploadedPortfolios = async () => {
-    stepLoading.value = true
-    const data = await axios.get(
-        route('retina.dropshipping.customer_sales_channels.portfolios.index',
-            {
-                customerSalesChannel: route().params.customerSalesChannel,
-                'filter[un_upload]': 'true',
-            }
-        )
-    )
-    portfoliosList.value = data.data.data
-    // Automatically select all portfolios for syncing
-    selectedPortfoliosToSync.value = [...portfoliosList.value]
-    stepLoading.value = false
-}
-
-watch(() => props.step.current, async (newStep, oldStep) => {
-    // console.log('Step changed to:', oldStep, newStep)
-    if (newStep === 1 || newStep === 2) {
-        fetchIndexUnuploadedPortfolios()
-    }
+const bundleProductsPayload = computed(() => {
+    return bundle.products.value.map(p => ({
+        product_id: p.id,
+        quantity: p.quantity || 1
+    }))
 })
-
-const selectedPortfoliosToSync = ref([])
 
 const summary = ref({
     total_price: 0,
@@ -115,19 +45,6 @@ const summary = ref({
     profit: 0,
     profit_percentage: 0
 })
-
-const selectedProducts = ref<any[]>([]) 
-
-const bundleDescription = ref('')
-const isGeneratingAI = ref(false)
-
-const showMediaModal = ref(false)
-const isLoadingMedia = ref(false)
-
-const selectedMedia = ref<any[]>([])
-const selectedMediaIds = ref<number[]>([])
-
-const mediaGallery = ref<string[]>([])
 
 const calculateBundle = async () => {
     try {
@@ -138,8 +55,8 @@ const calculateBundle = async () => {
 
         const { data } = await axios.post(
             route(
-                props.bundle_routes.calculate.name,
-                props.bundle_routes.calculate.parameters
+                layout.bundle_routes.calculate.name,
+                layout.bundle_routes.calculate.parameters
             ),
             payload
         )
@@ -155,72 +72,13 @@ const calculateBundle = async () => {
     }
 }
 
-const openExistingMedia = async () => {
-    showMediaModal.value = true
-    fetchMediaGallery()
-}
-
-const flatMediaGallery = computed(() => {
-
-    const result:any[] = []
-
-    mediaGallery.value.forEach(product => {
-
-        if(!product.image) return
-
-        Object.entries(product.image).forEach(([imageId, imageData]:any) => {
-
-            result.push({
-                product_id: product.id,
-                image_id: Number(imageId),
-                url: imageData.original,
-                image: imageData
-            })
-
-        })
-
-    })
-    console.log("result", result)
-    return result
-})
-
-const toggleSelect = (img:any) => {
-
-    const index = selectedMediaIds.value.indexOf(img.image_id)
-
-    if(index !== -1){
-
-        selectedMediaIds.value.splice(index,1)
-
-        selectedMedia.value =
-            selectedMedia.value.filter(m => m.image_id !== img.image_id)
-
-    } else {
-
-        selectedMediaIds.value.push(img.image_id)
-
-        selectedMedia.value.push({
-            image_id: img.image_id,
-            product_id: img.product_id,
-            url: img.url,
-            image: img.image
-        })
-
-    }
-}
-
-const removeMedia = (media:any) => {
-    selectedMedia.value =
-        selectedMedia.value.filter(m => m.image_id !== media.image_id)
-}
-
-const generateAIDescription = async () => {
+const generateAITitle = async () => {
     try {
         isGeneratingAI.value = true
 
         const { data } = await axios.post(
             route(
-                props.bundle_routes.ai.generate_description.name
+                layout.bundle_routes.ai.generate_title.name
             ),
             {
                 prompt: bundleDescription.value
@@ -234,12 +92,25 @@ const generateAIDescription = async () => {
     }
 }
 
-const showGenerateModal = ref(false)
-const aiPrompt = ref('')
-const selectedMediaForAI = ref<any[]>([])
 
-const buildBase64Image = (b64:string) => {
-   return `data:image/png;base64,${b64}`
+const generateAIDescription = async () => {
+    try {
+        isGeneratingAI.value = true
+
+        const { data } = await axios.post(
+            route(
+                layout.bundle_routes.ai.generate_description.name
+            ),
+            {
+                prompt: bundleDescription.value
+            }
+        )
+
+        bundleDescription.value = data.description
+
+    } finally {
+        isGeneratingAI.value = false
+    }
 }
 
 const generateAIImages = async () => {
@@ -254,7 +125,7 @@ const generateAIImages = async () => {
 
       const res = await axios.post(
             route(
-                props.bundle_routes.ai.generate_images.name
+                layout.bundle_routes.ai.generate_images.name
             ),
             payload
         )
@@ -284,15 +155,25 @@ const generateAIImages = async () => {
 }
 
 const productIds = computed(() => {
-    return selectedProducts.value.map(p => p.id)
+    return bundle.products.value.map(p => p.id)
 })
+
+const openExistingMedia = async () => {
+    showMediaModal.value = true
+    fetchMediaGallery()
+}
+
+const removeMedia = (media:any) => {
+    selectedMedia.value =
+        selectedMedia.value.filter(m => m.image_id !== media.image_id)
+}
 
 const fetchMediaGallery = async () => {
     try {
         isLoadingMedia.value = true
 
         const url = route(
-            props.bundle_routes.images.get.name,
+            layout.bundle_routes.images.get.name,
             {
                 product_ids: productIds.value
             }
@@ -319,62 +200,85 @@ const fetchMediaGallery = async () => {
     }
 }
 
-const onUpdateSelectedProducts = (products:any[]) => {
-    selectedProducts.value = products.map(p => ({
-        ...p,
-        quantity: p.quantity_selected ?? p.quantity ?? 1
-    }))
+const flatMediaGallery = computed(() => {
+
+    const result:any[] = []
+
+    mediaGallery.value.forEach(product => {
+
+        if(!product.image) return
+
+        Object.entries(product.image).forEach(([imageId, imageData]:any) => {
+
+            result.push({
+                product_id: product.id,
+                image_id: Number(imageId),
+                url: imageData.original,
+                image: imageData
+            })
+
+        })
+
+    })
+    console.log("result", result)
+    return result
+})
+
+// image action
+const fileInput = ref<HTMLInputElement | null>(null)
+const localUploadedFiles = ref<File[]>([])
+
+const openFilePicker = () => {
+    fileInput.value?.click()
 }
 
-const isStoringBundle = ref(false)
+const uploadFilesLocal = (files: FileList) => {
+    Array.from(files).forEach(file => {
+        localUploadedFiles.value.push(file)
 
-const submitBundle = async () => {
-    try {
-        isStoringBundle.value = true
+        // preview
+        console.log("file",file)
+        selectedMedia.value.push(file)
+        console.log("selectedMedia", selectedMedia.value)
+    })
+}
 
-       const payload = {
-            name: 'asd',
-            code: 'r',
-            description: bundleDescription,
-            price: summary.value.total_bundle_price || 0,
-            rrp: summary.value.total_rrp || 0,
-            products: selectedProducts.value.map(p => ({
-                product_id: p.id,
-                quantity: p.quantity || 1
-            }))
-        }
+const onDrop = (e:DragEvent) => {
+   if(!e.dataTransfer?.files?.length) return
+   uploadFilesLocal(e.dataTransfer.files)
+}
 
-        console.log('STORE BUNDLE PAYLOAD', payload)
+const onFileChange = (e:Event) => {
+   const target = e.target as HTMLInputElement
+   uploadFilesLocal(target.files)
+}
 
-        await axios.post(
-            route(
-                props.bundle_routes.store.name,
-                props.bundle_routes.store.parameters
-            ),
-            payload
-        )
+const toggleSelect = (img:any) => {
 
-        emits('onDone')
+    const index = selectedMediaIds.value.indexOf(img.image_id)
 
-    } catch (e) {
-        notify({
-            title: trans('Error'),
-            text: trans('Failed to create bundle'),
-            type: 'error'
+    if(index !== -1){
+
+        selectedMediaIds.value.splice(index,1)
+
+        selectedMedia.value =
+            selectedMedia.value.filter(m => m.image_id !== img.image_id)
+
+    } else {
+
+        selectedMediaIds.value.push(img.image_id)
+
+        selectedMedia.value.push({
+            image_id: img.image_id,
+            product_id: img.product_id,
+            url: img.url,
+            image: img.image
         })
-    } finally {
-        isStoringBundle.value = false
+
     }
 }
 
-const bundleProductsPayload = computed(() => {
-    return selectedProducts.value.map(p => ({
-        product_id: p.id,
-        quantity: p.quantity || 1
-    }))
-})
 
-const selectedMediaAIIds = ref<any[]>([])
 const toggleSelectAI = (media:any) => {
 
     const index = selectedMediaAIIds.value.indexOf(media.image_id)
@@ -397,38 +301,47 @@ const toggleSelectAI = (media:any) => {
     }
 }
 
-// action iamge
-const fileInput = ref<HTMLInputElement | null>(null)
-const localUploadedFiles = ref<File[]>([])
+const submitBundle = async () => {
+    try {
+        isStoringBundle.value = true
 
-const uploadFilesLocal = (files: FileList) => {
-    Array.from(files).forEach(file => {
-        localUploadedFiles.value.push(file)
+       const payload = {
+            name: 'asd',
+            code: 'r',
+            description: bundleDescription,
+            price: summary.value.total_bundle_price || 0,
+            rrp: summary.value.total_rrp || 0,
+            products: bundle.products.value.map(p => ({
+                product_id: p.id,
+                quantity: p.quantity || 1
+            }))
+        }
 
-        // preview
-        console.log("file",file)
-        selectedMedia.value.push(file)
-        console.log("selectedMedia", selectedMedia.value)
-    })
+        console.log('STORE BUNDLE PAYLOAD', payload)
+
+        await axios.post(
+            route(
+                props.bundle_routes.store.name,
+                props.bundle_routes.store.parameters
+            ),
+            payload
+        )
+
+        // close modal
+
+    } catch (e) {
+        notify({
+            title: trans('Error'),
+            text: trans('Failed to create bundle'),
+            type: 'error'
+        })
+    } finally {
+        isStoringBundle.value = false
+    }
 }
 
-const openFilePicker = () => {
-    fileInput.value?.click()
-}
-
-const onDrop = (e:DragEvent) => {
-   if(!e.dataTransfer?.files?.length) return
-
-   uploadFilesLocal(e.dataTransfer.files)
-}
-
-const onFileChange = (e:Event) => {
-   const target = e.target as HTMLInputElement
-   uploadFilesLocal(target.files)
-}
-
-watch(selectedProducts, () => {
-    if(selectedProducts.value.length){
+watch(bundle.products, () => {
+    if(bundle.products.value.length){
         calculateBundle()
     } else {
         summary.value = {
@@ -441,106 +354,122 @@ watch(selectedProducts, () => {
     }
 }, { deep:true })
 
-const debouncedCalculate = debounce(calculateBundle, 400)
+const debouncedCalculate = debounce(() => {
+    bundle.calculateBundle(layout?.bundle_routes)
+}, 400)
 
-watch(selectedProducts, () => {
-    debouncedCalculate()
-}, { deep:true })
-
-onMounted(() => {
-    if (props.step.current > 0) {
-        fetchIndexUnuploadedPortfolios()
-    }
-})
+watch(
+    bundle.products,
+    () => debouncedCalculate(),
+    { deep: true }
+)
 </script>
 
 <template>
-    <div>
-        <!-- NEW HEADER STEP 0 -->
-        <div v-if="step.current === 0" class="flex items-start justify-between border-b pb-4 mb-4">
-            <!-- LEFT -->
-            <div>
-                <div class="text-xl font-semibold">
-                    Create Your Bundle
-                    <FontAwesomeIcon icon="fal fa-layer-group" class="text-xl text-black" fixed-width
-                        aria-hidden="true" />
-                </div>
-
-                <div class="text-sm mt-1">
-                    STEP {{ step.current + 1 }}/2
-                </div>
-            </div>
-
-            <!-- RIGHT SUMMARY -->
-            <div class="w-[320px] text-sm space-y-2">
-                <div class="flex justify-between border-b pb-1">
-                    <span class="text-gray-500">Cost Price (Individual Purchase)</span>
-                    <span class="font-medium">{{ summary.total_price }}</span>
-                </div>
-
-                <div class="flex justify-between border-b pb-1">
-                    <span class="text-gray-500">Bundle Price (-10%)</span>
-                    <span class="font-medium text-green-600">{{ summary.total_bundle_price }}</span>
-                </div>
-
-                <div class="flex justify-between border-b pb-1">
-                    <span class="text-gray-500">RRP</span>
-                    <span class="font-medium">{{ summary.total_rrp }}</span>
-                </div>
-
-                <div class="flex justify-between pt-1">
-                    <span class="text-gray-500">Profit</span>
-                    <span class="font-semibold text-green-600"> [{{ summary.profit_percentage }}%] {{ summary.profit }}</span>
-                </div>
-            </div>
+<Transition name="slide">
+  <div
+    v-if="bundle.open.value"
+    class="h-screen bg-white flex flex-col"
+  >
+    <template v-if="bundle.step.value === 1">
+        <!-- HEADER -->
+        <div class="p-4 border-b flex justify-between items-center">
+        <div class="font-semibold text-lg">
+            Create Your Bundle
+        </div>
+        <button @click="bundle.close()">✕</button>
         </div>
 
-        <!-- 0: Select Product -->
-        <KeepAlive>
-            <BundlesSelector v-if="step.current === 0" xheadLabel="trans('Add products to portfolios')" @update:selected="onUpdateSelectedProducts" :route-fetch="{
-                name: props.routes.itemRoute.name,
-                parameters: {
-                    ...props.routes.itemRoute.parameters,
-                    'filter[type]': selectedList.value,
-                },
-            }" :valueToRefetch="selectedList.value" :label_result="selectedList.label" :isLoadingSubmit
-                :idxSubmitSuccess
-                class="px-4">
-                <template #header>
-                    <div>
+        <!-- BODY -->
+        <div class="flex-1 overflow-auto p-4">
 
-                    </div>
-                </template>
-                <template #afterInput>
-                    <div class="flex items-center justify-between mt-3">
+            <div class="text-xs text-gray-400 mb-3">
+                STEP {{ bundle.step.value }}/2
+            </div>
 
-                        <!-- FILTER LIST -->
-                        <div class="flex gap-2 text-sm font-semibold text-gray-500">
-                            <div v-for="list in filterList" @click="selectedList = list"
-                                class="whitespace-nowrap py-2 px-3 cursor-pointer rounded border" :class="selectedList.value === list.value
-                                    ? 'bg-gray-800 text-white border-gray-800'
-                                    : 'border-gray-300 hover:bg-gray-100'
-                                    ">
-                                {{ list.label }}
-                            </div>
-                        </div>
+            <div class="mb-4">
+                <label class="text-sm font-semibold">Bundle Title</label>
+              
+                <InputText v-model="bundle.title.value" type="text" class="text-base w-full mt-1 p-2" :placeholder="ctrans('Bundle Title')" required />
+                <Button @click="generateAITitle" :loading="isGeneratingAI" type="primary" :disabled="!bundle.title.value">
+                    <FontAwesomeIcon icon="fal fa-sparkles" class="mt-2" fixed-width />
+                        Generate with AI
+                </Button>
+            </div>
 
-                        <!-- NEXT BUTTON -->
-                         <Button @click="step.current = 1" label="Next" iconRight="fal fa-arrow-right" :disabled="!selectedProducts.length"/>
-                    </div>
-                </template>
-            </BundlesSelector>
-        </KeepAlive>
+            <div
+                v-for="item in bundle.products.value"
+                :key="item.id"
+                class="flex gap-3 py-3 border-b"
+            >
+                <img
+                :src="item.web_images?.main?.gallery?.png"
+                class="w-14 h-14 object-contain bg-gray-50 rounded"
+                />
 
-        <!-- 1: change the UI generate bundle -->
-        <KeepAlive>
-            <div v-if="step.current === 1" class="flex justify-center">
+                <div class="flex-1">
+                <div class="text-sm font-semibold">{{ item.name }}</div>
+                <div class="text-green-600 font-semibold">{{ item.price }}</div>
+                </div>
 
-                <div class="w-full">
+                <div class="flex items-center gap-2">
+                <button @click="bundle.decreaseQty(item.id)">-</button>
+                <div>{{ item.quantity }}</div>
+                <button @click="bundle.increaseQty(item.id)">+</button>
+                <button @click="bundle.removeProduct(item.id)">🗑</button>
+                </div>
+            </div>
+            <div
+            v-if="!bundle.products.value.length"
+            class="text-center text-gray-400 text-sm py-10"
+            >
+            No products added yet
+            </div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <div class="border-t p-4 space-y-2">
+
+            <template v-if="bundle.isSummaryLoading.value">
+            <div class="text-center text-sm text-gray-400 py-2">Calculating...</div>
+            </template>
+
+            <template v-else>
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-500">Cost Price</span>
+                <span>{{ bundle.summary.value.total_price }}</span>
+            </div>
+
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-500">RRP</span>
+                <span>{{ bundle.summary.value.total_rrp }}</span>
+            </div>
+
+            <div class="flex justify-between text-sm font-semibold text-green-600">
+                <span>Bundle Price</span>
+                <span>{{ bundle.summary.value.total_bundle_price }}</span>
+            </div>
+
+            <div class="flex justify-between text-xs text-gray-400">
+                <span>Profit</span>
+                <span>{{ bundle.summary.value.profit }} ({{ bundle.summary.value.profit_percentage }}%)</span>
+            </div>
+            </template>
+
+            <button :disabled="!bundle.products.value.length" @click="bundle.step.value = 2" class="w-full bg-black text-white p-3">
+                Next
+            </button>
+
+        </div>
+    </template>
+    <!-- UI Step 2 -->
+    <template v-if="bundle.step.value === 2">
+        <div class="w-full p-3">
 
                     <!-- BACK -->
                     <div class="mb-3">
-                        <Button @click="step.current = 0" type="tertiary" icon="fal fa-arrow-left"
+                        <Button @click="bundle.step.value = 1" type="tertiary" icon="fal fa-arrow-left"
                             :label="trans('Back')" />
                     </div>
 
@@ -779,10 +708,16 @@ onMounted(() => {
                     </template>
 
                 </Dialog>
-            </div>
-
-        </KeepAlive>
-    </div>
+    </template>
+  </div>
+</Transition>
 </template>
 
-
+<style>
+.slide-enter-from { transform: translateX(100%) }
+.slide-enter-to   { transform: translateX(0) }
+.slide-leave-from { transform: translateX(0) }
+.slide-leave-to   { transform: translateX(100%) }
+.slide-enter-active,
+.slide-leave-active { transition: all .25s ease; }
+</style>
