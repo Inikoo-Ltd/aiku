@@ -9,6 +9,7 @@ use App\Actions\Accounting\MontanaInvoices\UI\IndexMontanaInvoicesReport;
 use App\Actions\Accounting\SageInvoices\UI\IndexSageInvoicesReport;
 use App\Actions\Dispatching\Reports\IndexPackerPerformanceReport;
 use App\Actions\Dispatching\Reports\IndexPickerPerformanceReport;
+use App\Actions\Reports\UI\IndexUkManufacturingSurveyReport;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\SysAdmin\OverviewResource;
@@ -87,6 +88,12 @@ class GetReports extends OrgAction
                 'icon'  => 'fal fa-boxes',
                 'route' => route('grp.org.reports.packaging', $organisation),
                 'count' => 4,
+            ],
+            [
+                'name'  => __('UK Manufacturing Survey'),
+                'icon'  => 'fal fa-industry',
+                'route' => route('grp.org.reports.uk-manufacturing-survey', $organisation),
+                'count' => null,
             ],
         ];
     }

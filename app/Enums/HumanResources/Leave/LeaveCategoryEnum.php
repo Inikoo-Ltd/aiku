@@ -13,13 +13,16 @@ enum LeaveCategoryEnum: string
     case MEDICAL = 'medical';
     case SPECIAL = 'special';
 
+    case UNPAID = 'unpaid';
+
     public static function labels(): array
     {
         return [
             'annual' => __('Annual Leave'),
-            'personal'  => __('Personal Leave'),
-            'medical'   => __('Medical Leave'),
-            'special'   => __('Special Leave'),
+            'personal' => __('Personal Leave'),
+            'medical' => __('Medical Leave'),
+            'special' => __('Special Leave'),
+            'unpaid' => __('Unpaid Leave'),
         ];
     }
 
@@ -27,9 +30,10 @@ enum LeaveCategoryEnum: string
     {
         return [
             'annual' => 'blue',
-            'personal'  => 'green',
-            'medical'   => 'yellow',
-            'special'   => 'purple',
+            'personal' => 'green',
+            'medical' => 'yellow',
+            'special' => 'purple',
+            'unpaid' => 'red',
         ];
     }
 

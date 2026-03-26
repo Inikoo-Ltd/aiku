@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { Head, Link } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeadingTypes } from "@/types/PageHeading"
+import { ref, watch } from 'vue'
+
+import { PageHeadingTypes } from '@/types/PageHeading'
 import Table from "@/Components/Table/Table.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { RecurringBill } from "@/types/recurring_bill"
@@ -23,7 +25,10 @@ defineProps<{
 
 }>()
 
-const locale = useLocaleStore()
+const locale = useLocaleStore();
+const startDate = ref('');
+const endDate = ref('');
+const isLoadingExport = ref(false);
 
 function invoiceRoute(invoice: Invoice) {
 
@@ -70,12 +75,45 @@ function channelRoute(invoice: {}) {
     }
 }
 
+watch([startDate, endDate], ([newStartDate, newEndDate]) => {
+    router.get(route('retina.dropshipping.invoices.index'), {
+        startDate: newStartDate,
+        endDate: newEndDate
+    }, {
+        preserveState: true,
+        replace: true,
+    })
+})
+
+const onExportPdf = () => {
+    if (!startDate.value) return
+    window.open(route('retina.dropshipping.invoices.export', { startDate: startDate.value, endDate: endDate.value }), '_blank')
+}
+
 </script>
 
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+    <div class="flex items-center gap-3 px-4 py-3">
+        <input type="date" 
+            v-model="startDate" 
+            class="border border-gray-300 rounded px-3 py-1.5 text-sm">
+        <input type="date" 
+            v-model="endDate" 
+            class="border border-gray-300 rounded px-3 py-1.5 text-sm">
+        <Button
+            :disabled="!startDate || !endDate || isLoadingExport"
+            @click="onExportPdf"
+            label="Export invoices by date"
+            class="flex items-center gap-2 bg-indigo-600 text-white px-3 py-1.5 rounded text-sm disabled:opacity-50"
+        >
+            <FontAwesomeIcon icon="fal fa-file-pdf" />
+            Export Pdf
+        </Button>
+
+    </div>
     <Table :resource="data" class="mt-5">
         <template #cell(reference)="{ item: invoice }">
             <Link :href="invoiceRoute(invoice)" class="primaryLink py-0.5">

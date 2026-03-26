@@ -25,7 +25,7 @@ class EnsureEmailHasUnsubscribeLink
     <tr>
         <td align="center" style="padding: 20px 0;">
             <p style="font-family: Arial, sans-serif; font-size: 12px; color: #ffffff; line-height: 140%;">
-                {{unsubscribe}}
+                {{unsubscribe_fallback}}
             </p>
         </td>
     </tr>

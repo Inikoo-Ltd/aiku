@@ -20,11 +20,16 @@ class GetSalesChannelTimeSeriesStats
 
     public function handle(Group $group, $from_date = null, $to_date = null): array
     {
-        $salesChannels = SalesChannel::where('group_id', $group->id)->where('type', SalesChannelTypeEnum::MARKETPLACE)->where('show_in_dashboard', true)->get();
-
-        $salesChannels->load(['timeSeries' => function ($query) {
-            $query->where('frequency', TimeSeriesFrequencyEnum::DAILY->value);
-        }]);
+        $salesChannels = SalesChannel::query()
+            ->select(['id', 'slug', 'name', 'group_id'])
+            ->where('group_id', $group->id)
+            ->where('type', SalesChannelTypeEnum::MARKETPLACE)
+            ->where('show_in_dashboard', true)
+            ->with([
+                'timeSeries' => fn ($q) => $q->select(['id', 'sales_channel_id', 'frequency'])
+                    ->where('frequency', TimeSeriesFrequencyEnum::DAILY->value),
+            ])
+            ->get();
 
         $timeSeriesIds = [];
         $salesChannelToTimeSeriesMap = [];
@@ -53,20 +58,23 @@ class GetSalesChannelTimeSeriesStats
             );
         }
 
+        $groupCurrencyCode = $group->currency->code ?? 'GBP';
+
         $results = [];
         foreach ($salesChannels as $salesChannel) {
             $timeSeriesId = $salesChannelToTimeSeriesMap[$salesChannel->id] ?? null;
-            $stats = $allStats[$timeSeriesId] ?? [];
+            $stats        = $allStats[$timeSeriesId] ?? [];
 
             if (empty($stats) || collect($stats)->every(fn ($value) => $value == 0)) {
                 continue;
             }
 
-            $salesChannelData = array_merge($salesChannel->toArray(), $stats, [
-                'group_currency_code' => $salesChannel->group->currency->code
+            $results[] = array_merge($stats, [
+                'id'                  => $salesChannel->id,
+                'slug'                => $salesChannel->slug,
+                'name'                => $salesChannel->name,
+                'group_currency_code' => $groupCurrencyCode,
             ]);
-
-            $results[] = $salesChannelData;
         }
 
         return $results;

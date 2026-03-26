@@ -13,6 +13,7 @@ use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\MailshotRecipient;
+use App\Models\CRM\Customer;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -31,8 +32,9 @@ class IndexMailshotRecipients extends OrgAction
             ->leftJoin('email_addresses', 'dispatched_emails.email_address_id', '=', 'email_addresses.id');
 
 
-        if ($mailshot->type == MailshotTypeEnum::NEWSLETTER->value || $mailshot->type == MailshotTypeEnum::MARKETING->value) {
+        if ($mailshot->type == MailshotTypeEnum::NEWSLETTER || $mailshot->type == MailshotTypeEnum::MARKETING) {
             $queryBuilder->leftJoin('customers as recipient_model', 'mailshot_recipients.recipient_id', '=', 'recipient_model.id');
+            $queryBuilder->where('mailshot_recipients.recipient_type', class_basename(Customer::class));
         } else {
             $queryBuilder->leftJoin('prospects as recipient_model', 'mailshot_recipients.recipient_id', '=', 'recipient_model.id');
         }
@@ -61,7 +63,7 @@ class IndexMailshotRecipients extends OrgAction
                     ->pageName($prefix . 'Page');
             }
             $table->column(key: 'state', label: 'State', canBeHidden: false, type: 'icon');
-            $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true);
+            $table->column(key: 'recipient_name', label: __('Customer'), canBeHidden: false, sortable: true);
             $table->column(key: 'email_address', label: __('Email'), canBeHidden: false, sortable: true);
             $table->column(key: 'sent_at', label: __('Sent Date'), canBeHidden: false, sortable: true);
 

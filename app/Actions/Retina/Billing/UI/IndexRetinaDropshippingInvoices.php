@@ -23,11 +23,24 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Carbon\Carbon;
 
 class IndexRetinaDropshippingInvoices extends RetinaAction
 {
-    public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
+    public function handle(Customer $customer, ?string $startDate = null, ?string $endDate = null, $prefix = null): LengthAwarePaginator
     {
+        try{
+            if($startDate){
+                $startDate = Carbon::parse($startDate)->toDateString();
+            }
+            if($endDate){
+                $endDate = Carbon::parse($endDate)->toDateString();
+            }
+        } catch (\Exception $e) {
+            // Handle invalid date format, maybe log the error or return a default value
+            $startDate = null; // or you could throw an exception or return an error response
+            $endDate = null;
+        }
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereWith('reference', $value);
@@ -43,6 +56,14 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
 
         $queryBuilder->where('invoices.customer_id', $customer->id);
 
+        if ($startDate && $endDate) {
+            $queryBuilder->whereBetween('invoices.date', [
+                Carbon::parse($startDate)->startOfDay(),
+                Carbon::parse($endDate)->endOfDay()
+            ]);
+        } elseif ($startDate) {
+            $queryBuilder->whereDate('invoices.date', Carbon::parse($startDate)->toDateString());
+        }
 
 
         $queryBuilder->defaultSort('-invoices.date')
@@ -88,7 +109,6 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
-
 
             $noResults = __("No invoices found");
 
@@ -169,7 +189,11 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
     {
         $this->initialisation($request);
 
-        return $this->handle($this->customer);
+        return $this->handle(
+            $this->customer,
+            $request->query('startDate'),
+            $request->query('endDate')
+        );
     }
 
     public function getBreadcrumbs(): array

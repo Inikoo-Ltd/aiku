@@ -20,16 +20,23 @@ class SyncInvoiceTransactionTradeUnitBridges implements ShouldQueue, ShouldBeUni
 
     public string $jobQueue = 'low-priority';
 
-    public function getJobUniqueId(int $invoiceTransactionId): string
+    public function getJobUniqueId(?int $invoiceTransactionId): string
     {
-        return (string) $invoiceTransactionId;
+        return (string) $invoiceTransactionId ?? 'empty';
     }
 
-    public function handle(int $invoiceTransactionId): void
+    public function handle(?int $invoiceTransactionId): void
     {
-        $invoiceTransaction = InvoiceTransaction::find($invoiceTransactionId);
+        if (!$invoiceTransactionId) {
+            return;
+        }
 
-        if (!$invoiceTransaction || $invoiceTransaction->model_type !== 'Product' || !$invoiceTransaction->model_id) {
+        $invoiceTransaction = InvoiceTransaction::find($invoiceTransactionId);
+        if (!$invoiceTransaction) {
+            return;
+        }
+
+        if ($invoiceTransaction->model_type !== 'Product' || !$invoiceTransaction->model_id) {
             return;
         }
 
@@ -39,13 +46,23 @@ class SyncInvoiceTransactionTradeUnitBridges implements ShouldQueue, ShouldBeUni
             return;
         }
 
-        $quantity = abs($invoiceTransaction->quantity ?? 0);
+        $tradeUnits   = $product->tradeUnits;
+        $unitCount    = $tradeUnits->count();
+        $organisation = $invoiceTransaction->organisation;
 
-        foreach ($product->tradeUnits as $tradeUnit) {
-            // Todo: also we need unit_commercial_value in trade_units or at least fix the cost_price (all cost_price are null)
-            $netAmount    = ($tradeUnit->cost_price ?? 0) * $quantity;
-            $orgNetAmount = $invoiceTransaction->org_exchange ? $netAmount * $invoiceTransaction->org_exchange : 0;
-            $grpNetAmount = $invoiceTransaction->grp_exchange ? $netAmount * $invoiceTransaction->grp_exchange : 0;
+        if ($unitCount === 0) {
+            return;
+        }
+
+        $values = [];
+        foreach ($tradeUnits as $tradeUnit) {
+            $values[$tradeUnit->id] = GetTradeUnitValue::run($tradeUnit, $organisation, $invoiceTransaction->date);
+        }
+
+        $totalValue = array_sum($values);
+
+        foreach ($tradeUnits as $tradeUnit) {
+            $factor = $totalValue > 0 ? $values[$tradeUnit->id] / $totalValue : 1 / $unitCount;
 
             InvoiceTransactionHasTradeUnit::updateOrCreate(
                 [
@@ -54,9 +71,9 @@ class SyncInvoiceTransactionTradeUnitBridges implements ShouldQueue, ShouldBeUni
                 ],
                 [
                     'trade_unit_family_id' => $tradeUnit->trade_unit_family_id,
-                    'net_amount'           => $netAmount,
-                    'org_net_amount'       => $orgNetAmount,
-                    'grp_net_amount'       => $grpNetAmount,
+                    'net_amount'           => $invoiceTransaction->net_amount * $factor,
+                    'org_net_amount'       => $invoiceTransaction->org_net_amount * $factor,
+                    'grp_net_amount'       => $invoiceTransaction->grp_net_amount * $factor,
                 ]
             );
         }

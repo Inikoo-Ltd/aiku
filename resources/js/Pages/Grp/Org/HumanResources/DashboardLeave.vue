@@ -22,6 +22,8 @@ type LeaveItem = {
 	end_date: string
 	type: string
 	type_label: string
+	code: string
+	color: string
 	duration_days: number
 	reason: string
 	status: string
@@ -82,15 +84,15 @@ const props = defineProps<{
 		end: string
 	}
 	daysInMonth: number
-		monthName: string
-		employeeOptions: { value: number; label: string }[]
-		typeOptions: { value: string; label: string }[]
-		type_options?: Record<string, string | { label: string; category?: string }>
-		status_options?: Record<string, string>
-		departmentOptions?: { value: string; label: string }[]
-		holidays?: Array<{
-			id: number
-			label: string
+	monthName: string
+	employeeOptions: { value: number; label: string }[]
+	typeOptions: { value: string; label: string }[]
+	type_options?: Record<string, string | { label: string; category?: string }>
+	status_options?: Record<string, string>
+	departmentOptions?: { value: string; label: string }[]
+	holidays?: Array<{
+		id: number
+		label: string
 		from: string
 		to: string
 		type: string
@@ -264,9 +266,9 @@ const closeModal = () => {
 }
 
 const formatTypeLabel = (typeLabel: string | Record<string, any> | undefined | null): string => {
-	if (!typeLabel) return ''
-	if (typeof typeLabel === 'string') return typeLabel
-	if (typeof typeLabel === 'object' && typeLabel.label) return typeLabel.label
+	if (!typeLabel) return ""
+	if (typeof typeLabel === "string") return typeLabel
+	if (typeof typeLabel === "object" && typeLabel.label) return typeLabel.label
 	return String(typeLabel)
 }
 
@@ -381,59 +383,6 @@ const getHolidayLabel = (date: string): string => {
 		return checkDate >= holidayStart && checkDate <= holidayEnd
 	})
 	return holiday ? holiday.label : ""
-}
-
-const getLeaveColor = (type: string): string => {
-	switch (type) {
-		case "annual":
-			return "#16A34A" // Green
-		case "medical":
-			return "#EA580C" // Orange
-		case "unpaid":
-			return "#000000" // Black
-		case "halfday-morning":
-		case "halfday-afternoon":
-			return "#16A34A" // Green
-		case "training":
-			return "#9333EA" // Purple
-		case "leave-of-absence":
-			return "#EA580C" // Orange
-		case "compassionate":
-			return "#DB2777" // Pink
-		case "parental":
-			return "#0891B2" // Cyan
-		case "sabbatical":
-			return "#4F46E5" // Indigo
-		default:
-			return "#4F46E5" // Indigo
-	}
-}
-
-const getLeaveShortCode = (type: string): string => {
-	switch (type) {
-		case "annual":
-			return "H"
-		case "medical":
-			return "S"
-		case "unpaid":
-			return "U"
-		case "halfday-morning":
-			return "HM"
-		case "halfday-afternoon":
-			return "HA"
-		case "training":
-			return "T"
-		case "leave-of-absence":
-			return "LA"
-		case "compassionate":
-			return "C"
-		case "parental":
-			return "P"
-		case "sabbatical":
-			return "SA"
-		default:
-			return "H"
-	}
 }
 
 const createLeaveSegments = (employee: EmployeeCalendarRow): Record<number, LeaveSegment[]> => {
@@ -557,7 +506,7 @@ const getLeaveSegmentStyle = (segment: LeaveSegment): Record<string, string | nu
 
 	return {
 		gridColumn: `${segment.startCol} / ${segment.endColExclusive}`,
-		backgroundColor: getLeaveColor(segment.leave.type),
+		backgroundColor: segment.leave.color,
 		opacity: isPending ? 0.7 : 1,
 		border: isPending ? "1px dashed rgba(255,255,255,0.9)" : "none",
 		borderTopLeftRadius: segment.continuesLeft ? "0" : "9999px",
@@ -941,7 +890,7 @@ const submitExport = () => {
 										:title="getLeaveTooltip(segment)"
 										@click="openModal(segment.leave)">
 										<span class="truncate block">{{
-											getLeaveShortCode(segment.leave.type)
+											segment.leave.code
 										}}</span>
 									</button>
 								</div>
@@ -985,7 +934,9 @@ const submitExport = () => {
 						<label class="block text-sm font-medium text-gray-500">{{
 							trans("Type")
 						}}</label>
-						<div class="mt-1 text-sm text-gray-900">{{ formatTypeLabel(selectedLeave.type_label) }}</div>
+						<div class="mt-1 text-sm text-gray-900">
+							{{ formatTypeLabel(selectedLeave.type_label) }}
+						</div>
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-500">{{

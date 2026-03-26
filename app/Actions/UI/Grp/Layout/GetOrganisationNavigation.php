@@ -104,6 +104,7 @@ class GetOrganisationNavigation
         $navigation = $this->getWarehouseNavs($user, $organisation, $navigation);
 
 
+
         if ($user->authTo("procurement.$organisation->id.view")) {
             $navigation['procurement'] = [
                 'root'    => 'grp.org.procurement',

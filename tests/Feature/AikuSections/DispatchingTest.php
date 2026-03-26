@@ -82,7 +82,7 @@ beforeEach(function () {
         $this->organisation,
         $this->user,
         $this->shop
-    ) = createShop();
+        ) = createShop();
 
     $this->group      = $this->organisation->group;
     $this->adminGuest = createAdminGuest($this->group);
@@ -92,7 +92,7 @@ beforeEach(function () {
     list(
         $this->tradeUnit,
         $this->product
-    ) = createProduct($this->shop);
+        ) = createProduct($this->shop);
 
     $this->customer = createCustomer($this->shop);
     $this->order    = createOrder($this->customer, $this->product);
@@ -207,19 +207,17 @@ test('remove delivery note', function ($deliveryNote) {
 })->depends('create delivery note', 'create delivery note item');
 
 test('create second delivery note', function () {
-    $arrayData = [
-        'reference'        => 'A234567',
-        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
-        'email'            => 'test@email.com',
-        'phone'            => '+62081353890000',
-        'date'             => date('Y-m-d'),
-        'delivery_address' => new Address(Address::factory()->definition()),
-        'warehouse_id'     => $this->warehouse->id
-    ];
+    expect($this->order->state)->toBe(OrderStateEnum::SUBMITTED);
 
-    $deliveryNote = StoreDeliveryNote::make()->action($this->order, $arrayData);
+
+    $deliveryNote = SendOrderToWarehouse::make()->action($this->order, [
+        'warehouse_id' => $this->warehouse->id,
+    ]);
+    $this->order->refresh();
+
     expect($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
-        ->and($deliveryNote->reference)->toBe($arrayData['reference']);
+        ->and($deliveryNote->state)->toBe(DeliveryNoteStateEnum::UNASSIGNED)
+        ->and($this->order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
 
 
     return $deliveryNote;
@@ -278,6 +276,9 @@ test('create more delivery note item', function (DeliveryNote $deliveryNote) {
 })->depends('create second delivery note');
 
 test('update second delivery note state to in queue', function (DeliveryNote $deliveryNote) {
+    $order = $deliveryNote->orders()->first();
+    expect($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+
     $deliveryNote = UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $this->user);
 
     $deliveryNote->refresh();
@@ -418,7 +419,11 @@ test('set remaining quantity to not picked (2nd picking)', function (Picking $pi
 })->depends('store second picking');
 
 test('Set Delivery Note state to Packed', function (Picking $picking) {
-    $deliveryNote     = $picking->deliveryNote;
+    $deliveryNote = $picking->deliveryNote;
+
+    $order = $deliveryNote->orders()->first();
+    expect($order->state)->toBe(OrderStateEnum::HANDLING);
+
     $deliveryNoteItem = $picking->deliveryNoteItem;
 
     $packedDeliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote, $this->user);
@@ -472,7 +477,7 @@ test("UI Index dispatching delivery-notes", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where("title", "Delivery notes")
                     ->etc()
             )
@@ -496,7 +501,7 @@ test("UI Index dispatching show delivery-notes", function (DeliveryNote $deliver
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where("title", $deliveryNote->reference)
                     ->where("model", 'Delivery Note')
                     ->etc()
@@ -698,7 +703,7 @@ test("UI Index dispatching picking sessions", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where("title", "Picking Sessions")
                     ->etc()
             )
@@ -722,7 +727,7 @@ test("UI Index dispatching show picking session", function (PickingSession $pick
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where("title", $pickingSession->reference)
                     ->where("model", 'Picking Session')
                     ->etc()
@@ -740,7 +745,7 @@ it('can render the shippers index page', function () {
     ]))
         ->assertOk()
         ->assertInertia(
-            fn (Assert $page) => $page
+            fn(Assert $page) => $page
                 ->component('Org/Dispatching/Shippers')
                 ->has('data.data', 1)
         );
@@ -769,7 +774,7 @@ it('can render the inactive shippers index page', function () {
     ]))
         ->assertOk()
         ->assertInertia(
-            fn (Assert $page) => $page
+            fn(Assert $page) => $page
                 ->component('Org/Dispatching/Shippers')
                 ->has('data.data', 1)
                 ->where('data.data.0.name', $inactiveShipper->name)
@@ -783,7 +788,7 @@ it('can render the create shipper page', function () {
     ]))
         ->assertOk()
         ->assertInertia(
-            fn (Assert $page) => $page
+            fn(Assert $page) => $page
                 ->component('CreateModel')
                 ->has('formData.blueprint')
         );
@@ -799,7 +804,7 @@ it('can render the show shipper page', function () {
     ]))
         ->assertOk()
         ->assertInertia(
-            fn (Assert $page) => $page
+            fn(Assert $page) => $page
                 ->component('Org/Dispatching/Shipper')
                 ->where('pageHead.title', $shipper->name)
         );
@@ -814,7 +819,7 @@ it('can render the edit shipper page', function () {
     ]))
         ->assertOk()
         ->assertInertia(
-            fn (Assert $page) => $page
+            fn(Assert $page) => $page
                 ->component('EditModel')
                 ->where('formData.blueprint.0.fields.name.value', $shipper->name)
         );
