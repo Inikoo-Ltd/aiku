@@ -29,6 +29,7 @@ trait WithUpdateWebImages
 
 
         $webImagesData = [
+            'v'                => '1.1',
             'main'             => $this->getMainWebImageData($model),
             'secondary'        => $this->getSecondaryWebImageData($model),
             'extraDescription' => $extraDescription,
