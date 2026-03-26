@@ -30,7 +30,6 @@ class GetWarehouseNavigation
 
             $navigation['skus_families'] = [
                 'label'   => __('SKUs Families'),
-                'tooltip' => __('SKUs Families'),
                 'icon'    => ['fal', 'fa-boxes-alt'],
                 'route'   => [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.index',
