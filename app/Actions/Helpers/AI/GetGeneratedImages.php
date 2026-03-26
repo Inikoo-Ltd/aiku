@@ -2,18 +2,23 @@
 
 namespace App\Actions\Helpers\AI;
 
+use App\Actions\Catalogue\Product\UploadImagesToProduct;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithBase64FileConverter;
+use App\Actions\Traits\WithUploadModelImages;
+use App\Models\Catalogue\Product;
 use App\Models\Helpers\Media;
 use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 use OpenAI;
 
 class GetGeneratedImages extends OrgAction
 {
-    public function handle(string $prompt, array $metadata = []): array
+    use WithUploadModelImages;
+    use WithBase64FileConverter;
+
+    public function handle(Product $model, string $prompt, array $metadata = []): array
     {
         $apiKey = config('services.openai.api_key');
         $client = OpenAI::client($apiKey);
@@ -44,8 +49,6 @@ class GetGeneratedImages extends OrgAction
                 'n' => $n,
                 'size' => $size
             ])->json();
-
-            return $response;
         } else {
             $response = $client->images()->create([
                 'model' => 'dall-e-3',
@@ -57,9 +60,13 @@ class GetGeneratedImages extends OrgAction
             ]);
         }
 
-        return collect($response->data)->map(function ($image) use ($format) {
-            return $format === 'b64_json' ? $image->b64_json : $image->url;
+        $result = collect($response['data'])->map(function ($image) use ($model) {
+            return $this->convertBase64ToFile($image['b64_json'], $model);
         })->toArray();
+
+        return UploadImagesToProduct::run($model, [
+            'images' => $result
+        ]);
     }
 
     private function prepareImage(string $imageId): string
@@ -79,18 +86,19 @@ class GetGeneratedImages extends OrgAction
     public function asCommand(Command $command): void
     {
         $mediaId = $command->argument('media_id');
+        $model = Product::find(1);
 
-        $result = $this->handle('make this image better with stunning background', [
-            'images' => [$mediaId],
+        $result = $this->handle($model, 'make this image better with stunning background', [
+            'images' => [$mediaId]
         ]);
 
         dd($result);
     }
 
-    public function action(string $prompt, array $metadata = []): array
+    public function action(Product $model, string $prompt, array $metadata = []): array
     {
         $this->asAction = true;
 
-        return $this->handle($prompt, $metadata);
+        return $this->handle($model, $prompt, $metadata);
     }
 }

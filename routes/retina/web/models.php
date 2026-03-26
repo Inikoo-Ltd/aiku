@@ -342,12 +342,12 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::prefix('bundles')->name('bundles.')->group(function () {
         Route::post('title-generator', GenerateRetinaProductBundleTitle::class)->name('title.generate');
         Route::post('description-generator', GenerateRetinaProductBundleDescription::class)->name('description.generate');
-        Route::post('images-generator', GenerateRetinaProductImages::class)->name('images.generate');
     });
 
     Route::prefix('{customerSalesChannel:id}/bundles')->name('bundles.')->group(function () {
         Route::post('/', StoreRetinaBundle::class)->name('store');
         Route::patch('{bundle}', UpdateRetinaBundle::class)->name('update');
+        Route::post('products/{product:id}/images-generator', GenerateRetinaProductImages::class)->name('products.images.generate');
         Route::post('products/{product:id}/images', UploadRetinaBundleProductImages::class)->name('products.images.store')->withoutScopedBindings();
         Route::post('calculate-bundle-product', CalculateRetinaBundleItemPriceDetails::class)->name('products.calculate');
     });

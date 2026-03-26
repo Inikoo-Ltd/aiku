@@ -37,12 +37,15 @@ class StoreBundle extends OrgAction
         return DB::transaction(function () use ($customerSalesChannel, $modelData) {
             $productData = [];
             $selectedProducts = Arr::pull($modelData, 'products');
+            $shopBundleDiscount = Arr::get($customerSalesChannel->shop->settings, 'discount.bundle_discount_percentage', 10);
+
+            $productSelected = Product::where('shop_id', $customerSalesChannel->shop_id)
+                ->whereIn('id', Arr::pluck($selectedProducts, 'product_id'))
+                ->get();
 
             data_set($productData, 'exclusive_for_customer_id', $customerSalesChannel->customer_id);
-            data_set($productData, 'trade_units', Product::where('shop_id', $customerSalesChannel->shop_id)
-                ->whereIn('id', Arr::pluck($selectedProducts, 'product_id'))
-                ->get()
-                ->map(function ($product) {
+            data_set($productData, 'trade_units',
+                $productSelected->map(function ($product) {
                     return $product->tradeUnits->map(function (TradeUnit $tradeUnit) {
                         return [
                             'id' => $tradeUnit->id,
@@ -50,6 +53,7 @@ class StoreBundle extends OrgAction
                         ];
                     });
                 })->collapse()->toArray());
+
             data_set($productData, 'description', Arr::pull($modelData, 'description'));
             data_set($productData, 'price', Arr::pull($modelData, 'price'));
             data_set($productData, 'rrp', Arr::pull($modelData, 'rrp'));
@@ -59,8 +63,26 @@ class StoreBundle extends OrgAction
             data_set($productData, 'is_main', true);
             data_set($productData, 'unit', 'BUNDLE');
 
+            if(! Arr::get($productData, 'price')) {
+                $productPrice = $productSelected->sum('price');
+                data_set($productData, 'price', $productPrice * (1 - ($shopBundleDiscount / 100)));
+            }
+
+            if(! Arr::get($productData, 'rrp')) {
+                $productRrp = $productSelected->sum('rrp');
+                data_set($productData, 'rrp', $productRrp * (1 - ($shopBundleDiscount / 100)));
+            }
+
             if(! Arr::get($productData, 'code')) {
                 $productData['code'] = 'B-'.$customerSalesChannel->id.'-'.rand(1000, 9999);
+            }
+
+            if(! Arr::get($productData, 'name')) {
+                $productData['name'] = $productData['code'];
+            }
+
+            if(! Arr::get($productData, 'description')) {
+                $productData['description'] = $productSelected->first()->description;
             }
 
             $product = StoreProduct::make()->action($customerSalesChannel->shop, $productData);
@@ -102,10 +124,10 @@ class StoreBundle extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'name'        => ['required', 'string', 'max:255'],
+            'name'        => ['sometimes', 'nullable', 'string', 'max:255'],
             'code'        => ['nullable', 'string', 'max:64'],
             'description' => ['sometimes', 'nullable', 'string', 'max:65535'],
-            'price'       => ['required', 'numeric', 'min:0'],
+            'price'       => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'rrp'         => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'products'    => ['required', 'array', 'min:1'],
             'products.*.product_id'  => ['required', 'integer', 'exists:products,id'],

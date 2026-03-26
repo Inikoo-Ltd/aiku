@@ -13,6 +13,9 @@ use App\Actions\Helpers\AI\GetGeneratedImages;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Bundle;
+use App\Models\Catalogue\Product;
+use App\Models\CRM\Customer;
+use App\Models\CRM\WebUser;
 use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
@@ -22,26 +25,26 @@ class GenerateRetinaProductImages extends RetinaAction
     use WithActionUpdate;
     use SanitizeInputs;
 
-    public function handle(array $modelData): Bundle
+    public function handle(Product $product, array $modelData): Bundle
     {
         $prompt = Arr::get($modelData, 'prompt');
 
-        return GetGeneratedImages::run($prompt, $modelData);
+        return GetGeneratedImages::run($product, $prompt, $modelData);
     }
 
     public function rules(): array
     {
         return [
             'prompt' => ['required', 'string'],
-            'images' => ['nullable', 'array']
+            'images' => ['required', 'array']
         ];
     }
 
-    public function asController(ActionRequest $request): Bundle
+    public function asController(Product $product, ActionRequest $request): Bundle
     {
         $this->enableSanitize();
         $this->initialisation($request);
 
-        return $this->handle($this->validatedData);
+        return $this->handle($product, $this->validatedData);
     }
 }
