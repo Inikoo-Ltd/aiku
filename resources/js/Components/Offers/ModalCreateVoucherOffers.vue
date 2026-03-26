@@ -71,8 +71,10 @@ const categoryType = ref<'department' | 'subdepartment' | 'family' | null>(null)
 const categoryFilters = ref<number[]>([])
 const collectionFilters = ref<number[]>([])
 const productFilters = ref<number[]>([])
-const shopId = layout?.group?.id
+const shopId = layout?.shopState?.id
 const shopSlug = props.shop_data.slug
+
+console.log(layout);
 
 const categoryRoutes = {
     department: {
@@ -112,7 +114,7 @@ const collectionRoute = computed(() => {
 })
 
 const productFetchRoute = {
-    name: 'grp.json.shop.products_for_website_workshop',
+    name: 'grp.json.shop.products',
     parameters: {
         shop: (route().params as any).shop
     }
