@@ -6,6 +6,7 @@ import Table from "@/Components/Table/Table.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import ExportModalActions from "@/Components/HumanResources/ExportModalActions.vue"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
+import RejectLeaveModal from "@/Components/HumanResources/RejectLeaveModal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -41,6 +42,7 @@ const parsedTypeOptions = computed(() => {
 const locale = useLocaleStore()
 const isEditModalOpen = ref(false)
 const isExportModalOpen = ref(false)
+const isRejectModalOpen = ref(false)
 const selectedLeave = ref<any>(null)
 const isSubmitting = ref(false)
 const isExporting = ref(false)
@@ -156,6 +158,16 @@ const submitEdit = () => {
 const formatDate = (date: string) => {
 	return useFormatTime(date, { localeCode: locale?.language?.code })
 }
+
+const openRejectModal = (leave: any) => {
+	selectedLeave.value = leave
+	isRejectModalOpen.value = true
+}
+
+const closeRejectModal = () => {
+	isRejectModalOpen.value = false
+	selectedLeave.value = null
+}
 </script>
 
 <template>
@@ -208,9 +220,25 @@ const formatDate = (date: string) => {
 			</template>
 
 			<template #cell(reason)="{ item: leave }">
-				<span class="whitespace-nowrap">
-					{{ leave.reason ?? "—" }}
-				</span>
+				<div class="max-w-md">
+					<div v-if="leave.reason" class="text-sm text-gray-600 break-words">
+						{{ leave.reason }}
+					</div>
+					<div
+						v-if="leave.status === 'rejected' && leave.rejection_reason"
+						class="mt-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
+						<div class="break-words">
+							{{ leave.rejection_reason }}
+						</div>
+					</div>
+					<span
+						v-if="
+							!leave.reason &&
+							!(leave.status === 'rejected' && leave.rejection_reason)
+						">
+						—
+					</span>
+				</div>
 			</template>
 
 			<template #cell(attachments)="{ item: leave }">
@@ -266,36 +294,13 @@ const formatDate = (date: string) => {
 								type="positive" />
 						</template>
 					</ModalConfirmation>
-					<ModalConfirmation
+					<Button
 						v-if="leave.status === 'pending'"
-						:routeYes="{
-							name: 'grp.org.hr.leaves.reject',
-							parameters: { ...route().params, leave: leave.id },
-							method: 'post',
-						}"
-						:isWithMessage="true"
-						:keyMessage="'rejection_reason'"
-						:whyLabel="trans('Rejection Reason')"
-						:title="trans('Reject Leave Request')"
-						:description="trans('Are you sure you want to reject this leave request?')"
-						:message="{ placeholder: trans('Enter the reason for rejection') }">
-						<template #default="{ changeModel, isLoadingdelete }">
-							<Button
-								type="warning"
-								size="xs"
-								:icon="faTimes"
-								:label="trans('Reject')"
-								:loading="isLoadingdelete"
-								@click="changeModel" />
-						</template>
-						<template #btn-yes="{ clickYes, isLoadingdelete }">
-							<Button
-								:loading="isLoadingdelete"
-								@click="clickYes"
-								:label="trans('Yes, reject')"
-								type="warning" />
-						</template>
-					</ModalConfirmation>
+						type="warning"
+						size="xs"
+						:icon="faTimes"
+						:label="trans('Reject')"
+						@click="() => openRejectModal(leave)" />
 					<span v-if="leave.status !== 'pending'" class="text-gray-400 text-xs">
 						{{ trans("Processed") }}
 					</span>
@@ -380,20 +385,23 @@ const formatDate = (date: string) => {
 
 			<div class="grid grid-cols-2 gap-4">
 				<div>
-						<label class="block text-sm font-medium text-gray-700">{{
-							trans("Leave Type")
-						}}</label>
-						<select
-							v-model="exportForm.type"
-							class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
-							<option value="">{{ trans("All Types") }}</option>
-							<option v-for="option in parsedTypeOptions" :key="option.value" :value="option.value">
-								{{ option.label }}
-							</option>
-						</select>
-					</div>
-					<div>
-						<label class="block text-sm font-medium text-gray-700">{{
+					<label class="block text-sm font-medium text-gray-700">{{
+						trans("Leave Type")
+					}}</label>
+					<select
+						v-model="exportForm.type"
+						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
+						<option value="">{{ trans("All Types") }}</option>
+						<option
+							v-for="option in parsedTypeOptions"
+							:key="option.value"
+							:value="option.value">
+							{{ option.label }}
+						</option>
+					</select>
+				</div>
+				<div>
+					<label class="block text-sm font-medium text-gray-700">{{
 						trans("Status")
 					}}</label>
 					<select
@@ -497,4 +505,13 @@ const formatDate = (date: string) => {
 			@cancel="closeExportModal"
 			@export="submitExport" />
 	</Modal>
+
+	<RejectLeaveModal
+		:isOpen="isRejectModalOpen"
+		:leave="selectedLeave"
+		:route="{
+			name: 'grp.org.hr.leaves.reject',
+			parameters: { ...route().params, leave: selectedLeave?.id },
+		}"
+		@close="closeRejectModal" />
 </template>
