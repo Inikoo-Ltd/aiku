@@ -27,7 +27,7 @@ class MailshotRecipientsResource extends JsonResource
             'state'                        => DispatchedEmailStateEnum::stateIcon()[$this->state],
             'email_address'                => $this->email_address,
             'sent_at'                      => $this->sent_at,
-            'customer_name'                => $this->customer_name,
+            'recipient_name'               => $this->recipient_name,
         ];
     }
 }
