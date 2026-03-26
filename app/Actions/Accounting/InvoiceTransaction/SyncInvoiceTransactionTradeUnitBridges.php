@@ -39,14 +39,18 @@ class SyncInvoiceTransactionTradeUnitBridges implements ShouldQueue, ShouldBeUni
             return;
         }
 
-        $quantity = abs($invoiceTransaction->quantity ?? 0);
+        $tradeUnits = $product->tradeUnits;
+        $unitCount  = $tradeUnits->count();
 
-        foreach ($product->tradeUnits as $tradeUnit) {
-            // Todo: also we need unit_commercial_value in trade_units or at least fix the cost_price (all cost_price are null)
-            $netAmount    = ($tradeUnit->cost_price ?? 0) * $quantity;
-            $orgNetAmount = $invoiceTransaction->org_exchange ? $netAmount * $invoiceTransaction->org_exchange : 0;
-            $grpNetAmount = $invoiceTransaction->grp_exchange ? $netAmount * $invoiceTransaction->grp_exchange : 0;
+        if ($unitCount === 0) {
+            return;
+        }
 
+        $netAmount    = $invoiceTransaction->net_amount / $unitCount;
+        $orgNetAmount = $invoiceTransaction->org_net_amount / $unitCount;
+        $grpNetAmount = $invoiceTransaction->grp_net_amount / $unitCount;
+
+        foreach ($tradeUnits as $tradeUnit) {
             InvoiceTransactionHasTradeUnit::updateOrCreate(
                 [
                     'invoice_transaction_id' => $invoiceTransaction->id,
