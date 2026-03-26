@@ -25,6 +25,6 @@ class SendReOrderRemainderToCustomerEmail implements ShouldQueue
 
     public function handle(Customer $customer, OutboxCodeEnum $outboxCodeEnum, EmailBulkRun $emailBulkRun): DispatchedEmail
     {
-        return $this->sendCustomerOutboxEmail($customer, $outboxCodeEnum, [], '', null, null, $emailBulkRun);
+        return $this->sendCustomerOutboxEmail($customer, $outboxCodeEnum, ["customer_name" => $customer->name], '', null, null, $emailBulkRun);
     }
 }

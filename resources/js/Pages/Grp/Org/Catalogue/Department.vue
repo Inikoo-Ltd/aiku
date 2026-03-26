@@ -26,7 +26,6 @@ import { faDiagramNext } from "@fortawesome/free-solid-svg-icons";
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue";
 import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
-import { capitalize } from "@/Composables/capitalize";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { trans } from "laravel-vue-i18n"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -103,7 +102,7 @@ const component = computed(() => {
 
 
 <template>
-    <Head :title="capitalize(title)" />
+    <Head :title="title" />
     <PageHeading :data="pageHead">
         <template #button-delete="propx">
             <ModalConfirmationDelete

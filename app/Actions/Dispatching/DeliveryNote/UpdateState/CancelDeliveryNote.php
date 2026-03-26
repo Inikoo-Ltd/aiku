@@ -43,7 +43,6 @@ class CancelDeliveryNote extends OrgAction
      */
     public function handle(DeliveryNote $deliveryNote, $modifyOrder = true): DeliveryNote
     {
-        abort(422);
         $oldState     = $deliveryNote->state;
         $cancelledRef = $deliveryNote->reference.'-CANCELLED';
 

@@ -32,6 +32,7 @@ class SendCustomerRejectEmail extends OrgAction
             OutboxCodeEnum::REGISTRATION_REJECTED,
             additionalData: [
                 'rejected_notes' => $customer->rejected_notes,
+                'customer_name' => $customer->name
             ]
         );
     }

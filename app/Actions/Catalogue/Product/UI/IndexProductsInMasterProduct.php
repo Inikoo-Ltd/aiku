@@ -173,7 +173,7 @@ class IndexProductsInMasterProduct extends OrgAction
                         'subNavigation' => $subNavigation,
                     ],
                     'data'                         => ProductsResource::collection($products),
-                    'editable_table'               => false,
+                    'editable_table'               => true,
                     'tabs'                         => [
                         'current'    => $this->tab,
                         'navigation' => ProductsTabsEnum::navigationExcept([ProductsTabsEnum::SALES]),
