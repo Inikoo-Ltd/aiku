@@ -163,6 +163,7 @@ class DashboardLeave extends OrgAction
                         'type' => $leave->type,
                         'type_label' => $leave->leaveType?->name ?? $leave->type,
                         'code' => $leave->leaveType?->code ?? $leave->type,
+                        'color' => $leave->leaveType?->color ?? 'gray',
                         'duration_days' => $leave->duration_days,
                         'reason' => $leave->reason,
                         'status' => $leave->status?->value,
@@ -182,7 +183,7 @@ class DashboardLeave extends OrgAction
             ->where('state', 'working')
             ->orderBy('alias')
             ->get()
-            ->map(fn ($employee) => [
+            ->map(fn($employee) => [
                 'value' => $employee->id,
                 'label' => $employee->contact_name,
             ]);
@@ -192,7 +193,7 @@ class DashboardLeave extends OrgAction
             ->distinct('department')
             ->orderBy('department')
             ->pluck('department')
-            ->map(fn ($dept) => [
+            ->map(fn($dept) => [
                 'value' => $dept,
                 'label' => $dept,
             ]);
@@ -271,7 +272,8 @@ class DashboardLeave extends OrgAction
         Carbon  $visibleEnd,
         ?Carbon $monthStart = null,
         ?Carbon $monthEnd = null,
-    ): array {
+    ): array
+    {
         $weeks = [];
         $weekIndex = 0;
 

@@ -23,6 +23,7 @@ type LeaveItem = {
 	type: string
 	type_label: string
 	code: string
+	color: string
 	duration_days: number
 	reason: string
 	status: string
@@ -384,33 +385,6 @@ const getHolidayLabel = (date: string): string => {
 	return holiday ? holiday.label : ""
 }
 
-const getLeaveColor = (type: string): string => {
-	switch (type) {
-		case "annual":
-			return "#16A34A" // Green
-		case "medical":
-			return "#EA580C" // Orange
-		case "unpaid":
-			return "#000000" // Black
-		case "halfday-morning":
-		case "halfday-afternoon":
-			return "#16A34A" // Green
-		case "training":
-			return "#9333EA" // Purple
-		case "leave-of-absence":
-			return "#EA580C" // Orange
-		case "compassionate":
-			return "#DB2777" // Pink
-		case "parental":
-			return "#0891B2" // Cyan
-		case "sabbatical":
-			return "#4F46E5" // Indigo
-		default:
-			return "#4F46E5" // Indigo
-	}
-}
-
-
 const createLeaveSegments = (employee: EmployeeCalendarRow): Record<number, LeaveSegment[]> => {
 	const weekSegments: Record<number, LeaveSegment[]> = {}
 
@@ -532,7 +506,7 @@ const getLeaveSegmentStyle = (segment: LeaveSegment): Record<string, string | nu
 
 	return {
 		gridColumn: `${segment.startCol} / ${segment.endColExclusive}`,
-		backgroundColor: getLeaveColor(segment.leave.type),
+		backgroundColor: segment.leave.color,
 		opacity: isPending ? 0.7 : 1,
 		border: isPending ? "1px dashed rgba(255,255,255,0.9)" : "none",
 		borderTopLeftRadius: segment.continuesLeft ? "0" : "9999px",
