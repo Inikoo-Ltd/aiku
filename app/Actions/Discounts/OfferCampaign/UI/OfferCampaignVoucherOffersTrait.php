@@ -61,7 +61,7 @@ trait OfferCampaignVoucherOffersTrait
                     'slug'          => $offerCampaign->shop->slug,
                     'currency_code' => $offerCampaign->shop->currency->code,
 
-                    
+
                     'default_dates' => [
                         'start' => now()->toDateString(),
                         'end'   => now()->addDays(7)->toDateString(),
