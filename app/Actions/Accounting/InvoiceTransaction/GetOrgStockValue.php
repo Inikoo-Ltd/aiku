@@ -15,19 +15,15 @@ class GetOrgStockValue
 {
     use AsAction;
 
-    public function handle(OrgStock $orgStock, Carbon $date): float
+    public function handle(OrgStock $orgStock, ?Carbon $date=null): float
     {
         // TODO: Use $date to retrieve historical value based on old transaction data,
         // instead of the current OrgStock average value which may have been updated since.
 
         $average = ((float) ($orgStock->unit_commercial_value ?? 0) + (float) ($orgStock->unit_cost ?? 0)) / 2;
 
-        if ($average == 0 || !is_finite($average)) {
+        if ($average <= 0 || !is_finite($average)) {
             return 0.1;
-        }
-
-        if ($average < 0) {
-            return 0.0;
         }
 
         return $average;

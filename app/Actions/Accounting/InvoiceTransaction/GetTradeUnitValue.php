@@ -16,7 +16,7 @@ class GetTradeUnitValue
 {
     use AsAction;
 
-    public function handle(TradeUnit $tradeUnit, Organisation $organisation, Carbon $date): float
+    public function handle(TradeUnit $tradeUnit, Organisation $organisation, ?Carbon $date = null): float
     {
         // TODO: Use $date to retrieve historical value based on old transaction data,
         // instead of the current OrgStock average value which may have been updated since.
@@ -29,9 +29,9 @@ class GetTradeUnitValue
 
         $total = 0.0;
         foreach ($orgStocks as $orgStock) {
-            $total += GetOrgStockValue::run($orgStock, $date);
+            $total += $orgStocks->pivot->quantity * GetOrgStockValue::run($orgStock, $date);
         }
 
-        return $total / $orgStocks->count();
+        return $total;
     }
 }
