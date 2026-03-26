@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { trans } from 'laravel-vue-i18n'
-import Button from '../Elements/Buttons/Button.vue'
+import Button from "@/Components/Elements/Buttons/Button.vue";
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import { onMounted, ref, watch, computed } from 'vue'
@@ -11,7 +11,7 @@ import EmptyState from '../Utils/EmptyState.vue'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
 import BundlesSelector from './BundlesSelector.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { Textarea, Dialog, Checkbox, FileUpload } from "primevue"
+import { Textarea, Dialog, Checkbox, InputText } from "primevue"
 import { debounce } from 'lodash-es'
 import { route } from 'ziggy-js'
 import Image from '../Image.vue'
@@ -25,6 +25,7 @@ const props = defineProps<{
     }
     bundle_routes:{
         store: routeType
+        update: routeType
         images: routeType
         calculate: routeType
         ai: any
@@ -118,7 +119,8 @@ const summary = ref({
 
 const selectedProducts = ref<any[]>([]) 
 
-const bundleDescription = ref('')
+const bundleTitle = ref<string>('')
+const bundleDescription = ref<string>('')
 const isGeneratingAI = ref(false)
 
 const showMediaModal = ref(false)
@@ -214,6 +216,30 @@ const removeMedia = (media:any) => {
         selectedMedia.value.filter(m => m.image_id !== media.image_id)
 }
 
+const generateAITitle = async () => {
+    try {
+        isGeneratingAI.value = true
+
+        const { data } = await axios.post(
+            route(
+                props.bundle_routes.ai.generate_title.name
+            ),
+            {
+                prompt: bundleTitle.value
+            }
+        )
+        bundleTitle.value = data
+    } catch (e) {
+        notify({
+            title: trans('Error'),
+            text: trans('Failed to generate AI'),
+            type: 'error'
+        })
+    } finally {
+        isGeneratingAI.value = false
+    }
+}
+
 const generateAIDescription = async () => {
     try {
         isGeneratingAI.value = true
@@ -226,9 +252,14 @@ const generateAIDescription = async () => {
                 prompt: bundleDescription.value
             }
         )
+        bundleDescription.value = data
 
-        bundleDescription.value = data.description
-
+    } catch (e) {
+        notify({
+            title: trans('Error'),
+            text: trans('Failed to generate AI'),
+            type: 'error'
+        })
     } finally {
         isGeneratingAI.value = false
     }
@@ -238,46 +269,59 @@ const showGenerateModal = ref(false)
 const aiPrompt = ref('')
 const selectedMediaForAI = ref<any[]>([])
 
-const buildBase64Image = (b64:string) => {
-   return `data:image/png;base64,${b64}`
-}
-
 const generateAIImages = async () => {
     try {
         isGeneratingAI.value = true
-        console.log("selectedMediaForai", selectedMediaForAI.value)
         
         const payload = {
             images: selectedMediaForAI.value.map(m => m.image_id),
             prompt: aiPrompt.value
         }
 
-      const res = await axios.post(
+        const routeParams = {
+            ...props.bundle_routes.ai.generate_images.parameters,
+            product: product_id.value
+        }
+        
+    
+        const res = await axios.post(
             route(
-                props.bundle_routes.ai.generate_images.name
+                props.bundle_routes.ai.generate_images.name,
+                routeParams
             ),
             payload
         )
-        console.log("res data", res.data)
-        const aiImages = res.data.data || []
-        aiImages.forEach((img:any, i:number) => {
 
-            const base64Url = `data:image/png;base64,${img.b64_json}`
+        const media = res.data?.data
+
+        if (media) {
 
             selectedMedia.value.push({
-                id: `ai-${Date.now()}-${i}`,
-                url: base64Url,
-                image: { original: base64Url },
+                id: media.id,
+                image_id: media.id,
+                url: media.source?.original || media.thumbnail?.original,
+                image: media.thumbnail?.original || media.source?.original,
                 is_ai: true,
                 is_main: false
             })
 
-        })
+        }
 
         showGenerateModal.value = false
+
         aiPrompt.value = ''
         selectedMediaForAI.value = []
 
+        notify({
+            title: 'AI Image Generated',
+            type: 'success'
+        })
+    } catch (e) {
+        notify({
+            title: trans('Error'),
+            text: trans('Failed to generate AI'),
+            type: 'error'
+        })
     } finally {
         isGeneratingAI.value = false
     }
@@ -328,14 +372,16 @@ const onUpdateSelectedProducts = (products:any[]) => {
 
 const isStoringBundle = ref(false)
 
-const submitBundle = async () => {
+const bundle_id = ref('')
+const product_id = ref('')
+const storeBundle = async () => {
     try {
         isStoringBundle.value = true
 
        const payload = {
-            name: 'asd',
-            code: 'r',
-            description: bundleDescription,
+            name: bundleTitle.value,
+            code: '',
+            description: '',
             price: summary.value.total_bundle_price || 0,
             rrp: summary.value.total_rrp || 0,
             products: selectedProducts.value.map(p => ({
@@ -346,7 +392,7 @@ const submitBundle = async () => {
 
         console.log('STORE BUNDLE PAYLOAD', payload)
 
-        await axios.post(
+        const data = await axios.post(
             route(
                 props.bundle_routes.store.name,
                 props.bundle_routes.store.parameters
@@ -354,9 +400,58 @@ const submitBundle = async () => {
             payload
         )
 
+        
+        product_id.value = data.data.bundleable_id
+        bundle_id.value = data.data.id
+        console.log("product_id", product_id.value)
+        console.log("bundle_id", bundle_id.value)
+        
+        props.step.current = 1
+
+    } catch (e) {
+        notify({
+            title: trans('Error'),
+            text: trans('Failed to create bundle'),
+            type: 'error'
+        })
+    } finally {
+        isStoringBundle.value = false
+    }
+}
+
+const submitBundle = async () => {
+    try {
+        isStoringBundle.value = true
+
+       const payload = {
+            name: bundleTitle.value,
+            // code: '',
+            description: bundleDescription.value,
+            // price: summary.value.total_bundle_price || 0,
+            // rrp: summary.value.total_rrp || 0,
+            // products: selectedProducts.value.map(p => ({
+            //     product_id: p.id,
+            //     quantity: p.quantity || 1
+            // }))
+        }
+
+        const routeParams = {
+            ...props.bundle_routes.update.parameters,
+            bundle: bundle_id.value
+        }
+
+        await axios.patch(
+            route(
+                props.bundle_routes.update.name,
+                routeParams
+            ),
+            payload
+        )
+
         emits('onDone')
 
     } catch (e) {
+        console.log('ERROR FULL', e)
         notify({
             title: trans('Error'),
             text: trans('Failed to create bundle'),
@@ -508,12 +603,48 @@ onMounted(() => {
                 class="px-4">
                 <template #header>
                     <div>
+                        <div class="mb-4">
+                            <label class="text-sm block mb-1">
+                                Bundle Title
+                            </label>
 
+                            <div class="relative">
+
+                                <InputText
+                                v-model="bundleTitle"
+                                type="text"
+                                class="w-full pr-10 text-base p-2"
+                                :placeholder="ctrans('Bundle Title')"
+                                required
+                                />
+
+                                <!-- AI ICON BUTTON -->
+                                <Button
+                                type="button"
+                                @click="generateAITitle"
+                                :loading="isGeneratingAI"
+                                :disabled="!bundleTitle"
+                                v-tooltip="trans('Generate AI')" 
+                                class="absolute right-2 top-1/2 -translate-y-1/2 
+                                        h-7 w-7 flex items-center justify-center 
+                                        rounded-md border bg-white hover:bg-gray-100 
+                                        transition shadow-sm"
+                                >
+                                <FontAwesomeIcon
+                                    icon="fal fa-sparkles"
+                                    class="text-xs"
+                                    :class="isGeneratingAI ? 'animate-pulse text-primary' : ''"
+                                    fixed-width
+                                />
+                                </Button>
+
+                            </div>
+                            </div>
                     </div>
                 </template>
                 <template #afterInput>
                     <div class="flex items-center justify-between mt-3">
-
+                        
                         <!-- FILTER LIST -->
                         <div class="flex gap-2 text-sm font-semibold text-gray-500">
                             <div v-for="list in filterList" @click="selectedList = list"
@@ -526,7 +657,8 @@ onMounted(() => {
                         </div>
 
                         <!-- NEXT BUTTON -->
-                         <Button @click="step.current = 1" label="Next" iconRight="fal fa-arrow-right" :disabled="!selectedProducts.length"/>
+                         <Button @click="storeBundle" :loading="isStoringBundle" label="Next" iconRight="fal fa-arrow-right" :disabled="!selectedProducts.length && !bundleTitle.length"/>
+                    
                     </div>
                 </template>
             </BundlesSelector>
@@ -569,7 +701,7 @@ onMounted(() => {
                         <div class="flex justify-between items-center mt-2">
 
                             <div class="text-xs text-gray-400">
-                                Characters {{ bundleDescription.length }}/300
+                                Characters {{ bundleDescription.length }} words
                             </div>
 
                             <Button @click="generateAIDescription" :loading="isGeneratingAI" type="primary" :disabled="!bundleDescription">

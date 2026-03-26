@@ -387,14 +387,40 @@ watch(
                 STEP {{ bundle.step.value }}/2
             </div>
 
-            <div class="mb-4">
-                <label class="text-sm font-semibold">Bundle Title</label>
-              
-                <InputText v-model="bundle.title.value" type="text" class="text-base w-full mt-1 p-2" :placeholder="ctrans('Bundle Title')" required />
-                <Button @click="generateAITitle" :loading="isGeneratingAI" type="primary" :disabled="!bundle.title.value">
-                    <FontAwesomeIcon icon="fal fa-sparkles" class="mt-2" fixed-width />
-                        Generate with AI
-                </Button>
+          <div class="mb-4">
+            <label class="text-sm font-semibold block mb-1">
+                Bundle Title
+            </label>
+
+            <div class="relative">
+
+                <InputText
+                v-model="bundle.title.value"
+                type="text"
+                class="w-full pr-10 text-base p-2"
+                :placeholder="ctrans('Bundle Title')"
+                required
+                />
+
+                <!-- AI ICON BUTTON -->
+                <button
+                type="button"
+                @click="generateAITitle"
+                :disabled="isGeneratingAI"
+                class="absolute right-2 top-1/2 -translate-y-1/2 
+                        h-7 w-7 flex items-center justify-center 
+                        rounded-md border bg-white hover:bg-gray-100 
+                        transition shadow-sm"
+                >
+                <FontAwesomeIcon
+                    icon="fal fa-sparkles"
+                    class="text-xs"
+                    :class="isGeneratingAI ? 'animate-pulse text-primary' : ''"
+                    fixed-width
+                />
+                </button>
+
+            </div>
             </div>
 
             <div

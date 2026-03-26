@@ -99,9 +99,9 @@ class UpdateBundle extends OrgAction
     {
         $rules = [
             'name'        => ['sometimes', 'string', 'max:255'],
-            'code'        => ['sometimes', 'string', 'max:64'],
+            // 'code'        => ['sometimes', 'string', 'max:64'],
             'description' => ['sometimes', 'nullable', 'string', 'max:65535'],
-            'rrp'         => ['sometimes', 'nullable', 'numeric', 'min:0']
+            // 'rrp'         => ['sometimes', 'nullable', 'numeric', 'min:0']
         ];
 
         if (!$this->strict) {

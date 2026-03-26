@@ -22,7 +22,7 @@ class GenerateRetinaProductBundleTitle extends RetinaAction
     use WithActionUpdate;
     use SanitizeInputs;
 
-    public function handle(array $modelData): Bundle
+    public function handle(array $modelData): string
     {
         $prompt = Arr::get($modelData, 'prompt');
 
@@ -37,7 +37,7 @@ class GenerateRetinaProductBundleTitle extends RetinaAction
         ];
     }
 
-    public function asController(ActionRequest $request): Bundle
+    public function asController(ActionRequest $request): string
     {
         $this->enableSanitize();
         $this->initialisation($request);
