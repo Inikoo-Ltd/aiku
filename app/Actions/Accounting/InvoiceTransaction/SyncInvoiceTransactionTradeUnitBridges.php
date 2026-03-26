@@ -54,11 +54,9 @@ class SyncInvoiceTransactionTradeUnitBridges implements ShouldQueue, ShouldBeUni
             return;
         }
 
-        $valueGetter = GetInvoiceTransactionItemValue::make();
-
         $values = [];
         foreach ($tradeUnits as $tradeUnit) {
-            $values[$tradeUnit->id] = $valueGetter->getTradeUnitValue($tradeUnit, $organisation, $invoiceTransaction->date);
+            $values[$tradeUnit->id] = GetTradeUnitValue::run($tradeUnit, $organisation, $invoiceTransaction->date);
         }
 
         $totalValue = array_sum($values);

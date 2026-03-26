@@ -46,11 +46,9 @@ class SyncInvoiceTransactionOrgStockBridges implements ShouldQueue, ShouldBeUniq
             return;
         }
 
-        $valueGetter = GetInvoiceTransactionItemValue::make();
-
         $weights = [];
         foreach ($orgStocks as $orgStock) {
-            $weights[$orgStock->id] = $valueGetter->getOrgStockValue($orgStock, $invoiceTransaction->date)
+            $weights[$orgStock->id] = GetOrgStockValue::run($orgStock, $invoiceTransaction->date)
                 * ($orgStock->pivot->quantity ?? 1);
         }
 
