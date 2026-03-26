@@ -20,16 +20,23 @@ class SyncInvoiceTransactionTradeUnitBridges implements ShouldQueue, ShouldBeUni
 
     public string $jobQueue = 'low-priority';
 
-    public function getJobUniqueId(int $invoiceTransactionId): string
+    public function getJobUniqueId(?int $invoiceTransactionId): string
     {
-        return (string) $invoiceTransactionId;
+        return (string) $invoiceTransactionId??'empty';
     }
 
-    public function handle(int $invoiceTransactionId): void
+    public function handle(?int $invoiceTransactionId): void
     {
-        $invoiceTransaction = InvoiceTransaction::find($invoiceTransactionId);
+        if (!$invoiceTransactionId) {
+            return;
+        }
 
-        if (!$invoiceTransaction || $invoiceTransaction->model_type !== 'Product' || !$invoiceTransaction->model_id) {
+        $invoiceTransaction = InvoiceTransaction::find($invoiceTransactionId);
+        if (!$invoiceTransaction) {
+            return;
+        }
+
+        if ($invoiceTransaction->model_type !== 'Product' || !$invoiceTransaction->model_id) {
             return;
         }
 
@@ -46,11 +53,24 @@ class SyncInvoiceTransactionTradeUnitBridges implements ShouldQueue, ShouldBeUni
             return;
         }
 
+        //todo use  $value= $tradeUnit->getCommercialValue()
+//        $totalCommercialValue=0;
+//        foreach ($tradeUnits as $tradeUnit) {
+//            $value= $tradeUnit->getValue($invoiceTransaction->organisation);
+//            $totalCommercialValue += $value;
+//        }
+
         $netAmount    = $invoiceTransaction->net_amount / $unitCount;
         $orgNetAmount = $invoiceTransaction->org_net_amount / $unitCount;
         $grpNetAmount = $invoiceTransaction->grp_net_amount / $unitCount;
 
         foreach ($tradeUnits as $tradeUnit) {
+
+//            $factor=$tradeUnit->getValue()/$totalCommercialValue;
+//            $netAmount    = $invoiceTransaction->net_amount * $factor;
+//            $orgNetAmount = $invoiceTransaction->org_net_amount * $factor;
+//            $grpNetAmount = $invoiceTransaction->grp_net_amount * $factor;
+
             InvoiceTransactionHasTradeUnit::updateOrCreate(
                 [
                     'invoice_transaction_id' => $invoiceTransaction->id,
