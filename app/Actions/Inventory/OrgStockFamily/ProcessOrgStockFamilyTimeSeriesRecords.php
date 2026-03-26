@@ -56,18 +56,29 @@ class ProcessOrgStockFamilyTimeSeriesRecords implements ShouldBeUnique
     {
         $processedPeriods = [];
 
-        $query = DB::table('invoice_transactions')
-            ->whereExists(function ($query) use ($timeSeries) {
-                $query->select(DB::raw(1))
-                      ->from('invoice_transaction_has_org_stocks')
-                      ->whereColumn('invoice_transaction_has_org_stocks.invoice_transaction_id', 'invoice_transactions.id')
-                      ->where('invoice_transaction_has_org_stocks.org_stock_family_id', $timeSeries->org_stock_family_id);
+        $query = DB::table('invoice_transaction_has_org_stocks as pivot')
+            ->join('invoice_transactions', 'invoice_transactions.id', '=', 'pivot.invoice_transaction_id')
+            ->join('product_has_org_stocks as phos', function ($join) {
+                $join->on('phos.product_id', '=', 'invoice_transactions.model_id')
+                     ->on('phos.org_stock_id', '=', 'pivot.org_stock_id');
             })
+            ->join('org_stocks as os', 'os.id', '=', 'pivot.org_stock_id')
+            ->joinSub($this->orgStockProductWeightsSubquery(), 'product_weights', 'product_weights.product_id', '=', 'invoice_transactions.model_id')
+            ->where('pivot.org_stock_family_id', $timeSeries->org_stock_family_id)
             ->where('invoice_transactions.date', '>=', $from)
             ->where('invoice_transactions.date', '<=', $to)
             ->whereNull('invoice_transactions.deleted_at');
 
-        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency)->get();
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, $this->weightedOrgStockSelects())->get();
+
+        // TODO: switch to pivot-based selects after repair of 10M records is complete
+        // $query = DB::table('invoice_transaction_has_org_stocks as pivot')
+        //     ->join('invoice_transactions', 'invoice_transactions.id', '=', 'pivot.invoice_transaction_id')
+        //     ->where('pivot.org_stock_family_id', $timeSeries->org_stock_family_id)
+        //     ->where('invoice_transactions.date', '>=', $from)
+        //     ->where('invoice_transactions.date', '<=', $to)
+        //     ->whereNull('invoice_transactions.deleted_at');
+        // $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, $this->pivotBasedSelects())->get();
 
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);

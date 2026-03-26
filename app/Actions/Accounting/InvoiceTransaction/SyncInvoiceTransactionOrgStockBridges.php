@@ -39,13 +39,18 @@ class SyncInvoiceTransactionOrgStockBridges implements ShouldQueue, ShouldBeUniq
             return;
         }
 
-        $quantity = abs($invoiceTransaction->quantity ?? 0);
+        $orgStocks   = $product->orgStocks;
+        $stockCount  = $orgStocks->count();
 
-        foreach ($product->orgStocks as $orgStock) {
-            // Todo: need to fix unit_commercial_value in org_stocks
-            $netAmount    = ($orgStock->unit_commercial_value ?? 0) * $quantity;
-            $orgNetAmount = $invoiceTransaction->org_exchange ? $netAmount * $invoiceTransaction->org_exchange : 0;
-            $grpNetAmount = $invoiceTransaction->grp_exchange ? $netAmount * $invoiceTransaction->grp_exchange : 0;
+        if ($stockCount === 0) {
+            return;
+        }
+
+        $totalWeight = $orgStocks->sum(fn ($os) => ($os->unit_cost ?? 0) * ($os->pivot->quantity ?? 1));
+
+        foreach ($orgStocks as $orgStock) {
+            $weight = ($orgStock->unit_cost ?? 0) * ($orgStock->pivot->quantity ?? 1);
+            $share  = $totalWeight > 0 ? $weight / $totalWeight : 1 / $stockCount;
 
             InvoiceTransactionHasOrgStock::updateOrCreate(
                 [
@@ -54,9 +59,9 @@ class SyncInvoiceTransactionOrgStockBridges implements ShouldQueue, ShouldBeUniq
                 ],
                 [
                     'org_stock_family_id' => $orgStock->org_stock_family_id,
-                    'net_amount'          => $netAmount,
-                    'org_net_amount'      => $orgNetAmount,
-                    'grp_net_amount'      => $grpNetAmount,
+                    'net_amount'          => $invoiceTransaction->net_amount * $share,
+                    'org_net_amount'      => $invoiceTransaction->org_net_amount * $share,
+                    'grp_net_amount'      => $invoiceTransaction->grp_net_amount * $share,
                 ]
             );
         }
