@@ -25,7 +25,9 @@ class SendCustomerWelcomeEmail extends OrgAction
 
     public function handle(Customer $customer): DispatchedEmail
     {
-        return $this->sendCustomerOutboxEmail($customer, OutboxCodeEnum::REGISTRATION);
+        $additionalData = [
+            "customer_name" => $customer->name
+        ];
+        return $this->sendCustomerOutboxEmail($customer, OutboxCodeEnum::REGISTRATION, additionalData: $additionalData);
     }
-
 }

@@ -103,6 +103,21 @@ class GetOrganisationNavigation
 
         $navigation = $this->getWarehouseNavs($user, $organisation, $navigation);
 
+        // David request this shortcut
+        $navigation['skus_families'] = [
+            'label'   => __('SKUs Families'),
+            'tooltip' => __('SKUs Families'),
+            'icon'    => ['fal', 'fa-boxes-alt'],
+            'route'   => [
+                'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.index',
+                'parameters' => [
+                    'organisation' => $organisation->slug,
+                    'warehouse'    => $organisation->warehouses->first()->slug,
+                    'tab'          => 'sales',
+                ],
+            ],
+            'topMenu' => [],
+        ];
 
         if ($user->authTo("procurement.$organisation->id.view")) {
             $navigation['procurement'] = [
