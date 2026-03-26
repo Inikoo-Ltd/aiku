@@ -151,8 +151,8 @@ class IndexClockingEmployees extends OrgAction
                 return $leave->status?->value === LeaveStatusEnum::PENDING->value;
             });
 
-            $medicalRequestCount = $this->sumLeaveDaysByBucket($pendingLeaves, 'medical');
-            $unpaidRequestCount = $this->sumLeaveDaysByBucket($pendingLeaves, 'unpaid');
+            $medicalRequestCount = $this->countLeavesByBucket($submittedLeaves, 'medical');
+            $unpaidRequestCount = $this->countLeavesByBucket($submittedLeaves, 'unpaid');
             $balance = EmployeeLeaveBalance::firstOrCreate(
                 [
                     'employee_id' => $this->employee->id,
@@ -460,6 +460,13 @@ class IndexClockingEmployees extends OrgAction
 
             return $leave->is_half_day ? 0.5 : (float) $leave->duration_days;
         });
+    }
+
+    protected function countLeavesByBucket(Collection $leaves, string $bucket): int
+    {
+        return $leaves->filter(function (Leave $leave) use ($bucket) {
+            return LeaveTypeResolver::bucketFromLeaveType($leave->leaveType, $leave->type) === $bucket;
+        })->count();
     }
 
     public function htmlResponse(array $data, ActionRequest $request): Response
