@@ -95,8 +95,9 @@ const images = computed(() => {
     if (props.product?.web_images?.main?.gallery) {
         arr.push(props.product.web_images.main.gallery)
     }
-
-    if (props.product?.web_images?.all?.length) {
+    if (props.product?.web_images?.secondary?.gallery) {
+        arr.push(props.product.web_images.secondary.gallery)
+    }else if (props.product?.web_images?.all?.length) {
         props.product.web_images.all.slice(1).forEach(img => {
             if (img?.original) arr.push(img.original)
         })
