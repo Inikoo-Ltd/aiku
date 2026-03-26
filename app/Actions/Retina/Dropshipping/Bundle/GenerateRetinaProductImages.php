@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Dropshipping\Bundle;
 use App\Actions\Helpers\AI\GetGeneratedImages;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Bundle;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
@@ -26,11 +27,16 @@ class GenerateRetinaProductImages extends RetinaAction
     use WithActionUpdate;
     use SanitizeInputs;
 
-    public function handle(Product $product, array $modelData): Bundle
+    public function handle(Product $product, array $modelData): array
     {
         $prompt = Arr::get($modelData, 'prompt');
 
         return GetGeneratedImages::run($product, $prompt, $modelData);
+    }
+
+    public function jsonResponse(array $images): ImageResource
+    {
+        return ImageResource::make(Arr::first($images));
     }
 
     public function rules(): array
@@ -41,7 +47,7 @@ class GenerateRetinaProductImages extends RetinaAction
         ];
     }
 
-    public function asController(CustomerSalesChannel $customerSalesChannel, Product $product, ActionRequest $request): Bundle
+    public function asController(CustomerSalesChannel $customerSalesChannel, Product $product, ActionRequest $request): array
     {
         $this->enableSanitize();
         $this->initialisation($request);
