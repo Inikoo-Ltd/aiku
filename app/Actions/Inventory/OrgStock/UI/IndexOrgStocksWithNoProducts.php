@@ -337,7 +337,8 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                 $table->column(key: 'family_code', label: __('Family'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'quantity_available', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($sales) {
                 $table->betweenDates(['date'])
@@ -353,7 +354,6 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                     $table
                         ->column(key: 'unit_cost', label: __('Cost Value'), canBeHidden: false, sortable: true, type: 'currency')
                         // ->column(key: 'value_in_locations', label: __('Stock value'), canBeHidden: false, sortable: true, type: 'currency') // Todo: fix value_In_locations because mostly 0 or null
-                        ->column(key: 'quantity_available', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
                         ->column(key: 'woc', label: __('WOC'), canBeHidden: false, align: 'right')
                         ->column(key: 'revenue', label: __('Revenue'), sortable: true, type: 'currency')
                         ->column(key: 'dispatched', label: __('Dispatched'), sortable: true);
