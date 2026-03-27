@@ -81,6 +81,8 @@ class RepairMismatchedMasterProductProductsTradeUnits
                                     || str_starts_with($tradeUnit->slug, 'qsalt-')
                                     || str_starts_with($tradeUnit->slug, 'ncl-')
                                     || str_starts_with($tradeUnit->slug, 'wwib-')
+                                    || str_starts_with($tradeUnit->slug, 'pamg-')
+                                    || str_starts_with($tradeUnit->slug, 'mgw-')
 
 
 
