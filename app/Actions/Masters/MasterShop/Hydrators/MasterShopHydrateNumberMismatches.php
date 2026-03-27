@@ -31,7 +31,21 @@ class MasterShopHydrateNumberMismatches implements ShouldBeUnique
             ->where('mismatch_detected', true)
             ->count();
 
-        $masterShop->stats()->update(['number_mismatched_master_products' => $countMismatch]);
+        $countMismatchActive = MasterAsset::where('master_shop_id', $masterShop->id)
+            ->where('mismatch_detected', true)
+            ->where('status', true)
+            ->count();
+
+        $countMismatchInactive = MasterAsset::where('master_shop_id', $masterShop->id)
+            ->where('mismatch_detected', true)
+            ->where('status', false)
+            ->count();
+
+        $masterShop->stats()->update([
+            'number_mismatched_master_products'          => $countMismatch,
+            'number_mismatched_master_products_active'   => $countMismatchActive,
+            'number_mismatched_master_products_inactive' => $countMismatchInactive,
+        ]);
 
 
         $countMismatch = MasterProductCategory::where('master_shop_id', $masterShop->id)
@@ -39,7 +53,23 @@ class MasterShopHydrateNumberMismatches implements ShouldBeUnique
             ->where('mismatch_detected', true)
             ->count();
 
-        $masterShop->stats()->update(['number_mismatched_master_families' => $countMismatch]);
+        $countMismatchActive = MasterProductCategory::where('master_shop_id', $masterShop->id)
+            ->where('type', MasterProductCategoryTypeEnum::FAMILY)
+            ->where('mismatch_detected', true)
+            ->where('status', true)
+            ->count();
+
+        $countMismatchInactive = MasterProductCategory::where('master_shop_id', $masterShop->id)
+            ->where('type', MasterProductCategoryTypeEnum::FAMILY)
+            ->where('mismatch_detected', true)
+            ->where('status', false)
+            ->count();
+
+        $masterShop->stats()->update([
+            'number_mismatched_master_families'          => $countMismatch,
+            'number_mismatched_master_families_active'   => $countMismatchActive,
+            'number_mismatched_master_families_inactive' => $countMismatchInactive,
+        ]);
 
 
     }
