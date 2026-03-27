@@ -513,7 +513,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 ],
 
                 'shop_data' => [
-                    'currency_code' => $shop->currency->code,
+                    'currency_code' => $shop->currency->symbol,
                 ],
 
                 'order_route'    => isset($this->platform) && $this->platform->type === PlatformTypeEnum::MANUAL ? [
