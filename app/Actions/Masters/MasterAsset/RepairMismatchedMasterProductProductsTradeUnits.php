@@ -10,6 +10,7 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMismatch;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
@@ -75,6 +76,13 @@ class RepairMismatchedMasterProductProductsTradeUnits
                                     || str_starts_with($tradeUnit->slug, 'opp-')
                                     || str_starts_with($tradeUnit->slug, 'sellp-')
                                     || str_starts_with($tradeUnit->slug, 'fgb-')
+                                    || str_starts_with($tradeUnit->slug, 'gemfr-')
+                                    || str_starts_with($tradeUnit->slug, 'salt-')
+                                    || str_starts_with($tradeUnit->slug, 'qsalt-')
+                                    || str_starts_with($tradeUnit->slug, 'ncl-')
+                                    || str_starts_with($tradeUnit->slug, 'wwib-')
+
+
 
                                 ) {
                                     $autoSkip = true;
@@ -83,6 +91,8 @@ class RepairMismatchedMasterProductProductsTradeUnits
                                 if (in_array($tradeUnit->slug, ['sais-mx'])) {
                                     $autoSkip = true;
                                 }
+
+                                //MGBS-ST
 
 
                                 if ($tradeUnit->slug == 'ial01') {
@@ -93,7 +103,20 @@ class RepairMismatchedMasterProductProductsTradeUnits
                             echo "\nPRODUCT UNITS:\n";
                             foreach ($productTradeUnits as $id => $qty) {
                                 $tradeUnit = TradeUnit::find($id);
-                                if (str_starts_with($tradeUnit->slug, 'abot') || str_starts_with($tradeUnit->slug, 'gbot-')) {
+                                if (str_starts_with($tradeUnit->slug, 'abot')
+                                    || str_starts_with($tradeUnit->slug, 'gbot-')
+                                    || str_starts_with($tradeUnit->slug, 'rdbot-')
+                                    || str_starts_with($tradeUnit->slug, 'gjar-')
+                                    || str_starts_with($tradeUnit->slug, 'actc-')
+                                    || str_starts_with($tradeUnit->slug, 'opp-')
+                                    || str_starts_with($tradeUnit->slug, 'sellp-')
+                                    || str_starts_with($tradeUnit->slug, 'fgb-')
+                                    || str_starts_with($tradeUnit->slug, 'gemfr-')
+                                    || str_starts_with($tradeUnit->slug, 'salt-')
+                                    || str_starts_with($tradeUnit->slug, 'qsalt-')
+                                    || str_starts_with($tradeUnit->slug, 'ncl-')
+
+                                ) {
                                     $autoSkip = true;
                                 }
                                 echo "  - TradeUnit $tradeUnit->slug: $qty\n";
@@ -161,6 +184,7 @@ class RepairMismatchedMasterProductProductsTradeUnits
             'trade_units' => $tradeUnits
         ]);
 
+        MasterAssetHydrateMismatch::run($product->masterProduct);
         echo "{$product->masterProduct->slug} | Repaired --  Product -> Master OK\n";
     }
 
@@ -178,7 +202,7 @@ class RepairMismatchedMasterProductProductsTradeUnits
             SyncProductTradeUnits::run($product, $tradeUnitData);
         }
 
-
+        MasterAssetHydrateMismatch::run($masterProduct);
         echo "$masterProduct->slug | Repaired -- OK\n";
     }
 
