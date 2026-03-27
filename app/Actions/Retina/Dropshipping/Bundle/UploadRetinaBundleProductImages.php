@@ -12,10 +12,12 @@ namespace App\Actions\Retina\Dropshipping\Bundle;
 use App\Actions\Catalogue\Product\UploadImagesToProduct;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Bundle;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Traits\SanitizeInputs;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UploadRetinaBundleProductImages extends RetinaAction
@@ -33,6 +35,12 @@ class UploadRetinaBundleProductImages extends RetinaAction
     public function rules(): array
     {
         return UploadImagesToProduct::make()->rules();
+    }
+
+
+    public function jsonResponse(array $images): ImageResource
+    {
+        return ImageResource::make(Arr::first($images));
     }
 
     public function asController(CustomerSalesChannel $customerSalesChannel, Product $product, ActionRequest $request): array
