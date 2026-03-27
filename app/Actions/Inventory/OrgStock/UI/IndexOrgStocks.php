@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
+use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
@@ -126,9 +127,9 @@ class IndexOrgStocks extends OrgAction
     {
         $this->bucket = 'all';
         $this->parent = $orgStockFamily;
-        $this->initialisationFromWarehouse($warehouse, $request);
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
 
-        return $this->handle(parent: $orgStockFamily);
+        return $this->handle(parent: $orgStockFamily, prefix: OrgStocksTabsEnum::INDEX->value);
     }
 
     public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, ActionRequest $request): LengthAwarePaginator
@@ -400,6 +401,38 @@ class IndexOrgStocks extends OrgAction
         return OrgStocksResource::collection($stocks);
     }
 
+    public function getOrgStockFamilySubNavigation(OrgStockFamily $orgStockFamily, ActionRequest $request): array
+    {
+        $routeParameters = $request->route()->originalParameters();
+
+        return [
+            [
+                'label'    => __('SKU Family'),
+                'route'    => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show',
+                    'parameters' => array_diff_key($routeParameters, ['orgStock' => null]),
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-boxes-alt'],
+                    'tooltip' => __('SKU Family'),
+                ],
+            ],
+            [
+                'isAnchor' => true,
+                'label'    => __('SKUs'),
+                'number'   => $orgStockFamily->stats->number_org_stocks ?? 0,
+                'route'    => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index',
+                    'parameters' => array_diff_key($routeParameters, ['orgStock' => null]),
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-box'],
+                    'tooltip' => __('SKUs'),
+                ],
+            ],
+        ];
+    }
+
     public function getOrgStocksSubNavigation(): array
     {
         if ($this->parent instanceof Organisation) {
@@ -478,33 +511,43 @@ class IndexOrgStocks extends OrgAction
         $afterTitle = null;
         $iconRight = null;
 
-        if ($this->parent instanceof OrgPartner) {
-            $subNavigation = $this->getOrgPartnerNavigation($this->parent);
-            $title = $this->parent->partner->name;
-
-            $icon = [
-                'icon' => ['fal', 'fa-users-class'],
-                'title' => __('SKUs'),
+        if ($this->parent instanceof OrgStockFamily) {
+            $subNavigation = $this->getOrgStockFamilySubNavigation($this->parent, $request);
+            $title         = $this->parent->name;
+            $icon          = [
+                'icon'  => ['fal', 'fa-boxes-alt'],
+                'title' => __('SKU Family'),
             ];
-            $iconRight = [
+            $iconRight  = [
                 'icon' => 'fal fa-box',
             ];
             $afterTitle = [
-
+                'label' => __('SKUs'),
+            ];
+        } elseif ($this->parent instanceof OrgPartner) {
+            $subNavigation = $this->getOrgPartnerNavigation($this->parent);
+            $title         = $this->parent->partner->name;
+            $icon          = [
+                'icon'  => ['fal', 'fa-users-class'],
+                'title' => __('SKUs'),
+            ];
+            $iconRight  = [
+                'icon' => 'fal fa-box',
+            ];
+            $afterTitle = [
                 'label' => __('SKUs'),
             ];
         } elseif ($this->parent instanceof OrgAgent) {
             $subNavigation = $this->getOrgAgentNavigation($this->parent);
-            $title = $this->parent->agent->organisation->name;
-            $icon = [
-                'icon' => ['fal', 'fa-people-arrows'],
+            $title         = $this->parent->agent->organisation->name;
+            $icon          = [
+                'icon'  => ['fal', 'fa-people-arrows'],
                 'title' => __('SKUs'),
             ];
-            $iconRight = [
+            $iconRight  = [
                 'icon' => 'fal fa-box',
             ];
             $afterTitle = [
-
                 'label' => __('SKUs'),
             ];
         } else {
@@ -611,6 +654,17 @@ class IndexOrgStocks extends OrgAction
                 $headCrumb(
                     [
                         'name' => $routeName,
+                        'parameters' => $routeParameters,
+                    ],
+                    $suffix
+                )
+            ),
+
+            'grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index' => array_merge(
+                ShowOrgStockFamily::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
                         'parameters' => $routeParameters,
                     ],
                     $suffix
