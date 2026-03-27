@@ -15,6 +15,7 @@ import { route } from 'ziggy-js'
 import Image from '../Image.vue'
 import { faLayerGroup, faSparkles, faTrash,faImages } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import { router } from '@inertiajs/vue3';
 library.add(faLayerGroup, faSparkles, faTrash, faImages)
 
 const props = defineProps<{
@@ -436,22 +437,24 @@ const submitBundle = async () => {
             bundle: bundle_id.value
         }
 
-        await axios.patch(
-            route(
-                props.bundle_routes.update.name,
-                routeParams
-            ),
-            payload
+       router.patch(
+            route(props.bundle_routes.update.name, routeParams),
+            payload,
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    notify({
+                        title: trans('Success'),
+                        text: trans('Success submit bundle'),
+                        type: 'success'
+                    })
+
+                    props.step.current = 0
+                    emits('onDone')
+                }
+            }
         )
-
-        notify({
-            title: trans('Success'),
-            text: trans('Success submit bundle'),
-            type: 'success'
-        })
-
-        props.step.current = 0
-        emits('onDone')
 
     } catch (e) {
         console.error('ERROR', e)
