@@ -13,8 +13,10 @@ use App\Actions\Helpers\AI\GetGeneratedProductTitle;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Bundle;
+use App\Models\Catalogue\Product;
 use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 
 class GenerateRetinaProductBundleTitle extends RetinaAction
@@ -24,7 +26,13 @@ class GenerateRetinaProductBundleTitle extends RetinaAction
 
     public function handle(array $modelData): string
     {
-        $prompt = Arr::get($modelData, 'prompt');
+        $productNames = Product::whereIn('id', Arr::get($modelData, 'products'))
+            ->pluck('name');
+        $prompt = __("Create an excellent, engaging, and cohesive name for the following products:\n");
+
+        foreach ($productNames as $productName) {
+            $prompt .= "- " . Str::limit($productName) . "\n";
+        }
 
         return GetGeneratedProductTitle::run($prompt, $modelData);
     }
@@ -32,7 +40,9 @@ class GenerateRetinaProductBundleTitle extends RetinaAction
     public function rules(): array
     {
         return [
-            'prompt' => ['required', 'string'],
+            'products' => ['required', 'array'],
+            'products.*' => ['required', 'integer', 'exists:products,id'],
+            'prompt' => ['nullable', 'string'],
             'images' => ['nullable', 'array']
         ];
     }

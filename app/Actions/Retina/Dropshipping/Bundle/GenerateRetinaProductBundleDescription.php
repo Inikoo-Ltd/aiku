@@ -13,8 +13,10 @@ use App\Actions\Helpers\AI\GetGeneratedProductDescription;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Bundle;
+use App\Models\Catalogue\Product;
 use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 
 class GenerateRetinaProductBundleDescription extends RetinaAction
@@ -24,7 +26,13 @@ class GenerateRetinaProductBundleDescription extends RetinaAction
 
     public function handle(array $modelData): string
     {
-        $prompt = Arr::get($modelData, 'prompt');
+        $productDescriptions = Product::whereIn('id', Arr::get($modelData, 'products'))
+            ->pluck('description');
+        $prompt = __("Create an excellent, engaging, and cohesive description for the following products:\n");
+
+        foreach ($productDescriptions as $description) {
+            $prompt .= "- " . Str::limit($description) . "\n";
+        }
 
         return GetGeneratedProductDescription::run($prompt, $modelData);
     }
@@ -32,7 +40,9 @@ class GenerateRetinaProductBundleDescription extends RetinaAction
     public function rules(): array
     {
         return [
-            'prompt' => ['required', 'string'],
+            'products' => ['required', 'array'],
+            'products.*' => ['required', 'integer', 'exists:products,id'],
+            'prompt' => ['nullable', 'string'],
             'images' => ['nullable', 'array']
         ];
     }
