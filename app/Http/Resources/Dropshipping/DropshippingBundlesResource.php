@@ -40,7 +40,10 @@ class DropshippingBundlesResource extends JsonResource
             'customer_price'        => $this->bundleable->rrp,
             'status'                => $this->status,
             'image'                 => $image,
-            'full_size_image'       => $fullSizeImage
+            'full_size_image'       => $fullSizeImage,
+            'has_valid_platform_product_id'          => $this->has_valid_platform_product_id,
+            'exist_in_platform'                      => $this->exist_in_platform,
+            'platform_status'                        => $this->platform_status,
         ];
     }
 }
