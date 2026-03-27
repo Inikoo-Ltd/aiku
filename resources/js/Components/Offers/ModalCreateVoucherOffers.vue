@@ -18,7 +18,7 @@ const props = defineProps<{
     shop_data: {
         slug: string
         currency_code: string
-         default_dates: {
+        default_dates: {
             start: string
             end: string
         }
@@ -122,6 +122,41 @@ const productFetchRoute = {
 
 const submitCategoryOffer = () => {
     // Section: Submit
+    const targetPayload: Record<string, any> = {}
+
+    if (target.product) {
+        targetPayload.target = 'product'
+        targetPayload.product_ids = productFilters.value
+
+    } else {
+        if (target.category && categoryType.value && categoryFilters.value.length) {
+            targetPayload.target_category = categoryType.value // 'department' | 'subdepartment' | 'family'
+            targetPayload.category_ids = categoryFilters.value
+        }
+
+        if (target.collection && collectionFilters.value.length) {
+            targetPayload.target_collection = true
+            targetPayload.collection_ids = collectionFilters.value
+        }
+
+        if (target.shop && selectedShops.value.length) {
+            targetPayload.target_shop = true
+            targetPayload.shop_slugs = selectedShops.value
+        }
+    }
+    const payload = {
+        voucher: offerVoucher.value,
+        name: offerLabel.value,
+        type: 'amount',
+        offer_amount: offerAmount.value,
+        start_date: startDate.value,
+        end_date: endDate.value,
+        reuse_customer: reuseCustomer.value,
+        discount_percentage: discountPercentage.value,
+        ...targetPayload,
+    }
+    console.log("payload", payload)
+    
     router.post(
         route('grp.org.shops.show.discounts.campaigns.store_voucher', {
             organisation: 'sk',
@@ -129,14 +164,7 @@ const submitCategoryOffer = () => {
             offerCampaign: 'co-se',
         }),
         {
-            voucher: offerVoucher.value,
-            name: offerLabel.value,
-            type: 'amount',
-            discount_percentage: discountPercentage.value,
-            offer_amount: offerAmount.value,
-            start_date: startDate.value,
-            end_date: endDate.value,
-            reuse_customer: reuseCustomer.value,
+            payload
         },
         {
             preserveScroll: true,
@@ -483,7 +511,7 @@ const isFormInvalid = computed(() => {
 
                         </div>
 
-                         <!-- Section: Discount -->
+                        <!-- Section: Discount -->
                         <div>
                             <div class="font-medium mb-2 flex items-center gap-x-1">
                                 <FontAwesomeIcon icon="fas fa-asterisk"
@@ -493,7 +521,8 @@ const isFormInvalid = computed(() => {
 
 
                             <InputNumber v-model="discountPercentage" inputId="offer_discount"
-                                :placeholder="trans('Enter percentage')" suffix="%" :min="0" :max="100" class="w-full" />
+                                :placeholder="trans('Enter percentage')" suffix="%" :min="0" :max="100"
+                                class="w-full" />
 
                         </div>
                     </div>
