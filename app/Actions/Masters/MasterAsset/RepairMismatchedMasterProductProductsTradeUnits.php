@@ -11,6 +11,7 @@ namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
@@ -37,6 +38,12 @@ class RepairMismatchedMasterProductProductsTradeUnits
                         if ($product->shop_id != 18) {
                             continue;
                         }
+
+                        if($product->state==ProductStateEnum::DISCONTINUED){
+                            continue;
+                        }
+
+
 
                         $productTradeUnits = $product->tradeUnits->pluck('pivot.quantity', 'id');
 
@@ -83,7 +90,7 @@ class RepairMismatchedMasterProductProductsTradeUnits
                             echo "2. Follow children data [{$product->shop->slug}]\n";
                             echo "3. Do nothing\n\n";
 
-                            switch ($command->ask("option: ", '1')) {
+                            switch ($command->ask("option: ", '2')) {
                                 case "1":
                                     $this->copyMasterToProducts($masterProduct);
                                     break;
