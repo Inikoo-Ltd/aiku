@@ -209,13 +209,19 @@ trait WithAllegroApiServices
         ]);
     }
 
-    public function addOrderTracking(string $orderId, string $carrierId, string $trackingNumber, array $lineItems): array
+    public function addOrderTracking(string $orderId, array $shipmentData): array
     {
-        return $this->makeApiRequest('POST', "/order/checkout-forms/$orderId/parcel-tracking-numbers", [
-            'carrierId'      => $carrierId,
-            'waybill'        => $trackingNumber,
-            'lineItems'      => $lineItems,
+        return $this->makeApiRequest('POST', "/order/checkout-forms/$orderId/shipments", [
+            'carrierId'      => Arr::get($shipmentData, 'carrier_id'),
+            'waybill'        => Arr::get($shipmentData, 'waybill'),
+            'carrierName'    => Arr::get($shipmentData, 'carrier_name'),
+            'lineItems'      => Arr::get($shipmentData, 'line_items')
         ]);
+    }
+
+    public function getCarriers(): array
+    {
+        return $this->makeApiRequest('GET', "/order/carriers");
     }
 
     public function getParcelTrackingNumbers(string $orderId): array
