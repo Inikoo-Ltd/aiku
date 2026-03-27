@@ -6,7 +6,7 @@
  * Copyright (c) 2026, eka yudinata
  */
 
-namespace App\Actions\Comms\Outbox;
+namespace App\Actions\Comms\Outbox\LowStockInBasket;
 
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
 use App\Actions\Comms\EmailBulkRun\StoreEmailBulkRunRecipient;
@@ -27,16 +27,21 @@ class ProcessBasketLowStockCustomers
 
     public string $jobQueue = 'ses';
 
-    public function handle(?int $emailBulkRunId, ?int $outboxId, array $customers): void
+    public function handle(?int $emailBulkRunId, array $customers): void
     {
-        if (!$emailBulkRunId || !$outboxId) {
+        if (!$emailBulkRunId) {
             return;
         }
 
         $emailBulkRun = EmailBulkRun::find($emailBulkRunId);
-        $outbox = Outbox::find($outboxId);
 
-        if (!$emailBulkRun || !$outbox) {
+        if (!$emailBulkRun) {
+            return;
+        }
+
+        $outbox = Outbox::find($emailBulkRun->outbox_id);
+
+        if (!$outbox) {
             return;
         }
 

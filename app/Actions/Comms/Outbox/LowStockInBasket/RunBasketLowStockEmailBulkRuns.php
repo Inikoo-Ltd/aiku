@@ -6,9 +6,9 @@
  * Copyright (c) 2026, eka yudinata
  */
 
-namespace App\Actions\Comms\Outbox;
+namespace App\Actions\Comms\Outbox\LowStockInBasket;
 
-use App\Actions\Comms\EmailBulkRun\UpdateEmailBulkRun;
+use App\Actions\Comms\Outbox\WithGenerateEmailBulkRuns;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Services\QueryBuilder;
 use App\Actions\Traits\WithActionUpdate;
@@ -65,6 +65,7 @@ class RunBasketLowStockEmailBulkRuns
             //  Check another condition
             $baseQuery = DB::table('customers');
             $baseQuery->where('customers.shop_id', $outbox->shop_id);
+            $baseQuery->whereNull('customers.deleted_at');
 
             // check customer comms
             $baseQuery->join('customer_comms', function ($join) {
@@ -127,7 +128,7 @@ class RunBasketLowStockEmailBulkRuns
 
             $baseQuery->chunk($chuckSize, function ($customers) use ($emailBulkRun, $outbox) {
                 $customerData = $customers->map(function ($customer) {
-                    
+
                     return [
                         'id' => $customer->id,
                         'email' => $customer->email,
@@ -142,15 +143,15 @@ class RunBasketLowStockEmailBulkRuns
                 );
             });
 
-            UpdateEmailBulkRun::run(
-                $emailBulkRun,
-                [
-                    'recipients_stored_at' => now()
-                ]
-            );
+            // UpdateEmailBulkRun::run(
+            //     $emailBulkRun,
+            //     [
+            //         'recipients_stored_at' => now()
+            //     ]
+            // );
 
-            // update last outbox sent
-            $this->update($outbox, ['last_sent_at' => $currentDateTime]);
+            // // update last outbox sent
+            // $this->update($outbox, ['last_sent_at' => $currentDateTime]);
         }
     }
 
