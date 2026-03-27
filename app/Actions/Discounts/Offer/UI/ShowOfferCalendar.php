@@ -95,13 +95,13 @@ class ShowOfferCalendar
 
         return Inertia::render('Org/Discounts/OfferCalendar', [
             'breadcrumbs' => $this->getBreadcrumbs($organisation),
-            'title'       => __('Offer Calendar'),
+            'title'       => __('Offer Timeline'),
             'pageHead'    => [
                 'icon'  => [
                     'icon'  => ['fal', 'fa-badge-percent'],
-                    'title' => __('Offer Calendar'),
+                    'title' => __('Offer Timeline'),
                 ],
-                'title' => __('Offer Calendar'),
+                'title' => __('Offer Timeline'),
             ],
             'calendar'    => $calendar,
         ]);
@@ -145,10 +145,10 @@ class ShowOfferCalendar
                         'name'       => 'grp.org.offer.calendar',
                         'parameters' => ['organisation' => $organisation->slug],
                     ],
-                    'label' => __('Offer Calendar'),
+                    'label' => __('Offer Timeline'),
                     'icon'  => [
                         'icon'  => ['fal', 'fa-badge-percent'],
-                        'title' => __('Offer Calendar'),
+                        'title' => __('Offer Timeline'),
                     ],
                 ],
             ],

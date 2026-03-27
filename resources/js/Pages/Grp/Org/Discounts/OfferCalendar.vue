@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import OfferMonthCalendar from "@/Components/Discounts/OfferMonthCalendar.vue"
+import OfferTimelineCalendar from "@/Components/Discounts/OfferTimelineCalendar.vue"
 import { capitalize } from "@/Composables/capitalize"
 import type { PageHeadingTypes } from "@/types/PageHeading"
 
@@ -56,6 +56,6 @@ const props = defineProps<{
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <div class="px-4 pb-6 pt-2">
-        <OfferMonthCalendar :calendar="calendar" />
+        <OfferTimelineCalendar :calendar="calendar" />
     </div>
 </template>
