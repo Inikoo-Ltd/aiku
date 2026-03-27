@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Bundle;
 
 use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Catalogue\Product\UpdateProductImages;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -42,7 +43,12 @@ class UpdateBundle extends OrgAction
 
             $this->update($product, Arr::only($modelData, ['name', 'description', 'rrp']));
 
-            // Need images logic here
+            /** @var array $mainMedia */
+            $mainMedia = collect(Arr::get($modelData, 'images'))->where('is_main', true)->first();
+
+            UpdateProductImages::run($product, [
+                'image_id' => Arr::get($mainMedia, 'id'),
+            ]);
 
             $bundle->refresh();
 
