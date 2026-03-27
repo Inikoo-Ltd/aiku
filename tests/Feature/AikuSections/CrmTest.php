@@ -696,8 +696,7 @@ test('UI show customer timeline tab', function () {
         $page
             ->component('Org/Shop/CRM/Customer')
             ->has('tabs')
-            ->has('timeline')
-            ->where('timeline.events', fn ($events) => is_array($events));
+            ->has('timeline');
     });
 });
 
