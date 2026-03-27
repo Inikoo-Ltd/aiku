@@ -113,7 +113,7 @@ class StoreLeave extends OrgAction
             ->whereDate('to', '>=', $startDate->toDateString())
             ->get()
             ->pluck('from', 'to')
-            ->flatMap(fn ($date, $to) => [
+            ->flatMap(fn($date, $to) => [
                 $date->toDateString() => true,
                 $to->toDateString() => true,
             ]);
