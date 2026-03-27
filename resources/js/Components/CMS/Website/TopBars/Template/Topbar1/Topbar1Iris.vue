@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { inject, ref, watch } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faLayerGroup } from "@fal"
+import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus } from "@fal"
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
-import { faLaptopCode } from "@fas"
+import { faLaptopCode, faLayerGroup } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
 import { checkVisible, textReplaceVariables } from "@/Composables/Workshop"
@@ -242,7 +242,7 @@ watch(
                 </Button>
             </LinkIris>
 
-             <LinkIris href="/app/basket" :type="'internal'" >
+             <LinkIris href="/app/dropshipping/channels/eba-ebay-444920-7/my-products?tab=bundles" :type="'internal'" >
                 <Button
                     v-if="isLoggedIn"
                     v-tooltip="trans('Add Bundle')"  
