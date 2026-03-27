@@ -910,7 +910,6 @@ const onDownloadExtendedProperties = () => {
 	}, 400)
 }
 
-console.log("step", props.step)
 console.log("props parent porfot", props)
 const layout = inject("layout", layoutStructure)
 </script>
@@ -1520,6 +1519,7 @@ const layout = inject("layout", layoutStructure)
 				@showBulkButton="showBulkButton()"
 				@hideBulkButton="hideBulkButton()"
 				:data="props.bundles"
+				:bundle_routes="props.bundle_routes"
 				:tab="'bundles'"
 				:selectedData
 				:platform_data
