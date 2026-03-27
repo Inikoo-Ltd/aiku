@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Outbox\LowStockInBasket;
 
+use App\Actions\Comms\EmailBulkRun\UpdateEmailBulkRunRecipientStoredAt;
 use App\Actions\Comms\Outbox\WithGenerateEmailBulkRuns;
 use App\Models\Comms\Outbox;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -69,7 +70,7 @@ class ProcessLowStockInBasketEachOutbox
             $join->on('transactions.model_id', '=', 'products.id');
             $join->where('transactions.model_type', $productClass);
             $join->where('products.is_for_sale', true);
-            // $join->where('products.available_quantity_updated_at', '>', $intervalInHours);
+            $join->where('products.available_quantity_updated_at', '>', $intervalInHours);
             $join->whereIn('products.state', [
                 ProductStateEnum::ACTIVE->value,
                 ProductStateEnum::DISCONTINUING->value,
@@ -128,14 +129,10 @@ class ProcessLowStockInBasketEachOutbox
             'recipients_count'       => $this->countRecipients,
         ]);
 
-        // UpdateEmailBulkRun::run(
-        //     $emailBulkRun,
-        //     [
-        //         'recipients_stored_at' => now()
-        //     ]
-        // );
+        UpdateEmailBulkRunRecipientStoredAt::run($emailBulkRun);
 
-        // // update last outbox sent
-        // $instance->update($outbox, ['last_sent_at' => $currentDateTime]);
+        $outbox->update([
+            'last_sent_at' => $currentDateTime
+        ]);
     }
 }

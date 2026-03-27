@@ -18,9 +18,9 @@ class UpdateEmailBulkRunRecipientStoredAt
     public function handle(EmailBulkRun $emailBulk): bool
     {
         $emailBulk->refresh();
-        if (!$emailBulk->recipients_stored_at  && $emailBulk->recipients()->count() === $mailshot->recipients_count) {
-            UpdateMailshot::run(
-                $mailshot,
+        if (!$emailBulk->recipients_stored_at  && $emailBulk->recipients()->count() === $emailBulk->recipients_count) {
+            UpdateEmailBulkRun::run(
+                $emailBulk,
                 [
                     'recipients_stored_at' => now()
                 ]
