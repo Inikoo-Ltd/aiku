@@ -20,8 +20,8 @@ const props = defineProps<{
         <img
             :src="`/assets/promo/gr-${layout.retina.organisation}.png`"
             alt="Gold Reward logo"
-            class="pointer-events-none
-                   h-5 sm:h-6 md:h-6 lg:h-7 xl:h-7 2xl:h-8"
+            class="pointer-events-none translate-y-[15%]
+                   h-5 sm:h-6 md:h-6 lg:h-7 xl:h-7 2xl:h-9"
         />
     
         <div
