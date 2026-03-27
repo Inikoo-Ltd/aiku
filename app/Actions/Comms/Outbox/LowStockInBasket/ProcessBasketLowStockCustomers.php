@@ -48,34 +48,33 @@ class ProcessBasketLowStockCustomers
         $emailDeliveryChannel = StoreEmailDeliveryChannel::run($emailBulkRun);
 
         foreach ($customers as $customer) {
-            if (filter_var($customer['email'], FILTER_VALIDATE_EMAIL)) {
-                $customerModel = Customer::find($customer['id']);
-                if (!$customerModel) {
-                    continue;
-                }
-
-                $dispatchedEmail = StoreDispatchedEmail::run(
-                    $emailBulkRun,
-                    $customerModel,
-                    [
-                        'outbox_id'     => $outbox->id,
-                        'email_address' => $customer['email'],
-                        'data->additional_data' => [
-                            'products' => $this->generateProductLinks($customer['product_ids'])
-                        ]
-                    ]
-                );
-
-                StoreEmailBulkRunRecipient::run(
-                    $emailBulkRun,
-                    [
-                        'dispatched_email_id' => $dispatchedEmail->id,
-                        'recipient_type'      => class_basename($customerModel),
-                        'recipient_id'        => $customerModel->id,
-                        'channel'             => $emailDeliveryChannel->id,
-                    ]
-                );
+            $customerModel = Customer::find($customer['id']);
+            if (!$customerModel) {
+                continue;
             }
+
+            $dispatchedEmail = StoreDispatchedEmail::run(
+                $emailBulkRun,
+                $customerModel,
+                [
+                    'outbox_id'     => $outbox->id,
+                    'email_address' => $customer['email'],
+                    'data->additional_data' => [
+                        'products' => $this->generateProductLinks($customer['product_ids']),
+                        'customer_name' => $customerModel->name,
+                    ]
+                ]
+            );
+
+            StoreEmailBulkRunRecipient::run(
+                $emailBulkRun,
+                [
+                    'dispatched_email_id' => $dispatchedEmail->id,
+                    'recipient_type'      => class_basename($customerModel),
+                    'recipient_id'        => $customerModel->id,
+                    'channel'             => $emailDeliveryChannel->id,
+                ]
+            );
         }
 
         // After processing the chunk, update and dispatch the delivery channel

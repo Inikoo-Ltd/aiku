@@ -105,12 +105,15 @@ class SendEmailDeliveryChannel
 
             $additionalData = $dispatchedEmail->data['additional_data'] ?? [];
 
-            if ($recipient->recipient_name) {
-                $additionalData['customer_name'] = $recipient->recipient_name;
-            } elseif ($recipient->recipient_type == 'Customer') {
-                $recipientData = DB::table('customers')->select('name')->where('id', $recipient->recipient_id)->first();
-                if ($recipientData) {
-                    $additionalData['customer_name'] = $recipientData->name;
+
+            if (!isset($additionalData['customer_name'])) {
+                if ($recipient->recipient_name) {
+                    $additionalData['customer_name'] = $recipient->recipient_name;
+                } elseif ($recipient->recipient_type == 'Customer') {
+                    $recipientData = DB::table('customers')->select('name')->where('id', $recipient->recipient_id)->first();
+                    if ($recipientData) {
+                        $additionalData['customer_name'] = $recipientData->name;
+                    }
                 }
             }
 
