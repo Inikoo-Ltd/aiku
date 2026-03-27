@@ -45,11 +45,14 @@ class StoreBundle extends OrgAction
 
             data_set($productData, 'exclusive_for_customer_id', $customerSalesChannel->customer_id);
             data_set($productData, 'trade_units',
-                $productSelected->map(function ($product) {
-                    return $product->tradeUnits->map(function (TradeUnit $tradeUnit) {
+                $productSelected->map(function ($product) use ($selectedProducts) {
+                    return $product->tradeUnits->map(function (TradeUnit $tradeUnit) use ($product, $selectedProducts) {
+                        /** @var array $productQty */
+                        $productQty = collect($selectedProducts)->where('product_id', $product->id)->first();
+
                         return [
                             'id' => $tradeUnit->id,
-                            'quantity' => $tradeUnit->orgStocks()->sum('quantity_available')
+                            'quantity' => Arr::get($productQty, 'quantity')
                         ];
                     });
                 })->collapse()->toArray());
