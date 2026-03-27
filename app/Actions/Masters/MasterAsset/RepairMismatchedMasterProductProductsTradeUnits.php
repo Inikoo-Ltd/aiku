@@ -99,6 +99,8 @@ class RepairMismatchedMasterProductProductsTradeUnits
 
                                 if ($tradeUnit->slug == 'ial01') {
                                     $autoShopToMaster = true;
+                                }else{
+                                    $autoSkip = true;
                                 }
                             }
 
@@ -140,16 +142,18 @@ class RepairMismatchedMasterProductProductsTradeUnits
                                 }
                             }
 
-                            if ($autoSkip) {
-                                echo "\nAuto Skip\n";
-                                continue;
-                            }
-
                             if ($autoShopToMaster) {
                                 echo "\nAuto repair =======".$product->code."=====. \n";
                                 $this->copyProductToMaster($product);
                                 continue;
                             }
+
+                            if ($autoSkip) {
+                                echo "\nAuto Skip\n";
+                                continue;
+                            }
+
+
 
                             echo "====================================================\n\n";
                             echo "1. Follow master data (default)\n";
