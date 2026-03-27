@@ -50,6 +50,9 @@ const props = defineProps<{
 
     }
     onClickReconnect: Function
+    shop_data: {
+        currency_code: string
+    }
 }>()
 
 const emits = defineEmits<(e: "onDone") => void>()
@@ -145,7 +148,6 @@ const calculateBundle = async () => {
             ),
             payload
         )
-
         summary.value = data
 
     } catch (e) {
@@ -205,10 +207,18 @@ const toggleSelect = (img:any) => {
             image_id: img.image_id,
             product_id: img.product_id,
             url: img.url,
-            image: img.image
+            image: img.image,
+            is_main: false
         })
 
     }
+}
+
+const setMainImage = (imageId:number) => {
+    selectedMedia.value = selectedMedia.value.map(img => ({
+        ...img,
+        is_main: img.image_id === imageId
+    }))
 }
 
 const removeMedia = (media:any) => {
@@ -225,7 +235,7 @@ const generateAITitle = async () => {
                 props.bundle_routes.ai.generate_title.name
             ),
             {
-                prompt: bundleTitle.value
+                products:productIds.value
             }
         )
         bundleTitle.value = data
@@ -249,7 +259,7 @@ const generateAIDescription = async () => {
                 props.bundle_routes.ai.generate_description.name
             ),
             {
-                prompt: bundleDescription.value
+                products: productIds.value
             }
         )
         bundleDescription.value = data
@@ -424,15 +434,12 @@ const submitBundle = async () => {
         isStoringBundle.value = true
 
        const payload = {
-            name: bundleTitle.value,
-            // code: '',
+            // name: bundleTitle.value,
             description: bundleDescription.value,
-            // price: summary.value.total_bundle_price || 0,
-            // rrp: summary.value.total_rrp || 0,
-            // products: selectedProducts.value.map(p => ({
-            //     product_id: p.id,
-            //     quantity: p.quantity || 1
-            // }))
+            images: selectedMedia.value.map(img => ({
+                id: img.image_id,
+                is_main: img.is_main
+            }))
         }
 
         const routeParams = {
@@ -494,31 +501,76 @@ const toggleSelectAI = (media:any) => {
 
 // action iamge
 const fileInput = ref<HTMLInputElement | null>(null)
-const localUploadedFiles = ref<File[]>([])
 
-const uploadFilesLocal = (files: FileList) => {
-    Array.from(files).forEach(file => {
-        localUploadedFiles.value.push(file)
+const uploadFilesLocal = async (files: FileList) => {
+    if(!product_id.value) {
+        notify({
+            title: trans('Error'),
+            text: trans('Reload Pages'),
+            type: 'error'
+        })
+    }
 
-        // preview
-        console.log("file",file)
-        selectedMedia.value.push(file)
-        console.log("selectedMedia", selectedMedia.value)
-    })
+        try {
+            const formData = new FormData()
+
+            Array.from(files).forEach(file => {
+                formData.append('images[]', file)
+            })
+
+            const routeParams = {
+                ...props.bundle_routes.images.store.parameters,
+                product: product_id.value
+            }
+
+            const res = await axios.post(
+                route(
+                    props.bundle_routes.images.store.name,
+                    routeParams
+                ),
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }
+            )
+            const media = res.data?.data || []
+        
+            if (media) {
+                selectedMedia.value.push({
+                    id: media.id,
+                    image_id: media.id,
+                    url: media.source.original,
+                    image: media.source.original,
+                    is_ai: false,
+                    is_main: false
+                })
+            }
+            notify({
+                title: 'Success Upload Image',
+                type: 'success'
+            })
+
+        } catch (e) {
+            console.error('UPLOAD ERROR', e)
+        }
+
+    
 }
 
 const openFilePicker = () => {
     fileInput.value?.click()
 }
 
-const onDrop = (e:DragEvent) => {
+const onDrop = (e: DragEvent) => {
    if(!e.dataTransfer?.files?.length) return
-
    uploadFilesLocal(e.dataTransfer.files)
 }
 
-const onFileChange = (e:Event) => {
+const onFileChange = (e: Event) => {
    const target = e.target as HTMLInputElement
+   if (!target.files) return
    uploadFilesLocal(target.files)
 }
 
@@ -570,22 +622,22 @@ onMounted(() => {
             <div class="w-[320px] text-sm space-y-2">
                 <div class="flex justify-between border-b pb-1">
                     <span class="text-gray-500">Cost Price (Individual Purchase)</span>
-                    <span class="font-medium">{{ summary.total_price }}</span>
+                    <span class="font-medium">{{ summary.total_price }} {{ props.shop_data.currency_code }}</span>
                 </div>
 
                 <div class="flex justify-between border-b pb-1">
-                    <span class="text-gray-500">Bundle Price (-10%)</span>
-                    <span class="font-medium text-green-600">{{ summary.total_bundle_price }}</span>
+                    <span class="text-gray-500">Bundle Price</span>
+                    <span class="font-medium text-green-600">{{ summary.total_bundle_price }} {{ props.shop_data.currency_code }}</span>
                 </div>
 
                 <div class="flex justify-between border-b pb-1">
                     <span class="text-gray-500">RRP</span>
-                    <span class="font-medium">{{ summary.total_rrp }}</span>
+                    <span class="font-medium">{{ summary.total_rrp }} {{ props.shop_data.currency_code }}</span>
                 </div>
 
                 <div class="flex justify-between pt-1">
                     <span class="text-gray-500">Profit</span>
-                    <span class="font-semibold text-green-600"> [{{ summary.profit_percentage }}%] {{ summary.profit }}</span>
+                    <span class="font-semibold text-green-600"> [{{ summary.profit_percentage }}%] {{ summary.profit }} {{ props.shop_data.currency_code }}</span>
                 </div>
             </div>
         </div>
@@ -623,7 +675,7 @@ onMounted(() => {
                                 type="button"
                                 @click="generateAITitle"
                                 :loading="isGeneratingAI"
-                                :disabled="!bundleTitle"
+                                :disabled="!productIds.length"
                                 v-tooltip="trans('Generate AI')" 
                                 class="absolute right-2 top-1/2 -translate-y-1/2 
                                         h-7 w-7 flex items-center justify-center 
@@ -670,12 +722,6 @@ onMounted(() => {
 
                 <div class="w-full">
 
-                    <!-- BACK -->
-                    <div class="mb-3">
-                        <Button @click="step.current = 0" type="tertiary" icon="fal fa-arrow-left"
-                            :label="trans('Back')" />
-                    </div>
-
                     <!-- HEADER -->
                     <div class="mb-5">
                         <div class="text-xl font-semibold flex items-center gap-2">
@@ -696,7 +742,7 @@ onMounted(() => {
                             {{ trans('Description') }}
                         </label>
 
-                        <Textarea v-model="bundleDescription" rows="6" autoResize class="w-full mt-1" />
+                        <Textarea v-model="bundleDescription" rows="6" autoResize class="w-full mt-1" placeholder="Input your description" />
 
                         <div class="flex justify-between items-center mt-2">
 
@@ -704,7 +750,7 @@ onMounted(() => {
                                 Characters {{ bundleDescription.length }} words
                             </div>
 
-                            <Button @click="generateAIDescription" :loading="isGeneratingAI" type="primary" :disabled="!bundleDescription">
+                            <Button @click="generateAIDescription" :loading="isGeneratingAI" type="primary" :disabled="!productIds.length">
                                 <FontAwesomeIcon icon="fal fa-sparkles" class="mr-2" fixed-width />
                                 Generate with AI
                             </Button>
@@ -775,6 +821,20 @@ onMounted(() => {
                                     imageCover
                                 />
 
+                                 <!-- RADIO MAIN -->
+                                <input
+                                    type="radio"
+                                    name="main_image"
+                                    :checked="img.is_main"
+                                    @change="setMainImage(img.image_id)"
+                                    class="absolute top-2 left-2 z-20"
+                                />
+                                 <div
+                                    v-if="img.is_main"
+                                    class="absolute bottom-1 left-1 text-[10px] bg-black/70 text-white px-1 rounded"
+                                >
+                                    MAIN IMAGE
+                                </div>
                                 <button
                                     class="absolute top-1 right-1 bg-black/70 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
                                     @click="removeMedia(img)">
@@ -785,7 +845,7 @@ onMounted(() => {
                     </div>
 
                     <!-- SUBMIT -->
-                    <Button @click="submitBundle" class="flex justify-center items-center w-full" type="primary" :loading="isStoringBundle">
+                    <Button @click="submitBundle" :disabled="!bundleDescription.length" class="flex justify-center items-center w-full" type="primary" :loading="isStoringBundle">
                         Create Bundle
                         <FontAwesomeIcon icon="fal fa-layer-group" class="mr-2" fixed-width />
                     </Button>
@@ -797,43 +857,46 @@ onMounted(() => {
                         <LoadingIcon />
                     </div>
                    <div v-else class="grid grid-cols-4 gap-3">
+                        <template v-if="flatMediaGallery.length">
+                            <div
+                                v-for="img in flatMediaGallery"
+                                :key="img.image_id"
+                                class="relative aspect-square rounded-xl overflow-hidden border cursor-pointer group"
+                                @click="toggleSelect(img)"
+                            >
 
-                        <div
-                            v-for="img in flatMediaGallery"
-                            :key="img.image_id"
-                            class="relative aspect-square rounded-xl overflow-hidden border cursor-pointer group"
-                            @click="toggleSelect(img)"
-                        >
+                                <!-- IMAGE -->
+                                <div class="absolute inset-0 z-0">
+                                    <Image
+                                        :src="img.image"
+                                        class="w-full h-full"
+                                        imageCover
+                                    />
+                                </div>
 
-                            <!-- IMAGE -->
-                            <div class="absolute inset-0 z-0">
-                                <Image
-                                    :src="img.image"
-                                    class="w-full h-full"
-                                    imageCover
+                                <!-- DARK OVERLAY WHEN SELECTED -->
+                                <div
+                                    v-if="selectedMediaIds.includes(img.image_id)"
+                                    class="absolute inset-0 bg-black/40 z-10"
                                 />
+
+                                <!-- CHECKBOX -->
+                            <Checkbox
+                                :modelValue="selectedMediaIds.includes(img.image_id)"
+                                binary
+                                class="absolute top-2 left-2 z-20 bg-white rounded shadow pointer-events-none"
+                            />
+
+                                <!-- HOVER EFFECT -->
+                                <div
+                                    class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition z-5"
+                                />
+
                             </div>
-
-                            <!-- DARK OVERLAY WHEN SELECTED -->
-                            <div
-                                v-if="selectedMediaIds.includes(img.image_id)"
-                                class="absolute inset-0 bg-black/40 z-10"
-                            />
-
-                            <!-- CHECKBOX -->
-                        <Checkbox
-                            :modelValue="selectedMediaIds.includes(img.image_id)"
-                            binary
-                            class="absolute top-2 left-2 z-20 bg-white rounded shadow pointer-events-none"
-                        />
-
-                            <!-- HOVER EFFECT -->
-                            <div
-                                class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition z-5"
-                            />
-
-                        </div>
-
+                        </template>
+                        <template v-else>
+                            <h1 class="flex">There is no Image Here</h1>
+                        </template>
                     </div>
 
                     <template #footer>

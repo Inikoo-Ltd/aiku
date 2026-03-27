@@ -148,6 +148,9 @@ const props = defineProps<{
 		cust_country: string
 	}
 	bundle_routes: any
+	shop_data: {
+        currency_code: string
+    }
 }>()
 
 const step = ref(props.step)
@@ -1568,6 +1571,7 @@ const layout = inject("layout", layoutStructure)
 			:routes="props.routes"
 			:bundle_routes="props.bundle_routes"
 			:platform_data
+			:shop_data="props.shop_data"
 			@onDone="
 				() => {
 					;((isOpenModalCreateBundle = false), (key = ulid()))

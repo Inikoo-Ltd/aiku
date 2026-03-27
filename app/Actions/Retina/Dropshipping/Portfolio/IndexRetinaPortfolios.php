@@ -293,6 +293,7 @@ class IndexRetinaPortfolios extends RetinaAction
         $downloadPortfolioCustomerSalesChannel = DownloadPortfolioCustomerSalesChannel::where('customer_sales_channel_id', $this->customerSalesChannel->id)->whereNotNull('download_url')->orderBy('created_at', 'desc')->first();
         $last_active_download_portfolio_customer_sales_channel_url = $downloadPortfolioCustomerSalesChannel?->download_url;
         $last_created_at_download_portfolio_customer_sales_channel = $downloadPortfolioCustomerSalesChannel?->created_at;
+        $shop = $this->customer->shop;
         return Inertia::render(
             'Dropshipping/Portfolios',
             [
@@ -511,6 +512,10 @@ class IndexRetinaPortfolios extends RetinaAction
                     ],
                 ],
 
+                'shop_data' => [
+                    'currency_code' => $shop->currency->code,
+                ],
+
                 'order_route'    => isset($this->platform) && $this->platform->type === PlatformTypeEnum::MANUAL ? [
                     'name'       => 'retina.models.customer.order.platform.store',
                     'parameters' => [
@@ -527,11 +532,9 @@ class IndexRetinaPortfolios extends RetinaAction
                     ]
                 ],
 
-
                 'step' => [
                     'current' => 0
                 ],
-
 
                 'product_count' => $this->customerSalesChannel->number_portfolios,
 
