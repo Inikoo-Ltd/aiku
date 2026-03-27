@@ -662,6 +662,23 @@ test('UI show customer', function () {
     });
 });
 
+test('UI show customer timeline tab', function () {
+    $customer = Customer::first();
+    $response = get(route('grp.org.shops.show.crm.customers.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $customer->slug,
+        'tab' => 'timeline',
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Shop/CRM/Customer')
+            ->has('tabs')
+            ->has('timeline')
+            ->where('timeline.events', fn ($events) => is_array($events));
+    });
+});
+
 test('UI edit customer', function () {
     $customer = Customer::first();
     $response = get(route('grp.org.shops.show.crm.customers.edit', [$this->organisation->slug, $this->shop->slug, $customer->slug]));
