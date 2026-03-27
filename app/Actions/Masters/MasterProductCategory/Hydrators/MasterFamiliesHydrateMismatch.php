@@ -22,7 +22,7 @@ class MasterFamiliesHydrateMismatch
 
     public function handle(MasterProductCategory $masterFamily): void
     {
-        $hasMismatch = $masterFamily->masterAssets()->where('mismatch_detected', true)->exists();
+        $hasMismatch = $masterFamily->masterAssets()->where('mismatch_detected', true)->where('master_assets.status', true)->exists();
 
         if ($hasMismatch) {
             $masterFamily->updateQuietly(['mismatch_detected' => true]);
