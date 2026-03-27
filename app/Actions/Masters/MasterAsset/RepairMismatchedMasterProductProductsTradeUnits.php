@@ -12,6 +12,7 @@ namespace App\Actions\Masters\MasterAsset;
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
@@ -34,16 +35,21 @@ class RepairMismatchedMasterProductProductsTradeUnits
 
                     $products = $masterProduct->products;
                     foreach ($products as $product) {
-
                         if ($product->shop_id != 18) {
                             continue;
                         }
 
-                        if($product->state==ProductStateEnum::DISCONTINUED){
+                        if ($product->state == ProductStateEnum::DISCONTINUED) {
+                            continue;
+                        }
+
+                        if (!$product->is_for_sale) {
                             continue;
                         }
 
 
+                        $autoSkip = false;
+                        $autoShopToMaster = false;
 
                         $productTradeUnits = $product->tradeUnits->pluck('pivot.quantity', 'id');
 
@@ -61,12 +67,25 @@ class RepairMismatchedMasterProductProductsTradeUnits
                             foreach ($masterAssetTradeUnits as $id => $qty) {
                                 $tradeUnit = TradeUnit::find($id);
                                 echo "  - TradeUnit $tradeUnit->slug: $qty\n";
+                                if (str_starts_with($tradeUnit->slug, 'abot') || str_starts_with($tradeUnit->slug, 'gbot')) {
+                                    $autoSkip = true;
+                                }
+
+                                if ($tradeUnit->slug == 'ial01') {
+                                    $autoShopToMaster = true;
+                                }
                             }
 
                             echo "\nPRODUCT UNITS:\n";
                             foreach ($productTradeUnits as $id => $qty) {
                                 $tradeUnit = TradeUnit::find($id);
+                                if (str_starts_with($tradeUnit->slug, 'abot') || str_starts_with($tradeUnit->slug, 'gbot-') ) {
+                                    $autoSkip = true;
+                                }
                                 echo "  - TradeUnit $tradeUnit->slug: $qty\n";
+                                
+                                
+                                
                             }
 
                             if ($diffFromMaster->isNotEmpty()) {
@@ -85,6 +104,16 @@ class RepairMismatchedMasterProductProductsTradeUnits
                                 }
                             }
 
+                            if ($autoSkip) {
+                                echo "\nAuto Skip\n";
+                                continue;
+                            }
+
+                            if ($autoShopToMaster) {
+                                $this->copyProductToMaster($product);
+                                continue;
+                            }
+
                             echo "====================================================\n\n";
                             echo "1. Follow master data (default)\n";
                             echo "2. Follow children data [{$product->shop->slug}]\n";
@@ -101,6 +130,9 @@ class RepairMismatchedMasterProductProductsTradeUnits
                                     break;
                             }
                         }
+
+
+
                     }
                 }
             });
@@ -141,7 +173,7 @@ class RepairMismatchedMasterProductProductsTradeUnits
         echo "$masterProduct->slug | Repaired -- OK\n";
     }
 
-    public string $commandSignature = 'show:products_with_mismatch_trade_units {masterShop}';
+    public string $commandSignature = 'repair_mismatched_master_product_products_trade_units {masterShop}';
 
     public function asCommand(Command $command): void
     {
