@@ -2,12 +2,10 @@
 import { trans } from 'laravel-vue-i18n'
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { notify } from '@kyvg/vue3-notification'
-import { router } from '@inertiajs/vue3'
 import { onMounted, ref, watch, computed } from 'vue'
 import { routeType } from '@/types/route'
 import { set } from 'lodash-es'
 import axios from 'axios'
-import EmptyState from '../Utils/EmptyState.vue'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
 import BundlesSelector from './BundlesSelector.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -104,7 +102,6 @@ const fetchIndexUnuploadedPortfolios = async () => {
 }
 
 watch(() => props.step.current, async (newStep, oldStep) => {
-    // console.log('Step changed to:', oldStep, newStep)
     if (newStep === 1 || newStep === 2) {
         fetchIndexUnuploadedPortfolios()
     }
@@ -121,17 +118,13 @@ const summary = ref({
 })
 
 const selectedProducts = ref<any[]>([]) 
-
 const bundleTitle = ref<string>('')
 const bundleDescription = ref<string>('')
 const isGeneratingAI = ref(false)
-
 const showMediaModal = ref(false)
 const isLoadingMedia = ref(false)
-
 const selectedMedia = ref<any[]>([])
 const selectedMediaIds = ref<number[]>([])
-
 const mediaGallery = ref<string[]>([])
 
 const calculateBundle = async () => {
@@ -151,11 +144,12 @@ const calculateBundle = async () => {
         summary.value = data
 
     } catch (e) {
-        notify({
-            title: trans('Error'),
-            text: trans('Failed to calculate bundle'),
-            type: 'error'
-        })
+        console.error("error", e)
+        // notify({
+        //     title: trans('Error'),
+        //     text: trans('Failed to calculate bundle'),
+        //     type: 'error'
+        // })
     }
 }
 
@@ -184,7 +178,6 @@ const flatMediaGallery = computed(() => {
         })
 
     })
-    console.log("result", result)
     return result
 })
 
@@ -239,6 +232,11 @@ const generateAITitle = async () => {
             }
         )
         bundleTitle.value = data
+        notify({
+            title: trans('Success'),
+            text: trans('Success generate AI'),
+            type: 'success'
+        })
     } catch (e) {
         notify({
             title: trans('Error'),
@@ -264,6 +262,11 @@ const generateAIDescription = async () => {
         )
         bundleDescription.value = data
 
+        notify({
+            title: trans('Success'),
+            text: trans('Success generate AI'),
+            type: 'success'
+        })
     } catch (e) {
         notify({
             title: trans('Error'),
@@ -351,17 +354,10 @@ const fetchMediaGallery = async () => {
                 product_ids: productIds.value
             }
         )
-
-        console.log('MEDIA URL =', url)
-
         const response = await axios.get(url)
-
-        console.log('MEDIA RESPONSE', response.data)
-
         mediaGallery.value = response.data.data || []
-        console.log('mediaGallery', mediaGallery.value)
     } catch (e) {
-        console.log(e)
+        console.error(e)
 
         notify({
             title: trans('Error'),
@@ -400,8 +396,6 @@ const storeBundle = async () => {
             }))
         }
 
-        console.log('STORE BUNDLE PAYLOAD', payload)
-
         const data = await axios.post(
             route(
                 props.bundle_routes.store.name,
@@ -409,15 +403,11 @@ const storeBundle = async () => {
             ),
             payload
         )
-
         
         product_id.value = data.data.bundleable_id
         bundle_id.value = data.data.id
-        console.log("product_id", product_id.value)
-        console.log("bundle_id", bundle_id.value)
         
         props.step.current = 1
-
     } catch (e) {
         notify({
             title: trans('Error'),
@@ -434,7 +424,6 @@ const submitBundle = async () => {
         isStoringBundle.value = true
 
        const payload = {
-            // name: bundleTitle.value,
             description: bundleDescription.value,
             images: selectedMedia.value.map(img => ({
                 id: img.image_id,
@@ -455,10 +444,17 @@ const submitBundle = async () => {
             payload
         )
 
+        notify({
+            title: trans('Success'),
+            text: trans('Success submit bundle'),
+            type: 'success'
+        })
+
+        props.step.current = 0
         emits('onDone')
 
     } catch (e) {
-        console.log('ERROR FULL', e)
+        console.error('ERROR', e)
         notify({
             title: trans('Error'),
             text: trans('Failed to create bundle'),
@@ -554,9 +550,11 @@ const uploadFilesLocal = async (files: FileList) => {
 
         } catch (e) {
             console.error('UPLOAD ERROR', e)
+            notify({
+                title: 'Failed Upload Image',
+                type: 'error'
+            })
         }
-
-    
 }
 
 const openFilePicker = () => {
@@ -670,12 +668,11 @@ onMounted(() => {
                                 required
                                 />
 
-                                <!-- AI ICON BUTTON -->
                                 <Button
                                 type="button"
                                 @click="generateAITitle"
                                 :loading="isGeneratingAI"
-                                :disabled="!productIds.length"
+                                :disabled="!productIds.length || isGeneratingAI"
                                 v-tooltip="trans('Generate AI')" 
                                 class="absolute right-2 top-1/2 -translate-y-1/2 
                                         h-7 w-7 flex items-center justify-center 
@@ -683,7 +680,7 @@ onMounted(() => {
                                         transition shadow-sm"
                                 >
                                 <FontAwesomeIcon
-                                    icon="fal fa-sparkles"
+                                    :icon="isGeneratingAI ? 'fal fa-spinner' : 'fal fa-sparkles'"
                                     class="text-xs"
                                     :class="isGeneratingAI ? 'animate-pulse text-primary' : ''"
                                     fixed-width
@@ -691,7 +688,7 @@ onMounted(() => {
                                 </Button>
 
                             </div>
-                            </div>
+                        </div>
                     </div>
                 </template>
                 <template #afterInput>
@@ -721,7 +718,6 @@ onMounted(() => {
             <div v-if="step.current === 1" class="flex justify-center">
 
                 <div class="w-full">
-
                     <!-- HEADER -->
                     <div class="mb-5">
                         <div class="text-xl font-semibold flex items-center gap-2">
@@ -751,7 +747,7 @@ onMounted(() => {
                             </div>
 
                             <Button @click="generateAIDescription" :loading="isGeneratingAI" type="primary" :disabled="!productIds.length">
-                                <FontAwesomeIcon icon="fal fa-sparkles" class="mr-2" fixed-width />
+                                <FontAwesomeIcon  :icon="isGeneratingAI ? 'fal fa-spinner' : 'fal fa-sparkles'" class="mr-2" fixed-width />
                                 Generate with AI
                             </Button>
 
@@ -821,7 +817,6 @@ onMounted(() => {
                                     imageCover
                                 />
 
-                                 <!-- RADIO MAIN -->
                                 <input
                                     type="radio"
                                     name="main_image"
@@ -865,7 +860,6 @@ onMounted(() => {
                                 @click="toggleSelect(img)"
                             >
 
-                                <!-- IMAGE -->
                                 <div class="absolute inset-0 z-0">
                                     <Image
                                         :src="img.image"
@@ -874,20 +868,17 @@ onMounted(() => {
                                     />
                                 </div>
 
-                                <!-- DARK OVERLAY WHEN SELECTED -->
                                 <div
                                     v-if="selectedMediaIds.includes(img.image_id)"
                                     class="absolute inset-0 bg-black/40 z-10"
                                 />
 
-                                <!-- CHECKBOX -->
-                            <Checkbox
-                                :modelValue="selectedMediaIds.includes(img.image_id)"
-                                binary
-                                class="absolute top-2 left-2 z-20 bg-white rounded shadow pointer-events-none"
-                            />
+                                <Checkbox
+                                    :modelValue="selectedMediaIds.includes(img.image_id)"
+                                    binary
+                                    class="absolute top-2 left-2 z-20 bg-white rounded shadow pointer-events-none"
+                                />
 
-                                <!-- HOVER EFFECT -->
                                 <div
                                     class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition z-5"
                                 />
@@ -895,7 +886,9 @@ onMounted(() => {
                             </div>
                         </template>
                         <template v-else>
-                            <h1 class="flex">There is no Image Here</h1>
+                             <div class="col-span-4 text-center text-gray-400 py-6">
+                                No images yet
+                            </div>
                         </template>
                     </div>
 
