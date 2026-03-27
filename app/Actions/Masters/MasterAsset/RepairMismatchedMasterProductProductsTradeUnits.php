@@ -48,7 +48,7 @@ class RepairMismatchedMasterProductProductsTradeUnits
                         }
 
 
-                        $autoSkip = false;
+                        $autoSkip         = false;
                         $autoShopToMaster = false;
 
                         $productTradeUnits = $product->tradeUnits->pluck('pivot.quantity', 'id');
@@ -67,9 +67,21 @@ class RepairMismatchedMasterProductProductsTradeUnits
                             foreach ($masterAssetTradeUnits as $id => $qty) {
                                 $tradeUnit = TradeUnit::find($id);
                                 echo "  - TradeUnit $tradeUnit->slug: $qty\n";
-                                if (str_starts_with($tradeUnit->slug, 'abot') || str_starts_with($tradeUnit->slug, 'gbot')) {
+                                if (str_starts_with($tradeUnit->slug, 'abot') || str_starts_with($tradeUnit->slug, 'gbot')
+                                    || str_starts_with($tradeUnit->slug, 'rdbot-')
+                                    || str_starts_with($tradeUnit->slug, 'gjar-')
+                                    || str_starts_with($tradeUnit->slug, 'actc--')
+                                    || str_starts_with($tradeUnit->slug, 'opp-')
+                                    || str_starts_with($tradeUnit->slug, 'SelLp-')
+
+                                ) {
                                     $autoSkip = true;
                                 }
+
+                                if (in_array($tradeUnit->slug, ['sais-mx'])) {
+                                    $autoSkip = true;
+                                }
+
 
                                 if ($tradeUnit->slug == 'ial01') {
                                     $autoShopToMaster = true;
@@ -79,13 +91,10 @@ class RepairMismatchedMasterProductProductsTradeUnits
                             echo "\nPRODUCT UNITS:\n";
                             foreach ($productTradeUnits as $id => $qty) {
                                 $tradeUnit = TradeUnit::find($id);
-                                if (str_starts_with($tradeUnit->slug, 'abot') || str_starts_with($tradeUnit->slug, 'gbot-') ) {
+                                if (str_starts_with($tradeUnit->slug, 'abot') || str_starts_with($tradeUnit->slug, 'gbot-')) {
                                     $autoSkip = true;
                                 }
                                 echo "  - TradeUnit $tradeUnit->slug: $qty\n";
-                                
-                                
-                                
                             }
 
                             if ($diffFromMaster->isNotEmpty()) {
@@ -130,9 +139,6 @@ class RepairMismatchedMasterProductProductsTradeUnits
                                     break;
                             }
                         }
-
-
-
                     }
                 }
             });
