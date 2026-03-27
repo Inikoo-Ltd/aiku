@@ -34,10 +34,10 @@ class UpdateRetinaBundle extends RetinaAction
         return UpdateBundle::make()->rules();
     }
 
-    public function asController(Bundle $bundle, ActionRequest $request): Bundle
+    public function asController(CustomerSalesChannel $customerSalesChannel, Bundle $bundle, ActionRequest $request): Bundle
     {
         $this->enableSanitize();
-        $this->customerSalesChannel = $bundle->customerSalesChannel;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisation($request);
 
         return $this->handle($bundle, $this->validatedData);
