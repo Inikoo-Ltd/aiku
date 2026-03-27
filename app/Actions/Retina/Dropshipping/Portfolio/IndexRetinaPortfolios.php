@@ -91,8 +91,8 @@ class IndexRetinaPortfolios extends RetinaAction
 
         return $query->defaultSort('-portfolios.id')
             ->allowedFilters([
-                            $unUploadedFilter, $globalSearch, 
-                            $this->getStateFilter(), $this->getPlatformStatusFilter(), 
+                            $unUploadedFilter, $globalSearch,
+                            $this->getStateFilter(), $this->getPlatformStatusFilter(),
                             $this->getForSaleFilter()
                         ])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -117,9 +117,9 @@ class IndexRetinaPortfolios extends RetinaAction
     public function getForSaleFilter(): AllowedFilter
     {
         return AllowedFilter::callback('is_for_sale', function ($query, $value) {
-            if($value === 'true' || $value === true) {
+            if ($value === 'true' || $value === true) {
                 $query->where('products.is_for_sale', true);
-            } else if ($value === 'false' || $value === false) {
+            } elseif ($value === 'false' || $value === false) {
                 $query->where('products.is_for_sale', false);
             }
         });

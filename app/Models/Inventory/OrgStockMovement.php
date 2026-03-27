@@ -46,10 +46,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $last_fetched_at
  * @property string|null $source_id
  * @property string|null $fixed
- * @property bool|null $fixed_internal_helper
  * @property numeric|null $audited_quantity
  * @property string|null $running_quantity running quantity on org_stock/location
  * @property string|null $running_quantity_org_stock running quantity on org_stock
+ * @property bool|null $fixed_internal_helper
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Inventory\Location|null $location
  * @property-read \App\Models\Inventory\OrgStock $orgStock
