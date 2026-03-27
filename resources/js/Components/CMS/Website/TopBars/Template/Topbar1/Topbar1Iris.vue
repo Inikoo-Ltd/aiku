@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { inject, ref, watch } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus } from "@fal"
+import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faLayerGroup } from "@fal"
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { faLaptopCode } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -20,7 +20,7 @@ import GoldReward from "@/Components/Utils/GoldReward.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 
-library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck)
+library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck, faLayerGroup)
 
 const props = defineProps<{
     screenType?: "desktop" | "mobile" | "tablet"
@@ -200,6 +200,7 @@ watch(
             <SwitchLanguage
                 v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" />
 
+
             <!-- Section: Profile -->
             <LinkIris v-if="!layout.offer_data" href="/app/dashboard" :type="'internal'" class="flex items-center justify-center">
                 <Button
@@ -237,6 +238,26 @@ watch(
                         <span class="button">
                             {{ layout.iris_variables?.back_in_stock_count }}
                         </span>
+                    </template>
+                </Button>
+            </LinkIris>
+
+             <LinkIris href="/app/basket" :type="'internal'" >
+                <Button
+                    v-if="isLoggedIn"
+                    v-tooltip="trans('Add Bundle')"  
+                    type="transparent"
+                    class="button"
+                >
+                    <template #loading>
+                        <span v-show="false" class="button"></span>
+                    </template>
+                    <template #label="{ isLoadingVisit }">
+                        <span v-tooltip="trans('Number of products line')" class="button -mr-1.5 whitespace-nowrap">
+                        </span>
+                        <LoadingIcon v-if="isLoadingVisit" />
+                        <FontAwesomeIcon v-else icon="fas fa-layer-group" class="button" fixed-width
+                            aria-hidden="true" />
                     </template>
                 </Button>
             </LinkIris>
