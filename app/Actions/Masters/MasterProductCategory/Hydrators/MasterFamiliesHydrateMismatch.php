@@ -47,13 +47,22 @@ class MasterFamiliesHydrateMismatch
             return;
         }
 
+        $total = MasterProductCategory::where('type', MasterProductCategoryTypeEnum::FAMILY)->count();
+        $bar   = $command->getOutput()->createProgressBar($total);
+        $bar->setFormat('debug');
+        $bar->start();
+
         MasterProductCategory::where('type', MasterProductCategoryTypeEnum::FAMILY)
             ->orderBy('id')
-            ->chunkById(1000, function ($masterFamilies) {
+            ->chunkById(1000, function ($masterFamilies) use ($bar) {
                 foreach ($masterFamilies as $masterFamily) {
                     $this->handle($masterFamily);
+                    $bar->advance();
                 }
             });
+
+        $bar->finish();
+        $command->newLine();
     }
 
 
