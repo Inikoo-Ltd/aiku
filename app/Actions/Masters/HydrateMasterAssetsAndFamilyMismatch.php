@@ -9,24 +9,18 @@
 
 namespace App\Actions\Masters;
 
-use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMismatch;
-use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamiliesHydrateMismatch;
 use App\Actions\Traits\WithActionUpdate;
+use Artisan;
 use Illuminate\Console\Command;
 
 class HydrateMasterAssetsAndFamilyMismatch
 {
     use WithActionUpdate;
 
-    protected function handle(Command $command): void
+    protected function handle(): void
     {
-        echo "Running master asset hydrate mismatch";
-        MasterAssetHydrateMismatch::run();
-        echo "== Done hydrating master assets mismatch ==";
-
-        echo "Running master product categories hydrate mismatch";
-        MasterFamiliesHydrateMismatch::run();
-        echo "== Done hydrating master product categories mismatch ==";
+        Artisan::call('master_asset:hydrate_mismatch');
+        Artisan::call('master_product_categories:hydrate_mismatch');
 
     }
 
@@ -34,7 +28,8 @@ class HydrateMasterAssetsAndFamilyMismatch
 
     public function asCommand(Command $command): void
     {
-        $this->handle($command);
+        $command->info('Mismatch detected. Updating master assets and product categories.');
+        $this->handle();
     }
 
 }

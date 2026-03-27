@@ -81,6 +81,20 @@ class ShowInventoryDashboard extends OrgAction
                         ]
                     ]
                 ],
+                'statsBox' => [
+                    [
+                        'is_negative' => true,
+                        'label' => __('SKU Without Product'),
+                        'route' => [
+                            'name'       => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.current',
+                            'parameters' => $routeParameters
+                        ],
+                        'icon'  => 'fal fa-box',
+                        'backgroundColor' => '#ff000011',
+                        'color'           => '#df1c1cff',
+                        'value' => '0', // No stat for this just yet
+                    ],
+                ],
                 // 'dashboardStats' => $this->getDashboardStats(),
                 'dashboard'    => $this->getDashboard(),
 

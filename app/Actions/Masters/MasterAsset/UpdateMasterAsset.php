@@ -15,11 +15,10 @@ use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductFamily;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
-use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMismatch;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
-use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamiliesHydrateMismatch;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateNumberMismatches;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
@@ -53,6 +52,8 @@ class UpdateMasterAsset extends OrgAction
      */
     public function handle(MasterAsset $masterAsset, array $modelData): MasterAsset
     {
+        $oldMismatchDetected = $masterAsset->mismatch_detected;
+
         if (Arr::has($modelData, 'master_family_id')) {
             $masterFamily = null;
             if ($modelData['master_family_id']) {
@@ -130,6 +131,15 @@ class UpdateMasterAsset extends OrgAction
 
             $this->update($masterAsset, $modelData);
             $masterAsset->refresh();
+
+
+            return ModelHydrateSingleTradeUnits::run($masterAsset);
+        });
+
+        CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
+
+
+        if ($oldMismatchDetected != $masterAsset->mismatch_detected) {
             $masterFamily = $masterAsset->masterFamily;
             $masterFamily?->update(
                 [
@@ -137,13 +147,8 @@ class UpdateMasterAsset extends OrgAction
                 ]
             );
 
-            MasterAssetHydrateMismatch::run(true);
-            MasterFamiliesHydrateMismatch::run(true);
-
-            return ModelHydrateSingleTradeUnits::run($masterAsset);
-        });
-
-        CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
+            MasterShopHydrateNumberMismatches::run($masterAsset->masterShop);
+        }
 
 
         if ($masterAsset->wasChanged('unit')) {

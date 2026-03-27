@@ -160,7 +160,7 @@ const _popoverProfit = ref(null)
 
             </div>
 
-            <Popover ref="_popoverProfit" class="py-1 px-2 max-w-[90vw] md:max-w-none">
+            <Popover ref="_popoverProfit" class="max-w-[90vw] md:max-w-none sm:min-w-[350px]">
                 <ProfitCalculationList :product="product" />
             </Popover>
 

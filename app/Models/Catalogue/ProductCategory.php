@@ -158,17 +158,18 @@ class ProductCategory extends Model implements Auditable, HasMedia
     public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
-        'data'             => 'array',
-        'web_images'       => 'array',
-        'health_rank'      => HealthRankEnum::class,
-        'state'            => ProductCategoryStateEnum::class,
-        'type'             => ProductCategoryTypeEnum::class,
-        'activated_at'     => 'datetime',
-        'discontinuing_at' => 'datetime',
-        'discontinued_at'  => 'datetime',
-        'fetched_at'       => 'datetime',
-        'last_fetched_at'  => 'datetime',
-        'offers_data'      => 'array',
+        'data'                          => 'array',
+        'web_images'                    => 'array',
+        'health_rank'                   => HealthRankEnum::class,
+        'state'                         => ProductCategoryStateEnum::class,
+        'type'                          => ProductCategoryTypeEnum::class,
+        'activated_at'                  => 'datetime',
+        'discontinuing_at'              => 'datetime',
+        'discontinued_at'               => 'datetime',
+        'fetched_at'                    => 'datetime',
+        'last_fetched_at'               => 'datetime',
+        'offers_data'                   => 'array',
+        'mismatch_with_master_detected' => 'boolean',
     ];
 
     protected $attributes = [
