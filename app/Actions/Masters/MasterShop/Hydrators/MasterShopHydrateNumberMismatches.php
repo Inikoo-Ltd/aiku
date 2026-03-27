@@ -26,52 +26,21 @@ class MasterShopHydrateNumberMismatches implements ShouldBeUnique
 
     public function handle(MasterShop $masterShop): void
     {
+        $baseQueryMasterProduct = MasterAsset::where('master_shop_id', $masterShop->id)
+            ->where('mismatch_detected', true);
 
-        $countMismatch = MasterAsset::where('master_shop_id', $masterShop->id)
-            ->where('mismatch_detected', true)
-            ->count();
-
-        $countMismatchActive = MasterAsset::where('master_shop_id', $masterShop->id)
-            ->where('mismatch_detected', true)
-            ->where('status', true)
-            ->count();
-
-        $countMismatchInactive = MasterAsset::where('master_shop_id', $masterShop->id)
-            ->where('mismatch_detected', true)
-            ->where('status', false)
-            ->count();
-
-        $masterShop->stats()->update([
-            'number_mismatched_master_products'          => $countMismatch,
-            'number_mismatched_master_products_active'   => $countMismatchActive,
-            'number_mismatched_master_products_inactive' => $countMismatchInactive,
-        ]);
+        $masterShop->stats()->update(['number_mismatched_master_products' => $baseQueryMasterProduct->clone()->count()]);
+        $masterShop->stats()->update(['number_mismatched_master_products_active' => $baseQueryMasterProduct->clone()->where('status', true)->count()]);
+        $masterShop->stats()->update(['number_mismatched_master_products_inactive' => $baseQueryMasterProduct->clone()->where('status', false)->count()]);
 
 
-        $countMismatch = MasterProductCategory::where('master_shop_id', $masterShop->id)
+        $baseQueryMasterFamily = MasterProductCategory::where('master_shop_id', $masterShop->id)
             ->where('type', MasterProductCategoryTypeEnum::FAMILY)
-            ->where('mismatch_detected', true)
-            ->count();
+            ->where('mismatch_detected', true);
 
-        $countMismatchActive = MasterProductCategory::where('master_shop_id', $masterShop->id)
-            ->where('type', MasterProductCategoryTypeEnum::FAMILY)
-            ->where('mismatch_detected', true)
-            ->where('status', true)
-            ->count();
-
-        $countMismatchInactive = MasterProductCategory::where('master_shop_id', $masterShop->id)
-            ->where('type', MasterProductCategoryTypeEnum::FAMILY)
-            ->where('mismatch_detected', true)
-            ->where('status', false)
-            ->count();
-
-        $masterShop->stats()->update([
-            'number_mismatched_master_families'          => $countMismatch,
-            'number_mismatched_master_families_active'   => $countMismatchActive,
-            'number_mismatched_master_families_inactive' => $countMismatchInactive,
-        ]);
-
-
+        $masterShop->stats()->update(['number_mismatched_master_families' => $baseQueryMasterFamily->clone()->count()]);
+        $masterShop->stats()->update(['number_mismatched_master_families_active' => $baseQueryMasterFamily->clone()->where('status', true)->count()]);
+        $masterShop->stats()->update(['number_mismatched_master_families_inactive' => $baseQueryMasterFamily->clone()->where('status', false)->count()]);
     }
 
 
