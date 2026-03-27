@@ -25,7 +25,7 @@ class UploadRetinaBundleProductImages extends RetinaAction
 
     private CustomerSalesChannel $customerSalesChannel;
 
-    public function handle(Product $product, array $modelData): Bundle
+    public function handle(Product $product, array $modelData): array
     {
         return UploadImagesToProduct::run($product, 'image', $modelData);
     }
@@ -35,10 +35,10 @@ class UploadRetinaBundleProductImages extends RetinaAction
         return UploadImagesToProduct::make()->rules();
     }
 
-    public function asController(Bundle $bundle, Product $product, ActionRequest $request): Bundle
+    public function asController(CustomerSalesChannel $customerSalesChannel, Product $product, ActionRequest $request): array
     {
         $this->enableSanitize();
-        $this->customerSalesChannel = $bundle->customerSalesChannel;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisation($request);
 
         return $this->handle($product, $this->validatedData);
