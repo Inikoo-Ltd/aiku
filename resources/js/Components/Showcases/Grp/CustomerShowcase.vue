@@ -20,7 +20,11 @@ import {
     faArrowAltFromTop,
     faArrowAltFromBottom,
     faReceipt,
-    faCopy
+    faCopy,
+    faChartLine,
+    faExclamationTriangle,
+    faShoppingCart,
+    faBoxOpen
 } from "@fal"
 import {library} from "@fortawesome/fontawesome-svg-core"
 import {trans} from "laravel-vue-i18n"
@@ -48,7 +52,7 @@ import { notify } from "@kyvg/vue3-notification"
 import CustomerSalesVsRefunds from "@/Components/CustomerSalesVsRefunds.vue";
 import GoldReward from "@/Components/Utils/GoldReward.vue"
 
-library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy)
+library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen)
 
 interface Customer {
     slug: string
@@ -236,6 +240,17 @@ const copyToClipboard = async (text: string, label: string) => {
     }
 }
 
+const churnRiskLevel = computed(() => {
+    const risk = props.data?.stats?.churn_risk_prediction ?? 0
+    if (risk < 0.33) {
+        return { label: trans('Low'), color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-200', icon: 'text-green-400' }
+    }
+    if (risk < 0.66) {
+        return { label: trans('Medium'), color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200', icon: 'text-amber-400' }
+    }
+    return { label: trans('High'), color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-200', icon: 'text-red-400' }
+})
+
 function tagColorClass(scope?: string) {
     const normalized = (scope || '').toLowerCase()
 
@@ -253,6 +268,72 @@ function tagColorClass(scope?: string) {
 </script>
 
 <template>
+    <!-- Section: KPI Cards -->
+    <div v-if="data?.stats" class="px-4 py-4 md:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-3 border-b border-gray-200">
+        <!-- Card: Historic CLV -->
+        <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+            <FontAwesomeIcon icon="fal fa-chart-line" class="text-xl text-indigo-400 flex-shrink-0" />
+            <div>
+                <div class="text-xs text-gray-500">{{ trans('Lifetime Value') }}</div>
+                <div class="text-base font-semibold text-gray-800 tabular-nums">
+                    <CountUp
+                        :endVal="parseFloat(data.stats.historic_clv_amount ?? 0)"
+                        :decimalPlaces="2"
+                        :duration="1.5"
+                        :scrollSpyOnce="true"
+                        :options="{ formattingFn: (value) => locale.currencyFormat(data.currency?.code, value) }"
+                    />
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Average Order Value -->
+        <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+            <FontAwesomeIcon icon="fal fa-shopping-cart" class="text-xl text-blue-400 flex-shrink-0" />
+            <div>
+                <div class="text-xs text-gray-500">{{ trans('Avg Order Value') }}</div>
+                <div class="text-base font-semibold text-gray-800 tabular-nums">
+                    <CountUp
+                        :endVal="parseFloat(data.stats.average_order_value ?? 0)"
+                        :decimalPlaces="2"
+                        :duration="1.5"
+                        :scrollSpyOnce="true"
+                        :options="{ formattingFn: (value) => locale.currencyFormat(data.currency?.code, value) }"
+                    />
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Churn Risk -->
+        <div class="flex items-center gap-3 rounded-lg border px-4 py-3"
+            :class="[churnRiskLevel.bg, churnRiskLevel.border]">
+            <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-xl flex-shrink-0" :class="churnRiskLevel.icon" />
+            <div>
+                <div class="text-xs text-gray-500">{{ trans('Churn Risk') }}</div>
+                <div class="text-base font-semibold tabular-nums" :class="churnRiskLevel.color">
+                    {{ ((data.stats.churn_risk_prediction ?? 0) * 100).toFixed(0) }}%
+                    <span class="text-xs font-normal ml-1">{{ churnRiskLevel.label }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Total Orders -->
+        <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+            <FontAwesomeIcon icon="fal fa-box-open" class="text-xl text-emerald-400 flex-shrink-0" />
+            <div>
+                <div class="text-xs text-gray-500">{{ trans('Total Orders') }}</div>
+                <div class="text-base font-semibold text-gray-800 tabular-nums">
+                    <CountUp
+                        :endVal="data.stats.number_orders ?? 0"
+                        :decimalPlaces="0"
+                        :duration="1.5"
+                        :scrollSpyOnce="true"
+                    />
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Section: Stats box -->
     <div class="px-4 py-5 md:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 gap-8">
         <div v-if="data.require_approval && data.customer.status === 'pending_approval'"
