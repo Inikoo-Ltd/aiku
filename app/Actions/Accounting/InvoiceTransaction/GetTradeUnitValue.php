@@ -29,7 +29,7 @@ class GetTradeUnitValue
 
         $total = 0.0;
         foreach ($orgStocks as $orgStock) {
-            $total += $orgStocks->pivot->quantity * GetOrgStockValue::run($orgStock, $date);
+            $total += $orgStock->pivot->quantity * GetOrgStockValue::run($orgStock, $date);
         }
 
         return $total;

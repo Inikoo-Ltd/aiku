@@ -50,22 +50,36 @@ class RepairMailshotRecipientsStoredAt
         return ['msg' => $msg];
     }
 
-    public string $commandSignature = 'repair:mailshot-recipients-stored-at {mailshot}';
+    public string $commandSignature = 'repair:mailshot-recipients-stored-at {mailshots*}';
 
 
     public function asCommand(Command $command): int
     {
-        try {
-            $mailshot = Mailshot::where('slug', $command->argument('mailshot'))->firstOrFail();
-        } catch (Exception) {
-            $command->error('Mailshot not found');
+        $mailshotSlugs = $command->argument('mailshots');
+        $processedCount = 0;
+        $failedCount = 0;
+        $exitCode = 0;
 
-            return 1;
+        foreach ($mailshotSlugs as $slug) {
+            try {
+                $mailshot = Mailshot::where('slug', $slug)->firstOrFail();
+            } catch (Exception) {
+                $command->error("Mailshot '$slug' not found");
+                $failedCount++;
+                $exitCode = 1;
+                continue;
+            }
+
+            $res = $this->handle($mailshot);
+            $msg = Arr::get($res, 'msg', '');
+
+            $command->line("[$slug] $msg");
+            $processedCount++;
         }
-        $res = $this->handle($mailshot);
 
-        $command->line(Arr::get($res, 'msg', ''));
+        // Show summary
+        $command->info("Summary: $processedCount processed, $failedCount failed");
 
-        return 0;
+        return $exitCode;
     }
 }

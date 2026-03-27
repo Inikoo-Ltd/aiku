@@ -7,88 +7,87 @@ import { inject } from 'vue'
 
 const props = defineProps<{
   product: {
-
+    [key: string]: any
   }
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
-
 </script>
 
 <template>
-  <div>
-    <!-- Title -->
-    <div class="flex items-center justify-between mb-2 pl-1 pt-2">
-      <div class="font-semibold text-[1.2em]">
-        {{ trans("Profit Breakdown") }}:
-      </div>
+  <div class="text-[0.65rem] sm:text-[0.8rem] leading-tight tracking-tight sm:tracking-normal md:w-max max-w-[96vw] sm:max-w-none shadow-sm bg-white rounded-b">
+    
+    <div class="font-semibold text-[1.1em] mb-1.5 pl-1.5 pt-2">
+      {{ trans("Profit Breakdown") }}:
     </div>
 
-    <div class="pt-2 space-y-2 bg-gray-100 pr-2 sm:pr-4 rounded-t border-b border-gray-500 pb-2">
+    <div class="bg-gray-100 rounded-t border-b border-gray-400 p-1.5 sm:p-3">
+      
+      <div class="grid grid-cols-11 gap-x-1.5 sm:gap-x-4 gap-y-1 sm:gap-y-1.5 items-center whitespace-nowrap">
 
-      <!-- Retail -->
-      <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto] items-start sm:items-center pl-4 sm:pr-24 gap-1">
-        <div>{{ trans("Retail") }}:</div>
+        <!-- Retail | Row 1 -->
+        <div class="pr-0.5 sm:pr-2 col-span-3">
+          {{ trans("Retail") }}:
+        </div>
 
-        <div class="font-semibold text-left sm:text-right">
+        <div class="font-semibold col-span-3">
           {{ locale.currencyFormat(layout?.iris?.currency?.code, product.rrp) }}
-          <span class="font-normal text-slate-500">{{ trans("Outer") }}</span>
+          <span class="font-normal text-slate-500">/{{ trans("Outer") }}</span>
+        </div>
 
+        <div class="font-semibold col-span-3">
           <template v-if="product.units > 1">
-            <span class="ml-3">
-              {{ locale.currencyFormat(layout?.iris?.currency?.code, product.rrp_per_unit) }}
-            </span>
+            {{ locale.currencyFormat(layout?.iris?.currency?.code, product.rrp_per_unit) }}
             <span class="font-normal text-slate-500">/{{ product.unit }}</span>
           </template>
         </div>
-      </div>
+        <!-- empty -->
+        <div class="col-span-2">
+        </div>
+        
 
-      <!-- Cost -->
-      <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto] items-start sm:items-center pl-4 sm:pr-24 gap-1">
-        <div>{{ trans("Cost Price") }}:</div>
-
-        <div class="font-semibold text-left sm:text-right">
+        <!-- Row 2 -->
+        <div class="pr-0.5 sm:pr-2 col-span-3">{{ trans("Cost Price") }}:</div>
+        <div class="font-semibold col-span-3">
           {{ locale.currencyFormat(layout?.iris?.currency?.code, product.price) }}
-          <span class="font-normal text-slate-500">{{ trans("Outer") }}</span>
-
+          <span class="font-normal text-slate-500">/{{ trans("Outer") }}</span>
+        </div>
+        <div class="font-semibold col-span-3">
           <template v-if="product.units > 1">
-            <span class="ml-3">
-              {{
-                locale.currencyFormat(
-                  layout?.iris?.currency?.code,
-                  Number((product.price / product.units).toFixed(2) || 0).toFixed(2)
-                )
-              }}
-            </span>
+            {{
+              locale.currencyFormat(
+                layout?.iris?.currency?.code,
+                Number((product.price / product.units).toFixed(2) || 0).toFixed(2)
+              )
+            }}
             <span class="font-normal text-slate-500">/{{ product.unit }}</span>
           </template>
         </div>
-      </div>
+        <!-- empty -->
+        <div class="col-span-2">
+        </div> 
+        
+        <!-- Empty | Row 3 -->
+        <div class="col-span-11 border-t border-slate-300 my-0.5"></div>
 
-      <div class="border-t border-slate-300 my-1 sm:mr-24"></div>
-
-      <!-- Profit -->
-      <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto] items-start sm:items-center pl-4 gap-2">
-        <div>
+        <!-- Profit | Row 4-->
+        <div class="flex items-center gap-0.5 sm:gap-1 pr-0.5 sm:pr-2 col-span-3">
           {{ trans("Profit") }}
-          <span class="text-emerald-600 font-semibold">
-            ({{ product.margin }})
-          </span>:
+          <span class="text-emerald-600 font-semibold text-[0.95em]">[{{ product.margin }}]:</span>
         </div>
-
-        <div class="flex flex-wrap items-center font-semibold text-emerald-600 gap-2">
+        <div class="font-semibold text-emerald-600 col-span-3">
           {{ locale.currencyFormat(layout?.iris?.currency?.code, product.profit) }}
-          <span class="font-normal text-slate-500">{{ trans("Outer") }}</span>
-
+          <span class="font-normal text-slate-500">/{{ trans("Outer") }}</span>
+        </div>
+        <div class="font-semibold text-emerald-600 col-span-3">
           <template v-if="product.units > 1">
-            <span class="ml-2">
-              {{ locale.currencyFormat(layout?.iris?.currency?.code, product.profit_per_unit) }}
-            </span>
+            {{ locale.currencyFormat(layout?.iris?.currency?.code, product.profit_per_unit) }}
             <span class="font-normal text-slate-500">/{{ product.unit }}</span>
           </template>
-
-          <div class="text-[0.9em] px-2 py-[2px] rounded-full bg-gray-200 border border-slate-300 text-slate-600">
+        </div>
+        <div class="justify-self-end pl-0.5 sm:pl-2 col-span-2">
+          <div class="text-[0.75em] sm:text-[0.8em] px-1 py-[1px] sm:px-1.5 sm:py-[2px] rounded-full bg-gray-200 border border-slate-300 text-slate-600">
             {{ trans("Excl. Vat") }}
           </div>
         </div>
@@ -96,48 +95,46 @@ const locale = inject('locale', aikuLocaleStructure)
     </div>
 
     <!-- Discounted Profit -->
-    <div v-if="layout.iris.website.slug != 'acar'"
-      class="flex flex-col sm:flex-row sm:items-center  pl-4 mt-2 gap-2">
-      <div>
-        {{ trans("Profit") }}
-        <span class="text-primary font-semibold">
-          ({{ product.discounted_margin }})
-        </span>:
-      </div>
-
-      <div class="flex items-center justify-between gap-2">
-        <div class="font-semibold text-primary">
+    <div v-if="layout.iris.website.slug != 'acar'" class="p-1.5 sm:p-3 pt-1.5 sm:pt-2">
+      <div class="grid grid-cols-11 gap-x-1.5 sm:gap-x-4 items-center whitespace-nowrap">
+        
+        <div class="flex items-center gap-0.5 sm:gap-1 pr-0.5 sm:pr-2 col-span-3">
+          {{ trans("Profit") }}
+          <span class="text-primary font-semibold text-[0.95em]">[{{ product.discounted_margin }}]:</span>
+        </div>
+        
+        <div class="font-semibold text-primary col-span-3">
           {{
             locale.currencyFormat(
               layout?.iris?.currency?.code,
               product.rrp - product.discounted_price
             )
           }}
-          <span class="font-normal text-slate-500">
-            {{ trans("Outer") }}
-          </span>
-
+          <span class="font-normal text-slate-500">/{{ trans("Outer") }}</span>
+        </div>
+        
+        <div class="font-semibold text-primary col-span-3">
           <template v-if="product.units > 1">
-            <span class="ml-3">
-              {{
-                locale.currencyFormat(
-                  layout?.iris?.currency?.code,
-                  product.discounted_price_per_unit
-                )
-              }}
-            </span>
+            {{
+              locale.currencyFormat(
+                layout?.iris?.currency?.code,
+                product.discounted_price_per_unit
+              )
+            }}
             <span class="font-normal text-slate-500">/{{ product.unit }}</span>
           </template>
         </div>
-
-        <div class="flex items-center gap-x-2 shrink-0">
-          <img :src="`/assets/promo/gr-${layout.retina.organisation}.png`" alt="Gold Reward Logo" class="h-[2em]" />
-          <span class="text-[0.9em] leading-[1.2em] text-primary">
+        
+        <div class="justify-self-end pl-0.5 sm:pl-2 flex items-center gap-1 col-span-2">
+          <img :src="`/assets/promo/gr-${layout.retina.organisation}.png`" alt="Gold Reward Logo" class="h-[1.2em] sm:h-[1.5em]" />
+          <span class="text-[0.65em] sm:text-[0.75em] leading-[1em] sm:leading-[1.1em] text-primary whitespace-normal text-left">
             {{ trans("Members") }} <br />
             & {{ trans("Volume") }}
           </span>
         </div>
+
       </div>
     </div>
+
   </div>
 </template>

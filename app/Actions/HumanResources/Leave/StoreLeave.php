@@ -107,8 +107,19 @@ class StoreLeave extends OrgAction
         $days = 0;
         $current = $startDate->copy();
 
+        $holidays = Holiday::query()
+            ->where('organisation_id', $employee->organisation_id)
+            ->whereDate('from', '<=', $endDate->toDateString())
+            ->whereDate('to', '>=', $startDate->toDateString())
+            ->get()
+            ->pluck('from', 'to')
+            ->flatMap(fn($date, $to) => [
+                $date->toDateString() => true,
+                $to->toDateString() => true,
+            ]);
+
         while ($current->lte($endDate)) {
-            if ($current->isWeekday()) {
+            if ($current->isWeekday() && !isset($holidays[$current->toDateString()])) {
                 $days++;
             }
             $current->addDay();
@@ -278,7 +289,7 @@ class StoreLeave extends OrgAction
                 ->with('leaveType')
                 ->get()
                 ->filter(function (Leave $leave) {
-                    return $leave->status?->value !== LeaveStatusEnum::REJECTED->value;
+                    return $leave->status?->value === LeaveStatusEnum::APPROVED->value;
                 })
                 ->sum(function (Leave $leave) {
                     if (LeaveTypeResolver::bucketFromLeaveType($leave->leaveType, $leave->type) !== 'annual') {
@@ -310,8 +321,8 @@ class StoreLeave extends OrgAction
                 ->where('employee_id', $this->employee->id)
                 ->where('leave_type_id', $this->selectedLeaveType->id)
                 ->whereYear('start_date', $balanceYear)
+                ->where('status', LeaveStatusEnum::APPROVED->value)
                 ->get()
-                ->where('status', '!=', LeaveStatusEnum::REJECTED->value)
                 ->sum(function (Leave $leave) {
                     return $leave->is_half_day ? 0.5 : (float)$leave->duration_days;
                 });

@@ -1,19 +1,17 @@
 <?php
 
 /*
- * Author: Jonathan Lopez Sanchez <jonathan@ancientwisdom.biz>
- * Created: Wed, 15 Mar 2023 15:27:25 Central European Standard Time, Malaga, Spain
- * Copyright (c) 2023, Inikoo LTD
- */
+ * author Louis Perez
+ * created on 26-03-2026-17h-09m
+ * github: https://github.com/louis-perez
+ * copyright 2026
+*/
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
-use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
-use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
-use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
 use App\Actions\Procurement\OrgPartner\WithOrgPartnerSubNavigation;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -24,8 +22,6 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockFamily;
 use App\Models\Inventory\Warehouse;
-use App\Models\Procurement\OrgAgent;
-use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -38,29 +34,19 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexOrgStocks extends OrgAction
+class IndexOrgStocksWithNoProducts extends OrgAction
 {
     use WithInventoryAuthorisation;
     use WithOrgAgentSubNavigation;
     use WithOrgPartnerSubNavigation;
 
-    private OrgStockFamily|Organisation|OrgPartner|OrgAgent $parent;
+    private OrgStockFamily|Organisation $parent;
 
     private string $bucket;
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'all';
-        $this->parent = $organisation;
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
-
-        return $this->handle(parent: $organisation, prefix: OrgStocksTabsEnum::INDEX->value);
-    }
-
-    public function maya(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->bucket = 'all';
-        $this->maya = true;
         $this->parent = $organisation;
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
 
@@ -127,30 +113,12 @@ class IndexOrgStocks extends OrgAction
     {
         $this->bucket = 'all';
         $this->parent = $orgStockFamily;
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
+        $this->initialisationFromWarehouse($warehouse, $request);
 
-        return $this->handle(parent: $orgStockFamily, prefix: OrgStocksTabsEnum::INDEX->value);
+        return $this->handle(parent: $orgStockFamily);
     }
 
-    public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->bucket = 'all';
-        $this->parent = $orgAgent;
-        $this->initialisation($organisation, $request);
-
-        return $this->handle(parent: $orgAgent);
-    }
-
-    public function inOrgPartner(Organisation $organisation, OrgPartner $orgPartner, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->bucket = 'all';
-        $this->parent = $orgPartner;
-        $this->initialisation($organisation, $request);
-
-        return $this->handle(parent: $orgPartner);
-    }
-
-    protected function getElementGroups(Organisation|OrgStockFamily|OrgPartner|OrgAgent $parent): array
+    protected function getElementGroups(Organisation|OrgStockFamily $parent): array
     {
         return [
             'state' => [
@@ -168,7 +136,7 @@ class IndexOrgStocks extends OrgAction
         ];
     }
 
-    public function handle(OrgStockFamily|Organisation|OrgAgent|OrgPartner $parent, $prefix = null, $bucket = null): LengthAwarePaginator
+    public function handle(OrgStockFamily|Organisation $parent, $prefix = null, $bucket = null): LengthAwarePaginator
     {
         if ($bucket) {
             $this->bucket = $bucket;
@@ -193,10 +161,6 @@ class IndexOrgStocks extends OrgAction
                 'org_stock_families.slug as family_slug',
                 'org_stock_families.code as family_code',
             ]);
-        } elseif ($parent instanceof OrgAgent) {
-            $queryBuilder->where('org_stocks.organisation_id', $parent->agent->organisation->id);
-        } elseif ($parent instanceof OrgPartner) {
-            $queryBuilder->where('org_stocks.organisation_id', $parent->partner->id);
         } else {
             $queryBuilder->where('org_stocks.organisation_id', $this->organisation->id);
         }
@@ -221,6 +185,14 @@ class IndexOrgStocks extends OrgAction
                 );
             }
         }
+
+        $queryBuilder->whereRaw("
+            (
+                SELECT COUNT(*) 
+                FROM product_has_org_stocks
+                WHERE org_stock_id = org_stocks.id
+            ) = 0
+        ");
 
         $selects = [
             'org_stocks.id',
@@ -335,7 +307,7 @@ class IndexOrgStocks extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(OrgStockFamily|Organisation|OrgPartner|OrgAgent $parent, ?array $modelOperations = null, $prefix = null, $bucket = null, bool $sales = false): Closure
+    public function tableStructure(OrgStockFamily|Organisation $parent, ?array $modelOperations = null, $prefix = null, $bucket = null, bool $sales = false): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $bucket, $sales) {
             if ($prefix) {
@@ -401,38 +373,6 @@ class IndexOrgStocks extends OrgAction
         return OrgStocksResource::collection($stocks);
     }
 
-    public function getOrgStockFamilySubNavigation(OrgStockFamily $orgStockFamily, ActionRequest $request): array
-    {
-        $routeParameters = $request->route()->originalParameters();
-
-        return [
-            [
-                'label'    => __('SKU Family'),
-                'route'    => [
-                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show',
-                    'parameters' => array_diff_key($routeParameters, ['orgStock' => null]),
-                ],
-                'leftIcon' => [
-                    'icon'    => ['fal', 'fa-boxes-alt'],
-                    'tooltip' => __('SKU Family'),
-                ],
-            ],
-            [
-                'isAnchor' => true,
-                'label'    => __('SKUs'),
-                'number'   => $orgStockFamily->stats->number_org_stocks ?? 0,
-                'route'    => [
-                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index',
-                    'parameters' => array_diff_key($routeParameters, ['orgStock' => null]),
-                ],
-                'leftIcon' => [
-                    'icon'    => ['fal', 'fa-box'],
-                    'tooltip' => __('SKUs'),
-                ],
-            ],
-        ];
-    }
-
     public function getOrgStocksSubNavigation(): array
     {
         if ($this->parent instanceof Organisation) {
@@ -445,9 +385,9 @@ class IndexOrgStocks extends OrgAction
 
             [
                 'label' => __('Current'),
-                'root' => 'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.',
+                'root' => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.current',
                 'route' => [
-                    'name' => 'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.index',
+                    'name' => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.current',
                     'parameters' => [
                         $this->organisation->slug,
                         $this->warehouse->slug,
@@ -458,9 +398,9 @@ class IndexOrgStocks extends OrgAction
 
             [
                 'label' => __('Discontinued'),
-                'root' => 'grp.org.warehouses.show.inventory.org_stocks.discontinued_org_stocks.',
+                'root' => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.discontinued',
                 'route' => [
-                    'name' => 'grp.org.warehouses.show.inventory.org_stocks.discontinued_org_stocks.index',
+                    'name' => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.discontinued',
                     'parameters' => [
                         $this->organisation->slug,
                         $this->warehouse->slug,
@@ -471,9 +411,9 @@ class IndexOrgStocks extends OrgAction
             ],
             [
                 'label' => __('Abnormalities'),
-                'root' => 'grp.org.warehouses.show.inventory.org_stocks.abnormality_org_stocks.',
+                'root' => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.abnormality',
                 'route' => [
-                    'name' => 'grp.org.warehouses.show.inventory.org_stocks.abnormality_org_stocks.index',
+                    'name' => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.abnormality',
                     'parameters' => [
                         $this->organisation->slug,
                         $this->warehouse->slug,
@@ -485,9 +425,9 @@ class IndexOrgStocks extends OrgAction
             [
                 'label' => __('All'),
                 'icon' => 'fal fa-bars',
-                'root' => 'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.',
+                'root' => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.index',
                 'route' => [
-                    'name' => 'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.index',
+                    'name' => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.index',
                     'parameters' => [
                         $this->organisation->slug,
                         $this->warehouse->slug,
@@ -511,48 +451,7 @@ class IndexOrgStocks extends OrgAction
         $afterTitle = null;
         $iconRight = null;
 
-        if ($this->parent instanceof OrgStockFamily) {
-            $subNavigation = $this->getOrgStockFamilySubNavigation($this->parent, $request);
-            $title         = $this->parent->name;
-            $icon          = [
-                'icon'  => ['fal', 'fa-boxes-alt'],
-                'title' => __('SKU Family'),
-            ];
-            $iconRight  = [
-                'icon' => 'fal fa-box',
-            ];
-            $afterTitle = [
-                'label' => __('SKUs'),
-            ];
-        } elseif ($this->parent instanceof OrgPartner) {
-            $subNavigation = $this->getOrgPartnerNavigation($this->parent);
-            $title         = $this->parent->partner->name;
-            $icon          = [
-                'icon'  => ['fal', 'fa-users-class'],
-                'title' => __('SKUs'),
-            ];
-            $iconRight  = [
-                'icon' => 'fal fa-box',
-            ];
-            $afterTitle = [
-                'label' => __('SKUs'),
-            ];
-        } elseif ($this->parent instanceof OrgAgent) {
-            $subNavigation = $this->getOrgAgentNavigation($this->parent);
-            $title         = $this->parent->agent->organisation->name;
-            $icon          = [
-                'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('SKUs'),
-            ];
-            $iconRight  = [
-                'icon' => 'fal fa-box',
-            ];
-            $afterTitle = [
-                'label' => __('SKUs'),
-            ];
-        } else {
-            $subNavigation = $this->getOrgStocksSubNavigation();
-        }
+        $subNavigation = $this->getOrgStocksSubNavigation();
 
         if ($this->bucket == 'current') {
             $title = __('Current SKUs');
@@ -563,7 +462,8 @@ class IndexOrgStocks extends OrgAction
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
-                    $request->route()->originalParameters()
+                    $request->route()->originalParameters(),
+                    '(' . __('Orphan/No Product') .')'
                 ),
                 'title'    => $title,
                 'pageHead' => [
@@ -608,7 +508,7 @@ class IndexOrgStocks extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.index' => array_merge(
+            'grp.org.warehouses.show.inventory.org_stocks.orphan-product.index' => array_merge(
                 ShowInventoryDashboard::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
@@ -618,7 +518,7 @@ class IndexOrgStocks extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.index' => array_merge(
+            'grp.org.warehouses.show.inventory.org_stocks.orphan-product.current' => array_merge(
                 ShowInventoryDashboard::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
@@ -628,7 +528,7 @@ class IndexOrgStocks extends OrgAction
                     trim('('.__('Current').') '.$suffix)
                 )
             ),
-            'grp.org.warehouses.show.inventory.org_stocks.discontinued_org_stocks.index' => array_merge(
+            'grp.org.warehouses.show.inventory.org_stocks.orphan-product.discontinued' => array_merge(
                 ShowInventoryDashboard::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
@@ -638,39 +538,16 @@ class IndexOrgStocks extends OrgAction
                     trim('('.__('Discontinued').') '.$suffix)
                 )
             ),
-
-            'grp.org.procurement.org_partners.show.org-stocks.index' => array_merge(
-                ShowOrgPartner::make()->getBreadcrumbs($this->parent, $routeParameters),
+            'grp.org.warehouses.show.inventory.org_stocks.orphan-product.abnormalities' => array_merge(
+                ShowInventoryDashboard::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
                         'name' => $routeName,
                         'parameters' => $routeParameters,
                     ],
-                    $suffix
+                    trim('('.__('Abnormalities').') '.$suffix)
                 )
             ),
-            'grp.org.procurement.org_agents.show.org-stocks.index' => array_merge(
-                ShowOrgAgent::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    [
-                        'name' => $routeName,
-                        'parameters' => $routeParameters,
-                    ],
-                    $suffix
-                )
-            ),
-
-            'grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index' => array_merge(
-                ShowOrgStockFamily::make()->getBreadcrumbs($routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters,
-                    ],
-                    $suffix
-                )
-            ),
-
             default => []
         };
     }

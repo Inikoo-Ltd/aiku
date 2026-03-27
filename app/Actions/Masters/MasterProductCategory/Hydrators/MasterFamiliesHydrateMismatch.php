@@ -9,49 +9,51 @@
 
 namespace App\Actions\Masters\MasterProductCategory\Hydrators;
 
-use App\Actions\Traits\WithEnumStats;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateNumberMismatches;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
-use App\Models\Masters\MasterShop;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class MasterFamiliesHydrateMismatch implements ShouldBeUnique
+class MasterFamiliesHydrateMismatch
 {
     use AsAction;
-    use WithEnumStats;
 
-    public function getJobUniqueId(int|null $masterFamilyID): string
+
+    public function handle(MasterProductCategory $masterFamily): void
     {
-        return $masterFamilyID ?? 'empty';
-    }
+        $hasMismatch = $masterFamily->masterAssets()->where('mismatch_detected', true)->exists();
 
-    public function handle($onlyStats = false): void
-    {
-        if (!$onlyStats) {
-            MasterProductCategory::where('type', MasterProductCategoryTypeEnum::FAMILY)
-                ->orderBy('id')
-                ->chunkById(1000, function ($masterFamilies) {
-                    foreach ($masterFamilies as $masterFamily) {
-                        $hasMismatch = $masterFamily->masterAssets()->where('mismatch_detected', true)->exists();
-
-                        if ($hasMismatch) {
-                            $masterFamily->updateQuietly(['mismatch_detected' => true]);
-                        } else {
-                            $masterFamily->updateQuietly(['mismatch_detected' => false]);
-                        }
-                    }
-                });
+        if ($hasMismatch) {
+            $masterFamily->updateQuietly(['mismatch_detected' => true]);
+        } else {
+            $masterFamily->updateQuietly(['mismatch_detected' => false]);
         }
 
-        MasterShop::each(function ($masterShop) {
-            $countMismatch = MasterProductCategory::where('master_shop_id', $masterShop->id)
-                ->where('type', MasterProductCategoryTypeEnum::FAMILY)
-                ->where('mismatch_detected', true)
-                ->count();
+        MasterShopHydrateNumberMismatches::dispatch($masterFamily->masterShop)->delay(now()->addSeconds(60));
+    }
 
-            $masterShop->stats()->update(['number_mismatched_master_families' => $countMismatch]);
-        });
+    public function getCommandSignature(): string
+    {
+        return 'master_product_categories:hydrate_mismatch {master_product_category?}';
+    }
+
+    public function asCommand(Command $command): void
+    {
+        if ($command->argument('master_product_category')) {
+            $masterProductCategory = MasterProductCategory::where('slug', $command->argument('master_product_category'))->firstOrFail();
+            $this->handle($masterProductCategory);
+
+            return;
+        }
+
+        MasterProductCategory::where('type', MasterProductCategoryTypeEnum::FAMILY)
+            ->orderBy('id')
+            ->chunkById(1000, function ($masterFamilies) {
+                foreach ($masterFamilies as $masterFamily) {
+                    $this->handle($masterFamily);
+                }
+            });
     }
 
 

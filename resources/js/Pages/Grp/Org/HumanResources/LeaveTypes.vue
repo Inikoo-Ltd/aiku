@@ -256,7 +256,7 @@ const modalTitle = computed(() =>
 
 				<div>
 					<label class="block text-sm font-medium text-gray-700">
-						{{ trans("Max Days Per Year") }}
+						{{ trans("Maximum Days") }}
 					</label>
 					<input
 						v-model.number="form.max_days_per_year"

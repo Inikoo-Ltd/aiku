@@ -149,14 +149,13 @@ class RepairLocationOrgStockMovements
                 $movement = OrgStockMovement::find($movementId);
                 if ($movement) {
                     $this->fixAssociatePostTransactions($movement, $command);
-                    //     exit;
+                    //  exit;
                 }
             }
         }
 
         if ($errorData = $this->checkForHelpersContinuity($location, $orgStock, $command)) {
             $this->fixHelpersContinuity($location, $orgStock, $errorData, $command);
-            //exit;
         }
     }
 
@@ -178,8 +177,7 @@ class RepairLocationOrgStockMovements
             ->where('type', OrgStockMovementTypeEnum::ASSOCIATE->value)
             ->where('location_id', $location->id)
             ->where('org_stock_id', $orgStock->id)
-           // ->whereNull('fixed_internal_helper')
-            //    ->where('id',25238973)//25238869 //25238973
+            ->whereNull('fixed_internal_helper')
             ->where('id', '!=', $firstMovement->id)
             ->orderByRaw('date, source_id,id');
 
@@ -216,7 +214,7 @@ class RepairLocationOrgStockMovements
             ->where('type', OrgStockMovementTypeEnum::DISASSOCIATE->value)
             ->where('location_id', $location->id)
             ->where('org_stock_id', $orgStock->id)
-          //  ->whereNull('fixed_internal_helper')
+            ->whereNull('fixed_internal_helper')
             ->orderByRaw('date');
 
         if ($lastMovement) {

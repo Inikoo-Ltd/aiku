@@ -66,7 +66,7 @@ class IndexLeaveTypes extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             $table
@@ -76,7 +76,7 @@ class IndexLeaveTypes extends OrgAction
                 ->column(key: 'color', label: __('Color'), canBeHidden: true)
                 ->column(key: 'category', label: __('Category'), canBeHidden: false, sortable: true)
                 ->column(key: 'requires_approval', label: __('Requires Approval'), canBeHidden: true, sortable: true)
-                ->column(key: 'max_days_per_year', label: __('Max Days Per Year'), canBeHidden: true, sortable: true)
+                ->column(key: 'max_days_per_year', label: __('Maximum Days'), canBeHidden: true, sortable: true)
                 ->column(key: 'is_active', label: __('Active'), canBeHidden: true, sortable: true)
                 ->column(key: 'action', label: __('Actions'), canBeHidden: false)
                 ->defaultSort('code');
@@ -92,24 +92,24 @@ class IndexLeaveTypes extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Leave types'),
-                'pageHead'    => [
-                    'icon'           => ['fal', 'fa-calendar-minus'],
-                    'title'          => __('Leave Type'),
-                    'actions'        => [
+                'title' => __('Leave types'),
+                'pageHead' => [
+                    'icon' => ['fal', 'fa-calendar-minus'],
+                    'title' => __('Leave Type'),
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'create',
-                            'key'   => 'leave type',
+                            'key' => 'leave type',
                             'label' => __('New Leave Type'),
-                            'icon'  => ['fal', 'fa-plus'],
+                            'icon' => ['fal', 'fa-plus'],
                         ],
                     ],
                     'subNavigation' => $this->getLeaveSubNavigation($request),
                 ],
-                'data'                => $leaveTypes,
-                'categoryOptions'     => collect(LeaveCategoryEnum::cases())
-                    ->map(fn ($case) => [
+                'data' => $leaveTypes,
+                'categoryOptions' => collect(LeaveCategoryEnum::cases())
+                    ->map(fn($case) => [
                         'value' => $case->value,
                         'label' => $case->label(),
                     ])
@@ -131,14 +131,14 @@ class IndexLeaveTypes extends OrgAction
         $headCrumb = function (string $routeName, array $routeParameters) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => $routeName,
+                            'name' => $routeName,
                             'parameters' => $routeParameters,
                         ],
                         'label' => __('Leave Type'),
-                        'icon'  => 'fal fa-bars',
+                        'icon' => 'fal fa-bars',
                     ],
                 ],
             ];
