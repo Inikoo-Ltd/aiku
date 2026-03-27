@@ -182,6 +182,8 @@ const typeOptions = computed(() => {
 		value,
 		label: typeof data === "string" ? data : data.label,
 		category: typeof data === "string" ? null : data.category,
+		max_days_per_year:
+			typeof data === "object" && "max_days_per_year" in data ? data.max_days_per_year : null,
 	}))
 })
 
@@ -228,6 +230,43 @@ const editForm = useForm<{
 const isMedicalType = computed(() => {
 	const selectedOption = typeOptions.value.find((opt) => opt.value === leaveForm.type)
 	return selectedOption?.category === "medical"
+})
+
+const selectedLeaveType = computed(() => {
+	return typeOptions.value.find((opt) => opt.value === leaveForm.type)
+})
+
+const maxDaysPerYear = computed(() => {
+	return selectedLeaveType.value?.max_days_per_year ?? null
+})
+
+const calculateBusinessDays = (startDate: string, endDate: string): number => {
+	if (!startDate || !endDate) return 0
+
+	const start = new Date(startDate)
+	const end = new Date(endDate)
+	let days = 0
+	let current = new Date(start)
+
+	while (current <= end) {
+		const day = current.getDay()
+		if (day !== 0 && day !== 6) {
+			days++
+		}
+		current.setDate(current.getDate() + 1)
+	}
+
+	return days
+}
+
+const exceedsLimit = computed(() => {
+	if (!maxDaysPerYear.value || !leaveForm.start_date || !leaveForm.end_date) {
+		return false
+	}
+
+	const selectedDays = calculateBusinessDays(leaveForm.start_date, leaveForm.end_date)
+
+	return selectedDays > maxDaysPerYear.value
 })
 
 const canSubmitLeave = computed(() => {
@@ -530,6 +569,9 @@ const submitEdit = () => {
 					<p v-if="leaveForm.errors.type" class="mt-1 text-sm text-red-600">
 						{{ leaveForm.errors.type }}
 					</p>
+					<p v-if="maxDaysPerYear" class="mt-1 text-sm text-gray-500">
+						Maximum allowance: {{ maxDaysPerYear }} days/year
+					</p>
 				</div>
 
 				<div class="grid grid-cols-2 gap-4">
@@ -585,6 +627,13 @@ const submitEdit = () => {
 					</div>
 				</div>
 
+				<p v-if="exceedsLimit" class="text-sm text-red-600">
+					Selected dates ({{
+						calculateBusinessDays(leaveForm.start_date, leaveForm.end_date)
+					}}
+					days) exceed the maximum allowance of {{ maxDaysPerYear }} days
+				</p>
+
 				<p v-if="leaveForm.is_half_day" class="text-xs text-gray-500">
 					{{ trans("Half day leave is applied to one date only.") }}
 				</p>
@@ -639,7 +688,9 @@ const submitEdit = () => {
 						nativeType="submit"
 						:label="trans('Submit Request')"
 						:loading="isSubmitting"
-						:disabled="leaveForm.type === 'annual' && !canSubmitLeave" />
+						:disabled="
+							(leaveForm.type === 'annual' && !canSubmitLeave) || exceedsLimit
+						" />
 				</div>
 			</form>
 		</Modal>
