@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Bundle;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Actions\Traits\WithActionUpdate;
 use App\Models\Bundle;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
@@ -26,6 +27,7 @@ use Faker\Factory as Faker;
 class UpdateBundle extends OrgAction
 {
     use WithNoStrictRules;
+    use WithActionUpdate;
 
     private Customer $customer;
 
@@ -35,52 +37,14 @@ class UpdateBundle extends OrgAction
     public function handle(Bundle $bundle, array $modelData): Bundle
     {
         return DB::transaction(function () use ($bundle, $modelData) {
-            $productData = [];
-            $selectedProducts = Arr::pull($modelData, 'products');
+            /** @var Product $product */
+            $product = $bundle->bundleable;
 
-            data_set($productData, 'exclusive_for_customer_id', $customerSalesChannel->customer_id);
-            data_set($productData, 'trade_units', Product::where('shop_id', $customerSalesChannel->shop_id)
-                ->whereIn('id', Arr::pluck($selectedProducts, 'product_id'))
-                ->get()
-                ->map(function ($product) {
-                    return $product->tradeUnits->map(function (TradeUnit $tradeUnit) {
-                        return [
-                            'id' => $tradeUnit->id,
-                            'quantity' => $tradeUnit->orgStocks()->sum('quantity_available')
-                        ];
-                    });
-                })->collapse()->toArray());
-            data_set($productData, 'description', Arr::pull($modelData, 'description'));
-            data_set($productData, 'price', Arr::pull($modelData, 'price'));
-            data_set($productData, 'rrp', Arr::pull($modelData, 'rrp'));
-            data_set($productData, 'code', Arr::pull($modelData, 'code'));
-            data_set($productData, 'name', Arr::pull($modelData, 'name'));
-            data_set($productData, 'is_bundle', true);
-            data_set($productData, 'is_main', true);
-            data_set($productData, 'unit', 'BUNDLE');
+            $this->update($product, Arr::only($modelData, ['name', 'description', 'rrp']));
 
-            $product = StoreProduct::make()->action($customerSalesChannel->shop, $productData);
+            // Need images logic here
 
-            data_set($modelData, 'group_id', $customerSalesChannel->group_id);
-            data_set($modelData, 'organisation_id', $customerSalesChannel->organisation_id);
-            data_set($modelData, 'customer_id', $customerSalesChannel->customer_id);
-            data_set($modelData, 'bundleable_id', $product->id);
-            data_set($modelData, 'bundleable_type', $product->getMorphClass());
-            data_set($modelData, 'status', true);
-            data_set($modelData, 'data', [
-                'products' => $selectedProducts
-            ]);
-
-            /** @var Bundle $bundle */
-            $bundle = $customerSalesChannel->bundles()->create($modelData);
-
-            foreach ($selectedProducts as $selectedProduct) {
-                $bundle->items()->create([
-                    'item_id' => Arr::get($selectedProduct, 'product_id'),
-                    'item_type' => class_basename(Product::class),
-                    'quantity' => Arr::get($selectedProduct, 'quantity')
-                ]);
-            }
+            $bundle->refresh();
 
             return $bundle;
         });
@@ -142,11 +106,11 @@ class UpdateBundle extends OrgAction
         return $this->handle($bundle, $this->validatedData);
     }
 
-    public string $commandSignature = 'ds:bundle:store {customerSalesChannel}';
+    public string $commandSignature = 'ds:bundle:update {bundle}';
 
     public function asCommand(Command $command): void
     {
-        $customerSalesChannel = Bundle::where('id', $command->argument('bundle'))->firstOrFail();
+        $bundle = Bundle::where('id', $command->argument('bundle'))->firstOrFail();
 
         $faker = Faker::create();
         $modelData = [
@@ -162,8 +126,8 @@ class UpdateBundle extends OrgAction
             ]
         ];
 
-        $bundle = $this->handle($customerSalesChannel, $modelData);
+        $bundle = $this->handle($bundle, $modelData);
 
-        $command->info("Bundle [{$bundle->id}] created successfully.");
+        $command->info("Bundle [{$bundle->id}] updated successfully.");
     }
 }
