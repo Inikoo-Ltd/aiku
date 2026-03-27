@@ -10,6 +10,7 @@ namespace App\Actions\Comms\Outbox\LowStockInBasket;
 
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
 use App\Actions\Comms\EmailBulkRun\StoreEmailBulkRunRecipient;
+use App\Actions\Comms\EmailBulkRun\UpdateEmailBulkRunRecipientStoredAt;
 use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
@@ -84,6 +85,8 @@ class ProcessBasketLowStockCustomers
                 'number_emails' => $emailBulkRun->recipients()->where('channel', $emailDeliveryChannel->id)->count()
             ]
         );
+        UpdateEmailBulkRunRecipientStoredAt::run($emailBulkRun);
+
         SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
     }
 
