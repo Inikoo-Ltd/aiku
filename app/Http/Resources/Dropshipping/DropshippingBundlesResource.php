@@ -8,43 +8,39 @@
 
 namespace App\Http\Resources\Dropshipping;
 
-use App\Models\Catalogue\Product;
-use App\Models\Fulfilment\StoredItem;
+use App\Helpers\NaturalLanguage;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/**
- * @property string $slug
- * @property string $code
- * @property mixed $created_at
- * @property mixed $updated_at
- * @property string $name
- * @property mixed $state
- * @property string $shop_slug
- * @property mixed $shop_code
- * @property mixed $shop_name
- * @property mixed $department_slug
- * @property mixed $department_code
- * @property mixed $department_name
- * @property mixed $family_slug
- * @property mixed $family_code
- * @property mixed $family_name
- * @property StoredItem|Product $item
- * @property mixed $margin
- * @property mixed $platform_product_id
- * @property mixed $item_description
- * @property mixed $id
- *
- */
 class DropshippingBundlesResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $quantity         = $this->bundleable->available_quantity;
+        $weight           = $this->bundleable->gross_weight;
+        $marketing_weight = $this->bundleable->marketing_weight;
+        $dimension        = NaturalLanguage::make()->dimensions(json_encode($this->bundleable->marketing_dimensions));
+        $price            = $this->bundleable->price;
+        $image            = $this->bundleable->imageSources(64, 64);
+        $fullSizeImage    = $this->bundleable->imageSources();
+
         return [
             'id'                    => $this->id,
-            'product_id'                    => $this->product_id,
+            'product_id'            => $this->product_id,
             'code'                  => $this->product_code,
             'name'                  => $this->product_name,
             'description'           => $this->product_description,
+            'currency_code'         => $this->bundleable?->currency?->code,
+            'quantity_left'         => $quantity,
+            'weight'                => $weight,
+            'marketing_weight'      => $marketing_weight,
+            'dimension'             => $dimension,
+            'price'                 => $price,
+            'price_include_vat'     => $price,
+            'selling_price'         => $this->bundleable->rrp,
+            'customer_price'        => $this->bundleable->rrp,
+            'status'                => $this->status,
+            'image'                 => $image,
+            'full_size_image'       => $fullSizeImage
         ];
     }
 }

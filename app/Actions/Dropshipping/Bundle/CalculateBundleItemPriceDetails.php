@@ -61,9 +61,9 @@ class CalculateBundleItemPriceDetails extends OrgAction
             return [
                 'products' => $productData,
                 'total_price' => $totalPrice,
-                'total_bundle_price' => $totalBundlePrice,
+                'total_bundle_price' => round($totalBundlePrice, 2),
                 'total_rrp' => $totalRrp,
-                'profit' => $profit,
+                'profit' => round($profit),
                 'profit_percentage' => round($totalRrp > 0
                     ? ($profit / $totalRrp) * 100
                     : 0),
