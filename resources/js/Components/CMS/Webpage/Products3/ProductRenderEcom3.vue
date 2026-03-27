@@ -88,9 +88,15 @@ const onClickVariant = (product: ProductResource, event: Event) => {
 const idxSlideLoading = ref(false)
 const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
 const images = computed(() => {
+
+    console.log('Images processor:')
+
     if (!props.product?.web_images) return []
 
     const arr = []
+
+    console.log(props.product?.web_images)
+    console.log('Images processor ----------- start')
 
     if (props.product?.web_images?.main?.gallery) {
         arr.push(props.product.web_images.main.gallery)
@@ -103,6 +109,9 @@ const images = computed(() => {
         })
     }
 
+    console.log(arr)
+
+    console.log('Images processor ----------- end')
     return arr
 })
 

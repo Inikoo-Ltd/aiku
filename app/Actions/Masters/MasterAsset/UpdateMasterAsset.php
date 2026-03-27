@@ -131,7 +131,11 @@ class UpdateMasterAsset extends OrgAction
             $this->update($masterAsset, $modelData);
             $masterAsset->refresh();
             $masterFamily = $masterAsset->masterFamily;
-            $masterFamily->update(['mismatch_detected' => $masterFamily->masterAssets()->where('mismatch_detected', true)->exists()]);
+            $masterFamily?->update(
+                [
+                    'mismatch_detected' => $masterFamily->masterAssets()->where('mismatch_detected', true)->exists()
+                ]
+            );
 
             MasterAssetHydrateMismatch::run(true);
             MasterFamiliesHydrateMismatch::run(true);

@@ -16,31 +16,32 @@ class ExportDropshippingInvoicesByDate extends RetinaAction
 {
     use AsAction;
 
-    public function handle(Customer $customer, ?string $startDate = null, ?string $endDate = null) : Response
+    public function handle(Customer $customer, ?string $startDate = null, ?string $endDate = null): Response
     {
-        if(!$startDate){
+        if (!$startDate) {
             return response()->json(['error' => 'Start date is required'], 400);
         }
 
         $query = Invoice::where('invoices.customer_id', $customer->id);
 
-        if($startDate && $endDate){
-            $query->whereBetween('date',
-            [
+        if ($startDate && $endDate) {
+            $query->whereBetween(
+                'date',
+                [
                 Carbon::parse($startDate)->startOfDay(),
                 Carbon::parse($endDate)->endOfDay()
-            ]);
+            ]
+            );
             $fileName = 'invoices-' . $startDate . '_to_' . $endDate;
 
-        } 
-        else {
+        } else {
             $query->whereDate('date', Carbon::parse($startDate)->toDateString());
-            $fileName = 'invoices-' . $startDate;    
+            $fileName = 'invoices-' . $startDate;
         }
 
         $invoices = $query->get();
 
-        if($invoices->isEmpty()) {
+        if ($invoices->isEmpty()) {
             return response()->json(['error' => 'No invoices found for the given date range'], 404);
         }
 
@@ -83,7 +84,7 @@ class ExportDropshippingInvoicesByDate extends RetinaAction
     public function asController(ActionRequest $request): Response
     {
         $this->initialisation($request);
-        
+
         return $this->handle(
             $this->customer,
             $request->query('startDate'),

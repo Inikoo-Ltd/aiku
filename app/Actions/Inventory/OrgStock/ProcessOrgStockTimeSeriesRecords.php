@@ -58,27 +58,12 @@ class ProcessOrgStockTimeSeriesRecords implements ShouldBeUnique
 
         $query = DB::table('invoice_transaction_has_org_stocks as pivot')
             ->join('invoice_transactions', 'invoice_transactions.id', '=', 'pivot.invoice_transaction_id')
-            ->join('product_has_org_stocks as phos', function ($join) {
-                $join->on('phos.product_id', '=', 'invoice_transactions.model_id')
-                     ->on('phos.org_stock_id', '=', 'pivot.org_stock_id');
-            })
-            ->join('org_stocks as os', 'os.id', '=', 'pivot.org_stock_id')
-            ->joinSub($this->orgStockProductWeightsSubquery(), 'product_weights', 'product_weights.product_id', '=', 'invoice_transactions.model_id')
             ->where('pivot.org_stock_id', $timeSeries->org_stock_id)
             ->where('invoice_transactions.date', '>=', $from)
             ->where('invoice_transactions.date', '<=', $to)
             ->whereNull('invoice_transactions.deleted_at');
 
-        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, $this->weightedOrgStockSelects())->get();
-
-        // TODO: switch to pivot-based selects after repair of 10M records is complete
-        // $query = DB::table('invoice_transaction_has_org_stocks as pivot')
-        //     ->join('invoice_transactions', 'invoice_transactions.id', '=', 'pivot.invoice_transaction_id')
-        //     ->where('pivot.org_stock_id', $timeSeries->org_stock_id)
-        //     ->where('invoice_transactions.date', '>=', $from)
-        //     ->where('invoice_transactions.date', '<=', $to)
-        //     ->whereNull('invoice_transactions.deleted_at');
-        // $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, $this->pivotBasedSelects())->get();
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, $this->pivotBasedSelects())->get();
 
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);

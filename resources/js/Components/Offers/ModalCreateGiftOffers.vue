@@ -76,7 +76,7 @@ const submitCategoryOffer = () => {
 }
 
 const productFetchRoute = {
-    name: 'grp.json.shop.products_for_website_workshop',
+    name: 'grp.json.shop.products',
     parameters: {
         shop: (route().params as any).shop
     }

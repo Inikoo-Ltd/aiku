@@ -55,29 +55,14 @@ class ProcessTradeUnitFamilyTimeSeriesRecords implements ShouldBeUnique
     {
         $processedPeriods = [];
 
-        $bridgeCountSub = DB::table('invoice_transaction_has_trade_units')
-            ->select('invoice_transaction_id', DB::raw('COUNT(*) as cnt'))
-            ->groupBy('invoice_transaction_id');
-
         $query = DB::table('invoice_transaction_has_trade_units as pivot')
             ->join('invoice_transactions', 'invoice_transactions.id', '=', 'pivot.invoice_transaction_id')
-            ->joinSub($bridgeCountSub, 'bridge_counts', 'bridge_counts.invoice_transaction_id', '=', 'pivot.invoice_transaction_id')
             ->where('pivot.trade_unit_family_id', $timeSeries->trade_unit_family_id)
             ->where('invoice_transactions.date', '>=', $from)
             ->where('invoice_transactions.date', '<=', $to)
             ->whereNull('invoice_transactions.deleted_at');
 
-        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, $this->distributedInvoiceSelects())->get();
-
-        // Note: trade_units tidak memiliki data harga (cost_price semua NULL), sehingga tetap pakai equal distribution.
-        // TODO: switch to pivot-based selects after repair of 10M records is complete
-        // $query = DB::table('invoice_transaction_has_trade_units as pivot')
-        //     ->join('invoice_transactions', 'invoice_transactions.id', '=', 'pivot.invoice_transaction_id')
-        //     ->where('pivot.trade_unit_family_id', $timeSeries->trade_unit_family_id)
-        //     ->where('invoice_transactions.date', '>=', $from)
-        //     ->where('invoice_transactions.date', '<=', $to)
-        //     ->whereNull('invoice_transactions.deleted_at');
-        // $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, $this->pivotBasedSelects())->get();
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, $this->pivotBasedSelects())->get();
 
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
