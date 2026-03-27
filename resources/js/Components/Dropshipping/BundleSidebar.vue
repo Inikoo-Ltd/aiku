@@ -9,9 +9,15 @@ import { route } from 'ziggy-js'
 import { debounce } from 'lodash-es'
 import Button from '../Elements/Buttons/Button.vue';
 import { InputText } from "primevue"
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import InformationIcon from '../Utils/InformationIcon.vue';
 import { faLayerGroup, faSparkles, faTrash,faImages } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 library.add(faLayerGroup, faSparkles, faTrash, faImages)
+
+const props = defineProps<{
+    layout: string
+}>()
 
 const layout: any = inject("layout", {})
 const bundle = useBundle()
@@ -232,25 +238,81 @@ const openFilePicker = () => {
     fileInput.value?.click()
 }
 
-const uploadFilesLocal = (files: FileList) => {
-    Array.from(files).forEach(file => {
-        localUploadedFiles.value.push(file)
+const uploadFilesLocal = async (files: FileList) => {
+    if(!product_id.value) {
+        notify({
+            title: trans('Error'),
+            text: trans('Reload Pages'),
+            type: 'error'
+        })
+    }
 
-        // preview
-        console.log("file",file)
-        selectedMedia.value.push(file)
-        console.log("selectedMedia", selectedMedia.value)
-    })
+        try {
+            const formData = new FormData()
+
+            Array.from(files).forEach(file => {
+                formData.append('images[]', file)
+            })
+
+            const routeParams = {
+                ...props.bundle_routes.images.store.parameters,
+                product: product_id.value
+            }
+
+            const res = await axios.post(
+                route(
+                    props.bundle_routes.images.store.name,
+                    routeParams
+                ),
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }
+            )
+            const media = res.data?.data || []
+        
+            if (media) {
+                selectedMedia.value.push({
+                    id: media.id,
+                    image_id: media.id,
+                    url: media.source.original,
+                    image: media.source.original,
+                    is_ai: false,
+                    is_main: false
+                })
+            }
+            notify({
+                title: 'Success Upload Image',
+                type: 'success'
+            })
+
+        } catch (e) {
+            console.error('UPLOAD ERROR', e)
+            notify({
+                title: 'Failed Upload Image',
+                type: 'error'
+            })
+        }
 }
 
-const onDrop = (e:DragEvent) => {
+const onDrop = (e: DragEvent) => {
    if(!e.dataTransfer?.files?.length) return
    uploadFilesLocal(e.dataTransfer.files)
 }
 
-const onFileChange = (e:Event) => {
+const onFileChange = (e: Event) => {
    const target = e.target as HTMLInputElement
+   if (!target.files) return
    uploadFilesLocal(target.files)
+}
+
+const setMainImage = (imageId:number) => {
+    selectedMedia.value = selectedMedia.value.map(img => ({
+        ...img,
+        is_main: img.image_id === imageId
+    }))
 }
 
 const toggleSelect = (img:any) => {
@@ -298,6 +360,47 @@ const toggleSelectAI = (media:any) => {
 
         selectedMediaForAI.value.push(media)
 
+    }
+}
+
+const bundle_id = ref('')
+const product_id = ref('')
+const storeBundle = async () => {
+    try {
+        isStoringBundle.value = true
+
+       const payload = {
+            name: bundle.title.value,
+            code: '',
+            description: '',
+            price: summary.value.total_bundle_price || 0,
+            rrp: summary.value.total_rrp || 0,
+            products: bundle.products.value.map(p => ({
+                product_id: p.id,
+                quantity: p.quantity || 1
+            }))
+        }
+
+        const data = await axios.post(
+            route(
+                layout.bundle_routes.store.name,
+                layout.bundle_routes.store.parameters
+            ),
+            payload
+        )
+        
+        product_id.value = data.data.bundleable_id
+        bundle_id.value = data.data.id
+        
+        step.value = 2
+    } catch (e) {
+        notify({
+            title: trans('Error'),
+            text: trans('Failed to create bundle'),
+            type: 'error'
+        })
+    } finally {
+        isStoringBundle.value = false
     }
 }
 
@@ -363,6 +466,7 @@ watch(
     () => debouncedCalculate(),
     { deep: true }
 )
+console.log("bundle", bundle.products.value)
 </script>
 
 <template>
@@ -374,10 +478,10 @@ watch(
     <template v-if="bundle.step.value === 1">
         <!-- HEADER -->
         <div class="p-4 border-b flex justify-between items-center">
-        <div class="font-semibold text-lg">
-            Create Your Bundle
-        </div>
-        <button @click="bundle.close()">✕</button>
+            <div class="font-semibold text-lg">
+                Create Your Bundle
+            </div>
+            <button @click="bundle.close()">✕</button>
         </div>
 
         <!-- BODY -->
@@ -403,22 +507,23 @@ watch(
                 />
 
                 <!-- AI ICON BUTTON -->
-                <button
+                <Button
                 type="button"
                 @click="generateAITitle"
-                :disabled="isGeneratingAI"
+                :tooltip="trans('Generate AI')"
+                :disabled="isGeneratingAI || !bundle.products.value.length"
                 class="absolute right-2 top-1/2 -translate-y-1/2 
                         h-7 w-7 flex items-center justify-center 
                         rounded-md border bg-white hover:bg-gray-100 
                         transition shadow-sm"
                 >
                 <FontAwesomeIcon
-                    icon="fal fa-sparkles"
+                    :icon="isGeneratingAI ? 'fas fa-spinner' : 'fas fa-sparkles'"
                     class="text-xs"
-                    :class="isGeneratingAI ? 'animate-pulse text-primary' : ''"
+                     :class="isGeneratingAI ? 'animate-pulse text-primary' : ''"
                     fixed-width
                 />
-                </button>
+                </Button>
 
             </div>
             </div>
@@ -434,15 +539,22 @@ watch(
                 />
 
                 <div class="flex-1">
-                <div class="text-sm font-semibold">{{ item.name }}</div>
-                <div class="text-green-600 font-semibold">{{ item.price }}</div>
+                    <div class="text-sm font-semibold">{{ item.name }}</div>
+                    <div class="flex gap-2">
+                        <InformationIcon :information="trans('Individual purchased price')" />
+                        <div class="font-semibold text-sm line-through">{{ item.price_per_unit }} {{ props.layout }}</div>
+                        <div class="font-semibold text-green-600">{{ item.price }} {{ props.layout }}</div>
+                    </div>
                 </div>
 
                 <div class="flex items-center gap-2">
-                <button @click="bundle.decreaseQty(item.id)">-</button>
-                <div>{{ item.quantity }}</div>
-                <button @click="bundle.increaseQty(item.id)">+</button>
-                <button @click="bundle.removeProduct(item.id)">🗑</button>
+                    <button @click="bundle.decreaseQty(item.id)">-</button>
+                    <div>{{ item.quantity }}</div>
+                    <button @click="bundle.increaseQty(item.id)">+</button>
+
+                    <button @click="bundle.removeProduct(item.id)"v-tooltip="trans('Delete product')">🗑
+                        <FontAwesomeIcon icon="fal fa-layer-group" class="text-gray-500" fixed-width />
+                    </button>
                 </div>
             </div>
             <div
@@ -458,54 +570,46 @@ watch(
         <div class="border-t p-4 space-y-2">
 
             <template v-if="bundle.isSummaryLoading.value">
-            <div class="text-center text-sm text-gray-400 py-2">Calculating...</div>
+              <div class="text-center text-sm text-gray-400 py-2">Calculating...</div>
             </template>
 
             <template v-else>
-            <div class="flex justify-between text-sm">
-                <span class="text-gray-500">Cost Price</span>
-                <span>{{ bundle.summary.value.total_price }}</span>
-            </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Cost Price</span>
+                    <span>{{ bundle.summary.value.total_price }} {{ props.layout }}</span>
+                </div>
 
-            <div class="flex justify-between text-sm">
-                <span class="text-gray-500">RRP</span>
-                <span>{{ bundle.summary.value.total_rrp }}</span>
-            </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">RRP</span>
+                    <span>{{ bundle.summary.value.total_rrp }} {{ props.layout }}</span>
+                </div>
 
-            <div class="flex justify-between text-sm font-semibold text-green-600">
-                <span>Bundle Price</span>
-                <span>{{ bundle.summary.value.total_bundle_price }}</span>
-            </div>
+                <div class="flex justify-between text-sm font-semibold text-green-600">
+                    <span>Bundle Price</span>
+                    <span>{{ bundle.summary.value.total_bundle_price }} {{ props.layout }}</span>
+                </div>
 
-            <div class="flex justify-between text-xs text-gray-400">
-                <span>Profit</span>
-                <span>{{ bundle.summary.value.profit }} ({{ bundle.summary.value.profit_percentage }}%)</span>
-            </div>
+                <div class="flex justify-between text-xs text-gray-400">
+                    <span>Profit</span>
+                    <span>{{ bundle.summary.value.profit }} {{ props.layout }} ({{ bundle.summary.value.profit_percentage }}%)</span>
+                </div>
             </template>
 
-            <button :disabled="!bundle.products.value.length" @click="bundle.step.value = 2" class="w-full bg-black text-white p-3">
-                Next
-            </button>
+            <Button @click="storeBundle" :loading="isStoringBundle" label="Next" iconRight="fas fa-arrow-right" :disabled="!bundle.products.value.length && !bundle.title.value.length" class="w-full text-white rounded"/>
 
         </div>
     </template>
     <!-- UI Step 2 -->
     <template v-if="bundle.step.value === 2">
-        <div class="w-full p-3">
-
-                    <!-- BACK -->
-                    <div class="mb-3">
-                        <Button @click="bundle.step.value = 1" type="tertiary" icon="fal fa-arrow-left"
-                            :label="trans('Back')" />
-                    </div>
-
+                <div class="w-full p-3">
                     <!-- HEADER -->
                     <div class="mb-5">
-                        <div class="text-xl font-semibold flex items-center gap-2">
-                            Create Your Bundle
-
+                        <div class="text-xl font-semibold flex items-center justify-between gap-2">
+                            <div>Create Your Bundle
                             <FontAwesomeIcon v-tooltip="trans('Bundle generator')" icon="fal fa-layer-group"
                                 class="text-gray-500" fixed-width />
+                                </div>
+                            <button @click="bundle.close()">✕</button>
                         </div>
 
                         <div class="text-sm text-gray-400">
@@ -519,16 +623,16 @@ watch(
                             {{ trans('Description') }}
                         </label>
 
-                        <Textarea v-model="bundleDescription" rows="6" autoResize class="w-full mt-1" />
+                        <Textarea v-model="bundleDescription" rows="6" autoResize class="w-full mt-1" placeholder="Input your description"/>
 
                         <div class="flex justify-between items-center mt-2">
 
                             <div class="text-xs text-gray-400">
-                                Characters {{ bundleDescription.length }}/300
+                                Characters {{ bundleDescription.length }} words
                             </div>
 
-                            <Button @click="generateAIDescription" :loading="isGeneratingAI" type="primary" :disabled="!bundleDescription">
-                                <FontAwesomeIcon icon="fal fa-sparkles" class="mr-2" fixed-width />
+                            <Button @click="generateAIDescription" :loading="isGeneratingAI" type="primary" :disabled="!productIds.length">
+                                <FontAwesomeIcon :icon="isGeneratingAI ? 'fal fa-spinner' : 'fas fa-sparkles'" class="mr-2" fixed-width />
                                 Generate with AI
                             </Button>
 
@@ -598,6 +702,20 @@ watch(
                                     imageCover
                                 />
 
+                                 <input
+                                    type="radio"
+                                    name="main_image"
+                                    :checked="img.is_main"
+                                    @change="setMainImage(img.image_id)"
+                                    class="absolute top-2 left-2 z-20"
+                                />
+
+                                 <div
+                                    v-if="img.is_main"
+                                    class="absolute bottom-1 left-1 text-[10px] bg-black/70 text-white px-1 rounded"
+                                >
+                                    MAIN IMAGE
+                                </div>
                                 <button
                                     class="absolute top-1 right-1 bg-black/70 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
                                     @click="removeMedia(img)">
@@ -608,9 +726,9 @@ watch(
                     </div>
 
                     <!-- SUBMIT -->
-                    <Button @click="submitBundle" class="flex justify-center items-center w-full" type="primary" :loading="isStoringBundle">
+                    <Button @click="submitBundle" :disabled="!bundleDescription.length" class="flex justify-center items-center w-full" type="primary" :loading="isStoringBundle">
                         Create Bundle
-                        <FontAwesomeIcon icon="fal fa-layer-group" class="mr-2" fixed-width />
+                        <FontAwesomeIcon icon="fas fa-layer-group" class="mr-2" fixed-width />
                     </Button>
 
                 </div>
@@ -620,43 +738,44 @@ watch(
                         <LoadingIcon />
                     </div>
                    <div v-else class="grid grid-cols-4 gap-3">
+                        <template v-if="flatMediaGallery.length">
+                            <div
+                                v-for="img in flatMediaGallery"
+                                :key="img.image_id"
+                                class="relative aspect-square rounded-xl overflow-hidden border cursor-pointer group"
+                                @click="toggleSelect(img)"
+                            >
 
-                        <div
-                            v-for="img in flatMediaGallery"
-                            :key="img.image_id"
-                            class="relative aspect-square rounded-xl overflow-hidden border cursor-pointer group"
-                            @click="toggleSelect(img)"
-                        >
+                                <div class="absolute inset-0 z-0">
+                                    <Image
+                                        :src="img.image"
+                                        class="w-full h-full"
+                                        imageCover
+                                    />
+                                </div>
 
-                            <!-- IMAGE -->
-                            <div class="absolute inset-0 z-0">
-                                <Image
-                                    :src="img.image"
-                                    class="w-full h-full"
-                                    imageCover
+                                <div
+                                    v-if="selectedMediaIds.includes(img.image_id)"
+                                    class="absolute inset-0 bg-black/40 z-10"
                                 />
+
+                                <Checkbox
+                                    :modelValue="selectedMediaIds.includes(img.image_id)"
+                                    binary
+                                    class="absolute top-2 left-2 z-20 bg-white rounded shadow pointer-events-none"
+                                />
+
+                                <div
+                                    class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition z-5"
+                                />
+
                             </div>
-
-                            <!-- DARK OVERLAY WHEN SELECTED -->
-                            <div
-                                v-if="selectedMediaIds.includes(img.image_id)"
-                                class="absolute inset-0 bg-black/40 z-10"
-                            />
-
-                            <!-- CHECKBOX -->
-                        <Checkbox
-                            :modelValue="selectedMediaIds.includes(img.image_id)"
-                            binary
-                            class="absolute top-2 left-2 z-20 bg-white rounded shadow pointer-events-none"
-                        />
-
-                            <!-- HOVER EFFECT -->
-                            <div
-                                class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition z-5"
-                            />
-
-                        </div>
-
+                        </template>
+                        <template v-else>
+                             <div class="col-span-4 text-center text-gray-400 py-6">
+                                No images yet
+                            </div>
+                        </template>
                     </div>
 
                     <template #footer>
