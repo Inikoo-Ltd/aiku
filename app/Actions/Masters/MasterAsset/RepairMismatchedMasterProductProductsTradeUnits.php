@@ -48,8 +48,7 @@ class RepairMismatchedMasterProductProductsTradeUnits
                         }
 
 
-                        $autoSkip         = false;
-                        $autoShopToMaster = false;
+
 
                         $productTradeUnits = $product->tradeUnits->pluck('pivot.quantity', 'id');
 
@@ -64,15 +63,18 @@ class RepairMismatchedMasterProductProductsTradeUnits
                             echo "----------------------------------------------------\n";
 
                             echo "MASTER UNITS:\n";
+                            $autoSkip         = false;
+                            $autoShopToMaster = false;
                             foreach ($masterAssetTradeUnits as $id => $qty) {
                                 $tradeUnit = TradeUnit::find($id);
                                 echo "  - TradeUnit $tradeUnit->slug: $qty\n";
                                 if (str_starts_with($tradeUnit->slug, 'abot') || str_starts_with($tradeUnit->slug, 'gbot')
                                     || str_starts_with($tradeUnit->slug, 'rdbot-')
                                     || str_starts_with($tradeUnit->slug, 'gjar-')
-                                    || str_starts_with($tradeUnit->slug, 'actc--')
+                                    || str_starts_with($tradeUnit->slug, 'actc-')
                                     || str_starts_with($tradeUnit->slug, 'opp-')
-                                    || str_starts_with($tradeUnit->slug, 'SelLp-')
+                                    || str_starts_with($tradeUnit->slug, 'sellp-')
+                                    || str_starts_with($tradeUnit->slug, 'fgb-')
 
                                 ) {
                                     $autoSkip = true;
@@ -119,6 +121,7 @@ class RepairMismatchedMasterProductProductsTradeUnits
                             }
 
                             if ($autoShopToMaster) {
+                                echo "\nAuto repair =======".$product->code."=====. \n";
                                 $this->copyProductToMaster($product);
                                 continue;
                             }
