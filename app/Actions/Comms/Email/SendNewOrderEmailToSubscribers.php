@@ -272,6 +272,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                     </table>
                 </td>
                 <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: center;">%s</td>
+                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: center;">%s</td>
                 <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right;">%s</td>
             </tr>',
                 $productImage
@@ -285,6 +286,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                 $historicAsset->name ?? 'N/A',
                 $discountLabel,
                 rtrim(rtrim(sprintf('%.3f', $transaction->quantity_ordered ?? 0), '0'), '.') ?? '0',
+                number_format($product->available_quantity ?? 0),
                 $priceDisplay
             );
         }
