@@ -288,7 +288,9 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
 
                 <div
                     v-if="bundle.open.value"
-                    :class="bundle.open.value ? 'w-[400px] border-l-gray-300 sticky z-[52] border-l top-0 pointer-events-auto max-h-screen transition-all overflow-hidden' : 'w-0 border-transparent'"
+                    :class="bundle.open.value 
+                        ? 'w-[400px] border-l-gray-300 sticky z-[52] border-l top-0 pointer-events-auto h-screen transition-all' 
+                        : 'w-0 border-transparent'"
                     >
                     <BundleSidebar :layout="layout.iris.currency?.symbol"/>
                 </div>

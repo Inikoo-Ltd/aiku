@@ -451,7 +451,7 @@ watch(customerChannelsId, (val) => {
 
 <template>
     <Transition name="slide">
-        <div v-if="bundle.open.value"  class="bg-white flex flex-col h-full min-h-0">
+        <div v-if="bundle.open.value" class="bg-white flex flex-col h-full min-h-0">
             <template v-if="bundle.step.value === 1">
                 <!-- HEADER -->
                 <div class="p-4 border-b flex justify-between items-center">
@@ -575,7 +575,7 @@ watch(customerChannelsId, (val) => {
             </template>
             <!-- UI Step 2 -->
             <template v-if="bundle.step.value === 2">
-                <div class="w-full p-3">
+                <div class="w-full p-3 h-full overflow-auto">
                     <!-- HEADER -->
                     <div class="mb-5">
                         <div class="text-xl font-semibold flex items-center justify-between gap-2">
