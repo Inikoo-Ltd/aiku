@@ -36,6 +36,7 @@ use App\Actions\Catalogue\Product\DeleteProduct;
 use App\Actions\Catalogue\Product\MoveFamilyProductToOtherFamily;
 use App\Actions\Catalogue\Product\SetProductOffline;
 use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Catalogue\Product\SyncProductTradeUnitsToMasterAsset;
 use App\Actions\Catalogue\Product\UpdateBulkProduct;
 use App\Actions\Catalogue\Product\UpdateMultipleProductsFamily;
 use App\Actions\Catalogue\Product\UpdateProduct;
@@ -482,6 +483,8 @@ Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(fun
     Route::delete('delete-images/{media:id}', DeleteImageFromMasterProduct::class)->name('delete_images')->withoutScopedBindings();
 });
 Route::patch('master-asset/bulk-update', UpdateBulkMasterProduct::class)->name('master_asset.bulk_update');
+
+Route::patch('products/{product:id}/repair-trade-units-to-master-product', SyncProductTradeUnitsToMasterAsset::class)->name('products.repair_mismatch_trade_units');
 
 Route::prefix('department/{productCategory:id}')->name('department.')->group(function () {
     Route::post('sub-department', StoreSubDepartment::class)->name('sub_department.store');
@@ -1161,6 +1164,7 @@ Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () 
     Route::patch('clocking/{clocking:id}/notes', UpdateClockingNotes::class)->name('clocking.notes.update');
 });
 Route::patch('trolleys/{trolley:id}', UpdateTrolley::class)->name('trolleys.update');
+
 
 
 require __DIR__.'/models/inventory/warehouse.php';

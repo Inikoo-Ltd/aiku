@@ -47,8 +47,8 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
         $discontinuedMasterProducts = null;
 
         if ($parent instanceof MasterShop || $parent instanceof MasterProductCategory) {
-            $activeMasterProducts       = $parent->stats->number_current_master_product_categories_type_family;
-            $discontinuedMasterProducts = $parent->stats->number_master_product_categories_type_family - $parent->stats->number_current_master_product_categories_type_family;
+            $activeMasterProducts       = $parent->stats->number_mismatched_master_families_active;
+            $discontinuedMasterProducts = $parent->stats->number_mismatched_master_families_inactive;
         }
 
 

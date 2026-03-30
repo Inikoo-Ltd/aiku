@@ -22,7 +22,7 @@ class MasterFamiliesHydrateMismatch
 
     public function handle(MasterProductCategory $masterFamily): void
     {
-        $hasMismatch = $masterFamily->masterAssets()->where('mismatch_detected', true)->exists();
+        $hasMismatch = $masterFamily->masterAssets()->where('mismatch_detected', true)->where('master_assets.status', true)->exists();
 
         if ($hasMismatch) {
             $masterFamily->updateQuietly(['mismatch_detected' => true]);
@@ -47,13 +47,22 @@ class MasterFamiliesHydrateMismatch
             return;
         }
 
+        $total = MasterProductCategory::where('type', MasterProductCategoryTypeEnum::FAMILY)->count();
+        $bar   = $command->getOutput()->createProgressBar($total);
+        $bar->setFormat('debug');
+        $bar->start();
+
         MasterProductCategory::where('type', MasterProductCategoryTypeEnum::FAMILY)
             ->orderBy('id')
-            ->chunkById(1000, function ($masterFamilies) {
+            ->chunkById(1000, function ($masterFamilies) use ($bar) {
                 foreach ($masterFamilies as $masterFamily) {
                     $this->handle($masterFamily);
+                    $bar->advance();
                 }
             });
+
+        $bar->finish();
+        $command->newLine();
     }
 
 
