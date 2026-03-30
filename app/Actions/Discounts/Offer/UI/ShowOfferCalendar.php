@@ -92,6 +92,13 @@ class ShowOfferCalendar
                 ])
                 ->values()
                 ->all(),
+            'years' => collect($calendarData['yearOptions'] ?? [])
+                ->map(fn ($item) => [
+                    'value' => (string) ($item['value'] ?? ''),
+                    'label' => (string) ($item['label'] ?? ''),
+                ])
+                ->values()
+                ->all(),
         ];
 
         return Inertia::render('Org/Discounts/OfferCalendar', [

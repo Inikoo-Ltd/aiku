@@ -45,6 +45,21 @@ class GetOfferCalendarData
             $query->where('shop_id', $shopId);
         }
 
+        $minStartAt = (clone $query)->min('start_at');
+        $minYear = $minStartAt ? Carbon::parse($minStartAt)->year : now()->year;
+        $maxYear = now()->year + 2;
+        if ($minYear > $maxYear) {
+            $minYear = now()->year;
+        }
+
+        $yearOptions = [];
+        for ($optionYear = $minYear; $optionYear <= $maxYear; $optionYear++) {
+            $yearOptions[] = [
+                'value' => (string) $optionYear,
+                'label' => (string) $optionYear,
+            ];
+        }
+
         $query
             ->where('start_at', '<', $endOfPeriod)
             ->where(function ($q) use ($startOfPeriod) {
@@ -111,6 +126,7 @@ class GetOfferCalendarData
             'holidayRanges' => $ranges,
             'holidayYearPeriod' => null,
             'allHolidayYears'   => [],
+            'yearOptions'       => $yearOptions,
             'defaultPeriod'     => [
                 'start_date' => $startOfPeriod->toDateString(),
                 'end_date'   => $endOfPeriod->toDateString(),
