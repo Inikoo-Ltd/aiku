@@ -45,6 +45,7 @@ trait WithGenerateEmailBulkRuns
         ]);
     }
 
+    // Note: make more flexible for other outboxes
     protected function upsertEmailBulkRunForBasketLowStock(
         Outbox $outbox,
         ?string $date = null,
