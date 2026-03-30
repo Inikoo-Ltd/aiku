@@ -23,6 +23,7 @@ use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -169,6 +170,15 @@ class StoreTransaction extends OrgAction
         }
 
         return $rules;
+    }
+
+    public function afterValidator(Validator $validator, ActionRequest $request): void
+    {
+        
+        $exists = $request->order->itemTransactions()->where('model_id', $request->historicAsset->asset->model_id)->exists();
+        if ($exists) {
+            $validator->errors()->add('quantity_ordered', 'An existing product under order already exists.');
+        }
     }
 
     public function action(Order $order, HistoricAsset $historicAsset, array $modelData, int $hydratorsDelay = 0, bool $strict = true): Transaction
