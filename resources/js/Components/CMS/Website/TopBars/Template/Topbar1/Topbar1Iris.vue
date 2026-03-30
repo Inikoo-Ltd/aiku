@@ -122,6 +122,9 @@ watch(
   { deep: true }
 )
 
+const goToBundle = () => {
+    window.location.href = route('iris.redirect_bundle_to_retina')
+}
 </script>
 
 <template>
@@ -242,25 +245,17 @@ watch(
                 </Button>
             </LinkIris>
 
-             <LinkIris href="/app/dropshipping/channels/eba-ebay-444920-7/my-products?tab=bundles" :type="'internal'" >
-                <Button
-                    v-if="isLoggedIn"
-                    v-tooltip="trans('Add Bundle')"  
-                    type="transparent"
-                    class="button"
-                >
-                    <template #loading>
-                        <span v-show="false" class="button"></span>
-                    </template>
-                    <template #label="{ isLoadingVisit }">
-                        <span v-tooltip="trans('Number of products line')" class="button -mr-1.5 whitespace-nowrap">
-                        </span>
-                        <LoadingIcon v-if="isLoadingVisit" />
-                        <FontAwesomeIcon v-else icon="fas fa-layer-group" class="button" fixed-width
-                            aria-hidden="true" />
-                    </template>
-                </Button>
-            </LinkIris>
+            <!-- section redirect to bundle -->
+            <Button v-if="isLoggedIn" v-tooltip="trans('Add Bundle')" type="transparent" class="button"
+                @click="goToBundle">
+                <template #loading>
+                    <span v-show="false" class="button"></span>
+                </template>
+
+                <template #label>
+                    <FontAwesomeIcon icon="fas fa-layer-group" class="button" fixed-width />
+                </template>
+            </Button>
 
             <!-- Section: Favourite -->
             <LinkIris href="/app/favourites" :type="'internal'">
