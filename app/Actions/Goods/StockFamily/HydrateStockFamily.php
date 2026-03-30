@@ -8,7 +8,6 @@
 
 namespace App\Actions\Goods\StockFamily;
 
-use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateSalesIntervals;
 use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateStocks;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Goods\StockFamily;
@@ -26,7 +25,6 @@ class HydrateStockFamily
     public function handle(StockFamily $stockFamily): void
     {
         StockFamilyHydrateStocks::run($stockFamily);
-        StockFamilyHydrateSalesIntervals::run($stockFamily);
     }
 
 

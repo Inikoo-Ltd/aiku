@@ -87,8 +87,6 @@ class StoreMasterAsset extends OrgAction
             $masterAsset = $masterFamily->masterAssets()->create($modelData);
             $masterAsset->stats()->create();
             $masterAsset->orderingIntervals()->create();
-            $masterAsset->salesIntervals()->create();
-            $masterAsset->orderingStats()->create();
 
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $masterAsset->timeSeries()->create(['frequency' => $frequency]);

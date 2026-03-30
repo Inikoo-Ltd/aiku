@@ -14,6 +14,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Discounts\Offer;
+use App\Models\Helpers\Media;
 use App\Models\Helpers\UniversalSearch;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\Group;
@@ -46,7 +47,6 @@ use Spatie\Translatable\HasTranslations;
  * @property int $id
  * @property ProductCategoryTypeEnum $type
  * @property ProductCategoryStateEnum $state
- * @property HealthRankEnum|null $health_rank
  * @property int $group_id
  * @property int $organisation_id
  * @property int|null $shop_id
@@ -93,23 +93,34 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $offers_data
  * @property bool|null $is_for_sale
  * @property string|null $not_for_sale_since
+ * @property HealthRankEnum|null $health_rank
+ * @property string|null $desc_video_url
+ * @property int|null $desc_art1
+ * @property int|null $desc_art2
+ * @property int|null $desc_art3
+ * @property int|null $desc_art4
+ * @property int|null $desc_art5
+ * @property int|null $extra_desc_art1
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $containedByCollections
  * @property-read LaravelCollection<int, ModelHasContent> $contents
  * @property-read ProductCategory|null $department
+ * @property-read Media|null $descArt1Image
+ * @property-read Media|null $descArt2Image
+ * @property-read Media|null $descArt3Image
+ * @property-read Media|null $descArt4Image
+ * @property-read Media|null $descArt5Image
+ * @property-read Media|null $extraDescArt1Image
  * @property-read Group $group
- * @property-read \App\Models\Helpers\Media|null $image
- * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read MasterProductCategory|null $masterProductCategory
- * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
- * @property-read \App\Models\Catalogue\ProductCategoryOrderingIntervals|null $orderingIntervals
- * @property-read \App\Models\Catalogue\ProductCategoryOrderingStats|null $orderingStats
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read Organisation $organisation
  * @property-read ProductCategory|null $parent
- * @property-read \App\Models\Catalogue\ProductCategorySalesIntervals|null $salesIntervals
- * @property-read \App\Models\Helpers\Media|null $seoImage
+ * @property-read Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductCategoryStats|null $stats
  * @property-read ProductCategory|null $subDepartment
@@ -117,6 +128,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read mixed $translations
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
+ * @property-read LaravelCollection<int, Webpage> $webpages
  * @method static \Database\Factories\Catalogue\ProductCategoryFactory factory($count = null, $state = [])
  * @method static Builder<static>|ProductCategory newModelQuery()
  * @method static Builder<static>|ProductCategory newQuery()
@@ -146,17 +158,18 @@ class ProductCategory extends Model implements Auditable, HasMedia
     public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
-        'data'             => 'array',
-        'web_images'       => 'array',
-        'health_rank'      => HealthRankEnum::class,
-        'state'            => ProductCategoryStateEnum::class,
-        'type'             => ProductCategoryTypeEnum::class,
-        'activated_at'     => 'datetime',
-        'discontinuing_at' => 'datetime',
-        'discontinued_at'  => 'datetime',
-        'fetched_at'       => 'datetime',
-        'last_fetched_at'  => 'datetime',
-        'offers_data'      => 'array',
+        'data'                          => 'array',
+        'web_images'                    => 'array',
+        'health_rank'                   => HealthRankEnum::class,
+        'state'                         => ProductCategoryStateEnum::class,
+        'type'                          => ProductCategoryTypeEnum::class,
+        'activated_at'                  => 'datetime',
+        'discontinuing_at'              => 'datetime',
+        'discontinued_at'               => 'datetime',
+        'fetched_at'                    => 'datetime',
+        'last_fetched_at'               => 'datetime',
+        'offers_data'                   => 'array',
+        'mismatch_with_master_detected' => 'boolean',
     ];
 
     protected $attributes = [
@@ -205,21 +218,6 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->hasOne(ProductCategoryStats::class);
     }
 
-    public function orderingIntervals(): HasOne
-    {
-        return $this->hasOne(ProductCategoryOrderingIntervals::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(ProductCategorySalesIntervals::class);
-    }
-
-    public function orderingStats(): HasOne
-    {
-        return $this->hasOne(ProductCategoryOrderingStats::class);
-    }
-
     public function timeSeries(): HasMany
     {
         return $this->hasMany(ProductCategoryTimeSeries::class);
@@ -235,7 +233,6 @@ class ProductCategory extends Model implements Auditable, HasMedia
     {
         return $this->belongsTo(ProductCategory::class, 'sub_department_id');
     }
-
 
     public function parent(): BelongsTo
     {
@@ -314,9 +311,19 @@ class ProductCategory extends Model implements Auditable, HasMedia
 
     public function webpage(): MorphOne
     {
-        return $this->morphOne(Webpage::class, 'model');
+        $relation = $this->morphOne(Webpage::class, 'model');
+
+        if ($this->type === ProductCategoryTypeEnum::DEPARTMENT) {
+            $relation->where('url', $this->url);
+        }
+
+        return $relation;
     }
 
+    public function webpages(): MorphMany
+    {
+        return $this->morphMany(Webpage::class, 'model');
+    }
 
     public function masterProductCategory(): BelongsTo
     {
@@ -329,13 +336,41 @@ class ProductCategory extends Model implements Auditable, HasMedia
             ->where('trigger_type', class_basename(ProductCategory::class));
     }
 
-
-
     public function getGROffer(): HasOne
     {
         return $this->hasOne(Offer::class, 'trigger_id')
             ->where('trigger_type', class_basename(ProductCategory::class))
             ->where('state', OfferStateEnum::ACTIVE)
             ->where('type', 'Category Quantity Ordered Order Interval');
+    }
+
+    public function descArt1Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art1');
+    }
+
+    public function descArt2Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art2');
+    }
+
+    public function descArt3Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art3');
+    }
+
+    public function descArt4Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art4');
+    }
+
+    public function descArt5Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art5');
+    }
+
+    public function extraDescArt1Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'extra_desc_art1');
     }
 }

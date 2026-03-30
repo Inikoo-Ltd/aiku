@@ -17,6 +17,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSubDepartments;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateDepartments;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateFamilies;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateStatus;
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterSubDepartmentHydrateSubDepartment;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDepartments;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateFamilies;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSubDepartments;
@@ -65,6 +66,8 @@ trait WithProductCategoryHydrators
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             MasterDepartmentHydrateDepartments::run($masterProductCategory);
             MasterDepartmentHydrateDepartments::dispatch($masterProductCategory)->delay($this->hydratorsDelay);
+        } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            MasterSubDepartmentHydrateSubDepartment::run($masterProductCategory);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
             MasterFamilyHydrateFamilies::dispatch($masterProductCategory)->delay($this->hydratorsDelay);
             MasterFamilyHydrateStatus::dispatch($masterProductCategory);

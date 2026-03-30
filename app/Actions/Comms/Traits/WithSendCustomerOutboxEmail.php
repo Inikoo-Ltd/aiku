@@ -9,7 +9,6 @@
 namespace App\Actions\Comms\Traits;
 
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Models\Comms\DispatchedEmail;
@@ -49,18 +48,14 @@ trait WithSendCustomerOutboxEmail
 
         $emailHtmlBody = $outbox->emailOngoingRun->email->liveSnapshot->compiled_layout;
         if ($emailHtmlBody === null) {
-            Sentry::captureMessage('Email live snapshot not found for outbox code: ' . $code->value.' outbox id: '.$outbox->id.'');
+            Sentry::captureMessage('Email live snapshot not found for outbox code: '.$code->value.' outbox id: '.$outbox->id);
+
             return null;
         }
 
-
-
-        $recipient = $customer;
-        $dispatchedEmail = StoreDispatchedEmail::run($parent ?? $outbox->emailOngoingRun, $recipient, [
-            'is_test'       => false,
+        $dispatchedEmail = StoreDispatchedEmail::run($parent ?? $outbox->emailOngoingRun, $customer, [
             'outbox_id'     => $outbox->id,
-            'email_address' => $recipient->email,
-            'provider'      => DispatchedEmailProviderEnum::SES
+            'email_address' => $customer->email,
         ]);
         $dispatchedEmail->refresh();
 

@@ -16,6 +16,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -42,6 +43,7 @@ class UpdateOrderStateToHandling extends OrgAction
             OrderStateEnum::FINALISED,
         ])) {
             if ($oldState == OrderStateEnum::PACKED || $oldState == OrderStateEnum::FINALISED) {
+                /** @var Transaction $transaction */
                 foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
                     $historicAsset = $transaction->historicAsset;
 

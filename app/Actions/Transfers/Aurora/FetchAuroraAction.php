@@ -44,7 +44,8 @@ class FetchAuroraAction extends FetchAction
                 'fetch:delivery_notes',
                 'fetch:dispatched_emails',
                 'fetch:email_tracking_events',
-                'fetch:histories'
+                'fetch:histories',
+                'fetch:stock_movements',
             ]) and $command->option('order')) {
             $this->orderDesc = (bool)$command->option('order') == 'desc';
         }
@@ -63,7 +64,8 @@ class FetchAuroraAction extends FetchAction
                 'fetch:delivery_notes',
                 'fetch:dispatched_emails',
                 'fetch:email_tracking_events',
-                'fetch:histories'
+                'fetch:histories',
+                'fetch:stock_movements',
             ]) and $command->option('days')) {
             $this->fromDays = (int)$command->option('days');
         }

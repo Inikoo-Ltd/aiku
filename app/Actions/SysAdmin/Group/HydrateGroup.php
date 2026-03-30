@@ -32,7 +32,6 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateFamiliesWithNoDepartment;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateFulfilmentCustomers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateGuests;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceCategories;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterCollections;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterFamiliesWithNoDepartment;
@@ -40,8 +39,6 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterProductCategories;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterShops;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOfferCampaigns;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOffers;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCreatedIntervals;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrders;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrdersDispatchedToday;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateCreating;
@@ -62,7 +59,6 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePickedBays;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTrolleys;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePostRooms;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProductsWithNoFamily;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRegistrationIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShops;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStockFamilies;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStocks;
@@ -71,7 +67,6 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceTransactions;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateJobPositions;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateLocations;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrganisations;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrgStockFamilies;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrgStockMovements;
@@ -84,7 +79,6 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProducts;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRawMaterials;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRecurringBills;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRentals;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProductSuppliers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProspects;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePurchaseOrders;
@@ -147,8 +141,6 @@ class HydrateGroup extends HydrateModel
         GroupHydratePayments::run($group);
         GroupHydratePaymentAccounts::run($group);
         GroupHydratePaymentServiceProviders::run($group);
-        GroupHydrateSalesIntervals::run($group);
-        GroupHydrateOrderIntervals::run($group);
         GroupHydrateCollections::run($group);
         GroupHydrateWarehouses::run($group);
         GroupHydrateWarehouseAreas::run($group);
@@ -169,7 +161,6 @@ class HydrateGroup extends HydrateModel
         GroupHydrateTimesheets::run($group);
         GroupHydrateSubscriptions::run($group);
         GroupHydratePurchaseOrders::run($group);
-        GroupHydrateInvoiceIntervals::run($group);
 
         GroupHydrateMasterShops::run($group);
         GroupHydrateMasterProductCategories::run($group);
@@ -187,7 +178,7 @@ class HydrateGroup extends HydrateModel
         GroupHydratePostRooms::run($group);
         GroupHydrateOrgPostRooms::run($group);
         GroupHydrateOutboxes::run($group);
-        GroupHydrateDispatchedEmails::run($group);
+        GroupHydrateDispatchedEmails::run($group->id);
         GroupHydrateEmailsBulkRuns::run($group->id);
         GroupHydrateSupplierProducts::run($group);
         GroupHydrateMailshots::run($group);
@@ -238,10 +229,7 @@ class HydrateGroup extends HydrateModel
         GroupHydrateAdjustments::run($group);
         GroupHydrateWebUsers::run($group);
         GroupHydrateDeletedInvoices::run($group);
-        GroupHydrateRegistrationIntervals::run($group->id);
 
-        GroupHydrateOrderInBasketAtCustomerUpdateIntervals::run($group);
-        GroupHydrateOrderInBasketAtCreatedIntervals::run($group);
         GroupHydrateApiTokens::run($group);
 
         GroupHydrateFamiliesWithNoDepartment::run($group);

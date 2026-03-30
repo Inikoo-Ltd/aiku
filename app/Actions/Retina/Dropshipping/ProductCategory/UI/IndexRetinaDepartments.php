@@ -55,8 +55,6 @@ class IndexRetinaDepartments extends RetinaAction
 
         $queryBuilder->leftJoin('shops', 'product_categories.shop_id', 'shops.id');
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', '=', 'organisations.id');
-        $queryBuilder->leftJoin('product_category_sales_intervals', 'product_category_sales_intervals.product_category_id', 'product_categories.id');
-        $queryBuilder->leftJoin('product_category_ordering_intervals', 'product_category_ordering_intervals.product_category_id', 'product_categories.id');
 
         if (class_basename($parent) == 'Shop') {
             $queryBuilder->where('product_categories.shop_id', $parent->id);
@@ -87,8 +85,6 @@ class IndexRetinaDepartments extends RetinaAction
                 'shops.slug as shop_slug',
                 'shops.code as shop_code',
                 'shops.name as shop_name',
-                'product_category_sales_intervals.sales_grp_currency_all as sales_all',
-                'product_category_ordering_intervals.invoices_all as invoices_all',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
             ])

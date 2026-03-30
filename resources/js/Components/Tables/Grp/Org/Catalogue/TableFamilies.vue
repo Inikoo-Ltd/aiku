@@ -42,6 +42,7 @@ const emits = defineEmits<{
 }>()
 
 function familyRoute(family: Family) {
+    console.log('familyRoute', route().current())
     switch (route().current()) {
         case "grp.shops.show":
         case "grp.org.shops.show.catalogue.families.index":
@@ -91,6 +92,11 @@ function familyRoute(family: Family) {
             return route(
                 'grp.org.shops.show.catalogue.families.show',
                 [family.organisation_slug, family.shop_slug, family.slug])
+        default:
+            return route(
+                'grp.helpers.redirect_product_category',
+                [family.slug])
+
     }
 }
 

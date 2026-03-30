@@ -34,22 +34,14 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterAssetOrderingIntervals;
-use App\Models\Masters\MasterAssetOrderingStats;
-use App\Models\Masters\MasterAssetSalesIntervals;
 use App\Models\Masters\MasterAssetStats;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterCollectionOrderingStats;
-use App\Models\Masters\MasterCollectionSalesIntervals;
 use App\Models\Masters\MasterCollectionStats;
 use App\Models\Masters\MasterProductCategory;
-use App\Models\Masters\MasterProductCategoryOrderingIntervals;
-use App\Models\Masters\MasterProductCategoryOrderingStats;
-use App\Models\Masters\MasterProductCategorySalesIntervals;
 use App\Models\Masters\MasterProductCategoryStats;
 use App\Models\Masters\MasterShop;
-use App\Models\Masters\MasterShopOrderingIntervals;
 use App\Models\Masters\MasterShopOrderingStats;
-use App\Models\Masters\MasterShopSalesIntervals;
 use App\Models\Masters\MasterShopStats;
 use Illuminate\Support\Facades\Bus;
 use Inertia\Testing\AssertableInertia;
@@ -111,8 +103,6 @@ test('create master shop', function () {
     expect($masterShop)->toBeInstanceOf(MasterShop::class)
         ->and($masterShop->stats)->toBeInstanceOf(MasterShopStats::class)
         ->and($masterShop->orderingStats)->toBeInstanceOf(MasterShopOrderingStats::class)
-        ->and($masterShop->orderingIntervals)->toBeInstanceOf(MasterShopOrderingIntervals::class)
-        ->and($masterShop->salesIntervals)->toBeInstanceOf(MasterShopSalesIntervals::class)
         ->and($masterShop->timeSeries()->count())->toBe(5)
         ->and($masterShop)->not->toBeNull()
         ->and($masterShop->code)->toBe('SHOP1')
@@ -609,9 +599,6 @@ test('create master department', function (MasterShop $masterShop) {
 
     expect($masterProductCategory)->toBeInstanceOf(MasterProductCategory::class)
         ->and($masterProductCategory->stats)->toBeInstanceOf(MasterProductCategoryStats::class)
-        ->and($masterProductCategory->orderingStats)->toBeInstanceOf(MasterProductCategoryOrderingStats::class)
-        ->and($masterProductCategory->orderingIntervals)->toBeInstanceOf(MasterProductCategoryOrderingIntervals::class)
-        ->and($masterProductCategory->salesIntervals)->toBeInstanceOf(MasterProductCategorySalesIntervals::class)
         ->and($masterProductCategory->timeSeries()->count())->toBe(5)
         ->and($masterProductCategory)->not->toBeNull()
         ->and($masterProductCategory->code)->toBe('PRODUCT_CATEGORY1')
@@ -683,9 +670,6 @@ test('create master asset', function (MasterProductCategory $masterFamily) {
 
     expect($masterAsset)->toBeInstanceOf(MasterAsset::class)
         ->and($masterAsset->stats)->toBeInstanceOf(MasterAssetStats::class)
-        ->and($masterAsset->orderingStats)->toBeInstanceOf(MasterAssetOrderingStats::class)
-        ->and($masterAsset->orderingIntervals)->toBeInstanceOf(MasterAssetOrderingIntervals::class)
-        ->and($masterAsset->salesIntervals)->toBeInstanceOf(MasterAssetSalesIntervals::class)
         ->and($masterAsset->timeSeries()->count())->toBe(5)
         ->and($masterAsset)->not->toBeNull()
         ->and($masterAsset->code)->toBe('MASTER_ASSET1')
@@ -709,9 +693,7 @@ test('update master asset', function (MasterAsset $masterAsset) {
 
     expect($masterAsset)->toBeInstanceOf(MasterAsset::class)
         ->and($masterAsset->stats)->toBeInstanceOf(MasterAssetStats::class)
-        ->and($masterAsset->orderingStats)->toBeInstanceOf(MasterAssetOrderingStats::class)
         ->and($masterAsset->orderingIntervals)->toBeInstanceOf(MasterAssetOrderingIntervals::class)
-        ->and($masterAsset->salesIntervals)->toBeInstanceOf(MasterAssetSalesIntervals::class)
         ->and($masterAsset->timeSeries()->count())->toBe(5)
         ->and($masterAsset)->not->toBeNull()
         ->and($masterAsset->code)->toBe('MASTER_ASSET1')
@@ -816,7 +798,6 @@ test('create master collection', function (MasterProductCategory $masterFamily) 
     expect($masterCollection)->toBeInstanceOf(MasterCollection::class)
         ->and($masterCollection->stats)->toBeInstanceOf(MasterCollectionStats::class)
         ->and($masterCollection->orderingStats)->toBeInstanceOf(MasterCollectionOrderingStats::class)
-        ->and($masterCollection->salesIntervals)->toBeInstanceOf(MasterCollectionSalesIntervals::class)
         ->and($masterCollection)->not->toBeNull()
         ->and($masterCollection->code)->toBe('MC1')
         ->and($masterCollection->name)->toBe('master collection 1')

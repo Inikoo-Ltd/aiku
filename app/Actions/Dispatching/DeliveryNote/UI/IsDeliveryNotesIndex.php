@@ -24,6 +24,7 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 
 trait IsDeliveryNotesIndex
@@ -101,12 +102,52 @@ trait IsDeliveryNotesIndex
             abort(419);
         }
 
-//        // Todo: this hacks has to be deleted after we migrate from aurora
-//        if ($shopType != 'all') {
-//            $query->where('shops.is_aiku', true);
-//        }
 
         $query->where('shops.is_aiku', true);
+
+        $allowedFilters = [$globalSearch];
+
+        if ($bucket == 'dispatched') {
+            $query->leftJoin('countries', 'delivery_notes.delivery_country_id', '=', 'countries.id');
+
+            $allowedFilters[] = AllowedFilter::callback('country', function ($query, $value) {
+                $query->where('delivery_notes.delivery_country_id', $value);
+            });
+
+            $allowedFilters[] = AllowedFilter::callback('shop', function ($query, $value) {
+                $query->where('delivery_notes.shop_id', $value);
+            });
+
+            $allowedFilters[] = AllowedFilter::callback('shipper', function ($query, $value) {
+                $query->whereRaw(
+                    "delivery_notes.shipping_data @> ?::jsonb",
+                    [json_encode([['shipper_slug' => $value]])]
+                );
+            });
+
+            $allowedFilters[] = AllowedFilter::callback('weight_bracket', function ($query, $value) {
+                $bracketRanges = [
+                    'up_to_1kg'  => [0, 1000],
+                    '1_to_3kg'   => [1001, 3000],
+                    '3_to_6kg'   => [3001, 6000],
+                    '6_to_10kg'  => [6001, 10000],
+                    '10_to_20kg' => [10001, 20000],
+                    '20_to_31kg' => [20001, 31000],
+                    'over_31kg'  => [31001, null],
+                ];
+                $range = $bracketRanges[$value] ?? null;
+                if (!$range) {
+                    return;
+                }
+                if ($value === 'over_31kg') {
+                    $query->where('delivery_notes.effective_weight', '>', 31000);
+                } elseif ($range[0] === 0) {
+                    $query->where('delivery_notes.effective_weight', '<=', $range[1]);
+                } else {
+                    $query->whereBetween('delivery_notes.effective_weight', $range);
+                }
+            });
+        }
 
         // Subquery to count the number of picking sessions for each delivery note
         // Using a correlated subquery to ensure we only get one row per delivery note
@@ -117,7 +158,7 @@ trait IsDeliveryNotesIndex
         };
 
         // Subquery to concatenate picking session IDs for each delivery note
-        // Using STRING_AGG PostgreSQL function to concatenate values with comma separator
+        // Using STRING_AGG Postgres SQL function to concatenate values with comma separator
         // COALESCE is used to handle NULL values, returning an empty string if no picking sessions exist
         $pickingSessionIdsSubquery = function ($query) {
             $query->selectRaw("COALESCE(STRING_AGG(CAST(picking_session_id AS VARCHAR), ','), '')")
@@ -125,36 +166,44 @@ trait IsDeliveryNotesIndex
                 ->whereColumn('picking_session_has_delivery_notes.delivery_note_id', 'delivery_notes.id');
         };
 
+        $selectColumns = [
+            'delivery_notes.id',
+            'delivery_notes.reference',
+            'delivery_notes.date',
+            'delivery_notes.data',
+            'delivery_notes.state',
+            'delivery_notes.is_premium_dispatch',
+            'delivery_notes.has_extra_packing',
+            'delivery_notes.created_at',
+            'delivery_notes.updated_at',
+            'delivery_notes.slug',
+            'delivery_notes.type',
+            'delivery_notes.state',
+            'delivery_notes.number_items',
+            'delivery_notes.weight',
+            'delivery_notes.effective_weight',
+            'delivery_notes.estimated_weight',
+            'customers.slug as customer_slug',
+            'customers.name as customer_name',
+            'shops.name as shop_name',
+            'shops.slug as shop_slug',
+            'organisations.name as organisation_name',
+            'organisations.slug as organisation_slug',
+            'delivery_notes.customer_notes',
+            'delivery_notes.internal_notes',
+            'delivery_notes.public_notes',
+            'delivery_notes.shipping_notes',
+            'delivery_notes.shipping_data',
+            'orders.in_warehouse_at',
+        ];
+
+        if ($bucket == 'dispatched') {
+            $selectColumns[] = 'countries.name as country_name';
+            $selectColumns[] = 'countries.code as country_code';
+        }
+
         return $query->defaultSort('-delivery_notes.date')
-            ->select([
-                'delivery_notes.id',
-                'delivery_notes.reference',
-                'delivery_notes.date',
-                'delivery_notes.state',
-                'delivery_notes.is_premium_dispatch',
-                'delivery_notes.has_extra_packing',
-                'delivery_notes.created_at',
-                'delivery_notes.updated_at',
-                'delivery_notes.slug',
-                'delivery_notes.type',
-                'delivery_notes.state',
-                'delivery_notes.number_items',
-                'delivery_notes.weight',
-                'delivery_notes.effective_weight',
-                'delivery_notes.estimated_weight',
-                'customers.slug as customer_slug',
-                'customers.name as customer_name',
-                'shops.name as shop_name',
-                'shops.slug as shop_slug',
-                'organisations.name as organisation_name',
-                'organisations.slug as organisation_slug',
-                'delivery_notes.customer_notes',
-                'delivery_notes.internal_notes',
-                'delivery_notes.public_notes',
-                'delivery_notes.shipping_notes',
-                'delivery_notes.shipping_data',
-                'orders.in_warehouse_at'
-            ])
+            ->select($selectColumns)
             ->selectRaw(
                 "
                 COALESCE(
@@ -165,8 +214,22 @@ trait IsDeliveryNotesIndex
             )
             ->selectSub($pickingSessionsCountSubquery, 'picking_sessions_count')
             ->selectSub($pickingSessionIdsSubquery, 'picking_session_ids')
-            ->allowedSorts(['reference', 'date', 'number_items', 'customer_name', 'type', 'effective_weight', 'picking_sessions_count', 'number_of_days_in_warehouse'])
-            ->allowedFilters([$globalSearch])
+            ->allowedSorts([
+                'reference',
+                'date',
+                'number_items',
+                'customer_name',
+                'type',
+                'effective_weight',
+                'picking_sessions_count',
+                'number_of_days_in_warehouse',
+                'sort_picker',
+                'sort_packer',
+                'sort_trolleys',
+                'sort_picked_bays'
+
+            ])
+            ->allowedFilters($allowedFilters)
             ->withBetweenDates(['date'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -246,6 +309,65 @@ trait IsDeliveryNotesIndex
                     ]
                 );
 
+            if ($bucket == 'dispatched' && $parent instanceof Warehouse) {
+                $weightBracketOptions = [
+                    'up_to_1kg'  => __('Up to 1 kg'),
+                    '1_to_3kg'   => __('1 - 3 kg'),
+                    '3_to_6kg'   => __('3 - 6 kg'),
+                    '6_to_10kg'  => __('6 - 10 kg'),
+                    '10_to_20kg' => __('10 - 20 kg'),
+                    '20_to_31kg' => __('20 - 31 kg'),
+                    'over_31kg'  => __('Over 31 kg'),
+                ];
+
+                $countryOptions = DB::table('delivery_notes')
+                    ->join('countries', 'delivery_notes.delivery_country_id', '=', 'countries.id')
+                    ->where('delivery_notes.warehouse_id', $parent->id)
+                    ->where('delivery_notes.state', DeliveryNoteStateEnum::DISPATCHED->value)
+                    ->distinct()
+                    ->orderBy('countries.name')
+                    ->select('countries.id', 'countries.name')
+                    ->get()
+                    ->mapWithKeys(fn ($c) => [(string) $c->id => $c->name])
+                    ->all();
+
+                $shopOptions = DB::table('delivery_notes')
+                    ->join('shops', 'delivery_notes.shop_id', '=', 'shops.id')
+                    ->where('delivery_notes.warehouse_id', $parent->id)
+                    ->where('delivery_notes.state', DeliveryNoteStateEnum::DISPATCHED->value)
+                    ->where('shops.is_aiku', true)
+                    ->distinct()
+                    ->orderBy('shops.name')
+                    ->select('shops.id', 'shops.name')
+                    ->get()
+                    ->mapWithKeys(fn ($s) => [(string) $s->id => $s->name])
+                    ->all();
+
+                $shipperRows = DB::select("
+                    SELECT DISTINCT ON (elem->>'shipper_slug')
+                        elem->>'shipper_slug' as slug,
+                        elem->>'shipper_label' as label
+                    FROM delivery_notes, jsonb_array_elements(
+                        CASE WHEN jsonb_typeof(shipping_data) = 'array' THEN shipping_data ELSE '[]'::jsonb END
+                    ) as elem
+                    WHERE warehouse_id = ?
+                    AND state = ?
+                    AND jsonb_typeof(shipping_data) = 'array'
+                    AND shipping_data != '[]'::jsonb
+                    AND elem->>'shipper_slug' IS NOT NULL
+                    ORDER BY elem->>'shipper_slug', length(elem->>'shipper_label') DESC
+                ", [$parent->id, DeliveryNoteStateEnum::DISPATCHED->value]);
+
+                $shipperOptions = collect($shipperRows)
+                    ->mapWithKeys(fn ($s) => [$s->slug => $s->label ?: $s->slug])
+                    ->all();
+
+                $table
+                    ->selectFilter('country', $countryOptions, __('Country'))
+                    ->selectFilter('shop', $shopOptions, __('Shop'))
+                    ->selectFilter('shipper', $shipperOptions, __('Shipper'))
+                    ->selectFilter('weight_bracket', $weightBracketOptions, __('Weight (DPD)'));
+            }
 
             if ($bucket == 'all') {
                 $table->column(key: 'state', label: '', type: 'icon');
@@ -253,7 +375,6 @@ trait IsDeliveryNotesIndex
 
             $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            // $table->column(key: 'number_of_days_in_warehouse', label: __('Days'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             if (!$parent instanceof Customer) {
                 $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true);
             }
@@ -264,8 +385,31 @@ trait IsDeliveryNotesIndex
             $table->column(key: 'effective_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
             $table->column(key: 'number_items', label: __('Items'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($bucket == 'handling' || $bucket == 'handling_blocked' || $bucket == 'picked' || $bucket == 'packing' || $bucket == 'packed' || $bucket == 'finalised') {
+                $table->column(key: 'sort_picker', label: __('Picker'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
+            if ($bucket == 'handling' || $bucket == 'handling_blocked' || $bucket == 'picked') {
+                $table->column(key: 'sort_trolleys', label: __('Trolleys'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
+            if ($bucket == 'picked') {
+                $table->column(key: 'sort_picked_bays', label: __('Picked bays'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
+
+            if ($bucket == 'packing' || $bucket == 'packed' || $bucket == 'finalised') {
+                $table->column(key: 'sort_packer', label: __('Packer'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
             if (in_array($bucket, ['all', 'dispatched_today', 'dispatched'])) {
                 $table->column(key: 'delivery', label: __('Shipping'));
+            }
+
+            if ($bucket == 'dispatched') {
+                $table->column(key: 'country', label: __('Country'));
+                $table->column(key: 'weight_bracket', label: __('Weight Bracket'));
             }
 
             if ($bucket == 'unassigned' && $pickerEmployee) {

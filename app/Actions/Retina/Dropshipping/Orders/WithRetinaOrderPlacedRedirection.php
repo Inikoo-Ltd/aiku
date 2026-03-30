@@ -80,8 +80,7 @@ trait WithRetinaOrderPlacedRedirection
                         'key' => 'ecom_order_placed'.$arr['order']->id,
                     ]);
             }
-        }
-        elseif (Arr::get($arr, 'reason') == 'Insufficient balance') {
+        } elseif (Arr::get($arr, 'reason') == 'Insufficient balance') {
             return Redirect::back()->with('notification', [
                 'status'      => 'error',
                 'title'       => __('Error!'),

@@ -46,7 +46,6 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $master_sub_department_id
  * @property int|null $master_department_id
  * @property MasterAssetTypeEnum $type
- * @property HealthRankEnum|null $health_rank
  * @property bool $is_main
  * @property bool $status
  * @property string $slug
@@ -142,6 +141,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $is_minion_variant
  * @property bool $follow_trade_unit_media
  * @property bool $mismatch_detected Have a mismatch trade unit data (picking quantity, linked trade unit) with one or more of its children product
+ * @property HealthRankEnum|null $health_rank
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -166,10 +166,8 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Masters\MasterVariant|null $masterVariant
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read \App\Models\Masters\MasterAssetOrderingIntervals|null $orderingIntervals
- * @property-read \App\Models\Masters\MasterAssetOrderingStats|null $orderingStats
  * @property-read LaravelCollection<int, Product> $products
  * @property-read Media|null $rightImage
- * @property-read \App\Models\Masters\MasterAssetSalesIntervals|null $salesIntervals
  * @property-read Media|null $seoImage
  * @property-read Media|null $sizeComparisonImage
  * @property-read \App\Models\Masters\MasterAssetStats|null $stats
@@ -218,14 +216,14 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'status'               => 'boolean',
         'variant_is_visible'   => 'boolean',
 
-        'fetched_at'           => 'datetime',
-        'last_fetched_at'      => 'datetime',
-        'discontinued_at'      => 'datetime',
-        'stocks_status'        => MasterAssetStocksStatusEnum::class,
-        'products_status'      => MasterAssetProductsStatusEnum::class,
-        'offers_data'          => 'array',
-        'web_images'           => 'array',
-        'tax_category'         => 'array',
+        'fetched_at'              => 'datetime',
+        'last_fetched_at'         => 'datetime',
+        'discontinued_at'         => 'datetime',
+        'stocks_status'           => MasterAssetStocksStatusEnum::class,
+        'products_status'         => MasterAssetProductsStatusEnum::class,
+        'offers_data'             => 'array',
+        'web_images'              => 'array',
+        'tax_category'            => 'array',
         'follow_trade_unit_media' => 'boolean',
     ];
 
@@ -319,16 +317,6 @@ class MasterAsset extends Model implements Auditable, HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(MasterAssetStats::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(MasterAssetSalesIntervals::class);
-    }
-
-    public function orderingStats(): HasOne
-    {
-        return $this->hasOne(MasterAssetOrderingStats::class);
     }
 
     public function orderingIntervals(): HasOne

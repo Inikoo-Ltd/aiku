@@ -9,11 +9,11 @@ import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { faFileExport } from "@fal"
+import { faFileExport, faFileExcel } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { capitalize } from "@/Composables/capitalize"
 
-library.add(faFileExport)
+library.add(faFileExport, faFileExcel)
 
 const props = defineProps<{
     data: object
@@ -27,6 +27,23 @@ const props = defineProps<{
         }>
     }
 }>()
+
+const exportExcel = () => {
+    const params = route().params
+    const queryString = new URLSearchParams(window.location.search)
+
+    const exportParams: Record<string, string> = { ...params, type: 'xlsx' }
+
+    if (queryString.has('between[date]')) {
+        exportParams['between[date]'] = queryString.get('between[date]') as string
+    }
+
+    if (queryString.has('elements[vat_status]')) {
+        exportParams['elements[vat_status]'] = queryString.get('elements[vat_status]') as string
+    }
+
+    window.location.href = route('grp.org.reports.intrastat.exports.export-excel', exportParams)
+}
 </script>
 
 <template>
@@ -43,11 +60,17 @@ const props = defineProps<{
                 </a>
                 <a :href="route('grp.org.reports.intrastat.exports.export-slovakia', route().params)" download target="_blank">
                     <Button
-                        :style="'tertiary'"
+                        :style="'secondary'"
                         icon="fal fa-file-export"
                         label="Export Slovakia XML"
                     />
                 </a>
+                <Button
+                    @click="exportExcel"
+                    :style="'secondary'"
+                    icon="fal fa-file-excel"
+                    label="Export Excel"
+                />
             </div>
         </template>
     </PageHeading>

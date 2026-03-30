@@ -19,12 +19,15 @@ use Carbon\Carbon;
  * @property bool $is_active
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string $type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\HumanResources\WorkScheduleDay> $days
  * @property-read Model|\Eloquent $schedulable
  * @property-read Timezone|null $timezone
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkSchedule defaults()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkSchedule newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkSchedule newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkSchedule query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkSchedule shifts()
  * @mixin \Eloquent
  */
 class WorkSchedule extends Model
@@ -35,6 +38,7 @@ class WorkSchedule extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'type' => 'string',
     ];
 
     public function schedulable(): MorphTo
@@ -55,7 +59,7 @@ class WorkSchedule extends Model
     public function isOpenNow(string $timezone): bool
     {
         $now = Carbon::now($timezone);
-        $dayOfWeek = $now->dayOfWeekIso; // 1 (Mon) - 7 (Sun)
+        $dayOfWeek = $now->dayOfWeekIso;
 
         $todaySchedule = $this->days()->where('day_of_week', $dayOfWeek)->first();
 
@@ -63,8 +67,8 @@ class WorkSchedule extends Model
             return false;
         }
 
-        $startTime = substr((string) $todaySchedule->start_time, 0, 8);
-        $endTime   = substr((string) $todaySchedule->end_time, 0, 8);
+        $startTime = substr((string)$todaySchedule->start_time, 0, 8);
+        $endTime = substr((string)$todaySchedule->end_time, 0, 8);
 
         $start = Carbon::createFromFormat('H:i:s', $startTime, $timezone)
             ->setDateFrom($now);
@@ -78,5 +82,15 @@ class WorkSchedule extends Model
 
 
         return $now->gte($start) && $now->lt($end);
+    }
+
+    public function scopeShifts($query)
+    {
+        return $query->where('type', 'shift');
+    }
+
+    public function scopeDefaults($query)
+    {
+        return $query->where('type', 'default');
     }
 }

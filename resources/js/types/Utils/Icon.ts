@@ -6,8 +6,12 @@
  *
 */
 
+import { Image } from '@/types/Image'
+
 export interface Icon {
-    icon: string | string[]
+    icon?: string | string[]
+    img?: string
+    image?: Image
     tooltip?: string
     class?: string
     icon_rotation?: number
@@ -15,7 +19,9 @@ export interface Icon {
 
 export interface StateIcon {
     tooltip?: string
-    icon: string | string[]
+    icon?: string | string[]
+    text?: string
+    svg?: string
     class?: string
     color?: string
     app?: {

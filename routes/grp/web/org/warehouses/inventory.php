@@ -25,6 +25,7 @@ use App\Actions\Goods\StockFamily\UI\EditStockFamily;
 use App\Actions\Inventory\OrgStock\ExportOrgStocks;
 use App\Actions\Inventory\OrgStock\UI\EditOrgStock;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
+use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksWithNoProducts;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStock;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStockProcurement;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStockProducts;
@@ -41,6 +42,16 @@ Route::get('/', ShowInventoryDashboard::class)->name('dashboard');
 Route::prefix('stocks')->as('org_stocks.')->group(function () {
 
     Route::patch('{orgStock}/update', UpdateOrgStock::class)->name('update');
+
+    Route::prefix('orphans-from-product')->as('orphan-product.')->group(function () {
+        Route::get('/all', IndexOrgStocksWithNoProducts::class)->name('index');
+        Route::get('/current', [IndexOrgStocksWithNoProducts::class, 'current'])->name('current');
+        Route::get('/active', [IndexOrgStocksWithNoProducts::class, 'active'])->name('active');
+        Route::get('/in-process', [IndexOrgStocksWithNoProducts::class, 'inProcess'])->name('inProcess');
+        Route::get('/discontinuing', [IndexOrgStocksWithNoProducts::class, 'discontinuing'])->name('discontinuing');
+        Route::get('/discontinued', [IndexOrgStocksWithNoProducts::class, 'discontinued'])->name('discontinued');
+        Route::get('/abnormality', [IndexOrgStocksWithNoProducts::class, 'abnormality'])->name('abnormality');
+    });
 
     Route::prefix('all')->as('all_org_stocks.')->group(function () {
         Route::get('/', IndexOrgStocks::class)->name('index');

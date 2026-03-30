@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\CreditTransaction\UI\IndexCreditTransactionsAll;
 use App\Actions\Accounting\Invoice\ExportInvoices;
 use App\Actions\Accounting\Invoice\ISDocInvoice;
 use App\Actions\Accounting\Invoice\OmegaInvoice;
@@ -124,3 +125,5 @@ Route::get('/invoice-categories/{invoiceCategory}/refunds', [IndexRefunds::class
 Route::get('/invoice-categories/{invoiceCategory}/edit', EditInvoiceCategory::class)->name('invoice-categories.edit');
 
 Route::get('/customer-balances', [IndexCustomerBalances::class, 'inOrganisation'])->name('balances.index');
+
+Route::get('/credit-transactions', [IndexCreditTransactionsAll::class, 'inOrganisation'])->name('credit_transactions.index');

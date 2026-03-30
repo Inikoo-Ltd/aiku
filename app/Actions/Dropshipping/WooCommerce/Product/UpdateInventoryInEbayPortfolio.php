@@ -113,7 +113,7 @@ class UpdateInventoryInEbayPortfolio
             /** @var Product $product */
             $product = $portfolio->item;
 
-            if (!$product->available_quantity_updated_at || $product->available_quantity_updated_at->gt($portfolio->stock_last_updated_at)) {
+            if (!$product->available_quantity_updated_at || !$portfolio->stock_last_updated_at || $product->available_quantity_updated_at->gt($portfolio->stock_last_updated_at)) {
                 $applicable = true;
             }
         }

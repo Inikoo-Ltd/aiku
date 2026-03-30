@@ -321,6 +321,12 @@ const changeGlobalSearchValue = debounce((value?: string) => {
     changeSearchInputValue('global', value);
 }, 100)
 
+function changeFilterValue(key: string, value: string | null) {
+    const intKey = findDataKey('filters', key)
+    queryBuilderData.value.filters[intKey].value = value || null
+    queryBuilderData.value.cursor = null
+    queryBuilderData.value.page = 1
+}
 
 
 function onPerPageChange(value) {
@@ -544,10 +550,10 @@ onUnmounted(() => {
 
 
 function sortBy(column) {
-    if (queryBuilderData.value.sort === column) {
-        queryBuilderData.value.sort = `-${column}`;
-    } else {
+    if (queryBuilderData.value.sort === `-${column}`) {
         queryBuilderData.value.sort = column;
+    } else {
+        queryBuilderData.value.sort = `-${column}`
     }
 
     queryBuilderData.value.cursor = null;
@@ -750,6 +756,22 @@ const isLoading = ref<string | boolean>(false)
                         <slot name="add-on-button-in-before">
                         </slot>
 
+                        <!-- Filter: select -->
+                        <template v-if="queryBuilderData.filters?.length">
+                            <div v-for="selectFilter in queryBuilderData.filters" :key="selectFilter.key"
+                                v-show="selectFilter.type === 'select'"
+                                class="flex items-center gap-x-1.5">
+                                <label class="text-xs text-gray-500 whitespace-nowrap">{{ selectFilter.label }}</label>
+                                <select
+                                    :value="selectFilter.value ?? ''"
+                                    @change="changeFilterValue(selectFilter.key, ($event.target as HTMLSelectElement).value || null)"
+                                    class="text-sm border border-gray-300 rounded px-2 py-0.5 focus:ring-orange-500 focus:border-orange-500 bg-white">
+                                    <option v-if="selectFilter.noFilterOption" value="">{{ selectFilter.noFilterOptionLabel ?? '-' }}</option>
+                                    <option v-for="(label, optionKey) in selectFilter.options" :key="optionKey" :value="optionKey">{{ label }}</option>
+                                </select>
+                            </div>
+                        </template>
+
                         <!-- Filter: date between -->
                         <div v-if="queryBuilderProps?.betweenDates?.length" class="w-fit flex gap-x-2">
                             <TableBetweenFilter :optionsList="queryBuilderProps?.betweenDates"
@@ -910,7 +932,7 @@ const isLoading = ref<string | boolean>(false)
                                                     </template>
                                                     <template v-else-if="column.type === 'icon'">
                                                         <Icon
-                                                            v-if="item[column.key]?.icon"
+                                                            v-if="item[column.key]?.icon || item[column.key]?.text || item[column.key]?.svg"
                                                             :data="item[column.key]"
                                                         />
                                                         <FontAwesomeIcon v-else :icon="item[column.key]" class="" fixed-width aria-hidden="true" />

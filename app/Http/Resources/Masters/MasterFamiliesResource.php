@@ -33,6 +33,7 @@ use Illuminate\Support\Arr;
  * @property mixed $master_sub_department_code
  * @property mixed $master_sub_department_name
  * @property mixed $currency_code
+ * @property mixed $health_rank
  */
 class MasterFamiliesResource extends JsonResource
 {
@@ -78,7 +79,8 @@ class MasterFamiliesResource extends JsonResource
             'dropshippers'               => $this->dropshippers ?? 0,
             'listings'                   => $this->listings ?? 0,
             'sold'                       => $this->sold ?? 0,
-            'mismatch_detected'          => $this->mismatch_detected
+            'mismatch_detected'          => $this->mismatch_detected,
+            'health_rank'           => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
         ];
     }
 

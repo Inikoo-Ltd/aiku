@@ -279,26 +279,29 @@ const submitEditDate = async () => {
             <div v-if="props.invoiceExportOptions?.length"
                  class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit">
                 <div v-for="exportOption in props.invoiceExportOptions" class="w-auto mt-0 sm:flex-none text-base flex items-center">
-                    <a
-                       :href="exportOption.name ? route(exportOption.name, exportOption.parameters) : '#'"
-                       target="_blank"
-                       v-tooltip="exportOption.tooltip"
-                    >
-                        <Button
-                            :label="exportOption.label"
-                            :icon="exportOption.icon"
-                            type="tertiary"
-                            class="rounded-none border-transparent"
-                        />
-                    </a>
-                    <div
-                        v-if="exportOption.key == 'pdf'"
-                        @click="() => (isOpenModalProforma = true, selectedRouteToDownloadInvoice = exportOption.name ? exportOption : null)"
-                        v-tooltip="ctrans('Open data selector for Invoice')"
-                        class="text-xl border-r border-gray-300 h-full flex items-center hover:text-indigo-500 cursor-pointer opacity-40 hover:opacity-100 hover:bg-gray-200"
-                    >
-                        <FontAwesomeIcon icon="fal fa-ellipsis-v" class="" fixed-width aria-hidden="true" />
-                    </div>
+                    <template v-if="exportOption.key === 'pdf_filter'">
+                        <div
+                            @click="() => (isOpenModalProforma = true, selectedRouteToDownloadInvoice = exportOption.name ? exportOption : null)"
+                            v-tooltip="exportOption.tooltip"
+                            class="cursor-pointer h-full flex items-center px-2 hover:bg-gray-100"
+                        >
+                            <FontAwesomeIcon :icon="exportOption.icon" fixed-width aria-hidden="true" />
+                        </div>
+                    </template>
+                    <template v-else>
+                        <a
+                            :href="exportOption.name ? route(exportOption.name, exportOption.parameters) : '#'"
+                            target="_blank"
+                            v-tooltip="exportOption.tooltip"
+                        >
+                            <Button
+                                :label="exportOption.label"
+                                :icon="exportOption.icon"
+                                type="tertiary"
+                                class="rounded-none border-transparent"
+                            />
+                        </a>
+                    </template>
                 </div>
 
                 <Modal :isOpen="isOpenModalProforma" @onClose="isOpenModalProforma = false" width="w-full max-w-lg">

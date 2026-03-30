@@ -11,6 +11,7 @@ namespace App\Actions\Maintenance\Discounts;
 use App\Actions\Discounts\Offer\VolGr\StoreVolumeGRDiscount;
 use App\Actions\Traits\WithOrganisationSource;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -25,7 +26,7 @@ class CloneAuroraVolGROffers
     use AsAction;
     use WithOrganisationSource;
 
-    public string $commandSignature = 'clone:aurora_vol_gr_offers {organisation} {from_shop} {to_shop}';
+    public string $commandSignature = 'clone:aurora_vol_gr_offers {organisation} {from_shop} {to_shop?}';
 
     /**
      * @throws \Exception
@@ -38,73 +39,80 @@ class CloneAuroraVolGROffers
         $organisationSource->initialisation($organisation);
 
         $fromShop = Shop::where('organisation_id', $organisation->id)->where('slug', $command->argument('from_shop'))->firstOrFail();
-        $toShop   = Shop::where('slug', $command->argument('to_shop'))->firstOrFail();
-        //        if ($fromShop->id == $toShop->id) {
-        //            $command->error('From and To shops must be different.');
-        //
-        //            return 1;
-        //        }
+
+        if ($command->argument('to_shop')) {
+            $toShop  = Shop::where('slug', $command->argument('to_shop'))->firstOrFail();
+            $toShops = [$toShop->id];
+
+        } else {
+            $toShops = Shop::where('is_aiku', true)->where('type', ShopTypeEnum::B2B)->pluck('id')->toArray();
+        }
+
 
         $fromShopSource = explode(':', $fromShop->source_id);
 
-
-        $volCampaign = DB::connection('aurora')->table('Deal Campaign Dimension')->select('Deal Campaign Key')->where('Deal Campaign Store Key', $fromShopSource[1])->where('Deal Campaign Code', 'VL')->first();
-
-        DB::connection('aurora')
-            ->table('Deal Dimension')
-            ->join('Deal Component Dimension', 'Deal Dimension.Deal Key', '=', 'Deal Component Dimension.Deal Component Deal Key')
-            ->where('Deal Status', 'Active')
-            ->whereIn('Deal Campaign Key', [
-                $volCampaign->{'Deal Campaign Key'}
-            ])->orderBy('Deal Key', 'desc')
-            ->chunk(100, function ($auroraOffers) use ($fromShop, $toShop, $organisation, $command) {
-                foreach ($auroraOffers as $auroraOffer) {
-                    $fromFamily = ProductCategory::where('source_family_id', $organisation->id.':'.$auroraOffer->{'Deal Trigger Key'})->first();
-
-                    if (!$fromFamily) {
-                        $fromFamily = ProductCategory::where('shop_id', $fromShop->id)->whereRaw("lower(code) = lower(?)", [$auroraOffer->{'Deal Component Allowance Target Label'}])->first();
-                    }
+        foreach ($toShops as $toShopId) {
+            $toShop = Shop::find($toShopId);
+            $command->info("Processing $fromShop->name to $toShop->name");
 
 
-                    if (!$fromFamily) {
-                        $command->error("Family not found for DK ".$auroraOffer->{'Deal Key'}."  ".$auroraOffer->{'Deal Name'});
-                        continue;
-                    }
+            $volCampaign = DB::connection('aurora')->table('Deal Campaign Dimension')->select('Deal Campaign Key')->where('Deal Campaign Store Key', $fromShopSource[1])->where('Deal Campaign Code', 'VL')->first();
+
+            DB::connection('aurora')
+                ->table('Deal Dimension')
+                ->join('Deal Component Dimension', 'Deal Dimension.Deal Key', '=', 'Deal Component Dimension.Deal Component Deal Key')
+                ->where('Deal Status', 'Active')
+                ->whereIn('Deal Campaign Key', [
+                    $volCampaign->{'Deal Campaign Key'}
+                ])->orderBy('Deal Key', 'desc')
+                ->chunk(100, function ($auroraOffers) use ($fromShop, $toShop, $organisation, $command) {
+                    foreach ($auroraOffers as $auroraOffer) {
+                        $fromFamily = ProductCategory::where('source_family_id', $organisation->id.':'.$auroraOffer->{'Deal Trigger Key'})->first();
+
+                        if (!$fromFamily) {
+                            $fromFamily = ProductCategory::where('shop_id', $fromShop->id)->whereRaw("lower(code) = lower(?)", [$auroraOffer->{'Deal Component Allowance Target Label'}])->first();
+                        }
 
 
-                    $toFamily = ProductCategory::where('shop_id', $toShop->id)->where('type', ProductCategoryTypeEnum::FAMILY)
-                        ->whereRaw("lower(code) = lower(?)", [$fromFamily->code])
-                        ->first();
+                        if (!$fromFamily) {
+                            $command->error("Family not found for DK ".$auroraOffer->{'Deal Key'}."  ".$auroraOffer->{'Deal Name'});
+                            continue;
+                        }
 
-                    if ($toFamily) {
-                        $offer = Offer::where('shop_id', $toShop->id)->where('type', 'Category Quantity Ordered Order Interval')->where('trigger_id', $toFamily->id)->first();
-                        if (!$offer) {
-                            StoreVolumeGRDiscount::make()->action(
-                                $toFamily,
-                                [
-                                    'trigger_data_item_quantity' => $auroraOffer->{'Deal Terms'},
-                                    'percentage_off'             => $auroraOffer->{'Deal Component Allowance'},
-                                    'interval'                   => 30
-                                ]
-                            );
-                            $command->info("Offer created for $toFamily->code");
-                        } else {
-                            $offer->update([
-                                'state'  => OfferStateEnum::ACTIVE,
-                                'status' => true,
-                            ]);
-                            foreach ($offer->offerAllowances as $offerAllowance) {
-                                $offerAllowance->update([
-                                    'state'  => $offer->state->value,
-                                    'status' => $offer->status,
-                                    'end_at' => null
+
+                        $toFamily = ProductCategory::where('shop_id', $toShop->id)->where('type', ProductCategoryTypeEnum::FAMILY)
+                            ->whereRaw("lower(code) = lower(?)", [$fromFamily->code])
+                            ->first();
+
+                        if ($toFamily) {
+                            $offer = Offer::where('shop_id', $toShop->id)->where('type', 'Category Quantity Ordered Order Interval')->where('trigger_id', $toFamily->id)->first();
+                            if (!$offer) {
+                                StoreVolumeGRDiscount::make()->action(
+                                    $toFamily,
+                                    [
+                                        'trigger_data_item_quantity' => $auroraOffer->{'Deal Terms'},
+                                        'percentage_off'             => $auroraOffer->{'Deal Component Allowance'},
+                                        'interval'                   => 30
+                                    ]
+                                );
+                                $command->info("Offer created for $toFamily->code");
+                            } else {
+                                $offer->update([
+                                    'state'  => OfferStateEnum::ACTIVE,
+                                    'status' => true,
                                 ]);
+                                foreach ($offer->offerAllowances as $offerAllowance) {
+                                    $offerAllowance->update([
+                                        'state'  => $offer->state->value,
+                                        'status' => $offer->status,
+                                        'end_at' => null
+                                    ]);
+                                }
                             }
                         }
                     }
-                }
-            });
-
+                });
+        }
 
         return 0;
     }

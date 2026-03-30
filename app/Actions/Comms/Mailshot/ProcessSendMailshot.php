@@ -1,81 +1,87 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 18 Dec 2023 09:24:16 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2023, Raul A Perusquia Flores
+ * Author: eka yudinata (https://github.com/ekayudinata)
+ * Created: Thursday, 12 Mar 2026 15:52:23 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2026, eka yudinata
  */
 
 namespace App\Actions\Comms\Mailshot;
 
+use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
 use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
-use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Mailshot;
-use Exception;
-use Illuminate\Console\Command;
+use App\Models\CRM\Customer;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProcessSendMailshot
 {
     use AsAction;
 
-    public string $jobQueue = 'default-long';
+    public string $jobQueue = 'ses';
 
-    public function tags(): array
+    public function handle(?int $mailshotId, array $customerIds): void
     {
-        return ['send_mailshot'];
-    }
-
-    public function handle(Mailshot $mailshot): void
-    {
-        $chunkSize = 100;
-        // NOTE: Ensure no second wave exists when the parent mailshot has the second wave disabled
-        if ($mailshot->secondWave()->exists() && !$mailshot->is_second_wave_enabled) {
-            DeleteMailshotSecondWave::run($mailshot->secondWave);
+        if (!$mailshotId) {
+            return;
+        }
+        $mailshot = Mailshot::find($mailshotId);
+        if (!$mailshot) {
+            return;
         }
 
-        $queryBuilder = GetMailshotRecipientsQueryBuilder::make()->handle($mailshot);
 
-        $outbox = $mailshot->shop->outboxes()->where('code', OutboxCodeEnum::MARKETING)->first();
+        $outboxId = $mailshot->outbox_id;
 
-        // Process recipients in chunks of 250
-        $queryBuilder->chunk($chunkSize, function ($recipients) use ($mailshot, $outbox) {
+        $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
 
-            $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
+        foreach ($customerIds as $customerId) {
+            $customer = Customer::find($customerId);
+            if (!$customer) {
+                continue;
+            }
 
-            AddRecipientsToMailshot::run($mailshot, $recipients, $emailDeliveryChannel, $outbox);
+            $recipientExists = $mailshot->recipients()
+                ->where('recipient_id', $customer->id)
+                ->where('recipient_type', class_basename($customer))
+                ->exists();
 
+            if (!$recipientExists) {
+                $dispatchedEmail = StoreDispatchedEmail::run(
+                    $mailshot,
+                    $customer,
+                    [
+                        'outbox_id' => $outboxId,
+                        'email_address' => $customer->email
+                    ]
+                );
 
-        });
+                StoreMailshotRecipient::run(
+                    $mailshot,
+                    [
+                        'dispatched_email_id' => $dispatchedEmail->id,
+                        'recipient_type'      => class_basename($customer),
+                        'recipient_id'        => $customer->id,
+                        'recipient_name'      => $customer->name,
+                        'channel'             => $emailDeliveryChannel->id,
+                    ]
+                );
+            }
+        }
 
-        UpdateMailshot::run(
-            $mailshot,
+        UpdateEmailDeliveryChannel::run(
+            $emailDeliveryChannel,
             [
-                'recipients_stored_at' => now()
+                'number_emails' => $mailshot->recipients()->where('channel', $emailDeliveryChannel->id)->count()
             ]
         );
 
-        // TODO: check another hydrator
-        MailshotHydrateDispatchedEmails::run($mailshot);
-    }
+        UpdateMailshotRecipientsStoredAt::run($mailshot);
+        MailshotHydrateDispatchedEmails::dispatch($mailshot->id)->delay(now()->addSeconds());
 
-    public string $commandSignature = 'mailshot:send {mailshot}';
-
-    public function asCommand(Command $command): int
-    {
-        try {
-            $mailshot = Mailshot::where('slug', $command->argument('mailshot'))->firstOrFail();
-        } catch (Exception $e) {
-            $command->error($e->getMessage());
-
-            return 1;
-        }
-
-        $this->handle($mailshot);
-
-        return 0;
+        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
     }
 }

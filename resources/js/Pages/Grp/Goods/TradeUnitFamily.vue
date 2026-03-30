@@ -114,6 +114,7 @@ const attachTradeUnit = () => {
       :routeFetch="props.routes.trade_units_route"
       :withQuantity="false"
       head_label="Selected Trade Units"
+      :enable_search="true"
     >
       <template #committed-list="{ list, deleteFormCommited }">
         <div class="h-full md:h-[400px] overflow-auto relative">

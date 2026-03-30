@@ -8,12 +8,10 @@
 
 namespace App\Actions\Comms\PostRoom\UI;
 
-use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\Comms\Outbox\UI\IndexOutboxes;
 use App\Actions\OrgAction;
 use App\Enums\Comms\PostRoom\PostRoomsTabsEnum;
-use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Http\Resources\Mail\MailshotResource;
 use App\Http\Resources\Mail\PostRoomResource;
 use App\Http\Resources\Mail\OutboxesResource;
@@ -118,15 +116,11 @@ class ShowPostRoom extends OrgAction
                     fn () => MailshotResource::collection(IndexMailshots::run($postRoom, PostRoomsTabsEnum::MAILSHOTS->value))
                     : Inertia::lazy(fn () => MailshotResource::collection(IndexMailshots::run($postRoom, PostRoomsTabsEnum::MAILSHOTS->value))),
 
-                PostRoomsTabsEnum::DISPATCHED_EMAILS->value => $this->tab == PostRoomsTabsEnum::DISPATCHED_EMAILS->value ?
-                    fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($postRoom, PostRoomsTabsEnum::DISPATCHED_EMAILS->value))
-                    : Inertia::lazy(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($postRoom, PostRoomsTabsEnum::DISPATCHED_EMAILS->value))),
 
                 'data'   => PostRoomResource::make($postRoom)
             ]
         )->table(IndexOutboxes::make()->tableStructure(parent:$postRoom, prefix: PostRoomsTabsEnum::OUTBOXES->value))
-         ->table(IndexMailshots::make()->tableStructure(parent:$postRoom, prefix: PostRoomsTabsEnum::MAILSHOTS->value))
-         ->table(IndexDispatchedEmails::make()->tableStructure(parent:$postRoom, prefix: PostRoomsTabsEnum::DISPATCHED_EMAILS->value));
+         ->table(IndexMailshots::make()->tableStructure(parent:$postRoom, prefix: PostRoomsTabsEnum::MAILSHOTS->value));
     }
 
 

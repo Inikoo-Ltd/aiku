@@ -1,25 +1,24 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
-
+import { Head, Link, router } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import { PageHeadingTypes } from '@/types/PageHeading'
 import Table from "@/Components/Table/Table.vue"
-import { useLocaleStore } from '@/Stores/locale'
-import { RecurringBill } from '@/types/recurring_bill'
+import { useLocaleStore } from "@/Stores/locale"
+import { RecurringBill } from "@/types/recurring_bill"
+import { useFormatTime } from "@/Composables/useFormatTime"
 
-import { useFormatTime } from '@/Composables/useFormatTime'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faReceipt } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { Invoice } from "@/types/invoice"
 
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faReceipt } from '@fal'
-import { library } from '@fortawesome/fontawesome-svg-core'
 library.add(faReceipt)
 
-// import FileShowcase from '@/xxxxxxxxxxxx'
 
-const props = defineProps<{
+defineProps<{
     title: string,
     pageHead: PageHeadingTypes
     data: {}
@@ -27,39 +26,68 @@ const props = defineProps<{
 }>()
 
 const locale = useLocaleStore();
+const startDate = ref('');
+const endDate = ref('');
+const isLoadingExport = ref(false);
 
-function invoiceRoute(invoice: RecurringBill) {
+function invoiceRoute(invoice: Invoice) {
+
+    console.log(route().current())
+
     switch (route().current()) {
-        case 'retina.dropshipping.invoices.index':
+        case "retina.dropshipping.invoices.index":
             return route(
-                'retina.dropshipping.invoices.show',
+                "retina.dropshipping.invoices.show",
+                [
+                    invoice.slug
+                ])
+        case "retina.ecom.invoices.index":
+            return route(
+                "retina.ecom.invoices.show",
+                [
+                    invoice.slug
+                ])
+        case "retina.fulfilment.billing.invoices.index":
+            return route(
+                "retina.fulfilment.billing.invoices.show",
                 [
                     invoice.slug
                 ])
         default:
-            return route(
-                'retina.fulfilment.billing.invoices.show',
-                [
-                invoice.slug
-                ])
+            return null
     }
 }
 
 function channelRoute(invoice: {}) {
     switch (route().current()) {
-        case 'retina.dropshipping.invoices.index':
+        case "retina.dropshipping.invoices.index":
             return route(
-                'retina.dropshipping.customer_sales_channels.show',
+                "retina.dropshipping.customer_sales_channels.show",
                 [
                     invoice.customer_sales_channel_slug
                 ])
         default:
             return route(
-                'retina.dropshipping.customer_sales_channels.show',
+                "retina.dropshipping.customer_sales_channels.show",
                 [
-                invoice.customer_sales_channel_slug
+                    invoice.customer_sales_channel_slug
                 ])
     }
+}
+
+watch([startDate, endDate], ([newStartDate, newEndDate]) => {
+    router.get(route('retina.dropshipping.invoices.index'), {
+        startDate: newStartDate,
+        endDate: newEndDate
+    }, {
+        preserveState: true,
+        replace: true,
+    })
+})
+
+const onExportPdf = () => {
+    if (!startDate.value) return
+    window.open(route('retina.dropshipping.invoices.export', { startDate: startDate.value, endDate: endDate.value }), '_blank')
 }
 
 </script>
@@ -68,17 +96,35 @@ function channelRoute(invoice: {}) {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+    <div class="flex items-center gap-3 px-4 py-3">
+        <input type="date" 
+            v-model="startDate" 
+            class="border border-gray-300 rounded px-3 py-1.5 text-sm">
+        <input type="date" 
+            v-model="endDate" 
+            class="border border-gray-300 rounded px-3 py-1.5 text-sm">
+        <Button
+            :disabled="!startDate || !endDate || isLoadingExport"
+            @click="onExportPdf"
+            label="Export invoices by date"
+            class="flex items-center gap-2 bg-indigo-600 text-white px-3 py-1.5 rounded text-sm disabled:opacity-50"
+        >
+            <FontAwesomeIcon icon="fal fa-file-pdf" />
+            Export Pdf
+        </Button>
+
+    </div>
     <Table :resource="data" class="mt-5">
         <template #cell(reference)="{ item: invoice }">
             <Link :href="invoiceRoute(invoice)" class="primaryLink py-0.5">
-            {{ invoice.reference }}
+                {{ invoice.reference }}
             </Link>
         </template>
 
         <template #cell(customer_sales_channel_name)="{ item: invoice }">
-            <div  v-if="invoice.customer_sales_channel_slug" class="flex items-center gap-2 w-7">
+            <div v-if="invoice.customer_sales_channel_slug" class="flex items-center gap-2 w-7">
                 <img v-tooltip="invoice.platform_name" :src="invoice.platform_image" :alt="invoice.platform_name"
-                    class="w-6 h-6"/>
+                     class="w-6 h-6" />
 
                 <Link :href="channelRoute(invoice)" class="primaryLink py-0.5">
                     {{ invoice.customer_sales_channel_name }}
@@ -92,8 +138,8 @@ function channelRoute(invoice: {}) {
         <!-- Column: Date -->
         <template #cell(type)="{ item }">
             <div class="text-center">
-            <!-- {{ item.type }} -->
-                <FontAwesomeIcon :icon='item.type?.icon?.icon' v-tooltip="item.type?.icon?.tooltip" :class='item.type?.icon?.class' fixed-width aria-hidden='true' />
+                <!-- {{ item.type }} -->
+                <FontAwesomeIcon :icon="item.type?.icon?.icon" v-tooltip="item.type?.icon?.tooltip" :class="item.type?.icon?.class" fixed-width aria-hidden="true" />
             </div>
         </template>
 

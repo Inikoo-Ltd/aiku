@@ -35,7 +35,7 @@ class UpdateDeliveryNoteStateToPicked extends OrgAction
             data_set($modelData, 'state', DeliveryNoteStateEnum::PICKED->value);
 
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
-                UpdateOrderStateToPicked::make()->action($deliveryNote->orders->first(), true);
+                UpdateOrderStateToPicked::make()->action($deliveryNote->orders->first(), $deliveryNote);
             }
 
             return $this->update($deliveryNote, $modelData);

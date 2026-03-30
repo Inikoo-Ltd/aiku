@@ -60,7 +60,7 @@ async function unsubscribe() {
 
     try {
         await axios.post(route("iris.unsubscribe.update", {
-            dispatchedEmail: uuid.value,
+            encryptedDispatchedEmailID: uuid.value,
         }), {}).then((response) => {
             const data = response.data
 

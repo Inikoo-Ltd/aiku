@@ -90,9 +90,11 @@ class IndexMasterSubDepartments extends GrpAction
             'master_product_categories.created_at',
             'master_product_categories.updated_at',
             'master_product_categories.web_images',
+            'master_product_category_stats.number_current_sub_departments as used_in',
             'master_product_category_stats.number_current_master_product_categories_type_family as number_families',
             'master_product_category_stats.number_current_master_assets_type_product as number_products',
             'currencies.code as currency_code',
+            'master_product_categories.health_rank',
         ];
 
         if ($prefix === MasterProductCategoryTabsEnum::SALES->value) {
@@ -129,6 +131,7 @@ class IndexMasterSubDepartments extends GrpAction
             ->allowedSorts([
                 'code',
                 'name',
+                'used_in',
                 'number_families',
                 'number_products',
                 'sales_grp_currency_external',
@@ -136,6 +139,7 @@ class IndexMasterSubDepartments extends GrpAction
                 'dropshippers',
                 'listings',
                 'sold',
+                'health_rank',
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -171,13 +175,15 @@ class IndexMasterSubDepartments extends GrpAction
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table
                     ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
                     ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                     ->column(key: 'code', label: __('Code'), sortable: true, searchable: true)
                     ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
+                    ->column(key: 'used_in', label: __('Used In'), sortable: true)
                     ->column(key: 'number_families', label: __('M. Families'), sortable: true)
                     ->column(key: 'number_products', label: __('M. Products'), sortable: true);
             }

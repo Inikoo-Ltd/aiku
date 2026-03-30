@@ -13,10 +13,9 @@ use App\Actions\GrpAction;
 use App\Actions\SysAdmin\User\StoreUserRequest;
 use App\Actions\SysAdmin\WithLogRequest;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Actions\Utils\GetOsFromUserAgent;
+use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\Analytics\UserRequest;
 use App\Models\SysAdmin\User;
-use hisorange\BrowserDetect\Parser as Browser;
 use Illuminate\Support\Carbon;
 
 class ProcessUserRequest extends GrpAction
@@ -38,17 +37,17 @@ class ProcessUserRequest extends GrpAction
         $section                = GetSectionRoute::run($routeData['name'], $routeData['arguments']);
         $aiku_scoped_section_id = $section?->id ?? null;
 
-        $parsedUserAgent = (new Browser())->parse($userAgent);
 
+        $browserData = GetBrowserInfo::run($userAgent);
 
         $modelData = [
             'date'                   => $datetime,
             'route_name'             => $routeData['name'],
             'route_params'           => json_encode($routeData['arguments']),
             'aiku_scoped_section_id' => $aiku_scoped_section_id,
-            'os'                     => GetOsFromUserAgent::run($parsedUserAgent),
-            'device'                 => $parsedUserAgent->deviceType(),
-            'browser'                => explode(' ', $parsedUserAgent->browserName())[0] ?: 'Unknown',
+            'os'                     => $browserData['os'],
+            'device'                 => $browserData['device'],
+            'browser'                => $browserData['browser'],
             'ip_address'             => $ip,
             'location'               => json_encode($geoLocation),
         ];

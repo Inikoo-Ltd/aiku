@@ -47,7 +47,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    containerClass: 'mt-4 w-64 border border-gray-300 rounded-md p-3',
+    containerClass: 'w-full border border-gray-300 rounded-md p-3',
     showEditButton: true,
     editable: true
 })
@@ -179,25 +179,25 @@ defineExpose({
             <div 
                 v-for="(subscription, key) in emailSubscriptions.subscriptions" 
                 :key="key"
-                class="flex items-center justify-between hover:bg-gray-50 rounded p-1"
+                class="flex items-start justify-between hover:bg-gray-50 rounded p-1"
             >
                 <span class="text-sm text-gray-700">{{ subscription.label }}</span>
 
                 <!-- Edit Mode: Toggle Switch -->
-                <div v-if="isEditingEmailSubscriptions && editable" class="flex items-center">
-                    <ToggleSwitch 
+                <div v-if="isEditingEmailSubscriptions && editable" class="flex items-center shrink-0 ml-2">
+                    <ToggleSwitch
                         :modelValue="localSubscriptions[key]"
-                        @update:modelValue="(value) => toggleSubscription(key, value)" 
+                        @update:modelValue="(value) => toggleSubscription(key, value)"
                         :class="{
                             'toggle-switch-active': localSubscriptions[key],
                             'toggle-switch-inactive': !localSubscriptions[key]
-                        }" 
-                        v-tooltip="localSubscriptions[key] ? trans('Subscribed') : trans('Unsubscribed')" 
+                        }"
+                        v-tooltip="localSubscriptions[key] ? trans('Subscribed') : trans('Unsubscribed')"
                     />
                 </div>
 
                 <!-- View Mode: Status Display -->
-                <div v-else class="flex items-center">
+                <div v-else class="flex items-center shrink-0 ml-2">
                     <FontAwesomeIcon 
                         :icon="subscription.is_subscribed ? faCheck : faTimes"
                         :class="subscription.is_subscribed ? 'text-green-500' : 'text-red-500'"

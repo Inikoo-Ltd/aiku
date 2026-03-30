@@ -52,7 +52,7 @@ class UpdateDeliveryNoteItemUnpack extends OrgAction
         $deliveryNote = $deliveryNoteItem->deliveryNote;
         $siblingDeliveryNoteItems = $deliveryNote->deliveryNoteItems()->with('packings')->get();
 
-        $hasUnfinishedPackings = $siblingDeliveryNoteItems->filter(fn ($item) => $item->packings->count() == 0);
+        $hasUnfinishedPackings = $siblingDeliveryNoteItems->filter(fn ($item) => empty((float) $item->quantity_not_picked) && $item->packings->count() == 0);
 
         $siblingDeliveryNoteItems = $deliveryNote->deliveryNoteItems()->with('packings')->get();
 
@@ -64,7 +64,7 @@ class UpdateDeliveryNoteItemUnpack extends OrgAction
                 'state' => DeliveryNoteStateEnum::PACKING->value,
             ]);
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
-                UpdateOrderStateToPacking::make()->action($deliveryNote->orders->first(), true);
+                UpdateOrderStateToPacking::make()->action($deliveryNote->orders->first());
             }
             $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
             $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::PACKING);

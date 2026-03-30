@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-use App\Actions\Retina\Accounting\Invoice\PdfRetinaInvoice;
+use App\Actions\Retina\Accounting\Invoice\PdfRetinaFulfilmentInvoice;
 use App\Actions\Retina\Accounting\Invoice\Transaction\ExportRetinaFulfilmentInvoiceTransactions;
 use App\Actions\Retina\Billing\UI\IndexRetinaFulfilmentInvoices;
 use App\Actions\Retina\Billing\UI\ShowRetinaBillingDashboard;
@@ -21,7 +21,7 @@ Route::get('next-bill', ShowRetinaCurrentRecurringBill::class)->name('next_recur
 Route::prefix('invoices')->as('invoices.')->group(function () {
     Route::get('/', IndexRetinaFulfilmentInvoices::class)->name('index');
     Route::get('{invoice}', ShowRetinaFulfilmentInvoice::class)->name('show');
-    Route::get('/{invoice}/export', PdfRetinaInvoice::class)->name('download');
+    Route::get('/{invoice}/export', PdfRetinaFulfilmentInvoice::class)->name('download');
     Route::get('/{invoice}/invoice-transactions/export', ExportRetinaFulfilmentInvoiceTransactions::class)->name('invoice-transactions.export');
 
 });

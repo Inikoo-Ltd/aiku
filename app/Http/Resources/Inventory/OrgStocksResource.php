@@ -43,6 +43,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $on_the_way_po_value
  * @property mixed $on_the_way_po_count
  * @property mixed $woc
+ * @property mixed $health_rank
  */
 class OrgStocksResource extends JsonResource
 {
@@ -60,7 +61,7 @@ class OrgStocksResource extends JsonResource
             'unit_value'                      => $this->unit_value,
             'unit_cost'                       => $this->unit_cost,
             'currency_code'                   => $this->currency_code,
-            'stock_value'                     => $this->unit_cost * $this->quantity_available,
+            'stock_value'                     => $this->stock_value,
             'number_locations'                => $this->number_location,
             'quantity_locations'              => $this->quantity_in_locations,
             'family_slug'                     => $this->family_slug,
@@ -85,6 +86,8 @@ class OrgStocksResource extends JsonResource
             'on_the_way_po_value'                   => $this->on_the_way_po_value ?? 0,
             'on_the_way_po_count'                   => $this->on_the_way_po_count ?? 0,
             'woc'                                   => $this->woc !== null ? round((float) $this->woc, 1) : null,
+            'product_count'                         => $this->product_count,
+            'health_rank'                      => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
         ];
     }
 

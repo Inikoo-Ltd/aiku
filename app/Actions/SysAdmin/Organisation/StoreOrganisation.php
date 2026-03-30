@@ -160,8 +160,6 @@ class StoreOrganisation extends GrpAction
 
             if ($organisation->type == OrganisationTypeEnum::SHOP) {
                 $organisation->orderingStats()->create();
-                $organisation->salesIntervals()->create();
-                $organisation->orderingIntervals()->create();
                 $organisation->orderHandlingStats()->create();
                 $organisation->fulfilmentStats()->create();
                 $organisation->manufactureStats()->create();

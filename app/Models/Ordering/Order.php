@@ -281,7 +281,8 @@ class Order extends Model implements HasMedia, Auditable
     protected array $auditInclude = [
         'reference',
         'handing_type',
-        'is_shipping_by_external'
+        'is_shipping_by_external'.
+        'state'
     ];
 
 
