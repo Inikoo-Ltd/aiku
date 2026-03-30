@@ -14,7 +14,6 @@ use App\Actions\OrgAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Ordering\Order;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 

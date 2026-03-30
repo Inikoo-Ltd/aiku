@@ -9,7 +9,6 @@ use App\Actions\Accounting\MontanaInvoices\UI\IndexMontanaInvoicesReport;
 use App\Actions\Accounting\SageInvoices\UI\IndexSageInvoicesReport;
 use App\Actions\Dispatching\Reports\IndexPackerPerformanceReport;
 use App\Actions\Dispatching\Reports\IndexPickerPerformanceReport;
-use App\Actions\Reports\UI\IndexUkManufacturingSurveyReport;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\SysAdmin\OverviewResource;

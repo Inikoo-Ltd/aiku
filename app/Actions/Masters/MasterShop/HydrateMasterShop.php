@@ -15,6 +15,7 @@ use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamiliesWithNoDepartment;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterSubDepartments;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateNumberMismatches;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
 use App\Actions\Traits\WithNormalise;
 use App\Models\Masters\MasterShop;
@@ -37,6 +38,7 @@ class HydrateMasterShop extends HydrateModel
         MasterShopHydrateMasterAssets::run($masterShop);
         MasterShopHydrateMasterFamiliesWithNoDepartment::run($masterShop);
         MasterShopHydrateMasterCollections::run($masterShop);
+        MasterShopHydrateNumberMismatches::run($masterShop);
     }
 
 

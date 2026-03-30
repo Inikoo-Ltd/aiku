@@ -18,18 +18,36 @@ const props = defineProps<{
     shop_data: {
         slug: string
         currency_code: string
+        default_dates: {
+            start: string
+            end: string
+        }
     }
 }>()
 
 const isOpenModal = ref(false)
+const openModal = () => {
+    startDate.value = new Date(props.shop_data.default_dates.start)
+    endDate.value = new Date(props.shop_data.default_dates.end)
+    isOpenModal.value = true
+}
 const isLoadingSubmit = ref(false)
 const layout = inject('layout', {})
-
+const discountPercentage = ref<number | null>(null)
 const offerVoucher = ref('')
 const offerLabel = ref('')
 const offerAmount = ref<number | null>(0)
-const startDate = ref(null)
-const endDate = ref(null)
+const startDate = ref<Date | null>(
+    props.shop_data.default_dates?.start
+        ? new Date(props.shop_data.default_dates.start)
+        : null
+)
+
+const endDate = ref<Date | null>(
+    props.shop_data.default_dates?.end
+        ? new Date(props.shop_data.default_dates.end)
+        : null
+)
 const reuseCustomer = ref(false)
 
 // tools step
@@ -53,8 +71,10 @@ const categoryType = ref<'department' | 'subdepartment' | 'family' | null>(null)
 const categoryFilters = ref<number[]>([])
 const collectionFilters = ref<number[]>([])
 const productFilters = ref<number[]>([])
-const shopId = layout?.group?.id
+const shopId = layout?.shopState?.id
 const shopSlug = props.shop_data.slug
+
+console.log(layout);
 
 const categoryRoutes = {
     department: {
@@ -94,7 +114,7 @@ const collectionRoute = computed(() => {
 })
 
 const productFetchRoute = {
-    name: 'grp.json.shop.products_for_website_workshop',
+    name: 'grp.json.shop.products',
     parameters: {
         shop: (route().params as any).shop
     }
@@ -102,6 +122,41 @@ const productFetchRoute = {
 
 const submitCategoryOffer = () => {
     // Section: Submit
+    const targetPayload: Record<string, any> = {}
+
+    if (target.product) {
+        targetPayload.target = 'product'
+        targetPayload.product_ids = productFilters.value
+
+    } else {
+        if (target.category && categoryType.value && categoryFilters.value.length) {
+            targetPayload.target_category = categoryType.value // 'department' | 'subdepartment' | 'family'
+            targetPayload.category_ids = categoryFilters.value
+        }
+
+        if (target.collection && collectionFilters.value.length) {
+            targetPayload.target_collection = true
+            targetPayload.collection_ids = collectionFilters.value
+        }
+
+        if (target.shop && selectedShops.value.length) {
+            targetPayload.target_shop = true
+            targetPayload.shop_slugs = selectedShops.value
+        }
+    }
+    const payload = {
+        voucher: offerVoucher.value,
+        name: offerLabel.value,
+        type: 'amount',
+        offer_amount: offerAmount.value,
+        start_date: startDate.value,
+        end_date: endDate.value,
+        reuse_customer: reuseCustomer.value,
+        discount_percentage: discountPercentage.value,
+        ...targetPayload,
+    }
+    console.log("payload", payload)
+    
     router.post(
         route('grp.org.shops.show.discounts.campaigns.store_voucher', {
             organisation: 'sk',
@@ -109,13 +164,7 @@ const submitCategoryOffer = () => {
             offerCampaign: 'co-se',
         }),
         {
-            voucher: offerVoucher.value,
-            name: offerLabel.value,
-            type: 'amount',
-            offer_amount: offerAmount.value,
-            start_date: startDate.value,
-            end_date: endDate.value,
-            reuse_customer: reuseCustomer.value,
+            payload
         },
         {
             preserveScroll: true,
@@ -191,6 +240,7 @@ const resetForm = () => {
     offerVoucher.value = ''
     startDate.value = null
     endDate.value = null
+    discountPercentage.value = null
     reuseCustomer.value = false
     offerAmount.value = null
 }
@@ -232,7 +282,7 @@ const isFormInvalid = computed(() => {
 
 <template>
     <div>
-        <Button :label="trans('Create Voucher')" @click="isOpenModal = true" icon="fas fa-badge-percent" />
+        <Button :label="trans('Create Voucher')" @click="openModal" icon="fas fa-badge-percent" />
 
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
             <div class="p-1 space-y-6">
@@ -356,10 +406,10 @@ const isFormInvalid = computed(() => {
 
                             <div class="flex flex-wrap gap-4">
 
-                                <div class="flex items-center gap-2">
+                                <!-- <div class="flex items-center gap-2">
                                     <Checkbox v-model="target.shop" binary />
                                     <label>{{ trans('Shop') }}</label>
-                                </div>
+                                </div> -->
 
                                 <div class="flex items-center gap-2">
                                     <Checkbox v-model="target.category" :disabled="target.product" binary />
@@ -458,6 +508,21 @@ const isFormInvalid = computed(() => {
 
                             <PureMultiselectInfiniteScroll v-model="productFilters" :fetchRoute="productFetchRoute"
                                 valueProp="id" labelProp="name" mode="multiple" />
+
+                        </div>
+
+                        <!-- Section: Discount -->
+                        <div>
+                            <div class="font-medium mb-2 flex items-center gap-x-1">
+                                <FontAwesomeIcon icon="fas fa-asterisk"
+                                    class="font-light text-xs text-red-400 align-middle" />
+                                {{ trans('Discount') }}:
+                            </div>
+
+
+                            <InputNumber v-model="discountPercentage" inputId="offer_discount"
+                                :placeholder="trans('Enter percentage')" suffix="%" :min="0" :max="100"
+                                class="w-full" />
 
                         </div>
                     </div>

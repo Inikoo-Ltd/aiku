@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
+use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
@@ -126,9 +127,9 @@ class IndexOrgStocks extends OrgAction
     {
         $this->bucket = 'all';
         $this->parent = $orgStockFamily;
-        $this->initialisationFromWarehouse($warehouse, $request);
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
 
-        return $this->handle(parent: $orgStockFamily);
+        return $this->handle(parent: $orgStockFamily, prefix: OrgStocksTabsEnum::INDEX->value);
     }
 
     public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, ActionRequest $request): LengthAwarePaginator
@@ -284,6 +285,11 @@ class IndexOrgStocks extends OrgAction
                 WHERE ithos.org_stock_id = org_stocks.id
                 AND it.deleted_at IS NULL
             ) as woc"),
+            DB::raw("(
+                SELECT COUNT(*) 
+                FROM product_has_org_stocks
+                WHERE org_stock_id = org_stocks.id
+            ) as product_count")
         ];
 
         if ($prefix === OrgStocksTabsEnum::SALES->value) {
@@ -306,7 +312,7 @@ class IndexOrgStocks extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
-        $allowedSorts = ['code', 'name', 'family_code', 'unit_value', 'unit_cost', 'stock_value', 'discontinued_in_organisation_at', 'organisation_name', 'value_in_locations', 'dispatched', 'revenue', 'quantity_available', 'on_the_way_po_value', 'health_rank', 'woc'];
+        $allowedSorts = ['code', 'name', 'family_code', 'unit_value', 'unit_cost', 'stock_value', 'discontinued_in_organisation_at', 'organisation_name', 'value_in_locations', 'dispatched', 'revenue', 'quantity_available', 'on_the_way_po_value', 'health_rank', 'woc', 'product_count'];
 
         if ($prefix === OrgStocksTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_grp_currency_external';
@@ -359,7 +365,8 @@ class IndexOrgStocks extends OrgAction
                 $table->column(key: 'family_code', label: __('Family'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'quantity_available', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($sales) {
                 $table->betweenDates(['date'])
@@ -375,7 +382,6 @@ class IndexOrgStocks extends OrgAction
                     $table
                         ->column(key: 'unit_cost', label: __('Cost Value'), canBeHidden: false, sortable: true, type: 'currency')
                         // ->column(key: 'value_in_locations', label: __('Stock value'), canBeHidden: false, sortable: true, type: 'currency') // Todo: fix value_In_locations because mostly 0 or null
-                        ->column(key: 'quantity_available', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
                         ->column(key: 'woc', label: __('WOC'), canBeHidden: false, align: 'right')
                         ->column(key: 'revenue', label: __('Revenue'), sortable: true, type: 'currency')
                         ->column(key: 'dispatched', label: __('Dispatched'), sortable: true);
@@ -386,12 +392,45 @@ class IndexOrgStocks extends OrgAction
                 }
 
             }
+            $table->column(key: 'product_count', label: __('Used in Products'), canBeHidden: false, sortable: true, searchable: true, align: 'left');
         };
     }
 
     public function jsonResponse(LengthAwarePaginator $stocks): AnonymousResourceCollection
     {
         return OrgStocksResource::collection($stocks);
+    }
+
+    public function getOrgStockFamilySubNavigation(OrgStockFamily $orgStockFamily, ActionRequest $request): array
+    {
+        $routeParameters = $request->route()->originalParameters();
+
+        return [
+            [
+                'label'    => __('SKU Family'),
+                'route'    => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show',
+                    'parameters' => array_diff_key($routeParameters, ['orgStock' => null]),
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-boxes-alt'],
+                    'tooltip' => __('SKU Family'),
+                ],
+            ],
+            [
+                'isAnchor' => true,
+                'label'    => __('SKUs'),
+                'number'   => $orgStockFamily->stats->number_org_stocks ?? 0,
+                'route'    => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index',
+                    'parameters' => array_diff_key($routeParameters, ['orgStock' => null]),
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-box'],
+                    'tooltip' => __('SKUs'),
+                ],
+            ],
+        ];
     }
 
     public function getOrgStocksSubNavigation(): array
@@ -472,33 +511,43 @@ class IndexOrgStocks extends OrgAction
         $afterTitle = null;
         $iconRight = null;
 
-        if ($this->parent instanceof OrgPartner) {
-            $subNavigation = $this->getOrgPartnerNavigation($this->parent);
-            $title = $this->parent->partner->name;
-
-            $icon = [
-                'icon' => ['fal', 'fa-users-class'],
-                'title' => __('SKUs'),
+        if ($this->parent instanceof OrgStockFamily) {
+            $subNavigation = $this->getOrgStockFamilySubNavigation($this->parent, $request);
+            $title         = $this->parent->name;
+            $icon          = [
+                'icon'  => ['fal', 'fa-boxes-alt'],
+                'title' => __('SKU Family'),
             ];
-            $iconRight = [
+            $iconRight  = [
                 'icon' => 'fal fa-box',
             ];
             $afterTitle = [
-
+                'label' => __('SKUs'),
+            ];
+        } elseif ($this->parent instanceof OrgPartner) {
+            $subNavigation = $this->getOrgPartnerNavigation($this->parent);
+            $title         = $this->parent->partner->name;
+            $icon          = [
+                'icon'  => ['fal', 'fa-users-class'],
+                'title' => __('SKUs'),
+            ];
+            $iconRight  = [
+                'icon' => 'fal fa-box',
+            ];
+            $afterTitle = [
                 'label' => __('SKUs'),
             ];
         } elseif ($this->parent instanceof OrgAgent) {
             $subNavigation = $this->getOrgAgentNavigation($this->parent);
-            $title = $this->parent->agent->organisation->name;
-            $icon = [
-                'icon' => ['fal', 'fa-people-arrows'],
+            $title         = $this->parent->agent->organisation->name;
+            $icon          = [
+                'icon'  => ['fal', 'fa-people-arrows'],
                 'title' => __('SKUs'),
             ];
-            $iconRight = [
+            $iconRight  = [
                 'icon' => 'fal fa-box',
             ];
             $afterTitle = [
-
                 'label' => __('SKUs'),
             ];
         } else {
@@ -605,6 +654,17 @@ class IndexOrgStocks extends OrgAction
                 $headCrumb(
                     [
                         'name' => $routeName,
+                        'parameters' => $routeParameters,
+                    ],
+                    $suffix
+                )
+            ),
+
+            'grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index' => array_merge(
+                ShowOrgStockFamily::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
                         'parameters' => $routeParameters,
                     ],
                     $suffix

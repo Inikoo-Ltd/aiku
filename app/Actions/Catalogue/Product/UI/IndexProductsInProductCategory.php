@@ -353,18 +353,18 @@ class IndexProductsInProductCategory extends OrgAction
                 'shop_id'                      => $this->shop->id,
                 'currencies'                   => $productCategory->shop->currency,
                 'data'                         => ProductsResource::collection($products),
-                'variantSlugs'                 => $products->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn($slug) => [$slug => productCodeToHexCode($slug)]),
+                'variantSlugs'                 => $products->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]),
                 'tabs'                         => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
-                    fn() => ProductsResource::collection($products)
-                    : Inertia::lazy(fn() => ProductsResource::collection($products)),
+                    fn () => ProductsResource::collection($products)
+                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
 
                 ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?
-                    fn() => ProductsResource::collection($this->handle($productCategory, ProductTabsEnum::SALES->value))
-                    : Inertia::lazy(fn() => ProductsResource::collection($this->handle($productCategory, ProductTabsEnum::SALES->value))),
+                    fn () => ProductsResource::collection($this->handle($productCategory, ProductTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => ProductsResource::collection($this->handle($productCategory, ProductTabsEnum::SALES->value))),
 
 
             ]
