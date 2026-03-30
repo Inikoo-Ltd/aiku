@@ -61,8 +61,7 @@ class ProcessBasketLowStockRecipients
                     'outbox_id'     => $outbox->id,
                     'email_address' => $customer['email'],
                     'data->additional_data' => [
-                        'products' => $this->generateProductLinks($customer['product_ids']),
-                        'customer_name' => $customerModel->name,
+                        'products' => $this->generateProductLinks($customer['product_ids'])
                     ]
                 ]
             );
@@ -74,6 +73,7 @@ class ProcessBasketLowStockRecipients
                     'recipient_type'      => class_basename($customerModel),
                     'recipient_id'        => $customerModel->id,
                     'channel'             => $emailDeliveryChannel->id,
+                    'recipient_name'      => $customerModel->name,
                 ]
             );
         }
