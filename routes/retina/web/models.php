@@ -57,6 +57,7 @@ use App\Actions\Retina\Dropshipping\ApiToken\DeleteCustomerAccessToken;
 use App\Actions\Retina\Dropshipping\ApiToken\StoreCustomerToken;
 use App\Actions\Retina\Dropshipping\Basket\DeleteRetinaBasket;
 use App\Actions\Retina\Dropshipping\Bundle\CalculateRetinaBundleItemPriceDetails;
+use App\Actions\Retina\Dropshipping\Bundle\DeleteRetinaBundle;
 use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductImages;
 use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductBundleDescription;
 use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductBundleTitle;
@@ -347,6 +348,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::prefix('{customerSalesChannel:id}/bundles')->name('bundles.')->group(function () {
         Route::post('/', StoreRetinaBundle::class)->name('store');
         Route::patch('{bundle:id}', UpdateRetinaBundle::class)->name('update')->withoutScopedBindings();
+        Route::delete('{bundle:id}', DeleteRetinaBundle::class)->name('delete')->withoutScopedBindings();
         Route::post('products/{product:id}/images-generator', GenerateRetinaProductImages::class)->name('products.images.generate')->withoutScopedBindings();
         Route::post('products/{product:id}/images', UploadRetinaBundleProductImages::class)->name('products.images.store')->withoutScopedBindings();
         Route::post('calculate-bundle-product', CalculateRetinaBundleItemPriceDetails::class)->name('products.calculate');
