@@ -185,8 +185,6 @@ export function useBundle(routes?: any) {
                 }
             )
             description.value = data || ''
-            console.log("des", description.value)
-            console.log("des data", data)
             notify({
                 title: trans('Success'),
                 text: trans('Success generate AI'),
