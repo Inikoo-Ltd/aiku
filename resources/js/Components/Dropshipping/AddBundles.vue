@@ -13,16 +13,17 @@ import { Textarea, Dialog, Checkbox, InputText } from "primevue"
 import { debounce } from 'lodash-es'
 import { route } from 'ziggy-js'
 import Image from '../Image.vue'
-import { faLayerGroup, faSparkles, faTrash,faImages } from '@fas'
+import { faLayerGroup, faSparkles, faTrash, faImages } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { router } from '@inertiajs/vue3';
+import { useBundle } from '@/Composables/useBundle';
 library.add(faLayerGroup, faSparkles, faTrash, faImages)
 
 const props = defineProps<{
     step: {
         current: number
     }
-    bundle_routes:{
+    bundle_routes: {
         store: routeType
         update: routeType
         images: routeType
@@ -110,49 +111,14 @@ watch(() => props.step.current, async (newStep, oldStep) => {
 
 const selectedPortfoliosToSync = ref([])
 
-const summary = ref({
-    total_price: 0,
-    total_bundle_price: 0,
-    total_rrp: 0,
-    profit: 0,
-    profit_percentage: 0
-})
+const bundle = useBundle(props.bundle_routes)
 
-const selectedProducts = ref<any[]>([]) 
-const bundleTitle = ref<string>('')
-const bundleDescription = ref<string>('')
 const isGeneratingAI = ref(false)
 const showMediaModal = ref(false)
 const isLoadingMedia = ref(false)
 const selectedMedia = ref<any[]>([])
 const selectedMediaIds = ref<number[]>([])
 const mediaGallery = ref<string[]>([])
-
-const calculateBundle = async () => {
-    try {
-
-        const payload = {
-           products: bundleProductsPayload.value
-        }
-
-        const { data } = await axios.post(
-            route(
-                props.bundle_routes.calculate.name,
-                props.bundle_routes.calculate.parameters
-            ),
-            payload
-        )
-        summary.value = data
-
-    } catch (e) {
-        console.error("error", e)
-        // notify({
-        //     title: trans('Error'),
-        //     text: trans('Failed to calculate bundle'),
-        //     type: 'error'
-        // })
-    }
-}
 
 const openExistingMedia = async () => {
     showMediaModal.value = true
@@ -161,13 +127,13 @@ const openExistingMedia = async () => {
 
 const flatMediaGallery = computed(() => {
 
-    const result:any[] = []
+    const result: any[] = []
 
     mediaGallery.value.forEach(product => {
 
-        if(!product.image) return
+        if (!product.image) return
 
-        Object.entries(product.image).forEach(([imageId, imageData]:any) => {
+        Object.entries(product.image).forEach(([imageId, imageData]: any) => {
 
             result.push({
                 product_id: product.id,
@@ -182,13 +148,13 @@ const flatMediaGallery = computed(() => {
     return result
 })
 
-const toggleSelect = (img:any) => {
+const toggleSelect = (img: any) => {
 
     const index = selectedMediaIds.value.indexOf(img.image_id)
 
-    if(index !== -1){
+    if (index !== -1) {
 
-        selectedMediaIds.value.splice(index,1)
+        selectedMediaIds.value.splice(index, 1)
 
         selectedMedia.value =
             selectedMedia.value.filter(m => m.image_id !== img.image_id)
@@ -208,75 +174,16 @@ const toggleSelect = (img:any) => {
     }
 }
 
-const setMainImage = (imageId:number) => {
+const setMainImage = (imageId: number) => {
     selectedMedia.value = selectedMedia.value.map(img => ({
         ...img,
         is_main: img.image_id === imageId
     }))
 }
 
-const removeMedia = (media:any) => {
+const removeMedia = (media: any) => {
     selectedMedia.value =
         selectedMedia.value.filter(m => m.image_id !== media.image_id)
-}
-
-const generateAITitle = async () => {
-    try {
-        isGeneratingAI.value = true
-
-        const { data } = await axios.post(
-            route(
-                props.bundle_routes.ai.generate_title.name
-            ),
-            {
-                products:productIds.value
-            }
-        )
-        bundleTitle.value = data
-        notify({
-            title: trans('Success'),
-            text: trans('Success generate AI'),
-            type: 'success'
-        })
-    } catch (e) {
-        notify({
-            title: trans('Error'),
-            text: trans('Failed to generate AI'),
-            type: 'error'
-        })
-    } finally {
-        isGeneratingAI.value = false
-    }
-}
-
-const generateAIDescription = async () => {
-    try {
-        isGeneratingAI.value = true
-
-        const { data } = await axios.post(
-            route(
-                props.bundle_routes.ai.generate_description.name
-            ),
-            {
-                products: productIds.value
-            }
-        )
-        bundleDescription.value = data
-
-        notify({
-            title: trans('Success'),
-            text: trans('Success generate AI'),
-            type: 'success'
-        })
-    } catch (e) {
-        notify({
-            title: trans('Error'),
-            text: trans('Failed to generate AI'),
-            type: 'error'
-        })
-    } finally {
-        isGeneratingAI.value = false
-    }
 }
 
 const showGenerateModal = ref(false)
@@ -286,7 +193,7 @@ const selectedMediaForAI = ref<any[]>([])
 const generateAIImages = async () => {
     try {
         isGeneratingAI.value = true
-        
+
         const payload = {
             images: selectedMediaForAI.value.map(m => m.image_id),
             prompt: aiPrompt.value
@@ -294,10 +201,10 @@ const generateAIImages = async () => {
 
         const routeParams = {
             ...props.bundle_routes.ai.generate_images.parameters,
-            product: product_id.value
+            product: bundle.product_id.value
         }
-        
-    
+
+
         const res = await axios.post(
             route(
                 props.bundle_routes.ai.generate_images.name,
@@ -342,7 +249,7 @@ const generateAIImages = async () => {
 }
 
 const productIds = computed(() => {
-    return selectedProducts.value.map(p => p.id)
+    return bundle.products.value.map(p => p.id)
 })
 
 const fetchMediaGallery = async () => {
@@ -370,53 +277,31 @@ const fetchMediaGallery = async () => {
     }
 }
 
-const onUpdateSelectedProducts = (products:any[]) => {
-    selectedProducts.value = products.map(p => ({
+const onUpdateSelectedProducts = (products: any[]) => {
+    bundle.products.value = products.map(p => ({
         ...p,
-        quantity: p.quantity_selected ?? p.quantity ?? 1
+        quantity: p.quantity_selected ?? 1
     }))
 }
 
 const isStoringBundle = ref(false)
 
-const bundle_id = ref('')
-const product_id = ref('')
-const storeBundle = async () => {
+const handleStoreBundle = async () => {
     try {
-        isStoringBundle.value = true
+        await bundle.storeBundle()
 
-       const payload = {
-            name: bundleTitle.value,
-            code: '',
-            description: '',
-            price: summary.value.total_bundle_price || 0,
-            rrp: summary.value.total_rrp || 0,
-            products: selectedProducts.value.map(p => ({
-                product_id: p.id,
-                quantity: p.quantity || 1
-            }))
-        }
-
-        const data = await axios.post(
-            route(
-                props.bundle_routes.store.name,
-                props.bundle_routes.store.parameters
-            ),
-            payload
-        )
-        
-        product_id.value = data.data.bundleable_id
-        bundle_id.value = data.data.id
-        
         props.step.current = 1
+
+        notify({
+            title: trans('Success'),
+            type: 'success'
+        })
     } catch (e) {
         notify({
             title: trans('Error'),
             text: trans('Failed to create bundle'),
             type: 'error'
         })
-    } finally {
-        isStoringBundle.value = false
     }
 }
 
@@ -424,8 +309,8 @@ const submitBundle = async () => {
     try {
         isStoringBundle.value = true
 
-       const payload = {
-            description: bundleDescription.value,
+        const payload = {
+            description: bundle.description.value,
             images: selectedMedia.value.map(img => ({
                 id: img.image_id,
                 is_main: img.is_main
@@ -434,10 +319,10 @@ const submitBundle = async () => {
 
         const routeParams = {
             ...props.bundle_routes.update.parameters,
-            bundle: bundle_id.value
+            bundle: bundle.bundle_id.value
         }
 
-       router.patch(
+        router.patch(
             route(props.bundle_routes.update.name, routeParams),
             payload,
             {
@@ -468,21 +353,14 @@ const submitBundle = async () => {
     }
 }
 
-const bundleProductsPayload = computed(() => {
-    return selectedProducts.value.map(p => ({
-        product_id: p.id,
-        quantity: p.quantity || 1
-    }))
-})
-
 const selectedMediaAIIds = ref<any[]>([])
-const toggleSelectAI = (media:any) => {
+const toggleSelectAI = (media: any) => {
 
     const index = selectedMediaAIIds.value.indexOf(media.image_id)
 
-    if(index !== -1){
+    if (index !== -1) {
 
-        selectedMediaAIIds.value.splice(index,1)
+        selectedMediaAIIds.value.splice(index, 1)
 
         selectedMediaForAI.value =
             selectedMediaForAI.value.filter(
@@ -502,62 +380,62 @@ const toggleSelectAI = (media:any) => {
 const fileInput = ref<HTMLInputElement | null>(null)
 
 const uploadFilesLocal = async (files: FileList) => {
-    if(!product_id.value) {
+    if (!bundle.product_id.value) {
         notify({
             title: trans('Error'),
             text: trans('Reload Pages'),
             type: 'error'
         })
     }
+    console.log("productid", bundle.product_id.value)
+    try {
+        const formData = new FormData()
 
-        try {
-            const formData = new FormData()
+        Array.from(files).forEach(file => {
+            formData.append('images[]', file)
+        })
 
-            Array.from(files).forEach(file => {
-                formData.append('images[]', file)
-            })
+        const routeParams = {
+            ...props.bundle_routes.images.store.parameters,
+            product: bundle.product_id.value
+        }
 
-            const routeParams = {
-                ...props.bundle_routes.images.store.parameters,
-                product: product_id.value
-            }
-
-            const res = await axios.post(
-                route(
-                    props.bundle_routes.images.store.name,
-                    routeParams
-                ),
-                formData,
-                {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    }
+        const res = await axios.post(
+            route(
+                props.bundle_routes.images.store.name,
+                routeParams
+            ),
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
                 }
-            )
-            const media = res.data?.data || []
-        
-            if (media) {
-                selectedMedia.value.push({
-                    id: media.id,
-                    image_id: media.id,
-                    url: media.source.original,
-                    image: media.source.original,
-                    is_ai: false,
-                    is_main: false
-                })
             }
-            notify({
-                title: 'Success Upload Image',
-                type: 'success'
-            })
+        )
+        const media = res.data?.data || []
 
-        } catch (e) {
-            console.error('UPLOAD ERROR', e)
-            notify({
-                title: 'Failed Upload Image',
-                type: 'error'
+        if (media) {
+            selectedMedia.value.push({
+                id: media.id,
+                image_id: media.id,
+                url: media.source.original,
+                image: media.source.original,
+                is_ai: false,
+                is_main: false
             })
         }
+        notify({
+            title: 'Success Upload Image',
+            type: 'success'
+        })
+
+    } catch (e) {
+        console.error('UPLOAD ERROR', e)
+        notify({
+            title: 'Failed Upload Image',
+            type: 'error'
+        })
+    }
 }
 
 const openFilePicker = () => {
@@ -565,21 +443,21 @@ const openFilePicker = () => {
 }
 
 const onDrop = (e: DragEvent) => {
-   if(!e.dataTransfer?.files?.length) return
-   uploadFilesLocal(e.dataTransfer.files)
+    if (!e.dataTransfer?.files?.length) return
+    uploadFilesLocal(e.dataTransfer.files)
 }
 
 const onFileChange = (e: Event) => {
-   const target = e.target as HTMLInputElement
-   if (!target.files) return
-   uploadFilesLocal(target.files)
+    const target = e.target as HTMLInputElement
+    if (!target.files) return
+    uploadFilesLocal(target.files)
 }
 
-watch(selectedProducts, () => {
-    if(selectedProducts.value.length){
-        calculateBundle()
+watch(bundle.products.value, () => {
+    if (bundle.products.value.length) {
+        bundle.addProduct(bundle.products.value)
     } else {
-        summary.value = {
+        bundle.summary.value = {
             total_price: 0,
             total_bundle_price: 0,
             total_rrp: 0,
@@ -587,13 +465,13 @@ watch(selectedProducts, () => {
             profit_percentage: 0
         }
     }
-}, { deep:true })
+}, { deep: true })
 
-const debouncedCalculate = debounce(calculateBundle, 400)
+const debouncedCalculate = debounce(bundle.calculateBundle, 400)
 
-watch(selectedProducts, () => {
+watch(bundle.products.value, () => {
     debouncedCalculate()
-}, { deep:true })
+}, { deep: true })
 
 onMounted(() => {
     if (props.step.current > 0) {
@@ -623,37 +501,42 @@ onMounted(() => {
             <div class="w-[320px] text-sm space-y-2">
                 <div class="flex justify-between border-b pb-1">
                     <span class="text-gray-500">Cost Price (Individual Purchase)</span>
-                    <span class="font-medium">{{ summary.total_price }} {{ props.shop_data.currency_code }}</span>
+                    <span class="font-medium">{{ bundle.summary.value.total_price }} {{ props.shop_data.currency_code
+                        }}</span>
                 </div>
 
                 <div class="flex justify-between border-b pb-1">
                     <span class="text-gray-500">Bundle Price</span>
-                    <span class="font-medium text-green-600">{{ summary.total_bundle_price }} {{ props.shop_data.currency_code }}</span>
+                    <span class="font-medium text-green-600">{{ bundle.summary.value.total_bundle_price }} {{
+                        props.shop_data.currency_code }}</span>
                 </div>
 
                 <div class="flex justify-between border-b pb-1">
                     <span class="text-gray-500">RRP</span>
-                    <span class="font-medium">{{ summary.total_rrp }} {{ props.shop_data.currency_code }}</span>
+                    <span class="font-medium">{{ bundle.summary.value.total_rrp }} {{ props.shop_data.currency_code
+                    }}</span>
                 </div>
 
                 <div class="flex justify-between pt-1">
                     <span class="text-gray-500">Profit</span>
-                    <span class="font-semibold text-green-600"> [{{ summary.profit_percentage }}%] {{ summary.profit }} {{ props.shop_data.currency_code }}</span>
+                    <span class="font-semibold text-green-600"> [{{ bundle.summary.value.profit_percentage }}%] {{
+                        bundle.summary.value.profit }}
+                        {{ props.shop_data.currency_code }}</span>
                 </div>
             </div>
         </div>
 
         <!-- 0: Select Product -->
         <KeepAlive>
-            <BundlesSelector v-if="step.current === 0" xheadLabel="trans('Add products to portfolios')" @update:selected="onUpdateSelectedProducts" :route-fetch="{
-                name: props.routes.itemRoute.name,
-                parameters: {
-                    ...props.routes.itemRoute.parameters,
-                    'filter[type]': selectedList.value,
-                },
-            }" :valueToRefetch="selectedList.value" :label_result="selectedList.label" :isLoadingSubmit
-                :idxSubmitSuccess
-                class="px-4">
+            <BundlesSelector v-if="step.current === 0" xheadLabel="trans('Add products to portfolios')"
+                @update:selected="onUpdateSelectedProducts" :route-fetch="{
+                    name: props.routes.itemRoute.name,
+                    parameters: {
+                        ...props.routes.itemRoute.parameters,
+                        'filter[type]': selectedList.value,
+                    },
+                }" :valueToRefetch="selectedList.value" :label_result="selectedList.label" :isLoadingSubmit
+                :idxSubmitSuccess class="px-4" withQuantity>
                 <template #header>
                     <div>
                         <div class="mb-4">
@@ -663,31 +546,21 @@ onMounted(() => {
 
                             <div class="relative">
 
-                                <InputText
-                                v-model="bundleTitle"
-                                type="text"
-                                class="w-full pr-10 text-base p-2"
-                                :placeholder="ctrans('Bundle Title')"
-                                required
-                                />
+                                <InputText v-model="bundle.title.value" type="text" class="w-full pr-10 text-base p-2"
+                                    :placeholder="ctrans('Bundle Title')" required />
 
-                                <Button
-                                type="button"
-                                @click="generateAITitle"
-                                :loading="isGeneratingAI"
-                                :disabled="!productIds.length || isGeneratingAI"
-                                v-tooltip="trans('Generate AI')" 
-                                class="absolute right-2 top-1/2 -translate-y-1/2 
+                                <Button type="button" @click="bundle.generateAITitle"
+                                    :loading="bundle.isGeneratingAI.value"
+                                    :disabled="!bundle.productIds.value.length || bundle.isGeneratingAI.value"
+                                    v-tooltip="trans('Generate AI')" class="absolute right-2 top-1/2 -translate-y-1/2 
                                         h-7 w-7 flex items-center justify-center 
                                         rounded-md border bg-white hover:bg-gray-100 
-                                        transition shadow-sm"
-                                >
-                                <FontAwesomeIcon
-                                    :icon="isGeneratingAI ? 'fal fa-spinner' : 'fal fa-sparkles'"
-                                    class="text-xs"
-                                    :class="isGeneratingAI ? 'animate-pulse text-primary' : ''"
-                                    fixed-width
-                                />
+                                        transition shadow-sm">
+                                    <FontAwesomeIcon
+                                        :icon="bundle.isGeneratingAI.value ? 'fal fa-spinner' : 'fal fa-sparkles'"
+                                        class="text-xs"
+                                        :class="bundle.isGeneratingAI.value ? 'animate-pulse text-primary' : ''"
+                                        fixed-width />
                                 </Button>
 
                             </div>
@@ -696,7 +569,7 @@ onMounted(() => {
                 </template>
                 <template #afterInput>
                     <div class="flex items-center justify-between mt-3">
-                        
+
                         <!-- FILTER LIST -->
                         <div class="flex gap-2 text-sm font-semibold text-gray-500">
                             <div v-for="list in filterList" @click="selectedList = list"
@@ -709,8 +582,9 @@ onMounted(() => {
                         </div>
 
                         <!-- NEXT BUTTON -->
-                         <Button @click="storeBundle" :loading="isStoringBundle" label="Next" iconRight="fal fa-arrow-right" :disabled="!selectedProducts.length && !bundleTitle.length"/>
-                    
+                        <Button @click="handleStoreBundle" :loading="bundle.isStoringBundle" label="Next"
+                            iconRight="fal fa-arrow-right" :disabled="!bundle.products.value.length" />
+
                     </div>
                 </template>
             </BundlesSelector>
@@ -741,16 +615,20 @@ onMounted(() => {
                             {{ trans('Description') }}
                         </label>
 
-                        <Textarea v-model="bundleDescription" rows="6" autoResize class="w-full mt-1" placeholder="Input your description" />
+                        <Textarea v-model="bundle.description.value" rows="6" autoResize class="w-full mt-1"
+                            placeholder="Input your description" />
 
                         <div class="flex justify-between items-center mt-2">
 
                             <div class="text-xs text-gray-400">
-                                Characters {{ bundleDescription.length }} words
+                                Characters {{ bundle.description.value.length }} words
                             </div>
 
-                            <Button @click="generateAIDescription" :loading="isGeneratingAI" type="primary" :disabled="!productIds.length">
-                                <FontAwesomeIcon  :icon="isGeneratingAI ? 'fal fa-spinner' : 'fal fa-sparkles'" class="mr-2" fixed-width />
+                            <Button @click="bundle.generateAIDescription" :loading="bundle.isGeneratingAI.value"
+                                type="primary" :disabled="!bundle.productIds.value.length">
+                                <FontAwesomeIcon
+                                    :icon="bundle.isGeneratingAI.value ? 'fal fa-spinner' : 'fal fa-sparkles'"
+                                    class="mr-2" fixed-width />
                                 Generate with AI
                             </Button>
 
@@ -759,18 +637,14 @@ onMounted(() => {
 
                     <!-- MEDIA -->
                     <div class="mb-5">
-                        <div
-                            class="border-2 border-dashed border-gray-300 rounded-xl h-[140px]
+                        <div class="border-2 border-dashed border-gray-300 rounded-xl h-[140px]
                                 flex flex-col items-center justify-center
-                                text-gray-400 cursor-pointer hover:bg-gray-50 transition"
-                            @dragover.prevent
-                            @drop.prevent="onDrop"
-                            @click="openFilePicker"
-                        >
+                                text-gray-400 cursor-pointer hover:bg-gray-50 transition" @dragover.prevent
+                            @drop.prevent="onDrop" @click="openFilePicker">
 
                             <FontAwesomeIcon icon='fal fa-upload'
-                            class='!border-2 !rounded-full !p-2 !text-xl !text-muted-color' fixed-width
-                            aria-hidden='true' />
+                                class='!border-2 !rounded-full !p-2 !text-xl !text-muted-color' fixed-width
+                                aria-hidden='true' />
 
                             <div class="text-sm font-medium">
                                 Upload Media
@@ -782,14 +656,8 @@ onMounted(() => {
 
                         </div>
 
-                        <input
-                            ref="fileInput"
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            class="hidden"
-                            @change="onFileChange"
-                        />
+                        <input ref="fileInput" type="file" multiple accept="image/*" class="hidden"
+                            @change="onFileChange" />
 
                         <!-- ACTION -->
                         <div class="flex gap-2 mt-3">
@@ -798,7 +666,8 @@ onMounted(() => {
                                 Select existing media
                             </Button>
 
-                            <Button @click="showGenerateModal = true" type="primary" icon="fal fa-arrow-left"  :disabled="!selectedMedia.length">
+                            <Button @click="showGenerateModal = true" type="primary" icon="fal fa-arrow-left"
+                                :disabled="!selectedMedia.length">
                                 <FontAwesomeIcon :icon="faSparkles" class="mr-2" fixed-width />
                                 Generate Image AI
                             </Button>
@@ -813,24 +682,12 @@ onMounted(() => {
 
                         <div class="bg-gray-100 rounded-xl p-3 mt-1 grid grid-cols-3 gap-3 min-h-[110px]">
                             <div v-for="img in selectedMedia" class="relative group">
-                                <Image
-                                    :key="img.id"
-                                    :src="img.image"
-                                    class="h-24 w-full rounded-lg"
-                                    imageCover
-                                />
+                                <Image :key="img.id" :src="img.image" class="h-24 w-full rounded-lg" imageCover />
 
-                                <input
-                                    type="radio"
-                                    name="main_image"
-                                    :checked="img.is_main"
-                                    @change="setMainImage(img.image_id)"
-                                    class="absolute top-2 left-2 z-20"
-                                />
-                                 <div
-                                    v-if="img.is_main"
-                                    class="absolute bottom-1 left-1 text-[10px] bg-black/70 text-white px-1 rounded"
-                                >
+                                <input type="radio" name="main_image" :checked="img.is_main"
+                                    @change="setMainImage(img.image_id)" class="absolute top-2 left-2 z-20" />
+                                <div v-if="img.is_main"
+                                    class="absolute bottom-1 left-1 text-[10px] bg-black/70 text-white px-1 rounded">
                                     MAIN IMAGE
                                 </div>
                                 <button
@@ -843,7 +700,9 @@ onMounted(() => {
                     </div>
 
                     <!-- SUBMIT -->
-                    <Button @click="submitBundle" :disabled="!bundleDescription.length" class="flex justify-center items-center w-full" type="primary" :loading="isStoringBundle">
+                    <!-- :disabled="!bundle.description.value.length" -->
+                    <Button @click="submitBundle" class="flex justify-center items-center w-full" type="primary"
+                        :loading="isStoringBundle">
                         Create Bundle
                         <FontAwesomeIcon icon="fal fa-layer-group" class="mr-2" fixed-width />
                     </Button>
@@ -854,42 +713,28 @@ onMounted(() => {
                     <div v-if="isLoadingMedia" class="py-10 text-center">
                         <LoadingIcon />
                     </div>
-                   <div v-else class="grid grid-cols-4 gap-3">
+                    <div v-else class="grid grid-cols-4 gap-3">
                         <template v-if="flatMediaGallery.length">
-                            <div
-                                v-for="img in flatMediaGallery"
-                                :key="img.image_id"
+                            <div v-for="img in flatMediaGallery" :key="img.image_id"
                                 class="relative aspect-square rounded-xl overflow-hidden border cursor-pointer group"
-                                @click="toggleSelect(img)"
-                            >
+                                @click="toggleSelect(img)">
 
                                 <div class="absolute inset-0 z-0">
-                                    <Image
-                                        :src="img.image"
-                                        class="w-full h-full"
-                                        imageCover
-                                    />
+                                    <Image :src="img.image" class="w-full h-full" imageCover />
                                 </div>
 
-                                <div
-                                    v-if="selectedMediaIds.includes(img.image_id)"
-                                    class="absolute inset-0 bg-black/40 z-10"
-                                />
+                                <div v-if="selectedMediaIds.includes(img.image_id)"
+                                    class="absolute inset-0 bg-black/40 z-10" />
 
-                                <Checkbox
-                                    :modelValue="selectedMediaIds.includes(img.image_id)"
-                                    binary
-                                    class="absolute top-2 left-2 z-20 bg-white rounded shadow pointer-events-none"
-                                />
+                                <Checkbox :modelValue="selectedMediaIds.includes(img.image_id)" binary
+                                    class="absolute top-2 left-2 z-20 bg-white rounded shadow pointer-events-none" />
 
-                                <div
-                                    class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition z-5"
-                                />
+                                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition z-5" />
 
                             </div>
                         </template>
                         <template v-else>
-                             <div class="col-span-4 text-center text-gray-400 py-6">
+                            <div class="col-span-4 text-center text-gray-400 py-6">
                                 No images yet
                             </div>
                         </template>
@@ -903,49 +748,36 @@ onMounted(() => {
 
                 </Dialog>
 
-                <Dialog v-model:visible="showGenerateModal" header="Generate AI Image" modal :style="{ width: '600px' }">
+                <Dialog v-model:visible="showGenerateModal" header="Generate AI Image" modal
+                    :style="{ width: '600px' }">
 
                     <div class="mb-4">
                         <div class="text-sm font-semibold mb-2">
                             Select images of products you want to include in generated image
                         </div>
 
-                       <div class="grid grid-cols-4 gap-3">
+                        <div class="grid grid-cols-4 gap-3">
 
-                            <div
-                                v-for="media in selectedMedia"
-                                :key="media.image_id"
+                            <div v-for="media in selectedMedia" :key="media.image_id"
                                 class="relative aspect-square rounded-xl overflow-hidden border cursor-pointer group"
-                                @click="toggleSelectAI(media)"
-                            >
+                                @click="toggleSelectAI(media)">
 
-                            
+
                                 <!-- IMAGE -->
                                 <div class="absolute inset-0 z-0">
-                                    <Image
-                                        :src="media.image"
-                                        class="w-full h-full"
-                                        imageCover
-                                    />
+                                    <Image :src="media.image" class="w-full h-full" imageCover />
                                 </div>
 
                                 <!-- DARK OVERLAY -->
-                                <div
-                                    v-if="selectedMediaAIIds.includes(media.image_id)"
-                                    class="absolute inset-0 bg-black/40 z-10"
-                                />
+                                <div v-if="selectedMediaAIIds.includes(media.image_id)"
+                                    class="absolute inset-0 bg-black/40 z-10" />
 
                                 <!-- CHECKBOX (visual only) -->
-                                <Checkbox
-                                    :modelValue="selectedMediaAIIds.includes(media.image_id)"
-                                    binary
-                                    class="absolute top-2 left-2 z-20 bg-white rounded shadow pointer-events-none"
-                                />
+                                <Checkbox :modelValue="selectedMediaAIIds.includes(media.image_id)" binary
+                                    class="absolute top-2 left-2 z-20 bg-white rounded shadow pointer-events-none" />
 
                                 <!-- HOVER -->
-                                <div
-                                    class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition"
-                                />
+                                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition" />
 
                             </div>
 
@@ -957,16 +789,12 @@ onMounted(() => {
                             Describe your image
                         </div>
 
-                        <Textarea v-model="aiPrompt" rows="3" class="w-full" placeholder="Input description"/>
+                        <Textarea v-model="aiPrompt" rows="3" class="w-full" placeholder="Input description" />
                     </div>
 
                     <template #footer>
-                        <Button
-                            label="Generate"
-                            @click="generateAIImages"
-                            :loading="isGeneratingAI"
-                            :disabled="!selectedMediaForAI.length || !aiPrompt"
-                        />
+                        <Button label="Generate" @click="generateAIImages" :loading="isGeneratingAI"
+                            :disabled="!selectedMediaForAI.length || !aiPrompt" />
                     </template>
 
                 </Dialog>
@@ -975,5 +803,3 @@ onMounted(() => {
         </KeepAlive>
     </div>
 </template>
-
-

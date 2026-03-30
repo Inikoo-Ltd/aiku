@@ -54,7 +54,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
 import { routeType } from "@/types/route"
-import { InputText, Message, Dialog, Textarea } from "primevue"
+import { InputText, Message, Dialog, Textarea, Checkbox } from "primevue"
 import { EditorContent } from "@tiptap/vue-3"
 import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 
@@ -118,6 +118,7 @@ const props = defineProps<{
 	}
 	bundle_routes: {
 		update: routeType
+		delete: routeType
 		images: routeType
 		ai: any
 	}
@@ -1125,11 +1126,21 @@ const submitBundle = async () => {
 			<div class="flex gap-2">
 				<Button v-tooltip="trans('Edit Bundle')" type="tertiary" :style="'white-w-outline'" size="xs"
 					icon="fal fa-pencil" @click="openEditModal(item)" />
-				<ButtonWithLink v-tooltip="trans('Delete Bundle', {
+				<!-- <ButtonWithLink v-tooltip="trans('Delete Bundle', {
 					platform: props.platform_data.name,
 				})
 					" type="negative" icon="fal fa-trash-alt" :routeTarget="item.delete_portfolio" :method="'delete'" size="xs"
-					:style="'white-r-outline'" :bindToLink="{ preserveScroll: true }" />
+					:style="'white-r-outline'" :bindToLink="{ preserveScroll: true }" /> -->
+				<ButtonWithLink v-tooltip="trans('Delete Bundle', {
+					platform: props.platform_data.name,
+				})" type="negative" icon="fal fa-trash-alt" size="xs" :style="'white-r-outline'" :method="'delete'"
+					:bindToLink="{ preserveScroll: true }" :routeTarget="{
+						...props.bundle_routes.delete,
+						parameters: {
+							...props.bundle_routes.delete.parameters,
+							bundle: item.id
+						}
+					}" />
 			</div>
 		</template>
 	</Table>

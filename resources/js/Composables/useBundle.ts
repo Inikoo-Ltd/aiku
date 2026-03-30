@@ -1,11 +1,15 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import axios from 'axios'
+import debounce from 'lodash/debounce'
+import { notify } from '@kyvg/vue3-notification'
+import { trans } from 'laravel-vue-i18n'
 
-const open = ref(true)
-const products = ref<any[]>([])
+const open = ref(false)
 const step = ref(1)
 const title = ref('')
+const description = ref('')
 
+const products = ref<any[]>([])
 const summary = ref({
     total_price: 0,
     total_bundle_price: 0,
@@ -14,32 +18,32 @@ const summary = ref({
     profit_percentage: 0
 })
 
-const isSummaryLoading = ref(false)
+let bundleRoutes: any = null
+export function useBundle(routes?: any) {
+    if (routes) {
+        bundleRoutes = routes
+    }
+    const isGeneratingAI = ref(false)
 
-export function useBundle(){
+    const productIds = computed(() => {
+        return products.value.map(p => p.id)
+    })
 
-   const addProduct = (product:any)=>{
-      const exist = products.value.find(p => p.id === product.id)
+    const isSummaryLoading = ref(false)
 
-      if(!exist){
-         products.value.push({
-            ...product,
-            quantity: 1
-         })
-      }
-      console.log('[useBundle] addProduct =>', {
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            web_images: product.web_images,
-            // allKeys: Object.keys(product),
-            fullObject: product
-        })
-      open.value = true
-      calculateBundle()
-   }
+    const addProduct = (product: any) => {
+        const exist = products.value.find(p => p.id === product.id)
 
-   const removeProduct = (id: number) => {
+        if (!exist) {
+            products.value.push({
+                ...product,
+                quantity: 1
+            })
+        }
+        open.value = true
+    }
+
+    const removeProduct = (id: number) => {
         products.value = products.value.filter(p => p.id !== id)
         calculateBundle()
     }
@@ -60,11 +64,11 @@ export function useBundle(){
         }
     }
 
-   const close = ()=>{
-      open.value = false
-   }
+    const close = () => {
+        open.value = false
+    }
 
-    const calculateBundle = async (bundleRoutes?: any) => {
+    const calculateBundle = async () => {
         if (!products.value.length) {
             summary.value = {
                 total_price: 0,
@@ -76,9 +80,8 @@ export function useBundle(){
             return
         }
 
-        // Guard: kalau routes belum di-set, skip
-        if (!bundleRoutes.value?.calculate?.name) {
-            console.warn('[useBundle] bundleRoutes belum di-set, skip calculateBundle')
+        if (!bundleRoutes?.calculate?.name) {
+            console.warn('[useBundle] bundleRoutes not found')
             return
         }
 
@@ -92,15 +95,23 @@ export function useBundle(){
                 }))
             }
 
-            // bundleRoutes di-pass dari component karena composable tidak bisa inject layout
+            const params =
+                typeof bundleRoutes.calculate.getParameters === 'function'
+                    ? bundleRoutes.calculate.getParameters()
+                    : bundleRoutes.calculate.parameters || {}
+
+            if (!params?.customerSalesChannel) {
+                console.warn('[useBundle] customerSalesChannel belum dipilih')
+                return
+            }
+
             const { data } = await axios.post(
                 route(
-                    bundleRoutes?.calculate?.name,
-                    bundleRoutes?.calculate?.parameters
+                    bundleRoutes.calculate.name,
+                    params
                 ),
                 payload
             )
-
             summary.value = data
 
         } catch (e) {
@@ -110,26 +121,165 @@ export function useBundle(){
         }
     }
 
-   const costPrice = computed(()=>{
-      return products.value.reduce((t,p)=> t + (p.price * p.quantity),0)
-   })
+    const debouncedCalculate = debounce(calculateBundle, 400)
 
-   const bundlePrice = computed(()=>{
-      return costPrice.value * 0.9
-   })
+    watch(products, () => {
+        debouncedCalculate()
+    }, { deep: true })
 
-   return {
-      open,
-      products,
-      step,
-      title,
-      addProduct,
-      removeProduct,
-      increaseQty,
-      decreaseQty,
-      close,
-      summary,
-      isSummaryLoading,
-      calculateBundle,
-   }
+    const generateAITitle = async () => {
+        if (!productIds.value.length) return
+
+        try {
+            isGeneratingAI.value = true
+
+            const routeName = bundleRoutes?.ai?.generate_title?.name
+
+            if (!routeName) {
+                console.warn('[useBundle] generate_title route not defined')
+                return
+            }
+
+            const { data } = await axios.post(
+                route(routeName),
+                {
+                    products: productIds.value
+                }
+            )
+
+            title.value = data
+            notify({
+                title: trans('Success'),
+                text: trans('Success generate AI'),
+                type: 'success'
+            })
+        } catch (e) {
+            console.error('[useBundle] generateAITitle failed', e)
+            notify({
+                title: trans('Error'),
+                text: trans('Failed to generate AI'),
+                type: 'error'
+            })
+        } finally {
+            isGeneratingAI.value = false
+        }
+    }
+
+    const generateAIDescription = async () => {
+        try {
+            isGeneratingAI.value = true
+
+            const routeName = bundleRoutes?.ai?.generate_description?.name
+
+            if (!routeName) {
+                console.warn('[useBundle] generate_title route not defined')
+                return
+            }
+
+            const { data } = await axios.post(
+                route(
+                    routeName
+                ),
+                {
+                    products: productIds.value
+                }
+            )
+            description.value = data || ''
+            console.log("des", description.value)
+            console.log("des data", data)
+            notify({
+                title: trans('Success'),
+                text: trans('Success generate AI'),
+                type: 'success'
+            })
+        } catch (e) {
+            notify({
+                title: trans('Error'),
+                text: trans('Failed to generate AI'),
+                type: 'error'
+            })
+        } finally {
+            isGeneratingAI.value = false
+        }
+    }
+
+    const isStoringBundle = ref(false)
+    const bundle_id = ref('')
+    const product_id = ref('')
+
+    const storeBundle = async () => {
+        try {
+            isStoringBundle.value = true
+
+            const payload = {
+                name: title.value,
+                code: '',
+                description: '',
+                price: summary.value.total_bundle_price || 0,
+                rrp: summary.value.total_rrp || 0,
+                products: products.value.map(p => ({
+                    product_id: p.id,
+                    quantity: p.quantity || 1
+                }))
+            }
+
+            const routeName = bundleRoutes.store.name
+
+            if (!routeName) {
+                console.warn('[useBundle] generate_title route not defined')
+                return
+            }
+
+            const params =
+                typeof bundleRoutes.store.getParameters === 'function'
+                    ? bundleRoutes.store.getParameters()
+                    : bundleRoutes.store.parameters || {}
+
+            if (!params?.customerSalesChannel) {
+                console.warn('[useBundle] customerSalesChannel belum dipilih')
+                return
+            }
+            const { data } = await axios.post(
+                route(
+                    routeName,
+                    params
+                ),
+                payload
+            )
+
+            product_id.value = data.bundleable_id
+            bundle_id.value = data.id
+            return data
+            // step.value = 1
+        } catch (e) {
+            console.error('[useBundle] storeBundle failed', e)
+            throw e
+        } finally {
+            isStoringBundle.value = false
+        }
+    }
+    return {
+        products,
+        title,
+        description,
+        step,
+        open,
+        summary,
+        isSummaryLoading,
+        isGeneratingAI,
+        product_id,
+        bundle_id,
+        productIds,
+        bundleRoutes,
+        addProduct,
+        removeProduct,
+        increaseQty,
+        decreaseQty,
+        close,
+        calculateBundle,
+        generateAITitle,
+        generateAIDescription,
+
+        storeBundle
+    }
 }
