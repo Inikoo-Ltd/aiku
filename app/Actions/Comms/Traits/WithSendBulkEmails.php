@@ -126,6 +126,10 @@ trait WithSendBulkEmails
                 "<a ses:no-track href=\"$unsubscribeUrl\">%s</a>",
                 __('Unsubscribe')
             ),
+            'unsubscribe_fallback' => sprintf(
+                "<a ses:no-track href=\"$unsubscribeUrl\" style=\"color: white;\">%s</a>",
+                __('Unsubscribe')
+            ),
             'customer-shop' => Arr::get($additionalData, 'customer_shop'),
             'customer-email' => Arr::get($additionalData, 'customer_email'),
             'customer-url' => Arr::get($additionalData, 'customer_url'),

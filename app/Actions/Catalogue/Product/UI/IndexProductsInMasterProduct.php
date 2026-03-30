@@ -156,6 +156,13 @@ class IndexProductsInMasterProduct extends OrgAction
             'icon' => 'fal fa-store',
         ];
 
+        $hasMismatch = false;
+
+        // TODO REMOVE PLEASE TO SHOW ON PRODUCTION
+        if (app()->isLocal()) {
+            $hasMismatch = $this->parent?->mismatch_detected;
+        }
+
         return Inertia::render(
             'Org/Catalogue/Products',
             [
@@ -171,9 +178,21 @@ class IndexProductsInMasterProduct extends OrgAction
                         'afterTitle'    => $afterTitle,
                         'iconRight'     => $iconRight,
                         'subNavigation' => $subNavigation,
+                        'actions'   => [
+                            $hasMismatch ? [
+                                'key'   => 'repair-mismatch',
+                                'type'  => 'button',
+                                'style' => 'delete',
+                                'route' => [
+                                    'name'       => 'grp.models.master_asset.repair_mismatch_trade_units',
+                                    'parameters' => request()->route()->originalParameters()
+                                ]
+                            ] : false,
+                        ],
                     ],
-                    'data'                         => ProductsResource::collection($products),
-                    'editable_table'               => false,
+                    'data'                              => ProductsResource::collection($products),
+                    'editable_table'                    => true,
+                    'mismatch_trade_unit_with_master'   => $hasMismatch,
                     'tabs'                         => [
                         'current'    => $this->tab,
                         'navigation' => ProductsTabsEnum::navigationExcept([ProductsTabsEnum::SALES]),

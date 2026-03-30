@@ -29,11 +29,11 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
 {
     public function handle(Customer $customer, ?string $startDate = null, ?string $endDate = null, $prefix = null): LengthAwarePaginator
     {
-        try{
-            if($startDate){
+        try {
+            if ($startDate) {
                 $startDate = Carbon::parse($startDate)->toDateString();
             }
-            if($endDate){
+            if ($endDate) {
                 $endDate = Carbon::parse($endDate)->toDateString();
             }
         } catch (\Exception $e) {

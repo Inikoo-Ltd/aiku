@@ -76,7 +76,7 @@ class IndexWebsiteVisitors extends OrgAction
                 ->column(key: 'os', label: __('OS'), canBeHidden: false)
                 ->column(key: 'location', label: __('Location'), canBeHidden: false)
                 ->column(key: 'page_views', label: __('Page Views'), canBeHidden: false, sortable: true)
-                ->column(key: 'duration', label: __('Duration'), canBeHidden: false, sortable: true)
+                ->column(key: 'duration_seconds', label: __('Duration'), canBeHidden: false, sortable: true)
                 ->column(key: 'bounce', label: __('Bounce'), canBeHidden: false)
                 ->column(key: 'first_seen_at', label: __('First Seen'), canBeHidden: false, sortable: true)
                 ->column(key: 'last_seen_at', label: __('Last Seen'), canBeHidden: false, sortable: true)

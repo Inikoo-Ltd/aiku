@@ -27,6 +27,7 @@ use App\Models\Comms\BackInStockReminder;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\SubscriptionEvent;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\CRM\CustomerWebActivity;
 use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerClient;
@@ -374,6 +375,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function webUsers(): HasMany
     {
         return $this->hasMany(WebUser::class);
+    }
+
+    public function webActivities(): HasMany
+    {
+        return $this->hasMany(CustomerWebActivity::class);
     }
 
 

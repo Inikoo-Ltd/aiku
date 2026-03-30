@@ -17,6 +17,7 @@ use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns
 use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReorderRemainder\SendReorderRemainderEmails;
 use App\Actions\Comms\Outbox\RunBasketLowStockEmailBulkRuns;
+use App\Actions\CRM\Customer\SyncAllCustomersWebActivitiesDaily;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
@@ -146,6 +147,15 @@ class Kernel extends ConsoleKernel
                 monitorSlug: 'PurgeWebUserPasswordReset',
             ),
             name: 'PurgeWebUserPasswordReset',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(SyncAllCustomersWebActivitiesDaily::makeJob())->dailyAt('02:00')->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'SyncAllCustomersWebActivitiesDaily',
+            ),
+            name: 'SyncAllCustomersWebActivitiesDaily',
             type: 'job',
             scheduledAt: now()->format('H:i')
         );

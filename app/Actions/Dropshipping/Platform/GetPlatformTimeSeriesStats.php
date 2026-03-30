@@ -17,17 +17,20 @@ class GetPlatformTimeSeriesStats
 
     public function handle(Group|Organisation|Shop $parent, $from_date = null, $to_date = null): array
     {
-        $platforms = [];
+        $groupId = match (true) {
+            $parent instanceof Group        => $parent->id,
+            $parent instanceof Organisation => $parent->group_id,
+            $parent instanceof Shop        => $parent->group_id,
+        };
 
-        if ($parent instanceof Group) {
-            $platforms = Platform::where('group_id', $parent->id)->get();
-        } else {
-            $platforms = Platform::where('group_id', $parent->group_id)->get();
-        }
-
-        $platforms->load(['timeSeries' => function ($query) {
-            $query->where('frequency', TimeSeriesFrequencyEnum::DAILY->value);
-        }]);
+        $platforms = Platform::query()
+            ->select(['id', 'slug', 'code', 'name', 'group_id'])
+            ->where('group_id', $groupId)
+            ->with([
+                'timeSeries' => fn ($q) => $q->select(['id', 'platform_id', 'frequency'])
+                    ->where('frequency', TimeSeriesFrequencyEnum::DAILY->value),
+            ])
+            ->get();
 
         $timeSeriesIds = [];
         $platformToTimeSeriesMap = [];
@@ -60,7 +63,7 @@ class GetPlatformTimeSeriesStats
                     'channels'                    => 'channels',
                     'customers'                   => 'customers',
                     'portfolios'                  => 'portfolios',
-                    'customer_clients'            => 'customer_clients'
+                    'customer_clients'            => 'customer_clients',
                 ],
                 'platform_time_series_records',
                 'platform_time_series_id',
@@ -72,10 +75,16 @@ class GetPlatformTimeSeriesStats
 
         $totalSalesByInterval = $this->calculateTotalSales($allStats, $parent);
 
+        $organisationSlug = $parent instanceof Organisation ? $parent->slug : null;
+        $shopSlug         = $parent instanceof Shop ? $parent->slug : null;
+        if ($parent instanceof Shop) {
+            $organisationSlug = $parent->organisation->slug ?? null;
+        }
+
         $results = [];
         foreach ($platforms as $platform) {
             $timeSeriesId = $platformToTimeSeriesMap[$platform->id] ?? null;
-            $stats = $allStats[$timeSeriesId] ?? [];
+            $stats        = $allStats[$timeSeriesId] ?? [];
 
             if (empty($stats) || collect($stats)->every(fn ($value) => $value == 0)) {
                 continue;
@@ -83,14 +92,19 @@ class GetPlatformTimeSeriesStats
 
             $statsWithPercentage = $this->addSalesPercentage($stats, $totalSalesByInterval, $parent);
 
-            $platformData = array_merge($platform->toArray(), $statsWithPercentage);
+            $platformData = array_merge($statsWithPercentage, [
+                'id'   => $platform->id,
+                'slug' => $platform->slug,
+                'code' => $platform->code,
+                'name' => $platform->name,
+            ]);
 
             if ($parent instanceof Shop) {
-                $platformData['shop_id'] = $parent->id;
-                $platformData['shop_slug'] = $parent->slug;
-                $platformData['organisation_slug'] = $parent->organisation->slug ?? null;
+                $platformData['shop_id']           = $parent->id;
+                $platformData['shop_slug']         = $shopSlug;
+                $platformData['organisation_slug'] = $organisationSlug;
             } elseif ($parent instanceof Organisation) {
-                $platformData['organisation_slug'] = $parent->slug;
+                $platformData['organisation_slug'] = $organisationSlug;
             }
 
             $results[] = $platformData;
@@ -99,24 +113,19 @@ class GetPlatformTimeSeriesStats
         return $results;
     }
 
-    /**
-     * Calculate total sales for each interval based on parent type
-     */
     private function calculateTotalSales(array $allStats, Group|Organisation|Shop $parent): array
     {
-        $totals = [];
+        $totals    = [];
         $intervals = DateIntervalEnum::cases();
 
         $salesField = match (true) {
-            // $parent instanceof Shop => 'sales',
-            $parent instanceof Shop => 'sales_grp_currency_external',
-            // $parent instanceof Organisation => 'sales_org_currency',
+            $parent instanceof Shop         => 'sales_grp_currency_external',
             $parent instanceof Organisation => 'sales_grp_currency_external',
-            $parent instanceof Group => 'sales_grp_currency_external',
+            $parent instanceof Group        => 'sales_grp_currency_external',
         };
 
         foreach ($intervals as $interval) {
-            $key = $salesField . '_' . $interval->value;
+            $key          = $salesField . '_' . $interval->value;
             $totals[$key] = 0;
 
             foreach ($allStats as $stats) {
@@ -127,33 +136,24 @@ class GetPlatformTimeSeriesStats
         return $totals;
     }
 
-    /**
-     * Add sales_percentage to stats for each interval
-     */
     private function addSalesPercentage(array $stats, array $totalSalesByInterval, Group|Organisation|Shop $parent): array
     {
         $intervals = DateIntervalEnum::cases();
 
         $salesField = match (true) {
-            // $parent instanceof Shop => 'sales',
-            $parent instanceof Shop => 'sales_grp_currency_external',
-            // $parent instanceof Organisation => 'sales_org_currency',
+            $parent instanceof Shop         => 'sales_grp_currency_external',
             $parent instanceof Organisation => 'sales_grp_currency_external',
-            $parent instanceof Group => 'sales_grp_currency_external',
+            $parent instanceof Group        => 'sales_grp_currency_external',
         };
 
         foreach ($intervals as $interval) {
-            $key = $salesField . '_' . $interval->value;
-            $totalSales = $totalSalesByInterval[$key] ?? 0;
+            $key          = $salesField . '_' . $interval->value;
+            $totalSales   = $totalSalesByInterval[$key] ?? 0;
             $platformSales = (float)($stats[$key] ?? 0);
 
-            if ($totalSales > 0) {
-                $percentage = ($platformSales / $totalSales) * 100;
-            } else {
-                $percentage = 0;
-            }
-
-            $stats['sales_percentage_' . $interval->value] = round($percentage, 2);
+            $stats['sales_percentage_' . $interval->value] = $totalSales > 0
+                ? round(($platformSales / $totalSales) * 100, 2)
+                : 0;
         }
 
         return $stats;

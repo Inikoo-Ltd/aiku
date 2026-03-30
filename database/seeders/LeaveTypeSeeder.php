@@ -159,7 +159,7 @@ class LeaveTypeSeeder extends Seeder
                 'code' => 'unpaid-leave',
                 'name' => 'Un-Paid Leave',
                 'color' => 'black',
-                'category' => LeaveCategoryEnum::SPECIAL,
+                'category' => LeaveCategoryEnum::UNPAID,
                 'description' => 'Unpaid leave',
                 'requires_approval' => true,
                 'max_days_per_year' => 14,
