@@ -3,7 +3,9 @@
 namespace App\Http\Resources\CRM;
 
 use App\Actions\Helpers\Images\GetPictureSources;
+use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Bundle;
+use App\Models\BundleItem;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
@@ -49,6 +51,10 @@ class BundleResource extends JsonResource
             });
         });
 
+        $productList = $bundle->items->map(function (BundleItem $item) {
+            return ProductResource::make($item->item);
+        });
+
         return [
             'id'                 => $bundle->id,
             'bundleable_id'      => $bundle->bundleable_id,
@@ -57,6 +63,7 @@ class BundleResource extends JsonResource
             'code'               => $product->code,
             'current_images'     => $imageArrCurrent,
             'list_images'        => $imageArrList,
+            'products'           => $productList,
             'price'              => $product->price,
             'name'               => $product->name,
             'gross_weight'       => $product->gross_weight,

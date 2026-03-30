@@ -29,6 +29,7 @@ class ShowRetinaBundle extends RetinaAction
         $bundle->load([
             'bundleable.images',
             'bundleable.tradeUnits.images',
+            'items.item',
         ]);
 
         return $bundle;
