@@ -250,12 +250,25 @@ export function useBundle(routes?: any) {
             product_id.value = data.bundleable_id
             bundle_id.value = data.id
             return data
-            // step.value = 1
         } catch (e) {
             console.error('[useBundle] storeBundle failed', e)
             throw e
         } finally {
             isStoringBundle.value = false
+        }
+    }
+
+    const resetBundle = () => {
+        title.value = ''
+        description.value = ''
+
+        products.value = []
+        summary.value = {
+            total_price: 0,
+            total_bundle_price: 0,
+            total_rrp: 0,
+            profit: 0,
+            profit_percentage: 0
         }
     }
     return {
@@ -271,6 +284,8 @@ export function useBundle(routes?: any) {
         bundle_id,
         productIds,
         bundleRoutes,
+        resetBundle,
+
         addProduct,
         removeProduct,
         increaseQty,
