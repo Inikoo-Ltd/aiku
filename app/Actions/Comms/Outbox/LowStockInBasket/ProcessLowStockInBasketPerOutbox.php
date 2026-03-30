@@ -19,7 +19,7 @@ use App\Models\Catalogue\Product;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProcessLowStockInBasketEachOutbox
+class ProcessLowStockInBasketPerOutbox
 {
     use WithGenerateEmailBulkRuns;
     use AsAction;
@@ -117,7 +117,7 @@ class ProcessLowStockInBasketEachOutbox
                 ->values()
                 ->all();
 
-            ProcessBasketLowStockCustomers::dispatch(
+            ProcessBasketLowStockRecipients::dispatch(
                 $emailBulkRun->id,
                 $customerData
             );

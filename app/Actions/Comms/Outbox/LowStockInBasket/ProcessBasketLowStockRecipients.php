@@ -22,7 +22,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProcessBasketLowStockCustomers
+class ProcessBasketLowStockRecipients
 {
     use AsAction;
 
