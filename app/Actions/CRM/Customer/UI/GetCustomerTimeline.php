@@ -11,6 +11,7 @@ namespace App\Actions\CRM\Customer\UI;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Helpers\Audit\AuditEventEnum;
 use App\Models\Accounting\Payment;
+use App\Models\Analytics\WebUserRequest;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\History;
 use App\Models\Ordering\Order;
@@ -33,6 +34,7 @@ class GetCustomerTimeline
         $this->appendOrderEvents($customer, $cutoff, $limit, $events);
         $this->appendPaymentEvents($customer, $cutoff, $limit, $events);
         $this->appendEmailEvents($customer, $cutoff, $limit, $events);
+        $this->appendWebUserLoginEvents($customer, $cutoff, $events);
 
         return [
             'events' => $events->sortByDesc('timestamp')->values()->map(function (array $event) {
@@ -206,9 +208,43 @@ class GetCustomerTimeline
             });
     }
 
+    private function appendWebUserLoginEvents(Customer $customer, Carbon $cutoff, Collection $events): void
+    {
+        $customer->webUsers()->get()->each(function ($webUser) use ($cutoff, $events) {
+            WebUserRequest::where('web_user_id', $webUser->id)
+                ->where('date', '>=', $cutoff->toDateString())
+                ->selectRaw('date, os, device, browser, location, MIN(id) as id')
+                ->groupBy('date', 'os', 'device', 'browser', 'location')
+                ->orderByDesc('date')
+                ->limit(20)
+                ->get()
+                ->each(function (WebUserRequest $request) use ($webUser, $events) {
+                    $timestamp = Carbon::parse($request->date);
+
+                    $events->push([
+                        'id'        => "web_login_{$webUser->id}_{$request->id}",
+                        'type'      => 'web_login',
+                        'timestamp' => $timestamp,
+                        'datetime'  => $timestamp->toIso8601String(),
+                        'title'     => __('Website visit'),
+                        'subtitle'  => $request->browser && $request->device ? "{$request->browser} · {$request->device}" : null,
+                        'icon'      => ['fal', 'fa-globe'],
+                        'color'     => 'teal',
+                        'metadata'  => [
+                            'browser'  => $request->browser,
+                            'device'   => $request->device,
+                            'os'       => $request->os,
+                            'location' => $request->location,
+                        ],
+                    ]);
+                });
+        });
+    }
+
     private function appendEmailEvents(Customer $customer, Carbon $cutoff, int $limit, Collection $events): void
     {
         $customer->dispatchedEmails()
+            ->with(['mailshot:id,subject', 'outbox:id,name'])
             ->where(function ($q) use ($cutoff) {
                 $q->where('dispatched_emails.sent_at', '>=', $cutoff)
                     ->orWhere('dispatched_emails.created_at', '>=', $cutoff);
@@ -217,15 +253,16 @@ class GetCustomerTimeline
             ->limit($limit)
             ->get()
             ->each(function ($email) use ($events) {
-                $timestamp = $email->sent_at ?? $email->created_at;
-                $stateLabel = DispatchedEmailStateEnum::labels()[$email->state->value] ?? $email->state->value;
+                $timestamp   = $email->sent_at ?? $email->created_at;
+                $stateLabel  = DispatchedEmailStateEnum::labels()[$email->state->value] ?? $email->state->value;
+                $campaignName = $email->mailshot?->subject ?? $email->outbox?->name ?? null;
 
                 $events->push([
                     'id'        => "email_{$email->id}",
                     'type'      => 'email',
                     'timestamp' => $timestamp,
                     'datetime'  => $timestamp?->toIso8601String(),
-                    'title'     => __('Email sent'),
+                    'title'     => $campaignName ? __('Email: :name', ['name' => $campaignName]) : __('Email sent'),
                     'subtitle'  => $stateLabel,
                     'icon'      => ['fal', 'fa-envelope'],
                     'color'     => 'purple',

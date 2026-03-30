@@ -13,13 +13,14 @@ import {
     faCodeBranch,
     faChevronDown,
     faChevronUp,
+    faGlobe,
 } from '@fal'
 import { trans } from 'laravel-vue-i18n'
 import { useFormatTime } from '@/Composables/useFormatTime'
 
 library.add(
     faUserEdit, faStickyNote, faInboxIn, faPaperPlane, faTimesCircle,
-    faMoneyBill, faEnvelope, faCodeBranch, faChevronDown, faChevronUp
+    faMoneyBill, faEnvelope, faCodeBranch, faChevronDown, faChevronUp, faGlobe
 )
 
 interface TimelineEvent {
@@ -47,6 +48,7 @@ const colorClasses: Record<string, { bg: string; icon: string }> = {
     indigo: { bg: 'bg-indigo-100', icon: 'text-indigo-600' },
     purple: { bg: 'bg-purple-100', icon: 'text-purple-600' },
     yellow: { bg: 'bg-yellow-100', icon: 'text-yellow-600' },
+    teal:   { bg: 'bg-teal-100',   icon: 'text-teal-600' },
 }
 
 const recentEvents = computed(() => (props.events ?? []).slice(0, 10))

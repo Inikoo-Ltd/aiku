@@ -20,12 +20,13 @@ import {
     faChevronDown,
     faChevronUp,
     faFilter,
+    faGlobe,
 } from '@fal'
 import { useFormatTime } from '@/Composables/useFormatTime'
 
 library.add(
     faUserEdit, faStickyNote, faInboxIn, faPaperPlane, faTimesCircle,
-    faMoneyBill, faEnvelope, faCodeBranch, faChevronDown, faChevronUp, faFilter
+    faMoneyBill, faEnvelope, faCodeBranch, faChevronDown, faChevronUp, faFilter, faGlobe
 )
 
 interface TimelineEvent {
@@ -55,6 +56,7 @@ const filterOptions = [
     { key: 'account_update', label: 'Account Changes', types: ['account_update', 'note'] },
     { key: 'payment', label: 'Payments', types: ['payment'] },
     { key: 'email', label: 'Emails', types: ['email'] },
+    { key: 'web_login', label: 'Website Visits', types: ['web_login'] },
 ]
 
 const colorClasses: Record<string, { bg: string; icon: string }> = {
@@ -64,6 +66,7 @@ const colorClasses: Record<string, { bg: string; icon: string }> = {
     indigo: { bg: 'bg-indigo-100', icon: 'text-indigo-600' },
     purple: { bg: 'bg-purple-100', icon: 'text-purple-600' },
     yellow: { bg: 'bg-yellow-100', icon: 'text-yellow-600' },
+    teal:   { bg: 'bg-teal-100',   icon: 'text-teal-600' },
 }
 
 const filteredEvents = computed(() => {
@@ -99,6 +102,9 @@ const hasExpandableData = (event: TimelineEvent): boolean => {
     }
     if (event.type === 'email') {
         return !!(event.metadata?.number_reads !== undefined)
+    }
+    if (event.type === 'web_login') {
+        return !!(event.metadata?.browser || event.metadata?.os || event.metadata?.location)
     }
     return false
 }
@@ -256,6 +262,24 @@ const formatMetadataValue = (value: unknown): string => {
                                         <div class="flex gap-2">
                                             <span class="font-medium text-gray-700">Clicks:</span>
                                             <span>{{ event.metadata.number_clicks ?? 0 }}</span>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Web login: device, browser, location -->
+                                <template v-else-if="event.type === 'web_login'">
+                                    <div class="space-y-0.5">
+                                        <div v-if="event.metadata.os" class="flex gap-2">
+                                            <span class="font-medium text-gray-700 w-20 flex-none">OS:</span>
+                                            <span>{{ event.metadata.os }}</span>
+                                        </div>
+                                        <div v-if="event.metadata.browser" class="flex gap-2">
+                                            <span class="font-medium text-gray-700 w-20 flex-none">Browser:</span>
+                                            <span>{{ event.metadata.browser }}</span>
+                                        </div>
+                                        <div v-if="event.metadata.location" class="flex gap-2">
+                                            <span class="font-medium text-gray-700 w-20 flex-none">Location:</span>
+                                            <span>{{ event.metadata.location }}</span>
                                         </div>
                                     </div>
                                 </template>
