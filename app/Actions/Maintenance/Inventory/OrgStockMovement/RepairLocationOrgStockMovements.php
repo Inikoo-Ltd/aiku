@@ -255,7 +255,7 @@ class RepairLocationOrgStockMovements
 
     public function fixHelpersContinuity(Location $location, OrgStock $orgStock, array $errorData, ?Command $command = null): void
     {
-        $movements = DB::table('org_stock_movements')->select('date', 'id', 'quantity', 'audited_quantity', 'type', 'class')
+        $movements = DB::table('org_stock_movements')->select('date', 'id', 'quantity', 'audited_quantity', 'type', 'class','source_id')
             ->where('location_id', $location->id)
             ->where('org_stock_id', $orgStock->id)
             ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO])
@@ -308,6 +308,11 @@ class RepairLocationOrgStockMovements
                                 ]
                             );
                         $command?->warn("Garbage Duplicate disassociates   $movement->id ");
+                    }
+                }elseif ($movement->type == OrgStockMovementTypeEnum::ASSOCIATE->value && $isIn) {
+                    if(!$movement->source_id){
+                        DB::table('org_stock_movements')->where('id', $movement->id)->delete();
+                        $command?->warn("Deleted misplaced associated $movement->id ");
                     }
                 }
             }
