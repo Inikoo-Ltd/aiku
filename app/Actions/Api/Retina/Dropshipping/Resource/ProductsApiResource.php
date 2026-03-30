@@ -36,6 +36,7 @@ class ProductsApiResource extends JsonResource
             'price' => $this->price,
             'current_stock' => $this->current_stock,
             'name'  => $this->name,
+            'ean_barcode' => $this->barcode,
             'description' => $this->description,
         ];
 
