@@ -55,6 +55,7 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
 import { routeType } from "@/types/route"
 import { InputText, Message, Dialog, Textarea, Checkbox } from "primevue"
+import QuantitySelector from "@/Components/Dropshipping/QuantitySelector.vue"
 import { EditorContent } from "@tiptap/vue-3"
 import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 
@@ -498,15 +499,7 @@ const openEditModal = (item: any) => {
 		...item,
 		basePrice: item?.customer_price,
 	}
-
-	selectedMedia.value = item.images?.map((img: any) => ({
-		image_id: img.id,
-		url: img.url,
-		image: img.url,
-		is_main: img.is_main
-	})) || []
-
-	selectedMediaIds.value = selectedMedia.value.map(m => m.image_id)
+	fetchEditMediaGallery()
 }
 
 const isLoadingMedia = ref(false)
@@ -515,11 +508,73 @@ const selectedMedia = ref<any[]>([])
 const isGeneratingAI = ref(false)
 const selectedMediaIds = ref<number[]>([])
 const mediaGallery = ref<string[]>([])
+const editMediaGallery = ref<string[]>([])
 const showGenerateModal = ref(false)
 const isStoringBundle = ref(false)
 const aiPrompt = ref('')
 const selectedMediaForAI = ref<any[]>([])
 const selectedMediaAIIds = ref<any[]>([])
+const bundleItems = ref<any[]>([])
+
+const fetchEditMediaGallery = async () => {
+	try {
+		isLoadingMedia.value = true
+
+		const routeParams = {
+			...props.bundle_routes.images.edit.parameters,
+			bundle: [selectedEditProduct.value.id]
+		}
+		const url = route(
+			props.bundle_routes.images.edit.name,
+			routeParams
+		)
+		const response = await axios.get(url)
+		const data = response.data.data || {}
+
+		editMediaGallery.value = data
+
+		if (data.current_images) {
+			selectedMedia.value = Object.entries(data.current_images).map(
+				([image_id, img]: any, index) => ({
+					image_id: Number(image_id),
+					image: img.original,
+					url: img.original,
+					is_main: index === 0 // default first jadi main
+				})
+			)
+
+			selectedMediaIds.value = selectedMedia.value.map(m => m.image_id)
+		}
+		if (data.items) {
+			bundleItems.value = data.items.map((i: any) => ({
+				id: i.bundle_item_id,
+				quantity: i.quantity,
+				product_id: i.item.id,
+				name: i.item.name,
+				image: i.item.images?.[0]?.source?.original || null,
+				raw: i
+			}))
+		}
+	} catch (e) {
+		console.error(e)
+
+		notify({
+			title: trans('Error'),
+			text: trans('Failed to load media'),
+			type: 'error'
+		})
+	} finally {
+		isLoadingMedia.value = false
+	}
+}
+
+const updateItemQty = (id: number, qty: number) => {
+	bundleItems.value = bundleItems.value.map(item =>
+		item.id === id
+			? { ...item, quantity: qty }
+			: item
+	)
+}
 
 const fetchMediaGallery = async () => {
 	try {
@@ -755,14 +810,21 @@ const submitBundle = async () => {
 	try {
 		isStoringBundle.value = true
 
+		const payloadItems = bundleItems.value.map(i => ({
+			bundle_item_id: i.id,
+			quantity: i.quantity
+		}))
+
 		const payload = {
 			description: selectedEditProduct?.value.description,
 			images: selectedMedia.value.map(img => ({
 				id: img.image_id,
 				is_main: img.is_main
-			}))
+			})),
+			payloadItems
 		}
 
+		console.log("payload", payload)
 		const routeParams = {
 			...props.bundle_routes.update.parameters,
 			bundle: selectedEditProduct?.value.id
@@ -1126,11 +1188,7 @@ const submitBundle = async () => {
 			<div class="flex gap-2">
 				<Button v-tooltip="trans('Edit Bundle')" type="tertiary" :style="'white-w-outline'" size="xs"
 					icon="fal fa-pencil" @click="openEditModal(item)" />
-				<!-- <ButtonWithLink v-tooltip="trans('Delete Bundle', {
-					platform: props.platform_data.name,
-				})
-					" type="negative" icon="fal fa-trash-alt" :routeTarget="item.delete_portfolio" :method="'delete'" size="xs"
-					:style="'white-r-outline'" :bindToLink="{ preserveScroll: true }" /> -->
+
 				<ButtonWithLink v-tooltip="trans('Delete Bundle', {
 					platform: props.platform_data.name,
 				})" type="negative" icon="fal fa-trash-alt" size="xs" :style="'white-r-outline'" :method="'delete'"
@@ -1338,6 +1396,28 @@ const submitBundle = async () => {
 				</div>
 			</div>
 
+			<div class="mb-5">
+				<label class="text-sm font-semibold">
+					Bundle Items
+				</label>
+
+				<div class="mt-2 space-y-2">
+					<div v-for="item in bundleItems" :key="item.id"
+						class="flex items-center gap-3 p-2 border rounded-lg bg-white">
+						<!-- IMAGE -->
+						<img :src="item.image" class="w-12 h-12 object-cover rounded bg-gray-100" />
+
+						<!-- INFO -->
+						<div class="flex-1 text-sm font-medium line-clamp-2">
+							{{ item.name }}
+						</div>
+
+						<!-- QUANTITY -->
+						<QuantitySelector :modelValue="item.quantity"
+							@update:modelValue="(val) => updateItemQty(item.id, val)" />
+					</div>
+				</div>
+			</div>
 			<div class="mb-3">
 				<div class="flex gap-2 mt-3">
 					<Button @click="openExistingMedia" type="secondary">
