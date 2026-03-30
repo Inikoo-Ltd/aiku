@@ -51,6 +51,7 @@ import CustomerClv from "@/Components/CustomerCLV.vue"
 import { notify } from "@kyvg/vue3-notification"
 import CustomerSalesVsRefunds from "@/Components/CustomerSalesVsRefunds.vue";
 import GoldReward from "@/Components/Utils/GoldReward.vue"
+import CustomerMiniTimeline from "@/Components/Showcases/Grp/CustomerMiniTimeline.vue"
 
 library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen)
 
@@ -140,6 +141,18 @@ const props = defineProps<{
     }
     tab: string
     handleTabUpdate?: Function
+    timeline?: {
+        events: {
+            id: string
+            type: string
+            datetime: string
+            title: string
+            subtitle: string | null
+            icon: string[]
+            color: string
+            metadata: Record<string, unknown>
+        }[]
+    }
 }>()
 
 
@@ -268,135 +281,48 @@ function tagColorClass(scope?: string) {
 </script>
 
 <template>
-    <!-- Section: KPI Cards -->
-    <div v-if="data?.stats" class="px-4 py-4 md:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-3 border-b border-gray-200">
-        <!-- Card: Historic CLV -->
-        <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
-            <FontAwesomeIcon icon="fal fa-chart-line" class="text-xl text-indigo-400 flex-shrink-0" />
-            <div>
-                <div class="text-xs text-gray-500">{{ trans('Lifetime Value') }}</div>
-                <div class="text-base font-semibold text-gray-800 tabular-nums">
-                    <CountUp
-                        :endVal="parseFloat(data.stats.historic_clv_amount ?? 0)"
-                        :decimalPlaces="2"
-                        :duration="1.5"
-                        :scrollSpyOnce="true"
-                        :options="{ formattingFn: (value) => locale.currencyFormat(data.currency?.code, value) }"
-                    />
-                </div>
+    <!-- Pending Approval Banner (full width) -->
+    <div v-if="data.require_approval && data.customer.status === 'pending_approval'"
+        class="px-4 py-4 md:px-6 lg:px-8">
+        <div class="p-5 border rounded-lg bg-white">
+            <div class="flex flex-col items-center text-center gap-2">
+                <h3 class="text-lg font-semibold text-gray-800">Pending Application</h3>
+                <p class="text-sm text-gray-600">
+                    This application is currently awaiting approval.
+                </p>
             </div>
-        </div>
 
-        <!-- Card: Average Order Value -->
-        <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
-            <FontAwesomeIcon icon="fal fa-shopping-cart" class="text-xl text-blue-400 flex-shrink-0" />
-            <div>
-                <div class="text-xs text-gray-500">{{ trans('Avg Order Value') }}</div>
-                <div class="text-base font-semibold text-gray-800 tabular-nums">
-                    <CountUp
-                        :endVal="parseFloat(data.stats.average_order_value ?? 0)"
-                        :decimalPlaces="2"
-                        :duration="1.5"
-                        :scrollSpyOnce="true"
-                        :options="{ formattingFn: (value) => locale.currencyFormat(data.currency?.code, value) }"
-                    />
-                </div>
-            </div>
-        </div>
+            <div class="mt-5 flex justify-center gap-3">
+                <Link :href="route(data.approveRoute.name, data.approveRoute.parameters)" method="patch"
+                    :data="{ status: 'approved' }">
+                <ButtonPrimeVue class="fixed-width-btn" severity="success" size="small" variant="outlined">
+                    <FontAwesomeIcon :icon="faCheck" @click="visible = false" />
+                    <span> Approve </span>
+                </ButtonPrimeVue>
+                </Link>
 
-        <!-- Card: Churn Risk -->
-        <div class="flex items-center gap-3 rounded-lg border px-4 py-3"
-            :class="[churnRiskLevel.bg, churnRiskLevel.border]">
-            <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-xl flex-shrink-0" :class="churnRiskLevel.icon" />
-            <div>
-                <div class="text-xs text-gray-500">{{ trans('Churn Risk') }}</div>
-                <div class="text-base font-semibold tabular-nums" :class="churnRiskLevel.color">
-                    {{ ((data.stats.churn_risk_prediction ?? 0) * 100).toFixed(0) }}%
-                    <span class="text-xs font-normal ml-1">{{ churnRiskLevel.label }}</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Card: Total Orders -->
-        <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
-            <FontAwesomeIcon icon="fal fa-box-open" class="text-xl text-emerald-400 flex-shrink-0" />
-            <div>
-                <div class="text-xs text-gray-500">{{ trans('Total Orders') }}</div>
-                <div class="text-base font-semibold text-gray-800 tabular-nums">
-                    <CountUp
-                        :endVal="data.stats.number_orders ?? 0"
-                        :decimalPlaces="0"
-                        :duration="1.5"
-                        :scrollSpyOnce="true"
-                    />
-                </div>
+                <ButtonPrimeVue class="fixed-width-btn" severity="danger" size="small" variant="outlined"
+                    @click="() => openRejectedModal(data.customer)">
+                    <FontAwesomeIcon :icon="faTimes" @click="visible = false" />
+                    <span> Reject </span>
+                </ButtonPrimeVue>
             </div>
         </div>
     </div>
 
-    <!-- Section: Stats box -->
-    <div class="px-4 py-5 md:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div v-if="data.require_approval && data.customer.status === 'pending_approval'"
-            class="w-full max-w-md justify-self-end">
-            <div class="p-5 border rounded-lg bg-white">
-                <div class="flex flex-col items-center text-center gap-2">
-                    <h3 class="text-lg font-semibold text-gray-800">Pending Application</h3>
-                    <p class="text-sm text-gray-600">
-                        This application is currently awaiting approval.
-                    </p>
-                </div>
+    <!-- 3-Column Hub Layout -->
+    <div class="px-4 py-5 md:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                <div class="mt-5 flex justify-center gap-3">
-                    <Link :href="route(data.approveRoute.name, data.approveRoute.parameters)" method="patch"
-                        :data="{ status: 'approved' }">
-                    <ButtonPrimeVue class="fixed-width-btn" severity="success" size="small" variant="outlined">
-                        <FontAwesomeIcon :icon="faCheck" @click="visible = false" />
-                        <span> Approve </span>
-                    </ButtonPrimeVue>
-                    </Link>
-
-                    <ButtonPrimeVue class="fixed-width-btn" severity="danger" size="small" variant="outlined"
-                        @click="() => openRejectedModal(data.customer)">
-                        <FontAwesomeIcon :icon="faTimes" @click="visible = false" />
-                        <span> Reject </span>
-                    </ButtonPrimeVue>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section: Profile box -->
-        <div>
+        <!-- LEFT COLUMN: Profile -->
+        <div class="lg:col-span-1">
             <div class="rounded-lg shadow-sm ring-1 ring-gray-900/5">
                 <dl class="flex flex-wrap">
-                    <!-- Profile: Header -->
-                    <!-- <div class="flex w-full py-6">
-                        <div v-if="data?.customer.is_dropshipping" class="flex-auto pl-6">
-                            <dt class="text-sm text-gray-500">{{ trans("Total Clients") }}</dt>
-                            <dd class="mt-1 text-base font-semibold leading-6">{{
-                                data?.customer?.number_current_customer_clients || 0 }}</dd>
-                        </div>
-
-                        <div class="flex-none self-end px-6">
-                            <dt class="sr-only">state</dt>
-                            <dd class="">
-                                <Tag :label="data?.customer?.state" :theme="data?.customer?.state === 'active'
-                                    ? 3
-                                    : data?.customer?.state === 'lost'
-                                        ? 7
-                                        : 99
-                                    " />
-                            </dd>
-                        </div>
-                    </div> -->
-
-                    <!-- Section: Field -->
                     <div class="flex flex-col gap-y-3 border-t border-gray-900/5 w-full py-6">
                         <!-- Field: Gold reward member -->
                         <div v-if="gr_data.customer_is_gr" class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt class="flex-none">
                                 <FontAwesomeIcon icon="fas fa-medal" class="align-middle text-yellow-500" fixed-width aria-hidden="true" />
                             </dt>
-                            
                             <dd class="text-yellow-600 inline-flex items-center">
                                 {{ gr_data?.gr_label }}
                                 <GoldReward
@@ -406,12 +332,11 @@ function tagColorClass(scope?: string) {
                                     <template #default>
                                         <div>
                                             <div class="ml-2 inline-block align-middle w-20 text-xxs rounded-sm h-3 my-1 bg-gray-200 relative overflow-hidden">
-                                                <div class="bg-green-500 absolute  left-0   top-0 h-full transition-all duration-1000 ease-in-out"
+                                                <div class="bg-green-500 absolute left-0 top-0 h-full transition-all duration-1000 ease-in-out"
                                                     :style="{
                                                         width: true ? gr_data?.meter?.[0]/gr_data?.meter?.[1] * 100 + '%' : '100%'
                                                     }"
                                                 />
-                                                
                                                 <div class="absolute inset-0 flex items-center justify-center text-xxs font-medium text-black">
                                                     {{ Number(gr_data?.meter?.[0]).toFixed(0) }} / {{ Number(gr_data?.meter?.[1]).toFixed(0) }} days
                                                 </div>
@@ -427,8 +352,7 @@ function tagColorClass(scope?: string) {
                             class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="trans('Contact name')" class="flex-none">
                                 <span class="sr-only">Contact name</span>
-                                <FontAwesomeIcon icon="fal fa-male" class="text-gray-400" fixed-width
-                                    aria-hidden="true" />
+                                <FontAwesomeIcon icon="fal fa-male" class="text-gray-400" fixed-width aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">{{ data?.customer?.contact_name }}</dd>
                             <button @click="copyToClipboard(data?.customer?.contact_name, 'Contact name')"
@@ -443,8 +367,7 @@ function tagColorClass(scope?: string) {
                             class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="trans('Company name')" class="flex-none">
                                 <span class="sr-only">Company name</span>
-                                <FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width
-                                    aria-hidden="true" />
+                                <FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">{{ data?.customer?.company_name }}</dd>
                             <button @click="copyToClipboard(data?.customer?.company_name, 'Company name')"
@@ -458,8 +381,7 @@ function tagColorClass(scope?: string) {
                         <div v-if="data?.customer?.created_at" class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="trans('Created at')" class="flex-none">
                                 <span class="sr-only">Created at</span>
-                                <FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" fixed-width
-                                    aria-hidden="true" />
+                                <FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" fixed-width aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">
                                 <time datetime="2023-01-31">{{ useFormatTime(data?.customer?.created_at) }}</time>
@@ -475,8 +397,7 @@ function tagColorClass(scope?: string) {
                         <div v-if="data?.customer?.email" class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="trans('Email')" class="flex-none">
                                 <span class="sr-only">Email</span>
-                                <FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width
-                                    aria-hidden="true" />
+                                <FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">
                                 <a :href="`mailto:${data.customer.email}`">{{ data?.customer?.email }}</a>
@@ -492,8 +413,7 @@ function tagColorClass(scope?: string) {
                         <div v-if="data?.customer?.phone" class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="trans('Phone')" class="flex-none">
                                 <span class="sr-only">Phone</span>
-                                <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width
-                                    aria-hidden="true" />
+                                <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">
                                 <a :href="`tel:${data.customer.phone}`">{{ data?.customer?.phone }}</a>
@@ -509,13 +429,11 @@ function tagColorClass(scope?: string) {
                         <div v-if="data?.customer?.address"
                             class="relative flex items-start w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="'Address'" class="flex-none pt-2">
-                                <FontAwesomeIcon icon="fal fa-map-marker-alt" class="text-gray-400" fixed-width
-                                    aria-hidden="true" />
+                                <FontAwesomeIcon icon="fal fa-map-marker-alt" class="text-gray-400" fixed-width aria-hidden="true" />
                             </dt>
                             <dd class="w-full text-gray-500">
                                 <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
-                                    <span class="" v-html="data?.customer?.address.formatted_address" />
-
+                                    <span v-html="data?.customer?.address.formatted_address" />
                                     <div v-if="data.address_management.can_open_address_management && data.shop.type !== 'external'"
                                         @click="() => isModalAddress = true"
                                         class="w-fit pr-4 whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
@@ -525,11 +443,12 @@ function tagColorClass(scope?: string) {
                             </dd>
                         </div>
 
+                        <!-- Field: Tags -->
                         <div v-if="data.tags.length > 0" class="relative flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="'Tags'" class="flex-none pt-2">
                                 <FontAwesomeIcon icon="fal fa-tags" class="text-gray-400" fixed-width aria-hidden="true" />
                             </dt>
-                            <dd class="flex items-center gap-2 w-full">
+                            <dd class="flex items-center gap-2 w-full flex-wrap">
                                 <span
                                     v-for="tag in data.tags"
                                     :key="tag.id"
@@ -542,10 +461,9 @@ function tagColorClass(scope?: string) {
                             </dd>
                         </div>
                     </div>
-
-
                 </dl>
             </div>
+
             <!-- Field: Tax Number -->
             <div v-if="data?.customer.tax_number && data.customer.tax_number.number"
                 class="flex items-start w-full flex-none gap-x-4 px-6 mt-6">
@@ -555,7 +473,6 @@ function tagColorClass(scope?: string) {
                 </dt>
                 <dd class="w-full text-gray-500">
                     <div class="space-y-2">
-                        <!-- Tax Number Display -->
                         <div class="flex items-center gap-x-2">
                             <div class="text-gray-900 font-medium">{{ data.customer.tax_number.number }}</div>
                             <button @click="copyToClipboard(data.customer.tax_number.number, 'Tax Number')"
@@ -564,8 +481,6 @@ function tagColorClass(scope?: string) {
                                 <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
                             </button>
                         </div>
-
-                        <!-- Validation Status Display -->
                         <div class="p-3 bg-gray-50 rounded-lg border">
                             <div class="flex items-start justify-between">
                                 <div class="flex items-center space-x-2">
@@ -573,36 +488,24 @@ function tagColorClass(scope?: string) {
                                         :icon="getStatusIcon(data.customer.tax_number.status, data.customer.tax_number.valid)"
                                         :class="getStatusColor(data.customer.tax_number.status, data.customer.tax_number.valid)"
                                         class="text-sm" />
-
-
                                     <div class="space-y-2">
                                         <p class="text-sm text-gray-900">
-                                            <span class="font-medium ">
-                                                {{ getStatusText(data.customer.tax_number.status,
-                                                data.customer.tax_number.valid) }}
+                                            <span class="font-medium">
+                                                {{ getStatusText(data.customer.tax_number.status, data.customer.tax_number.valid) }}
                                             </span>
-                                            <!-- Country -->
                                             <Tooltip v-if="data.customer.tax_number.country" class="inline ml-1">
-                                                <div class="inline hover:underline cursor-default">({{
-                                                    data.customer.tax_number.country.data.name }})</div>
-
+                                                <div class="inline hover:underline cursor-default">({{ data.customer.tax_number.country.data.name }})</div>
                                                 <template #popper>
                                                     <div class="p-1 max-w-xs">
                                                         <div class="space-y-2">
                                                             <div class="text-sm space-y-1">
-                                                                <p><span class="font-medium">{{ trans('Country')
-                                                                        }}:</span> {{
-                                                                    data.customer.tax_number.country.data.name }}</p>
-                                                                <p><span class="font-medium">{{ trans('Country Code')
-                                                                        }}:</span> {{
-                                                                    data.customer.tax_number.country.data.code }}</p>
+                                                                <p><span class="font-medium">{{ trans('Country') }}:</span> {{ data.customer.tax_number.country.data.name }}</p>
+                                                                <p><span class="font-medium">{{ trans('Country Code') }}:</span> {{ data.customer.tax_number.country.data.code }}</p>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </template>
                                             </Tooltip>
-
-                                            <!-- Last checked date -->
                                             <span v-if="data.customer.tax_number.checked_at"
                                                 v-tooltip="trans('Last checked :date', { date: formatDate(data.customer.tax_number.checked_at) })"
                                                 class="ml-1 cursor-default hover:underline">
@@ -618,66 +521,151 @@ function tagColorClass(scope?: string) {
             </div>
         </div>
 
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div class="flex flex-col gap-4">
-                <CustomerClv  :data="data?.stats"
-                    :currencyCode="data.currency" />
-                <CustomerSalesVsRefunds :data="data?.stats" :currency-code="data.currency" />
-            </div>
-
-            <div v-if="data.shop.type !== 'external'" class="justify-self-end ">
-                <div
-                    class="bg-indigo-50 border border-indigo-300 text-gray-700 flex flex-col justify-between px-4 py-5 sm:p-6 rounded-lg tabular-nums">
-                    <div class="w-full flex justify-between items-center">
-                        <div>
-                            <div class="text-base">
-                                {{ trans("Balance") }}
-                            </div>
+        <!-- CENTER COLUMN: KPI Cards + Mini Timeline -->
+        <div class="lg:col-span-1 flex flex-col gap-4">
+            <!-- KPI Cards: 2x2 grid -->
+            <div v-if="data?.stats" class="grid grid-cols-2 gap-3">
+                <!-- Card: Historic CLV -->
+                <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
+                    <FontAwesomeIcon icon="fal fa-chart-line" class="text-lg text-indigo-400 flex-shrink-0" />
+                    <div class="min-w-0">
+                        <div class="text-xs text-gray-500">{{ trans('Lifetime Value') }}</div>
+                        <div class="text-sm font-semibold text-gray-800 tabular-nums truncate">
+                            <CountUp
+                                :endVal="parseFloat(data.stats.historic_clv_amount ?? 0)"
+                                :decimalPlaces="2"
+                                :duration="1.5"
+                                :scrollSpyOnce="true"
+                                :options="{ formattingFn: (value) => locale.currencyFormat(data.currency?.code, value) }"
+                            />
                         </div>
-                        <div class="flex flex-col items-end">
-                            <div class="text-2xl font-bold">
-                                <CountUp :endVal="data.customer.balance" :decimalPlaces="2" :duration="1.5"
-                                    :scrollSpyOnce="true" :options="{
-                                        formattingFn: (value) =>
-                                            locale.currencyFormat(data.currency?.code, value),
-                                    }" />
-                            </div>
-                            <div class="flex items-center">
-                                <div @click="() => isModalBalanceIncrease = true"
-                                    v-tooltip="trans('Increase customer balance')"
-                                    class="cursor-pointer text-gray-400 hover:text-indigo-600">
-                                    <FontAwesomeIcon :icon="faArrowAltFromBottom" class="text-base"
-                                        tooltip="Decrease Balance" fixed-width aria-hidden="true" />
-                                </div>
-                                <span class="mx-2 text-gray-400">|</span>
-                                <div @click="() => isModalBalanceDecrease = true"
-                                    v-tooltip="trans('Decrease customer balance')"
-                                    class="cursor-pointer text-gray-400 hover:text-indigo-600">
-                                    <FontAwesomeIcon :icon="faArrowAltFromTop" class="text-base"
-                                        tooltip="Decrease Balance" fixed-width aria-hidden="true" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div v-if="handleTabUpdate" @click="() => handleTabUpdate('credit_transactions')"
-                        class="w-fit text-xs text-gray-400 hover:text-gray-700 mt-2 italic underline cursor-pointer">
-                        {{ trans("See all transactions list") }}
                     </div>
                 </div>
 
-                <div v-if="links.length" class="mt-4 w-64 border border-gray-300 rounded-md p-2">
-                    <div v-for="(item, index) in links" :key="index" class="p-2">
-                        <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
-                            type="secondary" />
+                <!-- Card: Average Order Value -->
+                <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
+                    <FontAwesomeIcon icon="fal fa-shopping-cart" class="text-lg text-blue-400 flex-shrink-0" />
+                    <div class="min-w-0">
+                        <div class="text-xs text-gray-500">{{ trans('Avg Order Value') }}</div>
+                        <div class="text-sm font-semibold text-gray-800 tabular-nums truncate">
+                            <CountUp
+                                :endVal="parseFloat(data.stats.average_order_value ?? 0)"
+                                :decimalPlaces="2"
+                                :duration="1.5"
+                                :scrollSpyOnce="true"
+                                :options="{ formattingFn: (value) => locale.currencyFormat(data.currency?.code, value) }"
+                            />
+                        </div>
                     </div>
                 </div>
 
-                <!-- Email Subscriptions Section -->
-                <EmailSubscribetion v-if="data?.customer?.email_subscriptions"
-                    :emailSubscriptions="data.customer.email_subscriptions" />
+                <!-- Card: Churn Risk -->
+                <div class="flex items-center gap-3 rounded-lg border px-3 py-3"
+                    :class="[churnRiskLevel.bg, churnRiskLevel.border]">
+                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-lg flex-shrink-0" :class="churnRiskLevel.icon" />
+                    <div class="min-w-0">
+                        <div class="text-xs text-gray-500">{{ trans('Churn Risk') }}</div>
+                        <div class="text-sm font-semibold tabular-nums" :class="churnRiskLevel.color">
+                            {{ ((data.stats.churn_risk_prediction ?? 0) * 100).toFixed(0) }}%
+                            <span class="text-xs font-normal ml-1">{{ churnRiskLevel.label }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Total Orders -->
+                <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
+                    <FontAwesomeIcon icon="fal fa-box-open" class="text-lg text-emerald-400 flex-shrink-0" />
+                    <div class="min-w-0">
+                        <div class="text-xs text-gray-500">{{ trans('Total Orders') }}</div>
+                        <div class="text-sm font-semibold text-gray-800 tabular-nums">
+                            <CountUp
+                                :endVal="data.stats.number_orders ?? 0"
+                                :decimalPlaces="0"
+                                :duration="1.5"
+                                :scrollSpyOnce="true"
+                            />
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <!-- Mini Timeline -->
+            <div class="rounded-lg border border-gray-200 p-4 flex flex-col gap-3">
+                <h3 class="text-sm font-semibold text-gray-700">{{ trans('Recent Activity') }}</h3>
+                <CustomerMiniTimeline
+                    v-if="timeline?.events"
+                    :events="timeline.events"
+                    :on-view-all="handleTabUpdate ? () => handleTabUpdate('timeline') : undefined"
+                />
+                <div v-else class="space-y-3">
+                    <div v-for="i in 5" :key="i" class="animate-pulse flex gap-3">
+                        <div class="w-8 h-8 rounded-full bg-gray-200 shrink-0" />
+                        <div class="flex-1 space-y-2 pt-1">
+                            <div class="h-3 bg-gray-200 rounded w-3/4" />
+                            <div class="h-2 bg-gray-100 rounded w-1/2" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Balance + Charts + Actions -->
+        <div class="lg:col-span-1 flex flex-col gap-4">
+            <!-- Balance Card -->
+            <div v-if="data.shop.type !== 'external'"
+                class="bg-indigo-50 border border-indigo-300 text-gray-700 flex flex-col justify-between px-4 py-5 sm:p-6 rounded-lg tabular-nums">
+                <div class="w-full flex justify-between items-center">
+                    <div>
+                        <div class="text-base">
+                            {{ trans("Balance") }}
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-end">
+                        <div class="text-2xl font-bold">
+                            <CountUp :endVal="data.customer.balance" :decimalPlaces="2" :duration="1.5"
+                                :scrollSpyOnce="true" :options="{
+                                    formattingFn: (value) =>
+                                        locale.currencyFormat(data.currency?.code, value),
+                                }" />
+                        </div>
+                        <div class="flex items-center">
+                            <div @click="() => isModalBalanceIncrease = true"
+                                v-tooltip="trans('Increase customer balance')"
+                                class="cursor-pointer text-gray-400 hover:text-indigo-600">
+                                <FontAwesomeIcon :icon="faArrowAltFromBottom" class="text-base"
+                                    tooltip="Decrease Balance" fixed-width aria-hidden="true" />
+                            </div>
+                            <span class="mx-2 text-gray-400">|</span>
+                            <div @click="() => isModalBalanceDecrease = true"
+                                v-tooltip="trans('Decrease customer balance')"
+                                class="cursor-pointer text-gray-400 hover:text-indigo-600">
+                                <FontAwesomeIcon :icon="faArrowAltFromTop" class="text-base"
+                                    tooltip="Decrease Balance" fixed-width aria-hidden="true" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="handleTabUpdate" @click="() => handleTabUpdate('credit_transactions')"
+                    class="w-fit text-xs text-gray-400 hover:text-gray-700 mt-2 italic underline cursor-pointer">
+                    {{ trans("See all transactions list") }}
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <CustomerClv :data="data?.stats" :currencyCode="data.currency" />
+            <CustomerSalesVsRefunds :data="data?.stats" :currency-code="data.currency" />
+
+            <!-- Web User Links -->
+            <div v-if="links.length" class="border border-gray-300 rounded-md p-2">
+                <div v-for="(item, index) in links" :key="index" class="p-2">
+                    <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
+                        type="secondary" />
+                </div>
+            </div>
+
+            <!-- Email Subscriptions -->
+            <EmailSubscribetion v-if="data?.customer?.email_subscriptions"
+                :emailSubscriptions="data.customer.email_subscriptions" />
         </div>
     </div>
 

@@ -157,6 +157,7 @@ const component = computed(() => {
         :tab="currentTab"
         :gr_data
         :handleTabUpdate
+        :timeline="props.timeline"
         :detachRoute="attachmentRoutes.detachRoute"
     />
 

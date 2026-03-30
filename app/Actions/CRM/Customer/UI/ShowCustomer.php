@@ -212,7 +212,7 @@ class ShowCustomer extends OrgAction
                 $tabs::HISTORY->value             => $this->tab == $tabs::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($customer))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($customer))),
-                $tabs::TIMELINE->value            => $this->tab == $tabs::TIMELINE->value ?
+                $tabs::TIMELINE->value            => $this->tab == $tabs::TIMELINE->value || $this->tab == $tabs::SHOWCASE->value ?
                     fn () => GetCustomerTimeline::run($customer)
                     : Inertia::lazy(fn () => GetCustomerTimeline::run($customer)),
 
