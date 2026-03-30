@@ -43,7 +43,7 @@ return new class () extends Migration {
             $table->unsignedInteger('location_id')->nullable()->index();
             $table->foreign('location_id')->references('id')->on('locations');
             $table->nullableMorphs('operation');
-            $table->decimal('quantity', 18, 6);
+            $table->decimal('quantity', 18, 6)->nullable();
             $table->decimal('org_amount', 16, 3);
             $table->decimal('grp_amount', 16, 3);
             $table->jsonb('data');

@@ -82,6 +82,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Location> $locations
  * @property-read \App\Models\Inventory\OrgStockFamily|null $orgStockFamily
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockHistory> $orgStockHistories
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockMovement> $orgStockMovements
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OrgSupplierProduct> $orgSupplierProducts
  * @property-read Organisation $organisation
@@ -215,5 +216,10 @@ class OrgStock extends Model implements Auditable
     {
         return $this->belongsToMany(Location::class, 'location_org_stocks')
             ->withPivot(['type', 'picking_priority', 'value', 'dropshipping_pipe', 'quantity', 'notes']);
+    }
+
+    public function orgStockHistories(): HasMany
+    {
+        return $this->hasMany(OrgStockHistory::class);
     }
 }
