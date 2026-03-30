@@ -6,6 +6,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Select from "primevue/select"
+import InputText from "primevue/inputtext"
 import Card from "primevue/card"
 import Tag from "primevue/tag"
 
@@ -135,6 +136,7 @@ const props = defineProps<{
             limit?: number | null
             year?: number
             month?: number | null
+            search?: string | null
         }
         filterOptions?: {
             campaignTypes?: SelectOption[]
@@ -154,7 +156,9 @@ const mode = ref<TimelineMode>("month")
 const selectedItem = ref<TimelineItem | null>(null)
 const selectedCampaignType = ref<string>(props.calendar.filters?.campaign_type ?? "")
 const selectedShop = ref<string>(props.calendar.filters?.shop !== null && props.calendar.filters?.shop !== undefined ? String(props.calendar.filters.shop) : "")
-const selectedYear = ref<number>(Number(props.calendar.filters?.year ?? props.calendar.year ?? new Date().getFullYear()))
+const baseYear = Number(props.calendar.year ?? new Date().getFullYear())
+const selectedYear = ref<number | null>(props.calendar.filters?.year ?? baseYear)
+const searchTerm = ref<string>((props.calendar.filters as any)?.search ?? "")
 const DEFAULT_LIMIT = 50
 const currentLimit = ref<number>(Number(props.calendar.filters?.limit ?? DEFAULT_LIMIT))
 const headerTimelineRef = ref<HTMLElement | null>(null)
@@ -174,7 +178,7 @@ const hoverTooltip = ref<{
     y: 0,
 })
 
-const activeYear = computed(() => Number(props.calendar.filters?.year ?? props.calendar.year ?? new Date().getFullYear()))
+const activeYear = computed(() => Number(props.calendar.filters?.year ?? baseYear))
 const previewStartYear = computed(() => (mode.value === "year" ? activeYear.value - 2 : activeYear.value - 1))
 const previewEndYear = computed(() => (mode.value === "year" ? activeYear.value + 2 : activeYear.value + 1))
 const timelineStart = computed(() => new Date(previewStartYear.value, 0, 1, 0, 0, 0, 0))
@@ -543,7 +547,7 @@ const applyFilters = (resetLimit = false): void => {
         params.organisation = props.calendar.organisationSlug
     }
 
-    params.year = selectedYear.value
+    params.year = Number(selectedYear.value ?? baseYear)
 
     const month = props.calendar.filters?.month
     if (month) {
@@ -553,6 +557,10 @@ const applyFilters = (resetLimit = false): void => {
     const limit = currentLimit.value
     if (limit) {
         params.limit = limit
+    }
+
+    if (searchTerm.value) {
+        params.search = searchTerm.value
     }
 
     if (selectedCampaignType.value) {
@@ -638,6 +646,16 @@ watch(
         currentLimit.value = Number(value ?? DEFAULT_LIMIT)
     }
 )
+
+watch(
+    () => selectedYear.value,
+    (value) => {
+        if (value === null) {
+            selectedYear.value = baseYear
+            applyFilters(true)
+        }
+    }
+)
 </script>
 
 <template>
@@ -675,6 +693,13 @@ watch(
             </div>
 
             <div class="flex items-center gap-2">
+                <InputText
+                    v-model="searchTerm"
+                    class="w-64 text-xs"
+                    :placeholder="trans('Search offer code or name')"
+                    @keyup.enter="applyFilters(true)"
+                />
+
                 <Select
                     v-model="selectedCampaignType"
                     :options="campaignTypeOptions"
@@ -700,6 +725,7 @@ watch(
                     optionValue="value"
                     class="w-32 text-xs"
                     :placeholder="trans('Year')"
+                    :showClear="selectedYear !== null"
                     @change="applyFilters(true)"
                 />
             </div>
@@ -753,16 +779,16 @@ watch(
                             <div class="flex h-full items-center gap-2">
                                 <span class="inline-block h-1/3 w-1.5 shrink-0 rounded-sm" :style="{ backgroundColor: item.color }" />
                                 <div class="min-w-0 flex-1 flex flex-col justify-center gap-0.5">
-                                    <div
+                                    <span
                                         class="truncate text-[13px] font-medium leading-tight text-gray-800"
-                                        :title="plainText(item.label)"
+                                        v-tooltip.top="plainText(item.label)"
                                     >
                                         {{ plainText(item.label) }}
-                                    </div>
+                                    </span>
                                     <div class="truncate text-[12px] leading-tight text-gray-500">
                                         <span v-if="item.campaignCode">{{ plainText(item.campaignCode) }}</span>
                                         <span v-if="item.offerCode"> • {{ plainText(item.offerCode) }}</span>
-                                        <span v-if="item.campaignName"> • {{ plainText(item.campaignName) }}</span>
+                                        <span v-tooltip.top="plainText(item.campaignName)" v-if="item.campaignName"> • {{ plainText(item.campaignName) }}</span>
                                     </div>
                                     <div class="truncate text-[12px] leading-tight text-gray-500">
                                         <span v-if="item.shopCode">{{ plainText(item.shopCode) }}</span>

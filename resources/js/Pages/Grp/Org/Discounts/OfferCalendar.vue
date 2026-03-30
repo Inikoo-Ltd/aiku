@@ -37,6 +37,7 @@ const props = defineProps<{
             limit?: number | null
             year?: number
             month?: number | null
+            search?: string | null
         }
         filterOptions?: {
             campaignTypes?: { value: string; label: string }[]
