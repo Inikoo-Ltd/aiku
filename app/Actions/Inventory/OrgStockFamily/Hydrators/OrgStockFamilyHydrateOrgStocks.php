@@ -10,6 +10,7 @@ namespace App\Actions\Inventory\OrgStockFamily\Hydrators;
 
 use App\Actions\Inventory\OrgStockFamily\UpdateOrgStockFamily;
 use App\Actions\Traits\WithEnumStats;
+use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum;
 use App\Models\Inventory\OrgStock;
@@ -41,6 +42,19 @@ class OrgStockFamilyHydrateOrgStocks implements ShouldBeUnique
                 model: 'org_stocks',
                 field: 'state',
                 enum: OrgStockStateEnum::class,
+                models: OrgStock::class,
+                where: function ($q) use ($orgStockFamily) {
+                    $q->where('org_stock_family_id', $orgStockFamily->id);
+                }
+            )
+        );
+
+        $stats = array_merge(
+            $stats,
+            $this->getEnumStats(
+                model: 'org_stocks',
+                field: 'quantity_status',
+                enum: OrgStockQuantityStatusEnum::class,
                 models: OrgStock::class,
                 where: function ($q) use ($orgStockFamily) {
                     $q->where('org_stock_family_id', $orgStockFamily->id);
