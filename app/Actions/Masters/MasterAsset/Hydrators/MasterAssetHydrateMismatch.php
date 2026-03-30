@@ -51,6 +51,14 @@ class MasterAssetHydrateMismatch implements ShouldBeUnique
                 $product->updateQuietly([
                     'mismatch_with_master_detected' => true
                 ]);
+
+                $masterFamily = $masterProduct->masterfamily;
+
+                if ($masterFamily && !$masterFamily->mismatch_detected) {
+                    $masterFamily->updateQuietly([
+                        'mismatch_detected' => false
+                    ]);
+                }
             } else {
                 $masterProduct->updateQuietly([
                     'mismatch_detected' => false
@@ -66,7 +74,7 @@ class MasterAssetHydrateMismatch implements ShouldBeUnique
             }
         }
 
-        MasterShopHydrateNumberMismatches::dispatch($masterProduct->masterShop)->delay(now()->addSeconds(60));
+        MasterShopHydrateNumberMismatches::run($masterProduct->masterShop);
     }
 
     public function getCommandSignature(): string
@@ -84,12 +92,13 @@ class MasterAssetHydrateMismatch implements ShouldBeUnique
         }
 
 
-        $total = MasterAsset::where('type', MasterAssetTypeEnum::PRODUCT)->count();
+        $total = MasterAsset::where('type', MasterAssetTypeEnum::PRODUCT)->where('master_shop_id', 3)->count();
         $bar   = $command->getOutput()->createProgressBar($total);
         $bar->setFormat('debug');
         $bar->start();
 
         MasterAsset::where('type', MasterAssetTypeEnum::PRODUCT)
+            ->where('master_shop_id', 3)
             ->orderBy('id')
             ->chunkById(1000, function ($masterProducts) use ($bar) {
                 foreach ($masterProducts as $masterProduct) {

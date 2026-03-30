@@ -22,7 +22,6 @@ use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
@@ -142,55 +141,11 @@ class IndexOrgStockFamilies extends OrgAction
             'organisations.slug as organisation_slug',
             'currencies.code as currency_code',
             'warehouses.slug as warehouse_slug',
-            DB::raw("(
-                SELECT COALESCE(SUM(os2.quantity_in_locations), 0)
-                FROM org_stocks os2
-                INNER JOIN model_has_trade_units mhtu2 ON mhtu2.model_id = os2.id AND mhtu2.model_type = 'OrgStock'
-                WHERE mhtu2.trade_unit_id IN (
-                    SELECT mhtu.trade_unit_id
-                    FROM model_has_trade_units mhtu
-                    INNER JOIN org_stocks os ON mhtu.model_id = os.id AND mhtu.model_type = 'OrgStock'
-                    WHERE os.org_stock_family_id = org_stock_families.id
-                )
-            ) as stock_value"),
-            DB::raw("(
-                SELECT COALESCE(SUM(pot.org_net_amount), 0)
-                FROM purchase_order_transactions pot
-                INNER JOIN purchase_orders po ON pot.purchase_order_id = po.id
-                INNER JOIN org_stocks os ON pot.org_stock_id = os.id
-                WHERE os.org_stock_family_id = org_stock_families.id
-                AND po.delivery_state IN ('ready_to_ship', 'dispatched')
-                AND po.state NOT IN ('cancelled', 'not_received')
-            ) as on_the_way_po_value"),
-            DB::raw("(
-                SELECT COUNT(DISTINCT po.id)
-                FROM purchase_order_transactions pot
-                INNER JOIN purchase_orders po ON pot.purchase_order_id = po.id
-                INNER JOIN org_stocks os ON pot.org_stock_id = os.id
-                WHERE os.org_stock_family_id = org_stock_families.id
-                AND po.delivery_state IN ('ready_to_ship', 'dispatched')
-                AND po.state NOT IN ('cancelled', 'not_received')
-            ) as on_the_way_po_count"),
-            DB::raw("(
-                SELECT COUNT(*)
-                FROM org_stocks os
-                WHERE os.org_stock_family_id = org_stock_families.id
-                AND os.quantity_status = 'out-of-stock'
-            ) as number_out_of_stock_org_stocks"),
-            DB::raw("(
-                SELECT
-                    CASE
-                        WHEN SUM(it.quantity) > 0 THEN
-                            (SELECT COALESCE(SUM(os.quantity_available), 0) FROM org_stocks os WHERE os.org_stock_family_id = org_stock_families.id)
-                            * EXTRACT(EPOCH FROM (NOW() - MIN(it.date))) / (7.0 * 86400)
-                            / SUM(it.quantity)
-                        ELSE NULL
-                    END
-                FROM invoice_transactions it
-                INNER JOIN invoice_transaction_has_org_stocks ithos ON ithos.invoice_transaction_id = it.id
-                WHERE ithos.org_stock_family_id = org_stock_families.id
-                AND it.deleted_at IS NULL
-            ) as woc"),
+            'org_stock_family_stats.stock_value',
+            'org_stock_family_stats.on_the_way_po_value',
+            'org_stock_family_stats.on_the_way_po_count',
+            'org_stock_family_stats.number_org_stocks_quantity_status_out_of_stock as number_out_of_stock_org_stocks',
+            'org_stock_family_stats.week_of_cover as woc',
             'org_stock_families.health_rank',
         ];
 

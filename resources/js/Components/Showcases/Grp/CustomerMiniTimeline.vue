@@ -1,9 +1,3 @@
-<!--
-  - Author: Raul Perusquia <raul@inikoo.com>
-  - Created: Fri, 28 Mar 2025 00:00:00 Malaysia Time, Kuala Lumpur, Malaysia
-  - Copyright (c) 2025, Raul A Perusquia Flores
-  -->
-
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -19,16 +13,16 @@ import {
     faCodeBranch,
     faChevronDown,
     faChevronUp,
-    faFilter,
     faGlobe,
     faEye,
     faShoppingCart,
 } from '@fal'
+import { trans } from 'laravel-vue-i18n'
 import { useFormatTime } from '@/Composables/useFormatTime'
 
 library.add(
     faUserEdit, faStickyNote, faInboxIn, faPaperPlane, faTimesCircle,
-    faMoneyBill, faEnvelope, faCodeBranch, faChevronDown, faChevronUp, faFilter, faGlobe,
+    faMoneyBill, faEnvelope, faCodeBranch, faChevronDown, faChevronUp, faGlobe,
     faEye, faShoppingCart
 )
 
@@ -44,23 +38,11 @@ interface TimelineEvent {
 }
 
 const props = defineProps<{
-    data: {
-        events: TimelineEvent[]
-    }
-    tab?: string
+    events: TimelineEvent[]
+    onViewAll?: () => void
 }>()
 
-const activeFilter = ref<string | null>(null)
 const expandedIds = ref<Set<string>>(new Set())
-
-const filterOptions = [
-    { key: null, label: 'All' },
-    { key: 'order', label: 'Orders', types: ['order_placed', 'order_dispatched', 'order_cancelled'] },
-    { key: 'account_update', label: 'Account Changes', types: ['account_update', 'note'] },
-    { key: 'payment', label: 'Payments', types: ['payment'] },
-    { key: 'email', label: 'Emails', types: ['email'] },
-    { key: 'web_activity', label: 'Website Activity', types: ['page_view', 'product_view', 'add_to_basket'] },
-]
 
 const colorClasses: Record<string, { bg: string; icon: string }> = {
     blue:   { bg: 'bg-blue-100',   icon: 'text-blue-600' },
@@ -72,18 +54,7 @@ const colorClasses: Record<string, { bg: string; icon: string }> = {
     teal:   { bg: 'bg-teal-100',   icon: 'text-teal-600' },
 }
 
-const filteredEvents = computed(() => {
-    if (!activeFilter.value) {
-        return props.data?.events ?? []
-    }
-
-    const option = filterOptions.find(f => f.key === activeFilter.value)
-    if (!option?.types) {
-        return props.data?.events ?? []
-    }
-
-    return (props.data?.events ?? []).filter(e => option.types!.includes(e.type))
-})
+const recentEvents = computed(() => (props.events ?? []).slice(0, 10))
 
 const toggleExpand = (id: string) => {
     if (expandedIds.value.has(id)) {
@@ -125,70 +96,51 @@ const formatMetadataValue = (value: unknown): string => {
 </script>
 
 <template>
-    <div class="p-4 max-w-3xl mx-auto">
-        <!-- Filter Bar -->
-        <div class="mb-6 flex flex-wrap items-center gap-2">
-            <FontAwesomeIcon :icon="['fal', 'fa-filter']" class="text-gray-400 text-sm" />
-            <button
-                v-for="filter in filterOptions"
-                :key="String(filter.key)"
-                @click="activeFilter = filter.key"
-                class="px-3 py-1 rounded-full text-sm font-medium border transition-colors"
-                :class="activeFilter === filter.key
-                    ? 'bg-gray-800 text-white border-gray-800'
-                    : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'"
-            >
-                {{ filter.label }}
-            </button>
-        </div>
-
+    <div class="flex flex-col">
         <!-- Empty State -->
-        <div v-if="filteredEvents.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
-            <div class="mb-4 animate-pulse">
-                <FontAwesomeIcon :icon="['fal', 'fa-code-branch']" class="text-gray-300 text-5xl" />
+        <div v-if="recentEvents.length === 0" class="flex flex-col items-center justify-center py-10 text-center">
+            <div class="mb-3 animate-pulse">
+                <FontAwesomeIcon :icon="['fal', 'fa-code-branch']" class="text-gray-300 text-4xl" />
             </div>
-            <p class="text-gray-500 text-base font-medium">No activity found</p>
-            <p class="text-gray-400 text-sm mt-1">
-                {{ activeFilter ? 'Try selecting a different filter.' : 'No activity in the last 12 months.' }}
-            </p>
+            <p class="text-gray-500 text-sm font-medium">{{ trans('No activity found') }}</p>
+            <p class="text-gray-400 text-xs mt-1">{{ trans('No activity in the last 12 months.') }}</p>
         </div>
 
         <!-- Timeline Feed -->
         <div v-else class="relative">
-            <!-- Vertical line -->
-            <div class="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-200" />
+            <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200" />
 
             <ol class="space-y-0">
                 <li
-                    v-for="event in filteredEvents"
+                    v-for="event in recentEvents"
                     :key="event.id"
-                    class="relative flex gap-4 pb-6"
+                    class="relative flex gap-3 pb-5"
                 >
                     <!-- Icon Bubble -->
                     <div
-                        class="relative z-10 flex h-10 w-10 flex-none items-center justify-center rounded-full ring-2 ring-white"
+                        class="relative z-10 flex h-8 w-8 flex-none items-center justify-center rounded-full ring-2 ring-white"
                         :class="getColorClasses(event.color).bg"
                     >
                         <FontAwesomeIcon
                             :icon="event.icon"
-                            class="text-sm"
+                            class="text-xs"
                             :class="getColorClasses(event.color).icon"
                         />
                     </div>
 
                     <!-- Content -->
-                    <div class="flex-1 min-w-0 pt-1.5">
+                    <div class="flex-1 min-w-0 pt-1">
                         <div class="flex items-start justify-between gap-2">
                             <div class="min-w-0">
-                                <p class="text-sm font-semibold text-gray-900 leading-tight">
+                                <p class="text-xs font-semibold text-gray-900 leading-tight">
                                     {{ event.title }}
                                 </p>
-                                <p v-if="event.subtitle" class="text-sm text-gray-500 mt-0.5 truncate">
+                                <p v-if="event.subtitle" class="text-xs text-gray-500 mt-0.5 truncate">
                                     {{ event.subtitle }}
                                 </p>
                             </div>
 
-                            <div class="flex items-center gap-2 flex-none">
+                            <div class="flex items-center gap-1.5 flex-none">
                                 <time
                                     :datetime="event.datetime"
                                     :title="useFormatTime(event.datetime, { formatTime: 'hm' })"
@@ -214,88 +166,56 @@ const formatMetadataValue = (value: unknown): string => {
                         <Transition name="expand">
                             <div
                                 v-if="expandedIds.has(event.id)"
-                                class="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600"
+                                class="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-xs text-gray-600"
                             >
-                                <!-- Account Update: old → new values -->
                                 <template v-if="event.type === 'account_update' && (event.metadata.old_values || event.metadata.new_values)">
                                     <div
                                         v-for="key in Object.keys({ ...(event.metadata.old_values as object ?? {}), ...(event.metadata.new_values as object ?? {}) })"
                                         :key="key"
                                         class="flex items-start gap-2 py-0.5"
                                     >
-                                        <span class="font-medium capitalize text-gray-700 w-28 flex-none">{{ key.replace(/_/g, ' ') }}</span>
+                                        <span class="font-medium capitalize text-gray-700 w-24 flex-none">{{ key.replace(/_/g, ' ') }}</span>
                                         <span class="text-red-500 line-through">{{ formatMetadataValue((event.metadata.old_values as Record<string, unknown>)?.[key]) }}</span>
                                         <span class="text-gray-400">→</span>
                                         <span class="text-green-600">{{ formatMetadataValue((event.metadata.new_values as Record<string, unknown>)?.[key]) }}</span>
                                     </div>
                                 </template>
 
-                                <!-- Order: amount details -->
                                 <template v-else-if="['order_placed', 'order_dispatched', 'order_cancelled'].includes(event.type)">
                                     <div v-if="event.metadata.net_amount" class="flex gap-2">
-                                        <span class="font-medium text-gray-700">Net:</span>
+                                        <span class="font-medium text-gray-700 text-gray-700">Net:</span>
                                         <span>{{ event.metadata.currency_code }} {{ event.metadata.net_amount }}</span>
                                     </div>
                                     <div v-if="event.metadata.total_amount" class="flex gap-2">
-                                        <span class="font-medium text-gray-700">Total:</span>
+                                        <span class="font-medium text-gray-700 text-gray-700">Total:</span>
                                         <span>{{ event.metadata.currency_code }} {{ event.metadata.total_amount }}</span>
                                     </div>
                                     <div v-if="event.metadata.state" class="flex gap-2">
-                                        <span class="font-medium text-gray-700">State:</span>
+                                        <span class="font-medium text-gray-700 text-gray-700">State:</span>
                                         <span>{{ String(event.metadata.state).replace(/_/g, ' ') }}</span>
                                     </div>
                                 </template>
 
-                                <!-- Payment: amount, state -->
                                 <template v-else-if="event.type === 'payment'">
                                     <div v-if="event.metadata.amount" class="flex gap-2">
-                                        <span class="font-medium text-gray-700">Amount:</span>
+                                        <span class="font-medium text-gray-700 text-gray-700">Amount:</span>
                                         <span>{{ event.metadata.amount }}</span>
                                     </div>
                                     <div v-if="event.metadata.state" class="flex gap-2">
-                                        <span class="font-medium text-gray-700">State:</span>
+                                        <span class="font-medium text-gray-700 text-gray-700">State:</span>
                                         <span>{{ String(event.metadata.state).replace(/_/g, ' ') }}</span>
                                     </div>
                                 </template>
 
-                                <!-- Email: reads, clicks -->
                                 <template v-else-if="event.type === 'email'">
                                     <div class="flex gap-4">
                                         <div class="flex gap-2">
-                                            <span class="font-medium text-gray-700">Reads:</span>
+                                            <span class="font-medium text-gray-700 text-gray-700">Reads:</span>
                                             <span>{{ event.metadata.number_reads ?? 0 }}</span>
                                         </div>
                                         <div class="flex gap-2">
-                                            <span class="font-medium text-gray-700">Clicks:</span>
+                                            <span class="font-medium text-gray-700 text-gray-700">Clicks:</span>
                                             <span>{{ event.metadata.number_clicks ?? 0 }}</span>
-                                        </div>
-                                    </div>
-                                </template>
-
-                                <!-- Page view / Product view: duration -->
-                                <template v-else-if="['page_view', 'product_view'].includes(event.type)">
-                                    <div class="space-y-0.5">
-                                        <div v-if="event.metadata.duration_seconds" class="flex gap-2">
-                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ trans('Duration') }}:</span>
-                                            <span>{{ event.metadata.duration_seconds }}s</span>
-                                        </div>
-                                        <div v-if="event.metadata.page_sub_type" class="flex gap-2">
-                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ trans('Type') }}:</span>
-                                            <span class="capitalize">{{ String(event.metadata.page_sub_type).replace(/_/g, ' ') }}</span>
-                                        </div>
-                                    </div>
-                                </template>
-
-                                <!-- Add to basket: product, quantity -->
-                                <template v-else-if="event.type === 'add_to_basket'">
-                                    <div class="space-y-0.5">
-                                        <div v-if="event.metadata.quantity" class="flex gap-2">
-                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ trans('Quantity') }}:</span>
-                                            <span>{{ event.metadata.quantity }}</span>
-                                        </div>
-                                        <div v-if="event.metadata.product_id" class="flex gap-2">
-                                            <span class="font-medium text-gray-700 w-24 flex-none">Product ID:</span>
-                                            <span>{{ event.metadata.product_id }}</span>
                                         </div>
                                     </div>
                                 </template>
@@ -304,6 +224,16 @@ const formatMetadataValue = (value: unknown): string => {
                     </div>
                 </li>
             </ol>
+        </div>
+
+        <!-- View All Link -->
+        <div v-if="onViewAll && (events?.length ?? 0) > 0" class="pt-2 border-t border-gray-200 text-center">
+            <button
+                @click="onViewAll"
+                class="text-xs text-indigo-600 hover:underline"
+            >
+                {{ trans('View all activity') }}
+            </button>
         </div>
     </div>
 </template>

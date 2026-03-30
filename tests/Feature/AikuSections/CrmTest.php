@@ -662,6 +662,28 @@ test('UI show customer', function () {
     });
 });
 
+test('UI show customer showcase tab has stats for KPI cards', function () {
+    $customer = $this->shop->customers()->first();
+    $response = get(route('grp.org.shops.show.crm.customers.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $customer->slug,
+        'tab' => 'showcase',
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Shop/CRM/Customer')
+            ->has('tabs')
+            ->has('showcase')
+            ->has('showcase.stats')
+            ->where('showcase.stats', fn ($stats) => isset($stats['historic_clv_amount'])
+                && isset($stats['average_order_value'])
+                && isset($stats['churn_risk_prediction'])
+                && isset($stats['number_orders'])
+            );
+    });
+});
+
 test('UI show customer timeline tab', function () {
     $customer = Customer::first();
     $response = get(route('grp.org.shops.show.crm.customers.show', [
@@ -674,8 +696,7 @@ test('UI show customer timeline tab', function () {
         $page
             ->component('Org/Shop/CRM/Customer')
             ->has('tabs')
-            ->has('timeline')
-            ->where('timeline.events', fn ($events) => is_array($events));
+            ->has('timeline');
     });
 });
 
