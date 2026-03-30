@@ -99,8 +99,7 @@ class ProcessLowStockInBasketPerOutbox
         // \Log::info($baseQuery->toRawSql());
 
         if ($totalItems > 0) {
-            $instance = new self();
-            $emailBulkRun = $instance->upsertEmailBulkRunForBasketLowStock($outbox, $currentDateTime->toDateTimeString());
+            $emailBulkRun = $this->upsertEmailBulkRunForBasketLowStock($outbox, $currentDateTime->toDateTimeString());
         } else {
             return;
         }
