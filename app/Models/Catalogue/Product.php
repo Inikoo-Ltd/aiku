@@ -284,6 +284,7 @@ class Product extends Model implements Auditable, HasMedia
         'not_for_sale_since'            => 'datetime',
         'is_for_sale'                   => 'boolean',
         'not_for_sale_from_master'      => 'boolean',
+        'mismatch_with_master_detected' => 'boolean',
 
     ];
 

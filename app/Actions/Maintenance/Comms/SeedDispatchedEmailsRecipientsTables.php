@@ -24,12 +24,12 @@ class SeedDispatchedEmailsRecipientsTables
         $command->info('Starting to seed dispatched emails recipients pivot tables...');
 
         $processedCount = 0;
-        $chunkSize      = 500;
+        $chunkSize      = 10001;
 
         DB::table('dispatched_emails')
             ->whereNotNull('recipient_type')
             ->orderBy('id', 'desc')
-            ->chunk($chunkSize, function ($dispatchedEmails) use ($command, &$processedCount) {
+            ->chunkById($chunkSize, function ($dispatchedEmails) use ($command, &$processedCount) {
                 $webUserInserts                     = [];
                 $usersInserts                       = [];
                 $customerInserts                    = [];
@@ -123,7 +123,9 @@ class SeedDispatchedEmailsRecipientsTables
                             ->where('user_id', $dispatchedEmail->recipient_id)
                             ->exists();
 
-                        if (!$exists) {
+                        $user = DB::table('users')->where('id', $dispatchedEmail->recipient_id)->exists();
+
+                        if (!$exists && $user) {
                             $insertData['user_id'] = $dispatchedEmail->recipient_id;
                             $usersInserts[]        = $insertData;
                         }
@@ -142,7 +144,7 @@ class SeedDispatchedEmailsRecipientsTables
 
                 if (!empty($usersInserts)) {
                     try {
-                        DB::table('user_has_dispatched_emails')->insert($webUserInserts);
+                        DB::table('user_has_dispatched_emails')->insert($usersInserts);
                         $changed = true;
                     } catch (\Exception $e) {
                         //
@@ -184,8 +186,8 @@ class SeedDispatchedEmailsRecipientsTables
                 }
 
                 $processedCount += count($dispatchedEmails);
-                $command->info("Processed $processedCount dispatched emails...");
-            });
+                $command->info("Processed $processedCount (fix recipient_type) dispatched emails...");
+            }, 'id');
 
         $command->info("Completed! Total processed: $processedCount dispatched emails.");
     }

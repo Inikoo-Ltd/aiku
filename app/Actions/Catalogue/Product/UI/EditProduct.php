@@ -510,7 +510,6 @@ class EditProduct extends OrgAction
                     'icon'   => 'fa-light fa-tag',
                     'fields' => $nameFields
                 ],
-
                 [
                     'label'  => __('Pricing'),
                     'icon'   => 'fa-light fa-money-bill',
@@ -604,7 +603,6 @@ class EditProduct extends OrgAction
 
                         ]
                     ],
-
                 $canEditNotForSale
                     ? [
                     'label'  => __('Sale Status'),
@@ -617,7 +615,18 @@ class EditProduct extends OrgAction
                         ],
                     ],
                 ] : [],
-
+                $product->masterProduct ? [
+                    'label'  => __('Trade Unit'),
+                    'icon'   => 'fal fa-atom',
+                    'fields' => [
+                        'not_follow_master_trade_units' => [
+                            'type'  => 'toggle',
+                            'label' => __('Do not follow master trade units'),
+                            'value' => $product->not_follow_master_trade_units,
+                            'information' => __('Would set product to have standalone trade units (Differs from master)')
+                        ],
+                    ],
+                ] : [],
             ]
         );
     }

@@ -86,6 +86,7 @@ class OrgStocksResource extends JsonResource
             'on_the_way_po_value'                   => $this->on_the_way_po_value ?? 0,
             'on_the_way_po_count'                   => $this->on_the_way_po_count ?? 0,
             'woc'                                   => $this->woc !== null ? round((float) $this->woc, 1) : null,
+            'product_count'                         => $this->product_count,
             'health_rank'                      => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
         ];
     }

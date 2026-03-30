@@ -346,7 +346,7 @@ onMounted(async () => {
                         </span>
                         
                         <!-- Popover: Question circle GR member -->
-                        <Popover ref="_popoverProfit" :style="{width: '550px'}" class="py-1 px-2">
+                        <Popover ref="_popoverProfit" class="max-w-[90vw] md:max-w-none sm:min-w-[350px]">
                             <ProfitCalculationList :product="fieldValue.product" />
                         </Popover>
                     </div>
@@ -567,7 +567,7 @@ onMounted(async () => {
                     <FontAwesomeIcon icon="fal fa-plus-circle" />
                 </span>
 
-                <Popover ref="_popoverProfit" :style="{ width: '550px' }">
+                <Popover ref="_popoverProfit" class="max-w-[90vw] md:max-w-none sm:min-w-[350px]">
                     <ProfitCalculationList :product="fieldValue.product" />
                 </Popover>
             </div>

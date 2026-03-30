@@ -36,6 +36,7 @@ const props = withDefaults(defineProps<{
   head_label?: string
   no_data_label?: string
   tabs?: Array<{ label: string, routeFetch: routeType }>
+  enable_search?: boolean
 }>(), {
   key_quantity: 'quantity_selected',
   head_label: 'Selected Products',
@@ -105,7 +106,7 @@ const getPortfoliosList = async (url?: string) => {
     const params: Record<string, any> = { ...tabRoute.parameters }
 
     // ✅ Only append search if tab has "search: true"
-    if (currentTab?.search && queryPortfolio.value) {
+    if ((currentTab?.search && queryPortfolio.value) || props.enable_search) {
       params['filter[global]'] = queryPortfolio.value
     }
 
@@ -317,9 +318,9 @@ defineExpose({
         </div>
 
         <!-- search -->
-        <div class="mb-2">
+        <div class="mt-2">
           <!-- search -->
-          <div v-if="tabs?.length && tabs[activeTab]?.search" class="mb-2">
+          <div v-if="(tabs?.length && tabs[activeTab]?.search) || enable_search" class="mb-2">
             <PureInput v-model="queryPortfolio" @update:modelValue="() => debounceGetPortfoliosList()"
               :placeholder="trans('Input to search')" />
           </div>

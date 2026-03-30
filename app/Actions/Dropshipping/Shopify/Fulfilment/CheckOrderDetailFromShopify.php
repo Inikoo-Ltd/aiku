@@ -116,7 +116,7 @@ class CheckOrderDetailFromShopify extends OrgAction
         dd($orderResponse);
     }
 
-    
+
     public string $commandSignature = 'shopify:check_order_details {order}';
 
     public function asCommand(Command $command): void

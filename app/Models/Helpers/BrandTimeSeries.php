@@ -17,8 +17,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $number_records
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\BrandTimeSeriesRecord> $records
  * @property-read \App\Models\Helpers\Brand $brand
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\BrandTimeSeriesRecord> $records
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BrandTimeSeries newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BrandTimeSeries newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BrandTimeSeries query()

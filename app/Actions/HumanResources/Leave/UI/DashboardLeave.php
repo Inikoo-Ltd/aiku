@@ -183,7 +183,7 @@ class DashboardLeave extends OrgAction
             ->where('state', 'working')
             ->orderBy('alias')
             ->get()
-            ->map(fn($employee) => [
+            ->map(fn ($employee) => [
                 'value' => $employee->id,
                 'label' => $employee->contact_name,
             ]);
@@ -193,7 +193,7 @@ class DashboardLeave extends OrgAction
             ->distinct('department')
             ->orderBy('department')
             ->pluck('department')
-            ->map(fn($dept) => [
+            ->map(fn ($dept) => [
                 'value' => $dept,
                 'label' => $dept,
             ]);
@@ -272,8 +272,7 @@ class DashboardLeave extends OrgAction
         Carbon  $visibleEnd,
         ?Carbon $monthStart = null,
         ?Carbon $monthEnd = null,
-    ): array
-    {
+    ): array {
         $weeks = [];
         $weekIndex = 0;
 
