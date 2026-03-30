@@ -19,6 +19,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import NumberWithButtonSave from '../NumberWithButtonSave.vue'
 import ToggleSwitch from "primevue/toggleswitch"
 import LoadingIcon from '../Utils/LoadingIcon.vue'
+import QuantitySelector from './QuantitySelector.vue'
 library.add(faCheckCircle)
 
 const props = defineProps<{
@@ -161,9 +162,7 @@ watch(selectedProduct, (val) => {
         </slot>
 
         <div class="relative isolate">
-            <div
-                class="text-gray-600 mb-3"
-            >
+            <div class="text-gray-600 mb-3">
                 Add products to your bundle
             </div>
             <div v-if="isLoadingSubmit"
@@ -241,7 +240,7 @@ watch(selectedProduct, (val) => {
                                                     <div v-if="item.gross_weight" v-tooltip="trans('Weight')"
                                                         class="w-fit text-xs text-gray-400 italic">
                                                         <span class="font-medium">Weight:</span> {{ (item.gross_weight /
-                                                        1000).toFixed(2) }} kg
+                                                            1000).toFixed(2) }} kg
                                                     </div>
 
                                                     <!-- Show Stock -->
@@ -252,7 +251,7 @@ watch(selectedProduct, (val) => {
                                                             'text-red-500': !item.available_quantity || item.available_quantity === 0
                                                         }">
                                                         <span class="font-medium">Stock:</span> {{
-                                                        item.available_quantity || 'Empty' }}
+                                                            item.available_quantity || 'Empty' }}
                                                     </div>
 
                                                 </div>
@@ -278,11 +277,23 @@ watch(selectedProduct, (val) => {
                                                 </div>
 
                                                 <!-- Quantity Input -->
-                                                <NumberWithButtonSave v-if="withQuantity"
+                                                <!-- <NumberWithButtonSave v-if="withQuantity"
                                                     :modelValue="get(item, 'quantity_selected', 1)"
                                                     :bindToTarget="{ min: 1 }"
                                                     @update:modelValue="(e: number) => (set(item, 'quantity_selected', e), selectedProduct.includes(item) ? '' : selectedProduct?.push(item))"
-                                                    noUndoButton noSaveButton parentClass="w-min" />
+                                                    noUndoButton noSaveButton parentClass="w-min" /> -->
+
+                                                <QuantitySelector
+                                                    v-if="withQuantity && compSelectedProduct.includes(item.id)"
+                                                    :modelValue="item.quantity_selected || 1" @update:modelValue="(val) => {
+                                                        item.quantity_selected = val
+
+                                                        if (!selectedProduct.includes(item)) {
+                                                            selectedProduct.push(item)
+                                                        }
+
+                                                        selectedProduct = [...selectedProduct]
+                                                    }" />
                                             </div>
 
                                         </slot>

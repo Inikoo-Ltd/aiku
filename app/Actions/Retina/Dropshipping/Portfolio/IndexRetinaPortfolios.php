@@ -476,6 +476,12 @@ class IndexRetinaPortfolios extends RetinaAction
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ]
                     ],
+                    'delete' => [
+                        'name'       => 'retina.models.dropshipping.bundles.delete',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
                     'images' => [
                         'get' => [
                             'name'       => 'retina.dropshipping.products.images.index',
