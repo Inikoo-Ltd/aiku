@@ -21,14 +21,14 @@ const props = defineProps<{
             :src="`/assets/promo/gr-${layout.retina.organisation}.png`"
             alt="Gold Reward logo"
             class="pointer-events-none translate-y-[15%]
-                   h-5 sm:h-6 md:h-6 lg:h-7 xl:h-7 2xl:h-9"
+                   h-6 sm:h-6 md:h-7 lg:h-7 xl:h-8 2xl:h-8"
         />
     
         <div
             class="background-primary flex items-center gap-1 rounded whitespace-nowrap leading-none text-white
-                   px-1.5 py-[2px]
+                   px-1.5 py-[3px]
                    text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] 2xl:text-[14px]
-                   2xl:px-2 2xl:py-[5px]"
+                   2xl:px-2 2xl:py-[3px]"
         >
             <span>{{ trans("Member Price") }}</span>
     
