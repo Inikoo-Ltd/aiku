@@ -11,9 +11,9 @@ import Button from '../Elements/Buttons/Button.vue';
 import { InputText, Select, Dialog, Textarea, Checkbox } from "primevue"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import InformationIcon from '../Utils/InformationIcon.vue';
-import { faLayerGroup, faSparkles, faTrash, faImages, faSpinner } from '@fas'
+import { faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, faMinus } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-library.add(faLayerGroup, faSparkles, faTrash, faImages, faSpinner)
+library.add(faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, faMinus)
 import { router } from '@inertiajs/vue3';
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import Image from '../Image.vue';
@@ -376,7 +376,7 @@ const submitBundle = async () => {
                 }
             }
         )
-
+        bundle.resetBundle()
     } catch (e) {
         notify({
             title: trans('Error'),
@@ -498,7 +498,7 @@ watch(customerChannelsId, (val) => {
                         </div>
                     </div>
 
-                    <div v-for="item in bundle.products.value" :key="item.id" class="flex gap-3 py-3 border-b">
+                    <div v-for="item in bundle.products.value" :key="item.id" class="flex gap-3 py-3 border-b border-t">
                         <img :src="item.web_images?.main?.gallery?.png"
                             class="w-14 h-14 object-contain bg-gray-50 rounded" />
 
@@ -512,13 +512,13 @@ watch(customerChannelsId, (val) => {
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-2">
-                            <button @click="bundle.decreaseQty(item.id)">-</button>
+                        <div class="flex justify-center items-center gap-2">
+                            <button @click="bundle.decreaseQty(item.id)"><FontAwesomeIcon icon='fas fa-minus' class="text-xs" fixed-width aria-hidden='true' /></button>
                             <div>{{ item.quantity }}</div>
-                            <button @click="bundle.increaseQty(item.id)">+</button>
+                            <button @click="bundle.increaseQty(item.id) "><FontAwesomeIcon icon='fas fa-plus' class="text-xs"fixed-width aria-hidden='true' /></button>
 
-                            <button @click="bundle.removeProduct(item.id)" v-tooltip="trans('Delete product')">🗑
-                                <FontAwesomeIcon icon="fal fa-layer-group" class="text-gray-500" fixed-width />
+                            <button @click="bundle.removeProduct(item.id)" v-tooltip="trans('Delete product')"><FontAwesomeIcon icon='fas fa-trash-alt' class="text-sm text-red-500" fixed-width aria-hidden='true' />
+                                <FontAwesomeIcon icon="fal fa-layer-group" class="text-xs" fixed-width />
                             </button>
                         </div>
                     </div>
@@ -530,30 +530,31 @@ watch(customerChannelsId, (val) => {
 
                 <!-- FOOTER -->
                 <div class="border-t p-4 space-y-2">
-                    <small v-if="!customerChannelsId" class="text-red-500">Please Choose Customer Sales Channel First
-                        For Calculate
-                        Bundle</small>
+                    <small v-if="!customerChannelsId" class="text-red-500">Please Choose Customer Sales Channel For Calculate Bundle</small>
                     <template v-if="bundle.isSummaryLoading.value">
                         <div class="text-center text-sm text-gray-400 py-2">Calculating...</div>
                     </template>
 
                     <template v-else>
                         <div class="flex justify-between text-sm">
-                            <span class="text-gray-500">Cost Price</span>
+                            <span class="text-gray-400">Cost Price (Individual Purchase)</span>
                             <span>{{ bundle.summary.value.total_price }} {{ props.layout }}</span>
                         </div>
 
-                        <div class="flex justify-between text-sm">
-                            <span class="text-gray-500">RRP</span>
-                            <span>{{ bundle.summary.value.total_rrp }} {{ props.layout }}</span>
-                        </div>
-
-                        <div class="flex justify-between text-sm font-semibold text-green-600">
-                            <span>Bundle Price</span>
+                         <div class="flex justify-between text-sm">
+                            <div class="flex gap-2">
+                                <span>Bundle Price</span>
+                                <!-- <span class="text-green-600">({{bundle.summary.value.profit_percentage }}%)</span> -->
+                            </div>
                             <span>{{ bundle.summary.value.total_bundle_price }} {{ props.layout }}</span>
                         </div>
 
-                        <div class="flex justify-between text-xs text-gray-400">
+                        <div class="flex justify-between text-sm">
+                            <span>RRP</span>
+                            <span>{{ bundle.summary.value.total_rrp }} {{ props.layout }}</span>
+                        </div>
+
+                        <div class="flex justify-between text-xs">
                             <span>Profit</span>
                             <span>{{ bundle.summary.value.profit }} {{ props.layout }} ({{
                                 bundle.summary.value.profit_percentage }}%)</span>
@@ -612,6 +613,10 @@ watch(customerChannelsId, (val) => {
 
                     <!-- MEDIA -->
                     <div class="mb-5">
+                         <label class="text-sm font-semibold">
+                            {{ trans('Media') }}
+                        </label>
+
                         <div class="border-2 border-dashed border-gray-300 rounded-xl h-[140px]
                                 flex flex-col items-center justify-center
                                 text-gray-400 cursor-pointer hover:bg-gray-50 transition" @dragover.prevent
@@ -676,8 +681,7 @@ watch(customerChannelsId, (val) => {
                     </div>
 
                     <!-- SUBMIT -->
-                    <Button @click="submitBundle" :disabled="!bundle.description.value.length"
-                        class="flex justify-center items-center w-full" type="primary" :loading="isStoringBundle">
+                    <Button @click="submitBundle" :disabled="!bundle.description.value.length" class="flex justify-center items-center w-full" type="primary" :loading="isStoringBundle">
                         Create Bundle
                         <FontAwesomeIcon icon="fas fa-layer-group" class="mr-2" fixed-width />
                     </Button>

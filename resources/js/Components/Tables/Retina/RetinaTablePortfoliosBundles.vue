@@ -848,7 +848,7 @@ const submitBundle = async () => {
 				}
 			}
 		)
-
+		bundle.resetBundle()
 	} catch (e) {
 		console.error('ERROR', e)
 		notify({
@@ -886,7 +886,8 @@ const submitBundle = async () => {
 		@onCheckedAll="(data) => onCheckedAll(data)" checkboxKey="id"
 		:isChecked="(item) => selectedProducts.includes(item.id)" :rowColorFunction="(item) => {
 			if (disableButtons(item)) {
-				return item.product_state == 'discontinued' ? 'bg-red-100' : 'bg-red-50'
+				// return item.product_state == 'discontinued' ? 'bg-red-100' : 'bg-red-50'
+				return item.platform_status === true ? 'bg-green-50' : 'bg-red-50'
 			} else if (
 				!isPlatformManual &&
 				is_platform_connected &&
