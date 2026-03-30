@@ -14,13 +14,17 @@ import {
     faChevronDown,
     faChevronUp,
     faGlobe,
+    faEye,
+    faShoppingCart,
+    faUndo,
 } from '@fal'
 import { trans } from 'laravel-vue-i18n'
 import { useFormatTime } from '@/Composables/useFormatTime'
 
 library.add(
     faUserEdit, faStickyNote, faInboxIn, faPaperPlane, faTimesCircle,
-    faMoneyBill, faEnvelope, faCodeBranch, faChevronDown, faChevronUp, faGlobe
+    faMoneyBill, faEnvelope, faCodeBranch, faChevronDown, faChevronUp, faGlobe,
+    faEye, faShoppingCart, faUndo
 )
 
 interface TimelineEvent {
@@ -49,6 +53,7 @@ const colorClasses: Record<string, { bg: string; icon: string }> = {
     purple: { bg: 'bg-purple-100', icon: 'text-purple-600' },
     yellow: { bg: 'bg-yellow-100', icon: 'text-yellow-600' },
     teal:   { bg: 'bg-teal-100',   icon: 'text-teal-600' },
+    orange: { bg: 'bg-orange-100', icon: 'text-orange-600' },
 }
 
 const recentEvents = computed(() => (props.events ?? []).slice(0, 10))
@@ -62,6 +67,9 @@ const toggleExpand = (id: string) => {
 }
 
 const hasExpandableData = (event: TimelineEvent): boolean => {
+    if (event.type === 'note') {
+        return !!event.subtitle
+    }
     if (['account_update'].includes(event.type)) {
         return !!(event.metadata?.old_values || event.metadata?.new_values)
     }
@@ -73,6 +81,12 @@ const hasExpandableData = (event: TimelineEvent): boolean => {
     }
     if (event.type === 'email') {
         return !!(event.metadata?.number_reads !== undefined)
+    }
+    if (['page_view', 'product_view'].includes(event.type)) {
+        return !!(event.metadata?.duration_seconds)
+    }
+    if (event.type === 'add_to_basket') {
+        return !!(event.metadata?.product_id || event.metadata?.quantity)
     }
     return false
 }
@@ -126,7 +140,7 @@ const formatMetadataValue = (value: unknown): string => {
                                 <p class="text-xs font-semibold text-gray-900 leading-tight">
                                     {{ event.title }}
                                 </p>
-                                <p v-if="event.subtitle" class="text-xs text-gray-500 mt-0.5 truncate">
+                                <p v-if="event.subtitle && !(event.type === 'note' && expandedIds.has(event.id))" class="text-xs text-gray-500 mt-0.5 truncate">
                                     {{ event.subtitle }}
                                 </p>
                             </div>
@@ -159,7 +173,11 @@ const formatMetadataValue = (value: unknown): string => {
                                 v-if="expandedIds.has(event.id)"
                                 class="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-xs text-gray-600"
                             >
-                                <template v-if="event.type === 'account_update' && (event.metadata.old_values || event.metadata.new_values)">
+                                <template v-if="event.type === 'note'">
+                                    <p class="whitespace-pre-wrap leading-relaxed">{{ event.subtitle }}</p>
+                                </template>
+
+                                <template v-else-if="event.type === 'account_update' && (event.metadata.old_values || event.metadata.new_values)">
                                     <div
                                         v-for="key in Object.keys({ ...(event.metadata.old_values as object ?? {}), ...(event.metadata.new_values as object ?? {}) })"
                                         :key="key"

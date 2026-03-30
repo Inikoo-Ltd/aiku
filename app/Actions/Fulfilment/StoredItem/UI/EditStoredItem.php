@@ -9,6 +9,7 @@
 namespace App\Actions\Fulfilment\StoredItem\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Enums\UI\Fulfilment\StoredItemTabsEnum;
 use App\Http\Resources\Fulfilment\StoredItemResource;
 use App\Models\Fulfilment\Fulfilment;
@@ -53,6 +54,14 @@ class EditStoredItem extends OrgAction
 
     public function htmlResponse(StoredItem $storedItem, ActionRequest $request): Response
     {
+        $stateOptions = collect(StoredItemStateEnum::labels())
+            ->map(fn ($label, $value) => [
+                'value' => $value,
+                'label' => $label,
+            ])
+            ->values()
+            ->all();
+
         return Inertia::render(
             'EditModel',
             [
@@ -95,6 +104,13 @@ class EditStoredItem extends OrgAction
                                     'placeholder'   => __("Customer's SKU name"),
                                     'value'   => $storedItem->name,
                                     // 'required' => true
+                                ],
+                                'state' => [
+                                    'type'        => 'select',
+                                    'label'       => __('State'),
+                                    'placeholder' => __('Select state'),
+                                    'options'     => $stateOptions,
+                                    'value'       => $storedItem->state->value,
                                 ],
                             ],
                         ]

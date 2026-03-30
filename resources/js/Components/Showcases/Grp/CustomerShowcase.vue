@@ -359,6 +359,14 @@ function tagColorClass(scope?: string) {
             <FontAwesomeIcon icon="fal fa-code-branch" class="text-green-500 text-xs" />
             {{ trans('Full Timeline') }}
         </button>
+        <a
+            v-if="data.customer.email"
+            :href="`mailto:${data.customer.email}`"
+            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+            <FontAwesomeIcon icon="fal fa-envelope" class="text-blue-500 text-xs" />
+            {{ trans('Send Email') }}
+        </a>
     </div>
 
     <!-- 3-Column Hub Layout -->
