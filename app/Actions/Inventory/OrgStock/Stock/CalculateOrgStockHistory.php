@@ -32,6 +32,11 @@ class CalculateOrgStockHistory implements ShouldBeUnique
     public function handle(OrgStock $orgStock, ?Command $command = null): void
     {
         $from = $this->getFirstAssociateDate($orgStock);
+        if (!$from) {
+            $command?->info('Skipping '.$orgStock->slug.' ('.$orgStock->id.') - no associate date');
+
+            return;
+        }
 
         $minimumDate = Carbon::parse('2020-01-01');
         if ($from->lt($minimumDate)) {
@@ -47,30 +52,37 @@ class CalculateOrgStockHistory implements ShouldBeUnique
 
         if ($to->lt($from)) {
             $command?->info('Skipping '.$orgStock->slug.' ('.$orgStock->id.') - to date is before from date');
+
             return;
         }
 
-        $days = (int) $from->diffInDays($to) + 1;
+        $days = (int)$from->diffInDays($to) + 1;
         $command?->info('Calculating '.$orgStock->slug.' ('.$orgStock->id.') from '.$from->format('Y-m-d').' to '.$to->format('Y-m-d').' ('.$days.' days)');
         foreach (Carbon::parse($from)->daysUntil($to) as $date) {
             StoreOrgStockHistoricLocationsStock::run($orgStock, $date, $command);
         }
-
-
     }
 
-    public function getLastDisassociateDate(OrgStock $orgStock): Carbon
+    public function getLastDisassociateDate(OrgStock $orgStock): ?Carbon
     {
         $rawDate = DB::table('org_stock_movements')->select('date')->where('org_stock_id', $orgStock->id)
-            ->where('type', OrgStockMovementTypeEnum::DISASSOCIATE->value)->orderby('date', 'desc')->first()->date;
-        return Carbon::parse($rawDate);
+            ->where('type', OrgStockMovementTypeEnum::DISASSOCIATE->value)->orderby('date', 'desc')->first();
+        if ($rawDate) {
+            return Carbon::parse($rawDate->date);
+        }
+
+        return null;
     }
 
-    public function getFirstAssociateDate(OrgStock $orgStock): Carbon
+    public function getFirstAssociateDate(OrgStock $orgStock): ?Carbon
     {
         $rawDate = DB::table('org_stock_movements')->select('date')->where('org_stock_id', $orgStock->id)
-            ->where('type', OrgStockMovementTypeEnum::ASSOCIATE->value)->orderby('date')->first()->date;
-        return Carbon::parse($rawDate);
+            ->where('type', OrgStockMovementTypeEnum::ASSOCIATE->value)->orderby('date')->first();
+        if ($rawDate) {
+            return Carbon::parse($rawDate->date);
+        }
+
+        return null;
     }
 
 
@@ -97,12 +109,13 @@ class CalculateOrgStockHistory implements ShouldBeUnique
 
 
         /** @var OrgStock $orgStock */
-        foreach (OrgStock::orderBy('id')->get() as $orgStock) {
+        foreach (OrgStock::orderBy('id', 'desc')->get() as $orgStock) {
             if ($fixMovements) {
                 RepairOrgStockMovements::run($orgStock, $command);
             }
             $command->info('Processing '.$orgStock->slug.' ('.$orgStock->id.')');
-            CalculateOrgStockHistory::dispatch($orgStock);
+            $this->handle($orgStock, $command);
+            //  CalculateOrgStockHistory::dispatch($orgStock);
         }
 
         return 0;
