@@ -12,6 +12,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Actions\UI\Dashboards\ShowGroupDashboard;
 
 class ShowOfferCalendar
 {
@@ -94,7 +95,11 @@ class ShowOfferCalendar
         ];
 
         return Inertia::render('Org/Discounts/OfferCalendar', [
-            'breadcrumbs' => $this->getBreadcrumbs($organisation),
+            'breadcrumbs' => $this->getBreadcrumbs(
+                $organisation,
+                $request->route()->getName(),
+                $request->route()->originalParameters()
+            ),
             'title'       => __('Offer Timeline'),
             'pageHead'    => [
                 'icon'  => [
@@ -135,23 +140,25 @@ class ShowOfferCalendar
             ->all();
     }
 
-    protected function getBreadcrumbs($organisation): array
+    protected function getBreadcrumbs($organisation, string $routeName, array $routeParameters): array
     {
-        return [
-            [
-                'type'   => 'simple',
-                'simple' => [
-                    'route' => [
-                        'name'       => 'grp.org.offer.calendar',
-                        'parameters' => ['organisation' => $organisation->slug],
-                    ],
-                    'label' => __('Offer Timeline'),
-                    'icon'  => [
-                        'icon'  => ['fal', 'fa-badge-percent'],
-                        'title' => __('Offer Timeline'),
-                    ],
-                ],
-            ],
-        ];
+        return match ($routeName) {
+            default => array_merge(
+                ShowGroupDashboard::make()->getBreadcrumbs(),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'icon'  => 'fal fa-badge-percent',
+                            'route' => [
+                                'name'       => 'grp.org.offer.calendar',
+                                'parameters' => ['organisation' => $organisation->slug],
+                            ],
+                            'label' => __('Offer Timeline'),
+                        ]
+                    ]
+                ]
+            )
+        };
     }
 }
