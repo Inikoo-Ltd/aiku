@@ -114,6 +114,10 @@ class FetchAuroraOrgStockMovement extends FetchAurora
                 OrgStockMovementTypeEnum::DISASSOCIATE,
                 OrgStockMovementTypeEnum::AUDIT,
             ])) {
+
+            DB::connection('aurora')->table('Inventory Transaction Fact')
+                ->where('Inventory Transaction Key', $this->auroraModelData->{'Inventory Transaction Key'})
+                ->update(['aiku_id' => 0]);
             return;
         }
 
@@ -128,6 +132,7 @@ class FetchAuroraOrgStockMovement extends FetchAurora
 
         $orgStock = $this->parseOrgStock($this->organisation->id.':'.$this->auroraModelData->{'Part SKU'});
         if (!$orgStock) {
+            print "!!!! Org stock do not found ".$this->organisation->id.':'.$this->auroraModelData->{'Part SKU'}." <<-\n";
             return;
         }
 
