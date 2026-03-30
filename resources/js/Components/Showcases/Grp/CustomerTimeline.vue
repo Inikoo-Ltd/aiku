@@ -21,12 +21,15 @@ import {
     faChevronUp,
     faFilter,
     faGlobe,
+    faEye,
+    faShoppingCart,
 } from '@fal'
 import { useFormatTime } from '@/Composables/useFormatTime'
 
 library.add(
     faUserEdit, faStickyNote, faInboxIn, faPaperPlane, faTimesCircle,
-    faMoneyBill, faEnvelope, faCodeBranch, faChevronDown, faChevronUp, faFilter, faGlobe
+    faMoneyBill, faEnvelope, faCodeBranch, faChevronDown, faChevronUp, faFilter, faGlobe,
+    faEye, faShoppingCart
 )
 
 interface TimelineEvent {
@@ -56,7 +59,7 @@ const filterOptions = [
     { key: 'account_update', label: 'Account Changes', types: ['account_update', 'note'] },
     { key: 'payment', label: 'Payments', types: ['payment'] },
     { key: 'email', label: 'Emails', types: ['email'] },
-    { key: 'web_login', label: 'Website Visits', types: ['web_login'] },
+    { key: 'web_activity', label: 'Website Activity', types: ['page_view', 'product_view', 'add_to_basket'] },
 ]
 
 const colorClasses: Record<string, { bg: string; icon: string }> = {
@@ -103,8 +106,11 @@ const hasExpandableData = (event: TimelineEvent): boolean => {
     if (event.type === 'email') {
         return !!(event.metadata?.number_reads !== undefined)
     }
-    if (event.type === 'web_login') {
-        return !!(event.metadata?.browser || event.metadata?.os || event.metadata?.location)
+    if (['page_view', 'product_view'].includes(event.type)) {
+        return !!(event.metadata?.duration_seconds)
+    }
+    if (event.type === 'add_to_basket') {
+        return !!(event.metadata?.product_id || event.metadata?.quantity)
     }
     return false
 }
@@ -266,20 +272,30 @@ const formatMetadataValue = (value: unknown): string => {
                                     </div>
                                 </template>
 
-                                <!-- Web login: device, browser, location -->
-                                <template v-else-if="event.type === 'web_login'">
+                                <!-- Page view / Product view: duration -->
+                                <template v-else-if="['page_view', 'product_view'].includes(event.type)">
                                     <div class="space-y-0.5">
-                                        <div v-if="event.metadata.os" class="flex gap-2">
-                                            <span class="font-medium text-gray-700 w-20 flex-none">OS:</span>
-                                            <span>{{ event.metadata.os }}</span>
+                                        <div v-if="event.metadata.duration_seconds" class="flex gap-2">
+                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ trans('Duration') }}:</span>
+                                            <span>{{ event.metadata.duration_seconds }}s</span>
                                         </div>
-                                        <div v-if="event.metadata.browser" class="flex gap-2">
-                                            <span class="font-medium text-gray-700 w-20 flex-none">Browser:</span>
-                                            <span>{{ event.metadata.browser }}</span>
+                                        <div v-if="event.metadata.page_sub_type" class="flex gap-2">
+                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ trans('Type') }}:</span>
+                                            <span class="capitalize">{{ String(event.metadata.page_sub_type).replace(/_/g, ' ') }}</span>
                                         </div>
-                                        <div v-if="event.metadata.location" class="flex gap-2">
-                                            <span class="font-medium text-gray-700 w-20 flex-none">Location:</span>
-                                            <span>{{ event.metadata.location }}</span>
+                                    </div>
+                                </template>
+
+                                <!-- Add to basket: product, quantity -->
+                                <template v-else-if="event.type === 'add_to_basket'">
+                                    <div class="space-y-0.5">
+                                        <div v-if="event.metadata.quantity" class="flex gap-2">
+                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ trans('Quantity') }}:</span>
+                                            <span>{{ event.metadata.quantity }}</span>
+                                        </div>
+                                        <div v-if="event.metadata.product_id" class="flex gap-2">
+                                            <span class="font-medium text-gray-700 w-24 flex-none">Product ID:</span>
+                                            <span>{{ event.metadata.product_id }}</span>
                                         </div>
                                     </div>
                                 </template>

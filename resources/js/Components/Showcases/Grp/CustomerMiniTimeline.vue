@@ -14,13 +14,16 @@ import {
     faChevronDown,
     faChevronUp,
     faGlobe,
+    faEye,
+    faShoppingCart,
 } from '@fal'
 import { trans } from 'laravel-vue-i18n'
 import { useFormatTime } from '@/Composables/useFormatTime'
 
 library.add(
     faUserEdit, faStickyNote, faInboxIn, faPaperPlane, faTimesCircle,
-    faMoneyBill, faEnvelope, faCodeBranch, faChevronDown, faChevronUp, faGlobe
+    faMoneyBill, faEnvelope, faCodeBranch, faChevronDown, faChevronUp, faGlobe,
+    faEye, faShoppingCart
 )
 
 interface TimelineEvent {
@@ -73,6 +76,12 @@ const hasExpandableData = (event: TimelineEvent): boolean => {
     }
     if (event.type === 'email') {
         return !!(event.metadata?.number_reads !== undefined)
+    }
+    if (['page_view', 'product_view'].includes(event.type)) {
+        return !!(event.metadata?.duration_seconds)
+    }
+    if (event.type === 'add_to_basket') {
+        return !!(event.metadata?.product_id || event.metadata?.quantity)
     }
     return false
 }

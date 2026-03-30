@@ -9,10 +9,11 @@
 namespace App\Actions\CRM\Customer\UI;
 
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
+use App\Enums\CRM\Customer\CustomerWebActivityTypeEnum;
 use App\Enums\Helpers\Audit\AuditEventEnum;
 use App\Models\Accounting\Payment;
-use App\Models\Analytics\WebUserRequest;
 use App\Models\CRM\Customer;
+use App\Models\CRM\CustomerWebActivity;
 use App\Models\Helpers\History;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Carbon;
@@ -34,7 +35,7 @@ class GetCustomerTimeline
         $this->appendOrderEvents($customer, $cutoff, $limit, $events);
         $this->appendPaymentEvents($customer, $cutoff, $limit, $events);
         $this->appendEmailEvents($customer, $cutoff, $limit, $events);
-        $this->appendWebUserLoginEvents($customer, $cutoff, $events);
+        $this->appendWebActivityEvents($customer, $cutoff, $events);
 
         return [
             'events' => $events->sortByDesc('timestamp')->values()->map(function (array $event) {
@@ -208,37 +209,65 @@ class GetCustomerTimeline
             });
     }
 
-    private function appendWebUserLoginEvents(Customer $customer, Carbon $cutoff, Collection $events): void
+    private function appendWebActivityEvents(Customer $customer, Carbon $cutoff, Collection $events): void
     {
-        $customer->webUsers()->get()->each(function ($webUser) use ($cutoff, $events) {
-            WebUserRequest::where('web_user_id', $webUser->id)
-                ->where('date', '>=', $cutoff->toDateString())
-                ->selectRaw('date, os, device, browser, location, MIN(id) as id')
-                ->groupBy('date', 'os', 'device', 'browser', 'location')
-                ->orderByDesc('date')
-                ->limit(20)
-                ->get()
-                ->each(function (WebUserRequest $request) use ($webUser, $events) {
-                    $timestamp = Carbon::parse($request->date);
+        CustomerWebActivity::where('customer_id', $customer->id)
+            ->where('activity_date', '>=', $cutoff->toDateString())
+            ->orderByDesc('activity_date')
+            ->limit(100)
+            ->get()
+            ->each(function (CustomerWebActivity $activity) use ($events) {
+                $timestamp = Carbon::parse($activity->activity_date);
 
-                    $events->push([
-                        'id'        => "web_login_{$webUser->id}_{$request->id}",
-                        'type'      => 'web_login',
+                match ($activity->activity_type) {
+                    CustomerWebActivityTypeEnum::ProductView => $events->push([
+                        'id'        => "web_product_view_{$activity->id}",
+                        'type'      => 'product_view',
                         'timestamp' => $timestamp,
                         'datetime'  => $timestamp->toIso8601String(),
-                        'title'     => __('Website visit'),
-                        'subtitle'  => $request->browser && $request->device ? "{$request->browser} · {$request->device}" : null,
+                        'title'     => __('Product viewed'),
+                        'subtitle'  => $activity->page_path,
+                        'icon'      => ['fal', 'fa-eye'],
+                        'color'     => 'teal',
+                        'metadata'  => [
+                            'page_path'        => $activity->page_path,
+                            'product_id'       => $activity->product_id,
+                            'duration_seconds' => $activity->duration_seconds,
+                        ],
+                    ]),
+                    CustomerWebActivityTypeEnum::AddToBasket => $events->push([
+                        'id'        => "web_add_to_basket_{$activity->id}",
+                        'type'      => 'add_to_basket',
+                        'timestamp' => $timestamp,
+                        'datetime'  => $timestamp->toIso8601String(),
+                        'title'     => __('Added to basket'),
+                        'subtitle'  => $activity->page_path,
+                        'icon'      => ['fal', 'fa-shopping-cart'],
+                        'color'     => 'green',
+                        'metadata'  => [
+                            'page_path'  => $activity->page_path,
+                            'product_id' => $activity->product_id,
+                            'quantity'   => $activity->quantity,
+                        ],
+                    ]),
+                    CustomerWebActivityTypeEnum::PageView => $events->push([
+                        'id'        => "web_page_view_{$activity->id}",
+                        'type'      => 'page_view',
+                        'timestamp' => $timestamp,
+                        'datetime'  => $timestamp->toIso8601String(),
+                        'title'     => __('Page visited'),
+                        'subtitle'  => $activity->page_path,
                         'icon'      => ['fal', 'fa-globe'],
                         'color'     => 'teal',
                         'metadata'  => [
-                            'browser'  => $request->browser,
-                            'device'   => $request->device,
-                            'os'       => $request->os,
-                            'location' => $request->location,
+                            'page_path'        => $activity->page_path,
+                            'page_type'        => $activity->page_type,
+                            'page_sub_type'    => $activity->page_sub_type,
+                            'duration_seconds' => $activity->duration_seconds,
                         ],
-                    ]);
-                });
-        });
+                    ]),
+                };
+            });
     }
 
     private function appendEmailEvents(Customer $customer, Carbon $cutoff, int $limit, Collection $events): void
