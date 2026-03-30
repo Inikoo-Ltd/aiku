@@ -8,12 +8,14 @@
 
 namespace App\Actions\Comms\EmailDeliveryChannel;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePendingBackInStockReminders;
 use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateCumulativeDispatchedEmails;
 use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateDispatchedEmails;
 use App\Actions\Comms\EmailBulkRun\UpdateEmailBulkRunSentState;
 use App\Actions\Comms\Mailshot\GetHtmlLayout;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
 use App\Actions\Comms\Mailshot\UpdateMailshotSentState;
+use App\Actions\Comms\Outbox\BackInStockNotification\BulkDeleteBackInStockReminder;
 use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
@@ -47,6 +49,8 @@ class SendEmailDeliveryChannel
 
         /** @var Mailshot|EmailBulkRun $model */
         $model = $emailDeliveryChannel->model;
+
+        $isOosNotification = $model instanceof EmailBulkRun && $model->outbox->code == OutboxCodeEnum::OOS_NOTIFICATION;
 
         try {
             $locale = $model->shop->language->code;
@@ -136,6 +140,12 @@ class SendEmailDeliveryChannel
                 additionalData: $additionalData,
                 senderName: $model->senderName()
             );
+
+            //  make sure this only run for OOS_NOTIFICATION
+            if ($isOosNotification) {
+                BulkDeleteBackInStockReminder::run($additionalData['reminderIds']);
+                ShopHydratePendingBackInStockReminders::run($model->shop);
+            }
         }
 
 
