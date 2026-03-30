@@ -239,7 +239,7 @@ class GetOrganisationNavigation
         $navigation['calendar_offers'] = [
             'label'   => __('Calendar Offers'),
             'tooltip' => __('Calendar Offers'),
-            'icon'    => ['fal', 'fa-calendar-alt'],
+            'icon'    => ['fal', 'fa-calendar'],
             'root'    => 'grp.org.offer.calendar',
             'route'   => [
                 'name'       => 'grp.org.offer.calendar',
