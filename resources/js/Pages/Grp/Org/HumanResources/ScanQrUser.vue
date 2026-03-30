@@ -2,6 +2,7 @@
 import { ref, computed, nextTick, onMounted } from "vue"
 import { QrcodeStream } from "vue-qrcode-reader"
 import { LMap, LTileLayer, LMarker, LTooltip } from "@vue-leaflet/vue-leaflet"
+import { addMinutes, formatDuration, intervalToDuration, parseISO, set } from "date-fns"
 import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
@@ -27,6 +28,14 @@ interface WorkSchedule {
 	is_active: boolean
 }
 
+interface LateClockInResult {
+	isLate: boolean
+	lateByMinutes: number
+	lateMessage: string
+	threshold: Date | null
+	scanTime: Date | null
+}
+
 const lat = ref<number | null>(null)
 const lng = ref<number | null>(null)
 const mapZoom = ref(15)
@@ -41,6 +50,7 @@ const canOpenCamera = computed(() => hasLocation.value)
 
 const showWorkHourModal = ref(false)
 const showSuccessModal = ref(false)
+const showLateAlertModal = ref(false)
 const notes = ref<string>("")
 const scanTime = ref<string | null>(null)
 const scanTimeRaw = ref<string | null>(null)
@@ -49,9 +59,114 @@ const clockType = ref<"clock_in" | "clock_out" | null>(null)
 const clockingId = ref<number | null>(null)
 const workingHours = ref<{ start: string; end: string } | null>(null)
 const isProcessing = ref(false)
-const isLate = ref(false)
 const shiftSchedules = ref<WorkSchedule[]>([])
 const selectedWorkScheduleId = ref<number | null>(null)
+
+const isIOS = () => {
+	return /iPhone|iPad|iPod/i.test(navigator.userAgent)
+}
+
+const getGeolocationErrorMessage = (err?: GeolocationPositionError) => {
+	switch (err?.code) {
+		case err?.PERMISSION_DENIED:
+			return isIOS()
+				? "Location blocked. Go to Settings > Safari > Location > Allow"
+				: "Location blocked. Please enable location permission in browser settings."
+		case err?.POSITION_UNAVAILABLE:
+			return "Location unavailable"
+		case err?.TIMEOUT:
+			return "Location timeout"
+		default:
+			return "Location error"
+	}
+}
+
+const parseScanTime = (value?: string | null) => {
+	if (!value) return null
+
+	const parsed = parseISO(value)
+
+	return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+const parseWorkingOfficeHourStart = (value?: string | null, scanDate?: Date | null) => {
+	if (!value || !scanDate) return null
+
+	const match = value.match(/(\d{2}):(\d{2})(?::(\d{2}))?/)
+	if (!match) return null
+
+	const [, hours, minutes, seconds = "00"] = match
+
+	return set(scanDate, {
+		hours: Number(hours),
+		minutes: Number(minutes),
+		seconds: Number(seconds),
+		milliseconds: 0,
+	})
+}
+
+const formatLateDuration = (lateByMinutes: number) => {
+	if (lateByMinutes <= 0) return ""
+
+	const duration = intervalToDuration({
+		start: 0,
+		end: lateByMinutes * 60 * 1000,
+	})
+
+	const formatted = formatDuration(duration, {
+		format: ["hours", "minutes"],
+		delimiter: " and ",
+	})
+
+	return formatted || "less than 1 minute"
+}
+
+const getLateClockInState = ({
+	scanTimeRaw,
+	workingOfficeHourStart,
+	gracePeriodMinutes = 15,
+}: {
+	scanTimeRaw?: string | null
+	workingOfficeHourStart?: string | null
+	gracePeriodMinutes?: number
+}): LateClockInResult => {
+	const scanTime = parseScanTime(scanTimeRaw)
+	const workingStart = parseWorkingOfficeHourStart(workingOfficeHourStart, scanTime)
+
+	if (!scanTime || !workingStart) {
+		return {
+			isLate: false,
+			lateByMinutes: 0,
+			lateMessage: "",
+			threshold: null,
+			scanTime,
+		}
+	}
+
+	const threshold = addMinutes(workingStart, gracePeriodMinutes)
+	const lateByMilliseconds = scanTime.getTime() - threshold.getTime()
+
+	if (lateByMilliseconds <= 0) {
+		return {
+			isLate: false,
+			lateByMinutes: 0,
+			lateMessage: "",
+			threshold,
+			scanTime,
+		}
+	}
+
+	const lateByMinutes = Math.floor(lateByMilliseconds / (60 * 1000))
+	const formattedDuration = formatLateDuration(lateByMinutes)
+
+	return {
+		isLate: true,
+		lateByMinutes,
+		lateMessage: formattedDuration ? `You are ${formattedDuration} late` : "",
+		threshold,
+		scanTime,
+	}
+}
 
 const fetchShiftSchedules = async () => {
 	try {
@@ -69,26 +184,23 @@ onMounted(() => {
 const detectMyLocation = () => {
 	errorMsg.value = null
 
+	if (!navigator.geolocation) {
+		errorMsg.value = "This browser does not support location access."
+		return
+	}
+
 	navigator.geolocation.getCurrentPosition(
 		(pos) => {
 			lat.value = pos.coords.latitude
 			lng.value = pos.coords.longitude
 		},
 		(err) => {
-			if (err.code === 1) {
-				if (isIOS()) {
-					errorMsg.value = "Location blocked. Go to Settings > Safari > Location > Allow"
-				} else {
-					errorMsg.value =
-						"Location blocked. Please enable location permission in browser settings."
-				}
-			} else if (err.code === 2) {
-				errorMsg.value = "Location unavailable"
-			} else if (err.code === 3) {
-				errorMsg.value = "Location timeout"
-			} else {
-				errorMsg.value = "Location error"
-			}
+			errorMsg.value = getGeolocationErrorMessage(err)
+		},
+		{
+			enableHighAccuracy: true,
+			timeout: 10000,
+			maximumAge: 0,
 		}
 	)
 }
@@ -172,9 +284,7 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
 		const { data } = await axios.post(route("grp.models.clocking-machine.qr.validate"), payload)
 
 		clockType.value = data.clocking?.type
-		isLate.value = data.clocking?.is_late ?? false
-
-		scanTimeRaw.value = data.clocking?.clocked_at
+		scanTimeRaw.value = data.clocking?.clocked_at ?? null
 		scanTime.value = useFormatTime(data.clocking?.clocked_at, { formatTime: "hms" })
 		clockingId.value = data.clocking?.id
 		if (data.working_hours) {
@@ -185,11 +295,21 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
 				start: `${dateOnly}T${data.working_hours.start}`,
 				end: `${dateOnly}T${data.working_hours.end}`,
 			}
-		} else {
-			workingHours.value = null
-		}
-		showSuccessModal.value = true
-	} catch (e: any) {
+			} else {
+				workingHours.value = null
+			}
+
+			const lateState = getLateClockInState({
+				scanTimeRaw: scanTimeRaw.value,
+				workingOfficeHourStart: workingHours.value?.start,
+			})
+
+			if (clockType.value === "clock_in" && lateState.isLate) {
+				showLateAlertModal.value = true
+			} else {
+				showSuccessModal.value = true
+			}
+		} catch (e: any) {
 		notify({
 			title: trans("Failed Scan QR"),
 			text: e.response?.data?.message,
@@ -219,25 +339,23 @@ const onStreamError = (err: Error) => {
 	}
 }
 
-const isIOS = () => {
-	return /iPhone|iPad|iPod/i.test(navigator.userAgent)
-}
-
 const modalTitle = computed(() => {
+	if (isLateClockIn.value) return trans("Late Clock-in Recorded")
 	if (clockType.value === "clock_in") return trans("Clock-in successful")
 	if (clockType.value === "clock_out") return trans("Clock-out successful")
 	return trans("Scan successful")
 })
 
-const attendanceStatus = computed(() => {
-	if (!scanTimeRaw.value || !workingHours.value?.start) return null
+const lateClockInState = computed(() =>
+	getLateClockInState({
+		scanTimeRaw: scanTimeRaw.value,
+		workingOfficeHourStart: workingHours.value?.start,
+	})
+)
 
-	const scan = new Date(scanTimeRaw.value)
-	const start = new Date(workingHours.value.start)
-	if (isNaN(scan.getTime()) || isNaN(start.getTime())) return null
-
-	return scan > start ? "late" : "ontime"
-})
+const isLateClockIn = computed(
+	() => clockType.value === "clock_in" && lateClockInState.value.isLate
+)
 
 const workingHoursFormatted = computed(() => {
 	if (!workingHours.value) return "-"
@@ -248,8 +366,23 @@ const workingHoursFormatted = computed(() => {
 	return `${start} - ${end}`
 })
 
+const isSubmitDisabled = computed(() => isLateClockIn.value && !notes.value.trim())
+
+const notesLabel = computed(() =>
+	isLateClockIn.value ? trans("Notes") : trans("Notes (optional)")
+)
+
+const notesPlaceholder = computed(() =>
+	isLateClockIn.value ? trans("Please provide a reason for being late...") : trans("Input Notes")
+)
+
+const closeLateAlertModal = () => {
+	showLateAlertModal.value = false
+	showSuccessModal.value = true
+}
+
 const submitNotes = async () => {
-	if (!clockingId.value) return
+	if (!clockingId.value || isSubmitDisabled.value) return
 
 	try {
 		await axios.patch(
@@ -363,6 +496,39 @@ const submitNotes = async () => {
 			@confirm="handleWorkHourConfirm" />
 
 		<Dialog
+			v-model:visible="showLateAlertModal"
+			modal
+			:closable="false"
+			:style="{ width: '420px' }"
+			appendTo="body">
+			<div class="text-center space-y-4 py-4">
+				<div class="flex justify-center">
+					<div class="w-20 h-20 rounded-full flex items-center justify-center bg-red-100">
+						<FontAwesomeIcon
+							:icon="faExclamationTriangle"
+							class="text-4xl text-red-600" />
+					</div>
+				</div>
+
+				<h3 class="text-xl font-semibold text-red-700">
+					{{ trans("Late Clock-in Alert") }}
+				</h3>
+
+				<p class="text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-3">
+					{{ trans("You are late today.") }}
+				</p>
+
+				<p v-if="lateClockInState.lateMessage" class="text-sm text-gray-600">
+					{{ lateClockInState.lateMessage }}
+				</p>
+
+				<div class="pt-2">
+					<Button label="Continue" type="warning" @click="closeLateAlertModal" full />
+				</div>
+			</div>
+		</Dialog>
+
+		<Dialog
 			v-model:visible="showSuccessModal"
 			modal
 			:closable="false"
@@ -372,24 +538,36 @@ const submitNotes = async () => {
 				<!-- ICON -->
 				<div class="flex justify-center">
 					<div
-						class="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
-						<FontAwesomeIcon :icon="faCheck" class="text-4xl text-green-600" />
+						class="w-20 h-20 rounded-full flex items-center justify-center"
+						:class="isLateClockIn ? 'bg-amber-100' : 'bg-green-100'">
+						<FontAwesomeIcon
+							:icon="isLateClockIn ? faExclamationTriangle : faCheck"
+							class="text-4xl"
+							:class="isLateClockIn ? 'text-amber-600' : 'text-green-600'" />
 					</div>
 				</div>
 
 				<!-- TITLE -->
-				<h3 class="text-xl font-semibold text-gray-800">
+				<h3
+					class="text-xl font-semibold"
+					:class="isLateClockIn ? 'text-amber-700' : 'text-gray-800'">
 					{{ modalTitle }}
 				</h3>
+
+				<p
+					v-if="isLateClockIn && lateClockInState.lateMessage"
+					class="text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+					{{ lateClockInState.lateMessage }}
+				</p>
 
 				<!-- INFO -->
 				<div class="text-sm text-gray-600 space-y-2 bg-gray-50 p-3 rounded-lg">
 					<div
-						v-if="isLate && clockType === 'clock_in'"
-						class="flex justify-between items-center bg-red-50 p-2 rounded border border-red-200">
+						v-if="isLateClockIn"
+						class="flex justify-between items-center bg-amber-50 p-2 rounded border border-amber-200">
 						<div class="flex items-center gap-2">
-							<FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-500" />
-							<span class="font-semibold text-red-600">{{
+							<FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-500" />
+							<span class="font-semibold text-amber-700">{{
 								trans("Late Arrival")
 							}}</span>
 						</div>
@@ -414,15 +592,24 @@ const submitNotes = async () => {
 				<!-- NOTES INPUT -->
 				<div class="pt-3">
 					<label class="text-sm text-gray-600 block mb-1 text-left">
-						{{ trans("Notes (optional)") }}
+						{{ notesLabel }}
 					</label>
-					<InputText v-model="notes" class="w-full" required placeholder="Input Notes" />
+					<InputText
+						v-model="notes"
+						class="w-full"
+						:required="isLateClockIn"
+						:placeholder="notesPlaceholder" />
 				</div>
 
 				<!-- ACTIONS -->
 				<div class="flex gap-2 pt-4">
 					<Button label="Close" type="exit" @click="showSuccessModal = false" full />
-					<Button label="Submit" type="save" @click="submitNotes" full />
+					<Button
+						label="Submit"
+						type="save"
+						@click="submitNotes"
+						:disabled="isSubmitDisabled"
+						full />
 				</div>
 			</div>
 		</Dialog>
