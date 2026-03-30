@@ -152,7 +152,7 @@ const notifyFailedProduct = () => {
 	notify({
 		title: trans("Something went wrong!"),
 		text: trans("Failed to add or update the quantity"),
-		type: "success",
+		type: "error",
 	})
 }
 const isXxLoading = ref<number | null>(null)

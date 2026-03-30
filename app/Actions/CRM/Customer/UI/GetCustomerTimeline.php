@@ -10,10 +10,12 @@ namespace App\Actions\CRM\Customer\UI;
 
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\CRM\Customer\CustomerWebActivityTypeEnum;
+use App\Enums\GoodsIn\Return\ReturnStateEnum;
 use App\Enums\Helpers\Audit\AuditEventEnum;
 use App\Models\Accounting\Payment;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerWebActivity;
+use App\Models\GoodsIn\OrderReturn;
 use App\Models\Helpers\History;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Carbon;
@@ -35,6 +37,7 @@ class GetCustomerTimeline
         $this->appendOrderEvents($customer, $cutoff, $limit, $events);
         $this->appendPaymentEvents($customer, $cutoff, $limit, $events);
         $this->appendEmailEvents($customer, $cutoff, $limit, $events);
+        $this->appendReturnEvents($customer, $cutoff, $limit, $events);
         $this->appendWebActivityEvents($customer, $cutoff, $events);
 
         return [
@@ -204,6 +207,36 @@ class GetCustomerTimeline
                         'amount'    => $payment->amount,
                         'state'     => $payment->state->value,
                         'status'    => $payment->status->value,
+                    ],
+                ]);
+            });
+    }
+
+    private function appendReturnEvents(Customer $customer, Carbon $cutoff, int $limit, Collection $events): void
+    {
+        OrderReturn::where('customer_id', $customer->id)
+            ->where('date', '>=', $cutoff)
+            ->latest('date')
+            ->limit($limit)
+            ->get()
+            ->each(function (OrderReturn $return) use ($events) {
+                $stateLabels = ReturnStateEnum::labels();
+                $stateLabel  = $stateLabels[$return->state->value] ?? $return->state->value;
+
+                $events->push([
+                    'id'        => "return_{$return->id}",
+                    'type'      => 'return',
+                    'timestamp' => $return->date,
+                    'datetime'  => $return->date->toIso8601String(),
+                    'title'     => __('Return request'),
+                    'subtitle'  => '#'.$return->reference.' · '.$stateLabel,
+                    'icon'      => ['fal', 'fa-undo'],
+                    'color'     => 'orange',
+                    'metadata'  => [
+                        'reference'     => $return->reference,
+                        'state'         => $return->state->value,
+                        'number_items'  => $return->number_items,
+                        'return_reason' => $return->return_reason,
                     ],
                 ]);
             });
