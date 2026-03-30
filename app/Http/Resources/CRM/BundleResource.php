@@ -52,7 +52,11 @@ class BundleResource extends JsonResource
         });
 
         $productList = $bundle->items->map(function (BundleItem $item) {
-            return ProductResource::make($item->item);
+            return [
+                'bundle_item_id' => $item->id,
+                'quantity' => $item->quantity,
+                'item' => ProductResource::make($item->item)
+            ];
         });
 
         return [
@@ -63,7 +67,7 @@ class BundleResource extends JsonResource
             'code'               => $product->code,
             'current_images'     => $imageArrCurrent,
             'list_images'        => $imageArrList,
-            'products'           => $productList,
+            'items'              => $productList,
             'price'              => $product->price,
             'name'               => $product->name,
             'gross_weight'       => $product->gross_weight,
