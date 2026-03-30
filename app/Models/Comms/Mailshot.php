@@ -67,6 +67,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_second_wave
  * @property int|null $parent_mailshot_id
  * @property int $send_delay_hours
+ * @property string|null $recipients_prepared_at
+ * @property int|null $recipients_count
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\Comms\EmailDeliveryChannel> $channels
  * @property-read Collection<int, \App\Models\Comms\DispatchedEmail> $dispatchedEmails

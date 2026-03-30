@@ -44,7 +44,9 @@ class StoreBundle extends OrgAction
                 ->get();
 
             data_set($productData, 'exclusive_for_customer_id', $customerSalesChannel->customer_id);
-            data_set($productData, 'trade_units',
+            data_set(
+                $productData,
+                'trade_units',
                 $productSelected->map(function ($product) use ($selectedProducts) {
                     return $product->tradeUnits->map(function (TradeUnit $tradeUnit) use ($product, $selectedProducts) {
                         /** @var array $productQty */
@@ -55,7 +57,8 @@ class StoreBundle extends OrgAction
                             'quantity' => Arr::get($productQty, 'quantity')
                         ];
                     });
-                })->collapse()->toArray());
+                })->collapse()->toArray()
+            );
 
             data_set($productData, 'description', Arr::pull($modelData, 'description'));
             data_set($productData, 'price', Arr::pull($modelData, 'price'));
@@ -66,25 +69,25 @@ class StoreBundle extends OrgAction
             data_set($productData, 'is_main', true);
             data_set($productData, 'unit', 'BUNDLE');
 
-            if(! Arr::get($productData, 'price')) {
+            if (! Arr::get($productData, 'price')) {
                 $productPrice = $productSelected->sum('price');
                 data_set($productData, 'price', $productPrice * (1 - ($shopBundleDiscount / 100)));
             }
 
-            if(! Arr::get($productData, 'rrp')) {
+            if (! Arr::get($productData, 'rrp')) {
                 $productRrp = $productSelected->sum('rrp');
                 data_set($productData, 'rrp', $productRrp * (1 - ($shopBundleDiscount / 100)));
             }
 
-            if(! Arr::get($productData, 'code')) {
+            if (! Arr::get($productData, 'code')) {
                 $productData['code'] = 'B-'.$customerSalesChannel->id.'-'.rand(1000, 9999);
             }
 
-            if(! Arr::get($productData, 'name')) {
+            if (! Arr::get($productData, 'name')) {
                 $productData['name'] = $productData['code'];
             }
 
-            if(! Arr::get($productData, 'description')) {
+            if (! Arr::get($productData, 'description')) {
                 $productData['description'] = $productSelected->first()->description;
             }
 

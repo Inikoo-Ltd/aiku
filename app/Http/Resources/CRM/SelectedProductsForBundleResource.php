@@ -5,7 +5,6 @@ namespace App\Http\Resources\CRM;
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Arr;
 
 /**
  * @property string $slug

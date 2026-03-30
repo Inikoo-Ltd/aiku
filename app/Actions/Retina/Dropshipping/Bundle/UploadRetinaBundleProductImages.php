@@ -13,7 +13,6 @@ use App\Actions\Catalogue\Product\UploadImagesToProduct;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Helpers\ImageResource;
-use App\Models\Bundle;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Traits\SanitizeInputs;

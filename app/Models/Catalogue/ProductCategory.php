@@ -99,6 +99,7 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $desc_art4
  * @property int|null $desc_art5
  * @property int|null $extra_desc_art1
+ * @property bool|null $mismatch_with_master_detected
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections

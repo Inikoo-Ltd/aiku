@@ -43,6 +43,8 @@ use Spatie\MediaLibrary\HasMedia;
  * @property string|null $deleted_by_type
  * @property int|null $deleted_by_id
  * @property string|null $source_id
+ * @property int|null $work_schedule_id
+ * @property bool $is_late
  * @property-read \App\Models\HumanResources\ClockingMachine|null $clockingMachine
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Media|null $image

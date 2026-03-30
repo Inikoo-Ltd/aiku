@@ -19,6 +19,7 @@ use Carbon\Carbon;
  * @property bool $is_active
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string $type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\HumanResources\WorkScheduleDay> $days
  * @property-read Model|\Eloquent $schedulable
  * @property-read Timezone|null $timezone

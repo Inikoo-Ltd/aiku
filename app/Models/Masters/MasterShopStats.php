@@ -54,6 +54,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_master_families_with_pending_master_assets
  * @property int $number_mismatched_master_families Amount of master product categories that has mismatch_detected = true
  * @property int $number_mismatched_master_products Amount of master products that has mismatch_detected = true
+ * @property int $number_mismatched_master_families_active Amount of master product categories that has mismatch_detected = true and is active
+ * @property int $number_mismatched_master_families_inactive Amount of master product categories that has mismatch_detected = true and inactive
+ * @property int $number_mismatched_master_products_active Amount of master products that has mismatch_detected = true and is active
+ * @property int $number_mismatched_master_products_inactive Amount of master products that has mismatch_detected = true and inactive
  * @property-read \App\Models\Masters\MasterShop $masterShop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopStats newQuery()

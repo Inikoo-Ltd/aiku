@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property int $channel
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string|null $recipient_name
  * @property-read \App\Models\Comms\DispatchedEmail|null $dispatchedEmail
  * @property-read \App\Models\Comms\EmailBulkRun $emailBulkRun
  * @property-read Model|\Eloquent $recipient

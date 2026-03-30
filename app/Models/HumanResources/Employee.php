@@ -82,6 +82,15 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $address_id
  * @property string|null $location
  * @property string|null $notes
+ * @property int|null $probation_period_days
+ * @property string|null $bank_account_name
+ * @property string|null $bank_account_number
+ * @property string|null $insurance_number
+ * @property string|null $religion
+ * @property string|null $contract_start_date
+ * @property string|null $contract_end_date
+ * @property string|null $identity_document_issued_by
+ * @property bool $allow_shift
  * @property-read \App\Models\Helpers\Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Address> $addresses
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $attachments

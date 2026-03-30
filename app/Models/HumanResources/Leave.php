@@ -18,7 +18,6 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property int $organisation_id
  * @property int $employee_id
  * @property string $employee_name
- * @property LeaveTypeEnum $type
  * @property \Illuminate\Support\Carbon $start_date
  * @property \Illuminate\Support\Carbon $end_date
  * @property int $duration_days
@@ -31,6 +30,10 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property bool $is_half_day
+ * @property string $session
+ * @property LeaveTypeEnum $type
+ * @property int|null $leave_type_id
  * @property-read User|null $approver
  * @property-read \App\Models\HumanResources\Employee $employee
  * @property-read \App\Models\SysAdmin\Group $group

@@ -8,9 +8,7 @@
 
 namespace App\Actions\Dropshipping\Bundle;
 
-use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProductImages;
-use App\Actions\Catalogue\Product\UploadImagesToProduct;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -19,9 +17,7 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Bundle;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -57,13 +53,13 @@ class UpdateBundle extends OrgAction
                 $this->attachMediaToModel($product, $existingMedia, 'image');
             }
 
-            if(Arr::get($mainMedia, 'id')) {
+            if (Arr::get($mainMedia, 'id')) {
                 UpdateProductImages::run($product, [
                     'image_id' => Arr::get($mainMedia, 'id'),
                 ]);
             }
 
-            if($bundle->customerSalesChannel->platform->type === PlatformTypeEnum::MANUAL) {
+            if ($bundle->customerSalesChannel->platform->type === PlatformTypeEnum::MANUAL) {
                 $this->update($bundle, [
                     'platform_status' => true,
                     'has_valid_platform_product_id' => true,

@@ -12,7 +12,6 @@ namespace App\Actions\Retina\Dropshipping\Bundle;
 use App\Actions\Helpers\AI\GetGeneratedProductTitle;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Bundle;
 use App\Models\Catalogue\Product;
 use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;

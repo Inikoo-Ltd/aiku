@@ -74,7 +74,7 @@ class GetGeneratedImages extends OrgAction
         $media = Media::find($imageId);
         $imageUrl = GetImgProxyUrl::run($media->getImage());
 
-        if(app()->isLocal()) {
+        if (app()->isLocal()) {
             $imageUrl = 'https://media.aiku.io/Odwk6eyl1y8D32Y9yQn98Ant9rD09RSGOcyrXEPeOhU/rs::0:600::/bG9jYWw6Ly9tZWRpYS8xUi9DRC82MFIzMEMxRzZNVktDRDFSL2Y5NGJhNDQ1LmpwZWc';
         }
 

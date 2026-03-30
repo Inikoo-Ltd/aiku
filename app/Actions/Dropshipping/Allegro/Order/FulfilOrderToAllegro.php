@@ -37,7 +37,7 @@ class FulfilOrderToAllegro extends RetinaAction
                 }
             });
 
-            if(!$carrierId) {
+            if (!$carrierId) {
                 $carrierId = 'OTHER';
             }
 
