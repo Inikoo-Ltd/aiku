@@ -62,11 +62,11 @@ class ShowChatDashboard extends OrgAction
                     [
                         'type'   => 'simple',
                         'simple' => [
+                            'icon'  => 'fal fa-comment-alt',
                             'route' => [
                                 'name'       => 'grp.org.crm.chat.dashboard',
                                 'parameters' => $routeParameters,
                             ],
-
                             'label' => __('Chat Dashboard'),
                         ],
                     ],

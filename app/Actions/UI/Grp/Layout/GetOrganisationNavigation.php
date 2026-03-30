@@ -215,7 +215,7 @@ class GetOrganisationNavigation
                     [
                         'label'   => __(key: 'Dashboard'),
                         'tooltip' => __('Dashboard'),
-                        'icon'  => ['fal', 'fa-chart-network'],
+                        'icon'  => ['fal', 'comment-alt'],
                         'root'  => 'grp.org.crm.chat.dashboard',
                         'route' => [
                             'name'       => 'grp.org.crm.chat.dashboard',
