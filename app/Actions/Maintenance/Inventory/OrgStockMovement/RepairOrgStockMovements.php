@@ -61,7 +61,8 @@ class RepairOrgStockMovements implements ShouldBeUnique
         /** @var OrgStock $orgStock */
         foreach (OrgStock::orderBy('id')->get() as $orgStock) {
             $command->info('Processing '.$orgStock->slug.' ('.$orgStock->id.')');
-            RepairOrgStockMovements::dispatch($orgStock);
+            $this->handle($orgStock, $command);
+            //RepairOrgStockMovements::dispatch($orgStock);
         }
 
         return 0;
