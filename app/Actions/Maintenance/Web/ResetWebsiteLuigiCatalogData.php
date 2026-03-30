@@ -9,15 +9,15 @@
 
 namespace App\Actions\Maintenance\Web;
 
-use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithOrganisationSource;
 use App\Actions\Web\Website\Luigi\WithLuigis;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class ResetWebsiteLuigiCatalogData
 {
-    use WithActionUpdate;
+    use AsAction;
     use WithOrganisationSource;
     use WithLuigis;
 
@@ -26,7 +26,6 @@ class ResetWebsiteLuigiCatalogData
      */
     public function handle(Website $website, Command $command): void
     {
-        $command->info('Procesing Reset Catalog Data for website: ' . $website->slug);
         $pageCount = 1;
         $command->info('// Processing page: ' . $pageCount);
         $contents = $this->getContentExport($website);
@@ -36,12 +35,14 @@ class ResetWebsiteLuigiCatalogData
             $query = parse_url($nextPage, PHP_URL_QUERY);
 
             $objects = data_get($contents, 'objects', []);
-            if(count($objects) > 0) {
+            if (count($objects) > 0) {
                 $command->info('Deleting ' . count($objects) . ' items from Luigi catalog');
                 $this->deleteItemBatch($website, $objects);
             }
 
-            if(empty($query)) break;
+            if (empty($query)) {
+                break;
+            }
 
             $pageCount++;
             $command->info('// Processing page: ' . $pageCount);
@@ -71,8 +72,19 @@ class ResetWebsiteLuigiCatalogData
         $website = Website::where('slug', $command->argument('website'))->first();
 
         if ($website) {
-            $this->handle($website, $command);
+            $accessToken = $this->getAccessToken($website);
+            if ($accessToken) {
+                if ($command->confirm("Are you sure you want to reset the catalog for: $website->name [$website->domain] ?")) {
+                    $command->info('Procesing Reset Catalog Data for website: ' . $website->slug);
+                    $this->handle($website, $command);
+                } else {
+                    $command->info("Aborting command");
+                }
+            } else {
+                $command->info("Access token not found [Website Slug: {$command->argument('website')}]");
+            }
+        } else {
+            $command->info("Website not found [Website Slug: {$command->argument('website')}]");
         }
     }
-
 }
