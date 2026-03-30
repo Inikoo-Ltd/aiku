@@ -38,6 +38,7 @@ use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaProductsForBasket;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaProductsForEmptyBasket;
 use App\Actions\Retina\Dropshipping\BackInStock\UI\IndexRetinaDropshippingBackInStocks;
 use App\Actions\Retina\Dropshipping\Bundle\UI\IndexRetinaBulkProductImages;
+use App\Actions\Retina\Dropshipping\Bundle\UI\ShowRetinaBundle;
 use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
@@ -116,6 +117,7 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
     Route::get('/edit', EditRetinaCustomerSalesChannel::class)->name('edit');
     Route::get('filtered-products', IndexRetinaFilteredProducts::class)->name('filtered_products.index');
 
+    Route::get('bundles/{bundle:id}', ShowRetinaBundle::class)->name('bundles.show')->withoutScopedBindings();
 
     Route::prefix('basket')->as('basket.')->group(function () {
         Route::get('/', IndexRetinaBaskets::class)->name('index');

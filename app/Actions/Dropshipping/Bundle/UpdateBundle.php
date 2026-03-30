@@ -57,9 +57,11 @@ class UpdateBundle extends OrgAction
                 $this->attachMediaToModel($product, $existingMedia, 'image');
             }
 
-            UpdateProductImages::run($product, [
-                'image_id' => Arr::get($mainMedia, 'id'),
-            ]);
+            if(Arr::get($mainMedia, 'id')) {
+                UpdateProductImages::run($product, [
+                    'image_id' => Arr::get($mainMedia, 'id'),
+                ]);
+            }
 
             if($bundle->customerSalesChannel->platform->type === PlatformTypeEnum::MANUAL) {
                 $this->update($bundle, [
