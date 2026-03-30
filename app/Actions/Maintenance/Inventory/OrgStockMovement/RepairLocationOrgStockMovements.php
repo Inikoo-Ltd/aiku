@@ -177,7 +177,7 @@ class RepairLocationOrgStockMovements
             ->where('type', OrgStockMovementTypeEnum::ASSOCIATE->value)
             ->where('location_id', $location->id)
             ->where('org_stock_id', $orgStock->id)
-            ->whereNull('fixed_internal_helper')
+            //->whereNull('fixed_internal_helper')
             ->where('id', '!=', $firstMovement->id)
             ->orderByRaw('date, source_id,id');
 
@@ -214,7 +214,7 @@ class RepairLocationOrgStockMovements
             ->where('type', OrgStockMovementTypeEnum::DISASSOCIATE->value)
             ->where('location_id', $location->id)
             ->where('org_stock_id', $orgStock->id)
-            ->whereNull('fixed_internal_helper')
+            //->whereNull('fixed_internal_helper')
             ->orderByRaw('date');
 
         if ($lastMovement) {

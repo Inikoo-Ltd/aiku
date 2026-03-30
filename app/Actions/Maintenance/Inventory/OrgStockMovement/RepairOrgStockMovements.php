@@ -10,12 +10,20 @@ namespace App\Actions\Maintenance\Inventory\OrgStockMovement;
 
 use App\Models\Inventory\OrgStock;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class RepairOrgStockMovements
+class RepairOrgStockMovements implements ShouldBeUnique
 {
     use AsAction;
+
+    public string $jobQueue = 'stock-history';
+
+    public function getJobUniqueId(OrgStock $orgStock): string
+    {
+        return $orgStock->id;
+    }
 
     public function handle(OrgStock $orgStock, ?Command $command = null): void
     {
@@ -24,6 +32,10 @@ class RepairOrgStockMovements
         foreach ($locationsIds as $locationId) {
             RepairLocationOrgStockMovements::run($locationId, $orgStock->id, $command);
         }
+
+        $orgStock->update([
+            'movements_fixed' => true,
+        ]);
     }
 
     public function getHistoricLocationIds(OrgStock $orgStock): array
@@ -49,7 +61,7 @@ class RepairOrgStockMovements
         /** @var OrgStock $orgStock */
         foreach (OrgStock::orderBy('id')->get() as $orgStock) {
             $command->info('Processing '.$orgStock->slug.' ('.$orgStock->id.')');
-            $this->handle($orgStock, $command);
+            RepairOrgStockMovements::dispatch($orgStock);
         }
 
         return 0;
