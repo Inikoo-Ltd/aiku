@@ -134,8 +134,8 @@ class RepairLocationOrgStockMovements
         if ($firstMovement) {
             if ($firstMovement->type != OrgStockMovementTypeEnum::ASSOCIATE->value) {
                 $command?->error('error first associate should be fixed by now');
-                return;
 
+                return;
             }
             if (!$firstMovement->fixed_internal_helper) {
                 array_unshift($internalAssociates, $firstMovement->id);
@@ -168,6 +168,7 @@ class RepairLocationOrgStockMovements
 
         if ($firstMovement->type != OrgStockMovementTypeEnum::ASSOCIATE->value) {
             print "Error last disassociate should be fixed by now  $firstMovement->id  $firstMovement->type  $firstMovement->date ";
+
             return null;
         }
 
@@ -204,8 +205,8 @@ class RepairLocationOrgStockMovements
 
             if ($lastMovement->type != OrgStockMovementTypeEnum::DISASSOCIATE->value) {
                 print "Error last disassociate should be fixed by now  $lastMovement->id  $lastMovement->type  $lastMovement->date ";
-                return null;
 
+                return null;
             }
         }
 
@@ -269,7 +270,7 @@ class RepairLocationOrgStockMovements
             //  print_r($movement);
             $ok = true;
             if (!in_array($movement->type, $expectedTypes)) {
-                $command?->warn("Movement type $movement->type should be in ".count($expectedTypes)." $movement->id");
+                $command?->warn("Movement ** type $movement->type ".$movement->date."   should be in ".count($expectedTypes)." $movement->id");
 
 
                 if ($movement->type == OrgStockMovementTypeEnum::DISASSOCIATE->value) {
@@ -297,6 +298,17 @@ class RepairLocationOrgStockMovements
                         $command?->warn("Garbage duplicated  disassociates   $movement->id ");
                     }
                 } elseif ($movement->type == OrgStockMovementTypeEnum::AUDIT->value && !$isIn) {
+                    if ($movement->audited_quantity == 0) {
+                        DB::table('org_stock_movements')->where('id', $movement->id)
+                            ->update(
+                                [
+                                    'type'  => OrgStockMovementTypeEnum::ASSOCIATE->value,
+                                    'class' => OrgStockMovementClassEnum::HELPER->value,
+                                    'fixed' => true
+                                ]
+                            );
+                        $command?->warn("Garbage Duplicate disassociates   $movement->id ");
+                    }
                 }
             }
 
