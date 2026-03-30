@@ -135,7 +135,7 @@ class FetchAuroraOrgStockMovement extends FetchAurora
 
         $orgStock = $this->parseOrgStock($this->organisation->id.':'.$this->auroraModelData->{'Part SKU'});
         if (!$orgStock) {
-            print "!!!! Org stock do not found ".$this->organisation->id.':'.$this->auroraModelData->{'Part SKU'}." <<-\n";
+            //print "!!!! Org stock do not found ".$this->organisation->id.':'.$this->auroraModelData->{'Part SKU'}." <<-\n";
 
             return;
         }
