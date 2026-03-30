@@ -4,6 +4,7 @@ import { trans } from "laravel-vue-i18n"
 import { router } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
+import { useFormatTime } from "@/Composables/useFormatTime"
 import Select from "primevue/select"
 import Card from "primevue/card"
 import Tag from "primevue/tag"
@@ -57,6 +58,7 @@ type TimelineItem = {
     labelHtml: string
     offerCode?: string | null
     campaignCode?: string | null
+    campaignName?: string | null
     campaignType?: string | null
     durationLabel?: string | null
     shopCode?: string | null
@@ -275,17 +277,6 @@ const formatAmount = (value?: string | number | null): string => {
     }).format(asNumber(value))
 }
 
-const formatDateTime = (value?: string | null): string => {
-    if (!value) {
-        return "-"
-    }
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) {
-        return value
-    }
-    return date.toLocaleString()
-}
-
 const boolLabel = (value?: boolean | null): string => {
     return value ? trans("Yes") : trans("No")
 }
@@ -448,10 +439,11 @@ const items = computed<TimelineItem[]>(() => {
 
         map.set(key, {
             id: `${idx}-${key}`,
-            label: plainText(r.label),
-            labelHtml: toSafeHtml(r.label),
+            label: plainText(r.details?.offer?.name ?? r.label ?? null),
+            labelHtml: toSafeHtml(r.details?.offer?.name ?? r.label ?? null),
             offerCode: plainText(r.offer_code ?? null),
             campaignCode: plainText(r.campaign_code ?? null),
+            campaignName: toSafeHtml(r.details?.campaign?.name ?? null),
             campaignType: plainText(r.campaign_type ?? null),
             durationLabel: plainText(r.duration_label ?? null),
             shopCode: plainText(r.shop_code ?? null),
@@ -761,13 +753,16 @@ watch(
                             <div class="flex h-full items-center gap-2">
                                 <span class="inline-block h-1/3 w-1.5 shrink-0 rounded-sm" :style="{ backgroundColor: item.color }" />
                                 <div class="min-w-0 flex-1 flex flex-col justify-center gap-0.5">
-                                    <div class="truncate text-[13px] font-medium leading-tight text-gray-800">
-                                        <span class="inline" v-html="item.labelHtml" />
+                                    <div
+                                        class="truncate text-[13px] font-medium leading-tight text-gray-800"
+                                        :title="plainText(item.label)"
+                                    >
+                                        {{ plainText(item.label) }}
                                     </div>
                                     <div class="truncate text-[12px] leading-tight text-gray-500">
                                         <span v-if="item.campaignCode">{{ plainText(item.campaignCode) }}</span>
                                         <span v-if="item.offerCode"> • {{ plainText(item.offerCode) }}</span>
-                                        <span v-if="item.campaignType"> • {{ plainText(item.campaignType) }}</span>
+                                        <span v-if="item.campaignName"> • {{ plainText(item.campaignName) }}</span>
                                     </div>
                                     <div class="truncate text-[12px] leading-tight text-gray-500">
                                         <span v-if="item.shopCode">{{ plainText(item.shopCode) }}</span>
@@ -911,10 +906,10 @@ watch(
                         </template>
                         <template #content>
                             <div class="grid grid-cols-[130px_1fr] gap-y-2 text-[15px] text-slate-700">
-                                <div class="text-slate-500">{{ trans("Offer Start") }}</div><div class="font-medium text-slate-900">{{ formatDateTime(selectedItem.details?.offer?.start_at) }}</div>
-                                <div class="text-slate-500">{{ trans("Offer End") }}</div><div class="font-medium text-slate-900">{{ formatDateTime(selectedItem.details?.offer?.end_at) }}</div>
-                                <div class="text-slate-500">{{ trans("Campaign Start") }}</div><div class="font-medium text-slate-900">{{ formatDateTime(selectedItem.details?.campaign?.start_at) }}</div>
-                                <div class="text-slate-500">{{ trans("Campaign End") }}</div><div class="font-medium text-slate-900">{{ formatDateTime(selectedItem.details?.campaign?.finish_at) }}</div>
+                                <div class="text-slate-500">{{ trans("Offer Start") }}</div><div class="font-medium text-slate-900">{{ useFormatTime(selectedItem.details?.offer?.start_at ?? undefined, { formatTime: "dd MMMM yyyy" }) }}</div>
+                                <div class="text-slate-500">{{ trans("Offer End") }}</div><div class="font-medium text-slate-900">{{ useFormatTime(selectedItem.details?.offer?.end_at ?? undefined, { formatTime: "dd MMMM yyyy" }) }}</div>
+                                <div class="text-slate-500">{{ trans("Campaign Start") }}</div><div class="font-medium text-slate-900">{{ useFormatTime(selectedItem.details?.campaign?.start_at ?? undefined, { formatTime: "dd MMMM yyyy" }) }}</div>
+                                <div class="text-slate-500">{{ trans("Campaign End") }}</div><div class="font-medium text-slate-900">{{ useFormatTime(selectedItem.details?.campaign?.finish_at ?? undefined, { formatTime: "dd MMMM yyyy" }) }}</div>
                             </div>
                         </template>
                     </Card>
@@ -931,13 +926,13 @@ watch(
                                 <div class="text-slate-500">{{ trans("Invoices") }}</div><div class="font-medium text-slate-900">{{ formatNumber(selectedItem.details?.stats?.offer?.number_invoices) }}</div>
                                 <div class="text-slate-500">{{ trans("Amount") }}</div><div class="font-medium text-slate-900">{{ formatAmount(selectedItem.details?.stats?.offer?.amount) }}</div>
                                 <div class="text-slate-500">{{ trans("Group Amount") }}</div><div class="font-medium text-slate-900">{{ formatAmount(selectedItem.details?.stats?.offer?.grp_amount) }}</div>
-                                <div class="text-slate-500">{{ trans("Last Used") }}</div><div class="font-medium text-slate-900">{{ formatDateTime(selectedItem.details?.stats?.offer?.last_used_at) }}</div>
+                                <div class="text-slate-500">{{ trans("Last Used") }}</div><div class="font-medium text-slate-900">{{ useFormatTime(selectedItem.details?.stats?.offer?.last_used_at ?? undefined, { formatTime: "dd MMMM yyyy" }) }}</div>
                             </div>
                             <div class="grid grid-cols-[130px_1fr] gap-y-2">
                                 <div class="text-slate-500">{{ trans("Orders") }}</div><div class="font-medium text-slate-900">{{ formatNumber(selectedItem.details?.stats?.offer?.number_orders) }}</div>
                                 <div class="text-slate-500">{{ trans("Delivery Notes") }}</div><div class="font-medium text-slate-900">{{ formatNumber(selectedItem.details?.stats?.offer?.number_delivery_notes) }}</div>
                                 <div class="text-slate-500">{{ trans("Org Amount") }}</div><div class="font-medium text-slate-900">{{ formatAmount(selectedItem.details?.stats?.offer?.org_amount) }}</div>
-                                <div class="text-slate-500">{{ trans("First Used") }}</div><div class="font-medium text-slate-900">{{ formatDateTime(selectedItem.details?.stats?.offer?.first_used_at) }}</div>
+                                <div class="text-slate-500">{{ trans("First Used") }}</div><div class="font-medium text-slate-900">{{ useFormatTime(selectedItem.details?.stats?.offer?.first_used_at ?? undefined, { formatTime: "dd MMMM yyyy" }) }}</div>
                             </div>
                         </div>
                     </template>
