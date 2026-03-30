@@ -31,7 +31,7 @@ class RunPriceChangeNotificationEmailBulkRuns
 
         /** @var Outbox $outbox */
         foreach ($outboxes as $outbox) {
-            ProcessPriceChangePerOutbox::run($outbox);
+            ProcessPriceChangePerOutbox::dispatch($outbox);
         }
     }
 

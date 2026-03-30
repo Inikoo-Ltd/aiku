@@ -36,7 +36,7 @@ class RunBasketLowStockEmailBulkRuns
 
         /** @var Outbox $outbox */
         foreach ($outboxes as $outbox) {
-            ProcessLowStockInBasketPerOutbox::run($outbox);
+            ProcessLowStockInBasketPerOutbox::dispatch($outbox);
         }
     }
 

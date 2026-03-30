@@ -17,7 +17,6 @@ use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Models\Catalogue\Product;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\CRM\Customer;
-use App\Models\Comms\Outbox;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -40,9 +39,7 @@ class ProcessPriceChangeRecipients
             return;
         }
 
-        $outbox = Outbox::find($emailBulkRun->outbox_id);
-
-        if (!$outbox) {
+        if (!$emailBulkRun->outbox_id) {
             return;
         }
 
@@ -58,7 +55,7 @@ class ProcessPriceChangeRecipients
                 $emailBulkRun,
                 $customerModel,
                 [
-                    'outbox_id'     => $outbox->id,
+                    'outbox_id'     => $emailBulkRun->outbox_id,
                     'email_address' => $customer['email'],
                     'data->additional_data' => [
                         'products' => $this->generateProductLinks($customer['product_ids'])
