@@ -23,20 +23,22 @@ class FetchAuroraOrgStockMovements extends FetchAuroraAction
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?OrgStockMovement
     {
         $orgStockMovementData = $organisationSource->fetchOrgStockMovement($organisationSourceId);
-
+        // print_r($orgStockMovementData['orgStockMovement']);
         if ($orgStockMovementData) {
             if ($orgStockMovement = OrgStockMovement::where('source_id', $orgStockMovementData['orgStockMovement']['source_id'])
                 ->first()) {
-
-
                 $orgStockMovement = UpdateOrgStockMovement::make()->action(
                     $orgStockMovement,
                     modelData: $orgStockMovementData['orgStockMovement'],
                     hydratorsDelay: 1800,
                     strict: false
                 );
+                $sourceData       = explode(':', $orgStockMovement->source_id);
+                DB::connection('aurora')->table('Inventory Transaction Fact')
+                    ->where('Inventory Transaction Key', $sourceData[1])
+                    ->update(['aiku_id' => $orgStockMovement->id]);
+                print "Updating source aiku_id:  ".$sourceData[1]." ->  ".$orgStockMovement->source_id."\n";
             } else {
-
                 //    try {
                 $orgStockMovement = StoreOrgStockMovement::make()->action(
                     orgStock: $orgStockMovementData['orgStock'],
@@ -47,17 +49,21 @@ class FetchAuroraOrgStockMovements extends FetchAuroraAction
                 );
 
                 $this->recordNew($organisationSource);
+                print "New: ".$orgStockMovement->source_id."\n";
+
                 //                } catch (Exception $e) {
                 //                    $this->recordError($organisationSource, $e, $orgStockMovementData['orgStockMovement'], 'orgStockMovement', 'store');
                 //
                 //                    return null;
                 //                }
-            }
-            $sourceData = explode(':', $orgStockMovement->source_id);
 
-            DB::connection('aurora')->table('Inventory Transaction Fact')
-                ->where('Inventory Transaction Key', $sourceData[1])
-                ->update(['aiku_id' => $orgStockMovement->id]);
+                $sourceData = explode(':', $orgStockMovement->source_id);
+
+                DB::connection('aurora')->table('Inventory Transaction Fact')
+                    ->where('Inventory Transaction Key', $sourceData[1])
+                    ->update(['aiku_id' => $orgStockMovement->id]);
+            }
+
 
             return $orgStockMovement;
         }
@@ -71,14 +77,15 @@ class FetchAuroraOrgStockMovements extends FetchAuroraAction
         $query = DB::connection('aurora')
             ->table('Inventory Transaction Fact')
             ->select('Inventory Transaction Key as source_id')
-            ->whereIn('Inventory Transaction Record Type', ['Movement', 'Helper', 'Info']);
+            ->whereIn('Inventory Transaction Record Type', ['Movement', 'Helper', 'Info'])
+            ->whereNot('aiku_picking_id');
+        //  ->where('Inventory Transaction Quantity', '!=', 0);
         if ($this->onlyNew) {
             $query->whereNull('aiku_id');
         }
         if ($this->fromDays) {
             $query->where('Date', '>=', now()->subDays($this->fromDays)->format('Y-m-d'));
         }
-
         $query->orderBy('Date', $this->orderDesc ? 'desc' : 'asc');
 
 
@@ -89,7 +96,9 @@ class FetchAuroraOrgStockMovements extends FetchAuroraAction
     public function count(): ?int
     {
         $query = DB::connection('aurora')->table('Inventory Transaction Fact')
+            ->whereNot('aiku_picking_id')
             ->whereIn('Inventory Transaction Record Type', ['Movement', 'Helper', 'Info']);
+        //  ->where('Inventory Transaction Quantity', '!=', 0);
         if ($this->onlyNew) {
             $query->whereNull('aiku_id');
         }

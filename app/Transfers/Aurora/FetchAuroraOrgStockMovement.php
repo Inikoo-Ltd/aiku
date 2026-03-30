@@ -25,6 +25,11 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         }
 
         if ($this->auroraModelData->{'Inventory Transaction Record Type'} == 'Info' && $this->auroraModelData->{'Inventory Transaction Type'} != 'Audit') {
+
+            DB::connection('aurora')->table('Inventory Transaction Fact')
+                ->where('Inventory Transaction Key', $this->auroraModelData->{'Inventory Transaction Key'})
+                ->update(['aiku_id' => 0]);
+
             return;
         }
 
@@ -34,6 +39,10 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         }
 
         if (in_array($this->auroraModelData->{'Inventory Transaction Type'}, ['Move Out', 'Move In']) && $this->auroraModelData->{'Inventory Transaction Quantity'} == 0) {
+            DB::connection('aurora')->table('Inventory Transaction Fact')
+                ->where('Inventory Transaction Key', $this->auroraModelData->{'Inventory Transaction Key'})
+                ->update(['aiku_id' => 0]);
+
             return;
         }
 
