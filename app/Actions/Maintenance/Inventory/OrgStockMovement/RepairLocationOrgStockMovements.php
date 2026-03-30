@@ -11,7 +11,6 @@ namespace App\Actions\Maintenance\Inventory\OrgStockMovement;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
-use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
@@ -632,9 +631,7 @@ class RepairLocationOrgStockMovements
                     'audited_quantity' => 0,
                     'org_amount'       => 0,
                     'date'             => Carbon::parse($dateFirstValidMovement)->subMicroseconds(1000)->format('Y-m-d H:i:s.u'),
-                    'type'             => OrgStockMovementTypeEnum::ASSOCIATE->value,
-                    'class'            => OrgStockMovementClassEnum::HELPER->value,
-                    'flow'             => OrgStockMovementFlowEnum::AUDIT->value,
+                    'type'             => OrgStockMovementTypeEnum::ASSOCIATE,
                     'fixed'            => true,
                 ]
             );
@@ -811,9 +808,7 @@ class RepairLocationOrgStockMovements
                     'audited_quantity' => 0,
                     'org_amount'       => 0,
                     'date'             => Carbon::parse(Arr::get($errorData, 'date'))->addMicroseconds(4000)->format('Y-m-d H:i:s.u'),
-                    'type'             => OrgStockMovementTypeEnum::DISASSOCIATE->value,
-                    'class'            => OrgStockMovementClassEnum::HELPER->value,
-                    'flow'             => OrgStockMovementFlowEnum::AUDIT->value,
+                    'type'             => OrgStockMovementTypeEnum::DISASSOCIATE,
                     'fixed'            => true,
                 ]
             );
@@ -953,9 +948,7 @@ class RepairLocationOrgStockMovements
                     'audited_quantity' => 0,
                     'org_amount'       => 0,
                     'date'             => Arr::get($errorData, 'date'),
-                    'type'             => OrgStockMovementTypeEnum::ASSOCIATE->value,
-                    'class'            => OrgStockMovementClassEnum::HELPER->value,
-                    'flow'             => OrgStockMovementFlowEnum::AUDIT->value,
+                    'type'             => OrgStockMovementTypeEnum::ASSOCIATE,
                     'fixed'            => true,
                 ]
             );
