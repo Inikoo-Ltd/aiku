@@ -51,7 +51,7 @@ trait WithLuigis
     /**
      * @throws \Exception
      */
-    private function request(Website|Webpage $parent, string $endPoint, array $body, string $method = 'post', $compressed = false): array
+    private function request(Website|Webpage $parent, string $endPoint, array $body, string $method = 'post', $compressed = false, $queryParams = null): array
     {
         $content_type = 'application/json; charset=utf-8';
 
@@ -76,6 +76,19 @@ trait WithLuigis
 
         [$publicKey, $privateKey] = $accessToken;
 
+        if (strtoupper($method) === 'GET') {
+            $bodyToSend = '';
+        } else {
+            $bodyJson = json_encode($body);
+
+            if ($compressed) {
+                $header['Content-Encoding'] = 'gzip';
+                $bodyToSend = gzencode($bodyJson, 9);
+            } else {
+                $bodyToSend = $bodyJson;
+            }
+        }
+
         $signature = $this->digest(
             $privateKey,
             $content_type,
@@ -83,6 +96,10 @@ trait WithLuigis
             $endPoint,
             $date
         );
+
+        if ($queryParams) {
+            $endPoint .= '?'.$queryParams;
+        }
 
         $header = [
             'Accept-Encoding' => 'gzip',
@@ -92,31 +109,26 @@ trait WithLuigis
         ];
 
         Log::info('compressed: '.$compressed);
-        $bodyToPrint = 'encoded body';
-        if ($compressed) {
-            $header['Content-Encoding'] = 'gzip';
-            $body                       = gzencode(json_encode($body), 9);
-        } else {
-            $body        = json_encode($body);
-            $bodyToPrint = $body;
-        }
-
         Log::info('Starting request to Luigi Box API '.$publicKey.' ('.$date.')...');
         Log::info('Headers: ', $header);
-        Log::info('Body: ', ['body' => $bodyToPrint]);
+        Log::info('Body: ', ['body' => $bodyToSend]);
         Log::info('Loading...');
 
         try {
             $response = Http::withHeaders($header)
-                ->retry(3, 100)
-                ->withBody($body, $content_type)
-                ->{strtolower($method)}(
-                    'https://live.luigisbox.tech/'.$endPoint
-                );
+                ->retry(3, 100);
+
+            if (!empty($bodyToSend)) {
+                $response = $response->withBody($bodyToSend, $content_type);
+            }
+
+
+            $response = $response->{strtolower($method)}(
+                'https://live.luigisbox.tech'.$endPoint
+            );
         } catch (\Exception $e) {
             throw new Exception('Failed to call Luigis Box API: '.$e->getMessage());
         }
-
 
         if ($response->failed()) {
             Log::error('Failed to send request to Luigis Box API: '.$response->body(), [
@@ -298,7 +310,7 @@ trait WithLuigis
             ];
         }
         try {
-            $this->request($website, '/v1/content/delete', $body, 'delete');
+            $this->request($website, '/v1/content', $body, 'delete');
         } catch (Exception $e) {
             //
         }
@@ -532,5 +544,17 @@ trait WithLuigis
             ProductCategoryTypeEnum::SUB_DEPARTMENT => 'sub_department',
             default => 'category',
         };
+    }
+
+    public function getContentExport(Website $website, $queryParams = 'size=500'): array
+    {
+        return $this->request($website, '/v1/content_export', [], 'GET', false, $queryParams);
+    }
+
+    public function getNextPagination(array $urlArr): string|null
+    {
+        return data_get(array_find($urlArr, function ($item) {
+            return data_get($item, 'rel', null) == 'next';
+        }), 'href', null);
     }
 }

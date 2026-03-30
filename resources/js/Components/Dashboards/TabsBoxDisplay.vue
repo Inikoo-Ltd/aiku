@@ -228,7 +228,7 @@ const getRoute = (tabSlug) => {
                                 <div class="tabular-nums font-semibold text-gray-800">
                                     {{ renderLabelBasedOnType(childTab.value, childTab.type, { currency_code: child.currency_code }) }}
                                 </div>
-                                <div v-if="tab.information" class="text-gray-400 text-[10px]">
+                                <div class="text-gray-400 text-[10px]">
                                     {{ renderLabelBasedOnType(childTab.information?.label, childTab.information?.type, { currency_code: child.currency_code }) }}
                                 </div>
                             </div>
