@@ -16,7 +16,7 @@ class GetOfferCalendarData
 {
     use AsObject;
 
-    public function handle(Organisation $organisation, int $year, ?OfferCampaignTypeEnum $campaignType = null, ?int $month = null, ?int $limit = null, ?int $shopId = null): array
+    public function handle(Organisation $organisation, int $year, ?OfferCampaignTypeEnum $campaignType = null, ?int $month = null, ?int $limit = null, ?int $shopId = null, ?string $search = null): array
     {
         $startOfYear = Carbon::create($year, 1, 1)->startOfDay();
         $endOfYear = Carbon::create($year, 12, 31)->endOfDay();
@@ -43,6 +43,17 @@ class GetOfferCalendarData
 
         if ($shopId) {
             $query->where('shop_id', $shopId);
+        }
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('code', 'ilike', '%'.$search.'%')
+                    ->orWhere('name', 'ilike', '%'.$search.'%')
+                    ->orWhereHas('offerCampaign', function ($q2) use ($search) {
+                        $q2->where('code', 'ilike', '%'.$search.'%')
+                            ->orWhere('name', 'ilike', '%'.$search.'%');
+                    });
+            });
         }
 
         $minStartAt = (clone $query)->min('start_at');

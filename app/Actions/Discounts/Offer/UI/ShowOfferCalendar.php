@@ -33,6 +33,10 @@ class ShowOfferCalendar
         $campaignTypeValue = $request->input('campaign_type');
         $campaignTypeEnum = $campaignTypeValue ? OfferCampaignTypeEnum::tryFrom($campaignTypeValue) : null;
         $shopId = $request->has('shop') ? (int) $request->input('shop') : null;
+        $search = trim((string) $request->input('search', ''));
+        if ($search === '') {
+            $search = null;
+        }
 
         $organisationSlug = $request->query('organisation');
         $routeOrganisation = $request->route('organisation');
@@ -59,7 +63,7 @@ class ShowOfferCalendar
         $selectedShop = collect($shopOptions)->first(fn ($item) => (int) ($item['value'] ?? 0) === (int) $shopId);
         $selectedShopId = $selectedShop['value'] ?? null;
 
-        $calendarData = GetOfferCalendarData::run($organisation, $year, $campaignTypeEnum, $month, $limit, $selectedShopId);
+        $calendarData = GetOfferCalendarData::run($organisation, $year, $campaignTypeEnum, $month, $limit, $selectedShopId, $search);
 
         $ranges = OfferCalendarRangeResource::collection(
             collect($calendarData['holidayRanges'] ?? [])
@@ -76,6 +80,7 @@ class ShowOfferCalendar
             'limit'         => $limit,
             'year'          => $year,
             'month'         => $month,
+            'search'        => $search,
         ];
         $calendar['filterOptions'] = [
             'campaignTypes' => collect($campaignTypeLegend)
