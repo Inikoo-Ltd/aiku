@@ -137,6 +137,7 @@ const props = defineProps<{
         filterOptions?: {
             campaignTypes?: SelectOption[]
             shops?: SelectOption[]
+            years?: SelectOption[]
         }
         pagination?: {
             total?: number
@@ -617,18 +618,16 @@ const campaignTypeLegend = computed(() =>
 )
 
 const yearOptions = computed<SelectOption[]>(() => {
-    const currentYear = new Date().getFullYear()
-    const startYear = currentYear - 5
-    const endYear = currentYear + 2
-
-    const options: SelectOption[] = []
-    for (let year = startYear; year <= endYear; year += 1) {
-        options.push({
-            value: String(year),
-            label: String(year),
-        })
+    const optionsFromBackend = props.calendar.filterOptions?.years ?? []
+    if (optionsFromBackend.length > 0) {
+        return optionsFromBackend
     }
-    return options
+    const currentYear = new Date().getFullYear()
+    return [
+        { value: String(currentYear), label: String(currentYear) },
+        { value: String(currentYear + 1), label: String(currentYear + 1) },
+        { value: String(currentYear + 2), label: String(currentYear + 2) },
+    ]
 })
 
 const campaignTypeOptions = computed<SelectOption[]>(() => [

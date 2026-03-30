@@ -41,6 +41,7 @@ const props = defineProps<{
         filterOptions?: {
             campaignTypes?: { value: string; label: string }[]
             shops?: { value: string; label: string }[]
+            years?: { value: string; label: string }[]
         }
         pagination?: {
             total?: number
