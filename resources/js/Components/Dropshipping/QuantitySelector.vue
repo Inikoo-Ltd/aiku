@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import { faPlus, faMinus } from "@fas"
+library.add(faPlus, faMinus)
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+
 const props = defineProps<{
     modelValue: number
     min?: number
@@ -18,17 +23,25 @@ const decrement = () => {
 </script>
 
 <template>
-    <div class="flex items-center gap-1 mt-2">
-        <button class="px-2 py-1 border rounded hover:bg-gray-100" @click.stop="decrement">
-            -
+    <div class="inline-flex items-center overflow-hidden shadow-sm">
+        <div class="text-[10px] text-gray-400 leading-none">
+            Qty
+        </div>
+        <!-- MINUS -->
+        <button @click.stop="decrement" class="px-2 py-1 text-gray-600 hover:bg-gray-100 transition disabled:opacity-40"
+            :disabled="modelValue <= (min || 1)">
+            <FontAwesomeIcon icon='fas fa-minus' fixed-width aria-hidden='true' />
         </button>
 
-        <span class="px-2 min-w-[24px] text-center">
+        <!-- VALUE -->
+        <div class="px-3 text-sm font-semibold text-gray-800 min-w-[32px] text-center">
             {{ modelValue || 1 }}
-        </span>
+        </div>
 
-        <button class="px-2 py-1 border rounded hover:bg-gray-100" @click.stop="increment">
-            +
+        <!-- PLUS -->
+        <button @click.stop="increment" class="px-2 py-1 text-gray-600 hover:bg-gray-100 transition">
+            <FontAwesomeIcon icon='fas fa-plus' fixed-width aria-hidden='true' />
         </button>
+
     </div>
 </template>

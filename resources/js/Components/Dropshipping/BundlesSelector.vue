@@ -203,7 +203,7 @@ watch(selectedProduct, (val) => {
                                 <template v-if="portfoliosList.length > 0">
                                     <div v-for="(item, index) in portfoliosList" :key="index"
                                         @click="() => selectProduct(item)"
-                                        class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
+                                        class="relative h-full rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
                                         :class="compSelectedProduct.includes(item.id)
                                             ? 'bg-indigo-100 border-indigo-300'
                                             : 'bg-white hover:bg-gray-200 border-gray-300'">
@@ -277,12 +277,6 @@ watch(selectedProduct, (val) => {
                                                 </div>
 
                                                 <!-- Quantity Input -->
-                                                <!-- <NumberWithButtonSave v-if="withQuantity"
-                                                    :modelValue="get(item, 'quantity_selected', 1)"
-                                                    :bindToTarget="{ min: 1 }"
-                                                    @update:modelValue="(e: number) => (set(item, 'quantity_selected', e), selectedProduct.includes(item) ? '' : selectedProduct?.push(item))"
-                                                    noUndoButton noSaveButton parentClass="w-min" /> -->
-
                                                 <QuantitySelector
                                                     v-if="withQuantity && compSelectedProduct.includes(item.id)"
                                                     :modelValue="item.quantity_selected || 1" @update:modelValue="(val) => {
