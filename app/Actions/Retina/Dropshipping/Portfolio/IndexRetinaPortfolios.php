@@ -492,7 +492,13 @@ class IndexRetinaPortfolios extends RetinaAction
                             'parameters' => [
                                 'customerSalesChannel' => $this->customerSalesChannel->id
                             ]
-                        ]
+                            ],
+                             'edit' => [
+                            'name'       => 'retina.dropshipping.customer_sales_channels.bundles.show',
+                            'parameters' => [
+                                'customerSalesChannel' => $this->customerSalesChannel->slug
+                            ]
+                        ],
                     ],
                     'calculate' => [
                         'name'       => 'retina.models.dropshipping.bundles.products.calculate',
