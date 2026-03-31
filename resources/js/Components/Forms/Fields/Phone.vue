@@ -11,7 +11,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { VueTelInput } from 'vue-tel-input'
 import 'vue-tel-input/vue-tel-input.css'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 library.add(faExclamationCircle, faCheckCircle)
 
@@ -22,19 +22,23 @@ if (props.options !== undefined && props.options.defaultCountry) {
     defaultCountry = props.options.defaultCountry
 }
 
-const handleChange = (number, phoneObject) => {
-    props.form.phone = phoneObject.number || ''
-    // console.log(props.form.phone)
-}
+// const handleChange = (number, phoneObject) => {
+//     props.form.phone = phoneObject.number || ''
+//     // console.log(props.form.phone)
+// }
 
-const phone = ref(props.form[props['fieldName']])
+const phone = ref(props.form[props.fieldName] || '')
+
+watch(phone, (val) => {
+    props.form[props.fieldName] = val
+})
 </script>
 
 <template>
     <div class="relative rounded-md">
-    <!-- {{ phone }} --- {{ form.phone }} -->
+    <!-- {{ phone }} --- {{ form.phone }} -->    
         <VueTelInput
-            @on-input="handleChange"
+            v-if="form && fieldName"
             v-model="phone"
             :styleClasses="[
                 form.errors[fieldName] ? 'errorShake' : '',
