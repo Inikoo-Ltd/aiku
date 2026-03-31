@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Bundle;
 
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductImages;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -19,6 +20,7 @@ use App\Models\BundleItem;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Portfolio;
+use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -70,20 +72,21 @@ class UpdateBundle extends OrgAction
             }
 
             if(Arr::get($modelData, 'payloadItems')) {
-                foreach (Arr::get($modelData, 'payloadItems', []) as $payloadItem) {
-                    $bundleItem = BundleItem::where('id', Arr::get($payloadItem, 'bundle_item_id'))->first();
+                $tradeUnits = [];
+                $selectedBundleItems = Arr::get($modelData, 'payloadItems');
 
-                    /** @var Product $bundleItemProduct */
-                    $bundleItemProduct = $bundleItem->item;
-
-                    foreach ($bundleItemProduct->tradeUnits as $tradeUnit) {
-                        $this->update($tradeUnit, []);
+                foreach ($selectedBundleItems as $selectedBundleItem) {
+                    foreach ($product->tradeUnits as $tradeUnit) {
+                        $tradeUnits[] = [
+                            'id' => $tradeUnit->id,
+                            'quantity' => $selectedBundleItem['quantity']
+                        ];
                     }
-
-                    $this->update($bundleItem, [
-                        'quantity' => Arr::get($payloadItem, "quantity")
-                    ]);
                 }
+
+                UpdateProduct::run($product, [
+                    'trade_units' => $tradeUnits
+                ]);
             }
 
             $bundle->refresh();
