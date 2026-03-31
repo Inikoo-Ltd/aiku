@@ -22,15 +22,23 @@ class CalculateDayOrgStockHistory implements ShouldBeUnique
 
     public string $jobQueue = 'stock-history';
 
-    public function getJobUniqueId(OrgStock $orgStock, Carbon $date): string
+    public function getJobUniqueId(?int $orgStockId, Carbon $date): string
     {
-        return $orgStock->id.'-'.Carbon::now()->format('Y-m-d');
+        return $orgStockId.'-'.Carbon::now()->format('Y-m-d');
     }
 
 
-    public function handle(OrgStock $orgStock, Carbon $date, ?Command $command = null): void
+    public function handle(?int $orgStockId, Carbon $date, ?Command $command = null): void
     {
-        $date->setTime(12, 0, 0);
+        if (!$orgStockId) {
+            return;
+        }
+        $orgStock = OrgStock::find($orgStockId);
+        if (!$orgStock) {
+            return;
+        }
+
+        $date->setTime(12, 0);
 
 
         $from = $this->getFirstAssociateDate($orgStock);
@@ -104,7 +112,7 @@ class CalculateDayOrgStockHistory implements ShouldBeUnique
         /** @var OrgStock $orgStock */
         foreach ($orgStocks as $orgStock) {
             //$command->info('Processing '.$orgStock->slug.' ('.$orgStock->id.')');
-            $this->handle($orgStock, $date);
+            $this->handle($orgStock->id, $date);
             //  CalculateOrgStockHistory::dispatch($orgStock);
             $progressBar->advance();
         }

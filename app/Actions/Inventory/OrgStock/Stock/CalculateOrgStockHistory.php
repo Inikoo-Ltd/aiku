@@ -17,6 +17,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
+//todo paling to remove this
 class CalculateOrgStockHistory implements ShouldBeUnique
 {
     use AsAction;
@@ -31,7 +32,6 @@ class CalculateOrgStockHistory implements ShouldBeUnique
 
     public function handle(OrgStock $orgStock, ?Command $command = null): void
     {
-        return;
         $from = $this->getFirstAssociateDate($orgStock);
         if (!$from) {
             $command?->info('Skipping '.$orgStock->slug.' ('.$orgStock->id.') - no associate date');
@@ -43,7 +43,7 @@ class CalculateOrgStockHistory implements ShouldBeUnique
         if ($from->lt($minimumDate)) {
             $from = $minimumDate;
         }
-        $maxDate = Carbon::parse('2020-01-02');
+
 
         $isCurrent = DB::table('location_org_stocks')->where('org_stock_id', $orgStock->id)->exists();
         if ($isCurrent) {
@@ -52,9 +52,6 @@ class CalculateOrgStockHistory implements ShouldBeUnique
             $to = $this->getLastDisassociateDate($orgStock);
         }
 
-        if ($to->gt($maxDate)) {
-            $to = $maxDate;
-        }
 
         if ($to->lt($from)) {
             $command?->info('Skipping '.$orgStock->slug.' ('.$orgStock->id.') - to date is before from date');
@@ -122,7 +119,6 @@ class CalculateOrgStockHistory implements ShouldBeUnique
             }
             $command->info('Processing '.$orgStock->slug.' ('.$orgStock->id.')');
             $this->handle($orgStock, $command);
-            //  CalculateOrgStockHistory::dispatch($orgStock);
         }
 
         return 0;
