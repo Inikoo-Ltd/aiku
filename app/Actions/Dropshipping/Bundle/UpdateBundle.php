@@ -52,8 +52,9 @@ class UpdateBundle extends OrgAction
                 $existingMedia = Media::find($imageId);
                 $this->attachMediaToModel($product, $existingMedia, 'image');
             }
+            $mainMediaId = Arr::get($mainMedia, 'id');
 
-            if (Arr::get($mainMedia, 'id')) {
+            if ($mainMediaId && $mainMediaId !== $product->image_id) {
                 UpdateProductImages::run($product, [
                     'image_id' => Arr::get($mainMedia, 'id'),
                 ]);
