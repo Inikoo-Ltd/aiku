@@ -93,7 +93,8 @@ class CloneAuroraVolGROffers
                                         'trigger_data_item_quantity' => $auroraOffer->{'Deal Terms'},
                                         'percentage_off'             => $auroraOffer->{'Deal Component Allowance'},
                                         'interval'                   => 30
-                                    ]
+                                    ],
+                                    900
                                 );
                                 $command->info("Offer created for $toFamily->code");
                             } else {

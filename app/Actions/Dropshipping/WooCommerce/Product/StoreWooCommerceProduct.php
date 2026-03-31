@@ -111,7 +111,7 @@ class StoreWooCommerceProduct extends RetinaAction
                 ];
             }
 
-            if (! blank($customAttributes)) {
+            /*if (! blank($customAttributes)) {
                 foreach ($customAttributes as $key => $attr) {
                     $attributes[] = [
                         'id' => 0,
@@ -122,7 +122,7 @@ class StoreWooCommerceProduct extends RetinaAction
                         'options' => [$attr['option']]
                     ];
                 }
-            }
+            }*/
 
             $ingredients = explode(',', $product->marketing_ingredients);
 
