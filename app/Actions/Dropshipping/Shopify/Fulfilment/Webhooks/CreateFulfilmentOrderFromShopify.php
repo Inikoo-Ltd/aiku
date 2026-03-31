@@ -47,6 +47,7 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
                 $lineItem = $lineItemEdge['node'];
 
                 $productId = data_get($lineItem, 'lineItem.product.id');
+                $productVariantId = data_get($lineItem, 'lineItem.variant.id');
 
                 if (empty($productId)) {
                     continue;
@@ -56,7 +57,8 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
                     'id' => $lineItem['id'],
                     'quantity' => $lineItem['remainingQuantity'],
                     'sku' => $lineItem['sku'],
-                    'product_id' => $productId
+                    'product_id' => $productId,
+                    'product_variant_id' => $productVariantId
                 ];
             }
 

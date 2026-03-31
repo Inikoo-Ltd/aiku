@@ -23,8 +23,12 @@ class ActivateOffer extends OrgAction
     use WithActionUpdate;
 
 
-    public function handle(Offer $offer): Offer
+    public function handle(Offer $offer, ?int $hydratorDelay = null): Offer
     {
+        if ($hydratorDelay !== null) {
+            $this->hydratorsDelay = $hydratorDelay;
+        }
+
         $modelData = [
             'state'  => OfferStateEnum::ACTIVE,
             'status' => true
@@ -44,7 +48,7 @@ class ActivateOffer extends OrgAction
         UpdateOfferAllowanceSignature::run($offer);
         OfferCampaignHydrateOffersState::run($offer->offerCampaign);
 
-        RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id)->delay(now()->addSeconds(10));
+        RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id)->delay($this->hydratorsDelay);
 
         return $offer;
     }
