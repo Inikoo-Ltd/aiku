@@ -15,6 +15,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Bundle;
+use App\Models\BundleItem;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Portfolio;
@@ -68,6 +69,23 @@ class UpdateBundle extends OrgAction
                 ]);
             }
 
+            if(Arr::get($modelData, 'payloadItems')) {
+                foreach (Arr::get($modelData, 'payloadItems', []) as $payloadItem) {
+                    $bundleItem = BundleItem::where('id', Arr::get($payloadItem, 'bundle_item_id'))->first();
+
+                    /** @var Product $bundleItemProduct */
+                    $bundleItemProduct = $bundleItem->item;
+
+                    foreach ($bundleItemProduct->tradeUnits as $tradeUnit) {
+                        $this->update($tradeUnit, []);
+                    }
+
+                    $this->update($bundleItem, [
+                        'quantity' => Arr::get($payloadItem, "quantity")
+                    ]);
+                }
+            }
+
             $bundle->refresh();
 
             return $bundle;
@@ -91,7 +109,10 @@ class UpdateBundle extends OrgAction
             'rrp'         => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'images'      => ['sometimes', 'array'],
             'images.*.id'    => ['sometimes', 'integer', 'exists:media,id'],
-            'images.*.is_main' => ['sometimes', 'boolean']
+            'images.*.is_main' => ['sometimes', 'boolean'],
+            'payloadItems' => ['sometimes', 'array'],
+            'payloadItems.*.bundle_item_id'  => ['required', 'integer', 'exists:bundle_items,id'],
+            'payloadItems.*.quantity'  => ['required', 'integer', 'min:1'],
         ];
 
         if (!$this->strict) {
