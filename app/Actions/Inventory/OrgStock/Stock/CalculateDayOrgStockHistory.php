@@ -30,19 +30,21 @@ class CalculateDayOrgStockHistory implements ShouldBeUnique
 
     public function handle(OrgStock $orgStock, Carbon $date, ?Command $command = null): void
     {
+        $date->setTime(12, 0, 0);
+
+
         $from = $this->getFirstAssociateDate($orgStock);
         if (!$from) {
             $command?->warn('Skipping '.$orgStock->slug.' ('.$orgStock->id.') - no associate date');
-
             return;
         }
-
-
+        
+        
         $isCurrent = DB::table('location_org_stocks')->where('org_stock_id', $orgStock->id)->exists();
         if ($isCurrent) {
-            $to = Carbon::now();
+            $to = Carbon::now()->endOfDay();
         } else {
-            $to = $this->getLastDisassociateDate($orgStock);
+            $to = $this->getLastDisassociateDate($orgStock)?->endOfDay();
         }
 
 
@@ -77,7 +79,7 @@ class CalculateDayOrgStockHistory implements ShouldBeUnique
         $rawDate = DB::table('org_stock_movements')->select('date')->where('org_stock_id', $orgStock->id)
             ->where('type', OrgStockMovementTypeEnum::ASSOCIATE->value)->orderby('date')->first();
         if ($rawDate) {
-            return Carbon::parse($rawDate->date);
+            return Carbon::parse($rawDate->date)->startOfDay();
         }
 
         return null;
