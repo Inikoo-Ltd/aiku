@@ -34,6 +34,11 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
 
     public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false): void
     {
+
+        if($order->shop_id==19){
+            return;
+        }
+
         $itemsNet   = $order->transactions()->where('model_type', 'Product')->sum('net_amount');
         $itemsGross = $order->transactions()->where('model_type', 'Product')->sum('gross_amount');
         $tax        = $order->taxCategory->rate;
