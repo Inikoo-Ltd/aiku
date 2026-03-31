@@ -109,7 +109,7 @@ class IndexLeaveTypes extends OrgAction
                 ],
                 'data' => $leaveTypes,
                 'categoryOptions' => collect(LeaveCategoryEnum::cases())
-                    ->map(fn($case) => [
+                    ->map(fn ($case) => [
                         'value' => $case->value,
                         'label' => $case->label(),
                     ])

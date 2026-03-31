@@ -676,7 +676,9 @@ test('UI show customer showcase tab has stats for KPI cards', function () {
             ->has('tabs')
             ->has('showcase')
             ->has('showcase.stats')
-            ->where('showcase.stats', fn ($stats) => isset($stats['historic_clv_amount'])
+            ->where(
+                'showcase.stats',
+                fn ($stats) => isset($stats['historic_clv_amount'])
                 && isset($stats['average_order_value'])
                 && isset($stats['churn_risk_prediction'])
                 && isset($stats['number_orders'])
