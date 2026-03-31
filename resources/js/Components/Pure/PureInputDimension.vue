@@ -25,7 +25,7 @@ const createDefaultValue = () => ({
   units: "mm"
 })
 
-// Dapatkan faktor pengali berdasarkan unit
+// Get factor based on unit
 const getFactor = (unit: string) => {
   if (unit === 'cm') return 100
   if (unit === 'mm') return 1000
@@ -33,7 +33,7 @@ const getFactor = (unit: string) => {
   return 1 // default: meter
 }
 
-// Konversi nilai dari DB (Meter) ke tampilan UI sesuai unit yang dipilih
+// Convert value to display
 const toDisplay = (val: any) => {
   if (!val) return createDefaultValue()
   const factor = getFactor(val.units)
@@ -45,7 +45,7 @@ const toDisplay = (val: any) => {
   }
 }
 
-// Konversi nilai dari input UI kembali ke DB (Meter)
+// Convert UI value to database (Meter)
 const toDatabase = (val: any) => {
   if (!val) return null
   const factor = getFactor(val.units)
@@ -57,17 +57,17 @@ const toDatabase = (val: any) => {
   }
 }
 
-// Keep internal state - Langsung konversi nilai prop ke angka UI
+// Keep internal state - initially convert from modelValue to display format
 const localValue = ref(toDisplay(props.modelValue))
 
-// Update localValue if parent changes (mencegah infinite loop dengan membandingkan nilai akhir)
+// Update localValue if parent changes (e.g. when loading existing data), but only if the new value is actually different from the current localValue to avoid overwriting user input
 watch(
   () => props.modelValue,
   (newVal) => {
     if (newVal) {
       const convertedLocal = toDatabase(localValue.value)
       
-      // Hanya timpa localValue jika nilainya benar-benar berbeda dari DB
+      // Check if the new value from parent is different from the current localValue (after converting localValue back to database format for accurate comparison)
       if (
         newVal.h !== convertedLocal?.h ||
         newVal.l !== convertedLocal?.l ||
@@ -86,7 +86,7 @@ watch(
 watch(
   localValue,
   (val) => {
-    // Saat user ngetik angka, lempar datanya ke parent dalam bentuk Meter
+    // Convert localValue back to database format before emitting
     emits("update:modelValue", toDatabase(val))
   },
   { deep: true }
