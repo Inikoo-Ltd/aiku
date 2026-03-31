@@ -25,6 +25,9 @@ use App\Actions\Goods\StockFamily\UI\EditStockFamily;
 use App\Actions\Inventory\OrgStock\ExportOrgStocks;
 use App\Actions\Inventory\OrgStock\UI\EditOrgStock;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
+use App\Actions\Inventory\OrgStock\UI\ShowOrgStockHistory;
+use App\Actions\Inventory\OrganisationStockHistory\UI\IndexLocationOrgStockHistories;
+use App\Actions\Inventory\OrganisationStockHistory\UI\IndexOrganisationStockHistories;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksWithNoProducts;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStock;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStockProcurement;
@@ -37,6 +40,13 @@ use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowInventoryDashboard::class)->name('dashboard');
+
+Route::prefix('stock-histories')->as('org_stock_histories.')->group(function () {
+    Route::get('/', IndexOrganisationStockHistories::class)->name('index');
+    Route::prefix('location-histories')->as('location_histories.')->group(function () {
+        Route::get('/', IndexLocationOrgStockHistories::class)->name('index');
+    });
+});
 
 
 Route::prefix('stocks')->as('org_stocks.')->group(function () {
@@ -60,6 +70,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
             Route::get('/edit', EditOrgStock::class)->name('edit');
+            Route::get('/org-stock-history', ShowOrgStockHistory::class)->name('show.org_stock_history');
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
@@ -73,6 +84,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
             Route::get('/edit', EditOrgStock::class)->name('edit');
+            Route::get('/org-stock-history', ShowOrgStockHistory::class)->name('show.org_stock_history');
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
@@ -86,6 +98,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
             Route::get('/edit', EditOrgStock::class)->name('edit');
+            Route::get('/org-stock-history', ShowOrgStockHistory::class)->name('show.org_stock_history');
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
@@ -99,6 +112,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
             Route::get('/edit', EditOrgStock::class)->name('edit');
+            Route::get('/org-stock-history', ShowOrgStockHistory::class)->name('show.org_stock_history');
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
@@ -112,6 +126,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
             Route::get('/edit', EditOrgStock::class)->name('edit');
+            Route::get('/org-stock-history', ShowOrgStockHistory::class)->name('show.org_stock_history');
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
@@ -125,6 +140,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
             Route::get('/edit', EditOrgStock::class)->name('edit');
+            Route::get('/org-stock-history', ShowOrgStockHistory::class)->name('show.org_stock_history');
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
@@ -138,6 +154,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
             Route::get('/edit', EditOrgStock::class)->name('edit');
+            Route::get('/org-stock-history', ShowOrgStockHistory::class)->name('show.org_stock_history');
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
@@ -169,6 +186,7 @@ Route::prefix('families')->as('org_stock_families.')->group(function () {
                 Route::prefix('{orgStock}')->group(function () {
                     Route::get('', [ShowOrgStock::class, 'inStockFamily'])->name('show');
                     Route::get('/edit', [EditOrgStock::class, 'inStockFamily'])->name('edit');
+                    Route::get('/org-stock-history', [ShowOrgStockHistory::class, 'inStockFamily'])->name('show.org_stock_history');
                     Route::get('/stock-history', [ShowOrgStockStockHistory::class, 'inStockFamily'])->name('show.stock_history');
                     Route::get('/procurement', [ShowOrgStockProcurement::class, 'inStockFamily'])->name('show.procurement');
                     Route::get('/products', [ShowOrgStockProducts::class, 'inStockFamily'])->name('show.products');

@@ -113,6 +113,15 @@ class GetWarehouseNavigation
                                 ],
                             ] : null,
 
+                        [
+                            "label" => __("Stock History"),
+                            "icon"  => ["fal", "fa-history"],
+                            'root'  => 'grp.org.warehouses.show.inventory.org_stock_histories.',
+                            "route" => [
+                                "name"       => "grp.org.warehouses.show.inventory.org_stock_histories.index",
+                                "parameters" => [$warehouse->organisation->slug, $warehouse->slug],
+                            ],
+                        ]
                     ],
                 ],
             ];
