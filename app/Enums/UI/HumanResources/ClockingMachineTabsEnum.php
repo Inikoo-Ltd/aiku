@@ -22,6 +22,7 @@ enum ClockingMachineTabsEnum: string
     case HISTORY             = 'history';
     case DATA                = 'data';
     case SCAN_QR_CODE        = 'scan_qr_code';
+    case CLOCKING_POLICIES = 'clocking_policies';
 
 
 
@@ -51,6 +52,10 @@ enum ClockingMachineTabsEnum: string
             ClockingMachineTabsEnum::SCAN_QR_CODE => [
                 'title' => __('Scan QR Code'),
                 'icon'  => 'fal fa-qrcode',
+            ],
+            ClockingMachineTabsEnum::CLOCKING_POLICIES => [
+                'title' => __('Clocking Policies'),
+                'icon'  => 'fal fa-user-shield',
             ],
         };
     }
