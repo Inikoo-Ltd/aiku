@@ -25,15 +25,27 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         }
 
         if ($this->auroraModelData->{'Inventory Transaction Record Type'} == 'Info' && $this->auroraModelData->{'Inventory Transaction Type'} != 'Audit') {
+            DB::connection('aurora')->table('Inventory Transaction Fact')
+                ->where('Inventory Transaction Key', $this->auroraModelData->{'Inventory Transaction Key'})
+                ->update(['aiku_id' => 0]);
+
             return;
         }
 
 
         if ($this->auroraModelData->aiku_picking_id) {
+            DB::connection('aurora')->table('Inventory Transaction Fact')
+                ->where('Inventory Transaction Key', $this->auroraModelData->{'Inventory Transaction Key'})
+                ->update(['aiku_id' => 0]);
+
             return;
         }
 
         if (in_array($this->auroraModelData->{'Inventory Transaction Type'}, ['Move Out', 'Move In']) && $this->auroraModelData->{'Inventory Transaction Quantity'} == 0) {
+            DB::connection('aurora')->table('Inventory Transaction Fact')
+                ->where('Inventory Transaction Key', $this->auroraModelData->{'Inventory Transaction Key'})
+                ->update(['aiku_id' => 0]);
+
             return;
         }
 
@@ -105,6 +117,10 @@ class FetchAuroraOrgStockMovement extends FetchAurora
                 OrgStockMovementTypeEnum::DISASSOCIATE,
                 OrgStockMovementTypeEnum::AUDIT,
             ])) {
+            DB::connection('aurora')->table('Inventory Transaction Fact')
+                ->where('Inventory Transaction Key', $this->auroraModelData->{'Inventory Transaction Key'})
+                ->update(['aiku_id' => 0]);
+
             return;
         }
 
@@ -119,6 +135,8 @@ class FetchAuroraOrgStockMovement extends FetchAurora
 
         $orgStock = $this->parseOrgStock($this->organisation->id.':'.$this->auroraModelData->{'Part SKU'});
         if (!$orgStock) {
+            //print "!!!! Org stock do not found ".$this->organisation->id.':'.$this->auroraModelData->{'Part SKU'}." <<-\n";
+
             return;
         }
 
@@ -183,11 +201,10 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         if ($type == OrgStockMovementTypeEnum::AUDIT || $type == OrgStockMovementTypeEnum::ASSOCIATE || $type == OrgStockMovementTypeEnum::DISASSOCIATE) {
             $this->parsedData['orgStockMovement']['audited_quantity'] = $auditedQuantity;
             if ($type == OrgStockMovementTypeEnum::AUDIT) {
-                $this->parsedData['orgStockMovement']['quantity']         = null;
+                $this->parsedData['orgStockMovement']['quantity'] = null;
             } else {
-                $this->parsedData['orgStockMovement']['quantity']         = 0;
+                $this->parsedData['orgStockMovement']['quantity'] = 0;
             }
-
         } else {
             $this->parsedData['orgStockMovement']['quantity']         = $quantity;
             $this->parsedData['orgStockMovement']['audited_quantity'] = null;

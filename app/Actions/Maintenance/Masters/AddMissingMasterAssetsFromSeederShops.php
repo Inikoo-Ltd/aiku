@@ -46,25 +46,25 @@ class AddMissingMasterAssetsFromSeederShops
 
                     if ($product->is_main) {
 
-                        if(!$product->master_product_id) {
+                        if (!$product->master_product_id) {
                             if ($command) {
                                 $command->info("Found main product with no master asset $product->slug");
                             } else {
                                 print "Found main product with no master asset $product->slug \n";
                             }
                             $this->upsertMasterProduct($masterShop, $product);
-                        }else{
+                        } else {
 
-                            $foundMasterProduct=$product->masterProduct;
+                            $foundMasterProduct = $product->masterProduct;
                             UpdateMasterAsset::make()->action(
                                 $foundMasterProduct,
                                 [
-                                    'units'=>$product->units,
+                                    'units' => $product->units,
                                 ]
                             );
                             $foundMasterProduct->update(
                                 [
-                                    'unit'=>$product->unit,
+                                    'unit' => $product->unit,
                                 ]
                             );
 

@@ -33,6 +33,15 @@ class StoreTransaction extends OrgAction
     use WithOrderExchanges;
 
 
+    /**
+     * @var \App\Models\Ordering\Order
+     */
+    private Order $order;
+    /**
+     * @var \App\Models\Catalogue\HistoricAsset
+     */
+    private HistoricAsset $historicAsset;
+
     public function handle(Order $order, HistoricAsset $historicAsset, array $modelData, $calculateShipping = true): Transaction
     {
         data_set($modelData, 'tax_category_id', $order->tax_category_id, overwrite: false);
@@ -172,10 +181,11 @@ class StoreTransaction extends OrgAction
         return $rules;
     }
 
+    
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
-        
-        $exists = $request->order->itemTransactions()->where('model_id', $request->historicAsset->asset->model_id)->exists();
+
+        $exists = $this->order->itemTransactions()->where('model_id', $this->historicAsset->asset->model_id)->exists();
         if ($exists) {
             $validator->errors()->add('quantity_ordered', 'An existing product under order already exists.');
         }
@@ -186,6 +196,10 @@ class StoreTransaction extends OrgAction
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
+
+        $this->order=$order;
+        $this->historicAsset=$historicAsset;
+
         $this->initialisationFromShop($order->shop, $modelData);
 
         return $this->handle($order, $historicAsset, $this->validatedData);
@@ -193,6 +207,8 @@ class StoreTransaction extends OrgAction
 
     public function asController(Order $order, HistoricAsset $historicAsset, ActionRequest $request): void
     {
+        $this->order=$order;
+        $this->historicAsset=$historicAsset;
         $this->initialisationFromShop($order->shop, $request);
         $this->handle($order, $historicAsset, $this->validatedData);
     }

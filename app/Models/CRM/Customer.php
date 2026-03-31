@@ -27,7 +27,6 @@ use App\Models\Comms\BackInStockReminder;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\SubscriptionEvent;
 use App\Models\Dispatching\DeliveryNote;
-use App\Models\CRM\CustomerWebActivity;
 use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerClient;
@@ -197,6 +196,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\CRM\TrafficSource|null $trafficSource
  * @property-read Collection<int, Transaction> $transactions
  * @property-read UniversalSearch|null $universalSearch
+ * @property-read Collection<int, CustomerWebActivity> $webActivities
  * @property-read Collection<int, \App\Models\CRM\WebUser> $webUsers
  * @property-read WooCommerceUser|null $wooCommerceUser
  * @method static \Database\Factories\CRM\CustomerFactory factory($count = null, $state = [])
