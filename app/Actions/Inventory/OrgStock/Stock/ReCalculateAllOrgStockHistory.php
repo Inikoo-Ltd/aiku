@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStock\Stock;
 
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
+use App\Models\SysAdmin\Organisation;
 use Carbon\CarbonPeriod;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
@@ -20,9 +21,9 @@ class ReCalculateAllOrgStockHistory
     use AsAction;
 
 
-    public function handle(?Command $command = null): void
+    public function handle(Organisation $organisation, ?Command $command = null): void
     {
-        $from = $this->getFirstPurchase();
+        $from = $this->getFirstPurchase($organisation);
         $to   = Carbon::yesterday();
 
         if (!$from || !$to || $from->greaterThan($to)) {
@@ -34,15 +35,16 @@ class ReCalculateAllOrgStockHistory
         $numberDays = count($period->toArray());
         $command?->info('Calculating '.$numberDays.' days of history');
         foreach (array_reverse($period->toArray()) as $date) {
-            $command?->info('Processing '.$date->format('Y-m-d'));
-            CalculateAllOrgStocksDayOrgStockHistory::dispatch($date->format('Y-m-d'));
+            CalculateAllOrgStocksDayOrgStockHistory::dispatch($organisation->id, $date->format('Y-m-d'));
+            sleep(1);
         }
     }
 
 
-    public function getFirstPurchase(): ?Carbon
+    public function getFirstPurchase(Organisation $organisation): ?Carbon
     {
         $rawDate = DB::table('org_stock_movements')->select('date')
+            ->where('organisation_id', $organisation->id)
             ->where('type', OrgStockMovementTypeEnum::PURCHASE->value)->orderby('date')->first();
         if ($rawDate) {
             return Carbon::parse($rawDate->date)->startOfDay();
@@ -54,12 +56,13 @@ class ReCalculateAllOrgStockHistory
 
     public function getCommandSignature(): string
     {
-        return 'calculate:all_org_stock_history';
+        return 'calculate:all_org_stock_history {organisation}';
     }
 
     public function asCommand(Command $command): int
     {
-        $this->handle($command);
+        $organisation = Organisation::where('slug', $command->argument('organisation'))->firstOrFail();
+        $this->handle($organisation, $command);
 
         return 0;
     }
