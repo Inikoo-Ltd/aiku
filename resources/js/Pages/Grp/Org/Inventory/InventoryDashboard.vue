@@ -21,6 +21,7 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from "chart.js"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import AccuracyDashboardWidget from "@/Components/DataDisplay/AccuracyDashboardWidget.vue"
 import StatProgressCard from "@/Components/DataDisplay/StatProgressCard.vue"
+import StatsBox from "@/Components/Stats/StatsBox.vue"
 
 library.add(
 	faSeedling,
@@ -39,6 +40,7 @@ const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
 	flatTreeMaps: {}
+	flatTreeMapsTwo?: {}
     dashboard: {
 		columns: Array<{
 			widgets: Array<{
@@ -51,6 +53,7 @@ const props = defineProps<{
 			}>
 		}>
 	}
+	statsBox: {}
 	dashboardStats: {
 		[key: string]: {
 			label: string
@@ -97,6 +100,16 @@ const options = {
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead"></PageHeading>
 	<FlatTreeMap class="mx-4" v-for="(treeMap, idx) in flatTreeMaps" :key="idx" :nodes="treeMap" />
+	
+    <div class="py-6 px-4">
+        <dl class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
+			<StatsBox v-for="(stat, index) in statsBox"
+				:key="index"
+				:stat="stat"
+			/>
+		</dl>
+	</div>
+	
 	<dl class="px-4 mt-5 grid grid-cols-1 md:grid-cols-2 gap-x-2 gap-y-3">
 	<!-- <div class="col-span-12">
         <div v-for="(column, colIdx) in dashboard.columns" :key="colIdx" class="flex flex-col md:flex-row gap-6">

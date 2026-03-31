@@ -51,12 +51,15 @@
         <!-- Jira -->
         @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'jira_help_desk_widget', ''))
             <script data-jsd-embedded data-key="{{Arr::get(request()->input('website')->settings, 'jira_help_desk_widget', '')}}" data-base-url="https://jsd-widget.atlassian.com" src="https://jsd-widget.atlassian.com/assets/embed.js"></script>
+            <style>
+                #jsd-widget {
+                    min-width: 370px !important;
+                    max-width: 370px !important;
+                    margin-bottom: 44px !important;
+                    margin-right: 22px !important;
+                }
+            </style>
         @endif
-        <style>
-            #jsd-widget {
-                bottom: 44px !important;
-            }
-        </style>
     </head>
     <body class="font-sans antialiased h-full text-slate-700">
         @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'google_tag_id', ''))

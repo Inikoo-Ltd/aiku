@@ -19,6 +19,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
@@ -59,7 +60,13 @@ class StartHandlingDeliveryNote extends OrgAction
                 $deliveryNote = UpdateDeliveryNote::run($deliveryNote, $modelData);
 
                 if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
-                    UpdateOrderStateToHandling::make()->action($deliveryNote->orders->first());
+                    $order = $deliveryNote->orders->first();
+                    if (in_array($order->state, [
+                        OrderStateEnum::IN_WAREHOUSE,
+                        OrderStateEnum::HANDLING,
+                    ])) {
+                        UpdateOrderStateToHandling::make()->action($order);
+                    }
                 }
 
                 DB::table('delivery_note_items')

@@ -80,6 +80,7 @@ import {
 	faTimesCircle as faTimesCircleLight,
 	faUserAlien,
 	faTombstone as faTombstoneLight,
+	faCopyright
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import { faViruses } from "@fad"
@@ -183,6 +184,7 @@ library.add(
 	faStarLight, faArrowUpLight, faMinusLight, faTimesCircleLight,
 	faUserAlien,
 	faTombstoneLight,
+	faCopyright
 )
 
 provide("layout", useLayoutStore())
@@ -309,7 +311,7 @@ const fallbackTheme = useColorTheme[3]
 
 const safeTheme = computed(() => {
 	const t = layout?.app?.theme
-	
+
 	return (t && t.length >= 8) ? t : fallbackTheme
 })
 console.log(Object.values(layout.rightSidebar).some((value) => value.show))

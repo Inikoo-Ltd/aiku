@@ -48,6 +48,7 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
 
         foreach ($portfolios->chunk(100) as $portfolioChunk) {
             foreach ($portfolioChunk as $portfolio) {
+                /**  @var Portfolio $portfolio */
                 if ($this->checkIfApplicable($portfolio)) {
                     $portfoliosID[$portfolio->id] = $portfolio->id;
                 }

@@ -25,6 +25,7 @@ class SendCreditBalanceEmailToUser extends OrgAction
     {
         /** @var Outbox $outbox */
         $outbox = $customer->shop->outboxes()->where('code', OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER)->first();
+        data_set($additionalData, "customer_name", $customer->name);
         $this->sendOutboxEmailToSubscribers($outbox, $additionalData);
     }
 }

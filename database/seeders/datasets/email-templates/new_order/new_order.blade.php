@@ -141,6 +141,7 @@
                           <tr style="border-bottom: 1px solid #e9e9e9;">
                               <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: left; font-weight: bold;">Product</td>
                               <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: center; font-weight: bold;">Qty</td>
+                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 5px; text-align: center; font-weight: bold;">Stock</td>
                               <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right; font-weight: bold;">Amount</td>
                           </tr>
 

@@ -6,16 +6,16 @@
 
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3";
-import { trans } from "laravel-vue-i18n"
 import Dashboard from "@/Components/DataDisplay/Dashboard/Dashboard.vue";
 
 const props = defineProps<{
+    title: string,
     dashboard: any
 }>();
 
 </script>
 
 <template>
-    <Head :title="trans('Shop')" />
+    <Head :title="title" />
     <Dashboard :dashboard="props.dashboard" />
 </template>

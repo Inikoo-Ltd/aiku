@@ -40,7 +40,8 @@ class PrepareNewsletterRecipients
             ->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id')
             ->where('customers.shop_id', $mailshot->shop_id)
             ->where('customer_comms.is_subscribed_to_newsletter', true)
-            ->whereNotNull('customers.email');
+            ->whereNotNull('customers.email')
+            ->whereNull('customers.deleted_at');
 
 
         $baseQuery->select('customers.id', 'customers.email')->orderBy('customers.id')

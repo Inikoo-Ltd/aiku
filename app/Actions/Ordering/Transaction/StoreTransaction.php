@@ -23,6 +23,7 @@ use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -31,6 +32,15 @@ class StoreTransaction extends OrgAction
 {
     use WithOrderExchanges;
 
+
+    /**
+     * @var \App\Models\Ordering\Order
+     */
+    private Order $order;
+    /**
+     * @var \App\Models\Catalogue\HistoricAsset
+     */
+    private HistoricAsset $historicAsset;
 
     public function handle(Order $order, HistoricAsset $historicAsset, array $modelData, $calculateShipping = true): Transaction
     {
@@ -171,11 +181,25 @@ class StoreTransaction extends OrgAction
         return $rules;
     }
 
+    
+    public function afterValidator(Validator $validator, ActionRequest $request): void
+    {
+
+        $exists = $this->order->itemTransactions()->where('model_id', $this->historicAsset->asset->model_id)->exists();
+        if ($exists) {
+            $validator->errors()->add('quantity_ordered', 'An existing product under order already exists.');
+        }
+    }
+
     public function action(Order $order, HistoricAsset $historicAsset, array $modelData, int $hydratorsDelay = 0, bool $strict = true): Transaction
     {
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
+
+        $this->order=$order;
+        $this->historicAsset=$historicAsset;
+
         $this->initialisationFromShop($order->shop, $modelData);
 
         return $this->handle($order, $historicAsset, $this->validatedData);
@@ -183,6 +207,8 @@ class StoreTransaction extends OrgAction
 
     public function asController(Order $order, HistoricAsset $historicAsset, ActionRequest $request): void
     {
+        $this->order=$order;
+        $this->historicAsset=$historicAsset;
         $this->initialisationFromShop($order->shop, $request);
         $this->handle($order, $historicAsset, $this->validatedData);
     }

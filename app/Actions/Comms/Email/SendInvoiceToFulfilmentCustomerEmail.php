@@ -47,6 +47,9 @@ class SendInvoiceToFulfilmentCustomerEmail extends OrgAction
             $subject = str_replace('[Invoice Number]', $invoice->reference, $subject);
         }
 
+        $additionalData = [
+            "customer_name" => $invoice->customer->name
+        ];
         return $this->sendEmailWithMergeTags(
             $dispatchedEmail,
             $outbox->emailOngoingRun->sender(),
@@ -54,6 +57,7 @@ class SendInvoiceToFulfilmentCustomerEmail extends OrgAction
             $emailHtmlBody,
             invoiceUrl: $this->getInvoiceLink($invoice),
             senderName: $outbox->emailOngoingRun->senderName(),
+            additionalData: $additionalData
         );
     }
 

@@ -196,8 +196,9 @@ const compTableFilterStatus = computed(() => {
 	return layout.currentQuery?.[`${props.tab}_filter`]?.status
 })
 const isLoadingTable = ref<null | string>(null)
+
 const onClickFilterOutOfStock = (query: string) => {
-	let xx: string | null = ""
+	let xx: string | null = query
 	if (compTableFilterStatus.value === query) {
 		xx = null
 	} else {
@@ -635,10 +636,22 @@ const percentageIncrease = ref(0);
 				size="xs"
 				class="whitespace-nowrap"
 				:key="compTableFilterForSale"
-				:type="compTableFilterForSale ? 'secondary' : 'tertiary'"
-				:icon="compTableFilterForSale ? 'fas fa-filter' : 'fal fa-filter'"
+				:type="compTableFilterForSale === 'true' ? 'secondary' : 'tertiary'"
+				:icon="compTableFilterForSale === 'true' ? 'fas fa-filter' : 'fal fa-filter'"
 				iconRight="fal fa-times"
 				:loading="isLoadingTable == 'discontinued'" />
+			<Button
+                @click="onClickFilterForSale('false')"
+                v-tooltip="trans('Only show products that are not for sale')"
+                :label="trans('Not For Sale')"
+                size="xs"
+                class="whitespace-nowrap"
+                :key="compTableFilterForSale + 'not'"
+                :type="compTableFilterForSale === 'false' ? 'secondary' : 'tertiary'"
+                :icon="compTableFilterForSale === 'false' ? 'fas fa-filter' : 'fal fa-filter'"
+                iconRight="fal fa-times"
+                :loading="isLoadingTable == 'not-for-sale'"
+            />
 			<Button
 				@click="onClickFilterOutOfStock('discontinued')"
 				v-tooltip="trans('Filter the product that discontinued')"
@@ -725,14 +738,14 @@ const percentageIncrease = ref(0);
 					{{ trans("RRP (include VAT):") }}
 					{{ locale.currencyFormat(product.currency_code, product.customer_price) }}
 				</div>
-				<div v-else-if="platform_data.type === 'ebay'">
+				<!-- <div v-else-if="platform_data.type === 'ebay'">
 					{{ trans("RRP:") }}
 					{{ locale.currencyFormat(product.currency_code, product.customer_price * 0.8) }}
 				</div>
 				<div v-else>
 					{{ trans("RRP:") }}
 					{{ locale.currencyFormat(product.currency_code, product.customer_price) }}
-				</div>
+				</div> -->
 			</div>
 		</template>
 

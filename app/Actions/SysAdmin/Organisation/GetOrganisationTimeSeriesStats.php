@@ -14,11 +14,17 @@ class GetOrganisationTimeSeriesStats
 
     public function handle(Group $group, $from_date = null, $to_date = null): array
     {
-        $organisations = $group->organisations()->where('type', OrganisationTypeEnum::SHOP)->get();
-
-        $organisations->load(['timeSeries' => function ($query) {
-            $query->where('frequency', TimeSeriesFrequencyEnum::DAILY->value);
-        }]);
+        $organisations = $group->organisations()
+            ->select(['organisations.id', 'organisations.slug', 'organisations.name', 'organisations.code', 'organisations.colour', 'organisations.currency_id', 'organisations.group_id'])
+            ->where('type', OrganisationTypeEnum::SHOP)
+            ->with([
+                'currency'       => fn ($q) => $q->select(['id', 'code']),
+                'group'          => fn ($q) => $q->select(['id', 'slug', 'currency_id']),
+                'group.currency' => fn ($q) => $q->select(['id', 'code']),
+                'timeSeries'     => fn ($q) => $q->select(['id', 'organisation_id', 'frequency'])
+                    ->where('frequency', TimeSeriesFrequencyEnum::DAILY->value),
+            ])
+            ->get();
 
         $timeSeriesIds = [];
         $organisationToTimeSeriesMap = [];
@@ -59,32 +65,37 @@ class GetOrganisationTimeSeriesStats
             );
         }
 
+        $groupSlug         = $group->slug ?? 'unknown';
+        $groupCurrencyCode = $group->currency->code ?? 'GBP';
+
         $results = [];
         foreach ($organisations as $organisation) {
             $timeSeriesId = $organisationToTimeSeriesMap[$organisation->id] ?? null;
-            $stats = $allStats[$timeSeriesId] ?? [];
+            $stats        = $allStats[$timeSeriesId] ?? [];
 
-            $intervals = ['tdy', 'ld', '3d', '1w', '1m', '1q', '1y', 'all', 'ytd', 'qtd', 'mtd', 'wtd', 'lm', 'lw', 'ctm'];
+            $intervals         = ['tdy', 'ld', '3d', '1w', '1m', '1q', '1y', 'all', 'ytd', 'qtd', 'mtd', 'wtd', 'lm', 'lw', 'ctm'];
             $registrationsData = [];
 
             foreach ($intervals as $interval) {
-                $with = $stats["registrations_with_orders_{$interval}"] ?? 0;
+                $with    = $stats["registrations_with_orders_{$interval}"] ?? 0;
                 $without = $stats["registrations_without_orders_{$interval}"] ?? 0;
                 $registrationsData["registrations_{$interval}"] = $with + $without;
 
-                $withLy = $stats["registrations_with_orders_{$interval}_ly"] ?? 0;
+                $withLy    = $stats["registrations_with_orders_{$interval}_ly"] ?? 0;
                 $withoutLy = $stats["registrations_without_orders_{$interval}_ly"] ?? 0;
                 $registrationsData["registrations_{$interval}_ly"] = $withLy + $withoutLy;
             }
 
-            $organisationData = array_merge($organisation->toArray(), $stats, $registrationsData, [
-                'slug' => $organisation->slug ?? 'unknown',
-                'group_slug' => $organisation->group->slug ?? 'unknown',
-                'organisation_currency_code' => $organisation->currency->code ?? 'GBP',
-                'group_currency_code' => $organisation->group->currency->code ?? 'GBP',
+            $results[] = array_merge($stats, $registrationsData, [
+                'id'                          => $organisation->id,
+                'slug'                        => $organisation->slug,
+                'name'                        => $organisation->name,
+                'code'                        => $organisation->code,
+                'colour'                      => $organisation->colour,
+                'group_slug'                  => $groupSlug,
+                'organisation_currency_code'  => $organisation->currency->code ?? 'GBP',
+                'group_currency_code'         => $groupCurrencyCode,
             ]);
-
-            $results[] = $organisationData;
         }
 
         return $results;

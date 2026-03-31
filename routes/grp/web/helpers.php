@@ -37,6 +37,7 @@ Route::get('redirect-invoice-in-customer/{invoice:id}', RedirectInvoicesInCustom
 
 Route::get('redirect-delivery-note/{deliveryNote:id}', RedirectDeliveryNotesLink::class)->name('redirect_delivery_notes');
 Route::get('redirect-org-stock/{orgStock:id}', RedirectOrgStockLink::class)->name('redirect_org_stock');
+Route::get('redirect-org-stock/{orgStock:id}/to-products-index', [RedirectOrgStockLink::class, 'toProductsIndex'])->name('redirect_org_stock.to_products_index');
 
 
 Route::get('redirect-invoices-from-dashboard/{shop:id}', RedirectInvoicesInShopFromDashboard::class)->name('redirect_invoices_from_dashboard');

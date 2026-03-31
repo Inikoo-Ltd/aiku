@@ -486,7 +486,8 @@ const confirm2 = (action) => {
                             type: "success",
                         })
                     },
-                    onError: () => {
+                    onError: (e) => {
+                        console.log(e);
                         notify({
                             title: trans("Error"),
                             text: trans("Failed to cancel order"),
