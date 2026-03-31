@@ -537,7 +537,7 @@ const fetchEditMediaGallery = async () => {
 			selectedMedia.value = Object.entries(data.current_images).map(
 				([image_id, img]: any, index) => ({
 					image_id: Number(image_id),
-					image: img.original,
+					image: img,
 					url: img.original,
 					is_main: index === 0 // default first jadi main
 				})
@@ -781,7 +781,7 @@ const generateAIImages = async () => {
 				id: media.id,
 				image_id: media.id,
 				url: media.source?.original || media.thumbnail?.original,
-				image: media.thumbnail?.original || media.source?.original,
+				image: media.thumbnail || media.source,
 				is_ai: true,
 				is_main: false
 			})
@@ -1383,7 +1383,6 @@ const submitBundle = async () => {
 				<div class="bg-gray-100 rounded-xl p-3 mt-1 grid grid-cols-3 gap-3 min-h-[110px]">
 					<div v-for="img in selectedMedia" class="relative group">
 						<Image :key="img.id" :src="img.image" class="h-24 w-full rounded-lg" imageCover />
-
 						<input type="radio" name="main_image" :checked="img.is_main"
 							@change="setMainImage(img.image_id)" class="absolute top-2 left-2 z-20" />
 						<div v-if="img.is_main"
