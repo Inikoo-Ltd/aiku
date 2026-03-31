@@ -236,7 +236,7 @@ class Kernel extends ConsoleKernel
 
 
         $this->logSchedule(
-            $schedule->command('fetch:stock_movements aroma -N -D 2')->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            $schedule->command('fetch:stock_movements -N -D 2')->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'FetchAuroraStockMovements',
             ),
             name: 'FetchAuroraStockMovements',
