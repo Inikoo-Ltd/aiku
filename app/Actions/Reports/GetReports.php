@@ -88,6 +88,12 @@ class GetReports extends OrgAction
                 'route' => route('grp.org.reports.packaging', $organisation),
                 'count' => 4,
             ],
+            [
+                'name'  => __('UK Manufacturing Survey'),
+                'icon'  => 'fal fa-industry',
+                'route' => route('grp.org.reports.uk-manufacturing-survey', $organisation),
+                'count' => null,
+            ],
         ];
     }
 }

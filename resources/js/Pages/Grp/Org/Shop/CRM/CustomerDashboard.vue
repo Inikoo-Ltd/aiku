@@ -3,7 +3,7 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors, BarElement, Cate
 import { Pie, Bar } from "vue-chartjs";
 import { trans } from "laravel-vue-i18n";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faUsers, faUserCheck, faUserSlash, faUserPlus, faMoneyBillWave, faCalendarAlt, faSyncAlt, faChartLine } from "@fal";
+import { faUsers, faUserCheck, faUserSlash, faUserPlus, faMoneyBillWave, faCalendarAlt, faSyncAlt, faChartLine, faInfoCircle } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { useLocaleStore } from "@/Stores/locale";
 import { capitalize } from "@/Composables/capitalize";
@@ -11,7 +11,7 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import { Link } from "@inertiajs/vue3"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faUsers, faUserCheck, faUserSlash, faUserPlus, faMoneyBillWave, faCalendarAlt, faSyncAlt, faChartLine);
+library.add(faUsers, faUserCheck, faUserSlash, faUserPlus, faMoneyBillWave, faCalendarAlt, faSyncAlt, faChartLine, faInfoCircle);
 
 ChartJS.register(ArcElement, Tooltip, Legend, Colors, BarElement, CategoryScale, LinearScale);
 
@@ -69,16 +69,19 @@ const props = defineProps<{
 				title: string;
 				description: string;
 				segments: string[];
+				tooltips: Record<string, string>;
 			};
 			frequency: {
 				title: string;
 				description: string;
 				segments: string[];
+				tooltips: Record<string, string>;
 			};
 			monetary: {
 				title: string;
 				description: string;
 				segments: string[];
+				tooltips: Record<string, string>;
 			};
 		};
 	};
@@ -350,12 +353,13 @@ const isLoadingVisit = ref<number | null>(null)
 		<div v-if="data.segments" class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
 			<!-- Recency Card -->
 			<div class="bg-white rounded-lg shadow p-6">
-				<div class="flex items-center justify-between mb-4">
+				<div class="flex items-center justify-between mb-1">
 					<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-						<FontAwesomeIcon :icon="['fas', 'calendar-alt']" class="text-blue-500" />
+						<FontAwesomeIcon :icon="['fal', 'calendar-alt']" class="text-blue-500" />
 						{{ data.segments.recency.title }}
 					</h3>
 				</div>
+				<p class="text-xs text-gray-400 mb-4">{{ data.segments.recency.description }}</p>
 
 				<div class="h-80">
 					<Bar :data="getRecencyChartData" :options="barOptions" />
@@ -364,16 +368,29 @@ const isLoadingVisit = ref<number | null>(null)
 				<div class="mt-3 text-xs text-gray-500 text-center">
 					Comparing: {{ currentDate }} vs {{ previousDate }}
 				</div>
+
+				<div class="mt-4 flex flex-wrap gap-2">
+					<span
+						v-for="segment in data.segments.recency.segments"
+						:key="segment"
+						v-tooltip="data.segments.recency.tooltips?.[segment]"
+						class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-blue-50 text-blue-700 cursor-default"
+					>
+						{{ segment }}
+						<FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-blue-400 text-xs" />
+					</span>
+				</div>
 			</div>
 
 			<!-- Frequency Card -->
 			<div class="bg-white rounded-lg shadow p-6">
-				<div class="flex items-center justify-between mb-4">
+				<div class="flex items-center justify-between mb-1">
 					<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-						<FontAwesomeIcon :icon="['fas', 'sync-alt']" class="text-green-500" />
+						<FontAwesomeIcon :icon="['fal', 'sync-alt']" class="text-green-500" />
 						{{ data.segments.frequency.title }}
 					</h3>
 				</div>
+				<p class="text-xs text-gray-400 mb-4">{{ data.segments.frequency.description }}</p>
 
 				<div class="h-80">
 					<Bar :data="getFrequencyChartData" :options="barOptions" />
@@ -382,16 +399,29 @@ const isLoadingVisit = ref<number | null>(null)
 				<div class="mt-3 text-xs text-gray-500 text-center">
 					Comparing: {{ currentDate }} vs {{ previousDate }}
 				</div>
+
+				<div class="mt-4 flex flex-wrap gap-2">
+					<span
+						v-for="segment in data.segments.frequency.segments"
+						:key="segment"
+						v-tooltip="data.segments.frequency.tooltips?.[segment]"
+						class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-green-50 text-green-700 cursor-default"
+					>
+						{{ segment }}
+						<FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-green-400 text-xs" />
+					</span>
+				</div>
 			</div>
 
 			<!-- Monetary Card -->
 			<div class="bg-white rounded-lg shadow p-6">
-				<div class="flex items-center justify-between mb-4">
+				<div class="flex items-center justify-between mb-1">
 					<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-						<FontAwesomeIcon :icon="['fas', 'chart-line']" class="text-purple-500" />
+						<FontAwesomeIcon :icon="['fal', 'chart-line']" class="text-purple-500" />
 						{{ data.segments.monetary.title }}
 					</h3>
 				</div>
+				<p class="text-xs text-gray-400 mb-4">{{ data.segments.monetary.description }}</p>
 
 				<div class="h-80">
 					<Bar :data="getMonetaryChartData" :options="barOptions" />
@@ -399,6 +429,18 @@ const isLoadingVisit = ref<number | null>(null)
 
 				<div class="mt-3 text-xs text-gray-500 text-center">
 					Comparing: {{ currentDate }} vs {{ previousDate }}
+				</div>
+
+				<div class="mt-4 flex flex-wrap gap-2">
+					<span
+						v-for="segment in data.segments.monetary.segments"
+						:key="segment"
+						v-tooltip="data.segments.monetary.tooltips?.[segment]"
+						class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-purple-50 text-purple-700 cursor-default"
+					>
+						{{ segment }}
+						<FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-purple-400 text-xs" />
+					</span>
 				</div>
 			</div>
 		</div>

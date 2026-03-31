@@ -33,7 +33,12 @@ class ShowShop extends OrgAction
     use WithDashboardSettings;
     use WithTabsBox;
 
-    public function handle(Shop $shop, ActionRequest $request): Response
+    public function handle(Shop $shop): Shop
+    {
+        return $shop;
+    }
+
+    public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
         $userSettings = $request->user()->settings;
 
@@ -104,16 +109,17 @@ class ShowShop extends OrgAction
         }
 
         return Inertia::render('Org/Catalogue/Shop', [
+            'title'            => __('Shop').' '.$shop->code,
             'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
             'dashboard'   => $dashboard,
         ]);
     }
 
-    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Response
+    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($shop, $request);
+        return $this->handle($shop);
     }
 
     public function getBreadcrumbs(array $routeParameters, $suffix = null): array

@@ -30,6 +30,7 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\LocationOrgStock;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class CancelDeliveryNote extends OrgAction
@@ -43,8 +44,15 @@ class CancelDeliveryNote extends OrgAction
      */
     public function handle(DeliveryNote $deliveryNote, $modifyOrder = true): DeliveryNote
     {
-        abort(422);
         $oldState     = $deliveryNote->state;
+
+        if (in_array($oldState, [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::CANCELLED])) {
+            throw ValidationException::withMessages([
+                'message' => __('Delivery note can not be cancelled.').' ['.__('Invalid state').': '. $oldState->value . ']',
+            ]);
+        }
+
+
         $cancelledRef = $deliveryNote->reference.'-CANCELLED';
 
         $cancelledCount = DB::table('delivery_notes')

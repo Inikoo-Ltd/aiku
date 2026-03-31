@@ -178,6 +178,8 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $margin
  * @property string|null $marketplace_second_id
  * @property bool $is_bundle
+ * @property bool|null $mismatch_with_master_detected
+ * @property bool $not_follow_master_trade_units
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -284,6 +286,7 @@ class Product extends Model implements Auditable, HasMedia
         'not_for_sale_since'            => 'datetime',
         'is_for_sale'                   => 'boolean',
         'not_for_sale_from_master'      => 'boolean',
+        'mismatch_with_master_detected' => 'boolean',
 
     ];
 

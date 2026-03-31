@@ -103,11 +103,15 @@ const showMemberPrice = computed(() => {
     return layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr
 })
 
+console.log("showMemberPrice", showMemberPrice.value)
+
 const showDiscount = computed(() => {
     if (props.product?.is_coming_soon) return false
     if (layout?.user?.gr_data?.amnesty) return false
     return !layout?.user?.gr_data?.customer_is_gr
 })
+
+console.log("product_discounted_price", props.product?.discounted_price)
 
 const showLeftBlock = computed(() => {
     return showMemberPrice.value || showDiscount.value
@@ -160,7 +164,7 @@ const _popoverProfit = ref(null)
 
             </div>
 
-            <Popover ref="_popoverProfit" class="py-1 px-2 max-w-[90vw] md:max-w-none">
+            <Popover ref="_popoverProfit" class="max-w-[90vw] md:max-w-none sm:min-w-[350px]">
                 <ProfitCalculationList :product="product" />
             </Popover>
 
@@ -230,11 +234,11 @@ const _popoverProfit = ref(null)
             2xl:text-[14px]">
 
                     <span v-if="showMemberPrice" class="text-primary">
-                        {{ trans("GR Active") }}
+                        {{ trans("GR Active") || "GR Active" }}
                     </span>
 
                     <span v-else>
-                        {{ trans("GR Inactive") }}
+                        {{ trans("GR Inactive") || "GR Inactive" }}
                     </span>
 
                     <span class="question-trigger" @click="_popoverQuestionCircle?.toggle($event)"

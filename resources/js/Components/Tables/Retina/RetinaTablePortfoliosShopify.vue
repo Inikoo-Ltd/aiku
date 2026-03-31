@@ -36,7 +36,8 @@ import {
     faSkullCrossbones,
     faCube,
     faBan,
-    faDollarSign
+    faDollarSign,
+    faEllipsisV
 } from "@fal"
 import {faStar, faFilter} from "@fas"
 import {faExclamationTriangle as fadExclamationTriangle} from "@fad"
@@ -49,9 +50,17 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
 import PureProgressBar from "@/Components/PureProgressBar.vue"
-import {Message} from "primevue"
+import {Message, Popover} from "primevue"
 
-library.add(faUnlink, faHandshake, faHandshakeSlash, faHandPointer, fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
+library.add(
+            faUnlink, faHandshake, faHandshakeSlash, 
+            faHandPointer, fadExclamationTriangle, faSyncAlt, 
+            faConciergeBell, faGarage, faExclamationTriangle, 
+            faPencil, faSearch, faThLarge, faListUl, faStar, 
+            faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, 
+            faClone, faLink, faScrewdriver, faTools,
+            faRecycle, faSkullCrossbones, faCube, faBan, faDollarSign, faEllipsisV, faTimes
+        )
 
 interface PlatformData {
     id: number
@@ -109,6 +118,12 @@ function portfolioRoute(product: Product) {
 
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
+const _filter_popover = ref()
+
+const toggleFilterPopover = (event: Event) => {
+    // PrimeVue butuh event target untuk posisi popover
+    _filter_popover.value?.toggle(event)
+}
 
 // const selectedProducts = ref<Product[]>([])
 const onUnchecked = (itemId: number) => {
@@ -166,7 +181,10 @@ const onClickFilterOutOfStock = (query: string) => {
 
     router.reload(
         {
-            data: {[`${props.tab}_filter[status]`]: xx},  // Sent to url parameter (?tab=showcase, ?tab=menu)
+            data: {
+                [`${props.tab}_filter[status]`]: xx,
+                productsPage: 1  // Reset to page 1 when applying a new filter
+            },  // Sent to url parameter (?tab=showcase, ?tab=menu)
             // only: [tabSlug],  // Only reload the props with dynamic name tabSlug (i.e props.showcase, props.menu)
             onStart: () => {
                 isLoadingTable.value = query || null
@@ -183,19 +201,26 @@ const onClickFilterOutOfStock = (query: string) => {
 }
 
 const onClickFilterForSale = (query: string) => {
-    let xx: string | null = 'true'
+    let xx: string | null = query
     if (compTableFilterForSale.value === query) {
         xx = null
-    } else {
+    }   else {
         xx = query
     }
 
     router.reload(
         {
-            data: {[`${props.tab}_filter[is_for_sale]`]: xx},  // Sent to url parameter (?tab=showcase, ?tab=menu)
+            data: {
+                [`${props.tab}_filter[is_for_sale]`]: xx,
+                productsPage: 1  // Reset to page 1 when applying a new filter
+            },  // Sent to url parameter (?tab=showcase, ?tab=menu)
             // only: [tabSlug],  // Only reload the props with dynamic name tabSlug (i.e props.showcase, props.menu)
             onStart: () => {
-                isLoadingTable.value = query || null
+                if (query === 'true') {
+                    isLoadingTable.value = 'is-for-sale'
+                } else if (query === 'false') {
+                    isLoadingTable.value = 'not-for-sale'
+                }
             },
             onSuccess: () => {
             },
@@ -218,22 +243,27 @@ const compTableFilterForSale = computed(() => {
 
 const onClickFilterPlatformStatus = (query: string) => {
     // console.log('111111 ewew', compTableFilterPlatformStatus.value, query)
-    let xx: string | null = ''
-    if (compTableFilterPlatformStatus.value === 'true') {
-        xx = 'false'
+    let xx: string | null = query
+    if (compTableFilterPlatformStatus.value === query) {
+        xx = null
     } else {
-        xx = 'true'
+        xx = query
     }
 
     // If query is undefined, remove the filter from the URL by setting it to null
     router.reload(
         {
             data: {
-                [`${props.tab}_filter[platform_status]`]: xx === undefined ? null : xx
+                [`${props.tab}_filter[platform_status]`]: xx === undefined ? null : xx,
+                productsPage: 1  // Reset to page 1 when applying a new filter
             },
             only: ['queryBuilderProps', 'products'],
             onStart: () => {
-                isLoadingTable.value = 'not-connected'
+                if (query === 'true') {
+                    isLoadingTable.value = 'connected'
+                } else if (query === 'false') {
+                    isLoadingTable.value = 'not-connected'
+                }
             },
             onSuccess: () => {
             },
@@ -540,50 +570,111 @@ onMounted(() => {
         </template>
 
         <template #add-on-button>
-            <!-- <Button
-                @click="onClickFilterOutOfStock('out-of-stock')"
-                v-tooltip="trans('Filter the product that out of stock')"
-                label="Out of stock"
-                size="xs"
-                :key="compTableFilterStatus"
-                :type="compTableFilterStatus === 'out-of-stock' ? 'secondary' : 'tertiary'"
-                :icon="compTableFilterStatus === 'out-of-stock' ? 'fas fa-filter' : 'fal fa-filter'"
-                iconRight="fal fa-exclamation-triangle"
-                :loading="isLoadingTable == 'out-of-stock'"
-            />
-            -->
-            <Button
-                @click="onClickFilterForSale('true')"
-                v-tooltip="trans('Only show products that are for sale')"
-                :label="trans('Only For Sale')"
-                size="xs"
-				class="whitespace-nowrap"
-                :key="compTableFilterForSale"
-                :type="compTableFilterForSale ? 'secondary' : 'tertiary'"
-                :icon="compTableFilterForSale ? 'fas fa-filter' : 'fal fa-filter'"
-                iconRight="fal fa-times"
-                :loading="isLoadingTable == 'is-for-sale'"
-            />
-            <Button
-                @click="onClickFilterOutOfStock('discontinued')"
-                v-tooltip="trans('Filter the product that discontinued')"
-                label="Discontinued"
-				class="whitespace-nowrap"
-                size="xs"
-                :key="compTableFilterStatus"
-                :type="compTableFilterStatus === 'discontinued' ? 'secondary' : 'tertiary'"
-                :icon="compTableFilterStatus === 'discontinued' ? 'fas fa-filter' : 'fal fa-filter'"
-                iconRight="fal fa-times"
-                :loading="isLoadingTable == 'discontinued'"
-            />
-            <Button @click="onClickFilterPlatformStatus('true')"
-                v-tooltip="trans('Filter the product that not connected yet to :platform', { platform: props.platform_data.name })"
-				class="whitespace-nowrap"
-                label="Not connected" size="xs" :key="compTableFilterPlatformStatus"
-                :type="compTableFilterPlatformStatus === 'true' ? 'secondary' : 'tertiary'"
-                :icon="compTableFilterPlatformStatus === 'true' ? 'fas fa-filter' : 'fal fa-filter'"
-                iconRight="fal fa-handshake-slash" :loading="isLoadingTable == 'not-connected'"/>
 
+            <div class="relative inline-flex items-center">
+                
+                <div @click="toggleFilterPopover" class="cursor-pointer">
+                    <Button
+                        :label="trans('Filter')"
+                        icon="fal fa-filter"
+                        class="h-7 flex items-center gap-x-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors pointer-events-none text-gray-700"
+                        type="tertiary" 
+                    />
+                </div>
+
+                <Popover ref="_filter_popover">
+                    <div class="flex flex-col min-w-[200px] p-1.5 gap-y-0.5 bg-white border border-gray-200 shadow-lg rounded-md mt-1 z-50">
+                        
+                        <div class="px-2.5 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 mb-1">
+                            {{ trans('Filter Products') }}
+                        </div>
+
+                        <Button
+                            @click="onClickFilterForSale('true')"
+                            v-tooltip="trans('Only show products that are for sale')"
+                            :label="trans('Only For Sale')"
+                            size="sm"
+                            class="justify-start w-full whitespace-nowrap shadow-none rounded hover:bg-gray-100 px-2.5 py-1.5 text-left font-normal"
+                            :class="compTableFilterForSale === 'true' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700'"
+                            :key="compTableFilterForSale"
+                            :type="compTableFilterForSale === 'true' ? 'secondary' : 'tertiary'"
+                            icon="fal fa-dollar-sign text-gray-400 w-4 text-center mr-1.5"
+                            :iconRight="compTableFilterForSale === 'true' ? 'fas fa-check text-indigo-600' : ''"
+                            :loading="isLoadingTable == 'is-for-sale'"
+                        />
+                        
+                        <Button
+                            @click="onClickFilterForSale('false')"
+                            v-tooltip="trans('Only show products that are not for sale')"
+                            size="sm"
+                            class="justify-start w-full whitespace-nowrap shadow-none rounded hover:bg-gray-100 px-2.5 py-1.5 text-left font-normal"
+                            :class="compTableFilterForSale === 'false' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700'"
+                            :key="compTableFilterForSale + 'not'"
+                            :type="compTableFilterForSale === 'false' ? 'secondary' : 'tertiary'"
+                            :iconRight="compTableFilterForSale === 'false' ? 'fas fa-check text-indigo-600' : ''"
+                            :loading="isLoadingTable == 'not-for-sale'"
+                        >
+                            <div class="flex items-center gap-x-2">
+                                
+                                <FontAwesomeLayers class="fa-fw text-gray-400 w-4 text-center">
+                                    <FontAwesomeIcon :icon="faDollarSign" />
+                                    <FontAwesomeIcon :icon="faBan" class="text-red-500/80 scale-110" />
+                                </FontAwesomeLayers>
+                                
+                                <span>{{ trans('Not For Sale') }}</span>
+                            
+                            </div>
+                        </Button>
+                        
+                        <div class="border-t border-gray-100 my-1"></div>
+
+                        <Button
+                            @click="onClickFilterOutOfStock('discontinued')"
+                            v-tooltip="trans('Filter the product that discontinued')"
+                            :label="trans('Discontinued')"
+                            size="sm"
+                            class="justify-start w-full whitespace-nowrap shadow-none rounded hover:bg-gray-100 px-2.5 py-1.5 text-left font-normal"
+                            :class="compTableFilterStatus === 'discontinued' ? 'bg-red-50 text-red-700 font-medium' : 'text-gray-700'"
+                            :key="compTableFilterStatus"
+                            :type="compTableFilterStatus === 'discontinued' ? 'secondary' : 'tertiary'"
+                            icon="fal fa-cube text-gray-400 w-4 text-center mr-1.5"
+                            :iconRight="compTableFilterStatus === 'discontinued' ? 'fas fa-check text-red-600' : ''"
+                            :loading="isLoadingTable == 'discontinued'"
+                        />
+                        
+                        <div class="border-t border-gray-100 my-1"></div>
+
+                        <Button 
+                            @click="onClickFilterPlatformStatus('true')"
+                            v-tooltip="trans('Filter the product that connected to :platform', { platform: props.platform_data.name })"
+                            :label="trans('Connected to :platform', { platform: props.platform_data.name })" 
+                            size="sm" 
+                            class="justify-start w-full whitespace-nowrap shadow-none rounded hover:bg-gray-100 px-2.5 py-1.5 text-left font-normal"
+                            :class="compTableFilterPlatformStatus === 'true' ? 'bg-green-50 text-green-700 font-medium' : 'text-gray-700'"
+                            :key="compTableFilterPlatformStatus" 
+                            :type="compTableFilterPlatformStatus === 'true' ? 'secondary' : 'tertiary'"
+                            icon="fal fa-handshake text-green-500 w-4 text-center mr-1.5"
+                            :iconRight="compTableFilterPlatformStatus === 'true' ? 'fas fa-check text-green-600' : ''"
+                            :loading="isLoadingTable == 'connected'"
+                        />
+                        
+                        <Button 
+                            @click="onClickFilterPlatformStatus('false')"
+                            v-tooltip="trans('Filter the product that not connected yet to :platform', { platform: props.platform_data.name })"
+                            :label="trans('Not Connected')" 
+                            size="sm" 
+                            class="justify-start w-full whitespace-nowrap shadow-none rounded hover:bg-gray-100 px-2.5 py-1.5 text-left font-normal"
+                            :class="compTableFilterPlatformStatus === 'false' ? 'bg-yellow-50 text-yellow-700 font-medium' : 'text-gray-700'"
+                            :key="compTableFilterPlatformStatus + 'not'"
+                            :type="compTableFilterPlatformStatus === 'false' ? 'secondary' : 'tertiary'"
+                            icon="fal fa-handshake-slash text-yellow-500 w-4 text-center mr-1.5"
+                            :iconRight="compTableFilterPlatformStatus === 'false' ? 'fas fa-check text-yellow-600' : ''"
+                            :loading="isLoadingTable == 'not-connected'"
+                        />
+
+                    </div>
+                </Popover>
+            </div>
         </template>
 
 

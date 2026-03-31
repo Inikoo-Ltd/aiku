@@ -19,8 +19,9 @@ import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCircleExclamation } from "@fortawesome/free-solid-svg-icons";
+import { faAppleCrate, faBox, faBoxOpen, faCheck, faSnooze, faTasks } from "@fal";
 
-library.add(faPlus);
+library.add(faPlus, faAppleCrate, faCheck, faBoxOpen, faSnooze, faBox, faTasks);
 
 const props = defineProps<{
   data: object,

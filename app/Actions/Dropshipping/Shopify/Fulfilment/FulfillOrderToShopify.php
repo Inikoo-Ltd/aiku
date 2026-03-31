@@ -96,6 +96,7 @@ class FulfillOrderToShopify extends OrgAction
                         'fulfillmentOrderId' => $fulfillOrderId
                     ]
                 ],
+                'notifyCustomer'              => true,
                 'trackingInfo'                => $trackingInfo
             ],
             'message'     => $message,

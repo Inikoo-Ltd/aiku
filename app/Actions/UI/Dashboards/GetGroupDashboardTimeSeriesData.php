@@ -10,6 +10,7 @@ namespace App\Actions\UI\Dashboards;
 use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryTimeSeriesStats;
 use App\Actions\Catalogue\Shop\GetShopTimeSeriesStats;
 use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
+use App\Actions\Helpers\Brand\GetBrandTimeSeriesStats;
 use App\Actions\Ordering\SalesChannel\GetSalesChannelTimeSeriesStats;
 use App\Actions\SysAdmin\Organisation\GetOrganisationTimeSeriesStats;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -84,6 +85,7 @@ class GetGroupDashboardTimeSeriesData
             'faire' => $faireInvoiceCategories,
             'platforms' => GetPlatformTimeSeriesStats::run($group, $fromDate, $toDate),
             'salesChannels' => GetSalesChannelTimeSeriesStats::run($group, $fromDate, $toDate),
+            'brands' => GetBrandTimeSeriesStats::run($group, $fromDate, $toDate),
         ];
     }
 

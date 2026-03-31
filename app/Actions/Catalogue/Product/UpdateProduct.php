@@ -460,6 +460,7 @@ class UpdateProduct extends OrgAction
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
             'has_live_webpage'             => ['sometimes', 'boolean'],
             'marketplace_id'               => ['sometimes'],
+            'not_follow_master_trade_units' => ['sometimes', 'boolean']
         ];
 
 

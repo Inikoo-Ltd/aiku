@@ -41,8 +41,9 @@ class StoreEbayProduct extends RetinaAction
         try {
             /** @var Product $product */
             $product = $portfolio->item;
-            $includeVat = Arr::get($ebayUser->customerSalesChannel->settings, 'tax_category.checked', false);
-            $customerPrice = $includeVat ? $portfolio->customer_price : $portfolio->customer_price * 0.8;
+            // $includeVat = Arr::get($ebayUser->customerSalesChannel->settings, 'tax_category.checked', false);
+            // $customerPrice = $includeVat ? $portfolio->customer_price : $portfolio->customer_price * 0.8;
+            $customerPrice = $portfolio->customer_price;
 
             $customerSalesChannel = $ebayUser->customerSalesChannel;
 

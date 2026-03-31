@@ -10,7 +10,7 @@ import { computed, inject, ref } from "vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from '@/types/route'
 import Dialog from 'primevue/dialog'
-import { faMinus, faPlus } from '@fal'
+import { faMinus, faPlus, faTools } from '@fal'
 import InputNumber from "primevue/inputnumber"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import PureInput from '@/Components/Pure/PureInput.vue'
@@ -23,6 +23,7 @@ import { faSave as falSave, faInfoCircle } from '@fal'
 import { faAsterisk, faQuestion } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faPencil } from '@far'
+import { faWarning } from '@fortawesome/free-solid-svg-icons'
 
 library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk)
 
@@ -46,6 +47,7 @@ const props = defineProps<{
     attachments?: Record<string, any>
     shop_id?: number
     variantSlugs?: Record<string, string>;
+    mismatch_trade_unit_with_master?: boolean
 }>()
 
 const layout = inject<string>('layout')
@@ -128,6 +130,28 @@ const onCancelEditBulkProduct = () => {
     rowErrors.value = {}
     key.value = ulid()
 }
+
+
+const repairTradeUnitToChildren = async () => {
+    console.log("REPAIRING");
+    await axios.patch(route('grp.models.master_asset.repair_mismatch_trade_units', {
+        masterAsset: props.masterAsset.id,
+    })).then((response) => {
+        notify({
+            title: trans("Success!"),
+            text: trans("Successfully repaired the product details"),
+            type: "success"
+        })
+        router.visit(route('grp.masters.master_shops.show.master_products.show', route().params))
+    }).catch((errors) => {
+        notify({
+            title: trans("Something went wrong"),
+            text: errors.message || trans("Failed to update product quantity in basket"),
+            type: "error"
+        })
+    })
+}
+
 </script>
 
 <template>
@@ -142,6 +166,19 @@ const onCancelEditBulkProduct = () => {
                 :icon="faPencil"
                 label="Edit Products"
             />
+        </template>
+        
+        <template #afterTitle2>
+            <FontAwesomeIcon 
+                v-if="mismatch_trade_unit_with_master" 
+                :icon="faWarning" 
+                class="text-red-500" 
+                v-tooltip="trans('One or more product under this master has mismatched trade units data. Please fix it by modifying the master products trade units')"
+            />
+        </template>
+
+        <template #button-repair-mismatch="{ action }">
+            <Button v-if="mismatch_trade_unit_with_master" :icon="faTools" :label="trans('Repair trade units')" v-tooltip="trans('Will force child to follow master products trade units')" @click="repairTradeUnitToChildren()" :style="'warning'" />
         </template>
     </PageHeading>
 
@@ -161,6 +198,7 @@ const onCancelEditBulkProduct = () => {
         :selectedProductsId="selectedProductsId"
         @selectedRow="(ids) => selectedProductsId = { ...selectedProductsId, ...ids }"
         :variantSlugs="variantSlugs"
+        :mismatch_trade_unit_with_master="mismatch_trade_unit_with_master"
     />
 
     <!-- MODAL -->
