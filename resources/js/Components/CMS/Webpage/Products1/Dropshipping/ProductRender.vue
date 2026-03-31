@@ -276,7 +276,7 @@ const openBundlePanel = (product:any) => {
                     </button>
                 </div>
 
-                <div class="absolute right-2 bottom-2 z-20 group" v-if="layout?.iris?.is_logged_in">
+                <div class="absolute right-2 bottom-2 z-20 group" v-if="layout?.iris?.is_logged_in && layout.app.name === 'iris'">
 
                     <Button
                         @click.prevent="openBundlePanel(product)"

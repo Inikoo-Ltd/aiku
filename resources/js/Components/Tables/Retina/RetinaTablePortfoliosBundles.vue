@@ -614,6 +614,7 @@ const flatMediaGallery = computed(() => {
 			result.push({
 				product_id: product.id,
 				image_id: Number(imageId),
+				key: `${product.id}-${imageId}`,
 				url: imageData.original,
 				image: imageData
 			})
@@ -626,20 +627,21 @@ const flatMediaGallery = computed(() => {
 
 const toggleSelect = (img: any) => {
 
-	const index = selectedMediaIds.value.indexOf(img.image_id)
+	const index = selectedMediaIds.value.indexOf(img.key)
 
 	if (index !== -1) {
 
 		selectedMediaIds.value.splice(index, 1)
 
 		selectedMedia.value =
-			selectedMedia.value.filter(m => m.image_id !== img.image_id)
+			selectedMedia.value.filter(m => m.key !== img.key)
 
 	} else {
 
-		selectedMediaIds.value.push(img.image_id)
+		selectedMediaIds.value.push(img.key)
 
 		selectedMedia.value.push({
+			key: img.key,
 			image_id: img.image_id,
 			product_id: img.product_id,
 			url: img.url,
@@ -728,7 +730,7 @@ const removeMedia = (media: any) => {
 
 const toggleSelectAI = (media: any) => {
 
-	const index = selectedMediaAIIds.value.indexOf(media.image_id)
+	const index = selectedMediaAIIds.value.indexOf(media.key)
 
 	if (index !== -1) {
 
@@ -736,12 +738,12 @@ const toggleSelectAI = (media: any) => {
 
 		selectedMediaForAI.value =
 			selectedMediaForAI.value.filter(
-				m => m.image_id !== media.image_id
+				m => m.key !== media.key
 			)
 
 	} else {
 
-		selectedMediaAIIds.value.push(media.image_id)
+		selectedMediaAIIds.value.push(media.key)
 
 		selectedMediaForAI.value.push(media)
 
@@ -846,7 +848,7 @@ const submitBundle = async () => {
 				}
 			}
 		)
-
+		bundle.resetBundle()
 	} catch (e) {
 		console.error('ERROR', e)
 		notify({
@@ -884,7 +886,8 @@ const submitBundle = async () => {
 		@onCheckedAll="(data) => onCheckedAll(data)" checkboxKey="id"
 		:isChecked="(item) => selectedProducts.includes(item.id)" :rowColorFunction="(item) => {
 			if (disableButtons(item)) {
-				return item.product_state == 'discontinued' ? 'bg-red-100' : 'bg-red-50'
+				// return item.product_state == 'discontinued' ? 'bg-red-100' : 'bg-red-50'
+				return item.platform_status === true ? 'bg-green-50' : 'bg-red-50'
 			} else if (
 				!isPlatformManual &&
 				is_platform_connected &&
@@ -1445,7 +1448,7 @@ const submitBundle = async () => {
 		</div>
 		<div v-else class="grid grid-cols-4 gap-3">
 			<template v-if="flatMediaGallery.length">
-				<div v-for="img in flatMediaGallery" :key="img.image_id"
+				<div v-for="img in flatMediaGallery" :key="img.key"
 					class="relative aspect-square rounded-xl overflow-hidden border cursor-pointer group"
 					@click="toggleSelect(img)">
 
@@ -1453,9 +1456,9 @@ const submitBundle = async () => {
 						<Image :src="img.image" class="w-full h-full" imageCover />
 					</div>
 
-					<div v-if="selectedMediaIds.includes(img.image_id)" class="absolute inset-0 bg-black/40 z-10" />
+					<div v-if="selectedMediaIds.includes(img.key)" class="absolute inset-0 bg-black/40 z-10" />
 
-					<Checkbox :modelValue="selectedMediaIds.includes(img.image_id)" binary
+					<Checkbox :modelValue="selectedMediaIds.includes(img.key)" binary
 						class="absolute top-2 left-2 z-20 bg-white rounded shadow pointer-events-none" />
 
 					<div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition z-5" />
@@ -1486,7 +1489,7 @@ const submitBundle = async () => {
 
 			<div class="grid grid-cols-4 gap-3">
 
-				<div v-for="media in selectedMedia" :key="media.image_id"
+				<div v-for="media in selectedMedia" :key="media.key"
 					class="relative aspect-square rounded-xl overflow-hidden border cursor-pointer group"
 					@click="toggleSelectAI(media)">
 
@@ -1497,10 +1500,10 @@ const submitBundle = async () => {
 					</div>
 
 					<!-- DARK OVERLAY -->
-					<div v-if="selectedMediaAIIds.includes(media.image_id)" class="absolute inset-0 bg-black/40 z-10" />
+					<div v-if="selectedMediaAIIds.includes(media.key)" class="absolute inset-0 bg-black/40 z-10" />
 
 					<!-- CHECKBOX (visual only) -->
-					<Checkbox :modelValue="selectedMediaAIIds.includes(media.image_id)" binary
+					<Checkbox :modelValue="selectedMediaAIIds.includes(media.key)" binary
 						class="absolute top-2 left-2 z-20 bg-white rounded shadow pointer-events-none" />
 
 					<!-- HOVER -->

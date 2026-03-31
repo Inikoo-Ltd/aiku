@@ -138,6 +138,7 @@ const flatMediaGallery = computed(() => {
             result.push({
                 product_id: product.id,
                 image_id: Number(imageId),
+                key: `${product.id}-${imageId}`,
                 url: imageData.original,
                 image: imageData
             })
@@ -150,27 +151,27 @@ const flatMediaGallery = computed(() => {
 
 const toggleSelect = (img: any) => {
 
-    const index = selectedMediaIds.value.indexOf(img.image_id)
+    const index = selectedMediaIds.value.indexOf(img.key)
 
     if (index !== -1) {
 
         selectedMediaIds.value.splice(index, 1)
 
         selectedMedia.value =
-            selectedMedia.value.filter(m => m.image_id !== img.image_id)
+            selectedMedia.value.filter(m => m.key !== img.key)
 
     } else {
 
-        selectedMediaIds.value.push(img.image_id)
+        selectedMediaIds.value.push(img.key)
 
         selectedMedia.value.push({
+            key: img.key,
             image_id: img.image_id,
             product_id: img.product_id,
             url: img.url,
             image: img.image,
             is_main: false
         })
-
     }
 }
 
@@ -227,7 +228,6 @@ const generateAIImages = async () => {
             })
 
         }
-
         showGenerateModal.value = false
 
         aiPrompt.value = ''
@@ -341,6 +341,7 @@ const submitBundle = async () => {
             }
         )
 
+        bundle.resetBundle()
     } catch (e) {
         console.error('ERROR', e)
         notify({
@@ -356,7 +357,7 @@ const submitBundle = async () => {
 const selectedMediaAIIds = ref<any[]>([])
 const toggleSelectAI = (media: any) => {
 
-    const index = selectedMediaAIIds.value.indexOf(media.image_id)
+    const index = selectedMediaAIIds.value.indexOf(media.key)
 
     if (index !== -1) {
 
@@ -364,12 +365,12 @@ const toggleSelectAI = (media: any) => {
 
         selectedMediaForAI.value =
             selectedMediaForAI.value.filter(
-                m => m.image_id !== media.image_id
+                m => m.key !== media.key
             )
 
     } else {
 
-        selectedMediaAIIds.value.push(media.image_id)
+        selectedMediaAIIds.value.push(media.key)
 
         selectedMediaForAI.value.push(media)
 
@@ -424,6 +425,7 @@ const uploadFilesLocal = async (files: FileList) => {
                 is_main: false
             })
         }
+        
         notify({
             title: 'Success Upload Image',
             type: 'success'
@@ -628,7 +630,7 @@ onMounted(() => {
                                 type="primary" :disabled="!bundle.productIds.value.length">
                                 <FontAwesomeIcon
                                     :icon="bundle.isGeneratingAI.value ? 'fal fa-spinner' : 'fal fa-sparkles'"
-                                    class="mr-2" fixed-width />
+                                    class="mr-2" :class="bundle.isGeneratingAI.value ? 'animate-pulse text-primary' : ''" fixed-width />
                                 Generate with AI
                             </Button>
 
@@ -700,8 +702,8 @@ onMounted(() => {
                     </div>
 
                     <!-- SUBMIT -->
-                    <!-- :disabled="!bundle.description.value.length" -->
-                    <Button @click="submitBundle" class="flex justify-center items-center w-full" type="primary"
+                    
+                    <Button @click="submitBundle" class="flex justify-center items-center w-full" type="primary" :disabled="!bundle.description.value.length"
                         :loading="isStoringBundle">
                         Create Bundle
                         <FontAwesomeIcon icon="fal fa-layer-group" class="mr-2" fixed-width />
@@ -715,7 +717,7 @@ onMounted(() => {
                     </div>
                     <div v-else class="grid grid-cols-4 gap-3">
                         <template v-if="flatMediaGallery.length">
-                            <div v-for="img in flatMediaGallery" :key="img.image_id"
+                            <div v-for="img in flatMediaGallery" :key="img.key"
                                 class="relative aspect-square rounded-xl overflow-hidden border cursor-pointer group"
                                 @click="toggleSelect(img)">
 
@@ -723,10 +725,10 @@ onMounted(() => {
                                     <Image :src="img.image" class="w-full h-full" imageCover />
                                 </div>
 
-                                <div v-if="selectedMediaIds.includes(img.image_id)"
+                                <div v-if="selectedMediaIds.includes(img.key)"
                                     class="absolute inset-0 bg-black/40 z-10" />
 
-                                <Checkbox :modelValue="selectedMediaIds.includes(img.image_id)" binary
+                                <Checkbox :modelValue="selectedMediaIds.includes(img.key)" binary
                                     class="absolute top-2 left-2 z-20 bg-white rounded shadow pointer-events-none" />
 
                                 <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition z-5" />
@@ -758,7 +760,7 @@ onMounted(() => {
 
                         <div class="grid grid-cols-4 gap-3">
 
-                            <div v-for="media in selectedMedia" :key="media.image_id"
+                            <div v-for="media in selectedMedia" :key="media.key"
                                 class="relative aspect-square rounded-xl overflow-hidden border cursor-pointer group"
                                 @click="toggleSelectAI(media)">
 
@@ -769,11 +771,11 @@ onMounted(() => {
                                 </div>
 
                                 <!-- DARK OVERLAY -->
-                                <div v-if="selectedMediaAIIds.includes(media.image_id)"
+                                <div v-if="selectedMediaAIIds.includes(media.key)"
                                     class="absolute inset-0 bg-black/40 z-10" />
 
                                 <!-- CHECKBOX (visual only) -->
-                                <Checkbox :modelValue="selectedMediaAIIds.includes(media.image_id)" binary
+                                <Checkbox :modelValue="selectedMediaAIIds.includes(media.key)" binary
                                     class="absolute top-2 left-2 z-20 bg-white rounded shadow pointer-events-none" />
 
                                 <!-- HOVER -->

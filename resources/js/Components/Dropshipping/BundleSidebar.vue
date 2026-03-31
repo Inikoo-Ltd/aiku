@@ -11,9 +11,9 @@ import Button from '../Elements/Buttons/Button.vue';
 import { InputText, Select, Dialog, Textarea, Checkbox } from "primevue"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import InformationIcon from '../Utils/InformationIcon.vue';
-import { faLayerGroup, faSparkles, faTrash, faImages } from '@fas'
+import { faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, faMinus } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-library.add(faLayerGroup, faSparkles, faTrash, faImages)
+library.add(faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, faMinus)
 import { router } from '@inertiajs/vue3';
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import Image from '../Image.vue';
@@ -64,7 +64,7 @@ const generateAIImages = async () => {
         }
 
         const routeConfig = bundleRoutes.ai.generate_images
-
+        
         const routeParams = {
             ...resolveParams(routeConfig),
             product: bundle.product_id.value
@@ -104,7 +104,7 @@ const generateAIImages = async () => {
         })
 
     } catch (e) {
-        console.log("e", e)
+        console.error("e", e)
         notify({
             title: trans('Error'),
             text: trans('Failed to generate AI'),
@@ -134,7 +134,6 @@ const fetchMediaGallery = async () => {
         isLoadingMedia.value = true
 
         const routeConfig = bundleRoutes.images.get
-        console.log('routeConfig fetchMediaGallery', routeConfig)
         const url = route(
             routeConfig.name,
             {
@@ -142,17 +141,11 @@ const fetchMediaGallery = async () => {
                 product_ids: productIds.value
             }
         )
-
-        console.log('MEDIA URL =', url)
-
         const response = await axios.get(url)
-
-        console.log('MEDIA RESPONSE', response.data)
-
         mediaGallery.value = response.data.data || []
-        console.log('mediaGallery', mediaGallery.value)
+        
     } catch (e) {
-        console.log(e)
+        console.error(e)
 
         notify({
             title: trans('Error'),
@@ -177,6 +170,7 @@ const flatMediaGallery = computed(() => {
             result.push({
                 product_id: product.id,
                 image_id: Number(imageId),
+                key: `${product.id}-${imageId}`,
                 url: imageData.original,
                 image: imageData
             })
@@ -184,7 +178,7 @@ const flatMediaGallery = computed(() => {
         })
 
     })
-    console.log("result", result)
+    
     return result
 })
 
@@ -212,7 +206,7 @@ const uploadFilesLocal = async (files: FileList) => {
         })
 
         const routeConfig = bundleRoutes.images.store
-        console.log("routeConfig upload", routeConfig)
+        
         const routeParams = {
             ...resolveParams(routeConfig),
             product: bundle.product_id.value
@@ -275,24 +269,26 @@ const setMainImage = (imageId: number) => {
 
 const toggleSelect = (img: any) => {
 
-    const index = selectedMediaIds.value.indexOf(img.image_id)
+    const index = selectedMediaIds.value.indexOf(img.key)
 
     if (index !== -1) {
 
         selectedMediaIds.value.splice(index, 1)
 
         selectedMedia.value =
-            selectedMedia.value.filter(m => m.image_id !== img.image_id)
+            selectedMedia.value.filter(m => m.key !== img.key)
 
     } else {
 
-        selectedMediaIds.value.push(img.image_id)
+        selectedMediaIds.value.push(img.key)
 
         selectedMedia.value.push({
+            key: img.key,
             image_id: img.image_id,
             product_id: img.product_id,
             url: img.url,
-            image: img.image
+            image: img.image,
+            is_main: false
         })
 
     }
@@ -301,7 +297,7 @@ const toggleSelect = (img: any) => {
 
 const toggleSelectAI = (media: any) => {
 
-    const index = selectedMediaAIIds.value.indexOf(media.image_id)
+    const index = selectedMediaAIIds.value.indexOf(media.key)
 
     if (index !== -1) {
 
@@ -309,12 +305,12 @@ const toggleSelectAI = (media: any) => {
 
         selectedMediaForAI.value =
             selectedMediaForAI.value.filter(
-                m => m.image_id !== media.image_id
+                m => m.key !== media.key
             )
 
     } else {
 
-        selectedMediaAIIds.value.push(media.image_id)
+        selectedMediaAIIds.value.push(media.key)
 
         selectedMediaForAI.value.push(media)
 
@@ -353,8 +349,6 @@ const submitBundle = async () => {
         }
 
         const routeConfig = bundleRoutes.update
-        console.log('routeConfig submit bundle', routeConfig)
-        console.log('STORE BUNDLE PAYLOAD', payload)
 
         const routeParams = {
             ...resolveParams(routeConfig),
@@ -382,7 +376,7 @@ const submitBundle = async () => {
                 }
             }
         )
-
+        bundle.resetBundle()
     } catch (e) {
         notify({
             title: trans('Error'),
@@ -451,7 +445,7 @@ watch(customerChannelsId, (val) => {
 
 <template>
     <Transition name="slide">
-        <div v-if="bundle.open.value" class="bg-white flex flex-col h-full min-h-0">
+        <div v-if="bundle.open.value" class="bg-white flex flex-col min-h-0 h-full rounded-md overflow-auto">
             <template v-if="bundle.step.value === 1">
                 <!-- HEADER -->
                 <div class="p-4 border-b flex justify-between items-center">
@@ -491,20 +485,20 @@ watch(customerChannelsId, (val) => {
                                 :placeholder="ctrans('Bundle Title')" required />
 
                             <!-- AI ICON BUTTON -->
-                            <Button type="button" @click="bundle.generateAITitle" :tooltip="trans('Generate AI')"
+                            <Button type="button" @click="bundle.generateAITitle" :tooltip="trans('Generate AI')"  :loading="bundle.isGeneratingAI.value"
                                 :disabled="isGeneratingAI || !bundle.products.value.length" class="absolute right-2 top-1/2 -translate-y-1/2 
                         h-7 w-7 flex items-center justify-center 
                         rounded-md border bg-white hover:bg-gray-100 
                         transition shadow-sm">
-                                <FontAwesomeIcon :icon="isGeneratingAI ? 'fas fa-spinner' : 'fas fa-sparkles'"
-                                    class="text-xs" :class="isGeneratingAI ? 'animate-pulse text-primary' : ''"
+                                <FontAwesomeIcon :icon="bundle.isGeneratingAI.value ? 'fal fa-spinner' : 'fal fa-sparkles'"
+                                    class="text-xs" :class="bundle.isGeneratingAI.value ? 'animate-pulse text-primary' : ''"
                                     fixed-width />
                             </Button>
 
                         </div>
                     </div>
 
-                    <div v-for="item in bundle.products.value" :key="item.id" class="flex gap-3 py-3 border-b">
+                    <div v-for="item in bundle.products.value" :key="item.id" class="flex gap-3 py-3 border-b border-t">
                         <img :src="item.web_images?.main?.gallery?.png"
                             class="w-14 h-14 object-contain bg-gray-50 rounded" />
 
@@ -518,13 +512,13 @@ watch(customerChannelsId, (val) => {
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-2">
-                            <button @click="bundle.decreaseQty(item.id)">-</button>
+                        <div class="flex justify-center items-center gap-2">
+                            <button @click="bundle.decreaseQty(item.id)"><FontAwesomeIcon icon='fas fa-minus' class="text-xs" fixed-width aria-hidden='true' /></button>
                             <div>{{ item.quantity }}</div>
-                            <button @click="bundle.increaseQty(item.id)">+</button>
+                            <button @click="bundle.increaseQty(item.id) "><FontAwesomeIcon icon='fas fa-plus' class="text-xs"fixed-width aria-hidden='true' /></button>
 
-                            <button @click="bundle.removeProduct(item.id)" v-tooltip="trans('Delete product')">🗑
-                                <FontAwesomeIcon icon="fal fa-layer-group" class="text-gray-500" fixed-width />
+                            <button @click="bundle.removeProduct(item.id)" v-tooltip="trans('Delete product')"><FontAwesomeIcon icon='fas fa-trash-alt' class="text-sm text-red-500" fixed-width aria-hidden='true' />
+                                <FontAwesomeIcon icon="fal fa-layer-group" class="text-xs" fixed-width />
                             </button>
                         </div>
                     </div>
@@ -536,39 +530,40 @@ watch(customerChannelsId, (val) => {
 
                 <!-- FOOTER -->
                 <div class="border-t p-4 space-y-2">
-                    <small v-if="!customerChannelsId" class="text-red-500">Please Choose Customer Sales Channel First
-                        For Calculate
-                        Bundle</small>
+                    <small v-if="!customerChannelsId" class="text-red-500">Please Choose Customer Sales Channel For Calculate Bundle</small>
                     <template v-if="bundle.isSummaryLoading.value">
                         <div class="text-center text-sm text-gray-400 py-2">Calculating...</div>
                     </template>
 
                     <template v-else>
                         <div class="flex justify-between text-sm">
-                            <span class="text-gray-500">Cost Price</span>
+                            <span class="text-gray-400">Cost Price (Individual Purchase)</span>
                             <span>{{ bundle.summary.value.total_price }} {{ props.layout }}</span>
                         </div>
 
-                        <div class="flex justify-between text-sm">
-                            <span class="text-gray-500">RRP</span>
-                            <span>{{ bundle.summary.value.total_rrp }} {{ props.layout }}</span>
-                        </div>
-
-                        <div class="flex justify-between text-sm font-semibold text-green-600">
-                            <span>Bundle Price</span>
+                         <div class="flex justify-between text-sm">
+                            <div class="flex gap-2">
+                                <span>Bundle Price</span>
+                                <!-- <span class="text-green-600">({{bundle.summary.value.profit_percentage }}%)</span> -->
+                            </div>
                             <span>{{ bundle.summary.value.total_bundle_price }} {{ props.layout }}</span>
                         </div>
 
-                        <div class="flex justify-between text-xs text-gray-400">
+                        <div class="flex justify-between text-sm">
+                            <span>RRP</span>
+                            <span>{{ bundle.summary.value.total_rrp }} {{ props.layout }}</span>
+                        </div>
+
+                        <div class="flex justify-between text-xs">
                             <span>Profit</span>
                             <span>{{ bundle.summary.value.profit }} {{ props.layout }} ({{
                                 bundle.summary.value.profit_percentage }}%)</span>
                         </div>
                     </template>
 
-                    <Button @click="handleStoreBundle" :loading="isStoringBundle" label="Next"
+                    <Button @click="handleStoreBundle" :loading="bundle.isStoringBundle" label="Next"
                         iconRight="fas fa-arrow-right"
-                        :disabled="!bundle.products.value.length && !bundle.title.value.length"
+                        :disabled="!bundle.products.value.length || !bundle.title.value.length || !customerChannelsId"
                         class="w-full text-white rounded" />
 
                 </div>
@@ -606,9 +601,9 @@ watch(customerChannelsId, (val) => {
                                 Characters {{ bundle.description.value.length }} words
                             </div>
 
-                            <Button @click="bundle.generateAIDescription" :loading="isGeneratingAI" type="primary"
+                            <Button @click="bundle.generateAIDescription" :loading="bundle.isGeneratingAI.value" type="primary"
                                 :disabled="!productIds.length">
-                                <FontAwesomeIcon :icon="isGeneratingAI ? 'fal fa-spinner' : 'fas fa-sparkles'"
+                                <FontAwesomeIcon :icon="bundle.isGeneratingAI.value ? 'fal fa-spinner' : 'fas fa-sparkles'"
                                     class="mr-2" fixed-width />
                                 Generate with AI
                             </Button>
@@ -618,6 +613,10 @@ watch(customerChannelsId, (val) => {
 
                     <!-- MEDIA -->
                     <div class="mb-5">
+                         <label class="text-sm font-semibold">
+                            {{ trans('Media') }}
+                        </label>
+
                         <div class="border-2 border-dashed border-gray-300 rounded-xl h-[140px]
                                 flex flex-col items-center justify-center
                                 text-gray-400 cursor-pointer hover:bg-gray-50 transition" @dragover.prevent
@@ -682,8 +681,7 @@ watch(customerChannelsId, (val) => {
                     </div>
 
                     <!-- SUBMIT -->
-                    <Button @click="submitBundle" :disabled="!bundle.description.value.length"
-                        class="flex justify-center items-center w-full" type="primary" :loading="isStoringBundle">
+                    <Button @click="submitBundle" :disabled="!bundle.description.value.length" class="flex justify-center items-center w-full" type="primary" :loading="isStoringBundle">
                         Create Bundle
                         <FontAwesomeIcon icon="fas fa-layer-group" class="mr-2" fixed-width />
                     </Button>
@@ -696,7 +694,7 @@ watch(customerChannelsId, (val) => {
                     </div>
                     <div v-else class="grid grid-cols-4 gap-3">
                         <template v-if="flatMediaGallery.length">
-                            <div v-for="img in flatMediaGallery" :key="img.image_id"
+                            <div v-for="img in flatMediaGallery" :key="img.key"
                                 class="relative aspect-square rounded-xl overflow-hidden border cursor-pointer group"
                                 @click="toggleSelect(img)">
 
@@ -704,10 +702,10 @@ watch(customerChannelsId, (val) => {
                                     <Image :src="img.image" class="w-full h-full" imageCover />
                                 </div>
 
-                                <div v-if="selectedMediaIds.includes(img.image_id)"
+                                <div v-if="selectedMediaIds.includes(img.key)"
                                     class="absolute inset-0 bg-black/40 z-10" />
 
-                                <Checkbox :modelValue="selectedMediaIds.includes(img.image_id)" binary
+                                <Checkbox :modelValue="selectedMediaIds.includes(img.key)" binary
                                     class="absolute top-2 left-2 z-20 bg-white rounded shadow pointer-events-none" />
 
                                 <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition z-5" />
@@ -739,7 +737,7 @@ watch(customerChannelsId, (val) => {
 
                         <div class="grid grid-cols-4 gap-3">
 
-                            <div v-for="media in selectedMedia" :key="media.image_id"
+                            <div v-for="media in selectedMedia" :key="media.key"
                                 class="relative aspect-square rounded-xl overflow-hidden border cursor-pointer group"
                                 @click="toggleSelectAI(media)">
 
@@ -750,11 +748,11 @@ watch(customerChannelsId, (val) => {
                                 </div>
 
                                 <!-- DARK OVERLAY -->
-                                <div v-if="selectedMediaAIIds.includes(media.image_id)"
+                                <div v-if="selectedMediaAIIds.includes(media.key)"
                                     class="absolute inset-0 bg-black/40 z-10" />
 
                                 <!-- CHECKBOX (visual only) -->
-                                <Checkbox :modelValue="selectedMediaAIIds.includes(media.image_id)" binary
+                                <Checkbox :modelValue="selectedMediaAIIds.includes(media.key)" binary
                                     class="absolute top-2 left-2 z-20 bg-white rounded shadow pointer-events-none" />
 
                                 <!-- HOVER -->
