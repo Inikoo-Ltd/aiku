@@ -74,7 +74,13 @@ class StoreOrderFromShopify extends OrgAction
                 foreach ($shopifyProducts as $shopifyProduct) {
                     /** @var Portfolio $portfolio */
                     $portfolio = $shopifyUser->customerSalesChannel->portfolios()
-                        ->where('platform_product_id', $shopifyProduct['product_id'])->first();
+                        ->where('platform_product_variant_id', Arr::get($shopifyProduct, 'product_variant_id'))->first();
+
+                    if(! $portfolio) {
+                        /** @var Portfolio $portfolio */
+                        $portfolio = $shopifyUser->customerSalesChannel->portfolios()
+                            ->where('platform_product_id', $shopifyProduct['product_id'])->first();
+                    }
 
                     if ($portfolio) {
                         /** @var Product $product */
