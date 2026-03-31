@@ -36,10 +36,11 @@ class CalculateDayOrgStockHistory implements ShouldBeUnique
         $from = $this->getFirstAssociateDate($orgStock);
         if (!$from) {
             $command?->warn('Skipping '.$orgStock->slug.' ('.$orgStock->id.') - no associate date');
+
             return;
         }
-        
-        
+
+
         $isCurrent = DB::table('location_org_stocks')->where('org_stock_id', $orgStock->id)->exists();
         if ($isCurrent) {
             $to = Carbon::now()->endOfDay();
