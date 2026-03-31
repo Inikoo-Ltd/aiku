@@ -88,7 +88,7 @@ class StoreBundle extends OrgAction
             }
 
             if (! Arr::get($productData, 'description')) {
-                $productData['description'] = $productSelected->first()->description;
+                $productData['description'] = $productSelected->first()?->description ?? '-';
             }
 
             $product = StoreProduct::make()->action($customerSalesChannel->shop, $productData);
