@@ -76,12 +76,21 @@ class UpdateBundle extends OrgAction
                 $selectedBundleItems = Arr::get($modelData, 'payloadItems');
 
                 foreach ($selectedBundleItems as $selectedBundleItem) {
-                    foreach ($product->tradeUnits as $tradeUnit) {
+                    $bundleItem =  BundleItem::find($selectedBundleItem['bundle_item_id']);
+
+                    /** @var Product $productSelected */
+                    $productSelected = $bundleItem->item;
+
+                    foreach ($productSelected->tradeUnits as $tradeUnit) {
                         $tradeUnits[] = [
                             'id' => $tradeUnit->id,
                             'quantity' => $selectedBundleItem['quantity']
                         ];
                     }
+
+                    $this->update($bundleItem, [
+                        'quantity' => $selectedBundleItem['quantity']
+                    ]);
                 }
 
                 UpdateProduct::run($product, [
