@@ -323,7 +323,7 @@ class IndexOrders extends OrgAction
         $subNavigation = null;
 
         if ($this->parent instanceof CustomerClient) {
-            unset($navigation[OrdersTabsEnum::STATS->value]);
+            // unset($navigation[OrdersTabsEnum::STATS->value]);
             $subNavigation = $this->getCustomerClientSubNavigation($this->parent, $this->customerSalesChannel);
         } elseif ($this->parent instanceof Customer) {
             if ($this->parent->is_dropshipping) {

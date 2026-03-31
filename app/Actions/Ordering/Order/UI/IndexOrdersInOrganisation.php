@@ -177,7 +177,7 @@ class IndexOrdersInOrganisation extends OrgAction
     {
         $navigation = OrdersTabsEnum::navigation();
 
-        unset($navigation[OrdersTabsEnum::STATS->value]);
+        // unset($navigation[OrdersTabsEnum::STATS->value]);
 
         $subNavigation = null;
 

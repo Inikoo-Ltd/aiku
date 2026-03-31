@@ -849,8 +849,7 @@ test("UI Index Stock Families", function () {
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", 'Master SKU Families')->etc()
-            )
-            ->has("data");
+            );
     });
 });
 

@@ -184,10 +184,11 @@ class StoreTransaction extends OrgAction
     
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
-
-        $exists = $this->order->itemTransactions()->where('model_id', $this->historicAsset->asset->model_id)->exists();
-        if ($exists) {
-            $validator->errors()->add('quantity_ordered', 'An existing product under order already exists.');
+        if($this->strict) {
+            $exists = $this->order->itemTransactions()->where('model_id', $this->historicAsset->asset->model_id)->exists();
+            if ($exists) {
+                $validator->errors()->add('quantity_ordered', 'An existing product under order already exists.');
+            }
         }
     }
 

@@ -19,29 +19,30 @@ class UpdateTriggerModelOffersData
 
     public function handle(Offer $offer): void
     {
-
         if ($offer->trigger_type == 'ProductCategory') {
             UpdateProductCategoryOffersData::run($offer);
         }
-
-
     }
 
     public function getCommandSignature(): string
     {
-        return 'discounts:offer:update-trigger-model-offers-data {offer?}';
+        return 'discounts:offer:update-trigger-model-offers-data {type} {model?}';
     }
 
     public function asCommand(Command $command): int
     {
-
-        $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
-
-
-        if ($slug = $command->argument('offer')) {
+        if ($command->argument('type') == 'offer') {
+            $slug  = $command->argument('model');
             $offer = Offer::where('slug', $slug)->firstOrFail();
             $this->handle($offer);
         } else {
+            if ($command->argument('model')) {
+                $shop      = Shop::where('slug', $command->argument('model'))->firstOrFail();
+                $aikuShops = [$shop->id];
+            } else {
+                $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
+            }
+
             $offers = Offer::whereIn('shop_id', $aikuShops);
             $count  = $offers->count();
 
