@@ -59,12 +59,14 @@ use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfoliosCSV;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Portfolio\ShowRetinaDropshippingPortfolio;
 use App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs;
+use App\Actions\Dropshipping\Shopify\Fulfilment\UI\SyncOrderCancellationToShopify;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaFilteredProducts;
 use App\Actions\Retina\Ebay\StoreRetinaEbayUser;
 use App\Actions\Retina\Ebay\UpdateRetinaEbayUser;
 use App\Actions\Retina\Platform\EditRetinaCustomerSalesChannel;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use Illuminate\Support\Facades\Route;
+use App\Actions\Accounting\Invoice\ExportDropshippingInvoicesByDate;
 
 Route::get('select-products-for-empty-basket', IndexRetinaProductsForEmptyBasket::class)->name('select_products_for_empty_basket');
 Route::get('select-products-for-basket/{order:id}', IndexRetinaProductsForBasket::class)->name('select_products_for_basket');
@@ -72,7 +74,6 @@ Route::get('select-products-for-basket/{order:id}', IndexRetinaProductsForBasket
 Route::get('bulk-products-images', IndexRetinaBulkProductImages::class)->name('products.images.index');
 
 Route::get('export-template-portfolios', ExportTemplateRetinaPortfolios::class)->name('portfolio_template.export');
-
 
 Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function () {
     Route::get('{customerSalesChannel}/upload-portfolio-history', IndexRetinaRecentCustomerSalesChannelPortfolioUploads::class)
@@ -93,6 +94,8 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
 Route::prefix('platform')->as('platform.')->group(function () {
     Route::post('shopify-user', StoreShopifyUser::class)->name('shopify_user.store');
     Route::delete('shopify-user', DeleteShopifyUser::class)->name('shopify_user.delete');
+    Route::patch('shopify-user/{order:id}/sync-cancelled-status', SyncOrderCancellationToShopify::class)->name('shopify_user.order.sync-cancellation');
+
 
     Route::post('wc-user/authorize', AuthorizeRetinaWooCommerceUser::class)->name('wc.authorize');
     Route::post('wc-user/{customerSalesChannel}/test-connection', TestConnectionWooCommerceUser::class)->name('wc.test_connection');
@@ -161,6 +164,7 @@ Route::get('order-transaction-templates', DownloadOrderTransactionsTemplate::cla
 
 Route::prefix('invoices')->name('invoices.')->group(function () {
     Route::get('', IndexRetinaDropshippingInvoices::class)->name('index');
+    Route::get('export', ExportDropshippingInvoicesByDate::class)->name('export');
     Route::get('{invoice}', ShowRetinaDropshippingInvoice::class)->name('show');
     Route::get('{invoice}/pdf', RetinaPdfInvoice::class)->name('pdf');
 });

@@ -43,6 +43,19 @@ watch(() => props.lng, v => {
 
 const close = () => emit("update:modelValue", false)
 
+const getGeolocationErrorMessage = (err?: GeolocationPositionError) => {
+    switch (err?.code) {
+        case err?.PERMISSION_DENIED:
+            return trans("Location blocked. Please allow GPS access in your browser settings.")
+        case err?.POSITION_UNAVAILABLE:
+            return trans("Location unavailable. Please try again.")
+        case err?.TIMEOUT:
+            return trans("Location request timed out. Please try again.")
+        default:
+            return trans("Unable to detect your location. Please allow GPS in your browser.")
+    }
+}
+
 const getLatLngToLocation = async (filter: any, forceMode?: 'forward' | 'reverse') => {
     const v = filter.value
     let params: any = {}
@@ -101,11 +114,12 @@ const detectMyLocation = () => {
     if (!navigator.geolocation) {
         notify({
             title: trans("Error"),
-            text: trans("Browser does not support GPS, Please allow GPS in your browser"),
+            text: trans("This browser does not support geolocation."),
             type: "error",
         })
         return
     }
+
     navigator.geolocation.getCurrentPosition(
         (pos) => {
             filter.value.lat = pos.coords.latitude
@@ -114,12 +128,17 @@ const detectMyLocation = () => {
             filter.value.lastSource = "map"
             debouncedReverseGeocode(filter)
         },
-        () => {
+        (err) => {
             notify({
                 title: trans("Error"),
-                text: trans("Browser does not support GPS, Please allow GPS in your browser"),
+                text: getGeolocationErrorMessage(err),
                 type: "error",
             })
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
         }
     )
 }

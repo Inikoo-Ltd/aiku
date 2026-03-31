@@ -6,7 +6,7 @@
 -->
 
 <script setup lang="ts">
-import {Head} from '@inertiajs/vue3'
+import {Head, router} from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import {capitalize} from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -39,7 +39,8 @@ import {
     faFilePdf,
     faPaperclip,
     faTimes,
-    faInfoCircle
+    faInfoCircle,
+    faSync
 } from '@fal'
 import {Currency} from '@/types/LayoutRules'
 import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue'
@@ -54,6 +55,7 @@ import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import {debounce} from 'lodash-es'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import { notify } from '@kyvg/vue3-notification'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faShieldAlt, faSpinnerThird)
 
@@ -206,6 +208,43 @@ const hasModified = props.transactions.data.some(item =>
   item.quantity_ordered !== item.quantity_dispatched
 );
 
+const isLoadingSyncStatus = ref(false)
+const syncOrderCancellationShopify = async (order) => {
+    router.patch(
+        route('retina.dropshipping.platform.shopify_user.order.sync-cancellation', { order: order.data.id}), {},
+        {
+            preserveScroll: true,
+            onStart: () => { isLoadingSyncStatus.value = true },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Order state has been synced to Shopify"),
+                    type: "error"
+                })
+            },
+            onError: (errors) => {
+                console.error(errors)
+                if (errors.messages == 'The fulfillment order is not in an in progress state.') {
+                    notify({
+                        title: trans("Unable to sync"),
+                        text: trans('The order state on Shopify is up-to-date'),
+                        type: "error"
+                    })
+                } else {
+                    notify({
+                        title: trans("Something went wrong"),
+                        text: errors.messages,
+                        type: "error"
+                    })
+                }
+            },
+            onFinish: () => { 
+                isLoadingSyncStatus.value = false 
+            },
+        }
+    )
+}
+
 </script>
 
 <template>
@@ -219,6 +258,15 @@ const hasModified = props.transactions.data.some(item =>
             </div>
         </template>
         <template #other>
+            <span 
+                v-if="order?.data.state == 'cancelled' && box_stats.customer_channel.platform.name == 'Shopify'" 
+                v-tooltip="trans('Sync order state')"
+                @click="syncOrderCancellationShopify(order)"
+                class="py-2 px-3 border border-solid border-gray-500 rounded-md cursor-pointer font-medium" 
+            >
+                <LoadingIcon v-if="isLoadingSyncStatus" />
+                <FontAwesomeIcon v-else :icon="faSync" />
+            </span>
             <span v-if="order?.data.state == 'cancelled'" :class="order?.data.state_icon.class" class="py-2 px-3 border border-solid border-red-500 rounded-md cursor-default font-medium" v-tooltip="trans('Order is cancelled')">
                 <FontAwesomeIcon :icon="order?.data.state_icon.icon"/>
                 {{ order?.data.state_label }}

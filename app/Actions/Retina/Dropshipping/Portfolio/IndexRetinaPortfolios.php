@@ -92,7 +92,11 @@ class IndexRetinaPortfolios extends RetinaAction
             );
 
         return $query->defaultSort('-portfolios.id')
-            ->allowedFilters([$unUploadedFilter, $globalSearch, $this->getStateFilter(), $this->getPlatformStatusFilter(), $this->getForSaleFilter()])
+            ->allowedFilters([
+                            $unUploadedFilter, $globalSearch,
+                            $this->getStateFilter(), $this->getPlatformStatusFilter(),
+                            $this->getForSaleFilter()
+                        ])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -107,15 +111,24 @@ class IndexRetinaPortfolios extends RetinaAction
     public function getPlatformStatusFilter(): AllowedFilter
     {
         return AllowedFilter::callback('platform_status', function ($query, $value) {
-            $query->where('platform_status', $value)
-                ->orWhere('products.state', $value);
+            if ($value === 'true' || $value === true) {
+                $query->where('platform_status', true)
+                    ->orWhere('products.state', true);
+            } elseif ($value === 'false' || $value === false) {
+                $query->where('platform_status', false)
+                    ->orWhere('products.state', true);
+            }
         });
     }
 
     public function getForSaleFilter(): AllowedFilter
     {
         return AllowedFilter::callback('is_for_sale', function ($query, $value) {
-            $query->where('products.is_for_sale', true);
+            if ($value === 'true' || $value === true) {
+                $query->where('products.is_for_sale', true);
+            } elseif ($value === 'false' || $value === false) {
+                $query->where('products.is_for_sale', false);
+            }
         });
     }
 

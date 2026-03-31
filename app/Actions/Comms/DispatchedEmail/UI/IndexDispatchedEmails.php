@@ -81,6 +81,8 @@ class IndexDispatchedEmails extends OrgAction
             case 'Mailshot':
                 $queryBuilder->leftJoin('mailshot_has_dispatched_emails', 'mailshot_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
                 $queryBuilder->where('mailshot_id', $parent->id);
+                $queryBuilder->leftJoin('test_email_recipient_has_dispatched_emails', 'test_email_recipient_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
+                $queryBuilder->whereNull('test_email_recipient_has_dispatched_emails.dispatched_email_id');
                 break;
             case 'Prospect':
                 $queryBuilder->where('dispatched_emails.recipient_type', 'Prospect');
@@ -150,7 +152,7 @@ class IndexDispatchedEmails extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             $table
@@ -181,5 +183,4 @@ class IndexDispatchedEmails extends OrgAction
             $table->defaultSort('-sent_at');
         };
     }
-
 }

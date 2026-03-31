@@ -17,6 +17,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class RedirectOrgStockLink extends OrgAction
 {
+    private $toProducts = false;
+
     public function handle(OrgStock $orgStock): ?RedirectResponse
     {
         /** @var Warehouse $warehouse */
@@ -27,6 +29,16 @@ class RedirectOrgStockLink extends OrgAction
             $warehouse->slug,
             $orgStock->slug
         ]);
+
+        if ($this->toProducts) {
+            $url = route('grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show.products', [
+                $orgStock->organisation->slug,
+                $warehouse->slug,
+                $orgStock->slug,
+                'tab'  => 'products'
+            ]);
+        }
+
         return Redirect::to($url);
     }
 
@@ -34,6 +46,14 @@ class RedirectOrgStockLink extends OrgAction
 
     public function asController(OrgStock $orgStock, ActionRequest $request): RedirectResponse
     {
+        $this->initialisation($orgStock->organisation, $request);
+
+        return $this->handle($orgStock);
+    }
+
+    public function toProductsIndex(OrgStock $orgStock, ActionRequest $request): RedirectResponse
+    {
+        $this->toProducts = true;
         $this->initialisation($orgStock->organisation, $request);
 
         return $this->handle($orgStock);

@@ -70,7 +70,7 @@ defineProps<{
         </template>
 
         <!-- Column: Duration -->
-        <template #cell(duration)="{ item: visitor }">
+        <template #cell(duration_seconds)="{ item: visitor }">
             <span>{{ visitor.duration }}</span>
         </template>
 

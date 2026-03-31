@@ -49,6 +49,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric|null $audited_quantity
  * @property string|null $running_quantity running quantity on org_stock/location
  * @property string|null $running_quantity_org_stock running quantity on org_stock
+ * @property bool|null $fixed_internal_helper
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Inventory\Location|null $location
  * @property-read \App\Models\Inventory\OrgStock $orgStock
@@ -76,6 +77,7 @@ class OrgStockMovement extends Model
         'amount'           => 'decimal:3',
         'grp_amount' => 'decimal:3',
         'org_amount' => 'decimal:3',
+        'fixed_internal_helper' => 'boolean',
     ];
 
     protected $attributes = [

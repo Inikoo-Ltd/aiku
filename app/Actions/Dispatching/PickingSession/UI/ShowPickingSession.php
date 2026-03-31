@@ -106,7 +106,6 @@ class ShowPickingSession extends OrgAction
             $actions[] = [
                 'type'    => 'button',
                 'style'   => 'save',
-                'tooltip' => __('start picking'),
                 'label'   => __('Start Picking'),
                 'key'     => 'action',
                 'route'   => [

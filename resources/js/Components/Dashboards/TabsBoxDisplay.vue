@@ -172,7 +172,7 @@ const getRoute = (tabSlug) => {
                             </template>
                         </div>
 
-                        <div class="text-gray-400 font-normal text-xs opacity-70">
+                        <div v-if="tab.information" class="text-gray-400 font-normal text-xs opacity-70">
                             {{ renderLabelBasedOnType(tab.information?.label, tab.information?.type, { currency_code: box.currency_code }) }}
                         </div>
                     </div>

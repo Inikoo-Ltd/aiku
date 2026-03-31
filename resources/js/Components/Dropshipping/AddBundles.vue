@@ -222,7 +222,7 @@ const generateAIImages = async () => {
                 id: media.id,
                 image_id: media.id,
                 url: media.source?.original || media.thumbnail?.original,
-                image: media.thumbnail?.original || media.source?.original,
+                image: media.thumbnail || media.source,
                 is_ai: true,
                 is_main: false
             })
@@ -420,7 +420,7 @@ const uploadFilesLocal = async (files: FileList) => {
                 id: media.id,
                 image_id: media.id,
                 url: media.source.original,
-                image: media.source.original,
+                image: media.source,
                 is_ai: false,
                 is_main: false
             })

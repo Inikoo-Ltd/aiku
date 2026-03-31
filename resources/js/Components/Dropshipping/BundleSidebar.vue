@@ -86,7 +86,7 @@ const generateAIImages = async () => {
                 id: media.id,
                 image_id: media.id,
                 url: media.source?.original || media.thumbnail?.original,
-                image: media.thumbnail?.original || media.source?.original,
+                image: media.thumbnail || media.source,
                 is_ai: true,
                 is_main: false
             })
@@ -230,7 +230,7 @@ const uploadFilesLocal = async (files: FileList) => {
                 id: media.id,
                 image_id: media.id,
                 url: media.source.original,
-                image: media.source.original,
+                image: media.source,
                 is_ai: false,
                 is_main: false
             })
@@ -666,7 +666,6 @@ watch(customerChannelsId, (val) => {
 
                                 <input type="radio" name="main_image" :checked="img.is_main"
                                     @change="setMainImage(img.image_id)" class="absolute top-2 left-2 z-20" />
-
                                 <div v-if="img.is_main"
                                     class="absolute bottom-1 left-1 text-[10px] bg-black/70 text-white px-1 rounded">
                                     MAIN IMAGE

@@ -10,7 +10,9 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMismatch;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
@@ -18,7 +20,7 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
 
-class MasterProductFixProductsTradeUnits
+class RepairMismatchedMasterProductProductsTradeUnits
 {
     use WithActionUpdate;
 
@@ -33,6 +35,21 @@ class MasterProductFixProductsTradeUnits
 
                     $products = $masterProduct->products;
                     foreach ($products as $product) {
+                        if ($product->shop_id != 18) {
+                            continue;
+                        }
+
+                        if ($product->state == ProductStateEnum::DISCONTINUED) {
+                            continue;
+                        }
+
+                        if (!$product->is_for_sale) {
+                            continue;
+                        }
+
+
+
+
                         $productTradeUnits = $product->tradeUnits->pluck('pivot.quantity', 'id');
 
                         $diffFromMaster  = $masterAssetTradeUnits->diffAssoc($productTradeUnits);
@@ -46,14 +63,65 @@ class MasterProductFixProductsTradeUnits
                             echo "----------------------------------------------------\n";
 
                             echo "MASTER UNITS:\n";
+                            $autoSkip         = false;
+                            $autoShopToMaster = false;
                             foreach ($masterAssetTradeUnits as $id => $qty) {
                                 $tradeUnit = TradeUnit::find($id);
                                 echo "  - TradeUnit $tradeUnit->slug: $qty\n";
+                                if (str_starts_with($tradeUnit->slug, 'abot') || str_starts_with($tradeUnit->slug, 'gbot')
+                                    || str_starts_with($tradeUnit->slug, 'rdbot-')
+                                    || str_starts_with($tradeUnit->slug, 'gjar-')
+                                    || str_starts_with($tradeUnit->slug, 'actc-')
+                                    || str_starts_with($tradeUnit->slug, 'opp-')
+                                    || str_starts_with($tradeUnit->slug, 'sellp-')
+                                    || str_starts_with($tradeUnit->slug, 'fgb-')
+                                    || str_starts_with($tradeUnit->slug, 'gemfr-')
+                                    || str_starts_with($tradeUnit->slug, 'salt-')
+                                    || str_starts_with($tradeUnit->slug, 'qsalt-')
+                                    || str_starts_with($tradeUnit->slug, 'ncl-')
+                                    || str_starts_with($tradeUnit->slug, 'wwib-')
+                                    || str_starts_with($tradeUnit->slug, 'pamg-')
+                                    || str_starts_with($tradeUnit->slug, 'mgw-')
+
+
+
+                                ) {
+                                    $autoSkip = true;
+                                }
+
+                                if (in_array($tradeUnit->slug, ['sais-mx'])) {
+                                    $autoSkip = true;
+                                }
+
+                                //MGBS-ST
+
+
+                                if ($tradeUnit->slug == 'ial01') {
+                                    $autoShopToMaster = true;
+                                } else {
+                                    $autoSkip = true;
+                                }
                             }
 
                             echo "\nPRODUCT UNITS:\n";
                             foreach ($productTradeUnits as $id => $qty) {
                                 $tradeUnit = TradeUnit::find($id);
+                                if (str_starts_with($tradeUnit->slug, 'abot')
+                                    || str_starts_with($tradeUnit->slug, 'gbot-')
+                                    || str_starts_with($tradeUnit->slug, 'rdbot-')
+                                    || str_starts_with($tradeUnit->slug, 'gjar-')
+                                    || str_starts_with($tradeUnit->slug, 'actc-')
+                                    || str_starts_with($tradeUnit->slug, 'opp-')
+                                    || str_starts_with($tradeUnit->slug, 'sellp-')
+                                    || str_starts_with($tradeUnit->slug, 'fgb-')
+                                    || str_starts_with($tradeUnit->slug, 'gemfr-')
+                                    || str_starts_with($tradeUnit->slug, 'salt-')
+                                    || str_starts_with($tradeUnit->slug, 'qsalt-')
+                                    || str_starts_with($tradeUnit->slug, 'ncl-')
+
+                                ) {
+                                    $autoSkip = true;
+                                }
                                 echo "  - TradeUnit $tradeUnit->slug: $qty\n";
                             }
 
@@ -73,12 +141,25 @@ class MasterProductFixProductsTradeUnits
                                 }
                             }
 
+                            if ($autoShopToMaster) {
+                                echo "\nAuto repair =======".$product->code."=====. \n";
+                                $this->copyProductToMaster($product);
+                                continue;
+                            }
+
+                            if ($autoSkip) {
+                                echo "\nAuto Skip\n";
+                                continue;
+                            }
+
+
+
                             echo "====================================================\n\n";
                             echo "1. Follow master data (default)\n";
                             echo "2. Follow children data [{$product->shop->slug}]\n";
                             echo "3. Do nothing\n\n";
 
-                            switch ($command->ask("option: ", '1')) {
+                            switch ($command->ask("option: ", '2')) {
                                 case "1":
                                     $this->copyMasterToProducts($masterProduct);
                                     break;
@@ -108,6 +189,7 @@ class MasterProductFixProductsTradeUnits
             'trade_units' => $tradeUnits
         ]);
 
+        MasterAssetHydrateMismatch::run($product->masterProduct);
         echo "{$product->masterProduct->slug} | Repaired --  Product -> Master OK\n";
     }
 
@@ -125,11 +207,11 @@ class MasterProductFixProductsTradeUnits
             SyncProductTradeUnits::run($product, $tradeUnitData);
         }
 
-
+        MasterAssetHydrateMismatch::run($masterProduct);
         echo "$masterProduct->slug | Repaired -- OK\n";
     }
 
-    public string $commandSignature = 'show:products_with_mismatch_trade_units {masterShop}';
+    public string $commandSignature = 'repair_mismatched_master_product_products_trade_units {masterShop}';
 
     public function asCommand(Command $command): void
     {
