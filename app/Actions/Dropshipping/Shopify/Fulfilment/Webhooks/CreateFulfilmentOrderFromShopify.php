@@ -44,31 +44,19 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
         foreach ($lineItems as $lineItemEdge) {
             $lineItem = $lineItemEdge['node'];
 
-                $productId = data_get($lineItem, 'lineItem.product.id');
-                $productVariantId = data_get($lineItem, 'lineItem.variant.id');
+            $productId = data_get($lineItem, 'lineItem.product.id');
+            $productVariantId = data_get($lineItem, 'lineItem.variant.id');
 
-                if (empty($productId)) {
-                    continue;
-                }
-
-                $assignedLineItems[] = [
-                    'id' => $lineItem['id'],
-                    'quantity' => $lineItem['remainingQuantity'],
-                    'sku' => $lineItem['sku'],
-                    'product_id' => $productId,
-                    'product_variant_id' => $productVariantId
-                ];
-            }
-
-            if (empty($assignedLineItems)) {
-                return;
+            if (empty($productId)) {
+                continue;
             }
 
             $assignedLineItems[] = [
                 'id' => $lineItem['id'],
                 'quantity' => $lineItem['remainingQuantity'],
                 'sku' => $lineItem['sku'],
-                'product_id' => $productId
+                'product_id' => $productId,
+                'product_variant_id' => $productVariantId
             ];
         }
 
