@@ -35,8 +35,6 @@ class ProcessBackInStockPerOutbox
         $baseQuery = DB::table('customers');
         $baseQuery->join('back_in_stock_reminders', 'customers.id', '=', 'back_in_stock_reminders.customer_id');
         $baseQuery->join('products', 'back_in_stock_reminders.product_id', '=', 'products.id');
-
-        //  Update this logic
         // select options
         $baseQuery->select(
             'customers.id',
@@ -52,7 +50,6 @@ class ProcessBackInStockPerOutbox
         $baseQuery->where('products.back_in_stock_since', '>', DB::raw('back_in_stock_reminders.created_at'));
 
         if ($lastOutBoxSent) {
-            $baseQuery->where('back_in_stock_reminders.created_at', '>', $lastOutBoxSent);
             $baseQuery->where('products.back_in_stock_since', '>', $lastOutBoxSent);
         }
 
@@ -75,7 +72,6 @@ class ProcessBackInStockPerOutbox
         }
 
         $chunkSize = 50;
-        // $deleteBackInStockReminderIds = [];
 
         $baseQuery->chunk($chunkSize, function ($customers) use ($emailBulkRun) {
             $customerData = $customers
@@ -88,9 +84,6 @@ class ProcessBackInStockPerOutbox
                 ])
                 ->values()
                 ->all();
-
-            // Collect reminder IDs for deletion
-            // $deleteBackInStockReminderIds = array_merge($deleteBackInStockReminderIds, $customers->pluck('reminder_id')->toArray());
 
             ProcessBackInStockRecipient::dispatch(
                 $emailBulkRun->id,

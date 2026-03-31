@@ -46,6 +46,8 @@ class ProcessBackInStockRecipient
 
         $emailDeliveryChannel = StoreEmailDeliveryChannel::run($emailBulkRun);
 
+        $reminderIdsArray = [];
+
         foreach ($customers as $customer) {
             $customerModel = Customer::find($customer['id']);
             if (!$customerModel) {
@@ -59,8 +61,7 @@ class ProcessBackInStockRecipient
                     'outbox_id'     => $emailBulkRun->outbox_id,
                     'email_address' => $customer['email'],
                     'data->additional_data' => [
-                        'products' => $this->generateProductLinks($customer['product_ids']),
-                        'reminderIds' => $customer['reminder_ids']
+                        'products' => $this->generateProductLinks($customer['product_ids'])
                     ]
                 ]
             );
@@ -75,9 +76,10 @@ class ProcessBackInStockRecipient
                     'recipient_name'      => $customerModel->name,
                 ]
             );
+
+            $reminderIdsArray = array_merge($reminderIdsArray, explode(',', $customer['reminder_ids']));
         }
 
-        // After processing the chunk, update and dispatch the delivery channel
         UpdateEmailDeliveryChannel::run(
             $emailDeliveryChannel,
             [
@@ -88,11 +90,11 @@ class ProcessBackInStockRecipient
 
         SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
 
-        // Delete processed back_in_stock_reminders
-        // if (!empty($reminderIds)) {
-        //     BulkDeleteBackInStockReminder::run($reminderIds);
-        //     ShopHydratePendingBackInStockReminders::run($outbox->shop);
-        // }
+        if (!empty($reminderIdsArray)) {
+            BulkDeleteBackInStockReminder::run($reminderIdsArray);
+        }
+
+        ShopHydratePendingBackInStockReminders::run($emailBulkRun->shop);
     }
 
     public function generateProductLinks(string $productIds): string
