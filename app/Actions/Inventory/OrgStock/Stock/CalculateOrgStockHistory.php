@@ -31,6 +31,7 @@ class CalculateOrgStockHistory implements ShouldBeUnique
 
     public function handle(OrgStock $orgStock, ?Command $command = null): void
     {
+        return;
         $from = $this->getFirstAssociateDate($orgStock);
         if (!$from) {
             $command?->info('Skipping '.$orgStock->slug.' ('.$orgStock->id.') - no associate date');
