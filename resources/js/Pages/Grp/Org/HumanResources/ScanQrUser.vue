@@ -221,6 +221,8 @@ const openCamera = async () => {
 		const stream = await navigator.mediaDevices.getUserMedia({
 			video: {
 				facingMode: { ideal: "environment" },
+				width: { ideal: 1080 },
+				height: { ideal: 1920 },
 			},
 		})
 		stream.getTracks().forEach((track) => track.stop())
@@ -295,21 +297,21 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
 				start: `${dateOnly}T${data.working_hours.start}`,
 				end: `${dateOnly}T${data.working_hours.end}`,
 			}
-			} else {
-				workingHours.value = null
-			}
+		} else {
+			workingHours.value = null
+		}
 
-			const lateState = getLateClockInState({
-				scanTimeRaw: scanTimeRaw.value,
-				workingOfficeHourStart: workingHours.value?.start,
-			})
+		const lateState = getLateClockInState({
+			scanTimeRaw: scanTimeRaw.value,
+			workingOfficeHourStart: workingHours.value?.start,
+		})
 
-			if (clockType.value === "clock_in" && lateState.isLate) {
-				showLateAlertModal.value = true
-			} else {
-				showSuccessModal.value = true
-			}
-		} catch (e: any) {
+		if (clockType.value === "clock_in" && lateState.isLate) {
+			showLateAlertModal.value = true
+		} else {
+			showSuccessModal.value = true
+		}
+	} catch (e: any) {
 		notify({
 			title: trans("Failed Scan QR"),
 			text: e.response?.data?.message,
@@ -411,6 +413,12 @@ const submitNotes = async () => {
 		console.error(e)
 	}
 }
+
+const trackFunction = () => ({
+	facingMode: "environment",
+	width: { ideal: 1080 },
+	height: { ideal: 1440 },
+})
 </script>
 
 <template>
@@ -460,12 +468,13 @@ const submitNotes = async () => {
 				</div>
 
 				<div class="flex-1 flex items-center justify-center relative">
-					<div class="w-full max-w-xl aspect-square relative">
+					<div class="w-full max-w-xl relative" style="aspect-ratio: 3/4">
 						<QrcodeStream
 							@detect="onDetect"
 							@error="onStreamError"
 							:paused="loading"
-							:formats="['qr_code']" />
+							:formats="['qr_code']"
+							:track="trackFunction" />
 
 						<!-- TARGET OVERLAY -->
 						<div
@@ -514,7 +523,8 @@ const submitNotes = async () => {
 					{{ trans("Late Clock-in Alert") }}
 				</h3>
 
-				<p class="text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-3">
+				<p
+					class="text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-3">
 					{{ trans("You are late today.") }}
 				</p>
 
@@ -633,8 +643,8 @@ const submitNotes = async () => {
 
 .scanner-frame {
 	position: relative;
-	width: 260px;
-	height: 260px;
+	width: 280px;
+	height: 373px;
 }
 
 /* ===== CORNERS ===== */

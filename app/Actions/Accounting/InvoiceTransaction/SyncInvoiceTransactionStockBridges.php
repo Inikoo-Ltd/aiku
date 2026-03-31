@@ -40,29 +40,42 @@ class SyncInvoiceTransactionStockBridges implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $quantity = abs($invoiceTransaction->quantity ?? 0);
+        $orgStocks  = $product->orgStocks;
+        $stockCount = $orgStocks->count();
 
-        foreach ($product->orgStocks as $orgStock) {
+        if ($stockCount === 0) {
+            return;
+        }
+
+        $weights = [];
+        foreach ($orgStocks as $orgStock) {
             $stock = $orgStock->stock;
+            if (! $stock) {
+                continue;
+            }
+            $weights[$stock->id] = GetOrgStockValue::run($orgStock, $invoiceTransaction->date) * ($orgStock->pivot->quantity ?? 1);
+        }
 
+        $totalWeight = array_sum($weights);
+
+        foreach ($orgStocks as $orgStock) {
+            $stock = $orgStock->stock;
             if (! $stock) {
                 continue;
             }
 
-            $netAmount = ($orgStock->unit_commercial_value ?? 0) * $quantity;
-            $orgNetAmount = $invoiceTransaction->org_exchange ? $netAmount * $invoiceTransaction->org_exchange : 0;
-            $grpNetAmount = $invoiceTransaction->grp_exchange ? $netAmount * $invoiceTransaction->grp_exchange : 0;
+            $factor = $totalWeight > 0 ? $weights[$stock->id] / $totalWeight : 1 / $stockCount;
 
             InvoiceTransactionHasStock::updateOrCreate(
                 [
                     'invoice_transaction_id' => $invoiceTransaction->id,
-                    'stock_id' => $stock->id,
+                    'stock_id'               => $stock->id,
                 ],
                 [
                     'stock_family_id' => $stock->stock_family_id,
-                    'net_amount' => $netAmount,
-                    'org_net_amount' => $orgNetAmount,
-                    'grp_net_amount' => $grpNetAmount,
+                    'net_amount'      => $invoiceTransaction->net_amount * $factor,
+                    'org_net_amount'  => $invoiceTransaction->org_net_amount * $factor,
+                    'grp_net_amount'  => $invoiceTransaction->grp_net_amount * $factor,
                 ]
             );
         }

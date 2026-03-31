@@ -38,14 +38,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon $activity_date
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read Customer $customer
- * @property-read WebUser|null $webUser
- * @property-read WebsiteVisitor|null $websiteVisitor
- * @property-read Website $website
- * @property-read Webpage|null $webpage
+ * @property-read \App\Models\CRM\Customer $customer
  * @property-read Group $group
  * @property-read Organisation $organisation
  * @property-read Shop $shop
+ * @property-read \App\Models\CRM\WebUser|null $webUser
+ * @property-read Webpage|null $webpage
+ * @property-read Website $website
+ * @property-read WebsiteVisitor|null $websiteVisitor
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerWebActivity newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerWebActivity newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerWebActivity query()
