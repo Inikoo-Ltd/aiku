@@ -13,6 +13,10 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { computed, ref } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { useTabChange } from "@/Composables/tab-change"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faCalendarDay, faCalendarWeek, faCalendarAlt, faCalendar } from "@fal"
+
+library.add(faCalendarDay, faCalendarWeek, faCalendarAlt, faCalendar)
 
 const props = defineProps<{
     title: string

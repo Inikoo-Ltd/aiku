@@ -18,6 +18,8 @@ use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -40,11 +42,14 @@ class IndexOrganisationStockHistories extends OrgAction
         $perPage  = config('ui.table.records_per_page', 25);
 
         if ($period === 'daily') {
-            return DB::table('organisation_stock_histories')
+            $query = DB::table('organisation_stock_histories')
                 ->selectRaw('date as period, org_stock_value, grp_stock_value, org_stock_commercial_value, grp_stock_commercial_value, number_org_stocks, number_out_of_stock_org_stocks, number_location_org_stocks')
                 ->where('organisation_id', $organisation->id)
-                ->orderBy('date', 'desc')
-                ->paginate(perPage: $perPage, pageName: $pageName);
+                ->orderBy('date', 'desc');
+
+            $this->applyDateFilter($query, $period);
+
+            return $query->paginate(perPage: $perPage, pageName: $pageName)->appends(request()->query());
         }
 
         $truncUnit = match ($period) {
@@ -53,7 +58,7 @@ class IndexOrganisationStockHistories extends OrgAction
             'yearly'  => 'year',
         };
 
-        return DB::table('organisation_stock_histories')
+        $query = DB::table('organisation_stock_histories')
             ->selectRaw(
                 "DATE_TRUNC('{$truncUnit}', date) as period,
                 ROUND(AVG(org_stock_value::numeric), 2) as org_stock_value,
@@ -64,10 +69,37 @@ class IndexOrganisationStockHistories extends OrgAction
                 ROUND(AVG(number_out_of_stock_org_stocks)) as number_out_of_stock_org_stocks,
                 ROUND(AVG(number_location_org_stocks)) as number_location_org_stocks"
             )
-            ->where('organisation_id', $organisation->id)
+            ->where('organisation_id', $organisation->id);
+
+        $this->applyDateFilter($query, $period);
+
+        return $query
             ->groupByRaw("DATE_TRUNC('{$truncUnit}', date)")
             ->orderByRaw("DATE_TRUNC('{$truncUnit}', date) DESC")
-            ->paginate(perPage: $perPage, pageName: $pageName);
+            ->paginate(perPage: $perPage, pageName: $pageName)->appends(request()->query());
+    }
+
+    private function applyDateFilter(Builder $query, string $period): void
+    {
+        $filters  = request()->input('between', []);
+        $timezone = resolveTimezoneHeader();
+
+        if (!isset($filters['date'])) {
+            return;
+        }
+
+        $parts = explode('-', $filters['date']);
+
+        if (count($parts) !== 2) {
+            return;
+        }
+
+        [$start, $end] = array_map('trim', $parts);
+
+        $startDate = Carbon::createFromFormat('Ymd', $start, $timezone)->setTimezone('UTC')->startOfDay()->toDateTimeString();
+        $endDate   = Carbon::createFromFormat('Ymd', $end, $timezone)->setTimezone('UTC')->endOfDay()->toDateTimeString();
+
+        $query->whereBetween('date', [$startDate, $endDate]);
     }
 
     public function tableStructure(string $period = 'daily'): Closure
@@ -86,6 +118,7 @@ class IndexOrganisationStockHistories extends OrgAction
 
             $table
                 ->withLabelRecord([__('record'), __('records')])
+                ->betweenDates(['date'])
                 ->column(key: 'period', label: $periodLabel, canBeHidden: false, type: 'date')
                 ->column(key: 'number_org_stocks', label: __('Total SKUs'), canBeHidden: false, align: 'right')
                 ->column(key: 'number_out_of_stock_org_stocks', label: __('Out of Stock'), canBeHidden: false, align: 'right')
