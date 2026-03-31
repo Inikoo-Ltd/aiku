@@ -51,6 +51,7 @@ class GetCustomerTimeline
     private function appendHistoryEvents(Customer $customer, Carbon $cutoff, int $limit, Collection $events): void
     {
         History::where('customer_id', $customer->id)
+            ->where('auditable_type', 'Customer')
             ->where('created_at', '>=', $cutoff)
             ->latest()
             ->limit($limit)
