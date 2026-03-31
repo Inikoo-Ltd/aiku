@@ -53,9 +53,8 @@ class IndexOrganisationStockHistories extends OrgAction
             }
 
 
-
             $query = DB::table('organisation_stock_histories')
-                ->selectRaw('date as period, org_stock_value, grp_stock_value, org_stock_commercial_value, grp_stock_commercial_value, number_org_stocks, number_out_of_stock_org_stocks, number_location_org_stocks')
+                ->selectRaw('id,date as period, org_stock_value, grp_stock_value, org_stock_commercial_value, grp_stock_commercial_value, number_org_stocks, number_out_of_stock_org_stocks, number_location_org_stocks')
                 ->where('organisation_id', $organisation->id)
                 ->orderBy($orderByName, $orderDirection);
 

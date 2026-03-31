@@ -15,6 +15,7 @@ class OrganisationStockHistoriesResource extends JsonResource
     public function toArray($request): array
     {
         return [
+            'id'                             => $this->id,
             'period'                         => $this->period,
             'org_stock_value'                => $this->org_stock_value,
             'grp_stock_value'                => $this->grp_stock_value,

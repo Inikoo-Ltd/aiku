@@ -22,6 +22,7 @@ use App\Actions\Goods\Stock\UI\CreateStock;
 use App\Actions\Goods\StockFamily\ExportStockFamilies;
 use App\Actions\Goods\StockFamily\UI\CreateStockFamily;
 use App\Actions\Goods\StockFamily\UI\EditStockFamily;
+use App\Actions\Inventory\OrganisationStockHistory\UI\ShowOrganisationStockHistory;
 use App\Actions\Inventory\OrgStock\ExportOrgStocks;
 use App\Actions\Inventory\OrgStock\UI\EditOrgStock;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
@@ -47,6 +48,9 @@ Route::get('/', ShowInventoryDashboard::class)->name('dashboard');
 Route::prefix('stock-histories')->as('org_stock_histories.')->group(function () {
     Route::get('/', IndexOrganisationStockHistories::class)->name('index');
     Route::get('/export', ExportOrganisationStockHistories::class)->name('export');
+    Route::get('/{organisationStockHistory}', ShowOrganisationStockHistory::class)->name('show');
+
+
     Route::prefix('location-histories')->as('location_histories.')->group(function () {
         Route::get('/', IndexLocationOrgStockHistories::class)->name('index');
         Route::get('/export', ExportLocationOrgStockHistories::class)->name('export');

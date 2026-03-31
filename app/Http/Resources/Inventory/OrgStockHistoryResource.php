@@ -15,6 +15,8 @@ class OrgStockHistoryResource extends JsonResource
     public function toArray($request): array
     {
         return [
+            'code'=>$this->code,
+            'name'=>$this->name,
             'id'                    => $this->id,
             'date'                  => $this->date,
             'quantity_in_locations' => $this->quantity_in_locations,
