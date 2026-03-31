@@ -42,7 +42,7 @@ class ProcessReorderRemainderPerOutbox
 
         if ($totalItems > 0) {
             // create email bulk run
-            $emailBulkRun = $this->upsertEmailBulkRunForBasketLowStock($outbox, $currentDateTime->toDateTimeString());
+            $emailBulkRun = $this->upsertEmailBulkRuns($outbox, $currentDateTime->toDateTimeString());
         } else {
             return;
         }
