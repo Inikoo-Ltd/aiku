@@ -15,6 +15,15 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import WorkHourSelectionModal from "@/Components/Utils/WorkHourSelectionModal.vue"
 
+const pageProps = defineProps<{
+	activeTimeTracker?: any
+	clockingStatus?: string
+	todayTimesheet?: any
+	lastClockIn?: any
+	lastClockOut?: any
+	timezone?: string
+}>()
+
 library.add(faTimes, faCheck, faExclamationTriangle)
 
 interface DetectedCode {
@@ -61,6 +70,22 @@ const workingHours = ref<{ start: string; end: string } | null>(null)
 const isProcessing = ref(false)
 const shiftSchedules = ref<WorkSchedule[]>([])
 const selectedWorkScheduleId = ref<number | null>(null)
+
+// Status Computed Properties
+const isClockedIn = computed(() => pageProps.clockingStatus === "clocked_in")
+
+const statusClasses = computed(() => ({
+	container: isClockedIn.value
+		? "bg-green-50 border border-green-200"
+		: "bg-gray-50 border border-gray-200",
+	iconWrapper: isClockedIn.value ? "bg-green-100" : "bg-gray-200",
+	icon: isClockedIn.value ? "text-green-600" : "text-gray-500",
+	text: isClockedIn.value ? "text-green-800" : "text-gray-700",
+}))
+
+const statusText = computed(() =>
+	isClockedIn.value ? trans("You're currently clocked in") : trans("You're currently clocked out")
+)
 
 const isIOS = () => {
 	return /iPhone|iPad|iPod/i.test(navigator.userAgent)
@@ -402,6 +427,8 @@ const submitNotes = async () => {
 			text: trans(`submit notes`),
 			type: "success",
 		})
+
+		window.location.reload()
 	} catch (e: any) {
 		notify({
 			title: trans("Failed submit notes"),
@@ -414,6 +441,38 @@ const submitNotes = async () => {
 	}
 }
 
+// Formatting Helpers
+const formatDurationLocal = (seconds: number) => {
+	const hours = Math.floor(seconds / 3600)
+	const minutes = Math.floor((seconds % 3600) / 60)
+	if (hours === 0 && minutes === 0) return trans("0m")
+	return hours === 0 ? `${minutes}m` : `${hours}h ${minutes}m`
+}
+
+const formatInTimezone = (dateString: string | undefined, options: Intl.DateTimeFormatOptions) => {
+	if (!dateString) return "-"
+	return new Date(dateString).toLocaleString("en-US", {
+		...options,
+		timeZone: pageProps.timezone || "UTC",
+	})
+}
+
+const displayDate = computed(() =>
+	formatInTimezone(pageProps.todayTimesheet?.date, {
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	})
+)
+
+const displayTime = (date?: string) =>
+	formatInTimezone(date, {
+		hour: "numeric",
+		minute: "2-digit",
+		second: "2-digit",
+		hour12: true,
+	})
+
 const trackFunction = () => ({
 	facingMode: "environment",
 	width: { ideal: 1080 },
@@ -425,6 +484,79 @@ const trackFunction = () => ({
 	<div class="relative z-0">
 		<div v-if="!cameraOn" class="max-w-lg mx-auto p-6">
 			<h2 class="text-2xl font-bold mb-6">{{ trans("Employee Clocking") }}</h2>
+
+			<div
+				v-if="pageProps?.clockingStatus"
+				class="mb-6 p-4 rounded-lg"
+				:class="statusClasses.container">
+				<div class="flex items-center justify-between mb-3">
+					<div class="flex items-center gap-3">
+						<div
+							class="w-10 h-10 rounded-full flex items-center justify-center"
+							:class="statusClasses.iconWrapper">
+							<FontAwesomeIcon
+								:icon="isClockedIn ? faCheck : faTimes"
+								class="text-lg"
+								:class="statusClasses.icon" />
+						</div>
+						<div>
+							<p class="text-sm font-medium" :class="statusClasses.text">
+								{{ statusText }}
+							</p>
+							<p
+								v-if="isClockedIn && pageProps.activeTimeTracker?.starts_at"
+								class="text-xs text-gray-500">
+								{{ trans("Since") }}:
+								{{
+									useFormatTime(pageProps.activeTimeTracker.starts_at, {
+										formatTime: "hms",
+									})
+								}}
+							</p>
+						</div>
+					</div>
+					<div class="text-right">
+						<p class="text-xs text-gray-400">{{ trans("Date") }}</p>
+						<p class="text-sm font-semibold text-gray-700">
+							{{ displayDate }}
+						</p>
+					</div>
+				</div>
+
+				<div
+					v-if="pageProps.todayTimesheet?.start_at || pageProps.todayTimesheet?.end_at"
+					class="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200">
+					<div
+						v-if="pageProps.todayTimesheet?.start_at"
+						class="text-center p-2 rounded bg-white/50">
+						<p class="text-xs text-gray-400">{{ trans("First Clock In") }}</p>
+						<p class="text-sm font-semibold text-gray-800">
+							{{ displayTime(pageProps.todayTimesheet.start_at) }}
+						</p>
+					</div>
+					<div
+						v-if="pageProps.todayTimesheet?.end_at"
+						class="text-center p-2 rounded bg-white/50">
+						<p class="text-xs text-gray-400">{{ trans("Last Clock Out") }}</p>
+						<p class="text-sm font-semibold text-gray-800">
+							{{ displayTime(pageProps.todayTimesheet.end_at) }}
+						</p>
+					</div>
+				</div>
+
+				<div
+					v-if="pageProps.todayTimesheet"
+					class="flex gap-4 mt-3 pt-3 border-t border-gray-200">
+					<span class="text-xs text-gray-500">
+						{{ trans("Working") }}:
+						{{ formatDurationLocal(pageProps.todayTimesheet.working_duration || 0) }}
+					</span>
+					<span class="text-xs text-gray-500">
+						{{ trans("Breaks") }}:
+						{{ formatDurationLocal(pageProps.todayTimesheet.breaks_duration || 0) }}
+					</span>
+				</div>
+			</div>
 
 			<div class="mb-6">
 				<p class="text-sm font-semibold text-gray-500 mb-2">
@@ -613,7 +745,16 @@ const trackFunction = () => ({
 
 				<!-- ACTIONS -->
 				<div class="flex gap-2 pt-4">
-					<Button label="Close" type="exit" @click="showSuccessModal = false" full />
+					<Button
+						label="Close"
+						type="exit"
+						@click="
+							() => {
+								showSuccessModal = false
+								window.location.reload()
+							}
+						"
+						full />
 					<Button
 						label="Submit"
 						type="save"
