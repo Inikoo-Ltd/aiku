@@ -201,16 +201,39 @@ class GetOrganisationNavigation
         //     'topMenu' => [],
         // ];
 
-        $navigation['crm_agents'] = [
-            'label'   => __('CRM Agents'),
-            'tooltip' => __('CRM Agents'),
-            'icon'    => ['fal', 'fa-headset'],
-            'root'    => 'grp.org.crm.agents.show',
+        $navigation['chat'] = [
+            'label'   => __('Chat'),
+            'tooltip' => __('Chat'),
+            'icon'    => ['fal', 'comment-alt'],
+            'root'    => 'grp.org.crm.',
             'route'   => [
-                'name'       => 'grp.org.crm.agents.show',
+                'name'       => 'grp.org.crm.chat.dashboard',
                 'parameters' => [$organisation->slug],
             ],
-            'topMenu' => [],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label'   => __(key: 'Dashboard'),
+                        'tooltip' => __('Dashboard'),
+                        'icon'  => ['fal', 'comment-alt'],
+                        'root'  => 'grp.org.crm.chat.dashboard',
+                        'route' => [
+                            'name'       => 'grp.org.crm.chat.dashboard',
+                            'parameters' => [$organisation->slug],
+                        ]
+                    ],
+                    [
+                        'label'   => __('CRM Agents'),
+                        'tooltip' => __('CRM Agents'),
+                        'icon'    => ['fal', 'fa-headset'],
+                        'root'    => 'grp.org.crm.agents.show',
+                        'route'   => [
+                            'name'       => 'grp.org.crm.agents.show',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ]
+                ]
+            ]
         ];
 
         return $this->getSettingsNavs($user, $organisation, $navigation);

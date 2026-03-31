@@ -85,6 +85,7 @@ class ShowAgent extends OrgAction
                     [
                         'type'   => 'simple',
                         'simple' => [
+                            'icon'  => 'fal fa-headset',
                             'route' => [
                                 'name'       => 'grp.org.crm.agents.show',
                                 'parameters' => $routeParameters
