@@ -142,6 +142,10 @@ class IndexOrganisationStockHistories extends OrgAction
                         'title' => __('Stock History'),
                     ],
                 ],
+                'download_route' => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_histories.export',
+                    'parameters' => $request->route()->originalParameters(),
+                ],
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => OrganisationStockHistoriesTabsEnum::navigation(),

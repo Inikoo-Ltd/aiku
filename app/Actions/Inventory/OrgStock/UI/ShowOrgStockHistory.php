@@ -131,6 +131,10 @@ class ShowOrgStockHistory extends OrgAction
                     'title'         => $this->orgStock->code,
                     'subNavigation' => $subNavigation,
                 ],
+                'download_route' => [
+                    'name'       => $request->route()->getName().'.export',
+                    'parameters' => $request->route()->originalParameters(),
+                ],
                 'data' => OrgStockHistoryResource::collection($records),
             ]
         )->table($this->tableStructure());

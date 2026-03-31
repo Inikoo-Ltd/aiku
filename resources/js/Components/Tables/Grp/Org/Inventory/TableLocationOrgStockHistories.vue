@@ -39,9 +39,11 @@ function orgStockRoute(stockSlug: string): string {
         </template>
 
         <template #cell(stock_code)="{ item }">
-            <Link :href="orgStockRoute(item.stock_slug)" class="primaryLink">
+            <!-- Todo: fix link -->
+            <!-- <Link :href="orgStockRoute(item.stock_slug)" class="primaryLink">
                 {{ item.stock_code }}
-            </Link>
+            </Link> -->
+            {{ item.stock_code }}
         </template>
 
         <template #cell(stock_name)="{ item }">
