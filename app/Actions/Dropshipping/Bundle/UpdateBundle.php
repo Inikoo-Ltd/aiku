@@ -54,7 +54,7 @@ class UpdateBundle extends OrgAction
             }
             $mainMediaId = Arr::get($mainMedia, 'id');
 
-            if ($mainMediaId && $mainMediaId !== $product->image_id) {
+            if (($product->image_id = null) && $mainMediaId) {
                 UpdateProductImages::run($product, [
                     'image_id' => Arr::get($mainMedia, 'id'),
                 ]);
