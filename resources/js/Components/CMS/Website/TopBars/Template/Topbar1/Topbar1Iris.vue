@@ -123,7 +123,7 @@ watch(
 )
 
 const goToBundle = () => {
-    window.location.href = route('iris.redirect_bundle_to_retina')
+     window.location.href = '/redirect-bundle-to-retina'
 }
 </script>
 
