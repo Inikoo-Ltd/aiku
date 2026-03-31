@@ -37,7 +37,7 @@ class OrgStockHistoryExport implements FromQuery, WithMapping, WithHeadings, Sho
                 'number_locations',
                 'org_stock_value',
                 'grp_stock_value',
-                'unit_value',
+                'value_per_sku',
             ])
             ->orderBy('date', 'desc');
 
@@ -100,7 +100,7 @@ class OrgStockHistoryExport implements FromQuery, WithMapping, WithHeadings, Sho
             (string) ($row->number_locations ?? '0'),
             number_format((float) ($row->org_stock_value ?? 0), 2, '.', ''),
             number_format((float) ($row->grp_stock_value ?? 0), 2, '.', ''),
-            $row->unit_value !== null ? number_format((float) $row->unit_value, 2, '.', '') : '',
+            $row->value_per_sku !== null ? number_format((float) $row->value_per_sku, 2, '.', '') : '',
         ];
     }
 }

@@ -21,7 +21,7 @@ class OrgStockHistoryResource extends JsonResource
             'org_stock_value'       => $this->org_stock_value,
             'grp_stock_value'       => $this->grp_stock_value,
             'number_locations'      => $this->number_locations,
-            'unit_value'            => $this->unit_value,
+            'value_per_sku'         => $this->value_per_sku,
         ];
     }
 }

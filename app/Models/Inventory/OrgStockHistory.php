@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $org_stock_commercial_value
  * @property numeric $grp_stock_commercial_value
  * @property int $number_locations
- * @property float|null $unit_value
+ * @property float|null $value_per_sku
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Inventory\OrgStock $orgStock

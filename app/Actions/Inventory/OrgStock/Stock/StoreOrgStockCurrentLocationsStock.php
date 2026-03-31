@@ -104,7 +104,7 @@ class StoreOrgStockCurrentLocationsStock
                 'grp_stock_value'               => 0,
                 'org_stock_commercial_value'    => 0,
                 'grp_stock_commercial_value'    => 0,
-                'unit_value'                    => 0
+                'value_per_sku'                    => 0
             ]
         );
 

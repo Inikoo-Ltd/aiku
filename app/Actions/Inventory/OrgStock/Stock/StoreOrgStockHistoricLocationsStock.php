@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock\Stock;
 
+use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\Inventory\OrganisationStockHistory\Hydrators\OrganisationStockHistoryHydrateFromOrgStockHistories;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
@@ -29,12 +30,15 @@ class StoreOrgStockHistoricLocationsStock
 
     public function handle(OrgStock $orgStock, Carbon $date, ?Command $command = null): array
     {
+        $exchangeRate = GetHistoricCurrencyExchange::run($orgStock->organisation->currency, $orgStock->group->currency, $date);
+
+
         $orgStockLocationData = [];
         $locationsIds         = $this->getLocationsIds($orgStock, $date);
-
+        $costPerSku           = $this->getCostPerSku($orgStock, $date);
         foreach ($locationsIds as $locationId) {
-
             $location = Location::withTrashed()->find($locationId);
+
             if ($location) {
                 if ($this->debug) {
                     $command?->warn("Checking location $location->slug");
@@ -42,18 +46,28 @@ class StoreOrgStockHistoricLocationsStock
                 $wasLocationValid = $this->wasLocationValid($orgStock, $location, $date, $command);
                 if ($wasLocationValid) {
                     $quantity = $this->getStockQuantity($orgStock, $location, $date);
+
+
                     $command?->line('Stock on '.$location->slug.' ('.$location->id.')  '.$date->format('Y-m-d').'  '.$quantity);
                     $orgStockLocationData[] = [
-                        'location_id' => $location->id,
-                        'quantity'    => $quantity,
+                        'location_id'     => $location->id,
+                        'quantity'        => $quantity,
+                        'org_stock_value' => $quantity * $costPerSku,
+                        'grp_stock_value' => $quantity * $costPerSku * $exchangeRate,
+
                     ];
                 }
             }
         }
+
         $orgStockQuantity = 0;
+        $orgStockValue    = 0;
+        $grpStockValue    = 0;
         foreach ($orgStockLocationData as $orgStockLocation) {
             if ($orgStockLocation['quantity'] > 0) {
                 $orgStockQuantity += $orgStockLocation['quantity'];
+                $orgStockValue    += $orgStockLocation['org_stock_value'];
+                $grpStockValue    += $orgStockLocation['grp_stock_value'];
             }
         }
 
@@ -101,11 +115,11 @@ class StoreOrgStockHistoricLocationsStock
                 'organisation_stock_history_id' => $organisationStockHistory->id,
                 'quantity_in_locations'         => $orgStockQuantity,
                 'number_locations'              => count($orgStockLocationData),
-                'org_stock_value'               => 0,
-                'grp_stock_value'               => 0,
+                'org_stock_value'               => $orgStockValue,
+                'grp_stock_value'               => $grpStockValue,
                 'org_stock_commercial_value'    => 0,
                 'grp_stock_commercial_value'    => 0,
-                'unit_value'                    => 0
+                'value_per_sku'                 => $costPerSku,
             ]
         );
 
@@ -127,6 +141,30 @@ class StoreOrgStockHistoricLocationsStock
         OrganisationStockHistoryHydrateFromOrgStockHistories::dispatch($organisationStockHistory->id)->delay(30);
 
         return $orgStockLocationData;
+    }
+
+    public function getCostPerSku(OrgStock $orgStock, Carbon $date)
+    {
+        $lastPurchase = OrgStockMovement::select(['cost_per_sku'])
+            ->where('org_stock_id', $orgStock->id)
+            ->where('type', OrgStockMovementTypeEnum::PURCHASE->value)
+            ->whereNot('cost_per_sku')
+            ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))->orderBy('date', 'desc')->first();
+
+        if ($lastPurchase && $lastPurchase->cost_per_sku > 0) {
+            return $lastPurchase->cost_per_sku;
+        }
+
+        $closestPurchase = OrgStockMovement::select(['cost_per_sku'])
+            ->where('org_stock_id', $orgStock->id)
+            ->where('type', OrgStockMovementTypeEnum::PURCHASE->value)
+            ->whereNot('cost_per_sku')
+            ->where('date', '>', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))->orderBy('date')->first();
+        if ($closestPurchase && $closestPurchase->cost_per_sku > 0) {
+            return $closestPurchase->cost_per_sku;
+        }
+
+        return $orgStock->unit_cost * $orgStock->packed_in;
     }
 
     public function getStockQuantity(OrgStock $orgStock, Location $location, Carbon $date)
@@ -186,7 +224,6 @@ class StoreOrgStockHistoricLocationsStock
 
     private function getLocationsIds(OrgStock $orgStock, Carbon $date): array
     {
-
         return OrgStockMovement::where('org_stock_id', $orgStock->id)
             ->where('class', OrgStockMovementClassEnum::HELPER)
             ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))

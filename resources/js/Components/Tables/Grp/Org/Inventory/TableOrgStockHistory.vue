@@ -37,8 +37,8 @@ const locale = inject("locale", aikuLocaleStructure)
             <span class="tabular-nums">{{ locale.number(item.org_stock_value) }}</span>
         </template>
 
-        <template #cell(unit_value)="{ item }">
-            <span class="tabular-nums">{{ item.unit_value != null ? locale.number(item.unit_value) : '-' }}</span>
+        <template #cell(value_per_sku)="{ item }">
+            <span class="tabular-nums">{{ item.value_per_sku != null ? locale.number(item.value_per_sku) : '-' }}</span>
         </template>
     </Table>
 </template>
