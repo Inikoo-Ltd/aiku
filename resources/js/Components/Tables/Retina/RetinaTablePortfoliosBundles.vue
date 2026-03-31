@@ -58,6 +58,7 @@ import { InputText, Message, Dialog, Textarea, Checkbox } from "primevue"
 import QuantitySelector from "@/Components/Dropshipping/QuantitySelector.vue"
 import { EditorContent } from "@tiptap/vue-3"
 import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import { useBundle } from "@/Composables/useBundle"
 
 library.add(
 	faSparkles,
@@ -808,6 +809,8 @@ const generateAIImages = async () => {
 	}
 }
 
+const bundle = useBundle(props.bundle_routes)
+
 const submitBundle = async () => {
 	try {
 		isStoringBundle.value = true
@@ -826,12 +829,10 @@ const submitBundle = async () => {
 			payloadItems
 		}
 
-		console.log("payload", payload)
 		const routeParams = {
 			...props.bundle_routes.update.parameters,
 			bundle: selectedEditProduct?.value.id
 		}
-
 		router.patch(
 			route(props.bundle_routes.update.name, routeParams),
 			payload,
