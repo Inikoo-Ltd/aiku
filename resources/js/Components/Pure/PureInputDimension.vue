@@ -58,6 +58,7 @@ const toDatabase = (val: any) => {
 }
 
 // Keep internal state - initially convert from modelValue to display format
+
 const localValue = ref(toDisplay(props.modelValue))
 
 // Update localValue if parent changes (e.g. when loading existing data), but only if the new value is actually different from the current localValue to avoid overwriting user input
