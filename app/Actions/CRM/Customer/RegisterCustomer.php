@@ -74,8 +74,8 @@ class RegisterCustomer extends OrgAction
             return [$customer, $webUser];
         });
 
-        SendCustomerWelcomeEmail::run($customer);
-        SendNewCustomerNotification::run($customer);
+        SendCustomerWelcomeEmail::dispatch($customer);
+        SendNewCustomerNotification::dispatch($customer);
         ShopHydrateCrmStats::run($shop);
 
 

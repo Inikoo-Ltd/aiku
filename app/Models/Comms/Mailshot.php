@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -46,7 +47,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon $date
  * @property \Illuminate\Support\Carbon|null $ready_at
  * @property \Illuminate\Support\Carbon|null $scheduled_at
- * @property string|null $recipients_stored_at
+ * @property \Illuminate\Support\Carbon|null $recipients_stored_at
  * @property \Illuminate\Support\Carbon|null $start_sending_at
  * @property \Illuminate\Support\Carbon|null $sent_at
  * @property \Illuminate\Support\Carbon|null $cancelled_at
@@ -67,7 +68,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_second_wave
  * @property int|null $parent_mailshot_id
  * @property int $send_delay_hours
- * @property string|null $recipients_prepared_at
+ * @property \Illuminate\Support\Carbon|null $recipients_prepared_at
  * @property int|null $recipients_count
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\Comms\EmailDeliveryChannel> $channels
@@ -100,17 +101,19 @@ class Mailshot extends Model implements Auditable
     use HasSlug;
 
     protected $casts = [
-        'recipients_recipe' => 'array',
-        'data'              => 'array',
-        'type'              => MailshotTypeEnum::class,
-        'state'             => MailshotStateEnum::class,
-        'date'              => 'datetime',
-        'ready_at'          => 'datetime',
-        'scheduled_at'      => 'datetime',
-        'start_sending_at'  => 'datetime',
-        'sent_at'           => 'datetime',
-        'cancelled_at'      => 'datetime',
-        'stopped_at'        => 'datetime',
+        'recipients_recipe'      => 'array',
+        'data'                   => 'array',
+        'type'                   => MailshotTypeEnum::class,
+        'state'                  => MailshotStateEnum::class,
+        'date'                   => 'datetime',
+        'ready_at'               => 'datetime',
+        'scheduled_at'           => 'datetime',
+        'recipients_prepared_at' => 'datetime',
+        'recipients_stored_at'   => 'datetime',
+        'start_sending_at'       => 'datetime',
+        'sent_at'                => 'datetime',
+        'cancelled_at'           => 'datetime',
+        'stopped_at'             => 'datetime',
     ];
 
     protected $attributes = [
@@ -171,9 +174,9 @@ class Mailshot extends Model implements Auditable
         return $this->hasOne(MailshotStats::class);
     }
 
-    public function dispatchedEmails(): MorphMany
+    public function dispatchedEmails(): BelongsToMany
     {
-        return $this->morphMany(DispatchedEmail::class, 'parent');
+        return $this->belongsToMany(DispatchedEmail::class, 'mailshot_has_dispatched_emails');
     }
 
     public function email(): MorphOne

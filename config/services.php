@@ -26,65 +26,66 @@ return [
     ],
 
     'ses' => [
-        'key'    => env('AWS_ACCESS_KEY_ID'),
-        'secret' => env('AWS_SECRET_ACCESS_KEY'),
-        'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+        'key'               => env('AWS_ACCESS_KEY_ID'),
+        'secret'            => env('AWS_SECRET_ACCESS_KEY'),
+        'region'            => env('AWS_DEFAULT_REGION', 'us-east-1'),
+        'configuration_set' => env('AWS_CONFIGURATION_SET'),
     ],
 
-    'tiktok' => [
-        'url'    => env('TIKTOK_BUSINESS_URL'),
-        'base_url'    => env('TIKTOK_BASE_URL'),
-        'auth_url'    => env('TIKTOK_AUTH_URL'),
-        'redirect_uri' => env('TIKTOK_REDIRECT_URI'),
-        'client_id' => env('TIKTOK_CLIENT_ID'),
+    'tiktok'    => [
+        'url'           => env('TIKTOK_BUSINESS_URL'),
+        'base_url'      => env('TIKTOK_BASE_URL'),
+        'auth_url'      => env('TIKTOK_AUTH_URL'),
+        'redirect_uri'  => env('TIKTOK_REDIRECT_URI'),
+        'client_id'     => env('TIKTOK_CLIENT_ID'),
         'client_secret' => env('TIKTOK_CLIENT_SECRET'),
-        'scopes' => env('TIKTOK_SCOPES')
+        'scopes'        => env('TIKTOK_SCOPES')
     ],
-    'allegro' => [
-        'base_url'    => env('ALLEGRO_BASE_URL'),
-        'auth_url'    => env('ALLEGRO_AUTH_URL'),
-        'client_id' => env('ALLEGRO_CLIENT_ID'),
+    'allegro'   => [
+        'base_url'      => env('ALLEGRO_BASE_URL'),
+        'auth_url'      => env('ALLEGRO_AUTH_URL'),
+        'client_id'     => env('ALLEGRO_CLIENT_ID'),
         'client_secret' => env('ALLEGRO_CLIENT_SECRET')
     ],
-    'ebay' => [
-        'client_id' => env('EBAY_CLIENT_ID'),
-        'client_secret' => env('EBAY_CLIENT_SECRET'),
-        'sandbox' => env('EBAY_SANDBOX', true),
-        'redirect_uri' => env('EBAY_REDIRECT_URI'),
+    'ebay'      => [
+        'client_id'       => env('EBAY_CLIENT_ID'),
+        'client_secret'   => env('EBAY_CLIENT_SECRET'),
+        'sandbox'         => env('EBAY_SANDBOX', true),
+        'redirect_uri'    => env('EBAY_REDIRECT_URI'),
         'redirect_uri_es' => env('EBAY_REDIRECT_URI_ES'),
     ],
-    'amazon' => [
-        'client_id' => env('AMAZON_CLIENT_ID'),
-        'app_id' => env('AMAZON_APP_ID'),
+    'amazon'    => [
+        'client_id'     => env('AMAZON_CLIENT_ID'),
+        'app_id'        => env('AMAZON_APP_ID'),
         'client_secret' => env('AMAZON_CLIENT_SECRET'),
-        'region' => env('AMAZON_REGION', 'na'),
-        'sandbox' => env('AMAZON_SANDBOX', true)
+        'region'        => env('AMAZON_REGION', 'na'),
+        'sandbox'       => env('AMAZON_SANDBOX', true)
     ],
     'apple_pay' => [
         'verification_string' => env('APPLE_PAY_VERIFICATION_STRING'),
     ],
-    'google' => [
-        'client_id' => env('GOOGLE_CLIENT_ID'),
+    'google'    => [
+        'client_id'     => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
     ],
-    'slack' => [
+    'slack'     => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
-            'channel' => env('SLACK_CHANNEL', '#general'),
+            'channel'              => env('SLACK_CHANNEL', '#general'),
         ],
     ],
     // Atlassian Jira Service Desk (embedded widget)
-    'jsd' => [
+    'jsd'       => [
         'widget_key' => env('JSD_WIDGET_KEY'),
     ],
 
-     'geocoding' => [
+    'geocoding' => [
         'provider' => env('GEOCODING_PROVIDER', 'nominatim'), // nominatim, google,
     ],
 
     'nominatim' => [
-        'url' => env('NOMINATIM_URL', 'https://nominatim.openstreetmap.org'),
-        'user_agent' => env('NOMINATIM_USER_AGENT', env('APP_NAME') . ' (noreply@inikoo.com)'),
+        'url'        => env('NOMINATIM_URL', 'https://nominatim.openstreetmap.org'),
+        'user_agent' => env('NOMINATIM_USER_AGENT'),
     ],
 
     'google_maps' => [

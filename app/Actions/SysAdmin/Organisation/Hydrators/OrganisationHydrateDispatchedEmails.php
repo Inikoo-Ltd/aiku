@@ -8,28 +8,35 @@
 
 namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
-use App\Actions\Traits\WithEnumStats;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class OrganisationHydrateDispatchedEmails implements ShouldBeUnique
 {
     use AsAction;
-    use WithEnumStats;
 
 
-    public string $jobQueue = 'low-priority';
-
-    public function getJobUniqueId(Organisation $organisation): string
+    public function getJobUniqueId(?int $organisationId): string
     {
-        return $organisation->id;
+        return $organisationId ?? 'empty';
     }
 
-    public function handle(Organisation $organisation): void
+    public function handle(?int $organisationId): void
     {
+        if (!$organisationId) {
+            return;
+        }
+        $organisation = Organisation::find($organisationId);
+        if (!$organisation) {
+            return;
+        }
+
         $stats = [
-            'number_dispatched_emails' => $organisation->dispatchedEmails()->count(),
+            'number_dispatched_emails' => DB::table('outboxes')->where('organisation_id', $organisation->id)
+                ->leftJoin('outbox_stats', 'outboxes.id', '=', 'outbox_stats.outbox_id')
+                ->sum('number_dispatched_emails'),
         ];
 
         $organisation->commsStats()->update($stats);

@@ -53,8 +53,9 @@ class SubmitOrder extends OrgAction
         $oldState = $order->state;
 
         $modelData = [
-            'state'  => OrderStateEnum::SUBMITTED,
-            'status' => OrderStatusEnum::PROCESSING,
+            'state'          => OrderStateEnum::SUBMITTED,
+            'status'         => OrderStatusEnum::PROCESSING,
+            'internal_notes' => $order->customer->warehouse_internal_notes,
         ];
 
         $date = now();
@@ -73,14 +74,14 @@ class SubmitOrder extends OrgAction
                 if ($transaction->submitted_at == null) {
                     data_set($transactionData, 'submitted_at', $date);
                     data_set($transactionData, 'status', TransactionStatusEnum::PROCESSING);
-                    data_set($transactionData, 'submitted_quantity_ordered', $transaction->quantity_ordered); //Copy quantity
+                    data_set($transactionData, 'submitted_quantity_ordered', $transaction->quantity_ordered);
+                    data_set($transactionData, 'submitted_gross_amount', $transaction->gross_amount);
+                    data_set($transactionData, 'submitted_net_amount', $transaction->net_amount);
+                    data_set($transactionData, 'submitted_discount_factor', $transaction->current_discount_factor);
                 }
 
                 $transaction->update($transactionData);
 
-                if ($transaction->asset) {
-                    $transaction->asset->orderingStats()->update(['last_order_submitted_at' => $transaction->submitted_at]);
-                }
             }
         }
 
@@ -133,7 +134,17 @@ class SubmitOrder extends OrgAction
             $grGiftOffer = Offer::find($grGiftOfferId);
         }
 
+        $eligible = false;
+
         if ($grGiftOffer) {
+            $minAmount = Arr::get($grGiftOffer->trigger_data, 'min_amount', 100000);
+            if ($order->gross_amount >= $minAmount) {
+                $eligible = true;
+            }
+        }
+
+
+        if ($grGiftOffer && $eligible) {
             $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');
             if (!$selectedGrGift) {
                 $grGiftsData = Arr::get($offersData, 'gr.gifts_products');

@@ -20,28 +20,30 @@ const layout: any = inject("layout", {});
 library.add(faPlus, faSave, fadSave, faSpinner, faUpload, faDownload, falPlus, faRocket, faArrowLeft, faPencil, faTrashAlt, faSpinnerThird, faTrashUndoAlt, faPersonDolly, faFileExport, faClipboard, faHistory, faListAlt, faTimes, faThLarge, faMinus, faExternalLink);
 
 
-const props = withDefaults(defineProps<{
-  style?: string | object
-  size?: string
-  icon?: Icon | string | string[] | IconDefinition
-  iconRight?: Icon | string | string[] | IconDefinition
-  action?: string
-  label?: string
-  full?: boolean
-  capitalize?: boolean
-  tooltip?: string
-  loading?: boolean
-  type?: string
-  disabled?: boolean
-  noHover?: boolean
-  injectStyle? : object|null
-  iconRightRotation?: number | string
-  iconRotation?: number | string
-}>(), {
-  size: "m",
-  capitalize: false,
-  loading: false
-});
+	const props = withDefaults(defineProps<{
+	  style?: string | object
+	  size?: string
+	  icon?: Icon | string | string[] | IconDefinition
+	  iconRight?: Icon | string | string[] | IconDefinition
+	  action?: string
+	  label?: string
+	  full?: boolean
+	  capitalize?: boolean
+	  tooltip?: string
+	  loading?: boolean
+	  type?: string
+	  nativeType?: "button" | "submit" | "reset"
+	  disabled?: boolean
+	  noHover?: boolean
+	  injectStyle? : object|null
+	  iconRightRotation?: number | string
+	  iconRotation?: number | string
+	}>(), {
+	  size: "m",
+	  capitalize: false,
+	  loading: false,
+	  nativeType: "button"
+	});
 
 
 let styleClass: string;
@@ -62,6 +64,8 @@ else if (props.style == "delete" || props.style == "negative" || props.style == 
 else if (props.style == "positive" || props.type == "positive") styleClass = `${ props.noHover ? "cursor-default" : "hover:text-green-800 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2" } border border-green-500 text-green-600 disabled:bg-green-200/75 `;
 else if (props.style == "warning" || props.type == "warning") styleClass = "border border-amber-500 text-amber-600 hover:text-amber-800 bg-amber-10 hover:bg-amber-200 disabled:bg-amber-300/75 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:ring-offset-2";
 
+else if (props.style == "yellow" || props.type == "yellow")
+  styleClass = "bg-yellow-400 hover:bg-yellow-500 border border-yellow-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
 else if (props.style == "white" || props.type == "white") styleClass = "bg-white hover:bg-gray-300 text-gray-600";
 else if (props.style == "red" || props.type == "red") styleClass = "bg-red-500 hover:bg-red-600 border border-red-500 hover:border-red-600 text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:text-red-300 disabled:bg-red-600";
 else if (props.style == "green" || props.type == "green") styleClass = `bg-green-500 ${ props.noHover ? "" : "hover:bg-green-600" } border border-green-600  text-white focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2`;
@@ -164,14 +168,16 @@ const getActionIcon = (icon: any) => {
 
 </script>
 
-<template>
-  <button :style="injectStyle ?? {}"
-          class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed"
-          :class="[
-            full ? 'w-full justify-center' : 'xmin-w-max',
-            styleClass,
-            sizeClass
-        ]"
+	<template>
+	  <button
+	          :style="injectStyle ?? {}"
+	          :type="nativeType"
+	          class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed"
+	          :class="[
+	            full ? 'w-full justify-center' : 'xmin-w-max',
+	            styleClass,
+	            sizeClass
+	        ]"
 
           :disabled="loading || disabled || style == 'disabled' || type == 'disabled'"
           v-tooltip="tooltip ?? undefined"

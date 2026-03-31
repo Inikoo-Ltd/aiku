@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { inject, ref, computed, nextTick, onMounted, watch, onBeforeUnmount } from "vue"
-
+import { trans } from "laravel-vue-i18n"
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faCube, faLink, faChevronCircleLeft, faChevronCircleRight } from '@fortawesome/free-solid-svg-icons'
 import { faStar, faCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
-import { Navigation, Autoplay, Thumbs, FreeMode } from 'swiper/modules'
+import { Navigation, Autoplay, Thumbs, FreeMode, Mousewheel } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/free-mode'
@@ -16,7 +16,6 @@ import Family3Render from './Families3Render.vue'
 import { getStyles } from '@/Composables/styles'
 import { sendMessageToParent } from '@/Composables/Workshop'
 import LinkIris from "@/Components/Iris/LinkIris.vue"
-import { fontWeight } from "html2canvas/dist/types/css/property-descriptors/font-weight"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -34,6 +33,10 @@ const props = defineProps<{
     settings?: { per_row?: { desktop?: number, tablet?: number, mobile?: number } }
     container?: any
     chip?: any
+    webpage_data?: {
+      webpage_type : string
+      overview_url : string
+    }
   }
   webpageData?: any
   blockData?: Record<string, any>
@@ -50,6 +53,14 @@ const swiperInstance = ref<any>(null)
 const refreshTrigger = ref(0)
 const containerRef = ref<HTMLElement | null>(null)
 const maxHeight = ref(0)
+
+const isBeginning = ref(true)
+const isEnd = ref(false)
+
+const updateEdges = (swiper: any) => {
+  isBeginning.value = swiper.isBeginning
+  isEnd.value = swiper.isEnd
+}
 
 const allItems = computed(() => [
   ...(props.fieldValue?.families || []),
@@ -148,7 +159,7 @@ async function computeMaxHeight() {
 
 let resizeHandler = () => {
   clearTimeout((resizeHandler as any)._t)
-  ;(resizeHandler as any)._t = setTimeout(() => computeMaxHeight(), 120)
+    ; (resizeHandler as any)._t = setTimeout(() => computeMaxHeight(), 120)
 }
 
 onMounted(async () => {
@@ -167,68 +178,72 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
   await nextTick()
   await computeMaxHeight()
 }, { deep: true })
+console.log('families',props)
 </script>
 
 <template>
-  <div  :id="fieldValue?.id ? fieldValue?.id  : 'families-3'"  component="families-3" :key="refreshTrigger" ref="containerRef">
-    <div
-      v-if="allItems.length"
-      class="px-4 py-10"
-      :style="{
-        ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
-        ...getStyles(props.fieldValue.container?.properties, props.screenType)
-      }"
-      @click="activateBlock"
-    >
-      <div class="flex items-center gap-4 w-full">
-        <div class="relative flex-1 overflow-hidden">
+  <div :id="fieldValue?.id ? fieldValue?.id : 'families-3'" component="families-3" :key="refreshTrigger"
+    ref="containerRef">
+    <div v-if="allItems.length" class="px-4 py-10" :style="{
+      ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
+      ...getStyles(props.fieldValue.container?.properties, props.screenType)
+    }" @click="activateBlock">
+      <div class="relative flex-1 overflow-hidden group">
 
-          <button
-            v-if="props.screenType !== 'mobile' && swiperInstance?.allowSlidePrev"
-            ref="prevEl"
-            class="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full text-gray-500"
-            @click.stop="scrollLeft"
-            type="button"
-          >
-            <FontAwesomeIcon :icon="['fas','chevron-circle-left']" />
-          </button>
+        <button v-if="props.screenType !== 'mobile' && !isBeginning" ref="prevEl"
+          class="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          @click.stop="scrollLeft" type="button">
+          <FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" class="text-4xl" />
+        </button>
 
-          <div class="swiper-mask">
-            <Swiper
-              @swiper="(s:any)=> swiperInstance = s"
-              :modules="[Autoplay, Thumbs, FreeMode, Navigation]"
-              :loop="props.screenType !== 'mobile'"
-              :slides-per-view="perRow"
-              :space-between="spaceBetween"
-              :freeMode="true"
-              :grabCursor="props.screenType === 'mobile'"
-              :touchRatio="1.2"
-              navigation
-              class="w-full swiper-inner"
-            >
-              <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="flex h-auto">
-                <LinkIris :href="item.url" class="w-full h-full flex">
-                  <Family3Render class="family-item w-full h-full" :data="item" :style="{
+        <div class="swiper-mask px-8">
+          <Swiper @swiper="(s: any) => { swiperInstance = s; updateEdges(s) }" @slideChange="updateEdges"
+            @reachBeginning="updateEdges" @reachEnd="updateEdges"
+            :modules="[Autoplay, Thumbs, FreeMode, Navigation, Mousewheel]" :loop="false" :slides-per-view="perRow"
+            :space-between="spaceBetween" :freeMode="true" :grabCursor="true" :touchRatio="1.2" navigation
+            class="w-full swiper-inner" :mousewheel="{
+              forceToAxis: true,
+              releaseOnEdges: true,
+              sensitivity: 1
+            }">
+
+
+            <SwiperSlide class="flex !w-[220px]" v-if="fieldValue?.webpage_data?.webpage_type == 'department'" >
+              <LinkIris :href="fieldValue?.webpage_data?.overview_url" type="internal" class="w-full h-full flex">
+                <div
+                  class="family-item w-full h-full cursor-pointer flex flex-col rounded-xl overflow-hidden border bg-white hover:bg-gray-50 transition-all"
+                  :style="{
                     ...getStyles(props.fieldValue?.chip?.container?.properties, props.screenType),
-                    fontWeight: 600
-                  }" :screenType="props.screenType" />
-                </LinkIris>
-              </SwiperSlide>
+                    fontWeight: 600,
+                    minHeight: maxHeight ? maxHeight + 'px' : undefined
+                  }">
+                  <!-- TOP AREA (fill space like image) -->
+                  <div class="flex-1 flex items-center justify-center bg-gray-100">
+                    <span class="text-sm font-semibold">
+                      {{trans("View All")}}
+                    </span>
+                  </div>
+                </div>
+              </LinkIris>
+            </SwiperSlide>
 
-            </Swiper>
-          </div>
+            <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="flex h-auto">
 
-          <button
-            v-if="props.screenType !== 'mobile' && swiperInstance?.allowSlideNext"
-            ref="nextEl"
-            class="absolute right-0 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full text-gray-500"
-            @click.stop="scrollRight"
-            type="button"
-          >
-            <FontAwesomeIcon :icon="['fas','chevron-circle-right']" />
-          </button>
-
+              <LinkIris :href="item.url" class="w-full h-full flex">
+                <Family3Render class="family-item w-full h-full" :data="item" :style="{
+                  ...getStyles(props.fieldValue?.chip?.container?.properties, props.screenType),
+                  fontWeight: 600
+                }" :screenType="props.screenType" />
+              </LinkIris>
+            </SwiperSlide>
+          </Swiper>
         </div>
+
+        <button v-if="props.screenType !== 'mobile' && swiperInstance?.allowSlideNext && !isEnd" ref="nextEl" class="absolute right-0 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full text-gray-800
+           opacity-0 group-hover:opacity-100 transition-opacity duration-200" @click.stop="scrollRight" type="button">
+          <FontAwesomeIcon :icon="['fas', 'chevron-circle-right']" class="text-4xl" />
+        </button>
+
       </div>
     </div>
   </div>
@@ -236,21 +251,21 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
 
 <style scoped>
 :deep(.swiper-button-prev),
-:deep(.swiper-button-next){
-  display:none!important;
+:deep(.swiper-button-next) {
+  display: none !important;
 }
 
 
 
-.swiper-inner{
-  box-sizing:border-box;
+.swiper-inner {
+  box-sizing: border-box;
 }
 
 /* mobile optimization */
-@media (max-width:768px){
-  .swiper-inner{
-    padding-left:0;
-    padding-right:0;
+@media (max-width:768px) {
+  .swiper-inner {
+    padding-left: 0;
+    padding-right: 0;
   }
 }
 </style>

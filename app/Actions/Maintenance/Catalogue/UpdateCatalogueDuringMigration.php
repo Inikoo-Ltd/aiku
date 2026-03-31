@@ -17,6 +17,7 @@ use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateFamil
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateStatus;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterFamilies;
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterSubDepartmentHydrateSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategoryWebImages;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Shop;
@@ -47,6 +48,7 @@ class UpdateCatalogueDuringMigration
                 MasterDepartmentHydrateMasterAssets::run($masterProductCategory);
                 MasterDepartmentHydrateDepartments::run($masterProductCategory);
                 MasterDepartmentHydrateMasterSubDepartments::run($masterProductCategory);
+                MasterSubDepartmentHydrateSubDepartment::run($masterProductCategory);
                 MasterFamilyHydrateMasterAssets::run($masterProductCategory);
                 MasterFamilyHydrateFamilies::run($masterProductCategory);
                 MasterFamilyHydrateStatus::run($masterProductCategory);

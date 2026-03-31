@@ -45,10 +45,6 @@ class DeleteCollection extends OrgAction
                 $collection->stats->delete();
             }
 
-            if ($collection->salesIntervals) {
-                $collection->salesIntervals->delete();
-            }
-
             if ($collection->orderingStats) {
                 $collection->orderingStats->delete();
             }

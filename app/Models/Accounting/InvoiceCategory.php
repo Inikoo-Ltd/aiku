@@ -45,9 +45,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Currency $currency
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\Invoice> $invoices
- * @property-read \App\Models\Accounting\InvoiceCategoryOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
- * @property-read \App\Models\Accounting\InvoiceCategorySalesIntervals|null $salesIntervals
  * @property-read \App\Models\Accounting\InvoiceCategoryStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\InvoiceCategoryTimeSeries> $timeSeries
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceCategory newModelQuery()
@@ -103,16 +101,6 @@ class InvoiceCategory extends Model implements Auditable
     public function stats(): HasOne
     {
         return $this->hasOne(InvoiceCategoryStats::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(InvoiceCategorySalesIntervals::class);
-    }
-
-    public function orderingIntervals(): HasOne
-    {
-        return $this->hasOne(InvoiceCategoryOrderingIntervals::class);
     }
 
     public function invoices(): HasMany

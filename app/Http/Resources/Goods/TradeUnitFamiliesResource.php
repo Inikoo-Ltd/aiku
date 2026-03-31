@@ -24,6 +24,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $sales_grp_currency_external_ly
  * @property mixed $invoices
  * @property mixed $invoices_ly
+ * @property mixed $health_rank
  */
 class TradeUnitFamiliesResource extends JsonResource
 {
@@ -45,6 +46,7 @@ class TradeUnitFamiliesResource extends JsonResource
             'invoices'                               => $this->invoices ?? 0,
             'invoices_ly'                            => $this->invoices_ly ?? 0,
             'invoices_delta'                         => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'health_rank'                       => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
         ];
     }
 

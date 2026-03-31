@@ -80,6 +80,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 		<DashboardWidget
             v-if="props.dashboard?.super_blocks?.[0]?.blocks"
+
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 		/>

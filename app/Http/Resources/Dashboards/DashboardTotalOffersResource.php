@@ -28,6 +28,43 @@ class DashboardTotalOffersResource extends JsonResource
 
         $firstModel = is_array($models) ? ($models[0] ?? []) : [];
 
+        $routeTargets = [
+           'customers' => [
+                'route_target' => [
+                    'name' => 'grp.org.shops.show.discounts.campaigns.totals.customers',
+                    'parameters' => [
+                        'organisation'  => $firstModel['organisation_slug'] ?? 'unknown',
+                        'shop'          => $firstModel['shop_slug'] ?? 'unknown',
+                        'offerCampaign' => $firstModel['slug'] ?? 'unknown'
+                    ],
+                    'key_date_filter' => 'between[date]',
+                ],
+           ],
+           'orders' => [
+                'route_target' => [
+                    'name'            => 'grp.org.shops.show.discounts.campaigns.totals.orders',
+                    'parameters'      => [
+                        'organisation'    => $firstModel['organisation_slug'] ?? 'unknown',
+                        'shop'            => $firstModel['shop_slug'] ?? 'unknown',
+                        'offerCampaign'   => $firstModel['slug'] ?? 'unknown'
+                    ],
+                    'key_date_filter' => 'between[date]',
+                ]
+           ],
+           'invoices' => [
+                'route_target' => [
+                    'name'            => 'grp.org.shops.show.discounts.campaigns.totals.invoices',
+                    'parameters'      => [
+                        'organisation'    => $firstModel['organisation_slug'] ?? 'unknown',
+                        'shop'            => $firstModel['shop_slug'] ?? 'unknown',
+                        'offerCampaign'   => $firstModel['slug'] ?? 'unknown'
+                    ],
+                    'key_date_filter' => 'between[date]',
+                ]
+           ],
+        ];
+
+
         $fields = [
             'customers',
             'orders',
@@ -51,14 +88,14 @@ class DashboardTotalOffersResource extends JsonResource
                 ],
             ],
             $this->getDashboardColumnsFromArray($summedData, [
-                'customers',
-                'customers_minified',
-                'orders',
-                'orders_minified',
-                'orders_delta',
-                'invoices',
-                'invoices_minified',
-                'invoices_delta',
+                'customers'             => $routeTargets['customers'],
+                'customers_minified'    => $routeTargets['customers'],
+                'orders'                => $routeTargets['orders'],
+                'orders_minified'       => $routeTargets['orders'],
+                'orders_delta'          => $routeTargets['orders'],
+                'invoices'              => $routeTargets['invoices'],
+                'invoices_minified'     => $routeTargets['invoices'],
+                'invoices_delta'        => $routeTargets['invoices'],
                 'sales_grp_currency_external',
                 'sales_grp_currency_external_minified',
                 'sales_grp_currency_external_delta',

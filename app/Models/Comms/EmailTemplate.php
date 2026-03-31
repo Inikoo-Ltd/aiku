@@ -10,6 +10,7 @@ namespace App\Models\Comms;
 
 use App\Enums\Comms\EmailTemplate\EmailTemplateBuilderEnum;
 use App\Enums\Comms\EmailTemplate\EmailTemplateStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Media;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
@@ -17,7 +18,6 @@ use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
@@ -45,7 +45,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $organisation_id
  * @property int|null $shop_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\DispatchedEmail> $dispatchedEmails
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
@@ -54,7 +53,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Model|\Eloquent $parent
  * @property-read Media|null $screenshot
  * @property-read Media|null $seoImage
- * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailTemplate newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailTemplate newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailTemplate query()
@@ -123,12 +122,6 @@ class EmailTemplate extends Model implements HasMedia, Auditable
     public function screenshot(): BelongsTo
     {
         return $this->belongsTo(Media::class, 'screenshot_id');
-    }
-
-    // use when testing send email
-    public function dispatchedEmails(): MorphMany
-    {
-        return $this->morphMany(DispatchedEmail::class, 'parent');
     }
 
     public function sender(): string

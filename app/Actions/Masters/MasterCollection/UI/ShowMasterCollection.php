@@ -20,6 +20,7 @@ use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamiliesInMasterColl
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\UI\SupplyChain\MasterCollectionTabsEnum;
 use App\Http\Resources\Catalogue\CollectionsResource;
 use App\Http\Resources\Catalogue\FamiliesInCollectionResource;
@@ -39,6 +40,7 @@ class ShowMasterCollection extends GrpAction
 {
     use WithMastersAuthorisation;
     use WithMasterCollectionNavigation;
+    use WithMasterCollectionSubNavigation;
 
     private MasterShop|MasterProductCategory|Group $parent;
 
@@ -91,6 +93,8 @@ class ShowMasterCollection extends GrpAction
 
     public function htmlResponse(MasterCollection $masterCollection, ActionRequest $request): Response
     {
+        $subNavigation = $this->getMasterCollectionSubNavigation($masterCollection);
+
         return Inertia::render(
             'Masters/MasterCollection',
             [
@@ -134,10 +138,11 @@ class ShowMasterCollection extends GrpAction
                             ]
                         ]
                     ],
+                    'subNavigation' => $subNavigation,
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => MasterCollectionTabsEnum::navigationWithStats($masterCollection)
+                    'navigation' => MasterCollectionTabsEnum::navigation()
                 ],
                 'routes'      => [
                     'families'    => [
@@ -220,56 +225,61 @@ class ShowMasterCollection extends GrpAction
                     fn () => MasterCollectionTimeSeriesResource::collection(IndexMasterCollectionTimeSeries::run($masterCollection, MasterCollectionTabsEnum::SALES->value))
                     : Inertia::lazy(fn () => MasterCollectionTimeSeriesResource::collection(IndexMasterCollectionTimeSeries::run($masterCollection, MasterCollectionTabsEnum::SALES->value))),
 
-                MasterCollectionTabsEnum::FAMILIES->value => $this->tab == MasterCollectionTabsEnum::FAMILIES->value ?
-                    fn () => FamiliesInCollectionResource::collection(IndexMasterFamiliesInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::FAMILIES->value))
-                    : Inertia::lazy(fn () => FamiliesInCollectionResource::collection(IndexMasterFamiliesInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::FAMILIES->value))),
+                // MasterCollectionTabsEnum::FAMILIES->value => $this->tab == MasterCollectionTabsEnum::FAMILIES->value ?
+                //     fn () => FamiliesInCollectionResource::collection(IndexMasterFamiliesInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::FAMILIES->value))
+                //     : Inertia::lazy(fn () => FamiliesInCollectionResource::collection(IndexMasterFamiliesInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::FAMILIES->value))),
 
-                MasterCollectionTabsEnum::PRODUCTS->value => $this->tab == MasterCollectionTabsEnum::PRODUCTS->value ?
-                    fn () => MasterProductsResource::collection(IndexMasterProductsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::PRODUCTS->value))
-                    : Inertia::lazy(fn () => MasterProductsResource::collection(IndexMasterProductsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::PRODUCTS->value))),
+                // MasterCollectionTabsEnum::PRODUCTS->value => $this->tab == MasterCollectionTabsEnum::PRODUCTS->value ?
+                //     fn () => MasterProductsResource::collection(IndexMasterProductsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::PRODUCTS->value))
+                //     : Inertia::lazy(fn () => MasterProductsResource::collection(IndexMasterProductsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::PRODUCTS->value))),
 
-                MasterCollectionTabsEnum::COLLECTIONS->value => $this->tab == MasterCollectionTabsEnum::COLLECTIONS->value ?
-                    fn () => MasterCollectionsResource::collection(GetMasterCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::COLLECTIONS->value))
-                    : Inertia::lazy(fn () => MasterCollectionsResource::collection(GetMasterCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::COLLECTIONS->value))),
+                // MasterCollectionTabsEnum::COLLECTIONS->value => $this->tab == MasterCollectionTabsEnum::COLLECTIONS->value ?
+                //     fn () => MasterCollectionsResource::collection(GetMasterCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::COLLECTIONS->value))
+                //     : Inertia::lazy(fn () => MasterCollectionsResource::collection(GetMasterCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::COLLECTIONS->value))),
 
                 MasterCollectionTabsEnum::IMAGES->value => $this->tab == MasterCollectionTabsEnum::IMAGES->value ?
                     fn () =>  GetMasterCollectionsImages::run($masterCollection)
                     : Inertia::lazy(fn () => GetMasterCollectionsImages::run($masterCollection)),
 
-
                 MasterCollectionTabsEnum::HISTORY->value => $this->tab == MasterCollectionTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($masterCollection, prefix: MasterCollectionTabsEnum::HISTORY->value))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterCollection, prefix: MasterCollectionTabsEnum::HISTORY->value))),
 
-
-                MasterCollectionTabsEnum::SHOP_COLLECTIONS->value => $this->tab == MasterCollectionTabsEnum::SHOP_COLLECTIONS->value ?
-                    fn () => CollectionsResource::collection(IndexCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::SHOP_COLLECTIONS->value))
-                    : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::SHOP_COLLECTIONS->value))),
+                // MasterCollectionTabsEnum::SHOP_COLLECTIONS->value => $this->tab == MasterCollectionTabsEnum::SHOP_COLLECTIONS->value ?
+                //     fn () => CollectionsResource::collection(IndexCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::SHOP_COLLECTIONS->value))
+                //     : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::SHOP_COLLECTIONS->value))),
             ]
-        )->table(
-            IndexMasterFamiliesInMasterCollection::make()->tableStructure(
-                masterCollection: $masterCollection,
-                prefix: MasterCollectionTabsEnum::FAMILIES->value,
-            )
-        )->table(
-            IndexMasterProductsInMasterCollection::make()->tableStructure(
-                masterCollection: $masterCollection,
-                prefix: MasterCollectionTabsEnum::PRODUCTS->value,
-            )
-        )->table(
-            GetMasterCollectionsInMasterCollection::make()->tableStructure(
-                masterCollection: $masterCollection,
-                prefix: MasterCollectionTabsEnum::COLLECTIONS->value,
-            )
-        )->table(
-            IndexCollectionsInMasterCollection::make()->tableStructure(
-                prefix: MasterCollectionTabsEnum::SHOP_COLLECTIONS->value,
-            )
-        )->table(
+        )
+        // ->table(
+        //     IndexMasterFamiliesInMasterCollection::make()->tableStructure(
+        //         masterCollection: $masterCollection,
+        //         prefix: MasterCollectionTabsEnum::FAMILIES->value,
+        //     )
+        // )
+        // ->table(
+        //     IndexMasterProductsInMasterCollection::make()->tableStructure(
+        //         masterCollection: $masterCollection,
+        //         prefix: MasterCollectionTabsEnum::PRODUCTS->value,
+        //     )
+        // )
+        // ->table(
+        //     GetMasterCollectionsInMasterCollection::make()->tableStructure(
+        //         masterCollection: $masterCollection,
+        //         prefix: MasterCollectionTabsEnum::COLLECTIONS->value,
+        //     )
+        // )
+        // ->table(
+        //     IndexCollectionsInMasterCollection::make()->tableStructure(
+        //         masterCollection: $masterCollection,
+        //         prefix: MasterCollectionTabsEnum::SHOP_COLLECTIONS->value,
+        //     )
+        // )
+        ->table(
             IndexHistory::make()->tableStructure(
                 prefix: MasterCollectionTabsEnum::HISTORY->value,
             )
-        )->table(
+        )
+        ->table(
             IndexMasterCollectionTimeSeries::make()->tableStructure(MasterCollectionTabsEnum::SALES->value)
         );
     }
@@ -300,6 +310,11 @@ class ShowMasterCollection extends GrpAction
             ];
         };
 
+        $parentRoute = null;
+        if ($routeName == 'grp.masters.master_shops.show.master_departments.show.master_collections.show') {
+            $parentRoute = $this->parent ?? MasterProductCategory::where('type', MasterProductCategoryTypeEnum::DEPARTMENT)->where('slug', data_get($routeParameters, 'masterDepartment'))->first();
+        }
+
         return match ($routeName) {
             'grp.masters.master_shops.show.master_collections.show' =>
             array_merge(
@@ -321,7 +336,7 @@ class ShowMasterCollection extends GrpAction
             ),
             'grp.masters.master_shops.show.master_departments.show.master_collections.show' =>
             array_merge(
-                ShowMasterDepartment::make()->getBreadcrumbs($masterCollection->masterShop, $this->parent, $routeName, $routeParameters, $suffix),
+                ShowMasterDepartment::make()->getBreadcrumbs($masterCollection->masterShop, $parentRoute, $routeName, $routeParameters, $suffix),
                 $headCrumb(
                     $masterCollection,
                     [

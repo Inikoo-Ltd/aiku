@@ -1,63 +1,71 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
-
+import { Head, Link } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { ref } from 'vue'
-
-import { PageHeadingTypes } from '@/types/PageHeading'
+import { PageHeadingTypes } from "@/types/PageHeading"
 import Table from "@/Components/Table/Table.vue"
-import { useLocaleStore } from '@/Stores/locale'
-import { RecurringBill } from '@/types/recurring_bill'
+import { useLocaleStore } from "@/Stores/locale"
+import { RecurringBill } from "@/types/recurring_bill"
+import { useFormatTime } from "@/Composables/useFormatTime"
 
-import { useFormatTime } from '@/Composables/useFormatTime'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faReceipt } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { Invoice } from "@/types/invoice"
 
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faReceipt } from '@fal'
-import { library } from '@fortawesome/fontawesome-svg-core'
 library.add(faReceipt)
 
-// import FileShowcase from '@/xxxxxxxxxxxx'
 
-const props = defineProps<{
+defineProps<{
     title: string,
     pageHead: PageHeadingTypes
     data: {}
 
 }>()
 
-const locale = useLocaleStore();
+const locale = useLocaleStore()
 
-function invoiceRoute(invoice: RecurringBill) {
+function invoiceRoute(invoice: Invoice) {
+
+    console.log(route().current())
+
     switch (route().current()) {
-        case 'retina.dropshipping.invoices.index':
+        case "retina.dropshipping.invoices.index":
             return route(
-                'retina.dropshipping.invoices.show',
+                "retina.dropshipping.invoices.show",
+                [
+                    invoice.slug
+                ])
+        case "retina.ecom.invoices.index":
+            return route(
+                "retina.ecom.invoices.show",
+                [
+                    invoice.slug
+                ])
+        case "retina.fulfilment.billing.invoices.index":
+            return route(
+                "retina.fulfilment.billing.invoices.show",
                 [
                     invoice.slug
                 ])
         default:
-            return route(
-                'retina.fulfilment.billing.invoices.show',
-                [
-                invoice.slug
-                ])
+            return null
     }
 }
 
 function channelRoute(invoice: {}) {
     switch (route().current()) {
-        case 'retina.dropshipping.invoices.index':
+        case "retina.dropshipping.invoices.index":
             return route(
-                'retina.dropshipping.customer_sales_channels.show',
+                "retina.dropshipping.customer_sales_channels.show",
                 [
                     invoice.customer_sales_channel_slug
                 ])
         default:
             return route(
-                'retina.dropshipping.customer_sales_channels.show',
+                "retina.dropshipping.customer_sales_channels.show",
                 [
-                invoice.customer_sales_channel_slug
+                    invoice.customer_sales_channel_slug
                 ])
     }
 }
@@ -71,14 +79,14 @@ function channelRoute(invoice: {}) {
     <Table :resource="data" class="mt-5">
         <template #cell(reference)="{ item: invoice }">
             <Link :href="invoiceRoute(invoice)" class="primaryLink py-0.5">
-            {{ invoice.reference }}
+                {{ invoice.reference }}
             </Link>
         </template>
 
         <template #cell(customer_sales_channel_name)="{ item: invoice }">
-            <div  v-if="invoice.customer_sales_channel_slug" class="flex items-center gap-2 w-7">
+            <div v-if="invoice.customer_sales_channel_slug" class="flex items-center gap-2 w-7">
                 <img v-tooltip="invoice.platform_name" :src="invoice.platform_image" :alt="invoice.platform_name"
-                    class="w-6 h-6"/>
+                     class="w-6 h-6" />
 
                 <Link :href="channelRoute(invoice)" class="primaryLink py-0.5">
                     {{ invoice.customer_sales_channel_name }}
@@ -92,8 +100,8 @@ function channelRoute(invoice: {}) {
         <!-- Column: Date -->
         <template #cell(type)="{ item }">
             <div class="text-center">
-            <!-- {{ item.type }} -->
-                <FontAwesomeIcon :icon='item.type?.icon?.icon' v-tooltip="item.type?.icon?.tooltip" :class='item.type?.icon?.class' fixed-width aria-hidden='true' />
+                <!-- {{ item.type }} -->
+                <FontAwesomeIcon :icon="item.type?.icon?.icon" v-tooltip="item.type?.icon?.tooltip" :class="item.type?.icon?.class" fixed-width aria-hidden="true" />
             </div>
         </template>
 

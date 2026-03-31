@@ -34,11 +34,11 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Subscription;
-use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Email;
 use App\Models\Comms\EmailAddress;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\EmailTemplate;
+use App\Models\Comms\ExternalSubscriberEmailRecipient;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\OrgPostRoom;
 use App\Models\Comms\Outbox;
@@ -116,6 +116,8 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\HumanResources\WorkSchedule;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * @property int $id
@@ -161,7 +163,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Customer> $customers
  * @property-read LaravelCollection<int, DeliveryNote> $deliveryNotes
  * @property-read \App\Models\SysAdmin\GroupDiscountsStats|null $discountsStats
- * @property-read LaravelCollection<int, DispatchedEmail> $dispatchedEmails
  * @property-read \App\Models\SysAdmin\GroupDropshippingStat|null $dropshippingStats
  * @property-read LaravelCollection<int, EmailAddress> $emailAddresses
  * @property-read LaravelCollection<int, EmailBulkRun> $emailBulkRuns
@@ -169,6 +170,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Email> $emails
  * @property-read LaravelCollection<int, Employee> $employees
  * @property-read LaravelCollection<int, ExternalLink> $externalLinks
+ * @property-read LaravelCollection<int, ExternalSubscriberEmailRecipient> $externalSubscriberEmailRecipients
  * @property-read LaravelCollection<int, FulfilmentCustomer> $fulfilmentCustomers
  * @property-read \App\Models\SysAdmin\GroupFulfilmentStats|null $fulfilmentStats
  * @property-read LaravelCollection<int, Fulfilment> $fulfilments
@@ -236,7 +238,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Rental> $rentals
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\Role> $roles
  * @property-read LaravelCollection<int, SalesChannel> $salesChannels
- * @property-read \App\Models\SysAdmin\GroupSalesIntervals|null $salesIntervals
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read LaravelCollection<int, Service> $services
  * @property-read LaravelCollection<int, ShippingZoneSchema> $shippingZoneSchemas
@@ -270,6 +271,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, WebUser> $webUsers
  * @property-read LaravelCollection<int, Webpage> $webpages
  * @property-read LaravelCollection<int, Website> $websites
+ * @property-read LaravelCollection<int, WorkSchedule> $workSchedules
  * @method static \Database\Factories\SysAdmin\GroupFactory factory($count = null, $state = [])
  * @method static Builder<static>|Group newModelQuery()
  * @method static Builder<static>|Group newQuery()
@@ -405,11 +407,6 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function orderingStats(): HasOne
     {
         return $this->hasOne(GroupOrderingStats::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(GroupSalesIntervals::class);
     }
 
     public function orderHandlingStats(): HasOne
@@ -753,11 +750,6 @@ class Group extends Authenticatable implements Auditable, HasMedia
         return $this->hasMany(EmailBulkRun::class);
     }
 
-    public function dispatchedEmails(): HasMany
-    {
-        return $this->hasMany(DispatchedEmail::class);
-    }
-
     public function webBlockTypes(): HasMany
     {
         return $this->hasMany(WebBlockType::class);
@@ -1004,4 +996,10 @@ class Group extends Authenticatable implements Auditable, HasMedia
     {
         return $this->morphMany(WorkSchedule::class, 'schedulable');
     }
+
+    public function externalSubscriberEmailRecipients(): HasMany
+    {
+        return $this->hasMany(ExternalSubscriberEmailRecipient::class);
+    }
+
 }

@@ -69,14 +69,15 @@ class TransactionsResource extends JsonResource
             $webpageUrl = $webpage?->getUrl();
         }
 
+
         return [
             'id'                        => $this->id,
             'state'                     => $this->state,
             'status'                    => $this->status,
-            'quantity_ordered'          => $this->quantity_ordered,
-            'quantity_bonus'            => $this->quantity_bonus,
-            'quantity_picked'           => $this->quantity_picked,
-            'quantity_dispatched'       => $this->quantity_dispatched,
+            'quantity_ordered'          => trimDecimalZeros($this->quantity_ordered),
+            'quantity_bonus'            => trimDecimalZeros($this->quantity_bonus),
+            'quantity_picked'           => trimDecimalZeros($this->quantity_picked),
+            'quantity_dispatched'       => trimDecimalZeros($this->quantity_dispatched),
             'quantity_fail'             => $this->quantity_fail,
             'quantity_cancelled'        => $this->quantity_cancelled,
             'gross_amount'              => $this->gross_amount,

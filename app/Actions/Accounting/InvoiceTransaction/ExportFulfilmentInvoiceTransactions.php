@@ -12,7 +12,6 @@ namespace App\Actions\Accounting\InvoiceTransaction;
 use App\Actions\Traits\WithExportData;
 use App\Exports\Accounting\FulfilmentInvoiceTransactionsExport;
 use App\Models\Accounting\Invoice;
-use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -33,14 +32,5 @@ class ExportFulfilmentInvoiceTransactions
         return $this->export(new FulfilmentInvoiceTransactionsExport($invoice), 'invoice_transactions', $type);
     }
 
-    /**
-     * @throws \Throwable
-     */
-    public function asController(Invoice $invoice, ActionRequest $request): BinaryFileResponse
-    {
-        $this->setRawAttributes($request->all());
-        $this->validateAttributes();
 
-        return $this->handle($invoice, $request->all());
-    }
 }

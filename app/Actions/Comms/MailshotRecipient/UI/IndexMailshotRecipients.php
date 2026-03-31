@@ -9,27 +9,34 @@
 namespace App\Actions\Comms\MailshotRecipient\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\MailshotRecipient;
-use App\Models\CRM\Customer;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class IndexMailshotRecipients extends OrgAction
 {
-    public function handle(Mailshot $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Mailshot $mailshot, $prefix = null): LengthAwarePaginator
     {
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
         $queryBuilder = QueryBuilder::for(MailshotRecipient::class);
-        $queryBuilder->where('mailshot_recipients.mailshot_id', '=', $parent->id)
+        $queryBuilder->where('mailshot_recipients.mailshot_id', '=', $mailshot->id)
             ->leftJoin('dispatched_emails', 'mailshot_recipients.dispatched_email_id', '=', 'dispatched_emails.id')
-            ->leftJoin('email_addresses', 'dispatched_emails.email_address_id', '=', 'email_addresses.id')
-            ->leftJoin('customers', 'mailshot_recipients.recipient_id', '=', 'customers.id', 'and', 'mailshot_recipients.recipient_type', '=', class_basename(Customer::class));
+            ->leftJoin('email_addresses', 'dispatched_emails.email_address_id', '=', 'email_addresses.id');
+
+
+        if ($mailshot->type == MailshotTypeEnum::NEWSLETTER->value || $mailshot->type == MailshotTypeEnum::MARKETING->value) {
+            $queryBuilder->leftJoin('customers as recipient_model', 'mailshot_recipients.recipient_id', '=', 'recipient_model.id');
+        } else {
+            $queryBuilder->leftJoin('prospects as recipient_model', 'mailshot_recipients.recipient_id', '=', 'recipient_model.id');
+        }
+
 
         return $queryBuilder
             ->defaultSort('-sent_at')
@@ -38,7 +45,7 @@ class IndexMailshotRecipients extends OrgAction
                 'dispatched_emails.state',
                 'dispatched_emails.sent_at as sent_at',
                 'email_addresses.email as email_address',
-                'customers.name as customer_name',
+                'recipient_model.name as recipient_name',
             ])
             ->allowedSorts(['sent_at', 'email_address'])
             ->withPaginator($prefix, tableName: request()->route()->getName())

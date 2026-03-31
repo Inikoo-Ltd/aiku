@@ -80,7 +80,7 @@ class SendReorderRemainderEmails implements ShouldQueue
 
             if ($lastBulkRun) {
                 // No delay needed since we're dispatching immediately
-                EmailBulkRunHydrateDispatchedEmails::dispatch($lastBulkRun);
+                EmailBulkRunHydrateDispatchedEmails::dispatch($lastBulkRun->id);
             }
 
             if ($updateLastOutBoxSent) {

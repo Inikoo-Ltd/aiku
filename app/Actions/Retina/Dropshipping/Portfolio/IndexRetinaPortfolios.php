@@ -86,6 +86,7 @@ class IndexRetinaPortfolios extends RetinaAction
             ->leftJoin('products', 'products.id', 'portfolios.item_id')
             ->select(
                 'portfolios.*',
+                'products.rrp',
                 'products.state as product_state',
                 'products.is_for_sale',
             );

@@ -20,7 +20,6 @@ use App\Actions\Catalogue\Product\UI\IndexProductsInGroup;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartmentsInGroup;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
 use App\Actions\Catalogue\Shop\UI\IndexShopsInGroup;
-use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Comms\EmailAddress\UI\IndexEmailAddress;
 use App\Actions\Comms\EmailAddress\UI\ShowEmailAddress;
 use App\Actions\Comms\EmailBulkRun\UI\IndexEmailBulkRuns;
@@ -84,7 +83,6 @@ Route::name('comms-marketing.')->prefix('comms-marketing')->group(function () {
     Route::get('/email-bulk-runs', [IndexEmailBulkRuns::class, 'inGroup'])->name('email-bulk-runs.index');
     Route::get('/email-addresses', IndexEmailAddress::class)->name('email-addresses.index');
     Route::get('/email-address/{emailAddress}', ShowEmailAddress::class)->name('email-addresses.show');
-    Route::get('/dispatched-emails', [IndexDispatchedEmails::class, 'inGroup'])->name('dispatched-emails.index');
 });
 
 Route::name('catalogue.')->prefix('catalogue')->group(function () {

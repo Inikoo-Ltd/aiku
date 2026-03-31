@@ -141,7 +141,7 @@ class RunBackInStockEmailBulkRuns
             // Note: Make sure this runs only once at the end
             // check Job Chaining Bus::chain
             if ($lastBulkRun) {
-                EmailBulkRunHydrateDispatchedEmails::dispatch($lastBulkRun);
+                EmailBulkRunHydrateDispatchedEmails::dispatch($lastBulkRun->id);
             }
 
             if ($updateLastOutBoxSent) {

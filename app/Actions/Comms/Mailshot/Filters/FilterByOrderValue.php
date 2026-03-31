@@ -3,19 +3,16 @@
 namespace App\Actions\Comms\Mailshot\Filters;
 
 use Illuminate\Support\Arr;
-use Spatie\QueryBuilder\QueryBuilder as SpatieQueryBuilder;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
 
 class FilterByOrderValue
 {
     /**
      * Apply the "By Order Value" filter.
      *
-     * @param SpatieQueryBuilder|Builder $query
-     * @param array $filters
-     * @return mixed
      */
-    public function apply($query, array $filters)
+    public function apply(Builder $query, array $filters): Builder
     {
         $orderValueFilter = Arr::get($filters, 'by_order_value');
         $isOrderValueActive = is_array($orderValueFilter) ? ($orderValueFilter['value'] ?? false) : $orderValueFilter;
@@ -39,13 +36,17 @@ class FilterByOrderValue
                 return $query;
             }
 
-            $query->whereHas('orders', function ($q) use ($min, $max) {
+            $query->whereExists(function ($q) use ($min, $max) {
+                $q->select(DB::raw(1))
+                    ->from('orders')
+                    ->whereColumn('orders.customer_id', 'customers.id'); // adjust FK as needed
+
                 if ($min !== null && $min !== '') {
-                    $q->where('org_net_amount', '>=', $min);
+                    $q->whereRaw('orders.org_net_amount >= ?', [$min]);
                 }
 
                 if ($max !== null && $max !== '') {
-                    $q->where('org_net_amount', '<=', $max);
+                    $q->whereRaw('orders.org_net_amount <= ?', [$max]);
                 }
             });
         }

@@ -20,7 +20,6 @@ enum OrdersTabsEnum: string
     case LAST_ORDERS    = 'last_orders';
     case EXCESS_ORDERS    = 'excess_orders';
     case ORDERS_WITH_REPLACEMENTS    = 'orders_with_replacements';
-    case STATS     = 'stats';
     case HISTORY   = 'history';
 
     public function blueprint(): array
@@ -38,10 +37,6 @@ enum OrdersTabsEnum: string
             OrdersTabsEnum::EXCESS_ORDERS => [
                 'title' => __('Overpaid orders'),
                 'icon'  => 'fal fa-arrow-from-bottom',
-            ],
-            OrdersTabsEnum::STATS => [
-                'title' => __('Stats'),
-                'icon'  => 'fal fa-chart-pie',
             ],
             OrdersTabsEnum::HISTORY => [
                 'title' => __('History'),

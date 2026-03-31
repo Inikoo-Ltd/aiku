@@ -40,7 +40,7 @@ const props = defineProps<{
 const slidesPerView = computed(() => {
     const perRow = props.fieldValue?.settings?.per_row ?? {}
     return {
-        desktop: perRow.desktop ?? 6,
+        desktop: perRow.desktop ?? 5,
         tablet: perRow.tablet ?? 4,
         mobile: perRow.mobile ?? 2,
     }[props.screenType] ?? 5

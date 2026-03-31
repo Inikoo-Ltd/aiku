@@ -18,7 +18,6 @@ class UploadImagesToBanner extends OrgAction
 {
     use WithUploadWebImage;
 
-    // Todo WithWebEditAuthorisation here
 
     public function asController(Banner $banner, ActionRequest $request): Collection
     {

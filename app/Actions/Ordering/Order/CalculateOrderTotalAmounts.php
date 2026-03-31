@@ -20,6 +20,8 @@ class CalculateOrderTotalAmounts extends OrgAction
 {
     use WithOrganisationsArgument;
 
+    public string $jobQueue = 'urgent';
+
     public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false): void
     {
         $itemsNet   = $order->transactions()->where('model_type', 'Product')->sum('net_amount');
@@ -109,11 +111,13 @@ class CalculateOrderTotalAmounts extends OrgAction
 
         if (in_array($order->state, [
             OrderStateEnum::IN_WAREHOUSE,
+            OrderStateEnum::HANDLING,
+            OrderStateEnum::HANDLING_BLOCKED,
             OrderStateEnum::PICKED,
             OrderStateEnum::PACKING,
             OrderStateEnum::PACKED,
         ])) {
-            if ($calculateShipping && Arr::hasAny($changes, ['goods_amount', 'estimated_weight']) || $collectionChanged || $forceRecalculate) {
+            if ($collectionChanged || $forceRecalculate) {
                 CalculateOrderShipping::run($order);
             }
 

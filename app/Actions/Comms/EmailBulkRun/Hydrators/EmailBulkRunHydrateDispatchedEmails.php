@@ -21,16 +21,24 @@ class EmailBulkRunHydrateDispatchedEmails implements ShouldBeUnique
     use WithEnumStats;
 
 
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'analytics';
 
-    public function getJobUniqueId(EmailBulkRun $emailBulkRun): string
+    public function getJobUniqueId(?int $emailBulkRunId): string
     {
-        return $emailBulkRun->id;
+        return $emailBulkRunId ?? 'empty';
     }
 
 
-    public function handle(EmailBulkRun $emailBulkRun): void
+    public function handle(?int $emailBulkRunId): void
     {
+        if (!$emailBulkRunId) {
+            return;
+        }
+        $emailBulkRun = EmailBulkRun::find($emailBulkRunId);
+        if (!$emailBulkRun) {
+            return;
+        }
+
         $stats = [
             'number_dispatched_emails' => $emailBulkRun->dispatchedEmails()->count()
         ];
@@ -43,8 +51,8 @@ class EmailBulkRunHydrateDispatchedEmails implements ShouldBeUnique
                 enum: DispatchedEmailStateEnum::class,
                 models: DispatchedEmail::class,
                 where: function ($q) use ($emailBulkRun) {
-                    $q->where('parent_type', get_class($emailBulkRun));
-                    $q->where('parent_id', $emailBulkRun->id);
+                    $q->leftJoin('email_bulk_run_has_dispatched_emails', 'email_bulk_run_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
+                    $q->where('email_bulk_run_id', $emailBulkRun->id);
                 }
             )
         );

@@ -23,9 +23,12 @@ class GetShopTimeSeriesStats
 
         $shops = $query->get();
 
-        $shops->load(['timeSeries' => function ($query) {
-            $query->where('frequency', TimeSeriesFrequencyEnum::DAILY->value);
-        }]);
+        $shops->load([
+            'timeSeries' => function ($query) {
+                $query->where('frequency', TimeSeriesFrequencyEnum::DAILY->value);
+            },
+            'organisation.image',
+        ]);
 
         $timeSeriesIds = [];
         $shopToTimeSeriesMap = [];
@@ -91,7 +94,10 @@ class GetShopTimeSeriesStats
             $shopData = array_merge($shop->toArray(), $stats, $registrationsData, [
                 'slug' => $shop->slug ?? 'unknown',
                 'type' => $shop->type,
+                'is_aiku' => $shop->is_aiku,
+                'migrated_to_aiku_on' => $shop->migrated_to_aiku_on,
                 'organisation_slug' => $shop->organisation->slug ?? 'unknown',
+                'organisation_logo' => $shop->organisation->imageSources(48, 48),
                 'group_slug' => $shop->group->slug ?? 'unknown',
                 'shop_currency_code' => $shop->currency->code ?? 'GBP',
                 'organisation_currency_code' => $shop->organisation->currency->code ?? 'GBP',

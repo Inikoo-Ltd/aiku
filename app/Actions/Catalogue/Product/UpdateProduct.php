@@ -464,6 +464,7 @@ class UpdateProduct extends OrgAction
 
 
         if (!$this->strict) {
+            $rules['marketplace_second_id']     = ['sometimes', 'nullable', 'string'];
             $rules['code']                      = ['sometimes', 'string'];
             $rules['org_stocks']                = ['sometimes', 'nullable', 'array'];
             $rules['gross_weight']              = ['sometimes', 'integer', 'gt:0'];

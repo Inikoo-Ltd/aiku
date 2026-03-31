@@ -278,6 +278,7 @@ const props = defineProps<{
         name: string
         icon: string
     }
+    is_faire_order: boolean
 }>()
 
 
@@ -1151,10 +1152,12 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         </template>
 
         <template #button-cancel="{ action }">
-            <div class="relative">
+            <div class="relative" v-if="!is_faire_order">
                 <Button :style="action.style" :label="action.label" :icon="action.icon" :loading="cancelLoading"
                     @click="() => confirm2(action)" :key="`ActionButton${action.label}${action.style}`"
                     :tooltip="action.tooltip" />
+            </div>
+            <div class="relative" v-else>
             </div>
         </template>
 
@@ -1608,9 +1611,6 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     :currencyCode="currency.code" :toBePaidBy="data?.data?.to_be_paid_by"
                                     :order="data?.data" :handleTabUpdate="handleTabUpdate">
                                     <template #default>
-
-
-
                                     </template>
                                 </NeedToPayV2>
 
@@ -1641,6 +1641,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     <Button @click="() => onClickPayRefund()" :label="trans('Refund money')"
                                         type="secondary" size="xxs" />
                                 </div>
+                                
 
                                 <div v-if="Number(box_stats.products.payment.pay_amount) > 0"
                                     class="my-2 xpt-2 xborder-t border-gray-300 text-xxs">
@@ -1677,9 +1678,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     </p>
 
                                     <ButtonWithLink
-                                        v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name"
+                                        v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name && layout.app?.environment === 'local'"
                                         :routeTarget="box_stats.products.excesses_payment?.route_to_add_balance"
-                                        xicon="far fa-plus"
                                         :label="trans('Move :cus_balance to customer balance', { cus_balance: locale.currencyFormat(currency.code, Math.abs(Number(box_stats.products.excesses_payment?.amount))) })"
                                         size="xs" type="primary" full />
                                 </div>

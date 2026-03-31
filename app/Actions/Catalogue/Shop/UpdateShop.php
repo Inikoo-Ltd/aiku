@@ -19,6 +19,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Web\Website\UpdateWebsite;
+use App\Actions\Web\Website\Hydrators\WebsiteReHydrateFamilyWebpage;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
@@ -100,6 +101,12 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.catalog.product_follow_master', Arr::pull($modelData, 'product_follow_master'));
         }
 
+        $updateChildWebsite = false;
+        if (Arr::has($modelData, 'family_webpage_split_description')) {
+            data_set($modelData, 'settings.website.family_webpage_split_description', Arr::pull($modelData, 'family_webpage_split_description'));
+            $updateChildWebsite = true;
+        }
+
         foreach ($modelData as $key => $value) {
             data_set(
                 $modelData,
@@ -122,14 +129,12 @@ class UpdateShop extends OrgAction
                     'wix_access_token' => 'settings.wix.access_token',
                     'enable_chat' => 'settings.chat.enable_chat',
                     'portal_link' => 'settings.portal.link',
-                    'bundle_discount_percentage' => 'settings.discount.bundle_discount_percentage',
                     default => $key
                 },
                 $value
             );
         }
 
-        data_forget($modelData, 'bundle_discount_percentage');
         data_forget($modelData, 'shopify_shop_name');
         data_forget($modelData, 'shopify_api_key');
         data_forget($modelData, 'shopify_api_secret');
@@ -256,6 +261,10 @@ class UpdateShop extends OrgAction
 
         if (count($changes) > 0) {
             ShopHydrateUniversalSearch::dispatch($shop);
+        }
+
+        if ($updateChildWebsite) {
+            WebsiteReHydrateFamilyWebpage::dispatch($shop->website);
         }
 
         return $shop;
@@ -388,7 +397,8 @@ class UpdateShop extends OrgAction
             'family_follow_master'                                    => ['sometimes', 'boolean'],
             'product_follow_master'                                   => ['sometimes', 'boolean'],
             'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
-            'bundle_discount_percentage'                              => ['sometimes', 'numeric', 'min:0', 'max:100']
+            'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
+            'family_webpage_split_description'                        => ['sometimes', 'boolean']
         ];
 
         $channelIds = SalesChannel::pluck('id');

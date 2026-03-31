@@ -9,9 +9,8 @@
 namespace App\Actions\SysAdmin;
 
 use App\Actions\Elasticsearch\IndexElasticsearchDocument;
-use App\Actions\Utils\GetOsFromUserAgent;
+use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Enums\Elasticsearch\ElasticsearchUserRequestTypeEnum;
-use hisorange\BrowserDetect\Parser as Browser;
 use Illuminate\Support\Carbon;
 use Stevebauman\Location\Facades\Location;
 
@@ -68,19 +67,13 @@ trait WithLogRequest
     }
 
 
-
-    public function detectWindows11($parsedUserAgent): string
-    {
-        return GetOsFromUserAgent::run($parsedUserAgent);
-
-    }
-
-
     public function logFail(string $index, Carbon $datetime, string $ip, string $userAgent, string $username, ?int $userID): void
     {
         $index = config('elasticsearch.index_prefix').$index;
 
-        $parsedUserAgent = (new Browser())->parse($userAgent);
+
+        $browserData = GetBrowserInfo::run($userAgent);
+
 
         $body = [
             'type'                 => ElasticsearchUserRequestTypeEnum::FAIL_LOGIN->value,
@@ -91,16 +84,16 @@ trait WithLogRequest
             'location'             => json_encode($this->getLocation($ip)), // reference: https://github.com/stevebauman/location
             'user_agent'           => $userAgent,
             'device_type'          => json_encode([
-                'title' => $parsedUserAgent->deviceType(),
-                'icon'  => $this->getDeviceIcon($parsedUserAgent->deviceType())
+                'title' => $browserData['device'],
+                'icon'  => $this->getDeviceIcon($browserData['device'])
             ]),
             'platform'             => json_encode([
-                'title' => $this->detectWindows11($parsedUserAgent),
-                'icon'  => $this->getPlatformIcon($this->detectWindows11($parsedUserAgent))
+                'title' => $browserData['os'],
+                'icon'  => $this->getPlatformIcon($browserData['os'])
             ]),
             'browser'              => json_encode([
-                'title' => explode(' ', $parsedUserAgent->browserName())[0],
-                'icon'  => $this->getBrowserIcon(strtolower($parsedUserAgent->browserName()))
+                'title' => $browserData['browser'],
+                'icon'  => $this->getBrowserIcon(strtolower($browserData['browser']))
             ])
         ];
 

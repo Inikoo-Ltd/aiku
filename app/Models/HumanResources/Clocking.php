@@ -54,6 +54,7 @@ use Spatie\MediaLibrary\HasMedia;
  * @property-read Media|null $seoImage
  * @property-read Model|\Eloquent|null $subject
  * @property-read \App\Models\HumanResources\Timesheet|null $timesheet
+ * @property-read \App\Models\HumanResources\WorkSchedule|null $workSchedule
  * @property-read \App\Models\HumanResources\Workplace|null $workplace
  * @method static Builder<static>|Clocking newModelQuery()
  * @method static Builder<static>|Clocking newQuery()
@@ -72,6 +73,7 @@ class Clocking extends Model implements HasMedia
     protected $casts = [
         'clocked_at'      => 'datetime:Y-m-d H:i:s',
         'type'            => ClockingTypeEnum::class,
+        'is_late'         => 'boolean',
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
@@ -97,6 +99,11 @@ class Clocking extends Model implements HasMedia
     public function timesheet(): BelongsTo
     {
         return $this->belongsTo(Timesheet::class);
+    }
+
+    public function workSchedule(): BelongsTo
+    {
+        return $this->belongsTo(WorkSchedule::class);
     }
 
 

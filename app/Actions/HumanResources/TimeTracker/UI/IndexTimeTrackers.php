@@ -9,7 +9,7 @@
 namespace App\Actions\HumanResources\TimeTracker\UI;
 
 use App\Actions\OrgAction;
-use App\Http\Resources\HumanResources\ClockingsResource;
+use App\Http\Resources\HumanResources\TimeTrackersResource;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Timesheet;
 use App\Models\HumanResources\TimeTracker;
@@ -28,17 +28,26 @@ class IndexTimeTrackers extends OrgAction
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
-        $queryBuilder = QueryBuilder::for(TimeTracker::class);
+        $queryBuilder = QueryBuilder::for(TimeTracker::class)
+            ->leftJoin('timesheets', 'time_trackers.timesheet_id', 'timesheets.id')
+            ->leftJoin('organisations', 'timesheets.organisation_id', 'organisations.id');
 
         switch (class_basename($parent)) {
             case 'Organisation':
-                $queryBuilder->where('time_trackers.organisation_id', $parent->id);
+                $queryBuilder->where('timesheets.organisation_id', $parent->id);
                 break;
             case 'Workplace':
                 $queryBuilder->where('time_trackers.workplace_id', $parent->id);
                 break;
             case 'ClockingMachine':
-                $queryBuilder->where('time_trackers.clocking_machine_id', $parent->id);
+                $queryBuilder
+                    ->leftJoin('clockings as start_clockings', 'time_trackers.start_clocking_id', 'start_clockings.id')
+                    ->leftJoin('clockings as end_clockings', 'time_trackers.end_clocking_id', 'end_clockings.id')
+                    ->where(function ($query) use ($parent) {
+                        $query
+                            ->where('start_clockings.clocking_machine_id', $parent->id)
+                            ->orWhere('end_clockings.clocking_machine_id', $parent->id);
+                    });
                 break;
             default: //Timesheet
                 $queryBuilder->where('time_trackers.timesheet_id', $parent->id);
@@ -49,14 +58,15 @@ class IndexTimeTrackers extends OrgAction
             ->defaultSort('time_trackers.starts_at')
             ->select(
                 [
-                    'starts_at',
-                    'ends_at',
-                    'duration',
+                    'time_trackers.starts_at',
+                    'time_trackers.ends_at',
+                    'time_trackers.duration',
                     'time_trackers.id',
-                    'status'
+                    'time_trackers.status',
+                    'organisations.code as organisation_code'
                 ]
             )
-            ->allowedSorts(['starts_at'])
+            ->allowedSorts(['time_trackers.starts_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -90,9 +100,9 @@ class IndexTimeTrackers extends OrgAction
     }
 
 
-    public function jsonResponse(LengthAwarePaginator $clockings): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $timeTrackers): AnonymousResourceCollection
     {
-        return ClockingsResource::collection($clockings);
+        return TimeTrackersResource::collection($timeTrackers);
     }
 
 }

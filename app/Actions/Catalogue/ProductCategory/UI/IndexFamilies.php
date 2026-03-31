@@ -179,6 +179,7 @@ class IndexFamilies extends OrgAction
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
             'product_categories.master_product_category_id',
+            'product_categories.health_rank',
             DB::raw(
                 "(
                     SELECT json_agg(json_build_object(
@@ -244,6 +245,7 @@ class IndexFamilies extends OrgAction
                 'dropshippers',
                 'listings',
                 'sold',
+                'health_rank',
                 AllowedSort::custom(
                     'collections',
                     new class () implements Sort {
@@ -337,7 +339,8 @@ class IndexFamilies extends OrgAction
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right');
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 if ($parent instanceof Organisation) {
                     $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
@@ -369,6 +372,7 @@ class IndexFamilies extends OrgAction
                 if ($parent instanceof ProductCategory && $parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                     $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
                 }
+
             }
         };
     }

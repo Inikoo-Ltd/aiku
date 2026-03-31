@@ -53,6 +53,7 @@ class UpdateMailshot extends OrgAction
         $rules = [
             'subject'           => ['sometimes', 'string', 'max:255'],
             'state'             => ['sometimes', Rule::enum(MailshotStateEnum::class)],
+            'ready_at'          => ['sometimes', 'date'],
             'recipients_recipe' => ['sometimes', 'array']
         ];
 

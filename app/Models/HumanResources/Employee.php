@@ -38,6 +38,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -62,7 +63,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property EmployeeStateEnum $state
  * @property string|null $employment_start_at
  * @property string|null $employment_end_at
- * @property string|null $emergency_contact
+ * @property array<array-key, mixed>|null $emergency_contact
  * @property array<array-key, mixed>|null $salary
  * @property array<array-key, mixed>|null $working_hours
  * @property numeric $week_working_hours
@@ -87,8 +88,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $bank_account_number
  * @property string|null $insurance_number
  * @property string|null $religion
- * @property string|null $contract_start_date
- * @property string|null $contract_end_date
+ * @property \Illuminate\Support\Carbon|null $contract_start_date
+ * @property \Illuminate\Support\Carbon|null $contract_end_date
  * @property string|null $identity_document_issued_by
  * @property bool $allow_shift
  * @property-read \App\Models\Helpers\Address|null $address
@@ -96,12 +97,15 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\HumanResources\Clocking> $clockings
+ * @property-read string|null $department
  * @property-read Group $group
+ * @property-read Collection<int, \App\Models\HumanResources\HRAnnouncement> $hrAnnouncements
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \App\Models\HumanResources\EmployeeHasJobPositions|null $pivot
  * @property-read Collection<int, \App\Models\HumanResources\JobPosition> $jobPositions
  * @property-read \App\Models\HumanResources\EmployeeAnalytics|null $latestAnalytics
+ * @property-read \App\Models\HumanResources\EmployeeLeaveBalance|null $leaveBalance
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Organisation $organisation
  * @property-read \App\Models\Helpers\Media|null $seoImage
@@ -134,30 +138,36 @@ class Employee extends Model implements HasMedia, Auditable
     use HasFactory;
     use HasHistory;
     use InOrganisation;
+    use InteractsWithMedia;
 
     protected $casts = [
+        'allow_shift' => 'boolean',
         'week_working_hours' => 'decimal:2',
-        'data'               => 'array',
-        'errors'             => 'array',
-        'salary'             => 'array',
-        'working_hours'      => 'array',
-        'migration_data'     => 'array',
-        'date_of_birth'      => 'datetime:Y-m-d',
-        'gender'             => GenderEnum::class,
-        'state'              => EmployeeStateEnum::class,
-        'type'               => EmployeeTypeEnum::class,
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
-
+        'data' => 'array',
+        'errors' => 'array',
+        'salary' => 'array',
+        'working_hours' => 'array',
+        'migration_data' => 'array',
+        'date_of_birth' => 'datetime:Y-m-d',
+        'gender' => GenderEnum::class,
+        'state' => EmployeeStateEnum::class,
+        'type' => EmployeeTypeEnum::class,
+        'fetched_at' => 'datetime',
+        'last_fetched_at' => 'datetime',
+        'contract_start_date' => 'date',
+        'contract_end_date' => 'date',
+        'religion' => 'string',
+        'emergency_contact' => 'array',
     ];
     //ss
 
     protected $attributes = [
-        'data'           => '{}',
-        'errors'         => '{}',
-        'salary'         => '{}',
-        'working_hours'  => '{}',
-        'migration_data' => '{}'
+        'data' => '{}',
+        'errors' => '{}',
+        'salary' => '{}',
+        'working_hours' => '{}',
+        'migration_data' => '{}',
+        'emergency_contact' => '{}'
     ];
 
     protected $guarded = [];
@@ -184,7 +194,12 @@ class Employee extends Model implements HasMedia, Auditable
         'employment_start_at',
         'employment_end_at',
         'emergency_contact',
-        'pin'
+        'pin',
+        'bank_account_number',
+        'bank_account_name',
+        'insurance_number',
+        'religion',
+        'probation_period_days',
     ];
 
     protected array $attributeModifiers = [
@@ -252,6 +267,11 @@ class Employee extends Model implements HasMedia, Auditable
         return $this->hasOne(EmployeeStats::class);
     }
 
+    public function leaveBalance()
+    {
+        return $this->hasOne(EmployeeLeaveBalance::class)->where('year', now()->year);
+    }
+
     public function latestAnalytics(): HasOne
     {
         return $this->hasOne(EmployeeAnalytics::class)->latestOfMany();
@@ -272,9 +292,85 @@ class Employee extends Model implements HasMedia, Auditable
         return $this->morphMany(Clocking::class, 'subject');
     }
 
+    public function availableShifts()
+    {
+        return $this->organisation->workSchedules()->shifts()->where('is_active', true);
+    }
+
     public function tasks(): MorphMany
     {
         return $this->morphMany(Task::class, 'assigner');
+    }
+
+    public function hrAnnouncements(): MorphMany
+    {
+        return $this->morphMany(HRAnnouncement::class, 'employee');
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('contracts')
+            ->acceptsMimeTypes(['application/pdf']);
+    }
+
+    public function isOnProbation(): bool
+    {
+        if (!$this->employment_start_at || !$this->probation_period_days) {
+            return false;
+        }
+        $probationEnd = \Carbon\Carbon::parse($this->employment_start_at)->addDays($this->probation_period_days);
+        return now()->lessThanOrEqualTo($probationEnd);
+    }
+
+    public function getLengthOfService(): ?string
+    {
+        if (!$this->employment_start_at) {
+            return null;
+        }
+
+        $start = \Carbon\Carbon::parse($this->employment_start_at);
+        $now = now();
+        $totalMonths = $start->diffInMonths($now);
+        $years = floor($totalMonths / 12);
+        $months = $totalMonths % 12;
+
+        if ($years > 0) {
+            return $years . ' year' . ($years > 1 ? 's' : '') . ($months > 0 ? ', ' . $months . ' month' . ($months > 1 ? 's' : '') : '');
+        }
+
+        if ($months > 0) {
+            return $months . ' month' . ($months > 1 ? 's' : '');
+        }
+
+        return 'Less than a month';
+    }
+
+    public function getCurrentJobTitle(): ?string
+    {
+        $currentJobPosition = $this->jobPositions()->first();
+        return $currentJobPosition?->name;
+    }
+
+    public function getCurrentDepartment(): ?string
+    {
+        $currentJobPosition = $this->jobPositions()->first();
+        return $currentJobPosition?->department;
+    }
+
+    public function getJobTitleAttribute(): ?string
+    {
+        $dbValue = $this->getAttributes()['job_title'] ?? null;
+
+        if ($dbValue) {
+            return $dbValue;
+        }
+
+        return $this->getCurrentJobTitle();
+    }
+
+    public function getDepartmentAttribute(): ?string
+    {
+        return $this->getCurrentDepartment();
     }
 
 }

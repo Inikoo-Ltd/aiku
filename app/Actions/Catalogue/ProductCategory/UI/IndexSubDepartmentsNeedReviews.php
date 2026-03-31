@@ -51,8 +51,6 @@ class IndexSubDepartmentsNeedReviews extends OrgAction
 
         $queryBuilder->leftJoin('shops', 'product_categories.shop_id', 'shops.id');
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', '=', 'organisations.id');
-        $queryBuilder->leftJoin('product_category_sales_intervals', 'product_category_sales_intervals.product_category_id', 'product_categories.id');
-        $queryBuilder->leftJoin('product_category_ordering_intervals', 'product_category_ordering_intervals.product_category_id', 'product_categories.id');
         $queryBuilder->leftJoin('webpages', function ($join) {
             $join->on('webpages.model_id', 'product_categories.id')
                 ->where('webpages.model_type', class_basename(ProductCategory::class));
@@ -117,8 +115,6 @@ class IndexSubDepartmentsNeedReviews extends OrgAction
                 'shops.name as shop_name',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
-                'product_category_sales_intervals.sales_grp_currency_all as sales_all',
-                'product_category_ordering_intervals.invoices_all as invoices_all',
                 'product_categories.master_product_category_id',
                 'webpages.state as webpage_state',
                 DB::raw(

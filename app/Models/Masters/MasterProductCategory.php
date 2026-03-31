@@ -8,9 +8,11 @@
 
 namespace App\Models\Masters;
 
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Helpers\Media;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
@@ -71,7 +73,7 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $web_images
  * @property bool $has_gr_vol_discount
  * @property bool $mismatch_detected One of master products under it has a mismatch trade unit data (picking quantity, linked trade unit) with one or more of its children product
- * @property string|null $health_rank
+ * @property HealthRankEnum|null $health_rank
  * @property string|null $desc_video_url
  * @property int|null $desc_art1
  * @property int|null $desc_art2
@@ -81,22 +83,25 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $extra_desc_art1
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
+ * @property-read Media|null $descArt1Image
+ * @property-read Media|null $descArt2Image
+ * @property-read Media|null $descArt3Image
+ * @property-read Media|null $descArt4Image
+ * @property-read Media|null $descArt5Image
+ * @property-read Media|null $extraDescArt1Image
  * @property-read Group $group
- * @property-read \App\Models\Helpers\Media|null $image
- * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterCollection> $masterCollections
  * @property-read MasterProductCategory|null $masterDepartment
  * @property-read LaravelCollection<int, MasterProductCategory> $masterProductCategories
  * @property-read \App\Models\Masters\MasterShop $masterShop
  * @property-read MasterProductCategory|null $masterSubDepartment
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterVariant> $masterVariant
- * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
- * @property-read \App\Models\Masters\MasterProductCategoryOrderingIntervals|null $orderingIntervals
- * @property-read \App\Models\Masters\MasterProductCategoryOrderingStats|null $orderingStats
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read MasterProductCategory|null $parent
  * @property-read LaravelCollection<int, ProductCategory> $productCategories
- * @property-read \App\Models\Masters\MasterProductCategorySalesIntervals|null $salesIntervals
- * @property-read \App\Models\Helpers\Media|null $seoImage
+ * @property-read Media|null $seoImage
  * @property-read \App\Models\Masters\MasterProductCategoryStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategoryTimeSeries> $timeSeries
  * @property-read mixed $translations
@@ -131,6 +136,7 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         'data'            => 'array',
         'web_images'      => 'array',
         'type'            => MasterProductCategoryTypeEnum::class,
+        'health_rank'     => HealthRankEnum::class,
         'status'          => 'boolean',
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
@@ -183,21 +189,6 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     public function productCategories(): HasMany
     {
         return $this->hasMany(ProductCategory::class, 'master_product_category_id');
-    }
-
-    public function orderingIntervals(): HasOne
-    {
-        return $this->hasOne(MasterProductCategoryOrderingIntervals::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(MasterProductCategorySalesIntervals::class);
-    }
-
-    public function orderingStats(): HasOne
-    {
-        return $this->hasOne(MasterProductCategoryOrderingStats::class);
     }
 
     public function timeSeries(): HasMany
@@ -260,5 +251,35 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         return $this->morphToMany(MasterCollection::class, 'model', 'model_has_master_collections')->withTimestamps();
     }
 
+
+    public function descArt1Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art1');
+    }
+
+    public function descArt2Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art2');
+    }
+
+    public function descArt3Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art3');
+    }
+
+    public function descArt4Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art4');
+    }
+
+    public function descArt5Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art5');
+    }
+
+    public function extraDescArt1Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'extra_desc_art1');
+    }
 
 }

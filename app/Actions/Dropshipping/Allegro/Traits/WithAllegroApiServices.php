@@ -76,7 +76,7 @@ trait WithAllegroApiServices
     public function sanitizeAllegroDescription(?string $content): string
     {
         if (!$content) {
-            return __("<p>No description available</p>");
+            return "<p>".__("No description available")."</p>";
         }
 
         $content = str_replace(['<strong>', '</strong>'], ['<b>', '</b>'], $content);

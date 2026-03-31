@@ -71,6 +71,8 @@ trait IsDeliveryNotesIndex
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::PACKING);
         } elseif ($bucket == 'finalised') {
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::FINALISED);
+        } elseif ($bucket == 'inWarehouse') {
+            $query->whereNotIn('delivery_notes.state', [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::CANCELLED]);
         } elseif ($bucket == 'dispatched') {
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::DISPATCHED);
         } elseif ($bucket == 'cancelled') {
@@ -80,13 +82,14 @@ trait IsDeliveryNotesIndex
                 ->where('dispatched_at', Carbon::today());
         }
 
+        $query->leftJoin('delivery_note_order', 'delivery_note_order.delivery_note_id', '=', 'delivery_notes.id');
+        $query->leftJoin('orders', 'orders.id', 'delivery_note_order.order_id');
 
         if ($parent instanceof Warehouse) {
             $query->where('delivery_notes.warehouse_id', $parent->id);
         } elseif ($parent instanceof Group) {
             $query->where('delivery_notes.group_id', $parent->id);
         } elseif ($parent instanceof Order) {
-            $query->leftjoin('delivery_note_order', 'delivery_note_order.delivery_note_id', '=', 'delivery_notes.id');
             $query->where('delivery_note_order.order_id', $parent->id);
         } elseif ($parent instanceof Customer) {
             $query->where('delivery_notes.customer_id', $parent->id);
@@ -98,26 +101,24 @@ trait IsDeliveryNotesIndex
             abort(419);
         }
 
-        // Todo: this hacks has to be deleted after we migrate from aurora
-        if ($shopType != 'all') {
-            $query->where('shops.is_aiku', true);
-        }
+
+        $query->where('shops.is_aiku', true);
 
         // Subquery to count the number of picking sessions for each delivery note
         // Using a correlated subquery to ensure we only get one row per delivery note
         $pickingSessionsCountSubquery = function ($query) {
             $query->selectRaw('COALESCE(COUNT(picking_session_id), 0)')
-                  ->from('picking_session_has_delivery_notes')
-                  ->whereColumn('picking_session_has_delivery_notes.delivery_note_id', 'delivery_notes.id');
+                ->from('picking_session_has_delivery_notes')
+                ->whereColumn('picking_session_has_delivery_notes.delivery_note_id', 'delivery_notes.id');
         };
 
         // Subquery to concatenate picking session IDs for each delivery note
-        // Using STRING_AGG PostgreSQL function to concatenate values with comma separator
+        // Using STRING_AGG Postgres SQL function to concatenate values with comma separator
         // COALESCE is used to handle NULL values, returning an empty string if no picking sessions exist
         $pickingSessionIdsSubquery = function ($query) {
             $query->selectRaw("COALESCE(STRING_AGG(CAST(picking_session_id AS VARCHAR), ','), '')")
-                  ->from('picking_session_has_delivery_notes')
-                  ->whereColumn('picking_session_has_delivery_notes.delivery_note_id', 'delivery_notes.id');
+                ->from('picking_session_has_delivery_notes')
+                ->whereColumn('picking_session_has_delivery_notes.delivery_note_id', 'delivery_notes.id');
         };
 
         return $query->defaultSort('-delivery_notes.date')
@@ -125,6 +126,7 @@ trait IsDeliveryNotesIndex
                 'delivery_notes.id',
                 'delivery_notes.reference',
                 'delivery_notes.date',
+                'delivery_notes.data',
                 'delivery_notes.state',
                 'delivery_notes.is_premium_dispatch',
                 'delivery_notes.has_extra_packing',
@@ -148,10 +150,33 @@ trait IsDeliveryNotesIndex
                 'delivery_notes.public_notes',
                 'delivery_notes.shipping_notes',
                 'delivery_notes.shipping_data',
+                'orders.in_warehouse_at',
             ])
+            ->selectRaw(
+                "
+                COALESCE(
+                    DATE_PART('day', NOW() - orders.in_warehouse_at),
+                    0
+                ) as number_of_days_in_warehouse
+            "
+            )
             ->selectSub($pickingSessionsCountSubquery, 'picking_sessions_count')
             ->selectSub($pickingSessionIdsSubquery, 'picking_session_ids')
-            ->allowedSorts(['reference', 'date', 'number_items', 'customer_name', 'type', 'effective_weight', 'picking_sessions_count'])
+            ->allowedSorts([
+                'reference',
+                'date',
+                'number_items',
+                'customer_name',
+                'type',
+                'effective_weight',
+                'picking_sessions_count',
+                'number_of_days_in_warehouse',
+                'sort_picker',
+                'sort_packer',
+                'sort_trolleys',
+                'sort_picked_bays'
+
+            ])
             ->allowedFilters([$globalSearch])
             ->withBetweenDates(['date'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -168,6 +193,7 @@ trait IsDeliveryNotesIndex
         if ($employee) {
             $pickerEmployee = $employee->jobPositions()->where('name', 'Picker')->first();
         }
+
         return function (InertiaTable $table) use ($parent, $prefix, $bucket, $pickerEmployee, $shopType) {
             if ($prefix) {
                 $table
@@ -179,12 +205,12 @@ trait IsDeliveryNotesIndex
             $table->betweenDates(['date']);
 
             $noResults = __("No delivery notes found");
-            $count = 0;
+            $count     = 0;
             if ($parent instanceof Customer) {
-                $count = $parent->stats->number_delivery_notes;
+                $count     = $parent->stats->number_delivery_notes;
                 $noResults = __("Customer has no delivery notes");
             } elseif ($parent instanceof CustomerClient) {
-                $count = $parent->stats->number_delivery_notes;
+                $count     = $parent->stats->number_delivery_notes;
                 $noResults = __("This customer client hasn't place any delivery notes");
             } elseif ($parent instanceof Group) {
                 $count = $parent->orderingStats->number_delivery_notes;
@@ -214,13 +240,11 @@ trait IsDeliveryNotesIndex
                         $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_cancelled;
                     }
                 }
-
-
             } elseif ($parent instanceof Shop) {
                 $count = $parent->orderingStats->number_delivery_notes;
             } elseif ($parent instanceof Order) {
                 $noResults = __("No delivery notes has been created for this order");
-                $count = $parent->stats->number_delivery_notes ?? 0;
+                $count     = $parent->stats->number_delivery_notes ?? 0;
             }
 
 
@@ -248,7 +272,26 @@ trait IsDeliveryNotesIndex
                 $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, searchable: true);
             }
             $table->column(key: 'effective_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+
             $table->column(key: 'number_items', label: __('Items'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($bucket == 'handling' || $bucket == 'handling_blocked' || $bucket == 'picked' || $bucket == 'packing' || $bucket == 'packed' || $bucket == 'finalised') {
+                $table->column(key: 'sort_picker', label: __('Picker'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
+            if ($bucket == 'handling' || $bucket == 'handling_blocked' || $bucket == 'picked') {
+                $table->column(key: 'sort_trolleys', label: __('Trolleys'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
+            if ($bucket == 'picked') {
+                $table->column(key: 'sort_picked_bays', label: __('Picked bays'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
+
+            if ($bucket == 'packing' || $bucket == 'packed' || $bucket == 'finalised') {
+                $table->column(key: 'sort_packer', label: __('Packer'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
             if (in_array($bucket, ['all', 'dispatched_today', 'dispatched'])) {
                 $table->column(key: 'delivery', label: __('Shipping'));
             }
@@ -256,8 +299,6 @@ trait IsDeliveryNotesIndex
             if ($bucket == 'unassigned' && $pickerEmployee) {
                 $table->column(key: 'action', label: __('Action'), canBeHidden: false);
             }
-
-
         };
     }
 

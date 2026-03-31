@@ -5,17 +5,24 @@
  */
 
 export interface Employee {
-    slug: string
-    name: string,
-    email: string,
-    phone: string,
-    created_at: string
-    updated_at: string
-    identity_document_number: number
-    gender: string
-    worker_number: string
-    job_title: string
-    emergency_contact: string;
-    type: string
-    state: string
+	slug: string
+	name: string
+	email: string
+	phone: string
+	created_at: string
+	updated_at: string
+	identity_document_number: number
+	gender: string
+	worker_number: string
+	job_title: string
+	emergency_contact: EmergencyContact | null
+	type: string
+	state: string
+}
+
+export interface EmergencyContact {
+	contact: string | null
+	phone_number: string | null
+	address: string | null
+	status: string | null
 }

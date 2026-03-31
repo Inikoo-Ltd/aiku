@@ -128,8 +128,8 @@ class IndexProductsInCatalogue extends OrgAction
                 'products.web_images',
                 'available_quantity',
                 'products.is_for_sale',
-                'units',
-                'unit',
+                'products.units',
+                'products.unit',
                 'master_product_id',
             ])
             ->selectRaw("'{$shop->currency->code}'  as currency_code")
@@ -262,6 +262,7 @@ class IndexProductsInCatalogue extends OrgAction
             if ($bucket == 'discontinued') {
                 $table->column(key: 'discontinued_at', label: __('Discontinued At'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
             }
+
         };
     }
 

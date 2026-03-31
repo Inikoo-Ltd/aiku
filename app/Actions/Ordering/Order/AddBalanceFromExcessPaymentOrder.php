@@ -18,7 +18,7 @@ use App\Models\Ordering\Order;
 class AddBalanceFromExcessPaymentOrder extends OrgAction
 {
     use WithActionUpdate;
-    public function handle(Order $order)
+    public function handle(Order $order): void
     {
         StoreCreditTransaction::make()->action($order->customer, [
             'amount' => $order->payment_amount - $order->total_amount,
@@ -39,7 +39,7 @@ class AddBalanceFromExcessPaymentOrder extends OrgAction
         ]);
     }
 
-    public function asController(Order $order)
+    public function asController(Order $order): void
     {
         $this->initialisationFromShop($order->shop, []);
         $this->handle($order);

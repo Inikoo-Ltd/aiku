@@ -36,7 +36,7 @@ const props = defineProps<{
         }
     >
     attachToFavouriteRoute: { name: string }
-    dettachToFavouriteRoute: { name: string }
+    detachToFavouriteRoute: { name: string }
     attachBackInStockRoute: { name: string }
     detachBackInStockRoute: { name: string }
 	addToBasketRoute:{ name: string }
@@ -100,7 +100,7 @@ const onAddFavourite = (product: ProductResource) => {
 
 const onUnselectFavourite = (product: ProductResource) => {
     router.delete(
-        route(props.dettachToFavouriteRoute.name, { product: product.id }),
+        route(props.detachToFavouriteRoute.name, { product: product.id }),
         {
             preserveScroll: true,
             preserveState: true,

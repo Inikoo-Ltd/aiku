@@ -44,7 +44,6 @@ trait OfferCampaignProductOffersTrait
                 'tabs'                                               => [
                     'current'    => $this->tab,
                     'navigation' => OfferCampaignTabsEnum::navigationExcept([
-                        OfferCampaignTabsEnum::GR_GIFT,
                         OfferCampaignTabsEnum::GR_AMNESTY
                     ])
                 ],

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Ordering\Transaction;
 
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrdersStats;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\OrgAction;
@@ -41,7 +40,6 @@ class StoreTransactionFromAdjustment extends OrgAction
         if ($this->strict) {
             CalculateOrderTotalAmounts::run($order);
             OrderHydrateTransactions::dispatch($order);
-            AssetHydrateOrdersStats::dispatch($transaction->asset_id)->delay($this->hydratorsDelay);
         }
 
         return $transaction;
