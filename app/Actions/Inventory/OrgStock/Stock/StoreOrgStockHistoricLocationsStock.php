@@ -36,6 +36,9 @@ class StoreOrgStockHistoricLocationsStock
         $orgStockLocationData = [];
         $locationsIds         = $this->getLocationsIds($orgStock, $date);
         $costPerSku           = $this->getCostPerSku($orgStock, $date);
+
+        $lastSoldDate = $this->lastSoldDate($orgStock, $date);
+
         foreach ($locationsIds as $locationId) {
             $location = Location::withTrashed()->find($locationId);
 
@@ -87,6 +90,8 @@ class StoreOrgStockHistoricLocationsStock
             }
         }
 
+        $nonMovingOneYear = $this->nonMovingOneYear($orgStock, $date, $orgStockQuantity);
+
 
         $organisationStockHistory = OrganisationStockHistory::firstOrCreate(
             [
@@ -120,10 +125,18 @@ class StoreOrgStockHistoricLocationsStock
                 'org_stock_commercial_value'    => 0,
                 'grp_stock_commercial_value'    => 0,
                 'value_per_sku'                 => $costPerSku,
+                'last_sold_date'                => $lastSoldDate,
+                'sold_within_1y'                => $lastSoldDate && $lastSoldDate->gte(Carbon::now()->subYear()),
+                'non_moving_1y'                 => $nonMovingOneYear,
+
             ]
         );
 
         foreach ($orgStockLocationData as $orgStockLocation) {
+            $quantity      = max(0, $orgStockLocation['quantity']);
+            $orgStockValue = max(0, $orgStockLocation['org_stock_value']);
+            $grpStockValue = max(0, $orgStockLocation['grp_stock_value']);
+
             LocationOrgStockHistory::updateOrCreate(
                 [
                     'date'         => $date->format('Y-m-d'),
@@ -133,7 +146,9 @@ class StoreOrgStockHistoricLocationsStock
                 [
                     'org_stock_history_id'         => $orgStockHistory->id,
                     'actual_quantity_in_locations' => $orgStockLocation['quantity'],
-                    'quantity_in_locations'        => max(0, $orgStockLocation['quantity'])
+                    'quantity_in_locations'        => $quantity,
+                    'org_stock_value'              => $orgStockValue,
+                    'grp_stock_value'              => $grpStockValue,
                 ]
             );
         }
@@ -186,6 +201,44 @@ class StoreOrgStockHistoricLocationsStock
             ->sum('quantity');
 
         return $seedQuantity + $sumMovements;
+    }
+
+    public function lastSoldDate(OrgStock $orgStock, Carbon $date): ?Carbon
+    {
+        $lastSoldData = OrgStockMovement::select('date')->where('org_stock_id', $orgStock->id)
+            ->where('type', OrgStockMovementTypeEnum::PICKED->value)
+            ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))
+            ->orderBy('date', 'desc')->first();
+        if ($lastSoldData) {
+            return Carbon::parse($lastSoldData->date);
+        }
+
+        return null;
+    }
+
+    public function nonMovingOneYear(OrgStock $orgStock, Carbon $date, $quantityOnDate)
+    {
+        $firstAssociate = OrgStockMovement::select('date')->where('org_stock_id', $orgStock->id)
+            ->where('type', OrgStockMovementTypeEnum::ASSOCIATE->value)
+            ->orderBy('date')->first();
+
+        if ($firstAssociate && Carbon::parse($firstAssociate->date)->lt($date->copy()->subYear())) {
+            return 0;
+        }
+
+        $sumPickedQuantity = OrgStockMovement::where('org_stock_id', $orgStock->id)
+            ->where('type', OrgStockMovementTypeEnum::PICKED->value)
+            ->where('date', '>=', $date->copy()->subYear()->startOfDay()->format('Y-m-d H:i:s.u'))
+            ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))
+            ->sum('quantity');
+
+        $nonMovingQuantity = $quantityOnDate - $sumPickedQuantity;
+        if ($nonMovingQuantity < 0) {
+            return 0;
+        }
+
+
+        return $nonMovingQuantity;
     }
 
     private function wasLocationValid(OrgStock $orgStock, Location $location, Carbon $date, ?Command $command): bool
