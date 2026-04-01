@@ -48,8 +48,8 @@ function orgStockRoute(stockId: number): string {
             <span class="tabular-nums">{{ locale.number(item.quantity_in_locations) }}</span>
         </template>
 
-        <template #cell(actual_quantity_in_locations)="{ item }">
-            <span class="tabular-nums">{{ locale.number(item.actual_quantity_in_locations) }}</span>
+        <template #cell(org_stock_value)="{ item }">
+            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.org_stock_value) }}</span>
         </template>
     </Table>
 </template>

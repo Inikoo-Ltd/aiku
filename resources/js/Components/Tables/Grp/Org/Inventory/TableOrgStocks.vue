@@ -305,5 +305,13 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
         <template #cell(org_stock_value)="{ item }">
             <span v-if="item.org_stock_value">{{ locale.currencyFormat(item.currency_code, item.org_stock_value) }}</span>
         </template>
+
+        <template #cell(sold_within_1y)="{ item }">
+            <Icon :data="item.sold_within_1y" />
+        </template>
+
+        <template #cell(non_moving_1y)="{ item }">
+            <span class="tabular-nums">{{ item.non_moving_1y ?? 0 }}</span>
+        </template>
     </Table>
 </template>

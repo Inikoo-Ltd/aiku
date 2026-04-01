@@ -16,6 +16,7 @@ use App\Models\Inventory\OrganisationStockHistory;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexLocationOrgStocksForOrganisationStockHistory extends OrgAction
@@ -46,11 +47,12 @@ class IndexLocationOrgStocksForOrganisationStockHistory extends OrgAction
                 'org_stocks.name as stock_name',
                 'org_stocks.slug as stock_slug',
                 'locations.code as location_code',
-                'location_org_stock_histories.actual_quantity_in_locations',
                 'location_org_stock_histories.quantity_in_locations',
+                'location_org_stock_histories.org_stock_value',
+                DB::raw("'" . $organisationStockHistory->organisation->currency->code . "' as currency_code"),
             ])
             ->defaultSort('org_stocks.code')
-            ->allowedSorts(['stock_code', 'location_code', 'quantity_in_locations', 'actual_quantity_in_locations'])
+            ->allowedSorts(['stock_code', 'location_code', 'quantity_in_locations', 'org_stock_value'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -73,7 +75,7 @@ class IndexLocationOrgStocksForOrganisationStockHistory extends OrgAction
                 ->column(key: 'stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'location_code', label: __('Location'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'quantity_in_locations', label: __('Quantity'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'actual_quantity_in_locations', label: __('Actual Quantity'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'org_stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency', align: 'right')
                 ->defaultSort('stock_code');
         };
     }

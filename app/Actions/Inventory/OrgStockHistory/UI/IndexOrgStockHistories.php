@@ -49,9 +49,12 @@ class IndexOrgStockHistories extends OrgAction
                 'org_stock_histories.quantity_in_locations',
                 'org_stock_histories.org_stock_value',
                 'org_stock_histories.grp_stock_value',
+                'org_stock_histories.sold_within_1y',
+                'org_stock_histories.last_sold_date',
+                'org_stock_histories.non_moving_1y',
                 DB::raw("'" . $organisationStockHistory->organisation->currency->code . "' as currency_code"),
             ])
-            ->allowedSorts(['code', 'name', 'quantity_in_locations', 'org_stock_value', 'grp_stock_value'])
+            ->allowedSorts(['code', 'name', 'quantity_in_locations', 'org_stock_value', 'grp_stock_value', 'sold_within_1y', 'non_moving_1y'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -76,6 +79,8 @@ class IndexOrgStockHistories extends OrgAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'quantity_in_locations', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'org_stock_value', label: __('Value ('.$currency.')'), canBeHidden: false, sortable: true, type: 'currency')
+                ->column(key: 'sold_within_1y', label: __('Sold Within 1Y'), canBeHidden: false, sortable: true, searchable: true, type: 'icon')
+                ->column(key: 'non_moving_1y', label: __('Non Moving 1Y'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->defaultSort('code');
         };
     }

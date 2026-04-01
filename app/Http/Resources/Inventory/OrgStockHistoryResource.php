@@ -24,6 +24,12 @@ class OrgStockHistoryResource extends JsonResource
             'org_stock_value'       => $this->org_stock_value,
             'grp_stock_value'       => $this->grp_stock_value,
             'currency_code'         => $this->currency_code,
+            'sold_within_1y'        => [
+                'icon'    => 'fal fa-cash-register',
+                'class'   => $this->sold_within_1y ? 'text-green-500' : 'text-red-500',
+                'tooltip' => __('Last sold at: ').($this->last_sold_date ? $this->last_sold_date->format('D, M j, Y') : __('Never')),
+            ],
+            'non_moving_1y'         => $this->non_moving_1y,
         ];
     }
 }
