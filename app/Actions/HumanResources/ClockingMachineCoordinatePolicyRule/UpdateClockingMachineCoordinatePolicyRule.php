@@ -33,10 +33,18 @@ class UpdateClockingMachineCoordinatePolicyRule extends OrgAction
         ];
     }
 
-    public function asController(ClockingMachineCoordinatePolicyRule $clockingMachineCoordinatePolicyRule, ActionRequest $request): ClockingMachineCoordinatePolicyRule
+    public function asController(ClockingMachineCoordinatePolicyRule $policyRule, ActionRequest $request): ClockingMachineCoordinatePolicyRule
     {
-        $this->initialisation($clockingMachineCoordinatePolicyRule->policy->organisation, $request);
+        $this->initialisation($policyRule->policy->organisation, $request);
 
-        return $this->handle($clockingMachineCoordinatePolicyRule, $this->validatedData);
+        return $this->handle($policyRule, $this->validatedData);
+    }
+    public function htmlResponse(): void
+    {
+        request()->session()->flash('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Clocking policy rule successfully updated.'),
+        ]);
     }
 }
