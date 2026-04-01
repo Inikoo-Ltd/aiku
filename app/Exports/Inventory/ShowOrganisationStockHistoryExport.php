@@ -1,9 +1,9 @@
 <?php
 
 /*
- * Author: stewicca <stewicalf@gmail.com>
- * Created: Tue, 01 Apr 2026
- * Copyright (c) 2026, Inikoo LTD
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Wed, 01 Apr 2026 17:25:59 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
 namespace App\Exports\Inventory;
@@ -57,8 +57,7 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
                 'org_stock_histories.org_stock_value',
                 'org_stock_histories.sold_within_1y',
                 'org_stock_histories.last_sold_date',
-                // TODO: unhide when non_moving_1y data is ready
-                // 'org_stock_histories.non_moving_1y',
+                'org_stock_histories.non_moving_1y',
             ])
             ->where('org_stock_histories.organisation_stock_history_id', $this->organisationStockHistory->id)
             ->orderBy('org_stocks.code');
@@ -83,8 +82,7 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
             __('Stock Value'),
             __('Sold Within 1 Year'),
             __('Last Sold Date'),
-            // TODO: unhide when non_moving_1y data is ready
-            // __('Non Moving 1 Year'),
+            __('Non Moving 1 Year'),
         ];
     }
 
@@ -97,36 +95,31 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
             'D' => NumberFormat::FORMAT_TEXT,
             'E' => NumberFormat::FORMAT_TEXT,
             'F' => NumberFormat::FORMAT_TEXT,
-            // TODO: unhide when non_moving_1y data is ready
-            // 'G' => NumberFormat::FORMAT_TEXT,
+            'G' => NumberFormat::FORMAT_TEXT,
         ];
     }
 
     public function map($row): array
     {
+        $orgSymbol = $this->organisationStockHistory->organisation->currency->symbol;
         if ($this->tab === 'location_org_stocks') {
-            $orgSymbol = $this->organisationStockHistory->organisation->currency->symbol;
-
             return [
-                (string) ($row->stock_code ?? ''),
-                (string) ($row->stock_name ?? ''),
-                (string) ($row->location_code ?? ''),
-                number_format((float) ($row->quantity_in_locations ?? 0), 2, '.', ''),
-                $orgSymbol.number_format((float) ($row->org_stock_value ?? 0), 2, '.', ''),
+                (string)($row->stock_code ?? ''),
+                (string)($row->stock_name ?? ''),
+                (string)($row->location_code ?? ''),
+                number_format((float)($row->quantity_in_locations ?? 0), 2, '.', ''),
+                $orgSymbol.number_format((float)($row->org_stock_value ?? 0), 2, '.', ''),
             ];
         }
 
-        $orgSymbol = $this->organisationStockHistory->organisation->currency->symbol;
-
         return [
-            (string) ($row->code ?? ''),
-            (string) ($row->name ?? ''),
-            number_format((float) ($row->quantity_in_locations ?? 0), 2, '.', ''),
-            $orgSymbol.number_format((float) ($row->org_stock_value ?? 0), 2, '.', ''),
+            (string)($row->code ?? ''),
+            (string)($row->name ?? ''),
+            number_format((float)($row->quantity_in_locations ?? 0), 2, '.', ''),
+            $orgSymbol.number_format((float)($row->org_stock_value ?? 0), 2, '.', ''),
             $row->sold_within_1y ? __('Yes') : __('No'),
             $row->last_sold_date ?? '',
-            // TODO: unhide when non_moving_1y data is ready
-            // (string) ($row->non_moving_1y ?? '0'),
+            (string)($row->non_moving_1y ?? '0'),
         ];
     }
 }

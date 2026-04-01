@@ -47,8 +47,7 @@ class IndexOrganisationStockHistories extends OrgAction
             'id',
             'date as bucket',
             'org_stock_value',
-            // TODO: unhide when number_locations data is ready
-            // 'number_locations',
+            'number_locations',
             'number_org_stocks',
             'number_out_of_stock_org_stocks',
             'number_location_org_stocks',
@@ -63,9 +62,9 @@ class IndexOrganisationStockHistories extends OrgAction
         return QueryBuilder::for(OrganisationStockHistory::class)
             ->select($select)
             ->where('organisation_id', $organisation->id)
-            ->when($bucket === 'weekly', fn($q) => $q->where('is_week', true))
-            ->when($bucket === 'monthly', fn($q) => $q->where('is_month', true))
-            ->when($bucket === 'yearly', fn($q) => $q->where('is_year', true))
+            ->when($bucket === 'weekly', fn ($q) => $q->where('is_week', true))
+            ->when($bucket === 'monthly', fn ($q) => $q->where('is_month', true))
+            ->when($bucket === 'yearly', fn ($q) => $q->where('is_year', true))
             ->defaultSort('-date')
             ->allowedSorts([
                 AllowedSort::field('bucket', 'date'),
@@ -99,8 +98,7 @@ class IndexOrganisationStockHistories extends OrgAction
                 ->column(key: 'bucket', label: $bucketLabel, canBeHidden: false, sortable: true, type: 'date')
                 ->column(key: 'number_org_stocks', label: __('Total SKUs'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'number_out_of_stock_org_stocks', label: __('Out of Stock'), canBeHidden: false, sortable: true, align: 'right')
-                // TODO: unhide when number_locations data is ready
-                // ->column(key: 'number_locations', label: __('Locations'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'number_locations', label: __('Locations'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(
                     key: 'org_stock_value',
                     label: $sameCurrency ? __('Stock Value') : __('Stock Value').' ('.$organisation->currency->code.')',
@@ -140,20 +138,20 @@ class IndexOrganisationStockHistories extends OrgAction
                 ],
 
                 OrganisationStockHistoriesTabsEnum::DAILY->value => $this->tab == OrganisationStockHistoriesTabsEnum::DAILY->value
-                    ? fn() => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn() => OrganisationStockHistoriesResource::collection($this->handle($this->organisation))),
+                    ? fn () => OrganisationStockHistoriesResource::collection($histories)
+                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation))),
 
                 OrganisationStockHistoriesTabsEnum::WEEKLY->value => $this->tab == OrganisationStockHistoriesTabsEnum::WEEKLY->value
-                    ? fn() => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn() => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'weekly'))),
+                    ? fn () => OrganisationStockHistoriesResource::collection($histories)
+                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'weekly'))),
 
                 OrganisationStockHistoriesTabsEnum::MONTHLY->value => $this->tab == OrganisationStockHistoriesTabsEnum::MONTHLY->value
-                    ? fn() => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn() => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'monthly'))),
+                    ? fn () => OrganisationStockHistoriesResource::collection($histories)
+                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'monthly'))),
 
                 OrganisationStockHistoriesTabsEnum::YEARLY->value => $this->tab == OrganisationStockHistoriesTabsEnum::YEARLY->value
-                    ? fn() => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn() => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'yearly'))),
+                    ? fn () => OrganisationStockHistoriesResource::collection($histories)
+                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'yearly'))),
             ]
         )
             ->table($this->tableStructure($this->organisation))

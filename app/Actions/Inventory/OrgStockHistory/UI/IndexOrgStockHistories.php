@@ -53,7 +53,7 @@ class IndexOrgStockHistories extends OrgAction
                 'org_stock_histories.sold_within_1y',
                 'org_stock_histories.last_sold_date',
                 'org_stock_histories.non_moving_1y',
-                DB::raw("'" . $organisationStockHistory->organisation->currency->code . "' as currency_code"),
+                DB::raw("'".$organisationStockHistory->organisation->currency->code."' as currency_code"),
             ])
             ->allowedSorts([
                 AllowedSort::field('code', 'org_stocks.code'),
@@ -86,9 +86,8 @@ class IndexOrgStockHistories extends OrgAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'quantity_in_locations', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'org_stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
-                ->column(key: 'sold_within_1y', label: __('Sold Within 1Y'), canBeHidden: false, sortable: true, searchable: true, type: 'icon')
-                // TODO: unhide when non_moving_1y data is ready
-                // ->column(key: 'non_moving_1y', label: __('Non Moving 1Y'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'sold_within_1y', label: '', icon: 'fal fa-cash-register', tooltip: __('Sold Within 1Y'), canBeHidden: false, sortable: true, searchable: true, type: 'icon')
+                ->column(key: 'non_moving_1y', label: '', icon: 'fal fa-skull-cow', tooltip: __('Non Moving 1Y'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->defaultSort('code');
         };
     }

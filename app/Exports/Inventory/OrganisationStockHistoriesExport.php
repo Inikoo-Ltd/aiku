@@ -37,17 +37,16 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
                 'grp_stock_value',
                 'number_org_stocks',
                 'number_out_of_stock_org_stocks',
-                // TODO: unhide when number_locations data is ready
-                // 'number_locations',
+                'number_locations',
             ])
             ->where('organisation_id', $this->organisation->id)
             ->orderBy('date', 'desc');
 
         match ($bucket) {
-            'weekly'  => $query->where('is_week', true),
+            'weekly' => $query->where('is_week', true),
             'monthly' => $query->where('is_month', true),
-            'yearly'  => $query->where('is_year', true),
-            default   => $query->where('is_week', false)->where('is_month', false)->where('is_year', false),
+            'yearly' => $query->where('is_year', true),
+            default => $query->where('is_week', false)->where('is_month', false)->where('is_year', false),
         };
 
         return $query;
@@ -64,8 +63,7 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
             __('Date'),
             __('Total SKUs'),
             __('Out of Stock'),
-            // TODO: unhide when number_locations data is ready
-            // __('Locations'),
+            __('Locations'),
             $this->isSameCurrency() ? __('Stock Value') : __('Stock Value').' ('.$this->organisation->currency->symbol.')',
         ];
 
@@ -97,16 +95,15 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
         $orgSymbol = $this->organisation->currency->symbol;
 
         $data = [
-            (string) $row->bucket,
-            (string) ($row->number_org_stocks ?? '0'),
-            (string) ($row->number_out_of_stock_org_stocks ?? '0'),
-            // TODO: unhide when number_locations data is ready
-            // (string) ($row->number_locations ?? '0'),
-            $orgSymbol.number_format((float) ($row->org_stock_value ?? 0), 2, '.', ''),
+            (string)$row->bucket,
+            (string)($row->number_org_stocks ?? '0'),
+            (string)($row->number_out_of_stock_org_stocks ?? '0'),
+            (string)($row->number_locations ?? '0'),
+            $orgSymbol.number_format((float)($row->org_stock_value ?? 0), 2, '.', ''),
         ];
 
         if (!$this->isSameCurrency()) {
-            $data[] = $this->organisation->group->currency->symbol.number_format((float) ($row->grp_stock_value ?? 0), 2, '.', '');
+            $data[] = $this->organisation->group->currency->symbol.number_format((float)($row->grp_stock_value ?? 0), 2, '.', '');
         }
 
         return $data;

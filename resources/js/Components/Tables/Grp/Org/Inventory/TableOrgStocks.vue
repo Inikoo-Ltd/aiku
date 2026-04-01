@@ -311,7 +311,7 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
         </template>
 
         <template #cell(non_moving_1y)="{ item }">
-            <span class="tabular-nums">{{ item.non_moving_1y ?? 0 }}</span>
+            <span class="tabular-nums">{{ locale.number(item.non_moving_1y) }}</span>
         </template>
     </Table>
 </template>
