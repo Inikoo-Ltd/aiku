@@ -117,7 +117,7 @@ class IndexOrganisationStockHistories extends OrgAction
             //            }
 
 
-           // $table->column(key: 'number_org_stocks_not_sold_1y', label: __('No sold 1Y'), icon: 'fal fa-ban', tooltip: __('Number of SKUs not sold in more than 1 year'), canBeHidden: false, sortable: true, align: 'right');
+            $table->column(key: 'number_org_stocks_not_sold_1y', label: __('No sold 1Y'), icon: 'fal fa-ban', tooltip: __('Number of SKUs not sold in more than 1 year'), canBeHidden: false, sortable: true, align: 'right');
             $table->column(
                 key: 'value_dormant_stock_1y',
                 label: __('Dormant 1Y'),
