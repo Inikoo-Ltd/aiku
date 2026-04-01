@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Author: Nickel
+ * Author: stewicca <stewicalf@gmail.com>
  * Created: Tue, 01 Apr 2026
  * Copyright (c) 2026, Inikoo LTD
  */
@@ -9,7 +9,6 @@
 namespace App\Actions\Inventory\OrgStockHistory\UI;
 
 use App\Actions\OrgAction;
-use App\Http\Resources\Inventory\LocationOrgStockHistoriesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\LocationOrgStockHistory;
 use App\Models\Inventory\OrganisationStockHistory;
@@ -18,6 +17,7 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
 
 class IndexLocationOrgStocksForOrganisationStockHistory extends OrgAction
 {
@@ -34,6 +34,9 @@ class IndexLocationOrgStocksForOrganisationStockHistory extends OrgAction
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
+
+        // TODO: after running repair:location_org_stock_histories_organisation_stock_history_id, remove the join to org_stock_histories and use this instead:
+        // ->where('location_org_stock_histories.organisation_stock_history_id', $organisationStockHistory->id)
 
         return QueryBuilder::for(LocationOrgStockHistory::class)
             ->leftJoin('org_stock_histories', 'location_org_stock_histories.org_stock_history_id', '=', 'org_stock_histories.id')
@@ -52,7 +55,13 @@ class IndexLocationOrgStocksForOrganisationStockHistory extends OrgAction
                 DB::raw("'" . $organisationStockHistory->organisation->currency->code . "' as currency_code"),
             ])
             ->defaultSort('org_stocks.code')
-            ->allowedSorts(['stock_code', 'location_code', 'quantity_in_locations', 'org_stock_value'])
+            ->allowedSorts([
+                AllowedSort::field('stock_code', 'org_stocks.code'),
+                AllowedSort::field('stock_name', 'org_stocks.name'),
+                AllowedSort::field('location_code', 'locations.code'),
+                AllowedSort::field('quantity_in_locations', 'location_org_stock_histories.quantity_in_locations'),
+                AllowedSort::field('org_stock_value', 'location_org_stock_histories.org_stock_value'),
+            ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

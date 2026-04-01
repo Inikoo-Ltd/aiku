@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Author: Nickel
+ * Author: stewicca <stewicalf@gmail.com>
  * Created: Tue, 01 Apr 2026
  * Copyright (c) 2026, Inikoo LTD
  */
@@ -37,7 +37,8 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
                 'grp_stock_value',
                 'number_org_stocks',
                 'number_out_of_stock_org_stocks',
-                'number_location_org_stocks',
+                // TODO: unhide when number_locations data is ready
+                // 'number_locations',
             ])
             ->where('organisation_id', $this->organisation->id)
             ->orderBy('date', 'desc');
@@ -59,18 +60,17 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
 
     public function headings(): array
     {
-        $orgCurrency = $this->organisation->currency->code;
-
         $headings = [
             __('Date'),
             __('Total SKUs'),
             __('Out of Stock'),
-            __('In Locations'),
-            __('Stock Value').' ('.$orgCurrency.')',
+            // TODO: unhide when number_locations data is ready
+            // __('Locations'),
+            $this->isSameCurrency() ? __('Stock Value') : __('Stock Value').' ('.$this->organisation->currency->symbol.')',
         ];
 
         if (!$this->isSameCurrency()) {
-            $headings[] = __('Stock Value').' ('.$this->organisation->group->currency->code.')';
+            $headings[] = __('Stock Value').' ('.$this->organisation->group->currency->symbol.')';
         }
 
         return $headings;
@@ -83,11 +83,10 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
             'B' => NumberFormat::FORMAT_TEXT,
             'C' => NumberFormat::FORMAT_TEXT,
             'D' => NumberFormat::FORMAT_TEXT,
-            'E' => NumberFormat::FORMAT_TEXT,
         ];
 
         if (!$this->isSameCurrency()) {
-            $formats['F'] = NumberFormat::FORMAT_TEXT;
+            $formats['E'] = NumberFormat::FORMAT_TEXT;
         }
 
         return $formats;
@@ -101,7 +100,8 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
             (string) $row->bucket,
             (string) ($row->number_org_stocks ?? '0'),
             (string) ($row->number_out_of_stock_org_stocks ?? '0'),
-            (string) ($row->number_location_org_stocks ?? '0'),
+            // TODO: unhide when number_locations data is ready
+            // (string) ($row->number_locations ?? '0'),
             $orgSymbol.number_format((float) ($row->org_stock_value ?? 0), 2, '.', ''),
         ];
 

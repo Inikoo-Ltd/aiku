@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Author: Nickel
+ * Author: stewicca <stewicalf@gmail.com>
  * Created: Tue, 01 Apr 2026
  * Copyright (c) 2026, Inikoo LTD
  */
@@ -29,6 +29,9 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
     public function query(): Builder
     {
         if ($this->tab === 'location_org_stocks') {
+            // TODO: after running repair:location_org_stock_histories_organisation_stock_history_id, remove the join to org_stock_histories and use this instead:
+            // ->where('location_org_stock_histories.organisation_stock_history_id', $this->organisationStockHistory->id)
+
             return DB::table('location_org_stock_histories')
                 ->join('org_stock_histories', 'location_org_stock_histories.org_stock_history_id', '=', 'org_stock_histories.id')
                 ->join('org_stocks', 'location_org_stock_histories.org_stock_id', '=', 'org_stocks.id')
@@ -54,7 +57,8 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
                 'org_stock_histories.org_stock_value',
                 'org_stock_histories.sold_within_1y',
                 'org_stock_histories.last_sold_date',
-                'org_stock_histories.non_moving_1y',
+                // TODO: unhide when non_moving_1y data is ready
+                // 'org_stock_histories.non_moving_1y',
             ])
             ->where('org_stock_histories.organisation_stock_history_id', $this->organisationStockHistory->id)
             ->orderBy('org_stocks.code');
@@ -63,27 +67,24 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
     public function headings(): array
     {
         if ($this->tab === 'location_org_stocks') {
-            $currencyCode = $this->organisationStockHistory->organisation->currency->code;
-
             return [
                 __('SKU Code'),
                 __('SKU Name'),
                 __('Location'),
                 __('Quantity'),
-                __('Stock Value').' ('.$currencyCode.')',
+                __('Stock Value'),
             ];
         }
-
-        $currencyCode = $this->organisationStockHistory->organisation->currency->code;
 
         return [
             __('SKU Code'),
             __('SKU Name'),
             __('Quantity'),
-            __('Stock Value').' ('.$currencyCode.')',
+            __('Stock Value'),
             __('Sold Within 1 Year'),
             __('Last Sold Date'),
-            __('Non Moving 1 Year'),
+            // TODO: unhide when non_moving_1y data is ready
+            // __('Non Moving 1 Year'),
         ];
     }
 
@@ -96,7 +97,8 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
             'D' => NumberFormat::FORMAT_TEXT,
             'E' => NumberFormat::FORMAT_TEXT,
             'F' => NumberFormat::FORMAT_TEXT,
-            'G' => NumberFormat::FORMAT_TEXT,
+            // TODO: unhide when non_moving_1y data is ready
+            // 'G' => NumberFormat::FORMAT_TEXT,
         ];
     }
 
@@ -123,7 +125,8 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
             $orgSymbol.number_format((float) ($row->org_stock_value ?? 0), 2, '.', ''),
             $row->sold_within_1y ? __('Yes') : __('No'),
             $row->last_sold_date ?? '',
-            (string) ($row->non_moving_1y ?? '0'),
+            // TODO: unhide when non_moving_1y data is ready
+            // (string) ($row->non_moving_1y ?? '0'),
         ];
     }
 }

@@ -41,27 +41,39 @@ class IndexOrganisationStockHistories extends OrgAction
     {
         InertiaTable::updateQueryBuilderParameters($bucket);
 
+        $sameCurrency = $organisation->currency_id === $organisation->group->currency_id;
+
+        $select = [
+            'id',
+            'date as bucket',
+            'org_stock_value',
+            // TODO: unhide when number_locations data is ready
+            // 'number_locations',
+            'number_org_stocks',
+            'number_out_of_stock_org_stocks',
+            'number_location_org_stocks',
+            DB::raw("'".$organisation->currency->code."' as org_currency_code"),
+        ];
+
+        if (!$sameCurrency) {
+            $select[] = 'grp_stock_value';
+            $select[] = DB::raw("'".$organisation->group->currency->code."' as grp_currency_code");
+        }
+
         return QueryBuilder::for(OrganisationStockHistory::class)
-            ->select([
-                'id',
-                'date as bucket',
-                'org_stock_value',
-                'grp_stock_value',
-                'org_stock_commercial_value',
-                'grp_stock_commercial_value',
-                'number_locations',
-                'number_org_stocks',
-                'number_out_of_stock_org_stocks',
-                'number_location_org_stocks',
-                DB::raw("'".$organisation->currency->code."' as org_currency_code"),
-                DB::raw("'".$organisation->group->currency->code."' as grp_currency_code"),
-            ])
+            ->select($select)
             ->where('organisation_id', $organisation->id)
             ->when($bucket === 'weekly', fn($q) => $q->where('is_week', true))
             ->when($bucket === 'monthly', fn($q) => $q->where('is_month', true))
             ->when($bucket === 'yearly', fn($q) => $q->where('is_year', true))
             ->defaultSort('-date')
-            ->allowedSorts([AllowedSort::field('bucket', 'date')])
+            ->allowedSorts([
+                AllowedSort::field('bucket', 'date'),
+                AllowedSort::field('number_org_stocks'),
+                AllowedSort::field('number_out_of_stock_org_stocks'),
+                AllowedSort::field('org_stock_value'),
+                AllowedSort::field('grp_stock_value'),
+            ])
             ->withPaginator($bucket, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -80,19 +92,26 @@ class IndexOrganisationStockHistories extends OrgAction
                 default => __('Date'),
             };
 
-            $orgCurrency = $organisation->currency->code;
-            $grpCurrency = $organisation->group->currency->code;
+            $sameCurrency = $organisation->currency_id === $organisation->group->currency_id;
 
             $table
                 ->withLabelRecord([__('record'), __('records')])
                 ->column(key: 'bucket', label: $bucketLabel, canBeHidden: false, sortable: true, type: 'date')
-                ->column(key: 'number_org_stocks', label: __('Total SKUs'), canBeHidden: false, align: 'right')
-                ->column(key: 'number_out_of_stock_org_stocks', label: __('Out of Stock'), canBeHidden: false, align: 'right')
-                ->column(key: 'number_locations', label: __('Locations'), canBeHidden: false, align: 'right')
-                ->column(key: 'org_stock_value', label: __('Stock Value').' ('.$orgCurrency.')', canBeHidden: false, type: 'currency', align: 'right');
+                ->column(key: 'number_org_stocks', label: __('Total SKUs'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'number_out_of_stock_org_stocks', label: __('Out of Stock'), canBeHidden: false, sortable: true, align: 'right')
+                // TODO: unhide when number_locations data is ready
+                // ->column(key: 'number_locations', label: __('Locations'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(
+                    key: 'org_stock_value',
+                    label: $sameCurrency ? __('Stock Value') : __('Stock Value').' ('.$organisation->currency->code.')',
+                    canBeHidden: false,
+                    sortable: true,
+                    type: 'currency',
+                    align: 'right'
+                );
 
-            if ($organisation->currency_id != $organisation->group->currency_id) {
-                $table->column(key: 'grp_stock_value', label: __('Stock Value').' ('.$grpCurrency.')', canBeHidden: false, type: 'currency', align: 'right');
+            if (!$sameCurrency) {
+                $table->column(key: 'grp_stock_value', label: __('Stock Value').' ('.$organisation->group->currency->code.')', canBeHidden: false, sortable: true, type: 'currency', align: 'right');
             }
         };
     }

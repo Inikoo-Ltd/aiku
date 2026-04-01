@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Author: Nickel
+ * Author: stewicca <stewicalf@gmail.com>
  * Created: Tue, 01 Apr 2026
  * Copyright (c) 2026, Inikoo LTD
  */
