@@ -1,12 +1,11 @@
 <?php
-
 /*
- * Author: stewicca <stewicalf@gmail.com>
- * Created: Tue, 01 Apr 2026
- * Copyright (c) 2026, Inikoo LTD
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Wed, 01 Apr 2026 21:01:34 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Inventory\OrgStockHistory;
+namespace App\Actions\Maintenance\Inventory\LocationOrgStockHistory;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
