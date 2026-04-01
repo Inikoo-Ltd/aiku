@@ -35,11 +35,12 @@ trait WithProformaInvoicePdf
 
                 return $transaction;
             });
-
+            
+            $amountToDeduct = (float) ($order->payment_amount ?? 0);
 
             $config = [
                 'title'                  => $order->reference,
-                'margin_left'            => 8,
+                'margin_left'            => 8,  
                 'margin_right'           => 8,
                 'margin_top'             => 2,
                 'margin_bottom'          => 2,
@@ -53,6 +54,10 @@ trait WithProformaInvoicePdf
                 'shop'                 => $order->shop,
                 'order'                => $order,
                 'transactions'         => $transactions,
+                'totalItemsNet'        => $totalItemsNet,
+                'totalShipping'        => $totalShipping,
+                'totalNet'             => $totalNet,
+                'amountToDeduct'       => $amountToDeduct,
                 'pro_mode'             => Arr::get($options, 'pro_mode', false),
                 'country_of_origin'    => Arr::get($options, 'country_of_origin', false),
                 'rrp'                  => Arr::get($options, 'rrp', false),
