@@ -118,6 +118,7 @@ class ProcessPriceChangeRecipients
             if (!$dataProduct) {
                 continue;
             }
+            $currencySymbol = $dataProduct->currency?->symbol ?? '$';
 
             $productImage = Arr::get(
                 $dataProduct->imageSources(200, 200),
@@ -164,7 +165,7 @@ class ProcessPriceChangeRecipients
                     <td align="center"
                         style="font-weight:600;
                                color:#16a34a;">'
-                    . number_format($newPrice, 2) .
+                    . $currencySymbol . ' ' . number_format($newPrice, 2) .
                     '</td>
                 </tr>';
             }

@@ -48,7 +48,6 @@ class SendEmailDeliveryChannel
         /** @var Mailshot|EmailBulkRun $model */
         $model = $emailDeliveryChannel->model;
 
-
         try {
             $locale = $model->shop->language->code;
             app()->setLocale($locale);
@@ -117,7 +116,6 @@ class SendEmailDeliveryChannel
 
             $additionalData = $dispatchedEmail->data['additional_data'] ?? [];
 
-
             if ($recipient->recipient_name) {
                 $additionalData['customer_name'] = $recipient->recipient_name;
             } elseif ($recipient->recipient_type == 'Customer') {
@@ -137,7 +135,6 @@ class SendEmailDeliveryChannel
                 additionalData: $additionalData,
                 senderName: $model->senderName()
             );
-
         }
 
 
