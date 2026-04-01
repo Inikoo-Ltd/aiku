@@ -26,7 +26,7 @@ class ExportOrganisationStockHistories extends OrgAction
     {
         $export = new OrganisationStockHistoriesExport($organisation, $filters);
 
-        return $this->export($export, 'stock-histories', $filters['type'] ?? 'xlsx');
+        return $this->export($export, 'stock-histories-'.($filters['tab'] ?? 'daily'), $filters['type'] ?? 'xlsx');
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): BinaryFileResponse

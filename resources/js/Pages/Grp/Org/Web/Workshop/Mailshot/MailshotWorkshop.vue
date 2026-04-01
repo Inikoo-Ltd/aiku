@@ -81,13 +81,13 @@ const onSendPublish = async (data) => {
 
                 notify({
                     title: "Warning",
-                    text: "Email saved and published, but no unsubscribe link was found.",
+                    text: "Saved successfully, but no unsubscribe link was found.",
                     type: "warning",
                 });
             } else {
                 notify({
                     title: "Success",
-                    text: "Save and publish email successfully",
+                    text: "Saved successfully",
                     type: "success",
                 });
             }
@@ -167,8 +167,8 @@ const saveTemplate = async () => {
         .then((response) => {
             visibleSAveEmailTemplateModal.value = false
             notify({
-                title: trans('Success!'),
-                text: trans('Success to save template'),
+                title: trans('Success'),
+                text: trans('Saved successfully'),
                 type: 'success',
             })
         })
