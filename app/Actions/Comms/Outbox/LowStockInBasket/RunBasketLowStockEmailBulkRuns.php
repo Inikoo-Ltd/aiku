@@ -6,7 +6,7 @@
  * Copyright (c) 2026, eka yudinata
  */
 
-namespace App\Actions\Comms\Outbox\PriceChangeNotification;
+namespace App\Actions\Comms\Outbox\LowStockInBasket;
 
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Services\QueryBuilder;
@@ -14,25 +14,30 @@ use App\Models\Comms\Outbox;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
 
-class RunPriceChangeNotificationEmailBulkRuns
+class RunBasketLowStockEmailBulkRuns
 {
     use AsAction;
 
-    public string $commandSignature = 'run:price-change-notification';
+    public string $commandSignature = 'run:basket-low-stock-notification';
     public string $jobQueue = 'ses';
 
     public function handle(): void
     {
         $queryOutbox = QueryBuilder::for(Outbox::class);
-        $queryOutbox->whereIn('code', [OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION]);
+        $queryOutbox->whereIn('code', [OutboxCodeEnum::BASKET_LOW_STOCK]);
         $queryOutbox->where('state', OutboxStateEnum::ACTIVE);
+        $queryOutbox->where('is_applicable', true);
         $queryOutbox->whereNotNull('shop_id');
-        $queryOutbox->select('outboxes.id', 'outboxes.shop_id', 'outboxes.code', 'outboxes.last_sent_at');
+        $queryOutbox->whereNotNull('interval');
+        $queryOutbox->whereNotNull('threshold');
+
+        // $queryOutbox->whereIn('id', [919]); //test for ukraine
+        $queryOutbox->select('outboxes.id', 'outboxes.shop_id', 'outboxes.code', 'outboxes.last_sent_at', 'outboxes.interval', 'outboxes.threshold');
         $outboxes = $queryOutbox->get();
 
         /** @var Outbox $outbox */
         foreach ($outboxes as $outbox) {
-            ProcessPriceChangePerOutbox::dispatch($outbox);
+            ProcessLowStockInBasketPerOutbox::dispatch($outbox);
         }
     }
 

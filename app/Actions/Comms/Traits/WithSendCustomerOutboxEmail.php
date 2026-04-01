@@ -14,9 +14,6 @@ use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Outbox;
 use App\Models\CRM\Customer;
-use App\Models\Comms\EmailBulkRun;
-use App\Models\Comms\EmailOngoingRun;
-use App\Models\Comms\Mailshot;
 use Sentry;
 
 trait WithSendCustomerOutboxEmail
@@ -32,8 +29,7 @@ trait WithSendCustomerOutboxEmail
         array $additionalData = [],
         string $unsubscribeUrl = '',
         ?string $passwordToken = null,
-        ?string $invoiceUrl = null,
-        EmailOngoingRun|EmailBulkRun|Mailshot|null $parent = null
+        ?string $invoiceUrl = null
     ): DispatchedEmail|null {
         /** @var Outbox $outbox */
         $outbox = $customer->shop->outboxes()->where('code', $code->value)->first();
@@ -53,7 +49,7 @@ trait WithSendCustomerOutboxEmail
             return null;
         }
 
-        $dispatchedEmail = StoreDispatchedEmail::run($parent ?? $outbox->emailOngoingRun, $customer, [
+        $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $customer, [
             'outbox_id'     => $outbox->id,
             'email_address' => $customer->email,
         ]);
