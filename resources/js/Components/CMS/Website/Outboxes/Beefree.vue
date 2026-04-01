@@ -12,6 +12,7 @@ const props = withDefaults(defineProps<{
     imagesUploadRoute: routeType
     snapshot: any
     mergeTags: Array<any>
+    mergeContents: Array<any> | null
     organisationSlug: string
 }>(), {});
 
@@ -56,22 +57,6 @@ const initializeBeefree = async () => {
 
         const token = response.data
 
-        //Update this array to add more merge contents
-        var mergeContents = [
-            {
-                name: 'Headline news',
-                value: '{headlines}'
-            }, {
-                name: 'Lastest blog articles',
-                value: '{latest-articles}'
-            }, {
-                name: 'Latest products viewed',
-                value: '{latest-products}'
-            }
-        ];
-
-
-
         // Configure Beefree with all options
         const beeConfig = {
             uid: 'CmsUserName',
@@ -83,7 +68,7 @@ const initializeBeefree = async () => {
             disableColorHistory: true,
             templateLanguageAutoTranslation: true,
             mergeTags: props.mergeTags,
-            mergeContents: mergeContents,
+            mergeContents: props.mergeContents || [],
             customAttributes: {
                 attributes: [
                     {

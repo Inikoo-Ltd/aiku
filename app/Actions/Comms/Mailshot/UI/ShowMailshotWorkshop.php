@@ -23,6 +23,7 @@ use App\Actions\Traits\WithOutboxBuilder;
 use App\Enums\UI\Mail\EmailTemplateTabsEnum;
 use App\Actions\Comms\EmailTemplate\UI\IndexEmailTemplates;
 use App\Actions\Comms\EmailTemplate\UI\IndexOtherStoreEmailTemplates;
+use App\Actions\Comms\Mailshot\GetMailshotMergeContents;
 use App\Http\Resources\Comms\MailshotTemplatesResource;
 use App\Http\Resources\Mail\EmailTemplateResource;
 
@@ -166,6 +167,7 @@ class ShowMailshotWorkshop extends OrgAction
                     'method' => 'post'
                 ],
                 'mergeTags' => GetMailshotMergeTags::run(),
+                'mergeContents' => GetMailshotMergeContents::run(),
                 'status' => $email->outbox->state,
                 'organisationSlug' => $this->organisation->slug,
                 'tabs' => [
