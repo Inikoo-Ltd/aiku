@@ -41,7 +41,7 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
             ->first();
 
         $stockLocationData = DB::table('location_org_stock_histories')
-            ->selectRaw('sum(location_id) as number_locations')
+            ->selectRaw('COUNT(DISTINCT location_id) as number_locations')
             ->where('organisation_stock_history_id', $organisationStockHistory->id)
             ->first();
 
