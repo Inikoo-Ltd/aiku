@@ -35,12 +35,12 @@ trait WithProformaInvoicePdf
 
                 return $transaction;
             });
-            
+
             $amountToDeduct = (float) ($order->payment_amount ?? 0);
 
             $config = [
                 'title'                  => $order->reference,
-                'margin_left'            => 8,  
+                'margin_left'            => 8,
                 'margin_right'           => 8,
                 'margin_top'             => 2,
                 'margin_bottom'          => 2,

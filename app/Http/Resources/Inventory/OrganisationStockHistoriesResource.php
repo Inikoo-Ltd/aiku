@@ -28,7 +28,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class OrganisationStockHistoriesResource extends JsonResource
 {
-
     public function toArray($request): array
     {
         return [

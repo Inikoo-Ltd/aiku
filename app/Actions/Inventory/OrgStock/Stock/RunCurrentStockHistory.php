@@ -9,7 +9,6 @@
 
 namespace App\Actions\Inventory\OrgStock\Stock;
 
-
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 

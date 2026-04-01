@@ -69,9 +69,9 @@ class ExportDropshippingInvoicesByDate extends RetinaAction
                 } elseif (!empty($orderData['delivery_data']['contact_name'])) {
                     $recipientName = $orderData['delivery_data']['contact_name'];
                 } elseif ($invoice->order?->customerClient) {
-                     $recipientName = $invoice->order->customerClient->contact_name ?? $invoice->order->customerClient->name;
+                    $recipientName = $invoice->order->customerClient->contact_name ?? $invoice->order->customerClient->name;
                 } elseif ($invoice->customerClient) {
-                     $recipientName = $invoice->customerClient->contact_name ?? $invoice->customerClient->name;
+                    $recipientName = $invoice->customerClient->contact_name ?? $invoice->customerClient->name;
                 }
 
                 $html = view('invoices.templates.pdf.invoice', [
