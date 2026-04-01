@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Wed, 01 Apr 2026 23:00:39 Malaysia Time, Kuala Lumpur, Malaysia
@@ -40,8 +41,14 @@ class DeleteOrganisationStockHistory
             return;
         }
 
-        DB::table('location_org_stock_histories')->where('organisation_stock_history_id', $organisationStockHistory->id)->delete();
-        DB::table('org_stock_histories')->where('id', $organisationStockHistory->id)->delete();
+        foreach ($organisationStockHistory->locationOrgStockHistories as $locationOrgStockHistory) {
+            $locationOrgStockHistory->delete();
+        }
+        foreach ($organisationStockHistory->orgStockHistories as $orgStockHistory) {
+            $orgStockHistory->delete();
+        }
+
+
         DB::table('organisation_stock_histories')->where('id', $organisationStockHistory->id)->delete();
 
         $command?->info("Deleted OrganisationStockHistory ID: $organisationStockHistory->id");
