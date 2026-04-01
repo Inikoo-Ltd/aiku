@@ -17,6 +17,10 @@ class UpdateClockingMachineCoordinatePolicy extends OrgAction
     {
         $policy->update($modelData);
 
+        if (array_key_exists('mode', $modelData) && (string) $modelData['mode'] !== ClockingPolicyModeEnum::HYBRID->value) {
+            $policy->rules()->delete();
+        }
+
         return $policy->refresh();
     }
 
@@ -34,10 +38,19 @@ class UpdateClockingMachineCoordinatePolicy extends OrgAction
         ];
     }
 
-    public function asController(ClockingMachineCoordinatePolicy $clockingMachineCoordinatePolicy, ActionRequest $request): ClockingMachineCoordinatePolicy
+    public function asController(ClockingMachineCoordinatePolicy $policy, ActionRequest $request): ClockingMachineCoordinatePolicy
     {
-        $this->initialisation($clockingMachineCoordinatePolicy->organisation, $request);
+        $this->initialisation($policy->organisation, $request);
 
-        return $this->handle($clockingMachineCoordinatePolicy, $this->validatedData);
+        return $this->handle($policy, $this->validatedData);
+    }
+
+    public function htmlResponse(): void
+    {
+        request()->session()->flash('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Clocking policy successfully updated.'),
+        ]);
     }
 }

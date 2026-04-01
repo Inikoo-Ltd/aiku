@@ -16,10 +16,19 @@ class DeleteClockingMachineCoordinatePolicy extends OrgAction
         return (bool) $policy->delete();
     }
 
-    public function asController(ClockingMachineCoordinatePolicy $clockingMachineCoordinatePolicy, ActionRequest $request): bool
+    public function asController(ClockingMachineCoordinatePolicy $policy, ActionRequest $request): bool
     {
-        $this->initialisation($clockingMachineCoordinatePolicy->organisation, $request);
+        $this->initialisation($policy->organisation, $request);
 
-        return $this->handle($clockingMachineCoordinatePolicy);
+        return $this->handle($policy);
+    }
+
+    public function htmlResponse(): void
+    {
+        request()->session()->flash('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Clocking policy successfully deleted.'),
+        ]);
     }
 }
