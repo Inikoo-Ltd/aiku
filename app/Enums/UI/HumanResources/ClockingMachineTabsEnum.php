@@ -54,7 +54,7 @@ enum ClockingMachineTabsEnum: string
                 'icon'  => 'fal fa-qrcode',
             ],
             ClockingMachineTabsEnum::CLOCKING_POLICIES => [
-                'title' => __('Clocking Policies'),
+                'title' => __('Clocking Map Policies'),
                 'icon'  => 'fal fa-user-shield',
             ],
         };
