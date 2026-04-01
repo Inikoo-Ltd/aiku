@@ -13,7 +13,6 @@ use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMismatch;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Product\ProductStateEnum;
-use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
@@ -99,7 +98,7 @@ class RepairMismatchedMasterProductProductsTradeUnits
 
                                 if ($tradeUnit->slug == 'ial01') {
                                     $autoShopToMaster = true;
-                                }else{
+                                } else {
                                     $autoSkip = true;
                                 }
                             }

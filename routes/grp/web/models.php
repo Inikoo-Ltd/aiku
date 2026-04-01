@@ -97,6 +97,7 @@ use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\CRM\Customer\UpdateCustomerAddress;
 use App\Actions\CRM\Customer\UpdateCustomerDeliveryAddress;
 use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
+use App\Actions\CRM\CustomerNote\StoreCustomerNote;
 use App\Actions\CRM\Poll\DeletePoll;
 use App\Actions\CRM\Poll\StorePoll;
 use App\Actions\CRM\Poll\UpdatePoll;
@@ -855,6 +856,7 @@ Route::post('fulfilment-customer-note/{fulfilmentCustomer}', StoreFulfilmentCust
 Route::patch('fulfilment-customer/{fulfilmentCustomer:id}', UpdateFulfilmentCustomer::class)->name('fulfilment_customer.update');
 Route::patch('customer/{customer:id}/approve', ApproveCustomer::class)->name('customer.approve');
 Route::patch('customer/{customer:id}/reject', RejectCustomer::class)->name('customer.reject');
+Route::post('customer/{customer:id}/note', StoreCustomerNote::class)->name('customer.note.store');
 
 Route::prefix('fulfilment-customer-space/{fulfilmentCustomer:id}')->as('fulfilment_customer_space.')->group(function () {
     Route::post('', StoreSpace::class)->name('store');

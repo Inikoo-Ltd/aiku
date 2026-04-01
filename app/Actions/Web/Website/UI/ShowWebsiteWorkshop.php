@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Website\UI;
 
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\Website\GetWebsiteWorkshopDepartment;
@@ -17,6 +18,7 @@ use App\Actions\Web\Website\GetWebsiteWorkshopProduct;
 use App\Actions\Web\Website\GetWebsiteWorkshopSubDepartment;
 use App\Enums\UI\Web\WebsiteWorkshopTabsEnum;
 use App\Http\Resources\Helpers\CurrencyResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
@@ -74,6 +76,7 @@ class ShowWebsiteWorkshop extends OrgAction
             unset($navigation[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value]);
             unset($navigation[WebsiteWorkshopTabsEnum::FAMILY->value]);
             unset($navigation[WebsiteWorkshopTabsEnum::FAMILIES_OVERVIEW->value]);
+            unset($navigation[WebsiteWorkshopTabsEnum::HISTORY->value]);
         }
 
         $tabs = [
@@ -117,7 +120,14 @@ class ShowWebsiteWorkshop extends OrgAction
                 fn () => GetWebsiteWorkshopDepartment::run($website)
             );
 
+        $tabs[WebsiteWorkshopTabsEnum::HISTORY->value] = $this->tab == WebsiteWorkshopTabsEnum::HISTORY->value
+            ?
+            fn () => HistoryResource::collection(IndexHistory::run($website, WebsiteWorkshopTabsEnum::HISTORY->value, ['products_published', 'product_published', 'families_overview_published', 'family_published', 'sub_department_published']))
+            : Inertia::lazy(
+                fn () => HistoryResource::collection(IndexHistory::run($website, WebsiteWorkshopTabsEnum::HISTORY->value, ['products_published', 'product_published', 'families_overview_published', 'family_published', 'sub_department_published']))
+            );
 
+        // dd(IndexHistory::run($website, WebsiteWorkshopTabsEnum::HISTORY->value, ['products_published', 'product_published', 'families_overview_published', 'family_published', 'sub_department_published']));
 
         $publishRoute = [
             'method'     => 'patch',
@@ -255,7 +265,8 @@ class ShowWebsiteWorkshop extends OrgAction
                 'layout_theme' => Arr::get($website->published_layout, 'theme'),
                 ...$tabs
             ]
-        );
+        )
+        ->table(IndexHistory::make()->tableStructure(WebsiteWorkshopTabsEnum::HISTORY->value));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array

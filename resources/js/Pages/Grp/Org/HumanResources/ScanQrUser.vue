@@ -2,6 +2,7 @@
 import { ref, computed, nextTick, onMounted } from "vue"
 import { QrcodeStream } from "vue-qrcode-reader"
 import { LMap, LTileLayer, LMarker, LTooltip } from "@vue-leaflet/vue-leaflet"
+import { addMinutes, formatDuration, intervalToDuration, parseISO, set } from "date-fns"
 import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
@@ -14,6 +15,15 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import WorkHourSelectionModal from "@/Components/Utils/WorkHourSelectionModal.vue"
 
+const pageProps = defineProps<{
+	activeTimeTracker?: any
+	clockingStatus?: string
+	todayTimesheet?: any
+	lastClockIn?: any
+	lastClockOut?: any
+	timezone?: string
+}>()
+
 library.add(faTimes, faCheck, faExclamationTriangle)
 
 interface DetectedCode {
@@ -25,6 +35,14 @@ interface WorkSchedule {
 	name: string
 	type: string
 	is_active: boolean
+}
+
+interface LateClockInResult {
+	isLate: boolean
+	lateByMinutes: number
+	lateMessage: string
+	threshold: Date | null
+	scanTime: Date | null
 }
 
 const lat = ref<number | null>(null)
@@ -41,6 +59,7 @@ const canOpenCamera = computed(() => hasLocation.value)
 
 const showWorkHourModal = ref(false)
 const showSuccessModal = ref(false)
+const showLateAlertModal = ref(false)
 const notes = ref<string>("")
 const scanTime = ref<string | null>(null)
 const scanTimeRaw = ref<string | null>(null)
@@ -49,9 +68,130 @@ const clockType = ref<"clock_in" | "clock_out" | null>(null)
 const clockingId = ref<number | null>(null)
 const workingHours = ref<{ start: string; end: string } | null>(null)
 const isProcessing = ref(false)
-const isLate = ref(false)
 const shiftSchedules = ref<WorkSchedule[]>([])
 const selectedWorkScheduleId = ref<number | null>(null)
+
+// Status Computed Properties
+const isClockedIn = computed(() => pageProps.clockingStatus === "clocked_in")
+
+const statusClasses = computed(() => ({
+	container: isClockedIn.value
+		? "bg-green-50 border border-green-200"
+		: "bg-gray-50 border border-gray-200",
+	iconWrapper: isClockedIn.value ? "bg-green-100" : "bg-gray-200",
+	icon: isClockedIn.value ? "text-green-600" : "text-gray-500",
+	text: isClockedIn.value ? "text-green-800" : "text-gray-700",
+}))
+
+const statusText = computed(() =>
+	isClockedIn.value ? trans("You're currently clocked in") : trans("You're currently clocked out")
+)
+
+const isIOS = () => {
+	return /iPhone|iPad|iPod/i.test(navigator.userAgent)
+}
+
+const getGeolocationErrorMessage = (err?: GeolocationPositionError) => {
+	switch (err?.code) {
+		case err?.PERMISSION_DENIED:
+			return isIOS()
+				? "Location blocked. Go to Settings > Safari > Location > Allow"
+				: "Location blocked. Please enable location permission in browser settings."
+		case err?.POSITION_UNAVAILABLE:
+			return "Location unavailable"
+		case err?.TIMEOUT:
+			return "Location timeout"
+		default:
+			return "Location error"
+	}
+}
+
+const parseScanTime = (value?: string | null) => {
+	if (!value) return null
+
+	const parsed = parseISO(value)
+
+	return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+const parseWorkingOfficeHourStart = (value?: string | null, scanDate?: Date | null) => {
+	if (!value || !scanDate) return null
+
+	const match = value.match(/(\d{2}):(\d{2})(?::(\d{2}))?/)
+	if (!match) return null
+
+	const [, hours, minutes, seconds = "00"] = match
+
+	return set(scanDate, {
+		hours: Number(hours),
+		minutes: Number(minutes),
+		seconds: Number(seconds),
+		milliseconds: 0,
+	})
+}
+
+const formatLateDuration = (lateByMinutes: number) => {
+	if (lateByMinutes <= 0) return ""
+
+	const duration = intervalToDuration({
+		start: 0,
+		end: lateByMinutes * 60 * 1000,
+	})
+
+	const formatted = formatDuration(duration, {
+		format: ["hours", "minutes"],
+		delimiter: " and ",
+	})
+
+	return formatted || "less than 1 minute"
+}
+
+const getLateClockInState = ({
+	scanTimeRaw,
+	workingOfficeHourStart,
+	gracePeriodMinutes = 15,
+}: {
+	scanTimeRaw?: string | null
+	workingOfficeHourStart?: string | null
+	gracePeriodMinutes?: number
+}): LateClockInResult => {
+	const scanTime = parseScanTime(scanTimeRaw)
+	const workingStart = parseWorkingOfficeHourStart(workingOfficeHourStart, scanTime)
+
+	if (!scanTime || !workingStart) {
+		return {
+			isLate: false,
+			lateByMinutes: 0,
+			lateMessage: "",
+			threshold: null,
+			scanTime,
+		}
+	}
+
+	const threshold = addMinutes(workingStart, gracePeriodMinutes)
+	const lateByMilliseconds = scanTime.getTime() - threshold.getTime()
+
+	if (lateByMilliseconds <= 0) {
+		return {
+			isLate: false,
+			lateByMinutes: 0,
+			lateMessage: "",
+			threshold,
+			scanTime,
+		}
+	}
+
+	const lateByMinutes = Math.floor(lateByMilliseconds / (60 * 1000))
+	const formattedDuration = formatLateDuration(lateByMinutes)
+
+	return {
+		isLate: true,
+		lateByMinutes,
+		lateMessage: formattedDuration ? `You are ${formattedDuration} late` : "",
+		threshold,
+		scanTime,
+	}
+}
 
 const fetchShiftSchedules = async () => {
 	try {
@@ -69,26 +209,23 @@ onMounted(() => {
 const detectMyLocation = () => {
 	errorMsg.value = null
 
+	if (!navigator.geolocation) {
+		errorMsg.value = "This browser does not support location access."
+		return
+	}
+
 	navigator.geolocation.getCurrentPosition(
 		(pos) => {
 			lat.value = pos.coords.latitude
 			lng.value = pos.coords.longitude
 		},
 		(err) => {
-			if (err.code === 1) {
-				if (isIOS()) {
-					errorMsg.value = "Location blocked. Go to Settings > Safari > Location > Allow"
-				} else {
-					errorMsg.value =
-						"Location blocked. Please enable location permission in browser settings."
-				}
-			} else if (err.code === 2) {
-				errorMsg.value = "Location unavailable"
-			} else if (err.code === 3) {
-				errorMsg.value = "Location timeout"
-			} else {
-				errorMsg.value = "Location error"
-			}
+			errorMsg.value = getGeolocationErrorMessage(err)
+		},
+		{
+			enableHighAccuracy: true,
+			timeout: 10000,
+			maximumAge: 0,
 		}
 	)
 }
@@ -109,6 +246,8 @@ const openCamera = async () => {
 		const stream = await navigator.mediaDevices.getUserMedia({
 			video: {
 				facingMode: { ideal: "environment" },
+				width: { ideal: 1080 },
+				height: { ideal: 1920 },
 			},
 		})
 		stream.getTracks().forEach((track) => track.stop())
@@ -172,9 +311,7 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
 		const { data } = await axios.post(route("grp.models.clocking-machine.qr.validate"), payload)
 
 		clockType.value = data.clocking?.type
-		isLate.value = data.clocking?.is_late ?? false
-
-		scanTimeRaw.value = data.clocking?.clocked_at
+		scanTimeRaw.value = data.clocking?.clocked_at ?? null
 		scanTime.value = useFormatTime(data.clocking?.clocked_at, { formatTime: "hms" })
 		clockingId.value = data.clocking?.id
 		if (data.working_hours) {
@@ -188,7 +325,17 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
 		} else {
 			workingHours.value = null
 		}
-		showSuccessModal.value = true
+
+		const lateState = getLateClockInState({
+			scanTimeRaw: scanTimeRaw.value,
+			workingOfficeHourStart: workingHours.value?.start,
+		})
+
+		if (clockType.value === "clock_in" && lateState.isLate) {
+			showLateAlertModal.value = true
+		} else {
+			showSuccessModal.value = true
+		}
 	} catch (e: any) {
 		notify({
 			title: trans("Failed Scan QR"),
@@ -219,25 +366,23 @@ const onStreamError = (err: Error) => {
 	}
 }
 
-const isIOS = () => {
-	return /iPhone|iPad|iPod/i.test(navigator.userAgent)
-}
-
 const modalTitle = computed(() => {
+	if (isLateClockIn.value) return trans("Late Clock-in Recorded")
 	if (clockType.value === "clock_in") return trans("Clock-in successful")
 	if (clockType.value === "clock_out") return trans("Clock-out successful")
 	return trans("Scan successful")
 })
 
-const attendanceStatus = computed(() => {
-	if (!scanTimeRaw.value || !workingHours.value?.start) return null
+const lateClockInState = computed(() =>
+	getLateClockInState({
+		scanTimeRaw: scanTimeRaw.value,
+		workingOfficeHourStart: workingHours.value?.start,
+	})
+)
 
-	const scan = new Date(scanTimeRaw.value)
-	const start = new Date(workingHours.value.start)
-	if (isNaN(scan.getTime()) || isNaN(start.getTime())) return null
-
-	return scan > start ? "late" : "ontime"
-})
+const isLateClockIn = computed(
+	() => clockType.value === "clock_in" && lateClockInState.value.isLate
+)
 
 const workingHoursFormatted = computed(() => {
 	if (!workingHours.value) return "-"
@@ -248,8 +393,23 @@ const workingHoursFormatted = computed(() => {
 	return `${start} - ${end}`
 })
 
+const isSubmitDisabled = computed(() => isLateClockIn.value && !notes.value.trim())
+
+const notesLabel = computed(() =>
+	isLateClockIn.value ? trans("Notes") : trans("Notes (optional)")
+)
+
+const notesPlaceholder = computed(() =>
+	isLateClockIn.value ? trans("Please provide a reason for being late...") : trans("Input Notes")
+)
+
+const closeLateAlertModal = () => {
+	showLateAlertModal.value = false
+	showSuccessModal.value = true
+}
+
 const submitNotes = async () => {
-	if (!clockingId.value) return
+	if (!clockingId.value || isSubmitDisabled.value) return
 
 	try {
 		await axios.patch(
@@ -267,6 +427,8 @@ const submitNotes = async () => {
 			text: trans(`submit notes`),
 			type: "success",
 		})
+
+		window.location.reload()
 	} catch (e: any) {
 		notify({
 			title: trans("Failed submit notes"),
@@ -278,12 +440,123 @@ const submitNotes = async () => {
 		console.error(e)
 	}
 }
+
+// Formatting Helpers
+const formatDurationLocal = (seconds: number) => {
+	const hours = Math.floor(seconds / 3600)
+	const minutes = Math.floor((seconds % 3600) / 60)
+	if (hours === 0 && minutes === 0) return trans("0m")
+	return hours === 0 ? `${minutes}m` : `${hours}h ${minutes}m`
+}
+
+const formatInTimezone = (dateString: string | undefined, options: Intl.DateTimeFormatOptions) => {
+	if (!dateString) return "-"
+	return new Date(dateString).toLocaleString("en-US", {
+		...options,
+		timeZone: pageProps.timezone || "UTC",
+	})
+}
+
+const displayDate = computed(() =>
+	formatInTimezone(pageProps.todayTimesheet?.date, {
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	})
+)
+
+const displayTime = (date?: string) =>
+	formatInTimezone(date, {
+		hour: "numeric",
+		minute: "2-digit",
+		second: "2-digit",
+		hour12: true,
+	})
+
+const trackFunction = () => ({
+	facingMode: "environment",
+	width: { ideal: 1080 },
+	height: { ideal: 1440 },
+})
 </script>
 
 <template>
 	<div class="relative z-0">
 		<div v-if="!cameraOn" class="max-w-lg mx-auto p-6">
 			<h2 class="text-2xl font-bold mb-6">{{ trans("Employee Clocking") }}</h2>
+
+			<div
+				v-if="pageProps?.clockingStatus"
+				class="mb-6 p-4 rounded-lg"
+				:class="statusClasses.container">
+				<div class="flex items-center justify-between mb-3">
+					<div class="flex items-center gap-3">
+						<div
+							class="w-10 h-10 rounded-full flex items-center justify-center"
+							:class="statusClasses.iconWrapper">
+							<FontAwesomeIcon
+								:icon="isClockedIn ? faCheck : faTimes"
+								class="text-lg"
+								:class="statusClasses.icon" />
+						</div>
+						<div>
+							<p class="text-sm font-medium" :class="statusClasses.text">
+								{{ statusText }}
+							</p>
+							<p
+								v-if="isClockedIn && pageProps.activeTimeTracker?.starts_at"
+								class="text-xs text-gray-500">
+								{{ trans("Since") }}:
+								{{
+									useFormatTime(pageProps.activeTimeTracker.starts_at, {
+										formatTime: "hms",
+									})
+								}}
+							</p>
+						</div>
+					</div>
+					<div class="text-right">
+						<p class="text-xs text-gray-400">{{ trans("Date") }}</p>
+						<p class="text-sm font-semibold text-gray-700">
+							{{ displayDate }}
+						</p>
+					</div>
+				</div>
+
+				<div
+					v-if="pageProps.todayTimesheet?.start_at || pageProps.todayTimesheet?.end_at"
+					class="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200">
+					<div
+						v-if="pageProps.todayTimesheet?.start_at"
+						class="text-center p-2 rounded bg-white/50">
+						<p class="text-xs text-gray-400">{{ trans("First Clock In") }}</p>
+						<p class="text-sm font-semibold text-gray-800">
+							{{ displayTime(pageProps.todayTimesheet.start_at) }}
+						</p>
+					</div>
+					<div
+						v-if="pageProps.todayTimesheet?.end_at"
+						class="text-center p-2 rounded bg-white/50">
+						<p class="text-xs text-gray-400">{{ trans("Last Clock Out") }}</p>
+						<p class="text-sm font-semibold text-gray-800">
+							{{ displayTime(pageProps.todayTimesheet.end_at) }}
+						</p>
+					</div>
+				</div>
+
+				<div
+					v-if="pageProps.todayTimesheet"
+					class="flex gap-4 mt-3 pt-3 border-t border-gray-200">
+					<span class="text-xs text-gray-500">
+						{{ trans("Working") }}:
+						{{ formatDurationLocal(pageProps.todayTimesheet.working_duration || 0) }}
+					</span>
+					<span class="text-xs text-gray-500">
+						{{ trans("Breaks") }}:
+						{{ formatDurationLocal(pageProps.todayTimesheet.breaks_duration || 0) }}
+					</span>
+				</div>
+			</div>
 
 			<div class="mb-6">
 				<p class="text-sm font-semibold text-gray-500 mb-2">
@@ -327,12 +600,13 @@ const submitNotes = async () => {
 				</div>
 
 				<div class="flex-1 flex items-center justify-center relative">
-					<div class="w-full max-w-xl aspect-square relative">
+					<div class="w-full max-w-xl relative" style="aspect-ratio: 3/4">
 						<QrcodeStream
 							@detect="onDetect"
 							@error="onStreamError"
 							:paused="loading"
-							:formats="['qr_code']" />
+							:formats="['qr_code']"
+							:track="trackFunction" />
 
 						<!-- TARGET OVERLAY -->
 						<div
@@ -363,6 +637,40 @@ const submitNotes = async () => {
 			@confirm="handleWorkHourConfirm" />
 
 		<Dialog
+			v-model:visible="showLateAlertModal"
+			modal
+			:closable="false"
+			:style="{ width: '420px' }"
+			appendTo="body">
+			<div class="text-center space-y-4 py-4">
+				<div class="flex justify-center">
+					<div class="w-20 h-20 rounded-full flex items-center justify-center bg-red-100">
+						<FontAwesomeIcon
+							:icon="faExclamationTriangle"
+							class="text-4xl text-red-600" />
+					</div>
+				</div>
+
+				<h3 class="text-xl font-semibold text-red-700">
+					{{ trans("Late Clock-in Alert") }}
+				</h3>
+
+				<p
+					class="text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-3">
+					{{ trans("You are late today.") }}
+				</p>
+
+				<p v-if="lateClockInState.lateMessage" class="text-sm text-gray-600">
+					{{ lateClockInState.lateMessage }}
+				</p>
+
+				<div class="pt-2">
+					<Button label="Continue" type="warning" @click="closeLateAlertModal" full />
+				</div>
+			</div>
+		</Dialog>
+
+		<Dialog
 			v-model:visible="showSuccessModal"
 			modal
 			:closable="false"
@@ -372,24 +680,36 @@ const submitNotes = async () => {
 				<!-- ICON -->
 				<div class="flex justify-center">
 					<div
-						class="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
-						<FontAwesomeIcon :icon="faCheck" class="text-4xl text-green-600" />
+						class="w-20 h-20 rounded-full flex items-center justify-center"
+						:class="isLateClockIn ? 'bg-amber-100' : 'bg-green-100'">
+						<FontAwesomeIcon
+							:icon="isLateClockIn ? faExclamationTriangle : faCheck"
+							class="text-4xl"
+							:class="isLateClockIn ? 'text-amber-600' : 'text-green-600'" />
 					</div>
 				</div>
 
 				<!-- TITLE -->
-				<h3 class="text-xl font-semibold text-gray-800">
+				<h3
+					class="text-xl font-semibold"
+					:class="isLateClockIn ? 'text-amber-700' : 'text-gray-800'">
 					{{ modalTitle }}
 				</h3>
+
+				<p
+					v-if="isLateClockIn && lateClockInState.lateMessage"
+					class="text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+					{{ lateClockInState.lateMessage }}
+				</p>
 
 				<!-- INFO -->
 				<div class="text-sm text-gray-600 space-y-2 bg-gray-50 p-3 rounded-lg">
 					<div
-						v-if="isLate && clockType === 'clock_in'"
-						class="flex justify-between items-center bg-red-50 p-2 rounded border border-red-200">
+						v-if="isLateClockIn"
+						class="flex justify-between items-center bg-amber-50 p-2 rounded border border-amber-200">
 						<div class="flex items-center gap-2">
-							<FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-500" />
-							<span class="font-semibold text-red-600">{{
+							<FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-500" />
+							<span class="font-semibold text-amber-700">{{
 								trans("Late Arrival")
 							}}</span>
 						</div>
@@ -414,15 +734,33 @@ const submitNotes = async () => {
 				<!-- NOTES INPUT -->
 				<div class="pt-3">
 					<label class="text-sm text-gray-600 block mb-1 text-left">
-						{{ trans("Notes (optional)") }}
+						{{ notesLabel }}
 					</label>
-					<InputText v-model="notes" class="w-full" required placeholder="Input Notes" />
+					<InputText
+						v-model="notes"
+						class="w-full"
+						:required="isLateClockIn"
+						:placeholder="notesPlaceholder" />
 				</div>
 
 				<!-- ACTIONS -->
 				<div class="flex gap-2 pt-4">
-					<Button label="Close" type="exit" @click="showSuccessModal = false" full />
-					<Button label="Submit" type="save" @click="submitNotes" full />
+					<Button
+						label="Close"
+						type="exit"
+						@click="
+							() => {
+								showSuccessModal = false
+								window.location.reload()
+							}
+						"
+						full />
+					<Button
+						label="Submit"
+						type="save"
+						@click="submitNotes"
+						:disabled="isSubmitDisabled"
+						full />
 				</div>
 			</div>
 		</Dialog>
@@ -446,8 +784,8 @@ const submitNotes = async () => {
 
 .scanner-frame {
 	position: relative;
-	width: 260px;
-	height: 260px;
+	width: 280px;
+	height: 373px;
 }
 
 /* ===== CORNERS ===== */

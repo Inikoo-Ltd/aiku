@@ -570,7 +570,7 @@ const submitEdit = () => {
 						{{ leaveForm.errors.type }}
 					</p>
 					<p v-if="maxDaysPerYear" class="mt-1 text-sm text-gray-500">
-						Maximum allowance: {{ maxDaysPerYear }} days/year
+						Maximum allowance: {{ maxDaysPerYear }} days
 					</p>
 				</div>
 

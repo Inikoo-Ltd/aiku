@@ -43,7 +43,7 @@ class ShowInventoryDashboard extends OrgAction
                 'title'        => __('Inventory'),
                 'pageHead'     => [
                     'title'     => __('Inventory'),
-                    'model'     => __('warehouse'),
+                    'model'     => __('Warehouse'),
                     'icon'      => [
                         'icon' => 'fal fa-pallet-alt'
                     ],
@@ -55,7 +55,7 @@ class ShowInventoryDashboard extends OrgAction
                 'flatTreeMaps' => [
                     [
                         [
-                            'name'  => __('SKUs families'),
+                            'name'  => __('SKUs Families'),
                             'icon'  => ['fal', 'fa-boxes-alt'],
                             'route' => [
                                 'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.index',

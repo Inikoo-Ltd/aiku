@@ -29,8 +29,18 @@ class ProductsInProductCategoryExport implements FromQuery, WithMapping, ShouldA
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|\Laravel\Scout\Builder|Builder
     {
         $query = DB::table('products')
-            ->select('products.*', 'product_categories.name as family_name')
-            ->leftJoin('product_categories', 'products.family_id', '=', 'product_categories.id')
+            ->select(
+                'products.*',
+                'families.name as family_name',
+                'families.code as family_code',
+                'departments.name as department_name',
+                'departments.code as department_code',
+                'sub_departments.name as subdepartment_name',
+                'sub_departments.code as subdepartment_code'
+            )
+            ->leftJoin('product_categories as families', 'products.family_id', '=', 'families.id')
+            ->leftJoin('product_categories as departments', 'products.department_id', '=', 'departments.id')
+            ->leftJoin('product_categories as sub_departments', 'products.sub_department_id', '=', 'sub_departments.id')
             ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]);
 
 

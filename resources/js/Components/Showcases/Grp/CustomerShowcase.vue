@@ -24,7 +24,10 @@ import {
     faChartLine,
     faExclamationTriangle,
     faShoppingCart,
-    faBoxOpen
+    faBoxOpen,
+    faStickyNote,
+    faClock,
+    faListAlt,
 } from "@fal"
 import {library} from "@fortawesome/fontawesome-svg-core"
 import {trans} from "laravel-vue-i18n"
@@ -36,7 +39,7 @@ import Tag from "@/Components/Tag.vue"
 import ModalRejected from "@/Components/Utils/ModalRejected.vue"
 import ButtonPrimeVue from "primevue/button"
 import ToggleSwitch from "primevue/toggleswitch"
-import {Link, router} from "@inertiajs/vue3"
+import {Link, router, useForm} from "@inertiajs/vue3"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import CountUp from "vue-countup-v3"
 import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
@@ -53,7 +56,7 @@ import CustomerSalesVsRefunds from "@/Components/CustomerSalesVsRefunds.vue";
 import GoldReward from "@/Components/Utils/GoldReward.vue"
 import CustomerMiniTimeline from "@/Components/Showcases/Grp/CustomerMiniTimeline.vue"
 
-library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen)
+library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt)
 
 interface Customer {
     slug: string
@@ -133,6 +136,14 @@ const props = defineProps<{
         tag_routes: Record<string, routeType>
         tags: {}[]
         tags_selected_id: number[]
+        note_route: routeType
+        orders_route: routeType | null
+        last_order: {
+            reference: string
+            slug: string
+            state: string
+            submitted_at: string | null
+        } | null
     },
     gr_data: {
         gr_label: string
@@ -184,6 +195,19 @@ if (props.data.editWebUser) {
     })
 }
 
+
+// Section: Add Note
+const isModalAddNote = ref(false)
+const noteForm = useForm({ note: '' })
+const submitNote = () => {
+    noteForm.post(route(props.data.note_route.name, props.data.note_route.parameters), {
+        onSuccess: () => {
+            isModalAddNote.value = false
+            noteForm.reset()
+            notify({ title: trans('Note added'), type: 'success' })
+        },
+    })
+}
 
 // Section: Balance increase and decrease
 const isModalBalanceDecrease = ref(false)
@@ -308,6 +332,41 @@ function tagColorClass(scope?: string) {
                 </ButtonPrimeVue>
             </div>
         </div>
+    </div>
+
+    <!-- Quick Actions Bar -->
+    <div class="px-4 pt-6 md:px-6 lg:px-8 flex flex-wrap gap-3">
+        <button
+            @click="isModalAddNote = true"
+            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+            <FontAwesomeIcon icon="fal fa-sticky-note" class="text-amber-500 text-xs" />
+            {{ trans('Add Note') }}
+        </button>
+        <Link
+            v-if="data.orders_route"
+            :href="route(data.orders_route.name, data.orders_route.parameters)"
+            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+            <FontAwesomeIcon icon="fal fa-list-alt" class="text-indigo-500 text-xs" />
+            {{ trans('View Orders') }}
+        </Link>
+        <button
+            v-if="handleTabUpdate"
+            @click="() => handleTabUpdate('timeline')"
+            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+            <FontAwesomeIcon icon="fal fa-code-branch" class="text-green-500 text-xs" />
+            {{ trans('Full Timeline') }}
+        </button>
+        <a
+            v-if="data.customer.email"
+            :href="`mailto:${data.customer.email}`"
+            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+            <FontAwesomeIcon icon="fal fa-envelope" class="text-blue-500 text-xs" />
+            {{ trans('Send Email') }}
+        </a>
     </div>
 
     <!-- 3-Column Hub Layout -->
@@ -460,6 +519,22 @@ function tagColorClass(scope?: string) {
                                 </span>
                             </dd>
                         </div>
+
+                        <!-- Field: Last Order -->
+                        <div v-if="data.last_order" class="flex items-center w-full flex-none gap-x-4 px-6">
+                            <dt v-tooltip="trans('Last Order')" class="flex-none">
+                                <FontAwesomeIcon icon="fal fa-shopping-cart" class="text-gray-400" fixed-width aria-hidden="true" />
+                            </dt>
+                            <dd class="text-gray-500 flex items-center gap-2 min-w-0">
+                                <span class="font-medium text-gray-700">#{{ data.last_order.reference }}</span>
+                                <span class="px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-600 capitalize">
+                                    {{ data.last_order.state.replace(/_/g, ' ') }}
+                                </span>
+                                <span v-if="data.last_order.submitted_at" class="text-xs text-gray-400 truncate">
+                                    {{ useFormatTime(data.last_order.submitted_at, { formatTime: 'short-datetime' }) }}
+                                </span>
+                            </dd>
+                        </div>
                     </div>
                 </dl>
             </div>
@@ -523,7 +598,7 @@ function tagColorClass(scope?: string) {
 
         <!-- CENTER COLUMN: KPI Cards + Mini Timeline -->
         <div class="lg:col-span-1 flex flex-col gap-4">
-            <!-- KPI Cards: 2x2 grid -->
+            <!-- KPI Cards: 2x2 grid + last active -->
             <div v-if="data?.stats" class="grid grid-cols-2 gap-3">
                 <!-- Card: Historic CLV -->
                 <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
@@ -573,7 +648,12 @@ function tagColorClass(scope?: string) {
                 </div>
 
                 <!-- Card: Total Orders -->
-                <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
+                <component
+                    :is="data.orders_route ? Link : 'div'"
+                    v-bind="data.orders_route ? { href: route(data.orders_route.name, data.orders_route.parameters) } : {}"
+                    class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3"
+                    :class="{ 'hover:border-emerald-400 hover:bg-emerald-50 transition-colors cursor-pointer': data.orders_route }"
+                >
                     <FontAwesomeIcon icon="fal fa-box-open" class="text-lg text-emerald-400 flex-shrink-0" />
                     <div class="min-w-0">
                         <div class="text-xs text-gray-500">{{ trans('Total Orders') }}</div>
@@ -584,6 +664,20 @@ function tagColorClass(scope?: string) {
                                 :duration="1.5"
                                 :scrollSpyOnce="true"
                             />
+                        </div>
+                    </div>
+                </component>
+
+                <!-- Card: Last Active (full width) -->
+                <div class="col-span-2 flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
+                    <FontAwesomeIcon icon="fal fa-clock" class="text-lg text-gray-400 flex-shrink-0" />
+                    <div class="min-w-0">
+                        <div class="text-xs text-gray-500">{{ trans('Last Active') }}</div>
+                        <div class="text-sm font-semibold text-gray-800 truncate">
+                            <span v-if="data.last_order?.submitted_at">
+                                {{ useFormatTime(data.last_order.submitted_at, { formatTime: 'short-datetime' }) }}
+                            </span>
+                            <span v-else class="text-gray-400 font-normal">{{ trans('No activity') }}</span>
                         </div>
                     </div>
                 </div>
@@ -689,6 +783,35 @@ function tagColorClass(scope?: string) {
     </Modal>
 
     <ModalRejected v-model="isModalUploadOpen" :customerID="customerID" :customerName="customerName" />
+
+    <!-- Modal: Add Note -->
+    <Modal :isOpen="isModalAddNote" @onClose="() => { isModalAddNote = false; noteForm.reset() }" width="max-w-lg w-full">
+        <div class="p-6">
+            <h3 class="text-base font-semibold text-gray-900 mb-4">{{ trans('Add Note') }}</h3>
+            <textarea
+                v-model="noteForm.note"
+                rows="4"
+                :placeholder="trans('Write a note about this customer...')"
+                class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
+            />
+            <div v-if="noteForm.errors.note" class="mt-1 text-xs text-red-600">{{ noteForm.errors.note }}</div>
+            <div class="mt-4 flex justify-end gap-2">
+                <button
+                    @click="() => { isModalAddNote = false; noteForm.reset() }"
+                    class="px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                >
+                    {{ trans('Cancel') }}
+                </button>
+                <button
+                    @click="submitNote"
+                    :disabled="noteForm.processing || !noteForm.note.trim()"
+                    class="px-3 py-1.5 text-sm font-medium rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {{ noteForm.processing ? trans('Saving...') : trans('Save Note') }}
+                </button>
+            </div>
+        </div>
+    </Modal>
 </template>
 
 <style scoped>

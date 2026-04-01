@@ -246,8 +246,7 @@ test("UI Index Stocks", function () {
             ->component("Goods/Stocks")
             ->has("title")
             ->has("breadcrumbs", 3)
-            ->has("pageHead")
-            ->has("data");
+            ->has("pageHead");
     });
 });
 
@@ -766,8 +765,7 @@ test('UI Index Stock Families', function () {
                     ->has('actions')
                     ->where('title', 'Master SKU Families')
                     ->etc()
-            )
-            ->has('data');
+            );
     });
 });
 

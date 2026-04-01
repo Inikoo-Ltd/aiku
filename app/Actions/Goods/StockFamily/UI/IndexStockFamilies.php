@@ -11,8 +11,9 @@ namespace App\Actions\Goods\StockFamily\UI;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
-use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Goods\StockFamily\StockFamilyStateEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\UI\Goods\StockFamiliesTabsEnum;
 use App\Http\Resources\Goods\StockFamiliesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\StockFamily;
@@ -34,46 +35,42 @@ class IndexStockFamilies extends OrgAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        if ($request->has('dateInterval') && DateIntervalEnum::tryFrom($request->input('dateInterval'))) {
-            $this->dateInterval = DateIntervalEnum::from($request->input('dateInterval'));
-        }
-
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisationFromGroup(group(), $request)->withTab(StockFamiliesTabsEnum::values());
         $this->bucket = 'all';
 
-        return $this->handle($this->group);
+        return $this->handle($this->group, prefix: StockFamiliesTabsEnum::INDEX->value);
     }
 
     public function active(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisationFromGroup(group(), $request)->withTab(StockFamiliesTabsEnum::values());
         $this->bucket = 'active';
 
-        return $this->handle($this->group);
+        return $this->handle($this->group, prefix: StockFamiliesTabsEnum::INDEX->value);
     }
 
     public function inProcess(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisationFromGroup(group(), $request)->withTab(StockFamiliesTabsEnum::values());
         $this->bucket = 'in_process';
 
-        return $this->handle($this->group);
+        return $this->handle($this->group, prefix: StockFamiliesTabsEnum::INDEX->value);
     }
 
     public function discontinuing(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisationFromGroup(group(), $request)->withTab(StockFamiliesTabsEnum::values());
         $this->bucket = 'discontinuing';
 
-        return $this->handle($this->group);
+        return $this->handle($this->group, prefix: StockFamiliesTabsEnum::INDEX->value);
     }
 
     public function discontinued(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisationFromGroup(group(), $request)->withTab(StockFamiliesTabsEnum::values());
         $this->bucket = 'discontinued';
 
-        return $this->handle($this->group);
+        return $this->handle($this->group, prefix: StockFamiliesTabsEnum::INDEX->value);
     }
 
     protected function getElementGroups(Group $group): array
@@ -106,6 +103,7 @@ class IndexStockFamilies extends OrgAction
                     ->orWhereAnyWordStartWith('stock_families.name', $value);
             });
         });
+
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -113,8 +111,6 @@ class IndexStockFamilies extends OrgAction
         $queryBuilder = QueryBuilder::for(StockFamily::class);
         $queryBuilder->where('stock_families.group_id', $group->id);
         $queryBuilder->leftJoin('stock_family_stats', 'stock_family_stats.stock_family_id', 'stock_families.id');
-        $queryBuilder->leftJoin('stock_family_sales_intervals', 'stock_family_sales_intervals.stock_family_id', 'stock_families.id');
-
 
         if ($this->bucket == 'active') {
             $queryBuilder->where('stock_families.state', StockFamilyStateEnum::ACTIVE);
@@ -135,38 +131,62 @@ class IndexStockFamilies extends OrgAction
             }
         }
 
+        $selects = [
+            'slug',
+            'code',
+            'stock_families.id as id',
+            'name',
+            'number_current_stocks',
+        ];
+
+        $allowedSorts = ['code', 'name', 'number_current_stocks'];
+
+        if ($prefix === StockFamiliesTabsEnum::SALES->value) {
+            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+                timeSeriesTable: 'stock_family_time_series',
+                timeSeriesRecordsTable: 'stock_family_time_series_records',
+                foreignKey: 'stock_family_id',
+                aggregateColumns: [
+                    'sales_grp_currency_external' => 'sales_grp_currency_external',
+                    'invoices'                    => 'invoices',
+                ],
+                frequency: TimeSeriesFrequencyEnum::DAILY->value,
+                prefix: $prefix,
+                includeLY: true
+            );
+
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+            $allowedSorts = array_merge($allowedSorts, ['sales_grp_currency_external', 'invoices']);
+        } else {
+            $queryBuilder->leftJoin('stock_family_sales_intervals', 'stock_family_sales_intervals.stock_family_id', 'stock_families.id');
+            $selects[] = 'stock_family_sales_intervals.*';
+            $selects[] = 'stock_family_sales_intervals.revenue_grp_currency_'.$this->dateInterval->value.' as revenue_grp_currency';
+            $allowedSorts[] = 'revenue_grp_currency';
+        }
+
         return $queryBuilder
             ->defaultSort('code')
-            ->select([
-                'slug',
-                'code',
-                'stock_families.id as id',
-                'name',
-                'number_current_stocks',
-                'stock_family_sales_intervals.*',
-                'stock_family_sales_intervals.revenue_grp_currency_'.$this->dateInterval->value.' as revenue_grp_currency',
-
-            ])
-            ->selectRaw(
-                "'".$group->currency->code."' as grp_currency_code"
-            )
-            ->allowedSorts(['code', 'name', 'number_current_stocks', 'revenue_grp_currency'])
+            ->select($selects)
+            ->selectRaw("'".$group->currency->code."' as grp_currency_code")
+            ->allowedSorts($allowedSorts)
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(Group $parent, $prefix = null, $bucket = 'all'): Closure
+    public function tableStructure(Group $parent, $prefix = null, $bucket = 'all', bool $sales = false): Closure
     {
-        return function (InertiaTable $table) use ($parent, $prefix, $bucket) {
+        return function (InertiaTable $table) use ($parent, $prefix, $bucket, $sales) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
 
-
-            if ($bucket == 'all') {
+            if ($bucket == 'all' && !$sales) {
                 foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                     $table->elementGroup(
                         key: $key,
@@ -176,10 +196,8 @@ class IndexStockFamilies extends OrgAction
                 }
             }
 
-
             $table
                 ->withGlobalSearch()
-                ->dateInterval($this->dateInterval)
                 ->withEmptyState(
                     [
                         'title'       => __('no stock families'),
@@ -198,10 +216,21 @@ class IndexStockFamilies extends OrgAction
                     ]
                 )
                 ->column(key: 'code', label: 'code', canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_current_stocks', label: 'SKUs', tooltip: __('Current SKUs'), canBeHidden: false, sortable: true)
-                ->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), sortable: true, align: 'right', isInterval: true)
-                ->defaultSort('code');
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($sales) {
+                $table->betweenDates(['date'])
+                    ->column(key: 'number_current_stocks', label: 'SKUs', tooltip: __('Current SKUs'), canBeHidden: false, sortable: true)
+                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
+                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right');
+            } else {
+                $table->dateInterval($this->dateInterval)
+                    ->column(key: 'number_current_stocks', label: 'SKUs', tooltip: __('Current SKUs'), canBeHidden: false, sortable: true)
+                    ->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), sortable: true, align: 'right', isInterval: true)
+                    ->defaultSort('code');
+            }
         };
     }
 
@@ -269,8 +298,6 @@ class IndexStockFamilies extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $stockFamily, ActionRequest $request): Response
     {
-        $parent = $this->group;
-
         $subNavigation = $this->getStockFamiliesSubNavigation();
 
         $title = match ($this->bucket) {
@@ -306,9 +333,21 @@ class IndexStockFamilies extends OrgAction
                     ],
                     'subNavigation' => $subNavigation
                 ],
-                'data'        => StockFamiliesResource::collection($stockFamily),
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => StockFamiliesTabsEnum::navigation(),
+                ],
+
+                StockFamiliesTabsEnum::INDEX->value => $this->tab == StockFamiliesTabsEnum::INDEX->value
+                    ? fn () => StockFamiliesResource::collection($stockFamily)
+                    : Inertia::lazy(fn () => StockFamiliesResource::collection($stockFamily)),
+
+                StockFamiliesTabsEnum::SALES->value => $this->tab == StockFamiliesTabsEnum::SALES->value
+                    ? fn () => StockFamiliesResource::collection($this->handle($this->group, prefix: StockFamiliesTabsEnum::SALES->value, bucket: $this->bucket))
+                    : Inertia::lazy(fn () => StockFamiliesResource::collection($this->handle($this->group, prefix: StockFamiliesTabsEnum::SALES->value, bucket: $this->bucket))),
             ]
-        )->table($this->tableStructure(parent: $parent, bucket: $this->bucket));
+        )->table($this->tableStructure(parent: $this->group, prefix: StockFamiliesTabsEnum::INDEX->value, bucket: $this->bucket))
+         ->table($this->tableStructure(parent: $this->group, prefix: StockFamiliesTabsEnum::SALES->value, bucket: $this->bucket, sales: true));
     }
 
     public function getBreadcrumbs($suffix = null): array

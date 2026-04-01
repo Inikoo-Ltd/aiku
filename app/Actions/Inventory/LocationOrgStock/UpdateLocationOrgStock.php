@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\LocationOrgStock;
 
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
+use App\Actions\Inventory\OrgStock\Stock\StoreOrgStockCurrentLocationsStock;
 use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -60,6 +61,8 @@ class UpdateLocationOrgStock extends OrgAction
         if ($locationOrgStock->wasChanged('quantity')) {
             OrgStockHydrateQuantityInLocations::dispatch($locationOrgStock->orgStock);
         }
+
+        // StoreOrgStockCurrentLocationsStock::run($locationOrgStock->orgStock);
 
         RepairOrgStockMissingLocationIds::dispatch($locationOrgStock->orgStock);
 

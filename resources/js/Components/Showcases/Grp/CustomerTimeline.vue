@@ -20,12 +20,17 @@ import {
     faChevronDown,
     faChevronUp,
     faFilter,
+    faGlobe,
+    faEye,
+    faShoppingCart,
+    faUndo,
 } from '@fal'
 import { useFormatTime } from '@/Composables/useFormatTime'
 
 library.add(
     faUserEdit, faStickyNote, faInboxIn, faPaperPlane, faTimesCircle,
-    faMoneyBill, faEnvelope, faCodeBranch, faChevronDown, faChevronUp, faFilter
+    faMoneyBill, faEnvelope, faCodeBranch, faChevronDown, faChevronUp, faFilter, faGlobe,
+    faEye, faShoppingCart, faUndo
 )
 
 interface TimelineEvent {
@@ -55,6 +60,8 @@ const filterOptions = [
     { key: 'account_update', label: 'Account Changes', types: ['account_update', 'note'] },
     { key: 'payment', label: 'Payments', types: ['payment'] },
     { key: 'email', label: 'Emails', types: ['email'] },
+    { key: 'web_activity', label: 'Website Activity', types: ['page_view', 'product_view', 'add_to_basket'] },
+    { key: 'return', label: 'Returns', types: ['return'] },
 ]
 
 const colorClasses: Record<string, { bg: string; icon: string }> = {
@@ -64,6 +71,8 @@ const colorClasses: Record<string, { bg: string; icon: string }> = {
     indigo: { bg: 'bg-indigo-100', icon: 'text-indigo-600' },
     purple: { bg: 'bg-purple-100', icon: 'text-purple-600' },
     yellow: { bg: 'bg-yellow-100', icon: 'text-yellow-600' },
+    teal:   { bg: 'bg-teal-100',   icon: 'text-teal-600' },
+    orange: { bg: 'bg-orange-100', icon: 'text-orange-600' },
 }
 
 const filteredEvents = computed(() => {
@@ -88,6 +97,9 @@ const toggleExpand = (id: string) => {
 }
 
 const hasExpandableData = (event: TimelineEvent): boolean => {
+    if (event.type === 'note') {
+        return !!event.subtitle
+    }
     if (['account_update'].includes(event.type)) {
         return !!(event.metadata?.old_values || event.metadata?.new_values)
     }
@@ -99,6 +111,15 @@ const hasExpandableData = (event: TimelineEvent): boolean => {
     }
     if (event.type === 'email') {
         return !!(event.metadata?.number_reads !== undefined)
+    }
+    if (['page_view', 'product_view'].includes(event.type)) {
+        return !!(event.metadata?.duration_seconds)
+    }
+    if (event.type === 'add_to_basket') {
+        return !!(event.metadata?.product_id || event.metadata?.quantity)
+    }
+    if (event.type === 'return') {
+        return !!(event.metadata?.return_reason || event.metadata?.number_items)
     }
     return false
 }
@@ -171,7 +192,7 @@ const formatMetadataValue = (value: unknown): string => {
                                 <p class="text-sm font-semibold text-gray-900 leading-tight">
                                     {{ event.title }}
                                 </p>
-                                <p v-if="event.subtitle" class="text-sm text-gray-500 mt-0.5 truncate">
+                                <p v-if="event.subtitle && !(event.type === 'note' && expandedIds.has(event.id))" class="text-sm text-gray-500 mt-0.5 truncate">
                                     {{ event.subtitle }}
                                 </p>
                             </div>
@@ -204,8 +225,13 @@ const formatMetadataValue = (value: unknown): string => {
                                 v-if="expandedIds.has(event.id)"
                                 class="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600"
                             >
+                                <!-- Note: full text -->
+                                <template v-if="event.type === 'note'">
+                                    <p class="whitespace-pre-wrap leading-relaxed">{{ event.subtitle }}</p>
+                                </template>
+
                                 <!-- Account Update: old → new values -->
-                                <template v-if="event.type === 'account_update' && (event.metadata.old_values || event.metadata.new_values)">
+                                <template v-else-if="event.type === 'account_update' && (event.metadata.old_values || event.metadata.new_values)">
                                     <div
                                         v-for="key in Object.keys({ ...(event.metadata.old_values as object ?? {}), ...(event.metadata.new_values as object ?? {}) })"
                                         :key="key"
@@ -256,6 +282,52 @@ const formatMetadataValue = (value: unknown): string => {
                                         <div class="flex gap-2">
                                             <span class="font-medium text-gray-700">Clicks:</span>
                                             <span>{{ event.metadata.number_clicks ?? 0 }}</span>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Page view / Product view: duration -->
+                                <template v-else-if="['page_view', 'product_view'].includes(event.type)">
+                                    <div class="space-y-0.5">
+                                        <div v-if="event.metadata.duration_seconds" class="flex gap-2">
+                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ trans('Duration') }}:</span>
+                                            <span>{{ event.metadata.duration_seconds }}s</span>
+                                        </div>
+                                        <div v-if="event.metadata.page_sub_type" class="flex gap-2">
+                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ trans('Type') }}:</span>
+                                            <span class="capitalize">{{ String(event.metadata.page_sub_type).replace(/_/g, ' ') }}</span>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Add to basket: product, quantity -->
+                                <template v-else-if="event.type === 'add_to_basket'">
+                                    <div class="space-y-0.5">
+                                        <div v-if="event.metadata.quantity" class="flex gap-2">
+                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ trans('Quantity') }}:</span>
+                                            <span>{{ event.metadata.quantity }}</span>
+                                        </div>
+                                        <div v-if="event.metadata.product_id" class="flex gap-2">
+                                            <span class="font-medium text-gray-700 w-24 flex-none">Product ID:</span>
+                                            <span>{{ event.metadata.product_id }}</span>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Return: reason, items -->
+                                <template v-else-if="event.type === 'return'">
+                                    <div class="space-y-0.5">
+                                        <div v-if="event.metadata.number_items" class="flex gap-2">
+                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ trans('Items') }}:</span>
+                                            <span>{{ event.metadata.number_items }}</span>
+                                        </div>
+                                        <div v-if="event.metadata.state" class="flex gap-2">
+                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ trans('State') }}:</span>
+                                            <span class="capitalize">{{ String(event.metadata.state).replace(/_/g, ' ') }}</span>
+                                        </div>
+                                        <div v-if="event.metadata.return_reason" class="flex gap-2 mt-1">
+                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ trans('Reason') }}:</span>
+                                            <span class="whitespace-pre-wrap">{{ event.metadata.return_reason }}</span>
                                         </div>
                                     </div>
                                 </template>
