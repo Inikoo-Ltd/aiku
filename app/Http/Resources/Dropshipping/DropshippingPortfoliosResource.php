@@ -164,6 +164,7 @@ class DropshippingPortfoliosResource extends JsonResource
             },
 
             'portfolio_data' => $this->data,
+            'bundle_id' => $this->bundle_id,
 
             'has_valid_platform_product_id'          => $this->has_valid_platform_product_id,
             'exist_in_platform'                      => $this->exist_in_platform,

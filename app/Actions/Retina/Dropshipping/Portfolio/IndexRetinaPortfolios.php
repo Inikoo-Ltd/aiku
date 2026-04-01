@@ -91,6 +91,12 @@ class IndexRetinaPortfolios extends RetinaAction
                 'products.is_for_sale',
             );
 
+        if($this->tab === CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value) {
+            $query->where('portfolios.is_bundle', true);
+        } else {
+            $query->where('portfolios.is_bundle', false);
+        }
+
         return $query->defaultSort('-portfolios.id')
             ->allowedFilters([
                             $unUploadedFilter, $globalSearch,
@@ -570,7 +576,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 'platform_user_id'         => $platformUser?->id,
                 'platform_data'            => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
                 'products'                 => DropshippingPortfoliosResource::collection($portfolios),
-                'bundles'                  => DropshippingBundlesResource::collection(IndexRetinaBundles::run($this->customerSalesChannel, 'bundles')),
+                'bundles'                  => DropshippingPortfoliosResource::collection($portfolios),
                 'is_platform_connected'    => $this->customerSalesChannel->platform_status,
                 'customer_sales_channel'   => RetinaCustomerSalesChannelResource::make($this->customerSalesChannel)->toArray(request()),
                 'channels'                  => CustomerSalesChannelsResourceTOFIX::collection($channels), //  Do now use the resource. Use an array of necessary data

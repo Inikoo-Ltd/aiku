@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Bundle;
 
 use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\Bundle;
@@ -113,6 +114,11 @@ class StoreBundle extends OrgAction
                     'quantity' => Arr::get($selectedProduct, 'quantity')
                 ]);
             }
+
+            StorePortfolio::make()->action($customerSalesChannel, $product, [
+                'is_bundle' => true,
+                'bundle_id' => $bundle->id
+            ]);
 
             return $bundle;
         });

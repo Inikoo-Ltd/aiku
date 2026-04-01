@@ -178,6 +178,8 @@ class StorePortfolio extends OrgAction
                 ),
             ],
             'status'          => 'sometimes|boolean',
+            'is_bundle'       => 'sometimes|boolean',
+            'bundle_id'       => 'sometimes|integer',
             'platform_product_id'          => 'sometimes|string',
             'platform_product_variant_id'          => 'sometimes|string',
             'platform_handle' => 'sometimes|string',
