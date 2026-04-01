@@ -35,7 +35,7 @@ const decrement = () => {
 
         <!-- VALUE -->
         <div class="px-3 text-sm font-semibold text-gray-800 min-w-[32px] text-center">
-            {{ modelValue || 1 }}
+            {{ modelValue || 0 }}
         </div>
 
         <!-- PLUS -->

@@ -133,6 +133,7 @@ class DropshippingPortfoliosResource extends JsonResource
         return [
             'id'                    => $this->id,
             'item_id'               => $itemId,
+            'product_id'            => $this->item_id,
             'code'                  => $this->item?->code ?? $this->item_code,
             'currency_code'         => $this->item?->currency?->code,
             'handle'                => $this->platform_handle,

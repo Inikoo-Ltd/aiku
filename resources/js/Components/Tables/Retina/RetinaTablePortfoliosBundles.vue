@@ -523,7 +523,7 @@ const fetchEditMediaGallery = async () => {
 
 		const routeParams = {
 			...props.bundle_routes.images.edit.parameters,
-			bundle: [selectedEditProduct.value.id]
+			bundle: [selectedEditProduct.value.bundle_id]
 		}
 		const url = route(
 			props.bundle_routes.images.edit.name,
@@ -537,13 +537,13 @@ const fetchEditMediaGallery = async () => {
 		if (data.current_images) {
 			selectedMedia.value = Object.entries(data.current_images).map(
 				([image_id, img]: any, index) => ({
+					key: String(image_id),
 					image_id: Number(image_id),
 					image: img,
 					url: img.original,
 					is_main: index === 0 // default first jadi main
 				})
 			)
-
 			selectedMediaIds.value = selectedMedia.value.map(m => m.image_id)
 		}
 		if (data.items) {
@@ -584,7 +584,7 @@ const fetchMediaGallery = async () => {
 		const url = route(
 			props.bundle_routes.images.get.name,
 			{
-				product_ids: [selectedEditProduct.value.product_id]
+				product_ids: [selectedEditProduct.value.bundle_id]
 			}
 		)
 		const response = await axios.get(url)
@@ -656,13 +656,13 @@ const toggleSelect = (img: any) => {
 const generateAITitle = async () => {
 	try {
 		isGeneratingAI.value = true
-
+		
 		const { data } = await axios.post(
 			route(
 				props.bundle_routes.ai.generate_title.name
 			),
 			{
-				products: [selectedEditProduct?.value.product_id]
+				products: bundleItems.value.map(item => item.product_id)
 			}
 		)
 		selectedEditProduct.value.name = data
@@ -685,13 +685,13 @@ const generateAITitle = async () => {
 const generateAIDescription = async () => {
 	try {
 		isGeneratingAI.value = true
-
+		
 		const { data } = await axios.post(
 			route(
 				props.bundle_routes.ai.generate_description.name
 			),
 			{
-				products: [selectedEditProduct?.value.product_id]
+				products: bundleItems.value.map(item => item.product_id)
 			}
 		)
 		selectedEditProduct.value.description = data
@@ -759,7 +759,6 @@ const generateAIImages = async () => {
 			images: selectedMediaForAI.value.map(m => m.image_id),
 			prompt: aiPrompt.value
 		}
-
 		const routeParams = {
 			...props.bundle_routes.ai.generate_images.parameters,
 			product: selectedEditProduct.value.product_id
@@ -831,7 +830,7 @@ const submitBundle = async () => {
 
 		const routeParams = {
 			...props.bundle_routes.update.parameters,
-			bundle: selectedEditProduct?.value.id
+			bundle: selectedEditProduct?.value.bundle_id
 		}
 		router.patch(
 			route(props.bundle_routes.update.name, routeParams),
