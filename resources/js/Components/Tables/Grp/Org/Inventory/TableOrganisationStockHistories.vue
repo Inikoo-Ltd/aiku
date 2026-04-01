@@ -10,6 +10,7 @@ import { Link } from "@inertiajs/vue3"
 import { inject } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { RouteParams } from "@/types/route-params"
+import { Location } from "@/types/location"
 
 defineProps<{
     data: object
@@ -18,7 +19,18 @@ defineProps<{
 
 const locale = inject("locale", aikuLocaleStructure)
 
-function formatPeriod(period: string, tab: string): string {
+function locationRoute(organisationStockHistory) {
+    return route(
+        "grp.org.warehouses.show.inventory.org_stock_histories.show",
+        [
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).warehouse,
+            organisationStockHistory.id
+        ]);
+}
+
+
+function formatPeriodx(period: string, tab: string): string {
     if (!period) return "-"
     const date = new Date(period)
 
@@ -88,12 +100,13 @@ function locationHistoriesRoute(period: string, tab: string): string {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(period)="{ item }">
-            <Link
-                :href="locationHistoriesRoute(item.period, tab ?? 'daily')"
-                class="primaryLink tabular-nums font-medium"
-            >
-                {{ formatPeriod(item.period, tab ?? 'daily') }}
+
+            <Link :href="locationRoute(item)" class="primaryLink">
+                {{item.period}}
             </Link>
+
+
+
         </template>
 
         <template #cell(number_org_stocks)="{ item }">

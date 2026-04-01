@@ -14,9 +14,11 @@ import { computed, ref } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCalendarDay, faCalendarWeek, faCalendarAlt, faCalendar } from "@fal"
+import { faCalendarDay, faCalendarWeek, faCalendarAlt, faCalendar, faDownload } from "@fal"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { routeType } from "@/types/route"
 
-library.add(faCalendarDay, faCalendarWeek, faCalendarAlt, faCalendar)
+library.add(faCalendarDay, faCalendarWeek, faCalendarAlt, faCalendar, faDownload)
 
 const props = defineProps<{
     title: string
@@ -25,6 +27,7 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
+    download_route: routeType
     daily?: {}
     weekly?: {}
     monthly?: {}
@@ -44,11 +47,28 @@ const component = computed(() => {
 
     return components[currentTab.value]
 })
+
+function exportUrl(): string {
+    if (!props.download_route?.name) return ""
+    const base = route(props.download_route.name, {
+        ...props.download_route.parameters,
+        tab: currentTab.value,
+        type: 'xlsx'
+    })
+    const betweenDate = new URLSearchParams(window.location.search).get("between[date]")
+    return betweenDate ? `${base}&between[date]=${betweenDate}` : base
+}
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
+    <PageHeading :data="pageHead">
+        <template #otherBefore>
+            <a :href="exportUrl()" download target="_blank" rel="noopener">
+                <Button :icon="faDownload" label="Excel" type="tertiary" />
+            </a>
+        </template>
+    </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
     <component
         :is="component"

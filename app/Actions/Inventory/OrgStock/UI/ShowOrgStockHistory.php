@@ -63,7 +63,7 @@ class ShowOrgStockHistory extends OrgAction
                 'org_stock_value',
                 'grp_stock_value',
                 'number_locations',
-                'unit_value',
+                'value_per_sku',
             ])
             ->orderBy('date', 'desc');
 
@@ -103,9 +103,9 @@ class ShowOrgStockHistory extends OrgAction
                 ->betweenDates(['date'])
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: false, type: 'date')
                 ->column(key: 'quantity_in_locations', label: __('Quantity'), canBeHidden: false, align: 'right')
-                ->column(key: 'number_locations', label: __('Locations'), canBeHidden: false, align: 'right')
+                ->column(key: 'number_locations', label: __('Number of Locations'), canBeHidden: false, align: 'right')
                 ->column(key: 'org_stock_value', label: __('Stock Value'), canBeHidden: false, align: 'right')
-                ->column(key: 'unit_value', label: __('Unit Value'), canBeHidden: false, align: 'right');
+                ->column(key: 'value_per_sku', label: __('Value per SKU'), canBeHidden: false, align: 'right');
         };
     }
 
@@ -130,6 +130,10 @@ class ShowOrgStockHistory extends OrgAction
                     'model'         => __('SKU'),
                     'title'         => $this->orgStock->code,
                     'subNavigation' => $subNavigation,
+                ],
+                'download_route' => [
+                    'name'       => $request->route()->getName().'.export',
+                    'parameters' => $request->route()->originalParameters(),
                 ],
                 'data' => OrgStockHistoryResource::collection($records),
             ]

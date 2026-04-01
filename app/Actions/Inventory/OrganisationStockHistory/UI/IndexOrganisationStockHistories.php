@@ -38,14 +38,25 @@ class IndexOrganisationStockHistories extends OrgAction
 
     public function handle(Organisation $organisation, string $period = 'daily'): LengthAwarePaginator
     {
-        $pageName = $period . 'Page';
+        $pageName = $period.'Page';
         $perPage  = config('ui.table.records_per_page', 25);
 
         if ($period === 'daily') {
+            $orderByName    = request()->input('daily_sort', '-date');
+            $orderDirection = 'asc';
+            if (str_starts_with($orderByName, '-')) {
+                $orderDirection = 'desc';
+                $orderByName    = substr($orderByName, 1);
+            }
+            if ($orderByName === 'period') {
+                $orderByName = 'date';
+            }
+
+
             $query = DB::table('organisation_stock_histories')
-                ->selectRaw('date as period, org_stock_value, grp_stock_value, org_stock_commercial_value, grp_stock_commercial_value, number_org_stocks, number_out_of_stock_org_stocks, number_location_org_stocks')
+                ->selectRaw('id,date as period, org_stock_value, grp_stock_value, org_stock_commercial_value, grp_stock_commercial_value, number_org_stocks, number_out_of_stock_org_stocks, number_location_org_stocks')
                 ->where('organisation_id', $organisation->id)
-                ->orderBy('date', 'desc');
+                ->orderBy($orderByName, $orderDirection);
 
             $this->applyDateFilter($query, $period);
 
@@ -53,10 +64,11 @@ class IndexOrganisationStockHistories extends OrgAction
         }
 
         $truncUnit = match ($period) {
-            'weekly'  => 'week',
+            'weekly' => 'week',
             'monthly' => 'month',
-            'yearly'  => 'year',
+            'yearly' => 'year',
         };
+
 
         $query = DB::table('organisation_stock_histories')
             ->selectRaw(
@@ -107,19 +119,19 @@ class IndexOrganisationStockHistories extends OrgAction
         return function (InertiaTable $table) use ($period) {
             $table
                 ->name($period)
-                ->pageName($period . 'Page');
+                ->pageName($period.'Page');
 
             $periodLabel = match ($period) {
-                'weekly'  => __('Week'),
+                'weekly' => __('Week'),
                 'monthly' => __('Month'),
-                'yearly'  => __('Year'),
-                default   => __('Date'),
+                'yearly' => __('Year'),
+                default => __('Date'),
             };
 
             $table
                 ->withLabelRecord([__('record'), __('records')])
                 ->betweenDates(['date'])
-                ->column(key: 'period', label: $periodLabel, canBeHidden: false, type: 'date')
+                ->column(key: 'period', label: $periodLabel, canBeHidden: false, type: 'date', sortable: true)
                 ->column(key: 'number_org_stocks', label: __('Total SKUs'), canBeHidden: false, align: 'right')
                 ->column(key: 'number_out_of_stock_org_stocks', label: __('Out of Stock'), canBeHidden: false, align: 'right')
                 ->column(key: 'number_location_org_stocks', label: __('In Locations'), canBeHidden: false, align: 'right')
@@ -133,35 +145,39 @@ class IndexOrganisationStockHistories extends OrgAction
         return Inertia::render(
             'Org/Inventory/OrganisationStockHistories',
             [
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __('Stock History'),
-                'pageHead'    => [
+                'breadcrumbs'    => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'title'          => __('Stock History'),
+                'pageHead'       => [
                     'title' => __('Stock History'),
                     'icon'  => [
                         'icon'  => ['fal', 'fa-history'],
                         'title' => __('Stock History'),
                     ],
                 ],
-                'tabs' => [
+                'download_route' => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_histories.export',
+                    'parameters' => $request->route()->originalParameters(),
+                ],
+                'tabs'           => [
                     'current'    => $this->tab,
                     'navigation' => OrganisationStockHistoriesTabsEnum::navigation(),
                 ],
 
                 OrganisationStockHistoriesTabsEnum::DAILY->value => $this->tab == OrganisationStockHistoriesTabsEnum::DAILY->value
-                    ? fn () => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'daily'))),
+                    ? fn() => OrganisationStockHistoriesResource::collection($histories)
+                    : Inertia::lazy(fn() => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'daily'))),
 
                 OrganisationStockHistoriesTabsEnum::WEEKLY->value => $this->tab == OrganisationStockHistoriesTabsEnum::WEEKLY->value
-                    ? fn () => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'weekly'))),
+                    ? fn() => OrganisationStockHistoriesResource::collection($histories)
+                    : Inertia::lazy(fn() => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'weekly'))),
 
                 OrganisationStockHistoriesTabsEnum::MONTHLY->value => $this->tab == OrganisationStockHistoriesTabsEnum::MONTHLY->value
-                    ? fn () => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'monthly'))),
+                    ? fn() => OrganisationStockHistoriesResource::collection($histories)
+                    : Inertia::lazy(fn() => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'monthly'))),
 
                 OrganisationStockHistoriesTabsEnum::YEARLY->value => $this->tab == OrganisationStockHistoriesTabsEnum::YEARLY->value
-                    ? fn () => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'yearly'))),
+                    ? fn() => OrganisationStockHistoriesResource::collection($histories)
+                    : Inertia::lazy(fn() => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'yearly'))),
             ]
         )
             ->table($this->tableStructure('daily'))

@@ -114,6 +114,10 @@ class IndexLocationOrgStockHistories extends OrgAction
                         'title' => __('Location Stock Histories'),
                     ],
                 ],
+                'download_route' => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_histories.location_histories.export',
+                    'parameters' => $request->route()->originalParameters(),
+                ],
                 'data' => LocationOrgStockHistoriesResource::collection($records),
             ]
         )->table($this->tableStructure());

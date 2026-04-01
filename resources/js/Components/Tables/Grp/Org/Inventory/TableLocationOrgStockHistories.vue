@@ -26,7 +26,7 @@ function orgStockRoute(stockSlug: string): string {
             (route().params as RouteParams).warehouse,
             stockSlug,
         ]
-    )
+    ) + `?between[date]=${(route().params as RouteParams).between.date}`
 }
 </script>
 
@@ -39,6 +39,7 @@ function orgStockRoute(stockSlug: string): string {
         </template>
 
         <template #cell(stock_code)="{ item }">
+            <pre>{{ (route().params as RouteParams) }}</pre>
             <Link :href="orgStockRoute(item.stock_slug)" class="primaryLink">
                 {{ item.stock_code }}
             </Link>
