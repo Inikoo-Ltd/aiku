@@ -25,7 +25,7 @@ class ProcessReorderRemainderRecipients implements ShouldQueue
 
     public string $jobQueue = 'ses';
 
-    public function handle(int $emailBulkRunId, array $customerData): void
+    public function handle(int $emailBulkRunId, array $customerIds): void
     {
         $emailBulkRun = EmailBulkRun::find($emailBulkRunId);
 
@@ -39,8 +39,8 @@ class ProcessReorderRemainderRecipients implements ShouldQueue
 
         $emailDeliveryChannel = StoreEmailDeliveryChannel::run($emailBulkRun);
 
-        foreach ($customerData as $customer) {
-            $customerModel = Customer::find($customer['id']);
+        foreach ($customerIds as $customerId) {
+            $customerModel = Customer::find($customerId);
             if (!$customerModel) {
                 continue;
             }
@@ -50,7 +50,7 @@ class ProcessReorderRemainderRecipients implements ShouldQueue
                 $customerModel,
                 [
                     'outbox_id'     => $emailBulkRun->outbox_id,
-                    'email_address' => $customer['email']
+                    'email_address' => $customerModel->email
                 ]
             );
 

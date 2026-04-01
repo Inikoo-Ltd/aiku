@@ -20,6 +20,7 @@ class ProcessReorderRemainderPerOutbox
     use WithGenerateEmailBulkRuns;
     use AsAction;
     public string $jobQueue = 'ses';
+    protected int $countRecipients = 0;
 
     public function handle(Outbox $outbox): void
     {
@@ -35,7 +36,7 @@ class ProcessReorderRemainderPerOutbox
         $baseQuery->whereNotNull('customers.email');
         $baseQuery->where('customers.email', '!=', '');
         $baseQuery->whereNull('customers.deleted_at');
-        $baseQuery->select('customers.id', 'customers.shop_id', 'customers.email');
+        $baseQuery->select('customers.id', 'customers.email');
         $baseQuery->orderBy('customers.shop_id');
         $baseQuery->orderBy('customers.id');
 
@@ -50,24 +51,22 @@ class ProcessReorderRemainderPerOutbox
 
         $chuckSize = 50;
         $baseQuery->chunk($chuckSize, function ($customers) use ($emailBulkRun) {
-            $customerData = $customers
-                ->filter(fn ($customer) => filter_var($customer->email, FILTER_VALIDATE_EMAIL))
-                ->map(fn ($customer) => [
-                    'id'    => $customer->id,
-                    'email' => $customer->email,
-                ])
-                ->values()
-                ->all();
+            $customerIds = [];
+            $numValidEmails = 0;
+            foreach ($customers as $customer) {
+                if (filter_var($customer->email, FILTER_VALIDATE_EMAIL)) {
+                    $customerIds[] = $customer->id;
+                    $numValidEmails++;
+                }
+            }
 
-            ProcessReorderRemainderRecipients::dispatch(
-                $emailBulkRun->id,
-                $customerData
-            );
+            ProcessReorderRemainderRecipients::dispatch($emailBulkRun->id, $customerIds);
+            $this->countRecipients += $numValidEmails;
         });
 
         $emailBulkRun->update([
             'recipients_prepared_at' => now(),
-            'recipients_count'       => $totalItems,
+            'recipients_count'       => $this->countRecipients
         ]);
 
         UpdateEmailBulkRunRecipientStoredAt::run($emailBulkRun);

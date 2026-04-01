@@ -56,7 +56,7 @@ class ProcessPriceChangeRecipients
                 $customerModel,
                 [
                     'outbox_id'     => $emailBulkRun->outbox_id,
-                    'email_address' => $customer['email'],
+                    'email_address' => $customerModel->email,
                     'data->additional_data' => [
                         'products' => $this->generateProductLinks($customer['product_ids'])
                     ]

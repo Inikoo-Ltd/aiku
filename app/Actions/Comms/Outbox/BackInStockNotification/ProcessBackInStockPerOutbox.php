@@ -79,7 +79,6 @@ class ProcessBackInStockPerOutbox
                 ->filter(fn ($customer) => filter_var($customer->email, FILTER_VALIDATE_EMAIL))
                 ->map(fn ($customer) => [
                     'id'           => $customer->id,
-                    'email'        => $customer->email,
                     'product_ids'  => $customer->product_ids,
                     'reminder_ids' => $customer->reminder_ids
                 ])
