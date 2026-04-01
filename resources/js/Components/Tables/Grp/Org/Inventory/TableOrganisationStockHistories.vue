@@ -122,11 +122,11 @@ function locationHistoriesRoute(period: string, tab: string): string {
         </template>
 
         <template #cell(org_stock_value)="{ item }">
-            <span class="tabular-nums">{{ locale.number(item.org_stock_value) }}</span>
+            <span class="tabular-nums">{{ locale.currencyFormat(item.org_currency_code, item.org_stock_value) }}</span>
         </template>
 
         <template #cell(grp_stock_value)="{ item }">
-            <span class="tabular-nums">{{ locale.number(item.grp_stock_value) }}</span>
+            <span class="tabular-nums">{{ locale.currencyFormat(item.grp_currency_code, item.grp_stock_value) }}</span>
         </template>
     </Table>
 </template>

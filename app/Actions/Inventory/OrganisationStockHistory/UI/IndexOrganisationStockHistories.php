@@ -19,6 +19,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -77,6 +78,8 @@ class IndexOrganisationStockHistories extends OrgAction
                 'number_org_stocks',
                 'number_out_of_stock_org_stocks',
                 'number_location_org_stocks',
+                DB::raw("'" . $organisation->currency->code . "' as org_currency_code"),
+                DB::raw("'" . $organisation->group->currency->code . "' as grp_currency_code"),
             ])
             ->where('organisation_id', $organisation->id);
 
