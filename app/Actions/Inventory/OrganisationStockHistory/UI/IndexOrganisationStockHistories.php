@@ -50,6 +50,10 @@ class IndexOrganisationStockHistories extends OrgAction
             'number_locations',
             'number_org_stocks',
             'number_out_of_stock_org_stocks',
+            'percentage_out_of_stock',
+            'percentage_value_dormant_stock_1y',
+            'value_dormant_stock_1y',
+            'number_org_stocks_not_sold_1y',
             'number_location_org_stocks',
             DB::raw("'".$organisation->currency->code."' as org_currency_code"),
         ];
@@ -62,9 +66,9 @@ class IndexOrganisationStockHistories extends OrgAction
         return QueryBuilder::for(OrganisationStockHistory::class)
             ->select($select)
             ->where('organisation_id', $organisation->id)
-            ->when($bucket === 'weekly', fn ($q) => $q->where('is_week', true))
-            ->when($bucket === 'monthly', fn ($q) => $q->where('is_month', true))
-            ->when($bucket === 'yearly', fn ($q) => $q->where('is_year', true))
+            ->when($bucket === 'weekly', fn($q) => $q->where('is_week', true))
+            ->when($bucket === 'monthly', fn($q) => $q->where('is_month', true))
+            ->when($bucket === 'yearly', fn($q) => $q->where('is_year', true))
             ->defaultSort('-date')
             ->allowedSorts([
                 AllowedSort::field('bucket', 'date'),
@@ -108,9 +112,22 @@ class IndexOrganisationStockHistories extends OrgAction
                     align: 'right'
                 );
 
-            if (!$sameCurrency) {
-                $table->column(key: 'grp_stock_value', label: __('Stock Value').' ('.$organisation->group->currency->code.')', canBeHidden: false, sortable: true, type: 'currency', align: 'right');
-            }
+            //            if (!$sameCurrency) {
+            //                $table->column(key: 'grp_stock_value', label: __('Stock Value').' ('.$organisation->group->currency->code.')', canBeHidden: false, sortable: true, type: 'currency', align: 'right');
+            //            }
+
+
+            $table->column(key: 'number_org_stocks_not_sold_1y', label: __('No sold 1Y'), icon: 'fal fa-ban', tooltip: __('Number of SKUs not sold in more than 1 year'), canBeHidden: false, sortable: true, align: 'right');
+            $table->column(
+                key: 'value_dormant_stock_1y',
+                label: __('Dormant 1Y'),
+                icon: 'fal fa-skull-cow',
+                tooltip: __('Value of dormant stock for more than 1 year'),
+                canBeHidden: false,
+                sortable: true,
+                type: 'currency',
+                align: 'right'
+            );
         };
     }
 
@@ -138,20 +155,20 @@ class IndexOrganisationStockHistories extends OrgAction
                 ],
 
                 OrganisationStockHistoriesTabsEnum::DAILY->value => $this->tab == OrganisationStockHistoriesTabsEnum::DAILY->value
-                    ? fn () => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation))),
+                    ? fn() => OrganisationStockHistoriesResource::collection($histories)
+                    : Inertia::lazy(fn() => OrganisationStockHistoriesResource::collection($this->handle($this->organisation))),
 
                 OrganisationStockHistoriesTabsEnum::WEEKLY->value => $this->tab == OrganisationStockHistoriesTabsEnum::WEEKLY->value
-                    ? fn () => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'weekly'))),
+                    ? fn() => OrganisationStockHistoriesResource::collection($histories)
+                    : Inertia::lazy(fn() => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'weekly'))),
 
                 OrganisationStockHistoriesTabsEnum::MONTHLY->value => $this->tab == OrganisationStockHistoriesTabsEnum::MONTHLY->value
-                    ? fn () => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'monthly'))),
+                    ? fn() => OrganisationStockHistoriesResource::collection($histories)
+                    : Inertia::lazy(fn() => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'monthly'))),
 
                 OrganisationStockHistoriesTabsEnum::YEARLY->value => $this->tab == OrganisationStockHistoriesTabsEnum::YEARLY->value
-                    ? fn () => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'yearly'))),
+                    ? fn() => OrganisationStockHistoriesResource::collection($histories)
+                    : Inertia::lazy(fn() => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'yearly'))),
             ]
         )
             ->table($this->tableStructure($this->organisation))

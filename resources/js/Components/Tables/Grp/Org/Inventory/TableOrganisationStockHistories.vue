@@ -10,7 +10,6 @@ import { Link } from "@inertiajs/vue3"
 import { inject } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { RouteParams } from "@/types/route-params"
-import { Location } from "@/types/location"
 
 defineProps<{
     data: object
@@ -29,25 +28,6 @@ function locationRoute(organisationStockHistory) {
         ]);
 }
 
-
-function formatPeriodx(period: string, tab: string): string {
-    if (!period) return "-"
-    const date = new Date(period)
-
-    if (tab === "yearly") {
-        return date.getFullYear().toString()
-    }
-
-    if (tab === "monthly") {
-        return date.toLocaleDateString(undefined, { year: "numeric", month: "short" })
-    }
-
-    if (tab === "weekly") {
-        return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
-    }
-
-    return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
-}
 
 function toYmd(date: Date): string {
     const y = date.getFullYear()
@@ -85,16 +65,7 @@ function periodDateRange(period: string, tab: string): string {
     return `${toYmd(date)}-${toYmd(date)}`
 }
 
-function locationHistoriesRoute(period: string, tab: string): string {
-    const dateRange = periodDateRange(period, tab)
-    return route(
-        "grp.org.warehouses.show.inventory.org_stock_histories.location_histories.index",
-        [
-            (route().params as RouteParams).organisation,
-            (route().params as RouteParams).warehouse,
-        ]
-    ) + (dateRange ? `?between[date]=${dateRange}` : "")
-}
+
 </script>
 
 <template>
@@ -128,6 +99,17 @@ function locationHistoriesRoute(period: string, tab: string): string {
 
         <template #cell(grp_stock_value)="{ item }">
             <span class="tabular-nums">{{ locale.currencyFormat(item.grp_currency_code, item.grp_stock_value) }}</span>
+        </template>
+
+        <template #cell(number_org_stocks_not_sold_1y)="{ item }">
+             <span class="tabular-nums text-red-500">
+                    {{ locale.number(item.number_org_stocks_not_sold_1y) }}
+             </span>
+        </template>
+        <template #cell(value_dormant_stock_1y)="{ item }">
+             <span class="tabular-nums text-red-500">
+            {{ locale.currencyFormat(item.org_currency_code, item.value_dormant_stock_1y) }}
+             </span>
         </template>
     </Table>
 </template>
