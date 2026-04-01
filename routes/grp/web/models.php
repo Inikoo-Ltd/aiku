@@ -422,14 +422,14 @@ Route::prefix('clocking-machine/{clockingMachine:id}')->name('clocking_machine..
 
 Route::prefix('clocking-machine-coordinate-policy')->name('clocking-machine-coordinate-policy.')->group(function () {
     Route::post('', StoreClockingMachineCoordinatePolicy::class)->name('store');
-    Route::patch('{clockingMachineCoordinatePolicy:id}', UpdateClockingMachineCoordinatePolicy::class)->name('update');
-    Route::delete('{clockingMachineCoordinatePolicy:id}', DeleteClockingMachineCoordinatePolicy::class)->name('delete');
-    Route::post('{clockingMachineCoordinatePolicy:id}/rule', StoreClockingMachineCoordinatePolicyRule::class)->name('rule.store');
+    Route::patch('{policy:id}', UpdateClockingMachineCoordinatePolicy::class)->name('update');
+    Route::delete('{policy:id}', DeleteClockingMachineCoordinatePolicy::class)->name('delete');
+    Route::post('{policy:id}/rule', StoreClockingMachineCoordinatePolicyRule::class)->name('rule.store');
 });
 
 Route::prefix('clocking-machine-coordinate-policy-rule')->name('clocking-machine-coordinate-policy-rule.')->group(function () {
-    Route::patch('{clockingMachineCoordinatePolicyRule:id}', UpdateClockingMachineCoordinatePolicyRule::class)->name('update');
-    Route::delete('{clockingMachineCoordinatePolicyRule:id}', DeleteClockingMachineCoordinatePolicyRule::class)->name('delete');
+    Route::patch('{policyRule:id}', UpdateClockingMachineCoordinatePolicyRule::class)->name('update');
+    Route::delete('{policyRule:id}', DeleteClockingMachineCoordinatePolicyRule::class)->name('delete');
 });
 
 Route::prefix('shipping-zone/{shippingZone:id}')->name('shipping_zone.')->group(function () {
