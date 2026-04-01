@@ -35,8 +35,6 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
                 'date as bucket',
                 'org_stock_value',
                 'grp_stock_value',
-                'org_stock_commercial_value',
-                'grp_stock_commercial_value',
                 'number_org_stocks',
                 'number_out_of_stock_org_stocks',
                 'number_location_org_stocks',
@@ -54,51 +52,63 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
         return $query;
     }
 
+    protected function isSameCurrency(): bool
+    {
+        return $this->organisation->currency->code === $this->organisation->group->currency->code;
+    }
+
     public function headings(): array
     {
         $orgCurrency = $this->organisation->currency->code;
-        $grpCurrency = $this->organisation->group->currency->code;
 
-        return [
+        $headings = [
             __('Date'),
             __('Total SKUs'),
             __('Out of Stock'),
             __('In Locations'),
             __('Stock Value').' ('.$orgCurrency.')',
-            __('Stock Value').' ('.$grpCurrency.')',
-            __('Commercial Value').' ('.$orgCurrency.')',
-            __('Commercial Value').' ('.$grpCurrency.')',
         ];
+
+        if (!$this->isSameCurrency()) {
+            $headings[] = __('Stock Value').' ('.$this->organisation->group->currency->code.')';
+        }
+
+        return $headings;
     }
 
     public function columnFormats(): array
     {
-        return [
+        $formats = [
             'A' => NumberFormat::FORMAT_TEXT,
             'B' => NumberFormat::FORMAT_TEXT,
             'C' => NumberFormat::FORMAT_TEXT,
             'D' => NumberFormat::FORMAT_TEXT,
             'E' => NumberFormat::FORMAT_TEXT,
-            'F' => NumberFormat::FORMAT_TEXT,
-            'G' => NumberFormat::FORMAT_TEXT,
-            'H' => NumberFormat::FORMAT_TEXT,
         ];
+
+        if (!$this->isSameCurrency()) {
+            $formats['F'] = NumberFormat::FORMAT_TEXT;
+        }
+
+        return $formats;
     }
 
     public function map($row): array
     {
         $orgSymbol = $this->organisation->currency->symbol;
-        $grpSymbol = $this->organisation->group->currency->symbol;
 
-        return [
+        $data = [
             (string) $row->bucket,
             (string) ($row->number_org_stocks ?? '0'),
             (string) ($row->number_out_of_stock_org_stocks ?? '0'),
             (string) ($row->number_location_org_stocks ?? '0'),
             $orgSymbol.number_format((float) ($row->org_stock_value ?? 0), 2, '.', ''),
-            $grpSymbol.number_format((float) ($row->grp_stock_value ?? 0), 2, '.', ''),
-            $orgSymbol.number_format((float) ($row->org_stock_commercial_value ?? 0), 2, '.', ''),
-            $grpSymbol.number_format((float) ($row->grp_stock_commercial_value ?? 0), 2, '.', ''),
         ];
+
+        if (!$this->isSameCurrency()) {
+            $data[] = $this->organisation->group->currency->symbol.number_format((float) ($row->grp_stock_value ?? 0), 2, '.', '');
+        }
+
+        return $data;
     }
 }
