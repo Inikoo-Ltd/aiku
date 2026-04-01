@@ -60,7 +60,6 @@ class IndexOrganisationStockHistories extends OrgAction
             ->when($bucket === 'weekly', fn($q) => $q->where('is_week', true))
             ->when($bucket === 'monthly', fn($q) => $q->where('is_month', true))
             ->when($bucket === 'yearly', fn($q) => $q->where('is_year', true))
-            ->when($bucket === 'daily', fn($q) => $q->where('is_week', false)->where('is_month', false)->where('is_year', false))
             ->defaultSort('-date')
             ->allowedSorts([AllowedSort::field('bucket', 'date')])
             ->withPaginator($bucket, tableName: request()->route()->getName())
