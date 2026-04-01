@@ -32,10 +32,19 @@ class StoreClockingMachineCoordinatePolicyRule extends OrgAction
         ];
     }
 
-    public function asController(ClockingMachineCoordinatePolicy $clockingMachineCoordinatePolicy, ActionRequest $request): ClockingMachineCoordinatePolicyRule
+    public function asController(ClockingMachineCoordinatePolicy $policy, ActionRequest $request): ClockingMachineCoordinatePolicyRule
     {
-        $this->initialisation($clockingMachineCoordinatePolicy->organisation, $request);
+        $this->initialisation($policy->organisation, $request);
 
-        return $this->handle($clockingMachineCoordinatePolicy, $this->validatedData);
+        return $this->handle($policy, $this->validatedData);
+    }
+
+    public function htmlResponse(): void
+    {
+        request()->session()->flash('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Clocking policy rule successfully created.'),
+        ]);
     }
 }
