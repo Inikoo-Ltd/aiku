@@ -10,15 +10,26 @@ import { Link } from "@inertiajs/vue3"
 import { inject } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { RouteParams } from "@/types/route-params"
+import { Location } from "@/types/location"
 
 defineProps<{
     data: object
-    tab?: string
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
 
-function formatPeriod(period: string, tab: string): string {
+function locationRoute(organisationStockHistory) {
+    return route(
+        "grp.org.warehouses.show.inventory.org_stock_histories.show",
+        [
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).warehouse,
+            organisationStockHistory.id
+        ]);
+}
+
+
+function formatPeriodx(period: string, tab: string): string {
     if (!period) return "-"
     const date = new Date(period)
 
@@ -86,13 +97,10 @@ function locationHistoriesRoute(period: string, tab: string): string {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
-        <template #cell(period)="{ item }">
-            <Link
-                :href="locationHistoriesRoute(item.period, tab ?? 'daily')"
-                class="primaryLink tabular-nums font-medium"
-            >
-                {{ formatPeriod(item.period, tab ?? 'daily') }}
+    <Table :resource="data" class="mt-5">
+        <template #cell(bucket)="{ item }">
+            <Link :href="locationRoute(item)" class="primaryLink">
+                {{ item.bucket }}
             </Link>
         </template>
 
@@ -114,11 +122,11 @@ function locationHistoriesRoute(period: string, tab: string): string {
         </template>
 
         <template #cell(org_stock_value)="{ item }">
-            <span class="tabular-nums">{{ locale.number(item.org_stock_value) }}</span>
+            <span class="tabular-nums">{{ locale.currencyFormat(item.org_currency_code, item.org_stock_value) }}</span>
         </template>
 
         <template #cell(grp_stock_value)="{ item }">
-            <span class="tabular-nums">{{ locale.number(item.grp_stock_value) }}</span>
+            <span class="tabular-nums">{{ locale.currencyFormat(item.grp_currency_code, item.grp_stock_value) }}</span>
         </template>
     </Table>
 </template>

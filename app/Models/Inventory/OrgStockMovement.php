@@ -47,6 +47,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $source_id
  * @property string|null $fixed
  * @property numeric|null $audited_quantity
+ * @property numeric|null $cost_per_sku
  * @property string|null $running_quantity running quantity on org_stock/location
  * @property string|null $running_quantity_org_stock running quantity on org_stock
  * @property bool|null $fixed_internal_helper
@@ -77,6 +78,7 @@ class OrgStockMovement extends Model
         'amount'           => 'decimal:3',
         'grp_amount' => 'decimal:3',
         'org_amount' => 'decimal:3',
+        'cost_per_sku' => 'decimal:6',
         'fixed_internal_helper' => 'boolean',
     ];
 

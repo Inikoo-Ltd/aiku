@@ -42,7 +42,7 @@ class CalculateOrgStockHistory implements ShouldBeUnique
         if ($from->lt($minimumDate)) {
             $from = $minimumDate;
         }
-        $maxDate = Carbon::parse('2020-01-02');
+
 
         $isCurrent = DB::table('location_org_stocks')->where('org_stock_id', $orgStock->id)->exists();
         if ($isCurrent) {
@@ -51,9 +51,6 @@ class CalculateOrgStockHistory implements ShouldBeUnique
             $to = $this->getLastDisassociateDate($orgStock);
         }
 
-        if ($to->gt($maxDate)) {
-            $to = $maxDate;
-        }
 
         if ($to->lt($from)) {
             $command?->info('Skipping '.$orgStock->slug.' ('.$orgStock->id.') - to date is before from date');
@@ -65,7 +62,7 @@ class CalculateOrgStockHistory implements ShouldBeUnique
         $days = (int)$from->diffInDays($to) + 1;
         $command?->info('Calculating '.$orgStock->slug.' ('.$orgStock->id.') from '.$from->format('Y-m-d').' to '.$to->format('Y-m-d').' ('.$days.' days)');
         foreach (Carbon::parse($from)->daysUntil($to) as $date) {
-            StoreOrgStockHistoricLocationsStock::run($orgStock, $date, $command);
+            SetOrgStockStockHistories::run($orgStock, $date, $command);
         }
     }
 
@@ -121,7 +118,6 @@ class CalculateOrgStockHistory implements ShouldBeUnique
             }
             $command->info('Processing '.$orgStock->slug.' ('.$orgStock->id.')');
             $this->handle($orgStock, $command);
-            //  CalculateOrgStockHistory::dispatch($orgStock);
         }
 
         return 0;

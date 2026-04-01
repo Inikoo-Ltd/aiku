@@ -33,13 +33,16 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
         }
 
         $stockData = DB::table('org_stock_histories')
-
+            ->selectRaw('sum(org_stock_value) as org_stock_values')
+            ->selectRaw('sum(grp_stock_value) as grp_stock_values')
             ->selectRaw('COUNT(DISTINCT org_stock_id) as number_org_stocks')
             ->selectRaw('COUNT(DISTINCT CASE WHEN quantity_in_locations < 1 THEN org_stock_id END) as number_out_of_stock_org_stocks')
             ->where('organisation_stock_history_id', $organisationStockHistory->id)
             ->first();
 
         $organisationStockHistory->update([
+            'org_stock_value'                => $stockData->org_stock_values,
+            'grp_stock_value'                => $stockData->grp_stock_values,
             'number_org_stocks'              => $stockData->number_org_stocks,
             'number_out_of_stock_org_stocks' => $stockData->number_out_of_stock_org_stocks
         ]);

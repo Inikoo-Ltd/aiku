@@ -1,10 +1,11 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 30 Mar 2026 18:54:41 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2026, Raul A Perusquia Flores
- */
+ * author Louis Perez
+ * created on 31-03-2026-15h-38m
+ * github: https://github.com/louis-perez
+ * copyright 2026
+*/
 
 namespace App\Actions\Inventory\OrgStock\Stock;
 
@@ -21,16 +22,16 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class StoreOrgStockHistoricLocationsStock
+class StoreOrgStockCurrentLocationsStock
 {
     use AsAction;
 
     public bool $debug = false;
 
-    public function handle(OrgStock $orgStock, Carbon $date, ?Command $command = null): array
+    public function handle(OrgStock $orgStock, ?Command $command = null): array
     {
         $orgStockLocationData = [];
-        $locationsIds         = $this->getLocationsIds($orgStock, $date);
+        $locationsIds         = $this->getLocationsIds($orgStock);
 
         foreach ($locationsIds as $locationId) {
 
@@ -39,10 +40,9 @@ class StoreOrgStockHistoricLocationsStock
                 if ($this->debug) {
                     $command?->warn("Checking location $location->slug");
                 }
-                $wasLocationValid = $this->wasLocationValid($orgStock, $location, $date, $command);
+                $wasLocationValid = $this->wasLocationValid($orgStock, $location, $command);
                 if ($wasLocationValid) {
-                    $quantity = $this->getStockQuantity($orgStock, $location, $date);
-                    $command?->line('Stock on '.$location->slug.' ('.$location->id.')  '.$date->format('Y-m-d').'  '.$quantity);
+                    $quantity = $this->getStockQuantity($orgStock, $location);
                     $orgStockLocationData[] = [
                         'location_id' => $location->id,
                         'quantity'    => $quantity,
@@ -50,6 +50,7 @@ class StoreOrgStockHistoricLocationsStock
                 }
             }
         }
+
         $orgStockQuantity = 0;
         foreach ($orgStockLocationData as $orgStockLocation) {
             if ($orgStockLocation['quantity'] > 0) {
@@ -58,26 +59,25 @@ class StoreOrgStockHistoricLocationsStock
         }
 
         if (empty($orgStockLocationData)) {
-            LocationOrgStockHistory::where('date', $date->format('Y-m-d'))
+            LocationOrgStockHistory::where('date', now()->format('Y-m-d'))
                 ->where('org_stock_id', $orgStock->id)
                 ->delete();
 
-            OrgStockHistory::where('date', $date->format('Y-m-d'))
+            OrgStockHistory::where('date', now()->format('Y-m-d'))
                 ->where('organisation_id', $orgStock->organisation_id)
                 ->where('org_stock_id', $orgStock->id)
                 ->delete();
 
-            $organisationStockHistory = OrganisationStockHistory::where('date', $date->format('Y-m-d'))->where('organisation_id', $orgStock->organisation_id)->first();
+            $organisationStockHistory = OrganisationStockHistory::where('date', now()->format('Y-m-d'))->where('organisation_id', $orgStock->organisation_id)->first();
             if ($organisationStockHistory) {
                 OrganisationStockHistoryHydrateFromOrgStockHistories::dispatch($organisationStockHistory->id)->delay(30);
             }
         }
 
-
         $organisationStockHistory = OrganisationStockHistory::firstOrCreate(
             [
                 'organisation_id' => $orgStock->organisation_id,
-                'date'            => $date->format('Y-m-d')
+                'date'            => now()->format('Y-m-d')
             ],
             [
                 'group_id'                       => $orgStock->group_id,
@@ -90,10 +90,9 @@ class StoreOrgStockHistoricLocationsStock
             ]
         );
 
-
         $orgStockHistory = OrgStockHistory::updateOrCreate(
             [
-                'date'            => $date->format('Y-m-d'),
+                'date'            => now()->format('Y-m-d'),
                 'organisation_id' => $orgStock->organisation_id,
                 'org_stock_id'    => $orgStock->id
             ],
@@ -105,14 +104,14 @@ class StoreOrgStockHistoricLocationsStock
                 'grp_stock_value'               => 0,
                 'org_stock_commercial_value'    => 0,
                 'grp_stock_commercial_value'    => 0,
-                'unit_value'                    => 0
+                'value_per_sku'                    => 0
             ]
         );
 
         foreach ($orgStockLocationData as $orgStockLocation) {
             LocationOrgStockHistory::updateOrCreate(
                 [
-                    'date'         => $date->format('Y-m-d'),
+                    'date'         => now()->format('Y-m-d'),
                     'org_stock_id' => $orgStock->id,
                     'location_id'  => $orgStockLocation['location_id']
                 ],
@@ -129,13 +128,13 @@ class StoreOrgStockHistoricLocationsStock
         return $orgStockLocationData;
     }
 
-    public function getStockQuantity(OrgStock $orgStock, Location $location, Carbon $date)
+    public function getStockQuantity(OrgStock $orgStock, Location $location)
     {
         $lastHelper = OrgStockMovement::select(['audited_quantity', 'date'])
             ->where('org_stock_id', $orgStock->id)
             ->where('location_id', $location->id)
             ->where('class', OrgStockMovementClassEnum::HELPER)
-            ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))->orderBy('date', 'desc')->first();
+            ->where('date', '<=', now()->endOfDay()->format('Y-m-d H:i:s.u'))->orderBy('date', 'desc')->first();
 
         $seedQuantity = $lastHelper->audited_quantity;
 
@@ -144,19 +143,19 @@ class StoreOrgStockHistoricLocationsStock
             ->where('location_id', $location->id)
             ->where('class', OrgStockMovementClassEnum::MOVEMENT)
             ->where('date', '>', Carbon::parse($lastHelper->date)->format('Y-m-d H:i:s.u'))
-            ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))
+            ->where('date', '<=', now()->endOfDay()->format('Y-m-d H:i:s.u'))
             ->sum('quantity');
 
         return $seedQuantity + $sumMovements;
     }
 
-    private function wasLocationValid(OrgStock $orgStock, Location $location, Carbon $date, ?Command $command): bool
+    private function wasLocationValid(OrgStock $orgStock, Location $location, ?Command $command): bool
     {
         $lastMarginalHelper = OrgStockMovement::select(['type', 'date'])
             ->where('org_stock_id', $orgStock->id)
             ->where('location_id', $location->id)
             ->whereIn('type', [OrgStockMovementTypeEnum::ASSOCIATE, OrgStockMovementTypeEnum::DISASSOCIATE])
-            ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))->orderBy('date', 'desc')->first();
+            ->where('date', '<=', now()->endOfDay()->format('Y-m-d H:i:s.u'))->orderBy('date', 'desc')->first();
 
         if ($this->debug) {
             $command->warn("{$lastMarginalHelper->type->value} ".Carbon::parse($lastMarginalHelper->date)->format('Y-m-d H:i:s.u'));
@@ -173,7 +172,7 @@ class StoreOrgStockHistoricLocationsStock
             return true;
         }
         $lastHelperDate = Carbon::parse($lastMarginalHelper->date);
-        if ($lastHelperDate->lt($date->copy()->startOfDay())) {
+        if ($lastHelperDate->lt(now()->startOfDay())) {
             if ($this->debug) {
                 $command?->error('Last location is discontinued at '.$lastHelperDate->format('Y-m-d H:i:s.u'));
             }
@@ -184,12 +183,12 @@ class StoreOrgStockHistoricLocationsStock
         return true;
     }
 
-    private function getLocationsIds(OrgStock $orgStock, Carbon $date): array
+    private function getLocationsIds(OrgStock $orgStock): array
     {
 
         return OrgStockMovement::where('org_stock_id', $orgStock->id)
             ->where('class', OrgStockMovementClassEnum::HELPER)
-            ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))
+            ->where('date', '<=', now()->endOfDay()->format('Y-m-d H:i:s.u'))
             ->distinct('location_id')
             ->pluck('location_id')->toArray();
     }
@@ -197,7 +196,7 @@ class StoreOrgStockHistoricLocationsStock
 
     public function getCommandSignature(): string
     {
-        return 'org_stock:run_quantity_on_locations {orgStock : OrgStock ID or slug} {date?}';
+        return 'org_stock:run_quantity_on_locations {orgStock : OrgStock ID or slug}';
     }
 
     public function asCommand(Command $command): int
@@ -209,14 +208,8 @@ class StoreOrgStockHistoricLocationsStock
             $orgStock = OrgStock::where('slug', $command->argument('orgStock'))->firstOrFail();
         }
 
-        if ($command->argument('date')) {
-            $date = Carbon::parse($command->argument('date'));
-        } else {
-            $date = Carbon::now();
-        }
-
-        $command->line("Get Stock of $orgStock->slug  ($orgStock->id) on ".$date->format('Y-m-d'));
-        $this->handle($orgStock, $date, $command);
+        $command->line("Get Stock of $orgStock->slug  ($orgStock->id) on ".now()->format('Y-m-d'));
+        $this->handle($orgStock, $command);
 
         return 0;
     }

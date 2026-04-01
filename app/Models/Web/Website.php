@@ -269,8 +269,6 @@ class Website extends Model implements Auditable, HasMedia
         return null;
     }
 
-
-
     public function images(): MorphToMany
     {
         return $this->morphToMany(Media::class, 'model', 'model_has_media');
@@ -286,9 +284,19 @@ class Website extends Model implements Auditable, HasMedia
         return $this->belongsTo(Snapshot::class, 'unpublished_header_snapshot_id');
     }
 
+    public function liveHeaderSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'live_header_snapshot_id');
+    }
+
     public function unpublishedFooterSnapshot(): BelongsTo
     {
         return $this->belongsTo(Snapshot::class, 'unpublished_footer_snapshot_id');
+    }
+
+    public function liveFooterSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'live_footer_snapshot_id');
     }
 
     public function unpublishedMenuSnapshot(): BelongsTo
@@ -296,9 +304,19 @@ class Website extends Model implements Auditable, HasMedia
         return $this->belongsTo(Snapshot::class, 'unpublished_menu_snapshot_id');
     }
 
+    public function liveMenuSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'live_menu_snapshot_id');
+    }
+
     public function unpublishedSidebarSnapshot(): BelongsTo
     {
         return $this->belongsTo(Snapshot::class, 'unpublished_sidebar_snapshot_id');
+    }
+
+    public function liveSidebarSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'live_sidebar_snapshot_id');
     }
 
     public function unpublishedCollectionSnapshot(): BelongsTo
@@ -306,9 +324,19 @@ class Website extends Model implements Auditable, HasMedia
         return $this->belongsTo(Snapshot::class, 'unpublished_collection_snapshot_id');
     }
 
+    public function liveCollectionSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'live_collection_snapshot_id');
+    }
+
     public function unpublishedDepartmentSnapshot(): BelongsTo
     {
         return $this->belongsTo(Snapshot::class, 'unpublished_department_snapshot_id');
+    }
+
+    public function liveDepartmentSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'live_department_snapshot_id');
     }
 
     public function unpublishedSubDepartmentSnapshot(): BelongsTo
