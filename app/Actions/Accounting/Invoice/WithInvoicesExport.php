@@ -57,6 +57,24 @@ trait WithInvoicesExport
                 return $transaction;
             });
 
+            $orderData = $invoice->order?->data ?? [];
+            $recipientName = null;
+            if (!empty($orderData['shipping_address']['name'])) {
+                $recipientName = $orderData['shipping_address']['name'];
+            } elseif (!empty($orderData['shopify_data']['shipping_address']['firstName']) || !empty($orderData['shopify_data']['shipping_address']['lastName'])) {
+                $recipientName = trim(($orderData['shopify_data']['shipping_address']['firstName'] ?? '') . ' ' . ($orderData['shopify_data']['shipping_address']['lastName'] ?? ''));
+            } elseif (!empty($orderData['delivery_data']['firstName']) || !empty($orderData['delivery_data']['lastName'])) {
+                $recipientName = trim(($orderData['delivery_data']['firstName'] ?? '') . ' ' . ($orderData['delivery_data']['lastName'] ?? ''));
+            } elseif (!empty($orderData['delivery_data']['name'])) {
+                $recipientName = $orderData['delivery_data']['name'];
+            } elseif (!empty($orderData['delivery_data']['contact_name'])) {
+                $recipientName = $orderData['delivery_data']['contact_name'];
+            } elseif ($invoice->order?->customerClient) {
+                 $recipientName = $invoice->order->customerClient->contact_name ?? $invoice->order->customerClient->name;
+            } elseif ($invoice->customerClient) {
+                 $recipientName = $invoice->customerClient->contact_name ?? $invoice->customerClient->name;
+            }
+
             //$refund = $invoice->type == InvoiceTypeEnum::REFUND;
             $refundData = [];
             // todo remove this i dont think we need this
@@ -106,6 +124,7 @@ trait WithInvoicesExport
                 'invoice'            => $invoice,
                 'deliveryNote'       => $deliveryNote,
                 'deliveryAddress'    => $deliveryNote?->deliveryAddress,
+                'recipientName'      => $recipientName,
                 'invoiceNumberLabel' => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice number') : __('Refund Number'),
                 'dateLabel'          => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice date') : __('Refund Date'),
                 'typeLabel'          => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice') : __('Refund'),
