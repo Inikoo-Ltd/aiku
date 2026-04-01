@@ -17,7 +17,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-//todo paling to remove this
 class CalculateOrgStockHistory implements ShouldBeUnique
 {
     use AsAction;
@@ -63,7 +62,7 @@ class CalculateOrgStockHistory implements ShouldBeUnique
         $days = (int)$from->diffInDays($to) + 1;
         $command?->info('Calculating '.$orgStock->slug.' ('.$orgStock->id.') from '.$from->format('Y-m-d').' to '.$to->format('Y-m-d').' ('.$days.' days)');
         foreach (Carbon::parse($from)->daysUntil($to) as $date) {
-            StoreOrgStockHistoricLocationsStock::run($orgStock, $date, $command);
+            SetOrgStockStockHistories::run($orgStock, $date, $command);
         }
     }
 

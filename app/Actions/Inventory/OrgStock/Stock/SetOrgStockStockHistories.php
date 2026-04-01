@@ -22,7 +22,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class StoreOrgStockHistoricLocationsStock
+class SetOrgStockStockHistories
 {
     use AsAction;
 
@@ -93,6 +93,8 @@ class StoreOrgStockHistoricLocationsStock
         $nonMovingOneYear = $this->nonMovingOneYear($orgStock, $date, $orgStockQuantity);
 
 
+        $isLastDayMonth = $date->isLastOfMonth();
+
         $organisationStockHistory = OrganisationStockHistory::firstOrCreate(
             [
                 'organisation_id' => $orgStock->organisation_id,
@@ -105,7 +107,10 @@ class StoreOrgStockHistoricLocationsStock
                 'org_stock_commercial_value'     => 0,
                 'grp_stock_commercial_value'     => 0,
                 'number_org_stocks'              => 0,
-                'number_out_of_stock_org_stocks' => 0
+                'number_out_of_stock_org_stocks' => 0,
+                'is_week'  => $date->isFriday(),
+                'is_month' => $isLastDayMonth,
+                'is_year'  => $date->isEndOfYear(),
             ]
         );
 

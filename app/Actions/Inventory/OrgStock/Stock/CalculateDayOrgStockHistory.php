@@ -69,7 +69,7 @@ class CalculateDayOrgStockHistory implements ShouldBeUnique
             return;
         }
         $command?->info('Calculating '.$orgStock->slug.' ('.$orgStock->id.') '.$date->format('Y-m-d'));
-        StoreOrgStockHistoricLocationsStock::run($orgStock, $date, $command);
+        SetOrgStockStockHistories::run($orgStock, $date, $command);
     }
 
     public function getLastDisassociateDate(OrgStock $orgStock): ?Carbon
@@ -111,9 +111,7 @@ class CalculateDayOrgStockHistory implements ShouldBeUnique
 
         /** @var OrgStock $orgStock */
         foreach ($orgStocks as $orgStock) {
-            //$command->info('Processing '.$orgStock->slug.' ('.$orgStock->id.')');
             $this->handle($orgStock->id, $date);
-            //  CalculateOrgStockHistory::dispatch($orgStock);
             $progressBar->advance();
         }
 
