@@ -58,7 +58,7 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
 
         $percentageValueDormantStock1y = 0;
         if ($stockData->org_stock_values > 0) {
-            $percentageValueDormantStock1y = $stockData->value_dormant_stock_1y / $stockData->org_stock_values;
+            $percentageValueDormantStock1y = $stockData->value_dormant_stock_1y ?? 0 / $stockData->org_stock_values;
         }
 
         $organisationStockHistory->update([
@@ -70,7 +70,7 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
             'percentage_out_of_stock'           => $percentageOutOfStock,
             'number_org_stocks_not_sold_1y'     => $stockNotSold,
             'percentage_value_dormant_stock_1y' => $percentageValueDormantStock1y,
-            'value_dormant_stock_1y'            => $stockData->value_dormant_stock_1y,
+            'value_dormant_stock_1y'            => $stockData->value_dormant_stock_1y ?? 0,
         ]);
     }
 
