@@ -14,7 +14,6 @@ import { Location } from "@/types/location"
 
 defineProps<{
     data: object
-    tab?: string
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
@@ -98,15 +97,11 @@ function locationHistoriesRoute(period: string, tab: string): string {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
-        <template #cell(period)="{ item }">
-
+    <Table :resource="data" class="mt-5">
+        <template #cell(bucket)="{ item }">
             <Link :href="locationRoute(item)" class="primaryLink">
-                {{item.period}}
+                {{ item.bucket }}
             </Link>
-
-
-
         </template>
 
         <template #cell(number_org_stocks)="{ item }">

@@ -11,19 +11,18 @@ namespace App\Actions\Inventory\OrganisationStockHistory\UI;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
-use App\Enums\UI\Inventory\OrganisationStockHistoriesTabsEnum;
 use App\Http\Resources\Inventory\OrganisationStockHistoriesResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Inventory\OrganisationStockHistory;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
+use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\QueryBuilder\AllowedSort;
 
 class IndexOrganisationStockHistories extends OrgAction
 {
@@ -31,107 +30,86 @@ class IndexOrganisationStockHistories extends OrgAction
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrganisationStockHistoriesTabsEnum::values());
+        $this->initialisationFromWarehouse($warehouse, $request);
 
-        return $this->handle($organisation, $this->tab);
+        return $this->handle($organisation);
     }
 
-    public function handle(Organisation $organisation, string $period = 'daily'): LengthAwarePaginator
+    protected function getElementGroups(Organisation $organisation): array
     {
-        $pageName = $period.'Page';
-        $perPage  = config('ui.table.records_per_page', 25);
+        return [
+            'bucket' => [
+                'label'    => __('Period'),
+                'elements' => [
+                    'daily'   => [__('Daily')],
+                    'weekly'  => [__('Weekly')],
+                    'monthly' => [__('Monthly')],
+                    'yearly'  => [__('Yearly')],
+                ],
+                'engine' => function ($query, $elements) {
+                    $query->where(function ($q) use ($elements) {
+                        foreach ($elements as $element) {
+                            $q->orWhere(function ($inner) use ($element) {
+                                match ($element) {
+                                    'weekly'  => $inner->where('is_week', true),
+                                    'monthly' => $inner->where('is_month', true),
+                                    'yearly'  => $inner->where('is_year', true),
+                                    default   => $inner->where('is_week', false)->where('is_month', false)->where('is_year', false),
+                                };
+                            });
+                        }
+                    });
+                },
+            ],
+        ];
+    }
 
-        if ($period === 'daily') {
-            $orderByName    = request()->input('daily_sort', '-date');
-            $orderDirection = 'asc';
-            if (str_starts_with($orderByName, '-')) {
-                $orderDirection = 'desc';
-                $orderByName    = substr($orderByName, 1);
-            }
-            if ($orderByName === 'period') {
-                $orderByName = 'date';
-            }
-
-
-            $query = DB::table('organisation_stock_histories')
-                ->selectRaw('id,date as period, org_stock_value, grp_stock_value, org_stock_commercial_value, grp_stock_commercial_value, number_org_stocks, number_out_of_stock_org_stocks, number_location_org_stocks')
-                ->where('organisation_id', $organisation->id)
-                ->orderBy($orderByName, $orderDirection);
-
-            $this->applyDateFilter($query, $period);
-
-            return $query->paginate(perPage: $perPage, pageName: $pageName)->appends(request()->query());
-        }
-
-        $truncUnit = match ($period) {
-            'weekly' => 'week',
-            'monthly' => 'month',
-            'yearly' => 'year',
-        };
-
-
-        $query = DB::table('organisation_stock_histories')
-            ->selectRaw(
-                "DATE_TRUNC('{$truncUnit}', date) as period,
-                ROUND(AVG(org_stock_value::numeric), 2) as org_stock_value,
-                ROUND(AVG(grp_stock_value::numeric), 2) as grp_stock_value,
-                ROUND(AVG(org_stock_commercial_value::numeric), 2) as org_stock_commercial_value,
-                ROUND(AVG(grp_stock_commercial_value::numeric), 2) as grp_stock_commercial_value,
-                ROUND(AVG(number_org_stocks)) as number_org_stocks,
-                ROUND(AVG(number_out_of_stock_org_stocks)) as number_out_of_stock_org_stocks,
-                ROUND(AVG(number_location_org_stocks)) as number_location_org_stocks"
-            )
+    public function handle(Organisation $organisation): LengthAwarePaginator
+    {
+        $queryBuilder = QueryBuilder::for(OrganisationStockHistory::class)
+            ->select([
+                'id',
+                'date as bucket',
+                'org_stock_value',
+                'grp_stock_value',
+                'org_stock_commercial_value',
+                'grp_stock_commercial_value',
+                'number_org_stocks',
+                'number_out_of_stock_org_stocks',
+                'number_location_org_stocks',
+            ])
             ->where('organisation_id', $organisation->id);
 
-        $this->applyDateFilter($query, $period);
-
-        return $query
-            ->groupByRaw("DATE_TRUNC('{$truncUnit}', date)")
-            ->orderByRaw("DATE_TRUNC('{$truncUnit}', date) DESC")
-            ->paginate(perPage: $perPage, pageName: $pageName)->appends(request()->query());
-    }
-
-    private function applyDateFilter(Builder $query, string $period): void
-    {
-        $filters  = request()->input('between', []);
-        $timezone = resolveTimezoneHeader();
-
-        if (!isset($filters['date'])) {
-            return;
+        foreach ($this->getElementGroups($organisation) as $key => $elementGroup) {
+            $queryBuilder->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: null
+            );
         }
 
-        $parts = explode('-', $filters['date']);
-
-        if (count($parts) !== 2) {
-            return;
-        }
-
-        [$start, $end] = array_map('trim', $parts);
-
-        $startDate = Carbon::createFromFormat('Ymd', $start, $timezone)->setTimezone('UTC')->startOfDay()->toDateTimeString();
-        $endDate   = Carbon::createFromFormat('Ymd', $end, $timezone)->setTimezone('UTC')->endOfDay()->toDateTimeString();
-
-        $query->whereBetween('date', [$startDate, $endDate]);
+        return $queryBuilder
+            ->defaultSort('-date')
+            ->allowedSorts([AllowedSort::field('bucket', 'date')])
+            ->withPaginator(null, tableName: request()->route()->getName())
+            ->withQueryString();
     }
 
-    public function tableStructure(string $period = 'daily'): Closure
+    public function tableStructure(): Closure
     {
-        return function (InertiaTable $table) use ($period) {
-            $table
-                ->name($period)
-                ->pageName($period.'Page');
-
-            $periodLabel = match ($period) {
-                'weekly' => __('Week'),
-                'monthly' => __('Month'),
-                'yearly' => __('Year'),
-                default => __('Date'),
-            };
+        return function (InertiaTable $table) {
+            foreach ($this->getElementGroups($this->organisation) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements']
+                );
+            }
 
             $table
                 ->withLabelRecord([__('record'), __('records')])
-                ->betweenDates(['date'])
-                ->column(key: 'period', label: $periodLabel, canBeHidden: false, type: 'date', sortable: true)
+                ->column(key: 'bucket', label: __('Date'), canBeHidden: false, type: 'date', sortable: true)
                 ->column(key: 'number_org_stocks', label: __('Total SKUs'), canBeHidden: false, align: 'right')
                 ->column(key: 'number_out_of_stock_org_stocks', label: __('Out of Stock'), canBeHidden: false, align: 'right')
                 ->column(key: 'number_location_org_stocks', label: __('In Locations'), canBeHidden: false, align: 'right')
@@ -158,32 +136,9 @@ class IndexOrganisationStockHistories extends OrgAction
                     'name'       => 'grp.org.warehouses.show.inventory.org_stock_histories.export',
                     'parameters' => $request->route()->originalParameters(),
                 ],
-                'tabs'           => [
-                    'current'    => $this->tab,
-                    'navigation' => OrganisationStockHistoriesTabsEnum::navigation(),
-                ],
-
-                OrganisationStockHistoriesTabsEnum::DAILY->value => $this->tab == OrganisationStockHistoriesTabsEnum::DAILY->value
-                    ? fn() => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn() => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'daily'))),
-
-                OrganisationStockHistoriesTabsEnum::WEEKLY->value => $this->tab == OrganisationStockHistoriesTabsEnum::WEEKLY->value
-                    ? fn() => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn() => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'weekly'))),
-
-                OrganisationStockHistoriesTabsEnum::MONTHLY->value => $this->tab == OrganisationStockHistoriesTabsEnum::MONTHLY->value
-                    ? fn() => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn() => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'monthly'))),
-
-                OrganisationStockHistoriesTabsEnum::YEARLY->value => $this->tab == OrganisationStockHistoriesTabsEnum::YEARLY->value
-                    ? fn() => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn() => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'yearly'))),
+                'data' => fn () => OrganisationStockHistoriesResource::collection($histories),
             ]
-        )
-            ->table($this->tableStructure('daily'))
-            ->table($this->tableStructure('weekly'))
-            ->table($this->tableStructure('monthly'))
-            ->table($this->tableStructure('yearly'));
+        )->table($this->tableStructure());
     }
 
     public function getBreadcrumbs(array $routeParameters): array

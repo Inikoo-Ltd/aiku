@@ -35,8 +35,7 @@ class ExportOrganisationStockHistories extends OrgAction
 
         $filters = [
             'type'    => $request->input('type', 'xlsx'),
-            'between' => $request->input('between', []),
-            'tab'     => $request->input('tab', 'daily'),
+            'buckets' => $request->input('elements.bucket'),
         ];
 
         return $this->handle($organisation, $filters);

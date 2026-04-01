@@ -16,7 +16,7 @@ class OrganisationStockHistoriesResource extends JsonResource
     {
         return [
             'id'                             => $this->id,
-            'period'                         => $this->period,
+            'bucket'                         => $this->bucket,
             'org_stock_value'                => $this->org_stock_value,
             'grp_stock_value'                => $this->grp_stock_value,
             'org_stock_commercial_value'     => $this->org_stock_commercial_value,
