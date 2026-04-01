@@ -46,7 +46,7 @@ class ReCalculateAllOrgStockHistory
             }
 
             if ($async) {
-                $command?->info('Dispatching  $organisation->id  '.$date->format('Y-m-d'));
+                $command?->info('Dispatching  '.$organisation->id.'  '.$date->format('Y-m-d'));
                 CalculateAllOrgStocksDayOrgStockHistory::dispatch($organisation->id, $date->format('Y-m-d'));
                 sleep(1);
             } else {
