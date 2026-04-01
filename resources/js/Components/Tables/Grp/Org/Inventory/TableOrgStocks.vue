@@ -164,9 +164,6 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
         )
     }
 }
-
-
-
 </script>
 
 <template>
@@ -299,6 +296,14 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
             <Link :href="orgStockRouteProductIndex(item) as string" class="primaryLink">
                 {{ item.product_count }}
             </Link>
+        </template>
+
+        <template #cell(quantity_in_locations)="{ item }">
+            <span class="tabular-nums">{{ locale.number(item.quantity_in_locations) }}</span>
+        </template>
+
+        <template #cell(org_stock_value)="{ item }">
+            <span v-if="item.org_stock_value">{{ locale.currencyFormat(item.currency_code, item.org_stock_value) }}</span>
         </template>
     </Table>
 </template>

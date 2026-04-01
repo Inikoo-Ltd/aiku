@@ -12,10 +12,10 @@ use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrganisationStockHistory;
 use App\Models\Inventory\OrgStockHistory;
-use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOrgStockHistories extends OrgAction
@@ -29,11 +29,9 @@ class IndexOrgStockHistories extends OrgAction
             });
         });
 
-
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
-
 
         $queryBuilder = QueryBuilder::for(OrgStockHistory::class);
 
@@ -51,6 +49,7 @@ class IndexOrgStockHistories extends OrgAction
                 'org_stock_histories.quantity_in_locations',
                 'org_stock_histories.org_stock_value',
                 'org_stock_histories.grp_stock_value',
+                DB::raw("'" . $organisationStockHistory->organisation->currency->code . "' as currency_code"),
             ])
             ->allowedSorts(['code', 'name', 'quantity_in_locations', 'org_stock_value', 'grp_stock_value'])
             ->allowedFilters([$globalSearch])
@@ -80,6 +79,4 @@ class IndexOrgStockHistories extends OrgAction
                 ->defaultSort('code');
         };
     }
-
-
 }

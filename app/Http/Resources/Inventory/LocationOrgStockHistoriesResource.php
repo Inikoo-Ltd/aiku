@@ -17,6 +17,7 @@ class LocationOrgStockHistoriesResource extends JsonResource
         return [
             'id'                           => $this->id,
             'date'                         => $this->date,
+            'stock_id'                     => $this->stock_id,
             'stock_code'                   => $this->stock_code,
             'stock_name'                   => $this->stock_name,
             'stock_slug'                   => $this->stock_slug,

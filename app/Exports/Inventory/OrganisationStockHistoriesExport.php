@@ -28,6 +28,8 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
 
     public function query(): Builder
     {
+        $bucket = $this->filters['tab'] ?? 'daily';
+
         $query = DB::table('organisation_stock_histories')
             ->select([
                 'date as bucket',
@@ -42,37 +44,30 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
             ->where('organisation_id', $this->organisation->id)
             ->orderBy('date', 'desc');
 
-        $buckets = $this->filters['buckets'] ? explode(',', $this->filters['buckets']) : null;
-
-        if ($buckets) {
-            $query->where(function ($q) use ($buckets) {
-                foreach ($buckets as $bucket) {
-                    $q->orWhere(function ($inner) use ($bucket) {
-                        match (trim($bucket)) {
-                            'weekly'  => $inner->where('is_week', true),
-                            'monthly' => $inner->where('is_month', true),
-                            'yearly'  => $inner->where('is_year', true),
-                            default   => $inner->where('is_week', false)->where('is_month', false)->where('is_year', false),
-                        };
-                    });
-                }
-            });
-        }
+        match ($bucket) {
+            'weekly'  => $query->where('is_week', true),
+            'monthly' => $query->where('is_month', true),
+            'yearly'  => $query->where('is_year', true),
+            default   => $query->where('is_week', false)->where('is_month', false)->where('is_year', false),
+        };
 
         return $query;
     }
 
     public function headings(): array
     {
+        $orgCurrency = $this->organisation->currency->code;
+        $grpCurrency = $this->organisation->group->currency->code;
+
         return [
             __('Date'),
             __('Total SKUs'),
             __('Out of Stock'),
             __('In Locations'),
-            __('Stock Value (Org)'),
-            __('Stock Value (Grp)'),
-            __('Commercial Value (Org)'),
-            __('Commercial Value (Grp)'),
+            __('Stock Value').' ('.$orgCurrency.')',
+            __('Stock Value').' ('.$grpCurrency.')',
+            __('Commercial Value').' ('.$orgCurrency.')',
+            __('Commercial Value').' ('.$grpCurrency.')',
         ];
     }
 
@@ -92,15 +87,18 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
 
     public function map($row): array
     {
+        $orgSymbol = $this->organisation->currency->symbol;
+        $grpSymbol = $this->organisation->group->currency->symbol;
+
         return [
             (string) $row->bucket,
             (string) ($row->number_org_stocks ?? '0'),
             (string) ($row->number_out_of_stock_org_stocks ?? '0'),
             (string) ($row->number_location_org_stocks ?? '0'),
-            number_format((float) ($row->org_stock_value ?? 0), 2, '.', ''),
-            number_format((float) ($row->grp_stock_value ?? 0), 2, '.', ''),
-            number_format((float) ($row->org_stock_commercial_value ?? 0), 2, '.', ''),
-            number_format((float) ($row->grp_stock_commercial_value ?? 0), 2, '.', ''),
+            $orgSymbol.number_format((float) ($row->org_stock_value ?? 0), 2, '.', ''),
+            $grpSymbol.number_format((float) ($row->grp_stock_value ?? 0), 2, '.', ''),
+            $orgSymbol.number_format((float) ($row->org_stock_commercial_value ?? 0), 2, '.', ''),
+            $grpSymbol.number_format((float) ($row->grp_stock_commercial_value ?? 0), 2, '.', ''),
         ];
     }
 }

@@ -5,37 +5,42 @@
  -->
 
 <script setup lang="ts">
+import { computed, ref } from "vue"
 import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import TableOrganisationStockHistories from "@/Components/Tables/Grp/Org/Inventory/TableOrganisationStockHistories.vue"
+import Tabs from "@/Components/Navigation/Tabs.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { ref } from "vue"
-import Tabs from "@/Components/Navigation/Tabs.vue"
+import { Tabs as TSTabs } from "@/types/Tabs"
 import { useTabChange } from "@/Composables/tab-change"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCalendarDay, faCalendarWeek, faCalendarAlt, faCalendar, faDownload } from "@fal"
+import { faBox, faInventory, faDownload } from "@fal"
+import TableOrgStocks from "@/Components/Tables/Grp/Org/Inventory/TableOrgStocks.vue"
+import TableLocationOrgStockHistories from "@/Components/Tables/Grp/Org/Inventory/TableLocationOrgStockHistories.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { routeType } from "@/types/route"
 
-library.add(faCalendarDay, faCalendarWeek, faCalendarAlt, faCalendar, faDownload)
+library.add(faBox, faInventory, faDownload)
 
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
-    tabs: {
-        current: string
-        navigation: {}
-    }
+    tabs: TSTabs
     download_route: routeType
-    daily?: {}
-    weekly?: {}
-    monthly?: {}
-    yearly?: {}
+    org_stocks?: {}
+    location_org_stocks?: {}
 }>()
 
-const currentTab = ref<string>(props?.tabs?.current ?? "daily")
+const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
+const component = computed(() => {
+    const components: Record<string, any> = {
+        org_stocks: TableOrgStocks,
+        location_org_stocks: TableLocationOrgStockHistories,
+    }
+    return components[currentTab.value]
+})
 
 function exportUrl(): string {
     if (!props.download_route?.name) return ""
@@ -56,8 +61,9 @@ function exportUrl(): string {
             </a>
         </template>
     </PageHeading>
-    <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
-    <TableOrganisationStockHistories
+    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+    <component
+        :is="component"
         :key="currentTab"
         :tab="currentTab"
         :data="props[currentTab]"

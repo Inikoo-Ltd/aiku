@@ -34,8 +34,8 @@ class ExportOrganisationStockHistories extends OrgAction
         $this->initialisationFromWarehouse($warehouse, $request);
 
         $filters = [
-            'type'    => $request->input('type', 'xlsx'),
-            'buckets' => $request->input('elements.bucket'),
+            'type' => $request->input('type', 'xlsx'),
+            'tab'  => $request->input('tab', 'daily'),
         ];
 
         return $this->handle($organisation, $filters);
