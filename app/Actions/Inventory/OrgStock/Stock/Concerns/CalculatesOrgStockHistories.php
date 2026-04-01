@@ -216,7 +216,7 @@ trait CalculatesOrgStockHistories
                 'grp_stock_commercial_value'    => 0,
                 'value_per_sku'                 => $costPerSku,
                 'last_sold_date'                => $lastSoldDate,
-                'sold_within_1y'                => $lastSoldDate && $lastSoldDate->gte($date->subYear()),
+                'sold_within_1y'                => $lastSoldDate && $lastSoldDate->gte($date->copy()->subYear()),
                 'non_moving_1y'                 => $nonMovingOneYear,
             ]
         );
