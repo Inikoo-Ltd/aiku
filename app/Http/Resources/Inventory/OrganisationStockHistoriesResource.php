@@ -10,6 +10,20 @@ namespace App\Http\Resources\Inventory;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @property mixed $id
+ * @property mixed $bucket
+ * @property mixed $org_stock_value
+ * @property mixed $grp_stock_value
+ * @property mixed $org_stock_commercial_value
+ * @property mixed $grp_stock_commercial_value
+ * @property mixed $number_org_stocks
+ * @property mixed $number_out_of_stock_org_stocks
+ * @property mixed $number_location_org_stocks
+ * @property mixed $org_currency_code
+ * @property mixed $grp_currency_code
+ * @property mixed $number_locations
+ */
 class OrganisationStockHistoriesResource extends JsonResource
 {
     public function toArray($request): array
@@ -26,6 +40,7 @@ class OrganisationStockHistoriesResource extends JsonResource
             'number_location_org_stocks'     => $this->number_location_org_stocks,
             'org_currency_code'              => $this->org_currency_code,
             'grp_currency_code'              => $this->grp_currency_code,
+            'number_locations'               => $this->number_locations
         ];
     }
 }

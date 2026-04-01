@@ -40,10 +40,16 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
             ->where('organisation_stock_history_id', $organisationStockHistory->id)
             ->first();
 
+        $stockLocationData = DB::table('location_org_stock_histories')
+            ->selectRaw('sum(location_id) as number_locations')
+            ->where('organisation_stock_history_id', $organisationStockHistory->id)
+            ->first();
+
         $organisationStockHistory->update([
             'org_stock_value'                => $stockData->org_stock_values,
             'grp_stock_value'                => $stockData->grp_stock_values,
             'number_org_stocks'              => $stockData->number_org_stocks,
+            'number_locations'               => $stockLocationData->number_locations??0,
             'number_out_of_stock_org_stocks' => $stockData->number_out_of_stock_org_stocks
         ]);
     }
