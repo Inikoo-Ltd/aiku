@@ -20,6 +20,7 @@ class ProcessBackInStockPerOutbox
     use WithGenerateEmailBulkRuns;
     use AsAction;
     protected int $countRecipients = 0;
+    public string $jobQueue = 'ses';
 
     public function handle(Outbox $outbox): void
     {

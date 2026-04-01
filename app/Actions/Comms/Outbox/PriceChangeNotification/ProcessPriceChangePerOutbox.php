@@ -23,6 +23,7 @@ class ProcessPriceChangePerOutbox
     use WithGenerateEmailBulkRuns;
     use AsAction;
     protected int $countRecipients = 0;
+    public string $jobQueue = 'ses';
 
     public function handle(Outbox $outbox): void
     {
@@ -34,7 +35,6 @@ class ProcessPriceChangePerOutbox
         $currentDateTime = Carbon::now()->utc();
         $last24Hours = Carbon::now()->utc()->subHours(24);
 
-        $emailongoingRun = $outbox->emailOngoingRun;
         $lastOutBoxSent = $outbox->last_sent_at;
 
         $productClass = class_basename(Product::class);

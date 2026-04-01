@@ -23,7 +23,7 @@ class ProcessReorderRemainderRecipients implements ShouldQueue
 {
     use AsAction;
 
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'ses';
 
     public function handle(int $emailBulkRunId, array $customerData): void
     {

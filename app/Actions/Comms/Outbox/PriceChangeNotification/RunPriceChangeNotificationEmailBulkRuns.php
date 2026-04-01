@@ -19,6 +19,7 @@ class RunPriceChangeNotificationEmailBulkRuns
     use AsAction;
 
     public string $commandSignature = 'run:price-change-notification';
+    public string $jobQueue = 'ses';
 
     public function handle(): void
     {

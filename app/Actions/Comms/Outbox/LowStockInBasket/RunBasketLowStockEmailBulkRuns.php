@@ -19,6 +19,7 @@ class RunBasketLowStockEmailBulkRuns
     use AsAction;
 
     public string $commandSignature = 'run:basket-low-stock-notification';
+    public string $jobQueue = 'ses';
 
     public function handle(): void
     {

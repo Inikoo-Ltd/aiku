@@ -20,7 +20,7 @@ class RunReorderRemainderEmailBulkRuns implements ShouldQueue
     use AsAction;
 
     public string $commandSignature = 'run:reorder-reminder-email-bulk-runs';
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'ses';
 
     public function handle(): void
     {

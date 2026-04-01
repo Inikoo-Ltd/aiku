@@ -19,7 +19,7 @@ class RunBackInStockEmailBulkRuns
     use AsAction;
 
     public string $commandSignature = 'run:back-in-stock-reminder';
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'ses';
 
     public function handle(): void
     {

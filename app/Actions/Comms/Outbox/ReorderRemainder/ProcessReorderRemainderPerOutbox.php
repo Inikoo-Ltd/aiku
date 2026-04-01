@@ -19,6 +19,7 @@ class ProcessReorderRemainderPerOutbox
 {
     use WithGenerateEmailBulkRuns;
     use AsAction;
+    public string $jobQueue = 'ses';
 
     public function handle(Outbox $outbox): void
     {
