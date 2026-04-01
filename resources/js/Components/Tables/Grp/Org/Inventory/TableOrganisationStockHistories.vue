@@ -36,36 +36,6 @@ function toYmd(date: Date): string {
     return `${y}${m}${d}`
 }
 
-function periodDateRange(period: string, tab: string): string {
-    if (!period) return ""
-    const date = new Date(period)
-
-    if (tab === "yearly") {
-        const start = new Date(date.getFullYear(), 0, 1)
-        const end = new Date(date.getFullYear(), 11, 31)
-        return `${toYmd(start)}-${toYmd(end)}`
-    }
-
-    if (tab === "monthly") {
-        const start = new Date(date.getFullYear(), date.getMonth(), 1)
-        const end = new Date(date.getFullYear(), date.getMonth() + 1, 0)
-        return `${toYmd(start)}-${toYmd(end)}`
-    }
-
-    if (tab === "weekly") {
-        const day = date.getDay()
-        const diff = (day === 0 ? -6 : 1 - day)
-        const monday = new Date(date)
-        monday.setDate(date.getDate() + diff)
-        const sunday = new Date(monday)
-        sunday.setDate(monday.getDate() + 6)
-        return `${toYmd(monday)}-${toYmd(sunday)}`
-    }
-
-    return `${toYmd(date)}-${toYmd(date)}`
-}
-
-
 </script>
 
 <template>
