@@ -7,6 +7,7 @@
 
 namespace App\Actions\Web\WebsiteVisitor;
 
+use App\Actions\CRM\Customer\SyncCustomerWebActivities;
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Actions\Web\WebsitePageView\StoreWebsitePageView;
 use App\Models\CRM\WebUser;
@@ -67,5 +68,13 @@ class ProcessWebsiteVisitorTracking implements ShouldBeUnique
         }
 
         StoreWebsitePageView::dispatch($visitor, $website, $currentUrl);
+
+        if ($visitor->web_user_id) {
+            $customer = $visitor->webUser?->customer;
+
+            if ($customer) {
+                SyncCustomerWebActivities::dispatch($customer, now()->startOfDay());
+            }
+        }
     }
 }
