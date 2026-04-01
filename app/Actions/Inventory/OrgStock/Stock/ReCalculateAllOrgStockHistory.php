@@ -34,7 +34,7 @@ class ReCalculateAllOrgStockHistory
 
         $numberDays = count($period->toArray());
         $command?->info('Calculating '.$numberDays.' days of history');
-        foreach (array_reverse($period->toArray()) as $date) {
+        foreach ($period->toArray() as $date) {
             if ($interval == 'w' && !$date->isFriday()) {
                 continue;
             }
