@@ -247,7 +247,10 @@
                 <td style="text-align:left" colspan="2">{{ $transaction->historicAsset?->name }}</td>
             @else
                 <td style="text-align:left" colspan="2">
-                    {{ $transaction->historicAsset?->units . 'x' . $transaction->historicAsset?->name . '(' . $order->currency->symbol . $transaction->net_amount . ')' }}
+                    @if($transaction->historicAsset?->units > 1)
+                        {{ trimDecimalZeros($transaction->historicAsset?->units) . 'x' }}
+                    @endif
+                    {{ $transaction->historicAsset?->name . ' (' . $order->currency->symbol . $transaction->net_amount . ')' }}
                     <br>
                     @if($rrp)
                         RRP: {{ $transaction->model->rrp }} <br>

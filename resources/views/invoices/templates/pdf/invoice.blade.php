@@ -284,6 +284,9 @@
 
             <td style="text-align:left" colspan="2">
                 @if($transaction->historicAsset)
+                    @if($transaction->model && $transaction->model->units > 1)
+                        {{ trimDecimalZeros($transaction->model->units) }}x 
+                    @endif
                     {{ $transaction->historicAsset->name }}
                     @if(isset($transaction->pallet))
                         <br>
