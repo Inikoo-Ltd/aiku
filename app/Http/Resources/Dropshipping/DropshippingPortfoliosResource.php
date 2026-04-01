@@ -166,6 +166,7 @@ class DropshippingPortfoliosResource extends JsonResource
 
             'portfolio_data' => $this->data,
             'bundle_id' => $this->bundle_id,
+            'is_bundle' => $this->is_bundle,
 
             'has_valid_platform_product_id'          => $this->has_valid_platform_product_id,
             'exist_in_platform'                      => $this->exist_in_platform,
@@ -197,7 +198,7 @@ class DropshippingPortfoliosResource extends JsonResource
                 ]
             ],
             'product_state'             => $this->product_state ?? null,
-            'is_for_sale'               => $this->is_for_sale ?? null,
+            'is_for_sale'               => ($this->is_bundle ? true : $this->is_for_sale) ?? null,
             'product_rrp'               => $this->rrp,
             ...$shopifyUploadRoute,
             ...$wooUploadRoute,
