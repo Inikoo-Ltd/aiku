@@ -38,7 +38,7 @@ class UpdateOrderPaymentsStatus extends OrgAction
         $payStatus             = OrderPayStatusEnum::UNPAID;
         $payDetailedStatus     = OrderPayDetailedStatusEnum::UNPAID;
         /** @var Payment $payment */
-        foreach ($order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->get() as $payment) {
+        foreach ($order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->where('payments.is_cancelled', false)->get() as $payment) {
             $runningPaymentsAmount += $payment->amount;
         }
         $runningPaymentsAmount = round($runningPaymentsAmount, 2);

@@ -283,6 +283,9 @@ class ShowOrder extends OrgAction
 
         $paymentsData = [];
         foreach ($order->payments as $payment) {
+            if ($payment->is_cancelled) {
+                continue;
+            }
             $paymentsData[] = [
                 'id'              => $payment->id,
                 'amount'          => $payment->amount,

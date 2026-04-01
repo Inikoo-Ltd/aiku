@@ -65,6 +65,7 @@ class IndexCreditTransactions extends OrgAction
                 'payments.reference as payment_reference',
                 'payments.id as payment_id',
                 'payments.type as payment_type',
+                'payments.is_cancelled',
                 'currencies.code as currency_code',
                 'orders.slug as order_slug',
                 'orders.reference as order_reference',

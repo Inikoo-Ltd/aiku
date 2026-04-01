@@ -134,6 +134,7 @@ class ShowPayment extends OrgAction
                         'topUp' => $payment->topUp ? $payment->topUp->reference : null,
                     ]
                 ],
+                'is_cancelled' => $payment->is_cancelled,
 
                 PaymentTabsEnum::SHOWCASE->value => $this->tab == PaymentTabsEnum::SHOWCASE->value ?
                     fn () => GetPaymentShowcase::run($payment)

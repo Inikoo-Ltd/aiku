@@ -41,6 +41,7 @@ class UpdateInvoicePaymentState extends OrgAction
 
         $payments = $invoice->payments()
             ->where('payments.status', PaymentStatusEnum::SUCCESS)
+            ->where('payments.is_cancelled', false)
             ->orderBy('payments.date')
             ->get();
 
