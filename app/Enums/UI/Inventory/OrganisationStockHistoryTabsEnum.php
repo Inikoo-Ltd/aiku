@@ -17,15 +17,20 @@ enum OrganisationStockHistoryTabsEnum: string
     use HasTabs;
 
     case ORG_STOCKS = 'org_stocks';
+    case LOCATION_ORG_STOCKS = 'location_org_stocks';
 
 
     public function blueprint(): array
     {
         return match ($this) {
             OrganisationStockHistoryTabsEnum::ORG_STOCKS => [
-                'title' => __('Org Stocks'),
+                'title' => 'SKUs',
                 'icon'  => 'fal fa-box',
             ],
+            OrganisationStockHistoryTabsEnum::LOCATION_ORG_STOCKS => [
+                'title' => __('Locations'),
+                'icon'  => 'fal fa-inventory',
+            ]
         };
     }
 }

@@ -68,9 +68,13 @@ class ShowOrganisationStockHistory extends OrgAction
                 OrganisationStockHistoryTabsEnum::ORG_STOCKS->value => $this->tab == OrganisationStockHistoryTabsEnum::ORG_STOCKS->value ?
                     fn () => OrgStockHistoryResource::collection(IndexOrgStockHistories::run($organisationStockHistory))
                     : Inertia::lazy(fn () => OrgStockHistoryResource::collection(IndexOrgStockHistories::run($organisationStockHistory))),
+                OrganisationStockHistoryTabsEnum::LOCATION_ORG_STOCKS->value => $this->tab == OrganisationStockHistoryTabsEnum::LOCATION_ORG_STOCKS->value ?
+                    fn () => OrgStockHistoryResource::collection(IndexOrgStockHistories::run($organisationStockHistory))
+                    : Inertia::lazy(fn () => OrgStockHistoryResource::collection(IndexOrgStockHistories::run($organisationStockHistory))),
 
             ]
-        )->table(IndexOrgStockHistories::make()->tableStructure($organisationStockHistory, prefix: OrganisationStockHistoryTabsEnum::ORG_STOCKS->value));
+        )->table(IndexOrgStockHistories::make()->tableStructure($organisationStockHistory, prefix: OrganisationStockHistoryTabsEnum::ORG_STOCKS->value))
+            ->table(IndexOrgStockHistories::make()->tableStructure($organisationStockHistory, prefix: OrganisationStockHistoryTabsEnum::LOCATION_ORG_STOCKS->value));
 
 
 
