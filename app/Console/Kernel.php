@@ -14,8 +14,6 @@ use App\Actions\Comms\Mailshot\RunMailshotScheduled;
 use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
 use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
 use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns;
-use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
-use App\Actions\Comms\Outbox\LowStockInBasket\RunBasketLowStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReorderRemainder\RunReorderRemainderEmailBulkRuns;
 use App\Actions\CRM\Customer\PruneCustomerWebActivities;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
@@ -45,7 +43,6 @@ class Kernel extends ConsoleKernel
 
     protected function schedule(Schedule $schedule): void
     {
-
         $this->logSchedule(
             $schedule->job(RunNewsletterScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
                 monitorSlug: 'RunNewsletterScheduled',
@@ -70,6 +67,15 @@ class Kernel extends ConsoleKernel
             ),
             name: 'RunMailshotSecondWave',
             type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->command('run:current_stock_history')->twiceDailyAt(0, 22, 5)->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'RunCurrentStockHistory',
+            ),
+            name: 'RunCurrentStockHistory',
+            type: 'command',
             scheduledAt: now()->format('H:i')
         );
 
@@ -453,7 +459,6 @@ class Kernel extends ConsoleKernel
         );
 
 
-
         // $this->logSchedule(
         //     $schedule->job(RunPriceChangeNotificationEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->withoutOverlapping()->sentryMonitor(
         //         monitorSlug: 'RunPriceChangeNotificationEmailBulkRuns',
@@ -556,7 +561,7 @@ class Kernel extends ConsoleKernel
 
     protected function commands(): void
     {
-        $this->load(__DIR__ . '/Commands');
+        $this->load(__DIR__.'/Commands');
 
         require base_path('routes/console.php');
     }
