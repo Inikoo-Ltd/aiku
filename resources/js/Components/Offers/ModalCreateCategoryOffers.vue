@@ -277,7 +277,7 @@ resetForm();
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />
                     <Button full icon="fad fa-save" :label="trans('Save')" @click="submitCategoryOffer"
-                        :isLoading="isLoadingSubmit" :disabled="isFormInvalid">
+                        :isLoading="isLoadingSubmit" :disabled="isFormInvalid || isLoadingSubmit">
                     </Button>
                 </div>
 
