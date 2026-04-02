@@ -17,6 +17,7 @@ use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
 use App\Enums\Dashboards\GroupDashboardSalesTableTabsEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Models\Inventory\OrganisationStockHistory;
 use App\Models\SysAdmin\Group;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -98,6 +99,7 @@ class ShowGroupDashboard extends OrgAction
                             'tables'      => GroupDashboardSalesTableTabsEnum::tables($group, $timeSeriesData, true),
                         ]
                     ],
+                    'stock_snapshot_table' => $this->getOrganisationStockSnapshotTable($group),
                     'tabs_box'    => [
                         'current'    => $this->tab,
                         'navigation' => $tabsBox
@@ -123,6 +125,160 @@ class ShowGroupDashboard extends OrgAction
         $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $request);
+    }
+
+    private function getOrganisationStockSnapshotTable(Group $group): array
+    {
+        $group->loadMissing('organisations.currency');
+
+        $orgIds = $group->organisations->pluck('id');
+
+        $latestHistories = OrganisationStockHistory::query()
+            ->whereIn('organisation_id', $orgIds)
+            ->where('is_week', false)
+            ->where('is_month', false)
+            ->where('is_year', false)
+            ->whereRaw('date = (
+                SELECT MAX(osh2.date)
+                FROM organisation_stock_histories osh2
+                WHERE osh2.organisation_id = organisation_stock_histories.organisation_id
+                AND osh2.is_week = false AND osh2.is_month = false AND osh2.is_year = false
+            )')
+            ->get()
+            ->keyBy('organisation_id');
+
+        $body = [];
+        $totals = [
+            'number_org_stocks'              => 0,
+            'number_out_of_stock_org_stocks' => 0,
+            'number_locations'               => 0,
+            'number_org_stocks_not_sold_1y'  => 0,
+        ];
+
+        foreach ($group->organisations as $organisation) {
+            $history     = $latestHistories->get($organisation->id);
+            $currencyCode = $organisation->currency->code;
+
+            $body[] = [
+                'slug'    => $organisation->slug,
+                'state'   => 'active',
+                'columns' => [
+                    'label'                          => [
+                        'formatted_value' => $organisation->name,
+                        'align'           => 'left',
+                        'route_target'    => [
+                            'name'       => 'grp.org.dashboard.show',
+                            'parameters' => ['organisation' => $organisation->slug],
+                        ],
+                    ],
+                    'number_org_stocks'              => [
+                        'formatted_value' => $history ? number_format($history->number_org_stocks) : '--',
+                    ],
+                    'number_out_of_stock_org_stocks' => [
+                        'formatted_value' => $history ? number_format($history->number_out_of_stock_org_stocks) : '--',
+                    ],
+                    'number_locations'               => [
+                        'formatted_value' => $history ? number_format($history->number_locations) : '--',
+                    ],
+                    'org_stock_value'                => [
+                        'formatted_value' => $history ? number_format((float) $history->org_stock_value, 2) : '--',
+                        'tooltip'         => $currencyCode,
+                    ],
+                    'number_org_stocks_not_sold_1y'  => [
+                        'formatted_value' => $history ? number_format($history->number_org_stocks_not_sold_1y) : '--',
+                    ],
+                    'value_dormant_stock_1y'         => [
+                        'formatted_value' => $history ? number_format((float) $history->value_dormant_stock_1y, 2) : '--',
+                        'tooltip'         => $currencyCode,
+                    ],
+                ],
+            ];
+
+            if ($history) {
+                $totals['number_org_stocks']              += $history->number_org_stocks;
+                $totals['number_out_of_stock_org_stocks'] += $history->number_out_of_stock_org_stocks;
+                $totals['number_locations']               += $history->number_locations;
+                $totals['number_org_stocks_not_sold_1y']  += $history->number_org_stocks_not_sold_1y;
+            }
+        }
+
+        return [
+            'id'     => 'stock_snapshot_table',
+            'type'   => 'table',
+            'tables' => [
+                'organisations' => [
+                    'header' => [
+                        'columns' => [
+                            'label'                          => [
+                                'formatted_value'   => __('Organisation'),
+                                'align'             => 'left',
+                                'frozen'            => true,
+                                'alignFrozen'       => 'left',
+                                'currency_type'     => 'always',
+                                'data_display_type' => 'always',
+                            ],
+                            'number_org_stocks'              => [
+                                'formatted_value'   => __('Total SKUs'),
+                                'icon'              => 'fal fa-box-open',
+                                'align'             => 'right',
+                                'currency_type'     => 'always',
+                                'data_display_type' => 'always',
+                            ],
+                            'number_out_of_stock_org_stocks' => [
+                                'formatted_value'   => __('Out of Stock'),
+                                'icon'              => 'fal fa-times-circle',
+                                'align'             => 'right',
+                                'currency_type'     => 'always',
+                                'data_display_type' => 'always',
+                            ],
+                            'number_locations'               => [
+                                'formatted_value'   => __('Locations'),
+                                'icon'              => 'fal fa-map-marker-alt',
+                                'align'             => 'right',
+                                'currency_type'     => 'always',
+                                'data_display_type' => 'always',
+                            ],
+                            'org_stock_value'                => [
+                                'formatted_value'   => __('Stock Value'),
+                                'icon'              => 'fal fa-pallet-alt',
+                                'tooltip'           => __('In organisation currency'),
+                                'align'             => 'right',
+                                'currency_type'     => 'always',
+                                'data_display_type' => 'always',
+                            ],
+                            'number_org_stocks_not_sold_1y'  => [
+                                'formatted_value'   => __('No Sold 1Y'),
+                                'icon'              => 'fal fa-ban',
+                                'tooltip'           => __('Number of SKUs not sold in more than 1 year'),
+                                'align'             => 'right',
+                                'currency_type'     => 'always',
+                                'data_display_type' => 'always',
+                            ],
+                            'value_dormant_stock_1y'         => [
+                                'formatted_value'   => __('Dormant 1Y'),
+                                'icon'              => 'fal fa-skull-cow',
+                                'tooltip'           => __('Value of dormant stock for more than 1 year, in organisation currency'),
+                                'align'             => 'right',
+                                'currency_type'     => 'always',
+                                'data_display_type' => 'always',
+                            ],
+                        ],
+                    ],
+                    'body'   => $body,
+                    'totals' => [
+                        'columns' => [
+                            'label'                          => ['formatted_value' => __('Total'), 'align' => 'left'],
+                            'number_org_stocks'              => ['formatted_value' => number_format($totals['number_org_stocks'])],
+                            'number_out_of_stock_org_stocks' => ['formatted_value' => number_format($totals['number_out_of_stock_org_stocks'])],
+                            'number_locations'               => ['formatted_value' => number_format($totals['number_locations'])],
+                            'org_stock_value'                => ['formatted_value' => '--'],
+                            'number_org_stocks_not_sold_1y'  => ['formatted_value' => number_format($totals['number_org_stocks_not_sold_1y'])],
+                            'value_dormant_stock_1y'         => ['formatted_value' => '--'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
     }
 
     public function getBreadcrumbs($label = null): array
