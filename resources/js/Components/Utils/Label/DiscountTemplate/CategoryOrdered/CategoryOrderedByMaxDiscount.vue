@@ -70,13 +70,17 @@ console.log('maxDiscountLabel', props.offer)
 
 <style scoped>
 .offer-wrapper {
-    @apply inline-flex flex-row;
+    @apply flex flex-col sm:flex-row items-start sm:items-stretch gap-1 sm:gap-2;
 }
 .offer-valid-until {
     @apply flex items-center px-2 
            bg-gray-100 text-gray-700 
            text-[10px] sm:text-xs 
-           rounded-sm;
+           rounded-sm
+           w-fit max-w-full;
+}
+.offer-valid-until span {
+    @apply truncate sm:whitespace-nowrap;
 }
 .offer-max-discount {
     @apply bg-[#A80000] border border-red-900 text-gray-100 w-fit flex items-center rounded-sm px-1 py-0.5 text-[10px] sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1;
