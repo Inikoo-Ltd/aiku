@@ -115,7 +115,7 @@ class StoreProductCategoryDiscount extends OrgAction
 
 
         $offer = StoreOffer::run($offerCampaign, $modelData);
-        ActivateOffer::run($offer,30);
+        ActivateOffer::run($offer, 30);
 
         return $offer;
     }
@@ -128,10 +128,14 @@ class StoreProductCategoryDiscount extends OrgAction
             'duration'                   => ['required', 'string', 'in:interval,permanent'],
             'trigger_data_item_quantity' => ['nullable', 'required_if:type,quantity', 'integer', 'min:1'],
             'trigger_data_item_amount'   => ['nullable', 'required_if:type,amount', 'numeric', 'min:0'],
-            'start_at'                   => ['required', 'date',  Rule::when(
-                                                request('duration') === 'interval',
-                                                ['before_or_equal:end_at']
-                                            )],
+            'start_at'                   => [
+                'required',
+                'date',
+                Rule::when(
+                    request('duration') === 'interval',
+                    ['before_or_equal:end_at']
+                )
+            ],
             'end_at'                     => ['nullable', 'required_if:duration,interval', 'date'],
             'percentage_off'             => ['required', 'numeric', 'gt:0', 'lt:100'],
             'product_category_id'        => ['required', 'integer', 'exists:product_categories,id'],
@@ -147,6 +151,13 @@ class StoreProductCategoryDiscount extends OrgAction
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($this->validatedData);
+    }
+
+    public function jsonResponse(Offer $offer): array
+    {
+        return [
+            'slug' => $offer->slug,
+        ];
     }
 
     /**
