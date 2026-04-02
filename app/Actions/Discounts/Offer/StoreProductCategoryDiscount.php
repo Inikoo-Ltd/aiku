@@ -129,11 +129,11 @@ class StoreProductCategoryDiscount extends OrgAction
             'trigger_data_item_quantity' => ['nullable', 'required_if:type,quantity', 'integer', 'min:1'],
             'trigger_data_item_amount'   => ['nullable', 'required_if:type,amount', 'numeric', 'min:0'],
             'start_at'                   => ['required', 'date',  Rule::when(
-                                                request('type') === 'amount',
+                                                request('duration') === 'interval',
                                                 ['before_or_equal:end_at']
                                             )],
             'end_at'                     => ['nullable', 'required_if:duration,interval', 'date'],
-            'percentage_off'             => ['required', 'numeric', 'gt:0', 'lt:1'],
+            'percentage_off'             => ['required', 'numeric', 'gt:0', 'lt:100'],
             'product_category_id'        => ['required', 'integer', 'exists:product_categories,id'],
         ];
     }
@@ -142,11 +142,11 @@ class StoreProductCategoryDiscount extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(Shop $shop, ActionRequest $request): Offer
+    public function asController(Shop $shop, ActionRequest $request): void
     {
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($this->validatedData);
+        $this->handle($this->validatedData);
     }
 
     /**
