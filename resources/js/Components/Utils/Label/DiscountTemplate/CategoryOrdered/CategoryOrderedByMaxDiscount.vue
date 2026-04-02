@@ -27,6 +27,7 @@ console.log('maxDiscountLabel', props.offer)
 </script>
 
 <template>
+     <div class="offer-wrapper gap-2">
     <div class="offer-max-discount bg-white">
         <div class="offer-label">
             <span v-if="maxDiscountLabel" class="discount">
@@ -52,9 +53,26 @@ console.log('maxDiscountLabel', props.offer)
 
         </Popover>
     </div>
+    <div class="offer-valid-until">
+            <span class="clock">⏳</span>
+            <span>
+                {{ trans("Valid until") }}
+                <strong>{{ props.offer.end_date }}</strong>
+            </span>
+        </div>
+         </div>
 </template>
 
 <style scoped>
+.offer-wrapper {
+    @apply inline-flex flex-row;
+}
+.offer-valid-until {
+    @apply flex items-center px-2 
+           bg-gray-100 text-gray-700 
+           text-[10px] sm:text-xs 
+           rounded-sm;
+}
 .offer-max-discount {
     @apply bg-[#A80000] border border-red-900 text-gray-100 w-fit flex items-center rounded-sm px-1 py-0.5 text-[10px] sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1;
 }
