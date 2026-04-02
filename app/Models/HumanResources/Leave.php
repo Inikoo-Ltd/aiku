@@ -7,6 +7,7 @@ use App\Models\SysAdmin\User;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -39,6 +40,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read \App\Models\HumanResources\LeaveType|null $leaveType
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\HumanResources\LeaveApprovalRecord> $approvalRecords
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Leave newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Leave newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Leave onlyTrashed()
@@ -83,5 +85,40 @@ class Leave extends Model implements HasMedia
     {
         $this->addMediaCollection('attachments')
             ->acceptsMimeTypes(['application/pdf', 'image/jpeg', 'image/png']);
+    }
+
+    public function approvalRecords()
+    {
+        return $this->hasMany(LeaveApprovalRecord::class);
+    }
+
+    public function currentApprovalLevel(): int
+    {
+        $latestApproved = $this->approvalRecords()
+            ->approved()
+            ->max('sequence_number');
+
+        return $latestApproved ? $latestApproved + 1 : 1;
+    }
+
+    public function canBeApprovedBy(User $user): bool
+    {
+        $currentLevel = $this->currentApprovalLevel();
+
+        return LeaveApprover::byOrganisation($this->organisation)
+            ->bySequence($currentLevel)
+            ->active()
+            ->where('user_id', $user->id)
+            ->exists();
+    }
+
+    public function isPendingApproval(): bool
+    {
+        return $this->status === LeaveStatusEnum::PENDING
+            && $this->approvalRecords()
+                ->where('status', '!=', 'rejected')
+                ->where('sequence_number', '<', $this->currentApprovalLevel())
+                ->where('status', 'approved')
+                ->count() >= 0;
     }
 }

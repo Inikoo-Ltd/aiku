@@ -382,6 +382,12 @@ use App\Actions\HumanResources\ClockingMachine\GenerateClockingMachineQrCode;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
 use App\Actions\Masters\MasterAsset\RepairMasterAssetTradeUnitsToChildren;
+use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\StoreClockingMachineCoordinatePolicy;
+use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\UpdateClockingMachineCoordinatePolicy;
+use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\DeleteClockingMachineCoordinatePolicy;
+use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\StoreClockingMachineCoordinatePolicyRule;
+use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\UpdateClockingMachineCoordinatePolicyRule;
+use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\DeleteClockingMachineCoordinatePolicyRule;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
@@ -412,6 +418,18 @@ Route::prefix('position/{jobPosition:id}')->name('job_position.')->group(functio
 Route::prefix('clocking-machine/{clockingMachine:id}')->name('clocking_machine..')->group(function () {
     Route::patch('', UpdateClockingMachine::class)->name('update');
     Route::delete('', DeleteClockingMachine::class)->name('delete');
+});
+
+Route::prefix('clocking-machine-coordinate-policy')->name('clocking-machine-coordinate-policy.')->group(function () {
+    Route::post('', StoreClockingMachineCoordinatePolicy::class)->name('store');
+    Route::patch('{policy:id}', UpdateClockingMachineCoordinatePolicy::class)->name('update');
+    Route::delete('{policy:id}', DeleteClockingMachineCoordinatePolicy::class)->name('delete');
+    Route::post('{policy:id}/rule', StoreClockingMachineCoordinatePolicyRule::class)->name('rule.store');
+});
+
+Route::prefix('clocking-machine-coordinate-policy-rule')->name('clocking-machine-coordinate-policy-rule.')->group(function () {
+    Route::patch('{policyRule:id}', UpdateClockingMachineCoordinatePolicyRule::class)->name('update');
+    Route::delete('{policyRule:id}', DeleteClockingMachineCoordinatePolicyRule::class)->name('delete');
 });
 
 Route::prefix('shipping-zone/{shippingZone:id}')->name('shipping_zone.')->group(function () {

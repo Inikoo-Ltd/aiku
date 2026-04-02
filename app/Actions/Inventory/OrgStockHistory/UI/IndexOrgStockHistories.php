@@ -21,7 +21,7 @@ use Spatie\QueryBuilder\AllowedSort;
 
 class IndexOrgStockHistories extends OrgAction
 {
-    public function handle(OrganisationStockHistory $organisationStockHistory, $prefix = null): LengthAwarePaginator
+    public function handle(OrganisationStockHistory $organisationStockHistory, $prefix = null, ?string $filter = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -38,6 +38,10 @@ class IndexOrgStockHistories extends OrgAction
 
         $queryBuilder->leftJoin('org_stocks', 'org_stock_histories.org_stock_id', '=', 'org_stocks.id');
         $queryBuilder->where('org_stock_histories.organisation_stock_history_id', $organisationStockHistory->id);
+
+        $queryBuilder->when($filter === 'out_of_stock', fn ($q) => $q->where('org_stock_histories.quantity_in_locations', 0));
+        $queryBuilder->when($filter === 'not_sold_1y', fn ($q) => $q->where('org_stock_histories.sold_within_1y', false));
+        $queryBuilder->when($filter === 'dormant_stock_1y', fn ($q) => $q->where('org_stock_histories.non_moving_1y', '>', 0));
 
         return $queryBuilder
             ->defaultSort('org_stocks.code')

@@ -5,7 +5,7 @@ import { faBullhorn, faCameraRetro, faCube, faFolder, faMoneyBillWave, faProject
 import { faExclamationTriangle, faThumbtack } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import { computed, ref } from "vue"
+import { computed, inject, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableCustomers from "@/Components/Tables/Grp/Org/CRM/TableCustomers.vue"
@@ -27,6 +27,7 @@ import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategory
 import TableVariants from "@/Components/Tables/Grp/Org/Catalogue/TableVariants.vue"
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
+import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOffers.vue'
 
 library.add(
     faFolder,
@@ -70,8 +71,16 @@ const props = defineProps<{
     salesData?: object
     variants?: {}
     offers?: {}
+    shop_data: {
+        id: number
+        slug: string
+        currency_code: string
+    }
+    product_category_id: number
 }>()
-console.log("family", props)
+
+const layout = inject("layout", {})
+
 const currentTab = ref(props.tabs.current)
 
 const handleTabUpdate = (tabSlug: string) => {
@@ -130,8 +139,16 @@ const showDialog = ref(false)
 
                 </Link>
 
-
             </div>
+        </template>
+
+        <template #otherBefore>
+            <ModalCreateCategoryOffers
+                v-if="currentTab === 'offers' && layout?.app.environment === 'local'"
+                :shop_data="props.shop_data" 
+                :product_category_id="props.product_category_id"
+                v-tooltip="'Create New Offer'"
+            />
         </template>
     </PageHeading>
 
@@ -141,6 +158,7 @@ const showDialog = ref(false)
     </Message>
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+    
     <div v-if="mini_breadcrumbs.length != 0" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
         <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
