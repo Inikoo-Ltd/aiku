@@ -129,11 +129,19 @@ class UpdateProductCategoryOffersData
         app()->setLocale($currentLocale);
 
 
+        $durationLabel='';
+        if($offer->duration==OfferDurationEnum::INTERVAL && $offer->end_at ){
+            $durationLabel = __('Until').' '.date('l, d F Y', strtotime($offer->end_at));
+        }
+
         $offerData = [
             'id'                      => $offer->id,
             'state'                   => $offer->state->value,
             'type'                    => $offer->type,
             'duration'                => $offer->duration->value,
+            'duration_label'          => $durationLabel,
+            'end_at'                  => $offer->end_at,
+            'start_at'                => $offer->start_at,
             'label'                   => $offer->label ?? $offer->name,
             'allowances'              => $allowances,
             'triggers_labels'         => $triggerLabels,

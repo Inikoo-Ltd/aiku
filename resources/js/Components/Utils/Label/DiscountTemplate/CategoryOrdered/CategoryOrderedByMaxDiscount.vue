@@ -34,9 +34,7 @@ console.log('maxDiscountLabel', props.offer)
             </span>
 
             <span class="label-text">
-                <!-- rifqi
-                {{ trans("Special Offers") }} -->
-                {{props.offer.label}}
+                {{ props.offer?.label || trans("Special Offers") }}
             </span>
 
             <span v-if="!layout?.user?.gr_data?.customer_is_gr" @click="_popoverInfoCircle?.toggle"
