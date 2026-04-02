@@ -3,21 +3,16 @@ import DashboardSettings from "./DashboardSettings.vue"
 import DashboardTable from "./DashboardTable.vue"
 import DashboardWidget from "./DashboardWidget.vue"
 import ShopIntervalStats from "./ShopIntervalStats.vue"
+import InventorySnapshotPanel from "./InventorySnapshotPanel.vue"
 import { ref, provide } from "vue"
 import {
     faBox,
     faBoxesAlt,
-    faBoxOpen,
     faCheckCircle,
     faCircle,
     faHandsHelping,
     faInventory,
-    faMapMarkerAlt,
     faMapSigns,
-    faPalletAlt,
-    faBan,
-    faSkullCow,
-    faTimesCircle,
     faTriangle,
     faWarehouse
 } from '@fal'
@@ -27,7 +22,7 @@ import { Dashboard } from "@/types/Components/Dashboard"
 import DashboardShopWidget from "@/Components/DataDisplay/Dashboard/DashboardShopWidget.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
-library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faBoxOpen, faCircle, faCheckCircle, faHandsHelping, faTriangle, faMapMarkerAlt, faPalletAlt, faBan, faSkullCow, faTimesCircle)
+library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faTriangle)
 
 const props = defineProps<{
 	dashboard?: Dashboard
@@ -47,6 +42,11 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
         </KeepAlive>
 
         <ShopIntervalStats v-if="props.dashboard?.super_blocks?.[0]?.shop_blocks" :shop-blocks="props.dashboard?.super_blocks?.[0]?.shop_blocks" />
+
+        <InventorySnapshotPanel
+            v-if="props.dashboard?.super_blocks?.[0]?.inventory_snapshot?.length"
+            :rows="props.dashboard.super_blocks[0].inventory_snapshot"
+        />
 
 		<DashboardSettings
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
@@ -82,20 +82,6 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			@onChangeTab="(val) => {
 				set(props, 'dashboard.super_blocks[0].blocks[0].current_tab', val)
 			}"
-		/>
-
-		<DashboardTable
-            v-if="props.dashboard?.super_blocks?.[0]?.stock_snapshot_table && props.dashboard?.super_blocks?.[0]?.blocks?.[0]?.current_tab === 'organisations'"
-			class="border-t border-gray-200"
-			idTable="stock_snapshot_table"
-			:tableData="{
-				...props.dashboard.super_blocks[0].stock_snapshot_table,
-				current_tab: 'organisations'
-			}"
-			:intervals="props.dashboard.super_blocks[0].intervals"
-			:settings="props.dashboard.super_blocks[0].settings"
-			:currentTab="'organisations'"
-			:showTabs="false"
 		/>
 
 		<DashboardWidget

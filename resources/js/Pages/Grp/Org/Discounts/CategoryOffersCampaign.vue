@@ -40,6 +40,8 @@ const props = defineProps<{
     shop_data: {
         slug: string
         currency_code: string
+        organisation: string
+        offercampaign: string
     }
 }>()
 

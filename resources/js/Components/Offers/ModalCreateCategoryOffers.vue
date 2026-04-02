@@ -11,18 +11,22 @@ import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
+import { inject } from "vue"
+import axios from 'axios'
 
 const props = defineProps<{
     shop_data: {
         id: number
         slug: string
         currency_code: string
+        organisation: string
+        offercampaign: string
     }
     product_category_id?: number
 }>()
 
 const isOpenModal = ref(false)
-
+const layout = inject('layout', null)
 const offerLabel = ref('')
 const typeOffer = ref('quantity')
 const offerQtyItems = ref<number | null>(null)
@@ -40,7 +44,8 @@ function onOfferQtyInput(e: { value: string | number | undefined }) {
 
 const submitCategoryOffer = () => {
     // Section: Submit
-    router.post(
+    isLoadingSubmit.value = true
+    axios.post(
         route('grp.models.category_offer.store', {
             shop: props.shop_data.id,
         }),
@@ -54,35 +59,39 @@ const submitCategoryOffer = () => {
             duration: dateType.value,
             start_at: startDate.value,
             end_at: endDate.value
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingSubmit.value = true
-            },
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
-                    type: "success"
-                })
-                resetForm();
-                isOpenModal.value = false
-            },
-            onError: (errors) => {
-                const errMsg = Array.isArray(errors) ? errors.join('. ') : trans("Failed to submit the data, please try again");
-                notify({
-                    title: trans("Something went wrong"),
-                    text: errMsg,
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSubmit.value = false
-            },
         }
     )
+    .then((response) => {
+        notify({
+            title: trans("Success"),
+            text: trans("Successfully submit the data"),
+            type: "success"
+        })
+        resetForm();
+        isOpenModal.value = false
+
+        if (!props.product_category_id) {
+            router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
+                organisation: props.shop_data.organisation,
+                shop: props.shop_data.slug,
+                offerCampaign: props.shop_data.offercampaign,
+                offer: response.data.slug
+            }))
+        }
+        router.reload()
+    })
+    .catch((error) => {
+        const errors = error.response?.data?.errors || {}
+        const errMsg = Object.values(errors).join('. ') || trans("Failed to submit the data, please try again");
+        notify({
+            title: trans("Something went wrong"),
+            text: errMsg,
+            type: "error"
+        })
+    })
+    .finally(() => {
+        isLoadingSubmit.value = false
+    })
 }
 
 const resetForm = () => {
@@ -167,8 +176,8 @@ resetForm();
                         {{ trans('Select offer type') }}:
                     </div>
 
-                    <div class="flex items-center xjustify-around gap-x-8">
-                        <div class="space-y-2">
+                    <div class="flex items-stretch gap-x-8">
+                        <div class="space-y-2 flex-1">
                             <div class="flex items-center gap-2">
                                 <RadioButton v-model="typeOffer" inputId="type-quantity" name="quantity"
                                     value="quantity" size="small" />
@@ -177,23 +186,26 @@ resetForm();
                                     <InformationIcon :information="trans('Total quantities of the items')" />
                                 </label>
                             </div>
-
-                            <InputNumber :modelValue="offerQtyItems" @input="onOfferQtyInput"
+                            <div class="min-h-[40px]">
+                            <InputNumber :modelValue="offerQtyItems" @input="onOfferQtyInput" v-show="typeOffer === 'quantity'"  fluid
                                 inputId="offer_quantity_item" :placeholder="trans('Enter number')"
-                                :disabled="typeOffer !== 'quantity'" :min="0"
+                                :disabled="typeOffer !== 'quantity'" :min="0" class="w-full" inputClass="w-full"
                                 :suffix="' ' + ((offerQtyItems ?? 0) > 1 ? trans('items') : trans('item'))" />
+                            </div>
                         </div>
 
-                        <div class="space-y-2">
+                        <div class="space-y-2 flex-1">
                             <div class="flex items-center gap-2">
                                 <RadioButton v-model="typeOffer" inputId="type-amount" name="amount" value="amount"
                                     size="small" />
                                 <label for="type-amount" class="cursor-pointer">{{ trans('By minimum amount')
                                     }}</label>
                             </div>
-                            <InputNumber v-model="offerAmount" inputId="offer_amount" mode="currency"
+                            <div class="min-h-[40px]">
+                            <InputNumber v-show="typeOffer === 'amount'" v-model="offerAmount"   fluid inputId="offer_amount" mode="currency" inputClass="w-full" :placeholder="trans('Enter number')" 
                                 :currency="props.shop_data.currency_code" locale="en-US" class="w-full"
                                 :disabled="typeOffer !== 'amount'" />
+                                </div>
                         </div>
                     </div>
                 </div>
@@ -255,7 +267,7 @@ resetForm();
                             </label>
 
                             <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"
-                                :minDate="startDate" :placeholder="trans('Select end date')" />
+                                :minDate="startDate || undefined" :placeholder="trans('Select end date')" />
                         </div>
                     </div>
 
