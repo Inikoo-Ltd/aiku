@@ -62,7 +62,7 @@ const component = computed(() => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #button-category-create-offer>
+        <template #otherBefore>
             <ModalCreateCategoryOffers
                 :shop_data="props.shop_data"
             />
