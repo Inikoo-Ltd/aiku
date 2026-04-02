@@ -47,7 +47,7 @@ const submitCategoryOffer = () => {
         {
             name: offerLabel.value,
             type: typeOffer.value,
-            product_category_id: offerCategoryId.value,
+            product_category_id: offerCategoryId.value || props.product_category_id,
             trigger_data_item_quantity: offerQtyItems.value != null ? Math.floor(offerQtyItems.value) : null,
             trigger_data_item_amount: offerAmount.value,
             percentage_off: discountPercentage.value != null ? discountPercentage.value / 100 : null,
@@ -98,7 +98,7 @@ const resetForm = () => {
 
 const isFormInvalid = computed(() => {
 
-    if (!offerCategoryId.value && !props.shop_data.masterProductCategoryId) return true
+    if (!offerCategoryId.value && !props.product_category_id) return true
 
     if (!offerLabel.value) return true
 
