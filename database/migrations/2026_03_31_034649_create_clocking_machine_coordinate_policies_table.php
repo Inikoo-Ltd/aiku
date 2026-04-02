@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\HumanResources\ClockingMachine\ClockingPolicyModeEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -15,7 +16,7 @@ return new class () extends Migration {
             $table->unsignedSmallInteger('scope_id')->index();
             $table->unsignedSmallInteger('clocking_machine_id')->nullable()->index();
             $table->foreign('clocking_machine_id')->references('id')->on('clocking_machines')->nullOnDelete();
-            $table->string('mode')->default('onsite')->index();
+            $table->string('mode')->default(ClockingPolicyModeEnum::ONSITE->value)->index();
             $table->boolean('is_active')->default(true)->index();
             $table->dateTimeTz('start_at')->nullable()->index();
             $table->dateTimeTz('end_at')->nullable()->index();
@@ -31,7 +32,7 @@ return new class () extends Migration {
                 ->on('clocking_machine_coordinate_policies')
                 ->cascadeOnDelete();
             $table->unsignedTinyInteger('day_of_week')->nullable()->index();
-            $table->string('mode_override')->default('onsite')->index();
+            $table->string('mode_override')->default(ClockingPolicyModeEnum::ONSITE->value)->index();
             $table->boolean('is_active')->default(true)->index();
             $table->dateTimeTz('start_at')->nullable()->index();
             $table->dateTimeTz('end_at')->nullable()->index();
