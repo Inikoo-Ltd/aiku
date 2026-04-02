@@ -11,7 +11,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Pie } from "vue-chartjs"
 import { trans } from "laravel-vue-i18n"
-import { faSeedling, faThumbsDown, faPalletAlt, faHistory, faBoxOpen, faMapMarkerAlt, faSkullCow, faDollarSign, faBan } from "@fal"
+import { faBox, faInventory, faSkullCow, faDollarSign, faBan } from "@fal"
 import { faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle } from "@fas"
 
 import { capitalize } from "@/Composables/capitalize"
@@ -19,21 +19,15 @@ import { useLocaleStore } from "@/Stores/locale"
 
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from "chart.js"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import AccuracyDashboardWidget from "@/Components/DataDisplay/AccuracyDashboardWidget.vue"
-import StatProgressCard from "@/Components/DataDisplay/StatProgressCard.vue"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
 
 library.add(
-    faSeedling,
-    faThumbsDown,
+    faBox,
+    faInventory,
     faTimesCircle,
     faPauseCircle,
     faExclamationCircle,
     faCheckCircle,
-    faPalletAlt,
-    faHistory,
-    faBoxOpen,
-    faMapMarkerAlt,
     faSkullCow,
     faDollarSign,
     faBan,
@@ -72,9 +66,9 @@ const props = defineProps<{
         percentage_dormant_1y: number
         number_org_stocks_not_sold_1y: number
         percentage_not_sold_1y: number
-        route: {
+        history_route: {
             name: string
-            parameters: Record<string, string>
+            parameters: Record<string, string | number>
         }
         locations_route: {
             name: string
@@ -129,7 +123,7 @@ const options = {
         <dl class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-gray-100 bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden">
             <div
                 class="px-5 py-4 cursor-pointer hover:bg-indigo-50 transition-colors"
-                @click="router.visit(route(stockHistoryToday.route.name, stockHistoryToday.route.parameters))"
+                @click="router.visit(route(stockHistoryToday.history_route.name, { ...stockHistoryToday.history_route.parameters, tab: 'org_stocks' }))"
             >
                 <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
                     <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true" />
@@ -141,7 +135,7 @@ const options = {
             </div>
             <div
                 class="px-5 py-4 cursor-pointer hover:bg-indigo-50 transition-colors"
-                @click="router.visit(route(stockHistoryToday.route.name, stockHistoryToday.route.parameters))"
+                @click="router.visit(route(stockHistoryToday.history_route.name, { ...stockHistoryToday.history_route.parameters, tab: 'org_stocks' }))"
             >
                 <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
                     <FontAwesomeIcon icon="fal fa-box" fixed-width aria-hidden="true" />
@@ -155,17 +149,17 @@ const options = {
                 class="px-5 py-4 cursor-pointer hover:bg-indigo-50 transition-colors"
                 @click="router.visit(route(stockHistoryToday.locations_route.name, stockHistoryToday.locations_route.parameters))"
             >
-                <dt class="flex items-center gap-x-1.5 text-xs font-medium ">
+                <dt class="flex items-center gap-x-1.5 text-xs font-medium">
                     <FontAwesomeIcon icon="fal fa-inventory" fixed-width aria-hidden="true" />
                     {{ trans('Locations') }}
                 </dt>
-                <dd class="mt-1 text-2xl font-semibold tabular-nums ">
+                <dd class="mt-1 text-2xl font-semibold tabular-nums">
                     {{ locale.number(stockHistoryToday.number_locations) }}
                 </dd>
             </div>
             <div
                 class="px-5 py-4 cursor-pointer hover:bg-indigo-50 transition-colors"
-                @click="router.visit(route(stockHistoryToday.route.name, stockHistoryToday.route.parameters))"
+                @click="router.visit(route(stockHistoryToday.history_route.name, { ...stockHistoryToday.history_route.parameters, tab: 'out_of_stock' }))"
             >
                 <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
                     <FontAwesomeIcon icon="fas fa-times-circle" class="text-red-400" fixed-width aria-hidden="true" />
@@ -183,10 +177,9 @@ const options = {
                     </span>
                 </dd>
             </div>
-
             <div
                 class="px-5 py-4 cursor-pointer hover:bg-indigo-50 transition-colors"
-                @click="router.visit(route(stockHistoryToday.route.name, stockHistoryToday.route.parameters))"
+                @click="router.visit(route(stockHistoryToday.history_route.name, { ...stockHistoryToday.history_route.parameters, tab: 'dormant_stock_1y' }))"
             >
                 <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
                     <FontAwesomeIcon icon="fal fa-skull-cow" class="text-red-500" fixed-width aria-hidden="true" />
@@ -206,10 +199,10 @@ const options = {
             </div>
             <div
                 class="px-5 py-4 cursor-pointer hover:bg-indigo-50 transition-colors"
-                @click="router.visit(route(stockHistoryToday.route.name, stockHistoryToday.route.parameters))"
+                @click="router.visit(route(stockHistoryToday.history_route.name, { ...stockHistoryToday.history_route.parameters, tab: 'not_sold_1y' }))"
             >
                 <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
-                    <FontAwesomeIcon icon="fal fa-ban" class="text-orange-400" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-ban" class="text-red-500" fixed-width aria-hidden="true" />
                     {{ trans('No Sold 1Y') }}
                 </dt>
                 <dd class="mt-1 flex items-baseline gap-x-2">

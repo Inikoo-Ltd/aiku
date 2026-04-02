@@ -3,6 +3,7 @@ import DashboardSettings from "./DashboardSettings.vue"
 import DashboardTable from "./DashboardTable.vue"
 import DashboardWidget from "./DashboardWidget.vue"
 import ShopIntervalStats from "./ShopIntervalStats.vue"
+import InventorySnapshotPanel from "./InventorySnapshotPanel.vue"
 import { ref, provide } from "vue"
 import {
     faBox,
@@ -41,6 +42,11 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
         </KeepAlive>
 
         <ShopIntervalStats v-if="props.dashboard?.super_blocks?.[0]?.shop_blocks" :shop-blocks="props.dashboard?.super_blocks?.[0]?.shop_blocks" />
+
+        <InventorySnapshotPanel
+            v-if="props.dashboard?.super_blocks?.[0]?.inventory_snapshot?.length"
+            :rows="props.dashboard.super_blocks[0].inventory_snapshot"
+        />
 
 		<DashboardSettings
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"

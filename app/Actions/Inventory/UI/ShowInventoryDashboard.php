@@ -145,9 +145,9 @@ class ShowInventoryDashboard extends OrgAction
             'percentage_dormant_1y'          => $pctDormant1y,
             'number_org_stocks_not_sold_1y'  => $history->number_org_stocks_not_sold_1y,
             'percentage_not_sold_1y'         => $pctNotSold1y,
-            'route'                          => [
-                'name'       => 'grp.org.warehouses.show.inventory.org_stock_histories.index',
-                'parameters' => $routeParameters,
+            'history_route'                  => [
+                'name'       => 'grp.org.warehouses.show.inventory.org_stock_histories.show',
+                'parameters' => array_merge($routeParameters, ['organisationStockHistory' => $history->id]),
             ],
             'locations_route'                => [
                 'name'       => 'grp.org.warehouses.show.infrastructure.locations.index',

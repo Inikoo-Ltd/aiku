@@ -17,6 +17,7 @@ use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
 use App\Enums\Dashboards\GroupDashboardSalesTableTabsEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Models\Inventory\OrganisationStockHistory;
 use App\Models\SysAdmin\Group;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -98,6 +99,7 @@ class ShowGroupDashboard extends OrgAction
                             'tables'      => GroupDashboardSalesTableTabsEnum::tables($group, $timeSeriesData, true),
                         ]
                     ],
+                    'inventory_snapshot' => $this->getInventorySnapshot($group),
                     'tabs_box'    => [
                         'current'    => $this->tab,
                         'navigation' => $tabsBox
@@ -123,6 +125,77 @@ class ShowGroupDashboard extends OrgAction
         $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $request);
+    }
+
+    private function getInventorySnapshot(Group $group): array
+    {
+        $group->loadMissing(['organisations' => fn ($q) => $q->with(['currency', 'warehouses'])]);
+
+        $orgIds = $group->organisations->pluck('id');
+
+        $latestHistories = OrganisationStockHistory::query()
+            ->whereIn('organisation_id', $orgIds)
+            ->where('is_week', false)
+            ->where('is_month', false)
+            ->where('is_year', false)
+            ->whereRaw('date = (
+                SELECT MAX(osh2.date)
+                FROM organisation_stock_histories osh2
+                WHERE osh2.organisation_id = organisation_stock_histories.organisation_id
+                AND osh2.is_week = false AND osh2.is_month = false AND osh2.is_year = false
+            )')
+            ->get()
+            ->keyBy('organisation_id');
+
+        $rows = [];
+        foreach ($group->organisations as $organisation) {
+            $history      = $latestHistories->get($organisation->id);
+            $currencyCode = $organisation->currency->code;
+            $totalSkus    = $history?->number_org_stocks ?? 0;
+            $stockValue   = (float) ($history?->org_stock_value ?? 0);
+            $warehouse    = $organisation->warehouses->first();
+
+            $historyRouteParams = $history && $warehouse ? [
+                'organisation'             => $organisation->slug,
+                'warehouse'                => $warehouse->slug,
+                'organisationStockHistory' => $history->id,
+            ] : null;
+
+            $rows[] = [
+                'name'                           => $organisation->name,
+                'slug'                           => $organisation->slug,
+                'currency_code'                  => $currencyCode,
+                'date'                           => $history?->date?->toDateString(),
+                'number_org_stocks'              => $history ? number_format($totalSkus) : '--',
+                'number_out_of_stock_org_stocks' => $history ? number_format($history->number_out_of_stock_org_stocks) : '--',
+                'percentage_out_of_stock'        => $totalSkus > 0
+                    ? round($history->number_out_of_stock_org_stocks / $totalSkus * 100, 1)
+                    : 0,
+                'number_locations'               => $history ? number_format($history->number_locations) : '--',
+                'org_stock_value'                => $history ? $stockValue : null,
+                'number_org_stocks_not_sold_1y'  => $history ? number_format($history->number_org_stocks_not_sold_1y) : '--',
+                'percentage_not_sold_1y'         => $totalSkus > 0
+                    ? round($history->number_org_stocks_not_sold_1y / $totalSkus * 100, 1)
+                    : 0,
+                'value_dormant_stock_1y'         => $history ? (float) $history->value_dormant_stock_1y : null,
+                'percentage_dormant_1y'          => $stockValue > 0
+                    ? round((float) $history->value_dormant_stock_1y / $stockValue * 100, 1)
+                    : 0,
+                'history_route'   => $historyRouteParams ? [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_histories.show',
+                    'parameters' => $historyRouteParams,
+                ] : null,
+                'locations_route' => $warehouse ? [
+                    'name'       => 'grp.org.warehouses.show.infrastructure.locations.index',
+                    'parameters' => [
+                        'organisation' => $organisation->slug,
+                        'warehouse'    => $warehouse->slug,
+                    ],
+                ] : null,
+            ];
+        }
+
+        return $rows;
     }
 
     public function getBreadcrumbs($label = null): array
