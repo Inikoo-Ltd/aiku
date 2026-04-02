@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import Popover from "primevue/popover"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from 'laravel-vue-i18n';
-
+import { faClock } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faClock)
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 interface Offer {
     max_percentage_discount?: number | string | null
 }
@@ -54,7 +56,10 @@ console.log('maxDiscountLabel', props.offer)
         </Popover>
     </div>
     <div class="offer-valid-until">
-            <span class="clock">⏳</span>
+            <span class="clock"><FontAwesomeIcon
+							
+							icon="fal fa-clock"
+							class="mr-1 text-blue-500" /></span>
             <span>
                 {{ trans("Valid until") }}
                 <strong>{{ props.offer.end_date }}</strong>
