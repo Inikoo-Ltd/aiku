@@ -37,7 +37,7 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
      */
     public function handle(Website $website, ?Command $command = null): void
     {
-
+        Log::error('Running ReindexWebsiteLuigi');
         $command?->info("Reindexing website ".$website->domain);
 
         $accessToken = $this->getAccessToken($website);
