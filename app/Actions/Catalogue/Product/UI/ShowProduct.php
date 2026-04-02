@@ -551,6 +551,25 @@ class ShowProduct extends OrgAction
                     ' ('.__('Out Of Stock').')'
                 )
             ),
+            'grp.org.shops.show.catalogue.products.rrp_violation_products.show' =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.rrp_violation_products.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.rrp_violation_products.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    ' ('.__('Out Of Stock').')'
+                )
+            ),
             'grp.org.shops.show.catalogue.products.discontinued_products.show' =>
             array_merge(
                 ShowCatalogue::make()->getBreadcrumbs($routeParameters),
