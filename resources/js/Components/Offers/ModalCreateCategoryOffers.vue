@@ -62,18 +62,19 @@ const submitCategoryOffer = () => {
                 isLoadingSubmit.value = true
             },
             onSuccess: () => {
-                resetForm()
                 notify({
                     title: trans("Success"),
                     text: trans("Successfully submit the data"),
                     type: "success"
                 })
+                resetForm();
                 isOpenModal.value = false
             },
-            onError: errors => {
+            onError: (errors) => {
+                const errMsg = Array.isArray(errors) ? errors.join('. ') : trans("Failed to submit the data, please try again");
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to submit the data, please try again"),
+                    text: errMsg,
                     type: "error"
                 })
             },
@@ -125,9 +126,9 @@ resetForm();
 
 <template>
     <div>
-        <Button :label="trans('Create Category Offer')" @click="isOpenModal = true" icon="fas fa-badge-percent" />
+        <Button :label="trans('Create Category Offer')" @click="isOpenModal = true; resetForm();" icon="fas fa-badge-percent" />
 
-        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
+        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false; resetForm();">
             <div class="p-1 space-y-3">
                 <h2 class="text-2xl font-bold mb-4 text-center">{{ trans('Create Category Offer') }}</h2>
 
