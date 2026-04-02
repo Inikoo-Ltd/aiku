@@ -11,6 +11,7 @@ namespace App\Models\HumanResources;
 use App\Audits\Redactors\EmployeePinRedactor;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Enums\Miscellaneous\GenderEnum;
 use App\Models\Helpers\UniversalSearch;
 use App\Models\SysAdmin\Group;
@@ -60,6 +61,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $worker_number
  * @property string|null $job_title
  * @property EmployeeTypeEnum $type
+ * @property EmploymentTypeEnum $employment_type
  * @property EmployeeStateEnum $state
  * @property string|null $employment_start_at
  * @property string|null $employment_end_at
@@ -152,6 +154,7 @@ class Employee extends Model implements HasMedia, Auditable
         'gender' => GenderEnum::class,
         'state' => EmployeeStateEnum::class,
         'type' => EmployeeTypeEnum::class,
+        'employment_type' => EmploymentTypeEnum::class,
         'fetched_at' => 'datetime',
         'last_fetched_at' => 'datetime',
         'contract_start_date' => 'date',
@@ -190,6 +193,7 @@ class Employee extends Model implements HasMedia, Auditable
         'worker_number',
         'job_title',
         'type',
+        'employment_type',
         'state',
         'employment_start_at',
         'employment_end_at',

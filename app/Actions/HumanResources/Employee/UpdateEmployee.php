@@ -23,6 +23,7 @@ use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Traits\WithReorganisePositions;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Enums\SysAdmin\User\UserAuthTypeEnum;
 use App\Http\Resources\HumanResources\EmployeeResource;
 use App\Models\HumanResources\Employee;
@@ -227,6 +228,7 @@ class UpdateEmployee extends OrgAction
             'emergency_contact.address' => ['sometimes', 'nullable', 'string', 'max:512'],
             'emergency_contact.status' => ['sometimes', 'nullable', 'string', 'max:512'],
             'type' => ['sometimes', Rule::enum(EmployeeTypeEnum::class)],
+            'employment_type' => ['sometimes', Rule::enum(EmploymentTypeEnum::class)],
             'contact_address' => ['sometimes', 'nullable', new ValidAddress()],
             'notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
             'identity_document_type' => ['sometimes', 'nullable', 'string', 'max:256'],
