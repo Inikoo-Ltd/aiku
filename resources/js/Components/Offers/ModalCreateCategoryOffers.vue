@@ -71,7 +71,7 @@ const submitCategoryOffer = () => {
                 isOpenModal.value = false
             },
             onError: (errors) => {
-                const errMsg = Array.isArray(errors) ? errors.join('. ') : trans("Failed to submit the data, please try again");
+                const errMsg =  Object.values(errors).join(' ') ?? trans("Failed to submit the data, please try again");
                 notify({
                     title: trans("Something went wrong"),
                     text: errMsg,
