@@ -34,8 +34,6 @@ return new class () extends Migration {
             $table->unsignedTinyInteger('day_of_week')->nullable()->index();
             $table->string('mode_override')->default(ClockingPolicyModeEnum::ONSITE->value)->index();
             $table->boolean('is_active')->default(true)->index();
-            $table->dateTimeTz('start_at')->nullable()->index();
-            $table->dateTimeTz('end_at')->nullable()->index();
             $table->timestampsTz();
         });
     }

@@ -24,12 +24,8 @@ class UpdateClockingMachineCoordinatePolicyRule extends OrgAction
     {
         return [
             'day_of_week'   => ['nullable', 'integer', 'between:1,7'],
-            'start_time'    => ['nullable', 'date_format:H:i:s'],
-            'end_time'      => ['nullable', 'date_format:H:i:s', 'after:start_time'],
             'mode_override' => ['sometimes', 'required', Rule::enum(ClockingPolicyModeEnum::class)],
             'is_active'     => ['sometimes', 'boolean'],
-            'start_at'      => ['nullable', 'date'],
-            'end_at'        => ['nullable', 'date', 'after_or_equal:start_at'],
         ];
     }
 

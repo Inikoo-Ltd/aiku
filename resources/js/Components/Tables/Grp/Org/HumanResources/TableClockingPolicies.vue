@@ -48,8 +48,6 @@ const editForm = ref({
 const newRule = ref({
     day_of_week: "",
     mode_override: "onsite",
-    start_at: "",
-    end_at: "",
 })
 
 const createForm = ref({
@@ -320,8 +318,6 @@ const openEditModal = (policy: Record<string, any>): void => {
     newRule.value = {
         day_of_week: "",
         mode_override: "onsite",
-        start_at: "",
-        end_at: "",
     }
     editRuleError.value = ""
     isEditModalOpen.value = true
@@ -401,8 +397,6 @@ const addRule = (): void => {
         {
             day_of_week: newRule.value.day_of_week ? Number(newRule.value.day_of_week) : null,
             mode_override: newRule.value.mode_override,
-            start_at: newRule.value.start_at || null,
-            end_at: newRule.value.end_at || null,
         },
         {
             preserveScroll: true,
