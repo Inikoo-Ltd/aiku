@@ -14,6 +14,7 @@ import PureInput from '../Pure/PureInput.vue'
 
 const props = defineProps<{
     shop_data: {
+        masterProductCategoryId?: number
         slug: string
         currency_code: string
     }
@@ -24,7 +25,7 @@ const isOpenModal = ref(false)
 const offerLabel = ref('')
 const typeOffer = ref('quantity')
 const offerQtyItems = ref<number | null>(null)
-const offerAmount = ref<number | null>(null)
+const offerAmount = ref<number | null>(0)
 const discountPercentage = ref<number | null>(null)
 const offerCategoryId = ref(null)
 const isLoadingSubmit = ref(false)
@@ -47,7 +48,7 @@ const submitCategoryOffer = () => {
         {
             name: offerLabel.value,
             type: typeOffer.value,
-            offerCategoryId: offerCategoryId.value,
+            offerCategoryId: offerCategoryId.value || props.shop_data.masterProductCategoryId,
             offer_qty_items: offerQtyItems.value,
             offer_amount: offerAmount.value,
             discount_percentage: discountPercentage.value,
@@ -68,6 +69,7 @@ const submitCategoryOffer = () => {
                     text: trans("Successfully submit the data"),
                     type: "success"
                 })
+                isOpenModal.value = false
             },
             onError: errors => {
                 notify({
@@ -97,7 +99,7 @@ const resetForm = () => {
 
 const isFormInvalid = computed(() => {
 
-    if (!offerCategoryId.value) return true
+    if (!offerCategoryId.value && !props.shop_data.masterProductCategoryId) return true
 
     if (!offerLabel.value) return true
 
@@ -139,7 +141,7 @@ const isFormInvalid = computed(() => {
 
                 </div>
 
-                <div class="space-y-2">
+                <div class="space-y-2" v-if="!props.shop_data.masterProductCategoryId">
                     <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
 

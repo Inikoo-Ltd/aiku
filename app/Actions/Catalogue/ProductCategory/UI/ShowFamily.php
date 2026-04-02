@@ -268,12 +268,16 @@ class ShowFamily extends OrgAction
                     'parentTag' => $parentTag,
 
                     'subNavigation' => $this->getFamilySubNavigation($family, $this->parent, $request)
-
                 ],
                 'url_master'       => $urlMaster,
                 'tabs'             => [
                     'current'    => $this->tab,
                     'navigation' => FamilyTabsEnum::navigation()
+                ],
+                'shop_data' => [
+                    'masterProductCategoryId' => $family->id,
+                    'slug'          => $family->shop->slug,
+                    'currency_code' => $family->shop->currency->code,
                 ],
                 'is_orphan'        => !$family->department_id,
                 'salesData' => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
