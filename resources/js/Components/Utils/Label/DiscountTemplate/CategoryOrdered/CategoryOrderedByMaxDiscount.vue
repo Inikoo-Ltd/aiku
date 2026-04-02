@@ -23,18 +23,20 @@ const maxDiscountLabel = computed(() => {
 
     return (val * 100).toFixed(2).replace(/\.00$/, "")
 })
-console.log('maxDiscountLabel', props)
+console.log('maxDiscountLabel', props.offer)
 </script>
 
 <template>
-    <div class="offer-max-discount">
+    <div class="offer-max-discount bg-white">
         <div class="offer-label">
             <span v-if="maxDiscountLabel" class="discount">
                 - {{ maxDiscountLabel }}% <strong>OFF</strong>
             </span>
 
             <span class="label-text">
-                {{ trans("Special Offers") }}
+                <!-- rifqi
+                {{ trans("Special Offers") }} -->
+                {{props.offer.label}}
             </span>
 
             <span v-if="!layout?.user?.gr_data?.customer_is_gr" @click="_popoverInfoCircle?.toggle"
