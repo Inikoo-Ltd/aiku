@@ -9,6 +9,7 @@ import Select from "primevue/select"
 import InputText from "primevue/inputtext"
 import Card from "primevue/card"
 import Tag from "primevue/tag"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 type OfferRoute = {
     name: string
@@ -37,6 +38,9 @@ type CampaignTypeLegend = {
     type: string
     label: string
     color: string
+    icon?: string
+    icon_tooltip?: string
+    icon_class?: string
 }
 
 type SelectOption = {
@@ -240,6 +244,39 @@ const campaignTypeLabelMap = computed(() => {
     return map
 })
 
+const campaignTypeIconMap = computed(() => {
+    const legend = props.calendar.campaignTypeLegend ?? []
+    const map = new Map<string, string>()
+    legend.forEach((entry) => {
+        if (entry.icon) {
+            map.set(entry.type, entry.icon)
+        }
+    })
+    return map
+})
+
+const campaignTypeIconClassMap = computed(() => {
+    const legend = props.calendar.campaignTypeLegend ?? []
+    const map = new Map<string, string>()
+    legend.forEach((entry) => {
+        if (entry.icon_class) {
+            map.set(entry.type, entry.icon_class)
+        }
+    })
+    return map
+})
+
+const campaignTypeIconTooltipMap = computed(() => {
+    const legend = props.calendar.campaignTypeLegend ?? []
+    const map = new Map<string, string>()
+    legend.forEach((entry) => {
+        if (entry.icon_tooltip) {
+            map.set(entry.type, entry.icon_tooltip)
+        }
+    })
+    return map
+})
+
 const campaignTypeColor = (type?: string | null): string => {
     if (!type) {
         return "#94a3b8"
@@ -252,6 +289,30 @@ const campaignTypeLabel = (type?: string | null): string => {
         return "-"
     }
     return campaignTypeLabelMap.value.get(type) ?? type
+}
+
+const campaignTypeIcon = (type?: string | null): string | null => {
+    if (!type) {
+        return null
+    }
+
+    return campaignTypeIconMap.value.get(type) ?? null
+}
+
+const campaignTypeIconClass = (type?: string | null): string => {
+    if (!type) {
+        return ""
+    }
+
+    return campaignTypeIconClassMap.value.get(type) ?? ""
+}
+
+const campaignTypeIconTooltip = (type?: string | null): string => {
+    if (!type) {
+        return ""
+    }
+
+    return campaignTypeIconTooltipMap.value.get(type) ?? campaignTypeLabel(type)
 }
 
 const plainText = (value?: string | null): string => {
@@ -845,6 +906,12 @@ watch(
                     :key="legend.type"
                     class="inline-flex items-center gap-2 rounded-md border border-gray-200 px-2 py-1 text-[12px] text-gray-700"
                 >
+                    <FontAwesomeIcon
+                        v-if="campaignTypeIcon(legend.type)"
+                        :icon="campaignTypeIcon(legend.type)!"
+                        :class="campaignTypeIconClass(legend.type)"
+                        v-tooltip.top="campaignTypeIconTooltip(legend.type)"
+                    />
                     <span class="inline-block h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: legend.color }" />
                     <span>{{ legend.label }}</span>
                 </div>
@@ -870,6 +937,11 @@ watch(
                             </div>
                         </div>
                         <div class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700">
+                            <FontAwesomeIcon
+                                v-if="campaignTypeIcon(selectedItem.details?.campaign?.type ?? selectedItem.campaignType ?? null)"
+                                :icon="campaignTypeIcon(selectedItem.details?.campaign?.type ?? selectedItem.campaignType ?? null)!"
+                                :class="campaignTypeIconClass(selectedItem.details?.campaign?.type ?? selectedItem.campaignType ?? null)"
+                            />
                             <span class="inline-block h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: selectedItem.color }" />
                             <span>{{ campaignTypeLabel(selectedItem.details?.campaign?.type ?? selectedItem.campaignType ?? null) }}</span>
                         </div>

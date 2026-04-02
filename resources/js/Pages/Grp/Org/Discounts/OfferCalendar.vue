@@ -29,6 +29,9 @@ const props = defineProps<{
             type: string
             label: string
             color: string
+            icon?: string
+            icon_tooltip?: string
+            icon_class?: string
         }[]
         organisationSlug?: string
         filters?: {

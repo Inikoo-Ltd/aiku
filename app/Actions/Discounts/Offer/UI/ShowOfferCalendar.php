@@ -143,11 +143,19 @@ class ShowOfferCalendar
 
         return collect(OfferCampaignTypeEnum::cases())
             ->values()
-            ->map(fn (OfferCampaignTypeEnum $type, int $index) => [
-                'type'   => $type->value,
-                'label'  => $type->labels()[$type->value] ?? $type->value,
-                'color'  => $palette[$index % count($palette)],
-            ])
+            ->map(function (OfferCampaignTypeEnum $type, int $index) use ($palette) {
+                $icons = $type->icons();
+                $iconData = $icons[$type->value] ?? null;
+
+                return [
+                    'type'         => $type->value,
+                    'label'        => $type->labels()[$type->value] ?? $type->value,
+                    'color'        => $palette[$index % count($palette)],
+                    'icon'         => $iconData['icon'] ?? null,
+                    'icon_tooltip' => $iconData['tooltip'] ?? null,
+                    'icon_class'   => $iconData['class'] ?? null,
+                ];
+            })
             ->values()
             ->all();
     }
