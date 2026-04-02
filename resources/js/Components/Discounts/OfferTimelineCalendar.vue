@@ -10,6 +10,35 @@ import InputText from "primevue/inputtext"
 import Card from "primevue/card"
 import Tag from "primevue/tag"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import {
+    faRepeat,
+    faPercentage,
+    faFlag,
+    faUsers,
+    faStore,
+    faTags,
+    faBox,
+    faHandHoldingUsd,
+    faTruck,
+    faGift,
+    faBadgePercent,
+} from "@fal"
+
+library.add(
+    faRepeat,
+    faPercentage,
+    faFlag,
+    faUsers,
+    faStore,
+    faTags,
+    faBox,
+    faHandHoldingUsd,
+    faTruck,
+    faGift,
+    faBadgePercent
+)
+
 
 type OfferRoute = {
     name: string
@@ -721,8 +750,8 @@ watch(
 
 <template>
     <div class="flex flex-col gap-4">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex flex-wrap items-center gap-2">
                 <Button
                     :key="`mode-week-${mode === 'week'}`"
                     :label="trans('Week')"
@@ -753,10 +782,10 @@ watch(
                 />
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:w-auto lg:items-center">
                 <InputText
                     v-model="searchTerm"
-                    class="w-64 text-xs"
+                    class="w-full text-xs lg:w-64"
                     :placeholder="trans('Search offer code or name')"
                     @keyup.enter="applyFilters(true)"
                 />
@@ -766,7 +795,7 @@ watch(
                     :options="campaignTypeOptions"
                     optionLabel="label"
                     optionValue="value"
-                    class="w-56 text-xs"
+                    class="w-full text-xs lg:w-56"
                     :placeholder="trans('All Campaign Types')"
                     @change="applyFilters(true)"
                 />
@@ -775,7 +804,7 @@ watch(
                     :options="shopOptions"
                     optionLabel="label"
                     optionValue="value"
-                    class="w-56 text-xs"
+                    class="w-full text-xs lg:w-56"
                     :placeholder="trans('All Shops')"
                     @change="applyFilters(true)"
                 />
@@ -784,7 +813,7 @@ watch(
                     :options="yearOptions"
                     optionLabel="label"
                     optionValue="value"
-                    class="w-32 text-xs"
+                    class="w-full text-xs lg:w-32"
                     :placeholder="trans('Year')"
                     :showClear="selectedYear !== null"
                     @change="applyFilters(true)"
@@ -900,7 +929,7 @@ watch(
             <div class="text-xs font-semibold text-gray-600">
                 {{ trans('Campaign Type Colors') }}
             </div>
-            <div class="mt-2 flex flex-wrap gap-3">
+            <div class="mt-2 flex flex-wrap gap-1">
                 <div
                     v-for="legend in campaignTypeLegend"
                     :key="legend.type"
