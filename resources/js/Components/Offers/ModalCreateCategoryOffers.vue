@@ -78,6 +78,7 @@ const submitCategoryOffer = () => {
                 offer: response.data.slug
             }))
         }
+        router.reload()
     })
     .catch((error) => {
         const errors = error.response?.data?.errors || {}
