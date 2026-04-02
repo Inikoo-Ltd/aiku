@@ -41,8 +41,8 @@ class IndexDispatchedEmails extends OrgAction
 
         switch (class_basename($parent)) {
             case 'Customer':
-                $queryBuilder->where('dispatched_emails.recipient_type', class_basename(Customer::class));
-                $queryBuilder->where('dispatched_emails.recipient_id', $parent->id);
+                $queryBuilder->leftJoin('customer_has_dispatched_emails', 'customer_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
+                $queryBuilder->where('customer_has_dispatched_emails.customer_id', $parent->id);
                 break;
             case 'Outbox':
                 /*
@@ -57,6 +57,7 @@ class IndexDispatchedEmails extends OrgAction
                     OutboxCodeEnum::REORDER_REMINDER_3RD,
                     OutboxCodeEnum::ORDER_CONFIRMATION
                 ])) {
+                    // make sure this think
                     $queryBuilder->leftJoin('customer_has_dispatched_emails', 'customer_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
                     $queryBuilder->leftJoin('customers', 'customer_has_dispatched_emails.customer_id', '=', 'customers.id');
 
@@ -74,7 +75,6 @@ class IndexDispatchedEmails extends OrgAction
                         $join->on('orders.id', '=', 'model_has_dispatched_emails.model_id');
                     });
                 }
-                 $queryBuilder->where('dispatched_emails.outbox_id', $parent->id);
                 $queryBuilder->where('dispatched_emails.outbox_id', $parent->id);
                 break;
             case 'Mailshot':

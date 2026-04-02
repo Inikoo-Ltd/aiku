@@ -55,23 +55,30 @@ defineProps<{
 function dispatchedEmailRoute(dispatchedEmail: DispatchedEmailResource) {
     switch (route().current()) {
         case "grp.org.fulfilments.show.operations.comms.outboxes.show":
+            const fulfilmentParams = (route().params as RouteParams);
+            if (!fulfilmentParams.organisation || !fulfilmentParams.fulfilment || !fulfilmentParams.outbox || !dispatchedEmail.id) {
+                return null;
+            }
             return route(
                 "grp.org.fulfilments.show.operations.comms.outboxes.dispatched-email.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).fulfilment,
-                    (route().params as RouteParams).outbox,
+                    fulfilmentParams.organisation,
+                    fulfilmentParams.fulfilment,
+                    fulfilmentParams.outbox,
 
                     dispatchedEmail.id]);
         case "grp.org.shops.show.dashboard.comms.outboxes.show":
-            return null;
-            // route(
-            //     "grp.org.shops.show.dashboard.comms.outboxes.dispatched-email.show",
-            //     [
-            //         (route().params as RouteParams).organisation,
-            //         dispatchedEmail.shop_slug,
-            //         (route().params as RouteParams).outbox,
-            //         dispatchedEmail.id]);
+            const outboxParam = (route().params as RouteParams);
+            if (!outboxParam.organisation || !dispatchedEmail.shop_slug || !dispatchedEmail.id || !outboxParam.outbox) {
+                return null;
+            }
+            return route(
+                "grp.org.shops.show.dashboard.comms.outboxes.dispatched-email.show",
+                [
+                    outboxParam.organisation,
+                    dispatchedEmail.shop_slug,
+                    outboxParam.outbox,
+                    dispatchedEmail.id]);
         default:
             return null;
     }
