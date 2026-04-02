@@ -157,7 +157,7 @@ class ValidateClockingMachineQrCode
 
     private function calculateLate($employee, Carbon $clockedInAt, ?WorkSchedule $selectedSchedule = null): bool
     {
-        if ($employee->employment_type === EmploymentTypeEnum::PARTTIME) {
+        if ($employee->employment_type === EmploymentTypeEnum::PART_TIME) {
             return false;
         }
 

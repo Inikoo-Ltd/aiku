@@ -25,7 +25,7 @@ class EmployeeFactory extends Factory
             'email'           => fake()->email,
             'worker_number'   => fake()->unique()->numberBetween(1000, 9999),
             'type'            => EmployeeTypeEnum::EMPLOYEE,
-            'employment_type' => EmploymentTypeEnum::FULLTIME,
+            'employment_type' => EmploymentTypeEnum::FULL_TIME,
         ];
     }
 }

@@ -133,10 +133,10 @@ class EditEmployee extends OrgAction
                     'label' => __('Employment Type'),
                     'required' => true,
                     'options' => [
-                        ['value' => EmploymentTypeEnum::FULLTIME->value, 'label' => __('Full Time')],
-                        ['value' => EmploymentTypeEnum::PARTTIME->value, 'label' => __('Part Time')],
+                        ['value' => EmploymentTypeEnum::FULL_TIME->value, 'label' => __('Full Time')],
+                        ['value' => EmploymentTypeEnum::PART_TIME->value, 'label' => __('Part Time')],
                     ],
-                    'value' => $employee->employment_type?->value ?? EmploymentTypeEnum::FULLTIME->value,
+                    'value' => $employee->employment_type?->value ?? EmploymentTypeEnum::FULL_TIME->value,
                 ],
 
                 'probation_period_days' => [

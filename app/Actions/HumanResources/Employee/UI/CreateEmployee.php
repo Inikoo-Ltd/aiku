@@ -152,15 +152,15 @@ class CreateEmployee extends OrgAction
                                     'mode'      => 'compact',
                                     'valueProp' => 'value',
                                     'required'  => true,
-                                    'value'     => EmploymentTypeEnum::FULLTIME->value,
+                                    'value'     => EmploymentTypeEnum::FULL_TIME->value,
                                     'options'   => [
                                         [
                                             'title'       => __('Full Time'),
-                                            'value'       => EmploymentTypeEnum::FULLTIME->value
+                                            'value'       => EmploymentTypeEnum::FULL_TIME->value
                                         ],
                                         [
                                             'title'       => __('Part Time'),
-                                            'value'       => EmploymentTypeEnum::PARTTIME->value
+                                            'value'       => EmploymentTypeEnum::PART_TIME->value
                                         ],
                                     ]
                                 ],

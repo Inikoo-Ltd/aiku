@@ -8,8 +8,8 @@ enum EmploymentTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case PARTTIME = 'part-time';
-    case FULLTIME = 'full-time';
+    case PART_TIME = 'part-time';
+    case FULL_TIME = 'full-time';
     case FREELANCE = 'freelance';
 
     public static function labels(): array
