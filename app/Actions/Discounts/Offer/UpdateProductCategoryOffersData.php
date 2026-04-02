@@ -133,7 +133,7 @@ class UpdateProductCategoryOffersData
         $durationLabel = '';
 
         if ($offer->duration == OfferDurationEnum::INTERVAL && $offer->end_at) {
-            $durationLabel = __('Until').' '.Carbon::parse($offer->end_at)->translatedFormat('D, d M Y');
+            $durationLabel = __('Until').' '.Carbon::parse($offer->end_at)->translatedFormat('D, d M');
         }
 
         $offerData = [
