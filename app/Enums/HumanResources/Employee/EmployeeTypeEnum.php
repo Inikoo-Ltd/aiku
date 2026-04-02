@@ -15,12 +15,9 @@ enum EmployeeTypeEnum: string
     use EnumHelperTrait;
 
     case EMPLOYEE = 'employee';
-    case PARTTIME = 'part-time';
-    case FULLTIME = 'full-time';
     case INTERNSHIP = 'internship';
     case VOLUNTEER = 'volunteer';
     case TEMPORAL_WORKER = 'temporal-worker';
-    case FREELANCE = 'freelance';
 
     public static function labels(): array
     {
@@ -29,9 +26,6 @@ enum EmployeeTypeEnum: string
             'volunteer' => __('Volunteer'),
             'temporal-worker' => __('Temporal Worker'),
             'internship' => __('Internship'),
-            'full-time' => __('Full Time'),
-            'part-time' => __('Part Time'),
-            'freelance' => __('Freelance'),
         ];
     }
 
