@@ -4,7 +4,7 @@
   -  Copyright (c) 2022, Raul A Perusquia Flores
   -->
 <script setup lang="ts">
-import { Head, Link, router } from "@inertiajs/vue3"
+import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import FlatTreeMap from "@/Components/Navigation/FlatTreeMap.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -132,6 +132,18 @@ const options = {
                 @click="router.visit(route(stockHistoryToday.route.name, stockHistoryToday.route.parameters))"
             >
                 <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
+                    <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true" />
+                    {{ trans('Stock Value') }}
+                </dt>
+                <dd class="mt-1 text-3xl font-semibold tabular-nums text-gray-800">
+                    {{ locale.currencyFormat(stockHistoryToday.currency_code, Number(stockHistoryToday.org_stock_value)) }}
+                </dd>
+            </div>
+            <div
+                class="px-5 py-4 cursor-pointer hover:bg-indigo-50 transition-colors"
+                @click="router.visit(route(stockHistoryToday.route.name, stockHistoryToday.route.parameters))"
+            >
+                <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
                     <FontAwesomeIcon icon="fal fa-box" fixed-width aria-hidden="true" />
                     {{ trans('Stored SKUs') }}
                 </dt>
@@ -143,11 +155,11 @@ const options = {
                 class="px-5 py-4 cursor-pointer hover:bg-indigo-50 transition-colors"
                 @click="router.visit(route(stockHistoryToday.locations_route.name, stockHistoryToday.locations_route.parameters))"
             >
-                <dt class="flex items-center gap-x-1.5 text-xs font-medium text-indigo-500">
+                <dt class="flex items-center gap-x-1.5 text-xs font-medium ">
                     <FontAwesomeIcon icon="fal fa-inventory" fixed-width aria-hidden="true" />
                     {{ trans('Locations') }}
                 </dt>
-                <dd class="mt-1 text-2xl font-semibold tabular-nums text-indigo-600">
+                <dd class="mt-1 text-2xl font-semibold tabular-nums ">
                     {{ locale.number(stockHistoryToday.number_locations) }}
                 </dd>
             </div>
@@ -164,39 +176,28 @@ const options = {
                         {{ locale.number(stockHistoryToday.number_out_of_stock_org_stocks) }}
                     </span>
                     <span
-                        class="text-sm font-medium tabular-nums text-gray-400"
+                        class="text-sm font-medium tabular-nums text-red-500"
                         v-tooltip="trans('Percentage of total SKUs')"
                     >
                         {{ stockHistoryToday.percentage_out_of_stock }}%
                     </span>
                 </dd>
             </div>
+
             <div
                 class="px-5 py-4 cursor-pointer hover:bg-indigo-50 transition-colors"
                 @click="router.visit(route(stockHistoryToday.route.name, stockHistoryToday.route.parameters))"
             >
                 <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
-                    <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true" />
-                    {{ trans('Stock Value') }}
-                </dt>
-                <dd class="mt-1 text-2xl font-semibold tabular-nums text-gray-800">
-                    {{ locale.currencyFormat(stockHistoryToday.currency_code, Number(stockHistoryToday.org_stock_value)) }}
-                </dd>
-            </div>
-            <div
-                class="px-5 py-4 cursor-pointer hover:bg-indigo-50 transition-colors"
-                @click="router.visit(route(stockHistoryToday.route.name, stockHistoryToday.route.parameters))"
-            >
-                <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
-                    <FontAwesomeIcon icon="fal fa-skull-cow" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-skull-cow" class="text-red-500" fixed-width aria-hidden="true" />
                     {{ trans('Dormant 1Y') }}
                 </dt>
                 <dd class="mt-1 flex items-baseline gap-x-2">
-                    <span class="text-2xl font-semibold tabular-nums text-gray-800">
+                    <span class="text-2xl font-semibold tabular-nums text-red-500">
                         {{ locale.currencyFormat(stockHistoryToday.currency_code, Number(stockHistoryToday.value_dormant_stock_1y)) }}
                     </span>
                     <span
-                        class="text-sm font-medium tabular-nums text-gray-400"
+                        class="text-sm font-medium tabular-nums text-red-500"
                         v-tooltip="trans('Percentage of total stock value')"
                     >
                         {{ stockHistoryToday.percentage_dormant_1y }}%
@@ -212,11 +213,11 @@ const options = {
                     {{ trans('No Sold 1Y') }}
                 </dt>
                 <dd class="mt-1 flex items-baseline gap-x-2">
-                    <span class="text-2xl font-semibold tabular-nums text-gray-800">
+                    <span class="text-2xl font-semibold tabular-nums text-red-500">
                         {{ locale.number(stockHistoryToday.number_org_stocks_not_sold_1y) }}
                     </span>
                     <span
-                        class="text-sm font-medium tabular-nums text-gray-400"
+                        class="text-sm font-medium tabular-nums text-red-500"
                         v-tooltip="trans('Percentage of total SKUs')"
                     >
                         {{ stockHistoryToday.percentage_not_sold_1y }}%
