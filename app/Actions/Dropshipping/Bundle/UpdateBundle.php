@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Bundle;
 
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductImages;
+use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -44,6 +45,7 @@ class UpdateBundle extends OrgAction
         return DB::transaction(function () use ($bundle, $modelData) {
             /** @var Product $product */
             $product = $bundle->bundleable;
+            $shopBundleDiscount = Arr::get($product->shop->settings, 'discount.bundle_discount_percentage', 10);
 
             $this->update($product, Arr::only($modelData, ['name', 'description', 'rrp']));
 
@@ -71,12 +73,12 @@ class UpdateBundle extends OrgAction
                 ]);
             }
 
-            if(Arr::get($modelData, 'payloadItems')) {
+            if (Arr::get($modelData, 'payloadItems')) {
                 $tradeUnits = [];
                 $selectedBundleItems = Arr::get($modelData, 'payloadItems');
 
                 foreach ($selectedBundleItems as $selectedBundleItem) {
-                    $bundleItem =  BundleItem::find($selectedBundleItem['bundle_item_id']);
+                    $bundleItem = BundleItem::find($selectedBundleItem['bundle_item_id']);
 
                     /** @var Product $productSelected */
                     $productSelected = $bundleItem->item;
@@ -93,8 +95,29 @@ class UpdateBundle extends OrgAction
                     ]);
                 }
 
+                $productPrice = collect($selectedBundleItems)->sum(function ($selectedBundleItem) {
+                    $bundleItem = BundleItem::find($selectedBundleItem['bundle_item_id']);
+                    return $bundleItem->item->price * $selectedBundleItem['quantity'];
+                });
+                $productPrice = $productPrice * (1 - ($shopBundleDiscount / 100));
+
+                $productRrp = collect($selectedBundleItems)->sum(function ($selectedBundleItem) {
+                    $bundleItem = BundleItem::find($selectedBundleItem['bundle_item_id']);
+                    return $bundleItem->item->rrp * $selectedBundleItem['quantity'];
+                });
+                $productRrp = $productRrp * (1 - ($shopBundleDiscount / 100));
+
+                $portfolio = Portfolio::where('bundle_id', $bundle->id)->first();
+
                 UpdateProduct::run($product, [
-                    'trade_units' => $tradeUnits
+                    'trade_units' => $tradeUnits,
+                    'price' => $productPrice,
+                    'rrp' => $productRrp,
+                ]);
+
+                UpdatePortfolio::make()->action($portfolio, [
+                    'selling_price' => $productRrp,
+                    'customer_price' => $productRrp
                 ]);
             }
 
@@ -116,15 +139,15 @@ class UpdateBundle extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'name'        => ['sometimes', 'string', 'max:255'],
+            'name' => ['sometimes', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string', 'max:65535'],
-            'rrp'         => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'images'      => ['sometimes', 'array'],
-            'images.*.id'    => ['sometimes', 'integer', 'exists:media,id'],
+            'rrp' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'images' => ['sometimes', 'array'],
+            'images.*.id' => ['sometimes', 'integer', 'exists:media,id'],
             'images.*.is_main' => ['sometimes', 'boolean'],
             'payloadItems' => ['sometimes', 'array'],
-            'payloadItems.*.bundle_item_id'  => ['required', 'integer', 'exists:bundle_items,id'],
-            'payloadItems.*.quantity'  => ['required', 'integer', 'min:1'],
+            'payloadItems.*.bundle_item_id' => ['required', 'integer', 'exists:bundle_items,id'],
+            'payloadItems.*.quantity' => ['required', 'integer', 'min:1'],
         ];
 
         if (!$this->strict) {
@@ -142,10 +165,10 @@ class UpdateBundle extends OrgAction
         if (!$audit) {
             Portfolio::disableAuditing();
         }
-        $this->asAction       = true;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->customer       = $bundle->customer;
+        $this->customer = $bundle->customer;
         $this->initialisationFromShop($bundle->customer->shop, $modelData);
 
         return $this->handle($bundle, $this->validatedData);
@@ -171,12 +194,12 @@ class UpdateBundle extends OrgAction
 
         $faker = Faker::create();
         $modelData = [
-            'name'        => $faker->name,
-            'code'        => $faker->bothify('B-####'),
-            'price'       => $faker->randomFloat(2, 10, 1000),
-            'rrp'         => $faker->randomFloat(2, 10, 1000),
+            'name' => $faker->name,
+            'code' => $faker->bothify('B-####'),
+            'price' => $faker->randomFloat(2, 10, 1000),
+            'rrp' => $faker->randomFloat(2, 10, 1000),
             'description' => $faker->sentence(),
-            'products'    => [
+            'products' => [
                 ['product_id' => 151812, 'quantity' => 1],
                 ['product_id' => 411847, 'quantity' => 2],
                 ['product_id' => 154425, 'quantity' => 3]

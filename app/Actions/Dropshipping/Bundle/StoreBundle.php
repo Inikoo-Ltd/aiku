@@ -71,12 +71,20 @@ class StoreBundle extends OrgAction
             data_set($productData, 'unit', 'BUNDLE');
 
             if (! Arr::get($productData, 'price')) {
-                $productPrice = $productSelected->sum('price');
+                $productPrice = $productSelected->sum(function ($product) use ($selectedProducts) {
+                    /** @var array $productQty */
+                    $productQty = collect($selectedProducts)->where('product_id', $product->id)->first();
+                    return $product->price * Arr::get($productQty, 'quantity', 1);
+                });
                 data_set($productData, 'price', $productPrice * (1 - ($shopBundleDiscount / 100)));
             }
 
             if (! Arr::get($productData, 'rrp')) {
-                $productRrp = $productSelected->sum('rrp');
+                $productRrp = $productSelected->sum(function ($product) use ($selectedProducts) {
+                    /** @var array $productQty */
+                    $productQty = collect($selectedProducts)->where('product_id', $product->id)->first();
+                    return $product->rrp * Arr::get($productQty, 'quantity', 1);
+                });
                 data_set($productData, 'rrp', $productRrp * (1 - ($shopBundleDiscount / 100)));
             }
 
