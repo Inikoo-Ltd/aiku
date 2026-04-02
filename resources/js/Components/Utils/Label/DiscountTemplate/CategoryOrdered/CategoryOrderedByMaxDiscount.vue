@@ -55,14 +55,13 @@ console.log('maxDiscountLabel', props.offer)
 
         </Popover>
     </div>
-    <div class="offer-valid-until">
+    <div v-if="props.offer.duration_label" class="offer-valid-until">
             <span class="clock"><FontAwesomeIcon
 							
 							icon="fal fa-clock"
 							class="mr-1 text-blue-500" /></span>
             <span>
-                {{ trans("Valid until") }}
-                <strong>{{ props.offer.end_date }}</strong>
+                <strong>{{ props.offer.duration_label }}</strong>
             </span>
         </div>
          </div>
