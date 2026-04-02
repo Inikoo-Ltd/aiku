@@ -676,11 +676,11 @@ const createPolicy = (): void => {
                         <div>{{ modeLabel(selectedPolicy.mode) }}</div>
                     </div>
                     <div class="rounded border border-gray-200 bg-white px-3 py-2">
-                        <div class="text-xs text-gray-500">{{ trans("Start At") }}</div>
+                        <div class="text-xs text-gray-500">{{ trans("Start Date") }}</div>
                         <div>{{ dateLabel(selectedPolicy.start_at) }}</div>
                     </div>
                     <div class="rounded border border-gray-200 bg-white px-3 py-2">
-                        <div class="text-xs text-gray-500">{{ trans("End At") }}</div>
+                        <div class="text-xs text-gray-500">{{ trans("End Date") }}</div>
                         <div>{{ dateLabel(selectedPolicy.end_at) }}</div>
                     </div>
                     <div class="rounded border border-gray-200 bg-white px-3 py-2">
@@ -714,7 +714,7 @@ const createPolicy = (): void => {
                 <div class="text-lg font-semibold">{{ trans("Edit Clocking Policy") }}</div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="mb-1 block text-sm font-medium">{{ trans("Mode") }}</label>
+                        <label class="mb-1 block text-sm font-medium">{{ trans("Mode") }} <span class="text-red-500">*</span></label>
                         <Select
                             v-model="editForm.mode"
                             :options="policyModeOptions"
@@ -730,22 +730,24 @@ const createPolicy = (): void => {
                         </div>
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium">{{ trans("Start At") }}</label>
+                        <label class="mb-1 block text-sm font-medium">{{ trans("Start Date (Optional)") }}</label>
                         <DatePicker
                             v-model="editForm.start_at"
                             class="w-full text-sm"
                             fluid
                             showIcon
+                            showClear
                             dateFormat="yy-mm-dd"
                         />
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium">{{ trans("End At") }}</label>
+                        <label class="mb-1 block text-sm font-medium">{{ trans("End Date (Optional)") }}</label>
                         <DatePicker
                             v-model="editForm.end_at"
                             class="w-full text-sm"
                             fluid
                             showIcon
+                            showClear
                             dateFormat="yy-mm-dd"
                         />
                     </div>
@@ -834,7 +836,8 @@ const createPolicy = (): void => {
                 <div class="text-lg font-semibold">{{ trans("Add Clocking Policy") }}</div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="mb-1 block text-sm font-medium">{{ trans("Scope Type") }}</label>
+                        <label class="mb-1 block text-sm font-medium">{{ trans("Scope Type") }} <span
+                                class="text-red-500">*</span></label>
                         <Select
                             v-model="createForm.scope_type"
                             :options="scopeTypeOptions"
@@ -845,7 +848,8 @@ const createPolicy = (): void => {
                         <Message v-if="createFieldErrors.scope_type" severity="error" variant="simple" class="mt-1 text-xs font-normal">{{ createFieldErrors.scope_type }}</Message>
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium">{{ trans("Scope Name") }}</label>
+                        <label class="mb-1 block text-sm font-medium">{{ trans("Scope Name") }} <span
+                                class="text-red-500">*</span></label>
                         <Select
                             v-model="createForm.scope_id"
                             :options="scopeIdOptions"
@@ -857,7 +861,8 @@ const createPolicy = (): void => {
                         <Message v-if="createFieldErrors.scope_id" severity="error" variant="simple" class="mt-1 text-xs font-normal">{{ createFieldErrors.scope_id }}</Message>
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium">{{ trans("Mode") }}</label>
+                        <label class="mb-1 block text-sm font-medium">{{ trans("Mode") }} <span
+                                class="text-red-500">*</span></label>
                         <Select
                             v-model="createForm.mode"
                             :options="policyModeOptions"
@@ -874,22 +879,25 @@ const createPolicy = (): void => {
                         </div>
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium">{{ trans("Start At") }}</label>
+                        <label class="mb-1 block text-sm font-medium">{{ trans("Start Date (Optional)") }}</label>
+
                         <DatePicker
                             v-model="createForm.start_at"
                             class="w-full text-sm"
                             fluid
                             showIcon
+                            showClear
                             dateFormat="yy-mm-dd"
                         />
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium">{{ trans("End At") }}</label>
+                        <label class="mb-1 block text-sm font-medium">{{ trans("End Date (Optional)") }}</label>
                         <DatePicker
                             v-model="createForm.end_at"
                             class="w-full text-sm"
                             fluid
                             showIcon
+                            showClear
                             dateFormat="yy-mm-dd"
                         />
                     </div>
