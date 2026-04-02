@@ -18,6 +18,7 @@ const props = defineProps<{
         slug: string
         currency_code: string
     }
+    product_category_id?: number
 }>()
 
 const isOpenModal = ref(false)
@@ -27,7 +28,7 @@ const typeOffer = ref('quantity')
 const offerQtyItems = ref<number | null>(null)
 const offerAmount = ref<number | null>(0)
 const discountPercentage = ref<number | null>(null)
-const offerCategoryId = ref(null)
+const offerCategoryId = ref<number | null>(null)
 const isLoadingSubmit = ref(false)
 const dateType = ref<'permanent' | 'interval'>('permanent')
 const startDate = ref<Date | null>(null)
@@ -89,7 +90,7 @@ const resetForm = () => {
     discountPercentage.value = null
     offerQtyItems.value = null
     offerAmount.value = null
-    offerCategoryId.value = null
+    offerCategoryId.value = props.product_category_id ?? null
     dateType.value = 'permanent'
     startDate.value = null
     endDate.value = null
@@ -117,6 +118,9 @@ const isFormInvalid = computed(() => {
 
     return false
 })
+
+resetForm();
+
 </script>
 
 <template>
@@ -139,7 +143,7 @@ const isFormInvalid = computed(() => {
 
                 </div>
 
-                <div class="space-y-2" v-if="!props.shop_data.masterProductCategoryId">
+                <div class="space-y-2" v-if="!product_category_id">
                     <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
 

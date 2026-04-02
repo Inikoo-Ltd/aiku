@@ -72,10 +72,11 @@ const props = defineProps<{
     variants?: {}
     offers?: {}
     shop_data: {
-        masterProductCategoryId: number
+        id: number
         slug: string
         currency_code: string
     }
+    product_category_id: number
 }>()
 
 const layout = inject("layout", {})
@@ -144,7 +145,9 @@ const showDialog = ref(false)
         <template #otherBefore>
             <ModalCreateCategoryOffers
                 v-if="currentTab === 'offers' && layout?.app.environment === 'local'"
-                :shop_data="props.shop_data" v-tooltip="'Create New Offer'"
+                :shop_data="props.shop_data" 
+                :product_category_id="props.product_category_id"
+                v-tooltip="'Create New Offer'"
             />
         </template>
     </PageHeading>

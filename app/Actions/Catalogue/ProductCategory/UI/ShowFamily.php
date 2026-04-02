@@ -211,6 +211,7 @@ class ShowFamily extends OrgAction
                         )
                     )
                 );
+
         return Inertia::render(
             'Org/Catalogue/Family',
             [
@@ -275,12 +276,13 @@ class ShowFamily extends OrgAction
                     'navigation' => FamilyTabsEnum::navigation()
                 ],
                 'shop_data' => [
-                    'masterProductCategoryId' => $family->id,
+                    'id'       => $family->shop->id,
                     'slug'          => $family->shop->slug,
                     'currency_code' => $family->shop->currency->code,
                 ],
-                'is_orphan'        => !$family->department_id,
-                'salesData' => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
+                'product_category_id'   =>  $family->id,
+                'is_orphan'             => !$family->department_id,
+                'salesData'             => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryTimeSeriesData::run($family)
                     : Inertia::lazy(fn () => GetProductCategoryTimeSeriesData::run($family)),
                 ...$tabs
