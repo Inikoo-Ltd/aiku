@@ -45,6 +45,7 @@ class ActivateOffer extends OrgAction
         }
 
         $offer->update($modelData);
+
         UpdateOfferAllowanceSignature::run($offer);
         OfferCampaignHydrateOffersState::run($offer->offerCampaign);
 

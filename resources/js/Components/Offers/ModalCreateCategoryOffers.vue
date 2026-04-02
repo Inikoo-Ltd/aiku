@@ -14,6 +14,7 @@ import PureInput from '../Pure/PureInput.vue'
 
 const props = defineProps<{
     shop_data: {
+        id: number
         slug: string
         currency_code: string
     }
@@ -39,21 +40,19 @@ function onOfferQtyInput(e: { value: string | number | undefined }) {
 const submitCategoryOffer = () => {
     // Section: Submit
     router.post(
-        route('grp.org.shops.show.discounts.campaigns.store_category', {
-            organisation: 'sk',
-            shop: 'se',
-            offerCampaign: 'co-se',
+        route('grp.models.category_offer.store', {
+            shop: props.shop_data.id,
         }),
         {
             name: offerLabel.value,
             type: typeOffer.value,
-            offerCategoryId: offerCategoryId.value,
-            offer_qty_items: offerQtyItems.value,
-            offer_amount: offerAmount.value,
-            discount_percentage: discountPercentage.value,
-            date_type: dateType.value,
-            start_date: startDate.value,
-            end_date: endDate.value
+            product_category_id: offerCategoryId.value,
+            trigger_data_item_quantity: offerQtyItems.value != null ? Math.floor(offerQtyItems.value) : null,
+            trigger_data_item_amount: offerAmount.value,
+            percentage_off: discountPercentage.value != null ? discountPercentage.value / 100 : null,
+            duration: dateType.value,
+            start_at: startDate.value,
+            end_at: endDate.value
         },
         {
             preserveScroll: true,
