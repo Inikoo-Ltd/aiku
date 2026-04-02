@@ -118,17 +118,39 @@ class ShowInventoryDashboard extends OrgAction
             return null;
         }
 
+        $totalSkus     = $history->number_org_stocks;
+        $stockValue    = (float) $history->org_stock_value;
+
+        $pctOutOfStock = $totalSkus > 0
+            ? round($history->number_out_of_stock_org_stocks / $totalSkus * 100, 1)
+            : 0;
+
+        $pctNotSold1y  = $totalSkus > 0
+            ? round($history->number_org_stocks_not_sold_1y / $totalSkus * 100, 1)
+            : 0;
+
+        $pctDormant1y  = $stockValue > 0
+            ? round((float) $history->value_dormant_stock_1y / $stockValue * 100, 1)
+            : 0;
+
         return [
             'date'                           => $history->date->toDateString(),
-            'number_org_stocks'              => $history->number_org_stocks,
+            'number_org_stocks'              => $totalSkus,
             'number_out_of_stock_org_stocks' => $history->number_out_of_stock_org_stocks,
+            'percentage_out_of_stock'        => $pctOutOfStock,
             'number_locations'               => $history->number_locations,
             'org_stock_value'                => $history->org_stock_value,
             'currency_code'                  => $this->organisation->currency->code,
             'value_dormant_stock_1y'         => $history->value_dormant_stock_1y,
+            'percentage_dormant_1y'          => $pctDormant1y,
             'number_org_stocks_not_sold_1y'  => $history->number_org_stocks_not_sold_1y,
+            'percentage_not_sold_1y'         => $pctNotSold1y,
             'route'                          => [
                 'name'       => 'grp.org.warehouses.show.inventory.org_stock_histories.index',
+                'parameters' => $routeParameters,
+            ],
+            'locations_route'                => [
+                'name'       => 'grp.org.warehouses.show.infrastructure.locations.index',
                 'parameters' => $routeParameters,
             ],
         ];

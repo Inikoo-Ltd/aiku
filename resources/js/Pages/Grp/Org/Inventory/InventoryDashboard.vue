@@ -4,14 +4,14 @@
   -  Copyright (c) 2022, Raul A Perusquia Flores
   -->
 <script setup lang="ts">
-import { Head, Link } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import FlatTreeMap from "@/Components/Navigation/FlatTreeMap.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Pie } from "vue-chartjs"
 import { trans } from "laravel-vue-i18n"
-import { faSeedling, faThumbsDown, faPalletAlt, faHistory, faBoxOpen, faMapMarkerAlt, faSkullCow } from "@fal"
+import { faSeedling, faThumbsDown, faPalletAlt, faHistory, faBoxOpen, faMapMarkerAlt, faSkullCow, faDollarSign, faBan } from "@fal"
 import { faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle } from "@fas"
 
 import { capitalize } from "@/Composables/capitalize"
@@ -34,7 +34,9 @@ library.add(
     faHistory,
     faBoxOpen,
     faMapMarkerAlt,
-    faSkullCow
+    faSkullCow,
+    faDollarSign,
+    faBan,
 )
 
 ChartJS.register(ArcElement, Tooltip, Legend, Colors)
@@ -62,12 +64,19 @@ const props = defineProps<{
         date: string
         number_org_stocks: number
         number_out_of_stock_org_stocks: number
+        percentage_out_of_stock: number
         number_locations: number
         org_stock_value: number
         currency_code: string
         value_dormant_stock_1y: number
+        percentage_dormant_1y: number
         number_org_stocks_not_sold_1y: number
+        percentage_not_sold_1y: number
         route: {
+            name: string
+            parameters: Record<string, string>
+        }
+        locations_route: {
             name: string
             parameters: Record<string, string>
         }
@@ -99,8 +108,6 @@ const options = {
             display: false
         },
         tooltip: {
-            // Popup: When the data set is hovered
-            // enabled: false,
             titleFont: {
                 size: 10,
                 weight: "lighter"
@@ -119,76 +126,104 @@ const options = {
     <PageHeading :data="pageHead"></PageHeading>
 
     <div v-if="stockHistoryToday" class="px-4 mt-4">
-        <Link
-            :href="route(stockHistoryToday.route.name, stockHistoryToday.route.parameters)"
-            class="block bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden hover:ring-indigo-300 transition-all"
-        >
-            <div class="px-6 py-3 border-b border-gray-100 flex items-center justify-between">
-                <div class="flex items-center gap-x-2 text-gray-600">
-                    <FontAwesomeIcon icon="fal fa-history" fixed-width aria-hidden="true" />
-                    <span class="font-medium text-base">{{ trans("Stock Snapshot") }}</span>
-                </div>
-                <span class="text-sm text-gray-400">{{ stockHistoryToday.date }}</span>
+        <dl class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-gray-100 bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden">
+            <div
+                class="px-5 py-4 cursor-pointer hover:bg-indigo-50 transition-colors"
+                @click="router.visit(route(stockHistoryToday.route.name, stockHistoryToday.route.parameters))"
+            >
+                <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
+                    <FontAwesomeIcon icon="fal fa-box" fixed-width aria-hidden="true" />
+                    {{ trans('Stored SKUs') }}
+                </dt>
+                <dd class="mt-1 text-2xl font-semibold tabular-nums text-gray-800">
+                    {{ locale.number(stockHistoryToday.number_org_stocks) }}
+                </dd>
             </div>
-            <dl class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-gray-100">
-                <div class="px-5 py-4">
-                    <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
-                        <FontAwesomeIcon icon="fal fa-box-open" fixed-width aria-hidden="true" />
-                        {{ trans("Stored SKUs") }}
-                    </dt>
-                    <dd class="mt-1 text-2xl font-semibold tabular-nums text-gray-800">
-                        {{ locale.number(stockHistoryToday.number_org_stocks) }}
-                    </dd>
-                </div>
-                <div class="px-5 py-4">
-                    <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
-                        <FontAwesomeIcon icon="fal fa-map-marker-alt" fixed-width aria-hidden="true" />
-                        {{ trans("Locations") }}
-                    </dt>
-                    <dd class="mt-1 text-2xl font-semibold tabular-nums text-gray-800">
-                        {{ locale.number(stockHistoryToday.number_locations) }}
-                    </dd>
-                </div>
-                <div class="px-5 py-4">
-                    <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
-                        <FontAwesomeIcon icon="fas fa-times-circle" class="text-red-400" fixed-width aria-hidden="true" />
-                        {{ trans("Out of Stock") }}
-                    </dt>
-                    <dd class="mt-1 text-2xl font-semibold tabular-nums text-red-500">
+            <div
+                class="px-5 py-4 cursor-pointer hover:bg-indigo-50 transition-colors"
+                @click="router.visit(route(stockHistoryToday.locations_route.name, stockHistoryToday.locations_route.parameters))"
+            >
+                <dt class="flex items-center gap-x-1.5 text-xs font-medium text-indigo-500">
+                    <FontAwesomeIcon icon="fal fa-inventory" fixed-width aria-hidden="true" />
+                    {{ trans('Locations') }}
+                </dt>
+                <dd class="mt-1 text-2xl font-semibold tabular-nums text-indigo-600">
+                    {{ locale.number(stockHistoryToday.number_locations) }}
+                </dd>
+            </div>
+            <div
+                class="px-5 py-4 cursor-pointer hover:bg-indigo-50 transition-colors"
+                @click="router.visit(route(stockHistoryToday.route.name, stockHistoryToday.route.parameters))"
+            >
+                <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
+                    <FontAwesomeIcon icon="fas fa-times-circle" class="text-red-400" fixed-width aria-hidden="true" />
+                    {{ trans('Out of Stock') }}
+                </dt>
+                <dd class="mt-1 flex items-baseline gap-x-2">
+                    <span class="text-2xl font-semibold tabular-nums text-red-500">
                         {{ locale.number(stockHistoryToday.number_out_of_stock_org_stocks) }}
-                    </dd>
-                </div>
-
-                <div class="px-5 py-4">
-                    <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
-                        <FontAwesomeIcon icon="fal fa-pallet-alt" fixed-width aria-hidden="true" />
-                        {{ trans("Stock Value") }}
-                    </dt>
-                    <dd class="mt-1 text-2xl font-semibold tabular-nums text-gray-800">
-                        {{ locale.currencyFormat(stockHistoryToday.currency_code, Number(stockHistoryToday.org_stock_value)) }}
-                    </dd>
-                </div>
-                <div class="px-5 py-4">
-                    <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
-                        <FontAwesomeIcon icon="fal fa-skull-cow" fixed-width aria-hidden="true" />
-                        {{ trans("Dormant 1Y") }}
-                    </dt>
-                    <dd class="mt-1 text-2xl font-semibold tabular-nums text-gray-800">
+                    </span>
+                    <span
+                        class="text-sm font-medium tabular-nums text-gray-400"
+                        v-tooltip="trans('Percentage of total SKUs')"
+                    >
+                        {{ stockHistoryToday.percentage_out_of_stock }}%
+                    </span>
+                </dd>
+            </div>
+            <div
+                class="px-5 py-4 cursor-pointer hover:bg-indigo-50 transition-colors"
+                @click="router.visit(route(stockHistoryToday.route.name, stockHistoryToday.route.parameters))"
+            >
+                <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
+                    <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true" />
+                    {{ trans('Stock Value') }}
+                </dt>
+                <dd class="mt-1 text-2xl font-semibold tabular-nums text-gray-800">
+                    {{ locale.currencyFormat(stockHistoryToday.currency_code, Number(stockHistoryToday.org_stock_value)) }}
+                </dd>
+            </div>
+            <div
+                class="px-5 py-4 cursor-pointer hover:bg-indigo-50 transition-colors"
+                @click="router.visit(route(stockHistoryToday.route.name, stockHistoryToday.route.parameters))"
+            >
+                <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
+                    <FontAwesomeIcon icon="fal fa-skull-cow" fixed-width aria-hidden="true" />
+                    {{ trans('Dormant 1Y') }}
+                </dt>
+                <dd class="mt-1 flex items-baseline gap-x-2">
+                    <span class="text-2xl font-semibold tabular-nums text-gray-800">
                         {{ locale.currencyFormat(stockHistoryToday.currency_code, Number(stockHistoryToday.value_dormant_stock_1y)) }}
-                    </dd>
-                </div>
-                <div class="px-5 py-4">
-                    <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
-                        <FontAwesomeIcon icon="fas fa-pause-circle" class="text-orange-400" fixed-width aria-hidden="true" />
-                        {{ trans("No Sold 1Y") }}
-                    </dt>
-                    <dd class="mt-1 text-2xl font-semibold tabular-nums text-gray-800">
+                    </span>
+                    <span
+                        class="text-sm font-medium tabular-nums text-gray-400"
+                        v-tooltip="trans('Percentage of total stock value')"
+                    >
+                        {{ stockHistoryToday.percentage_dormant_1y }}%
+                    </span>
+                </dd>
+            </div>
+            <div
+                class="px-5 py-4 cursor-pointer hover:bg-indigo-50 transition-colors"
+                @click="router.visit(route(stockHistoryToday.route.name, stockHistoryToday.route.parameters))"
+            >
+                <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
+                    <FontAwesomeIcon icon="fal fa-ban" class="text-orange-400" fixed-width aria-hidden="true" />
+                    {{ trans('No Sold 1Y') }}
+                </dt>
+                <dd class="mt-1 flex items-baseline gap-x-2">
+                    <span class="text-2xl font-semibold tabular-nums text-gray-800">
                         {{ locale.number(stockHistoryToday.number_org_stocks_not_sold_1y) }}
-                    </dd>
-                </div>
-
-            </dl>
-        </Link>
+                    </span>
+                    <span
+                        class="text-sm font-medium tabular-nums text-gray-400"
+                        v-tooltip="trans('Percentage of total SKUs')"
+                    >
+                        {{ stockHistoryToday.percentage_not_sold_1y }}%
+                    </span>
+                </dd>
+            </div>
+        </dl>
     </div>
 
     <FlatTreeMap class="mx-4" v-for="(treeMap, idx) in flatTreeMaps" :key="idx" :nodes="treeMap" />
@@ -196,8 +231,8 @@ const options = {
     <div class="py-6 px-4">
         <dl class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
             <StatsBox v-for="(stat, index) in statsBox"
-                      :key="index"
-                      :stat="stat"
+                :key="index"
+                :stat="stat"
             />
         </dl>
     </div>
@@ -229,8 +264,8 @@ const options = {
                     <div class="flex gap-x-2 items-end">
                         {{ locale.number(stats.count) }}
                         <span class="text-sm font-medium leading-4 text-gray-500">{{
-                                trans("current")
-                            }}</span>
+                            trans("current")
+                        }}</span>
                     </div>
 
                     <!-- Statistic -->
@@ -246,8 +281,8 @@ const options = {
                                 :title="sCase.icon.tooltip"
                                 aria-hidden="true" />
                             <span class="font-semibold">
-								{{ locale.number(sCase.count) }}
-							</span>
+                                {{ locale.number(sCase.count) }}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -256,16 +291,16 @@ const options = {
                 <div class="w-20">
                     <Pie
                         :data="{
-							labels: Object.entries(stats.cases).map(([, value]) => value.label),
-							datasets: [
-								{
-									data: Object.entries(stats.cases).map(
-										([, value]) => value.count
-									),
-									hoverOffset: 4,
-								},
-							],
-						}"
+                            labels: Object.entries(stats.cases).map(([, value]) => value.label),
+                            datasets: [
+                                {
+                                    data: Object.entries(stats.cases).map(
+                                        ([, value]) => value.count
+                                    ),
+                                    hoverOffset: 4,
+                                },
+                            ],
+                        }"
                         :options="options" />
                 </div>
             </dd>
