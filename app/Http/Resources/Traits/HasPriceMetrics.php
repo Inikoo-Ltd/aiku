@@ -25,15 +25,17 @@ trait HasPriceMetrics
         $profitPerUnit = 0;
         $pricePerUnit  = 0;
 
+        $safeUnits     = max(1, $unitsInt);
+        
         if ($rrp > 0) {
             // Avoid division by zero for per-unit calculation
-            $safeUnits     = max(1, $unitsInt);
             $margin        = percentage(round((($rrp - $price) / $rrp) * 100, 1), 100);
             $rrpPerUnit    = round($rrp / $safeUnits, 2);
             $profit        = round($rrp - $price, 2);
             $profitPerUnit = round($profit / $safeUnits, 2);
-            $pricePerUnit  = round($price / $safeUnits, 2);
         }
+        
+        $pricePerUnit  = round($price / $safeUnits, 2);
 
         return [$margin, $rrpPerUnit, $profit, $profitPerUnit, $unitsInt, $pricePerUnit];
     }
