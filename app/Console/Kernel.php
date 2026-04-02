@@ -14,9 +14,7 @@ use App\Actions\Comms\Mailshot\RunMailshotScheduled;
 use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
 use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
 use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns;
-use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
-use App\Actions\Comms\Outbox\ReorderRemainder\SendReorderRemainderEmails;
-use App\Actions\Comms\Outbox\RunBasketLowStockEmailBulkRuns;
+use App\Actions\Comms\Outbox\ReorderRemainder\RunReorderRemainderEmailBulkRuns;
 use App\Actions\CRM\Customer\PruneCustomerWebActivities;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Web\Website\PruneWebsiteConversionEvents;
@@ -45,7 +43,6 @@ class Kernel extends ConsoleKernel
 
     protected function schedule(Schedule $schedule): void
     {
-
         $this->logSchedule(
             $schedule->job(RunNewsletterScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
                 monitorSlug: 'RunNewsletterScheduled',
@@ -70,6 +67,15 @@ class Kernel extends ConsoleKernel
             ),
             name: 'RunMailshotSecondWave',
             type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->command('run:current_stock_history')->twiceDailyAt(0, 22, 5)->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'RunCurrentStockHistory',
+            ),
+            name: 'RunCurrentStockHistory',
+            type: 'command',
             scheduledAt: now()->format('H:i')
         );
 
@@ -417,10 +423,10 @@ class Kernel extends ConsoleKernel
 
 
         $this->logSchedule(
-            $schedule->job(SendReorderRemainderEmails::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'SendReorderRemainderEmails',
+            $schedule->job(RunReorderRemainderEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'RunReorderRemainderEmailBulkRuns',
             ),
-            name: 'SendReorderRemainderEmails',
+            name: 'RunReorderRemainderEmailBulkRuns',
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
@@ -451,7 +457,6 @@ class Kernel extends ConsoleKernel
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
-
 
 
         // $this->logSchedule(
@@ -556,7 +561,7 @@ class Kernel extends ConsoleKernel
 
     protected function commands(): void
     {
-        $this->load(__DIR__ . '/Commands');
+        $this->load(__DIR__.'/Commands');
 
         require base_path('routes/console.php');
     }

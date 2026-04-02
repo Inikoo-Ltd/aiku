@@ -22,7 +22,7 @@ enum OrgStockStockHistoryTabsEnum: string
     {
         return match ($this) {
             OrgStockStockHistoryTabsEnum::STOCK_HISTORY => [
-                'title' => __('Stock history'),
+                'title' => __('Stock History'),
                 'icon'  => 'fal fa-scanner',
             ],
         };

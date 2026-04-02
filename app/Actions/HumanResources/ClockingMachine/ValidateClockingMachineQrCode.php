@@ -3,7 +3,7 @@
 namespace App\Actions\HumanResources\ClockingMachine;
 
 use App\Actions\HumanResources\Clocking\StoreClocking;
-use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Enums\HumanResources\Clocking\ClockingActionEnum;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\ClockingMachine;
@@ -157,7 +157,7 @@ class ValidateClockingMachineQrCode
 
     private function calculateLate($employee, Carbon $clockedInAt, ?WorkSchedule $selectedSchedule = null): bool
     {
-        if ($employee->type === EmployeeTypeEnum::PARTTIME) {
+        if ($employee->employment_type === EmploymentTypeEnum::PART_TIME) {
             return false;
         }
 

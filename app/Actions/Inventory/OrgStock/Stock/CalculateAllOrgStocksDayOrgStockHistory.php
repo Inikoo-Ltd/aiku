@@ -21,7 +21,7 @@ class CalculateAllOrgStocksDayOrgStockHistory implements ShouldBeUnique
 
     public function getJobUniqueId(?int $organisationId, string $date): string
     {
-        return $organisationId.'-'.$date;
+        return 'v2'.$organisationId??'empty'.'-'.$date;
     }
 
     public function handle(?int $organisationId, string $date): void
@@ -36,7 +36,7 @@ class CalculateAllOrgStocksDayOrgStockHistory implements ShouldBeUnique
 
         $date = Carbon::parse($date);
 
-        OrgStock::where('organisation_id',$organisation->id)->orderBy('id')->chunk(100, function ($orgStocks) use ($date) {
+        OrgStock::where('organisation_id', $organisation->id)->orderBy('id')->chunk(100, function ($orgStocks) use ($date) {
             /** @var OrgStock $orgStock */
             foreach ($orgStocks as $orgStock) {
                 CalculateDayOrgStockHistory::run($orgStock->id, $date);

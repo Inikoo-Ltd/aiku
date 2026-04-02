@@ -12,11 +12,12 @@ use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrganisationStockHistory;
 use App\Models\Inventory\OrgStockHistory;
-use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
 
 class IndexOrgStockHistories extends OrgAction
 {
@@ -29,11 +30,9 @@ class IndexOrgStockHistories extends OrgAction
             });
         });
 
-
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
-
 
         $queryBuilder = QueryBuilder::for(OrgStockHistory::class);
 
@@ -51,8 +50,20 @@ class IndexOrgStockHistories extends OrgAction
                 'org_stock_histories.quantity_in_locations',
                 'org_stock_histories.org_stock_value',
                 'org_stock_histories.grp_stock_value',
+                'org_stock_histories.sold_within_1y',
+                'org_stock_histories.last_sold_date',
+                'org_stock_histories.non_moving_1y',
+                DB::raw("'".$organisationStockHistory->organisation->currency->code."' as currency_code"),
             ])
-            ->allowedSorts(['code', 'name', 'quantity_in_locations', 'org_stock_value', 'grp_stock_value'])
+            ->allowedSorts([
+                AllowedSort::field('code', 'org_stocks.code'),
+                AllowedSort::field('name', 'org_stocks.name'),
+                AllowedSort::field('quantity_in_locations', 'org_stock_histories.quantity_in_locations'),
+                AllowedSort::field('org_stock_value', 'org_stock_histories.org_stock_value'),
+                AllowedSort::field('grp_stock_value', 'org_stock_histories.grp_stock_value'),
+                AllowedSort::field('sold_within_1y', 'org_stock_histories.sold_within_1y'),
+                AllowedSort::field('non_moving_1y', 'org_stock_histories.non_moving_1y'),
+            ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -67,8 +78,6 @@ class IndexOrgStockHistories extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-            $currency = $organisationStockHistory->organisation->currency->symbol;
-
             $table
                 ->withTitle(title: __('Stock History'))
                 ->withLabelRecord([__('stock'), __('stocks')])
@@ -76,10 +85,10 @@ class IndexOrgStockHistories extends OrgAction
                 ->column(key: 'code', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'quantity_in_locations', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'org_stock_value', label: __('Value ('.$currency.')'), canBeHidden: false, sortable: true, type: 'currency')
+                ->column(key: 'org_stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
+                ->column(key: 'sold_within_1y', label: '', icon: 'fal fa-cash-register', tooltip: __('Sold Within 1Y'), canBeHidden: false, sortable: true, searchable: true, type: 'icon')
+                ->column(key: 'non_moving_1y', label: '', icon: 'fal fa-skull-cow', tooltip: __('Non Moving 1Y'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->defaultSort('code');
         };
     }
-
-
 }

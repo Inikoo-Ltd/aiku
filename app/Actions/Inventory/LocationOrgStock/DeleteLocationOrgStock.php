@@ -12,6 +12,7 @@ use App\Actions\Inventory\Location\Hydrators\LocationHydrateStocks;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
+use App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
@@ -56,6 +57,7 @@ class DeleteLocationOrgStock extends OrgAction
         LocationHydrateStockValue::dispatch($location);
         OrgStockHydrateLocations::dispatch($orgStock);
         OrgStockHydrateQuantityInLocations::dispatch($orgStock);
+        CalculateOrgStockCurrentStockHistories::dispatch($orgStock->id);
     }
 
     /**

@@ -265,8 +265,8 @@ class ShowWebsite extends OrgAction
 
 
                 WebsiteTabsEnum::CHANGELOG->value => $this->tab == WebsiteTabsEnum::CHANGELOG->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($website))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($website))),
+                    fn () => HistoryResource::collection(IndexHistory::run($website, excludeEventScopeFilter: ['products_published', 'product_published', 'families_overview_published', 'family_published', 'sub_department_published']))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($website, excludeEventScopeFilter: ['products_published', 'product_published', 'families_overview_published', 'family_published', 'sub_department_published']))),
 
                 WebsiteTabsEnum::EXTERNAL_LINKS->value => $this->tab == WebsiteTabsEnum::EXTERNAL_LINKS->value ?
                     fn () => ExternalLinksResource::collection(IndexExternalLinks::run($website))

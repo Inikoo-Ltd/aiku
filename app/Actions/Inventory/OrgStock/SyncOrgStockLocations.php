@@ -21,6 +21,9 @@ class SyncOrgStockLocations extends OrgAction
 {
     use AsAction;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(OrgStock $orgStock, array $modelData): array
     {
         $locationsData = $modelData['locationsData'];
@@ -59,6 +62,9 @@ class SyncOrgStockLocations extends OrgAction
     }
 
 
+    /**
+     * @throws \Throwable
+     */
     public function action(OrgStock $orgStock, array $modelData, int $hydratorsDelay = 0, bool $strict = true): array
     {
 

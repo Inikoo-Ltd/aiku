@@ -1,5 +1,5 @@
 <!--
-  - Author: Nickel
+  - Author: stewicca <stewicalf@gmail.com>
   - Created: Tue, 01 Apr 2026
   - Copyright (c) 2026, Inikoo LTD
   -->
@@ -9,7 +9,6 @@ import Table from "@/Components/Table/Table.vue"
 import { Link } from "@inertiajs/vue3"
 import { inject } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { RouteParams } from "@/types/route-params"
 
 defineProps<{
     data: object
@@ -18,15 +17,8 @@ defineProps<{
 
 const locale = inject("locale", aikuLocaleStructure)
 
-function orgStockRoute(stockSlug: string): string {
-    return route(
-        "grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show.org_stock_history",
-        [
-            (route().params as RouteParams).organisation,
-            (route().params as RouteParams).warehouse,
-            stockSlug,
-        ]
-    ) + `?between[date]=${(route().params as RouteParams).between.date}`
+function orgStockRoute(stockId: number): string {
+    return route("grp.helpers.redirect_org_stock", [stockId])
 }
 </script>
 
@@ -39,8 +31,7 @@ function orgStockRoute(stockSlug: string): string {
         </template>
 
         <template #cell(stock_code)="{ item }">
-            <pre>{{ (route().params as RouteParams) }}</pre>
-            <Link :href="orgStockRoute(item.stock_slug)" class="primaryLink">
+            <Link :href="orgStockRoute(item.stock_id)" class="primaryLink">
                 {{ item.stock_code }}
             </Link>
         </template>
@@ -57,8 +48,8 @@ function orgStockRoute(stockSlug: string): string {
             <span class="tabular-nums">{{ locale.number(item.quantity_in_locations) }}</span>
         </template>
 
-        <template #cell(actual_quantity_in_locations)="{ item }">
-            <span class="tabular-nums">{{ locale.number(item.actual_quantity_in_locations) }}</span>
+        <template #cell(org_stock_value)="{ item }">
+            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.org_stock_value) }}</span>
         </template>
     </Table>
 </template>

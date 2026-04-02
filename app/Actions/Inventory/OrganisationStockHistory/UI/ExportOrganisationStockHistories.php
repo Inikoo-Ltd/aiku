@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Author: Nickel
+ * Author: stewicca <stewicalf@gmail.com>
  * Created: Tue, 01 Apr 2026
  * Copyright (c) 2026, Inikoo LTD
  */
@@ -26,7 +26,7 @@ class ExportOrganisationStockHistories extends OrgAction
     {
         $export = new OrganisationStockHistoriesExport($organisation, $filters);
 
-        return $this->export($export, 'stock-histories', $filters['type'] ?? 'xlsx');
+        return $this->export($export, 'stock-histories-'.($filters['tab'] ?? 'daily'), $filters['type'] ?? 'xlsx');
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): BinaryFileResponse
@@ -34,9 +34,8 @@ class ExportOrganisationStockHistories extends OrgAction
         $this->initialisationFromWarehouse($warehouse, $request);
 
         $filters = [
-            'type'    => $request->input('type', 'xlsx'),
-            'between' => $request->input('between', []),
-            'tab'     => $request->input('tab', 'daily'),
+            'type' => $request->input('type', 'xlsx'),
+            'tab'  => $request->input('tab', 'daily'),
         ];
 
         return $this->handle($organisation, $filters);

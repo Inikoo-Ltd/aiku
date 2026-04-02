@@ -21,7 +21,7 @@ class ReCalculateAllOrgStockHistory
     use AsAction;
 
 
-    public function handle(Organisation $organisation, ?Command $command = null): void
+    public function handle(Organisation $organisation, ?Command $command = null, bool $async = false, string $interval = 'd'): void
     {
         $from = $this->getFirstPurchase($organisation);
         $to   = Carbon::yesterday();
@@ -34,9 +34,25 @@ class ReCalculateAllOrgStockHistory
 
         $numberDays = count($period->toArray());
         $command?->info('Calculating '.$numberDays.' days of history');
-        foreach (array_reverse($period->toArray()) as $date) {
-            CalculateAllOrgStocksDayOrgStockHistory::dispatch($organisation->id, $date->format('Y-m-d'));
-            sleep(1);
+        foreach ($period->toArray() as $date) {
+            if ($interval == 'w' && !$date->isFriday()) {
+                continue;
+            }
+            if ($interval == 'm' && !$date->isLastOfMonth()) {
+                continue;
+            }
+            if ($interval == 'y' && !$date->isEndOfYear()) {
+                continue;
+            }
+
+            if ($async) {
+                $command?->info('Dispatching  '.$organisation->id.'  '.$date->format('Y-m-d'));
+                CalculateAllOrgStocksDayOrgStockHistory::dispatch($organisation->id, $date->format('Y-m-d'));
+                sleep(1);
+            } else {
+                $command?->info('Calculating '.$date->format('Y-m-d'));
+                CalculateAllOrgStocksDayOrgStockHistory::run($organisation->id, $date->format('Y-m-d'));
+            }
         }
     }
 
@@ -56,13 +72,22 @@ class ReCalculateAllOrgStockHistory
 
     public function getCommandSignature(): string
     {
-        return 'calculate:all_org_stock_history {organisation}';
+        return 'calculate:all_org_stock_history {organisation} {--a|async} {--i|interval=d : Interval (d=day, w=week, m=month, y=year)}';
     }
 
     public function asCommand(Command $command): int
     {
         $organisation = Organisation::where('slug', $command->argument('organisation'))->firstOrFail();
-        $this->handle($organisation, $command);
+        $async        = $command->option('async');
+        $interval     = $command->option('interval');
+
+        if (!in_array($interval, ['d', 'w', 'm', 'y'])) {
+            $command->error('Invalid interval value. Accepted values: d, w, m, y');
+
+            return 1;
+        }
+
+        $this->handle($organisation, $command, $async, $interval);
 
         return 0;
     }

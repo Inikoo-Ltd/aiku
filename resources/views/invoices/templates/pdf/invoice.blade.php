@@ -229,7 +229,13 @@
         @if($deliveryAddress)
             <td width="45%" style="border: 0.1mm solid #888888;">
                 <span
-                        style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Delivery address') }}:</span>
+                        style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Delivery address') }}:
+                </span>
+                @if($recipientName)
+                <div>
+                    {{ $recipientName }}
+                </div>
+                @endif
                 <div>
                     {{ $deliveryAddress->address_line_1 }}
                 </div>
@@ -278,6 +284,9 @@
 
             <td style="text-align:left" colspan="2">
                 @if($transaction->historicAsset)
+                    @if($transaction->model && $transaction->model->units > 1)
+                        {{ trimDecimalZeros($transaction->model->units) }}x 
+                    @endif
                     {{ $transaction->historicAsset->name }}
                     @if(isset($transaction->pallet))
                         <br>
