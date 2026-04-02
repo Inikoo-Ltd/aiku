@@ -13,19 +13,11 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CalculateAllOrgStocksDayOrgStockHistory implements ShouldBeUnique
+class CalculateAllOrgStocksDayOrgStockHistory
 {
     use AsAction;
 
     public string $jobQueue = 'stock-history';
-
-    public function getJobUniqueId(?int $organisationId, string $date): string
-    {
-        if ($organisationId === null) {
-            return 'empty'.'-'.$date;
-        }
-        return $organisationId.'-'.$date;
-    }
 
     public function handle(?int $organisationId, string $date): void
     {
