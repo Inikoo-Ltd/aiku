@@ -59,20 +59,16 @@ class IndexDispatchedEmails extends OrgAction
                 ])) {
                     // make sure this think
                     $queryBuilder->leftJoin('customer_has_dispatched_emails', 'customer_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
-                    $queryBuilder->leftJoin('customers', 'customer_has_dispatched_emails.customer_id', '=', 'customers.id');
 
                     // for fulfilment customer
                     if ($parent->fulfilment_id) {
                         $queryBuilder->leftJoin('fulfilment_customers', function ($join) {
-                            $join->on('fulfilment_customers.customer_id', '=', 'customers.id');
+                            $join->on('fulfilment_customers.customer_id', '=', 'customer_has_dispatched_emails.customer_id');
                         });
                     }
                     $queryBuilder->leftJoin('model_has_dispatched_emails', function ($join) {
                         $join->on('model_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id')
                             ->where('model_has_dispatched_emails.model_type', '=', class_basename(Order::class));
-                    });
-                    $queryBuilder->leftJoin('orders', function ($join) {
-                        $join->on('orders.id', '=', 'model_has_dispatched_emails.model_id');
                     });
                 }
                 $queryBuilder->where('dispatched_emails.outbox_id', $parent->id);
@@ -116,11 +112,8 @@ class IndexDispatchedEmails extends OrgAction
                 $selectColumns = array_merge(
                     $selectColumns,
                     [
-                        'customers.id as customer_id',
-                        'customers.slug as customer_slug',
-                        'customers.name as customer_name',
-                        'orders.id as order_id',
-                        'orders.slug as order_slug'
+                        'customer_has_dispatched_emails.customer_id as customer_id',
+                        'model_has_dispatched_emails.model_id as order_id',
                     ]
                 );
                 if ($parent->fulfilment_id) {
