@@ -55,6 +55,8 @@ class StoreProductCategoryDiscount extends OrgAction
             } else {
                 data_set($modelData, 'type', 'Category Quantity Ordered');
             }
+        } elseif ($itemAmount == 0) {
+            data_set($modelData, 'type', 'Category Ordered');
         } else {
             data_set($modelData, 'type', 'Category Amount Ordered');
         }
