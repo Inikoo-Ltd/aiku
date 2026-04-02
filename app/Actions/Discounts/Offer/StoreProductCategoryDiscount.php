@@ -142,11 +142,11 @@ class StoreProductCategoryDiscount extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(Shop $shop, ActionRequest $request): void
+    public function asController(Shop $shop, ActionRequest $request): Offer
     {
         $this->initialisationFromShop($shop, $request);
 
-        $this->handle($this->validatedData);
+        return $this->handle($this->validatedData);
     }
 
     /**

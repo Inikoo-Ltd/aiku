@@ -61,6 +61,8 @@ trait OfferCampaignCategoryOffersTrait
                     'id'            => $offerCampaign->shop_id,
                     'slug'          => $offerCampaign->shop->slug,
                     'currency_code' => $offerCampaign->shop->currency->code,
+                    'organisation'  => $offerCampaign->shop->organisation->slug,
+                    'offercampaign' => $offerCampaign->slug,
                 ],
                 OfferCampaignTabsEnum::OVERVIEW->value => $this->tab == OfferCampaignTabsEnum::OVERVIEW->value ?
                     fn() => GetOfferCampaignOverview::run($offerCampaign)
