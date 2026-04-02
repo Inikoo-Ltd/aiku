@@ -24,9 +24,10 @@ class ReCalculateAllOrgStockHistory
     public function handle(Organisation $organisation, ?Command $command = null, bool $async = false, string $interval = 'd'): void
     {
         $from = $this->getFirstPurchase($organisation);
-        $to   = Carbon::yesterday();
 
-        if (!$from || !$to || $from->greaterThan($to)) {
+        $to   = Carbon::parse('2026-03-31');
+
+        if (!$from || $from->greaterThan($to)) {
             return;
         }
 

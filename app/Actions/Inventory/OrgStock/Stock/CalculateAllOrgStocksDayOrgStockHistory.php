@@ -24,7 +24,6 @@ class CalculateAllOrgStocksDayOrgStockHistory implements ShouldBeUnique
         if ($organisationId === null) {
             return 'empty'.'-'.$date;
         }
-
         return $organisationId.'-'.$date;
     }
 
