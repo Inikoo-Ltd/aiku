@@ -48,7 +48,7 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
                 ->orderBy('locations.code');
         }
 
-        return DB::table('org_stock_histories')
+        $query = DB::table('org_stock_histories')
             ->join('org_stocks', 'org_stock_histories.org_stock_id', '=', 'org_stocks.id')
             ->select([
                 'org_stocks.code',
@@ -59,8 +59,17 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
                 'org_stock_histories.last_sold_date',
                 'org_stock_histories.non_moving_1y',
             ])
-            ->where('org_stock_histories.organisation_stock_history_id', $this->organisationStockHistory->id)
-            ->orderBy('org_stocks.code');
+            ->where('org_stock_histories.organisation_stock_history_id', $this->organisationStockHistory->id);
+
+        if ($this->tab === 'out_of_stock') {
+            $query->where('org_stock_histories.quantity_in_locations', 0);
+        } elseif ($this->tab === 'not_sold_1y') {
+            $query->where('org_stock_histories.sold_within_1y', false);
+        } elseif ($this->tab === 'dormant_stock_1y') {
+            $query->where('org_stock_histories.non_moving_1y', '>', 0);
+        }
+
+        return $query->orderBy('org_stocks.code');
     }
 
     public function headings(): array

@@ -73,9 +73,24 @@ class ShowOrganisationStockHistory extends OrgAction
                     fn() => LocationOrgStockHistoriesResource::collection(IndexLocationOrgStocksForOrganisationStockHistory::run($organisationStockHistory, OrganisationStockHistoryTabsEnum::LOCATION_ORG_STOCKS->value))
                     : Inertia::lazy(fn() => LocationOrgStockHistoriesResource::collection(IndexLocationOrgStocksForOrganisationStockHistory::run($organisationStockHistory, OrganisationStockHistoryTabsEnum::LOCATION_ORG_STOCKS->value))),
 
+                OrganisationStockHistoryTabsEnum::OUT_OF_STOCK->value => $this->tab == OrganisationStockHistoryTabsEnum::OUT_OF_STOCK->value ?
+                    fn() => OrgStockHistoryResource::collection(IndexOrgStockHistories::run($organisationStockHistory, OrganisationStockHistoryTabsEnum::OUT_OF_STOCK->value, 'out_of_stock'))
+                    : Inertia::lazy(fn() => OrgStockHistoryResource::collection(IndexOrgStockHistories::run($organisationStockHistory, OrganisationStockHistoryTabsEnum::OUT_OF_STOCK->value, 'out_of_stock'))),
+
+                OrganisationStockHistoryTabsEnum::NOT_SOLD_1Y->value => $this->tab == OrganisationStockHistoryTabsEnum::NOT_SOLD_1Y->value ?
+                    fn() => OrgStockHistoryResource::collection(IndexOrgStockHistories::run($organisationStockHistory, OrganisationStockHistoryTabsEnum::NOT_SOLD_1Y->value, 'not_sold_1y'))
+                    : Inertia::lazy(fn() => OrgStockHistoryResource::collection(IndexOrgStockHistories::run($organisationStockHistory, OrganisationStockHistoryTabsEnum::NOT_SOLD_1Y->value, 'not_sold_1y'))),
+
+                OrganisationStockHistoryTabsEnum::DORMANT_STOCK_1Y->value => $this->tab == OrganisationStockHistoryTabsEnum::DORMANT_STOCK_1Y->value ?
+                    fn() => OrgStockHistoryResource::collection(IndexOrgStockHistories::run($organisationStockHistory, OrganisationStockHistoryTabsEnum::DORMANT_STOCK_1Y->value, 'dormant_stock_1y'))
+                    : Inertia::lazy(fn() => OrgStockHistoryResource::collection(IndexOrgStockHistories::run($organisationStockHistory, OrganisationStockHistoryTabsEnum::DORMANT_STOCK_1Y->value, 'dormant_stock_1y'))),
+
             ]
         )->table(IndexOrgStockHistories::make()->tableStructure($organisationStockHistory, prefix: OrganisationStockHistoryTabsEnum::ORG_STOCKS->value))
-            ->table(IndexLocationOrgStocksForOrganisationStockHistory::make()->tableStructure(prefix: OrganisationStockHistoryTabsEnum::LOCATION_ORG_STOCKS->value));
+            ->table(IndexLocationOrgStocksForOrganisationStockHistory::make()->tableStructure(prefix: OrganisationStockHistoryTabsEnum::LOCATION_ORG_STOCKS->value))
+            ->table(IndexOrgStockHistories::make()->tableStructure($organisationStockHistory, prefix: OrganisationStockHistoryTabsEnum::OUT_OF_STOCK->value))
+            ->table(IndexOrgStockHistories::make()->tableStructure($organisationStockHistory, prefix: OrganisationStockHistoryTabsEnum::NOT_SOLD_1Y->value))
+            ->table(IndexOrgStockHistories::make()->tableStructure($organisationStockHistory, prefix: OrganisationStockHistoryTabsEnum::DORMANT_STOCK_1Y->value));
     }
 
     public function getBreadcrumbs(OrganisationStockHistory $organisationStockHistory, array $routeParameters): array
