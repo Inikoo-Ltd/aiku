@@ -29,6 +29,9 @@ const props = defineProps<{
     download_route: routeType
     org_stocks?: {}
     location_org_stocks?: {}
+    out_of_stock?: {}
+    not_sold_1y?: {}
+    dormant_stock_1y?: {}
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -38,6 +41,9 @@ const component = computed(() => {
     const components: Record<string, any> = {
         org_stocks: TableOrgStocks,
         location_org_stocks: TableLocationOrgStockHistories,
+        out_of_stock: TableOrgStocks,
+        not_sold_1y: TableOrgStocks,
+        dormant_stock_1y: TableOrgStocks,
     }
     return components[currentTab.value]
 })

@@ -15,6 +15,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Discounts\Offer;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -45,8 +46,12 @@ class ActivateOffer extends OrgAction
         }
 
         $offer->update($modelData);
+
         UpdateOfferAllowanceSignature::run($offer);
         OfferCampaignHydrateOffersState::run($offer->offerCampaign);
+        if ($offer->trigger instanceof ProductCategory) {
+            UpdateProductCategoryOffersData::run($offer);
+        }
 
         RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id)->delay($this->hydratorsDelay);
 

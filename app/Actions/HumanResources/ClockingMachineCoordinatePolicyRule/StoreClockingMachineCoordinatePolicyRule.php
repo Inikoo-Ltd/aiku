@@ -1,0 +1,46 @@
+<?php
+
+namespace App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule;
+
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
+use App\Enums\HumanResources\ClockingMachine\ClockingPolicyModeEnum;
+use App\Models\HumanResources\ClockingMachineCoordinatePolicy;
+use App\Models\HumanResources\ClockingMachineCoordinatePolicyRule;
+use Illuminate\Validation\Rule;
+use Lorisleiva\Actions\ActionRequest;
+
+class StoreClockingMachineCoordinatePolicyRule extends OrgAction
+{
+    use WithHumanResourcesEditAuthorisation;
+
+    public function handle(ClockingMachineCoordinatePolicy $policy, array $modelData): ClockingMachineCoordinatePolicyRule
+    {
+        return $policy->rules()->create($modelData);
+    }
+
+    public function rules(): array
+    {
+        return [
+            'day_of_week'   => ['nullable', 'integer', 'between:1,7'],
+            'mode_override' => ['required', Rule::enum(ClockingPolicyModeEnum::class)],
+            'is_active'     => ['sometimes', 'boolean'],
+        ];
+    }
+
+    public function asController(ClockingMachineCoordinatePolicy $policy, ActionRequest $request): ClockingMachineCoordinatePolicyRule
+    {
+        $this->initialisation($policy->organisation, $request);
+
+        return $this->handle($policy, $this->validatedData);
+    }
+
+    public function htmlResponse(): void
+    {
+        request()->session()->flash('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Clocking policy rule successfully created.'),
+        ]);
+    }
+}

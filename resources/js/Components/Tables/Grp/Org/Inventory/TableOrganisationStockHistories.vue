@@ -18,14 +18,16 @@ defineProps<{
 
 const locale = inject("locale", aikuLocaleStructure)
 
-function locationRoute(organisationStockHistory) {
+function showRoute(organisationStockHistory, tab?: string) {
     return route(
         "grp.org.warehouses.show.inventory.org_stock_histories.show",
-        [
-            (route().params as RouteParams).organisation,
-            (route().params as RouteParams).warehouse,
-            organisationStockHistory.id
-        ]);
+        {
+            organisation: (route().params as RouteParams).organisation,
+            warehouse: (route().params as RouteParams).warehouse,
+            organisationStockHistory: organisationStockHistory.id,
+            ...(tab ? { tab } : {}),
+        }
+    )
 }
 
 
@@ -41,7 +43,7 @@ function toYmd(date: Date): string {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(bucket)="{ item }">
-            <Link :href="locationRoute(item)" class="primaryLink">
+            <Link :href="showRoute(item)" class="primaryLink">
                 {{ item.bucket }}
             </Link>
         </template>
@@ -51,12 +53,12 @@ function toYmd(date: Date): string {
         </template>
 
         <template #cell(number_out_of_stock_org_stocks)="{ item }">
-            <span
-                class="tabular-nums"
-                :class="item.number_out_of_stock_org_stocks > 0 ? 'text-red-500' : 'text-green-500'"
+            <Link :href="showRoute(item, 'out_of_stock')"
+                class="primaryLink tabular-nums"
+                :class="item.number_out_of_stock_org_stocks > 0 ? 'text-red-500 hover:text-red-700' : 'text-green-500 hover:text-green-700'"
             >
                 {{ locale.number(item.number_out_of_stock_org_stocks) }}
-            </span>
+            </Link>
         </template>
 
         <template #cell(number_location_org_stocks)="{ item }">
@@ -72,14 +74,14 @@ function toYmd(date: Date): string {
         </template>
 
         <template #cell(number_org_stocks_not_sold_1y)="{ item }">
-             <span class="tabular-nums text-red-500">
-                    {{ locale.number(item.number_org_stocks_not_sold_1y) }}
-             </span>
+            <Link :href="showRoute(item, 'not_sold_1y')" class="primaryLink tabular-nums text-red-500 hover:text-red-700">
+                {{ locale.number(item.number_org_stocks_not_sold_1y) }}
+            </Link>
         </template>
         <template #cell(value_dormant_stock_1y)="{ item }">
-             <span class="tabular-nums text-red-500">
-            {{ locale.currencyFormat(item.org_currency_code, item.value_dormant_stock_1y) }}
-             </span>
+            <Link :href="showRoute(item, 'dormant_stock_1y')" class="primaryLink tabular-nums text-red-500 hover:text-red-700">
+                {{ locale.currencyFormat(item.org_currency_code, item.value_dormant_stock_1y) }}
+            </Link>
         </template>
     </Table>
 </template>

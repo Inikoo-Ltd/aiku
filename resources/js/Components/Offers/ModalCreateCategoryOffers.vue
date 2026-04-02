@@ -14,9 +14,11 @@ import PureInput from '../Pure/PureInput.vue'
 
 const props = defineProps<{
     shop_data: {
+        id: number
         slug: string
         currency_code: string
     }
+    product_category_id?: number
 }>()
 
 const isOpenModal = ref(false)
@@ -24,9 +26,9 @@ const isOpenModal = ref(false)
 const offerLabel = ref('')
 const typeOffer = ref('quantity')
 const offerQtyItems = ref<number | null>(null)
-const offerAmount = ref<number | null>(null)
+const offerAmount = ref<number | null>(0)
 const discountPercentage = ref<number | null>(null)
-const offerCategoryId = ref(null)
+const offerCategoryId = ref<number | null>(null)
 const isLoadingSubmit = ref(false)
 const dateType = ref<'permanent' | 'interval'>('permanent')
 const startDate = ref<Date | null>(null)
@@ -39,21 +41,19 @@ function onOfferQtyInput(e: { value: string | number | undefined }) {
 const submitCategoryOffer = () => {
     // Section: Submit
     router.post(
-        route('grp.org.shops.show.discounts.campaigns.store_category', {
-            organisation: 'sk',
-            shop: 'se',
-            offerCampaign: 'co-se',
+        route('grp.models.category_offer.store', {
+            shop: props.shop_data.id,
         }),
         {
             name: offerLabel.value,
             type: typeOffer.value,
-            offerCategoryId: offerCategoryId.value,
-            offer_qty_items: offerQtyItems.value,
-            offer_amount: offerAmount.value,
-            discount_percentage: discountPercentage.value,
-            date_type: dateType.value,
-            start_date: startDate.value,
-            end_date: endDate.value
+            product_category_id: offerCategoryId.value || props.product_category_id,
+            trigger_data_item_quantity: offerQtyItems.value != null ? Math.floor(offerQtyItems.value) : null,
+            trigger_data_item_amount: offerAmount.value,
+            percentage_off: discountPercentage.value != null ? discountPercentage.value / 100 : null,
+            duration: dateType.value,
+            start_at: startDate.value,
+            end_at: endDate.value
         },
         {
             preserveScroll: true,
@@ -62,17 +62,19 @@ const submitCategoryOffer = () => {
                 isLoadingSubmit.value = true
             },
             onSuccess: () => {
-                resetForm()
                 notify({
                     title: trans("Success"),
                     text: trans("Successfully submit the data"),
                     type: "success"
                 })
+                resetForm();
+                isOpenModal.value = false
             },
-            onError: errors => {
+            onError: (errors) => {
+                const errMsg =  Object.values(errors).join(' ') ?? trans("Failed to submit the data, please try again");
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to submit the data, please try again"),
+                    text: errMsg,
                     type: "error"
                 })
             },
@@ -89,7 +91,7 @@ const resetForm = () => {
     discountPercentage.value = null
     offerQtyItems.value = null
     offerAmount.value = null
-    offerCategoryId.value = null
+    offerCategoryId.value = props.product_category_id ?? null
     dateType.value = 'permanent'
     startDate.value = null
     endDate.value = null
@@ -97,7 +99,7 @@ const resetForm = () => {
 
 const isFormInvalid = computed(() => {
 
-    if (!offerCategoryId.value) return true
+    if (!offerCategoryId.value && !props.product_category_id) return true
 
     if (!offerLabel.value) return true
 
@@ -117,13 +119,16 @@ const isFormInvalid = computed(() => {
 
     return false
 })
+
+resetForm();
+
 </script>
 
 <template>
     <div>
-        <Button :label="trans('Create Category Offer')" @click="isOpenModal = true" icon="fas fa-badge-percent" />
+        <Button :label="trans('Create Category Offer')" @click="isOpenModal = true; resetForm();" icon="fas fa-badge-percent" />
 
-        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
+        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false; resetForm();">
             <div class="p-1 space-y-3">
                 <h2 class="text-2xl font-bold mb-4 text-center">{{ trans('Create Category Offer') }}</h2>
 
@@ -139,7 +144,7 @@ const isFormInvalid = computed(() => {
 
                 </div>
 
-                <div class="space-y-2">
+                <div class="space-y-2" v-if="!product_category_id">
                     <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
 

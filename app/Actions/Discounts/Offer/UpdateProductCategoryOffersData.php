@@ -36,34 +36,11 @@ class UpdateProductCategoryOffersData
             return;
         }
 
-        $modelOfferData = $model->offers_data ?? [];
-        if (!$offerData) {
-            if (isset($modelOfferData['offers'])) {
-                unset($modelOfferData['offers'][$offer->id]);
-            }
-        } else {
-            $modelOfferData['offers'][$offer->id] = $offerData;
-        }
-        $modelOfferData['number_offers'] = count(Arr::get($modelOfferData, 'offers', []));
-        $modelOfferData                  = $this->getBestOffers($modelOfferData);
-        $modelOfferData['v']             = 1;
-        $model->update(['offers_data' => $modelOfferData]);
+        $this->updateModelOfferData($model, $offerData, $offer);
 
         if ($model instanceof ProductCategory) {
             foreach ($model->getProducts() as $product) {
-                $productOfferData = $product->offers_data ?? [];
-                if (!$offerData) {
-                    if (isset($productOfferData['offers'])) {
-                        unset($productOfferData['offers'][$offer->id]);
-                    }
-                } else {
-                    $productOfferData['offers'][$offer->id] = $offerData;
-                }
-                $productOfferData['number_offers'] = count(Arr::get($productOfferData, 'offers', []));
-                $productOfferData                  = $this->getBestOffers($productOfferData);
-                $productOfferData['v']             = 1;
-
-                $product->update(['offers_data' => $productOfferData]);
+                $this->updateModelOfferData($product, $offerData, $offer);
             }
         }
     }
@@ -76,6 +53,7 @@ class UpdateProductCategoryOffersData
 
         $maxPercentageDiscount = 0;
 
+        /** @var OfferAllowance $offerAllowance */
         foreach ($offerAllowances as $offerAllowance) {
             if ($offerAllowance && $offerAllowance->class) {
                 $percentageOff = Arr::get($offerAllowance->data, 'percentage_off', '');
@@ -216,7 +194,26 @@ class UpdateProductCategoryOffersData
 
     protected function getTriggerModel(Offer $offer): Product|ProductCategory|Collection|Shop|null
     {
-        return $offer->trigger;
+        /** @var Product|ProductCategory|Collection|Shop|null $trigger */
+        $trigger = $offer->trigger;
+
+        return $trigger;
+    }
+
+    public function updateModelOfferData(Shop|Product|Collection|ProductCategory $model, ?array $offerData, Offer $offer): void
+    {
+        $modelOfferData = $model->offers_data ?? [];
+        if (!$offerData) {
+            if (isset($modelOfferData['offers'])) {
+                unset($modelOfferData['offers'][$offer->id]);
+            }
+        } else {
+            $modelOfferData['offers'][$offer->id] = $offerData;
+        }
+        $modelOfferData['number_offers'] = count(Arr::get($modelOfferData, 'offers', []));
+        $modelOfferData                  = $this->getBestOffers($modelOfferData);
+        $modelOfferData['v']             = 1;
+        $model->update(['offers_data' => $modelOfferData]);
     }
 
 }
