@@ -34,7 +34,8 @@ class ReCalculateAllOrgStockHistory
 
         $numberDays = count($period->toArray());
         $command?->info('Calculating '.$numberDays.' days of history');
-        foreach ($period->toArray() as $date) {
+
+        foreach (collect($period->toArray())->shuffle() as $date) {
             if ($interval == 'w' && !$date->isFriday()) {
                 continue;
             }
@@ -48,7 +49,6 @@ class ReCalculateAllOrgStockHistory
             if ($async) {
                 $command?->info('Dispatching  '.$organisation->id.'  '.$date->format('Y-m-d'));
                 CalculateAllOrgStocksDayOrgStockHistory::dispatch($organisation->id, $date->format('Y-m-d'));
-                sleep(1);
             } else {
                 $command?->info('Calculating '.$date->format('Y-m-d'));
                 CalculateAllOrgStocksDayOrgStockHistory::run($organisation->id, $date->format('Y-m-d'));

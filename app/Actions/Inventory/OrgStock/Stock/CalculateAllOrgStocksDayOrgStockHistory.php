@@ -21,7 +21,11 @@ class CalculateAllOrgStocksDayOrgStockHistory implements ShouldBeUnique
 
     public function getJobUniqueId(?int $organisationId, string $date): string
     {
-        return 'v2'.$organisationId??'empty'.'-'.$date;
+        if ($organisationId === null) {
+            return 'empty'.'-'.$date;
+        }
+
+        return $organisationId.'-'.$date;
     }
 
     public function handle(?int $organisationId, string $date): void

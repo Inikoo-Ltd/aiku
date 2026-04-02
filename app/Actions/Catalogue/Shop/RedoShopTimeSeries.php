@@ -32,7 +32,11 @@ class RedoShopTimeSeries implements ShouldBeUnique
 
     public function getJobUniqueId(?int $shopId, ?string $from, ?string $to): string
     {
-        return $shopId ?? 'empty'.'_'.$from.'_'.$to;
+        if ($shopId === null) {
+            return 'empty'.'_'.$from.'_'.$to;
+        }
+
+        return $shopId.'_'.$from.'_'.$to;
     }
 
     public function handle(?int $shopId, ?string $from, ?string $to, bool $async = false): void
