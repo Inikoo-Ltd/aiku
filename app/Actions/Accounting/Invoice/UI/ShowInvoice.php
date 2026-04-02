@@ -383,6 +383,7 @@ class ShowInvoice extends OrgAction
                     'workshop_route' => $this->getOutboxRoute($invoice)
                 ],
                 'download_pdf_column'    => $this->getDownloadPdfColumns($invoice),
+                'is_external'            => $invoice->shop?->type->value == 'external',
                 InvoiceTabsEnum::REFUNDS->value => $this->tab == InvoiceTabsEnum::REFUNDS->value
                     ? fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))
                     : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))),

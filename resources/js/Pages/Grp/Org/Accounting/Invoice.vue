@@ -154,6 +154,7 @@ const props = defineProps<{
         value: string
         is_checked: boolean
     }[]
+    is_external?: boolean
 }>();
 
 const currentTab = ref<string>(props.tabs.current);
@@ -550,6 +551,7 @@ const submitEditDate = async () => {
                         :invoice
                         :invoice_pay
                         :list_refunds
+                        :is_external="is_external"
                         @onPayInOnClick="onPayInOnClick"
                         :routes="{
                             submit_route: invoice_pay.routes.submit_payment,
