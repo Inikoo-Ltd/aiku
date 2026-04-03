@@ -230,6 +230,7 @@ test('test send email reset password', function () {
 
     $webUser = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
 
+    /** @var Outbox $outbox */
     $outbox = $webUser->shop->outboxes()->where('code', 'password_reminder')->first();
 
     $outbox = PublishOutbox::make()->action(
