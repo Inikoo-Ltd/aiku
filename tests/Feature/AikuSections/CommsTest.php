@@ -21,7 +21,7 @@ use App\Actions\Comms\Mailshot\UpdateMailshot;
 use App\Actions\Comms\OrgPostRoom\StoreOrgPostRoom;
 use App\Actions\Comms\Outbox\HydrateOutbox;
 use App\Actions\Comms\Outbox\PublishOutbox;
-use App\Actions\Comms\Outbox\ReorderRemainder\SendReorderRemainderEmails;
+use App\Actions\Comms\Outbox\ReorderRemainder\RunReorderRemainderEmailBulkRuns;
 use App\Actions\Comms\Outbox\StoreOutbox;
 use App\Actions\Comms\Outbox\UpdateOutbox;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
@@ -288,7 +288,7 @@ test('send reorder reminder email', function () {
     expect($outbox->intervals->runs_all)->toBe(0);
 
 
-    SendReorderRemainderEmails::run();
+    RunReorderRemainderEmailBulkRuns::run();
     $outbox->refresh();
 
     expect($outbox->intervals->runs_all)->toBe(1);

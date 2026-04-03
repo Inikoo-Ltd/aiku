@@ -15,7 +15,7 @@ use App\Services\QueryBuilder;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class RunReorderRemainderEmailBulkRuns implements ShouldQueue
+class RunReorderRemainderEmailBulkRuns
 {
     use AsAction;
 
