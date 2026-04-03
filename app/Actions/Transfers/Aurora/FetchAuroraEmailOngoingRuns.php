@@ -199,7 +199,7 @@ class FetchAuroraEmailOngoingRuns extends FetchAuroraAction
         );
         if ($emailOngoingRun->status == EmailOngoingRunStatusEnum::IN_PROCESS) {
             $liveSnapshot?->delete();
-        } elseif($liveSnapshot) {
+        } elseif ($liveSnapshot) {
             UpdateSnapshot::make()->action(
                 $liveSnapshot,
                 $emailOngoingRunData['snapshot'],

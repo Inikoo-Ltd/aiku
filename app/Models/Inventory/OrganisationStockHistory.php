@@ -8,7 +8,6 @@
 
 namespace App\Models\Inventory;
 
-use App\Models\SupplyChain\SupplierProduct;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;

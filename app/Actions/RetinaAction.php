@@ -168,7 +168,7 @@ class RetinaAction
         }
 
         // Option 2: Alternatively, check if the URL path contains any of these segments.
-        if (array_any($publicRoutes, fn($segment) => Str::contains($request->path(), $segment) || Str::contains($request->route()->getName(), $segment))) {
+        if (array_any($publicRoutes, fn ($segment) => Str::contains($request->path(), $segment) || Str::contains($request->route()->getName(), $segment))) {
             return true;
         }
 

@@ -7,7 +7,6 @@ use App\Models\SysAdmin\User;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -34,13 +33,13 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string $session
  * @property string $type
  * @property int|null $leave_type_id
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\HumanResources\LeaveApprovalRecord> $approvalRecords
  * @property-read User|null $approver
  * @property-read \App\Models\HumanResources\Employee $employee
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\HumanResources\LeaveType|null $leaveType
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\HumanResources\LeaveApprovalRecord> $approvalRecords
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Leave newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Leave newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Leave onlyTrashed()

@@ -7,7 +7,6 @@
  */
 
 use App\Actions\Discounts\Offer\StoreOffer;
-use App\Actions\Discounts\Offer\StoreProductCategoryDiscount;
 use App\Actions\Discounts\Offer\UI\CreateOffer;
 use App\Actions\Discounts\Offer\UI\EditOffer;
 use App\Actions\Discounts\Offer\UI\IndexOffers;

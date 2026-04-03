@@ -61,7 +61,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $worker_number
  * @property string|null $job_title
  * @property EmployeeTypeEnum $type
- * @property EmploymentTypeEnum $employment_type
  * @property EmployeeStateEnum $state
  * @property string|null $employment_start_at
  * @property string|null $employment_end_at
@@ -94,6 +93,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $contract_end_date
  * @property string|null $identity_document_issued_by
  * @property bool $allow_shift
+ * @property EmploymentTypeEnum $employment_type
  * @property-read \App\Models\Helpers\Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Address> $addresses
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $attachments
