@@ -19,6 +19,11 @@ class CalculateAllOrgStocksDayOrgStockHistory
 
     public string $jobQueue = 'stock-history';
 
+    public function tags(): array
+    {
+        return ['stock_history'];
+    }
+
     public function handle(?int $organisationId, string $date): void
     {
         if (!$organisationId) {
