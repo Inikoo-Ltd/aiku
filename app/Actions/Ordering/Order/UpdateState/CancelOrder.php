@@ -132,9 +132,6 @@ class CancelOrder extends OrgAction
             }
         }
 
-        if ($order->shop->type == ShopTypeEnum::EXTERNAL && $order->external_id && app()->isProduction()) {
-            CancelFaireOrder::run($order->shop, $order);
-        }
 
         $this->orderHydrators($order);
         $this->orderHandlingHydrators($order, $oldState);
