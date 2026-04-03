@@ -17,6 +17,7 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\UpdateOrder;
+use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
@@ -51,7 +52,11 @@ class UpdateFaireOrder extends OrgAction
         $transactionCommissionsFactor = Arr::get($orderFaireData, 'payout_costs.commission_bps', 0) / 10000;
 
 
+        $faireItemIds = [];
+
         foreach ($orderFaireData['items'] as $item) {
+            $faireItemIds[] = $item['id'];
+
             $transaction = Transaction::where('order_id', $order->id)->where('marketplace_id', $item['id'])->first();
             if (!$transaction) {
                 $transactionData = $this->addTransaction($item, $order->shop, $transactionCommissionsFactor);
@@ -108,11 +113,7 @@ class UpdateFaireOrder extends OrgAction
 
                             $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
                             $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);
-
                         }
-
-
-
                     }
                 }
 
@@ -157,6 +158,18 @@ class UpdateFaireOrder extends OrgAction
                 'grp_net_amount'    => $netAmount * $grpExchange,
                 'org_net_amount'    => $netAmount * $orgExchange,
             ]);
+        }
+
+        $toDeleteTransactionIds = Transaction::where('order_id', $order->id)
+            ->whereNotNull('marketplace_id')
+            ->whereNotIn('marketplace_id', $faireItemIds)->pluck('id')->toArray();
+
+        foreach ($toDeleteTransactionIds as $transactionId) {
+            $transaction = Transaction::find($transactionId);
+            if ($transaction) {
+                DeleteTransaction::run($transaction);
+            }
+
         }
 
 
@@ -213,6 +226,7 @@ class UpdateFaireOrder extends OrgAction
     {
         if ($command->argument('order')) {
             $order = Order::where('slug', $command->argument('order'))->firstOrFail();
+            $command->info("Updating order {$order->shop->slug} $order->slug");
             $this->handle($order);
 
             return 0;

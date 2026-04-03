@@ -8,12 +8,14 @@
 
 namespace App\Actions\Ordering\Transaction;
 
+use App\Actions\Dispatching\DeliveryNoteItem\DeleteDeliveryNoteItem;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Ordering\Transaction;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteTransaction extends OrgAction
@@ -21,9 +23,20 @@ class DeleteTransaction extends OrgAction
     use WithActionUpdate;
 
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Transaction $transaction): Transaction
     {
-        $transaction->delete();
+        $transaction = DB::transaction(function () use ($transaction) {
+            foreach ($transaction->deliveryNoteItems as $deliveryNoteItem) {
+                DeleteDeliveryNoteItem::run($deliveryNoteItem);
+            }
+
+            $transaction->delete();
+
+            return $transaction;
+        });
 
         $order = $transaction->order;
         $order->refresh();
@@ -37,6 +50,9 @@ class DeleteTransaction extends OrgAction
         return $transaction;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(Transaction $transaction): Transaction
     {
         $this->asAction = true;
@@ -45,6 +61,9 @@ class DeleteTransaction extends OrgAction
         return $this->handle($transaction);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Transaction $transaction, ActionRequest $request): Transaction
     {
         $this->initialisationFromShop($transaction->shop, $request);
