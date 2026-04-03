@@ -9,7 +9,6 @@
 namespace App\Actions\Inventory\OrgStock\Stock;
 
 use App\Models\Inventory\OrgStock;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
