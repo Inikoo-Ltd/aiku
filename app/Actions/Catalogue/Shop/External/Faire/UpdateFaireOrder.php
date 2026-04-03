@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Shop\External\Faire;
 
 use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
+use App\Actions\Accounting\InvoiceTransaction\DeleteInvoiceTransaction;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
@@ -24,6 +25,7 @@ use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Accounting\InvoiceTransaction;
@@ -141,21 +143,30 @@ class UpdateFaireOrder extends OrgAction
             $grpExchange = GetCurrencyExchange::run($shop->currency, $shop->group->currency);
 
 
-            $transaction->update([
+            $dataToUpdate = [
                 'historic_asset_id' => $product->current_historic_asset_id,
                 'gross_amount'      => $netAmount,
                 'net_amount'        => $netAmount,
                 'grp_net_amount'    => $netAmount * $grpExchange,
                 'org_net_amount'    => $netAmount * $orgExchange,
-            ]);
+            ];
+            $quantity     = $item['quantity'] / $product->units;
+            if ($order->state == OrderStateEnum::DISPATCHED) {
+                $dataToUpdate['quantity_dispatched'] = $quantity;
+            }
+
+
+            $transaction->update($dataToUpdate);
 
             $invoiceTransaction = InvoiceTransaction::where('transaction_id', $transaction->id)->first();
+
             $invoiceTransaction?->update([
                 'historic_asset_id' => $product->current_historic_asset_id,
                 'gross_amount'      => $netAmount,
                 'net_amount'        => $netAmount,
                 'grp_net_amount'    => $netAmount * $grpExchange,
                 'org_net_amount'    => $netAmount * $orgExchange,
+                'quantity'          => $quantity,
             ]);
         }
 
@@ -167,6 +178,20 @@ class UpdateFaireOrder extends OrgAction
             $transaction = Transaction::find($transactionId);
             if ($transaction) {
                 DeleteTransaction::run($transaction);
+            }
+        }
+
+        $invoiceIds= $order->invoices()->pluck('id')->toArray();
+        if (!empty($invoiceIds)) {
+            $toDeleteInvoiceTransactionIds = InvoiceTransaction::whereIn('invoice_id', $invoiceIds)
+                ->whereNotNull('marketplace_id')
+                ->whereNotIn('marketplace_id', $faireItemIds)->pluck('id')->toArray();
+
+            foreach ($toDeleteInvoiceTransactionIds as $invoiceTransactionId) {
+                $invoiceTransaction = InvoiceTransaction::find($invoiceTransactionId);
+                if ($invoiceTransaction) {
+                    DeleteInvoiceTransaction::run($invoiceTransaction);
+                }
             }
         }
 

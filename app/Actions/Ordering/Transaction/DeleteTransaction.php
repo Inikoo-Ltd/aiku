@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Transaction;
 
+use App\Actions\Accounting\InvoiceTransaction\DeleteInvoiceTransaction;
 use App\Actions\Dispatching\DeliveryNoteItem\DeleteDeliveryNoteItem;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
@@ -31,6 +32,10 @@ class DeleteTransaction extends OrgAction
         $transaction = DB::transaction(function () use ($transaction) {
             foreach ($transaction->deliveryNoteItems as $deliveryNoteItem) {
                 DeleteDeliveryNoteItem::run($deliveryNoteItem);
+            }
+
+            if ($transaction->invoiceTransaction) {
+                DeleteInvoiceTransaction::run($transaction->invoiceTransaction);
             }
 
             $transaction->delete();
@@ -66,6 +71,10 @@ class DeleteTransaction extends OrgAction
      */
     public function asController(Transaction $transaction, ActionRequest $request): Transaction
     {
+        if ($transaction->invoiceTransaction) {
+            abort(403, 'Cannot delete transaction with invoice transaction');
+        }
+
         $this->initialisationFromShop($transaction->shop, $request);
 
         return $this->handle($transaction);
