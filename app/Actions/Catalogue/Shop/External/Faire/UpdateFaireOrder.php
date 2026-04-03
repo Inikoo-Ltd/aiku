@@ -50,9 +50,8 @@ class UpdateFaireOrder extends OrgAction
 
         $orderFaireData               = $shop->getFaireOrder($order->external_id);
         $transactionCommissionsFactor = Arr::get($orderFaireData, 'payout_costs.commission_bps', 0) / 10000;
-
-
-        $faireItemIds = [];
+        $orderCommission              = Arr::get($orderFaireData, 'payout_costs.commission.amount_minor', 0) / 100;
+        $faireItemIds                 = [];
 
         foreach ($orderFaireData['items'] as $item) {
             $faireItemIds[] = $item['id'];
@@ -169,14 +168,14 @@ class UpdateFaireOrder extends OrgAction
             if ($transaction) {
                 DeleteTransaction::run($transaction);
             }
-
         }
 
 
         $amountOff = Arr::get($orderFaireData, 'payout_costs.total_brand_discounts.amount_minor', 0) / 100;
 
         $order->update([
-            'amount_off' => $amountOff,
+            'amount_off'        => $amountOff,
+            'commission_amount' => $orderCommission,
         ]);
 
         $tax = 0;
