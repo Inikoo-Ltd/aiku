@@ -172,30 +172,22 @@ class RetinaAction
             return true;
         }
 
-        if (!$this->shop) {
+        if (!$this->shop || !$this->webUser) {
             return false;
         }
 
-        if(!$this->webUser){
-            return false;
-        }
-        
-        if ($this->shop->type === ShopTypeEnum::FULFILMENT && $this->webUser->customer->status === CustomerStatusEnum::APPROVED
-            && $this->fulfilmentCustomer->rentalAgreement) {
-            return true;
+        // Handle Fulfilment shops
+        if ($this->shop->type === ShopTypeEnum::FULFILMENT) {
+            return ($this->webUser->customer?->status === CustomerStatusEnum::APPROVED)
+                && ($this->fulfilmentCustomer?->rentalAgreement);
         }
 
-        if(!$request->user()){
-            return false;
+        // Handle Dropshipping and B2B (must be the owner)
+        $user = $request->user();
+        if ($user && in_array($this->shop->type, [ShopTypeEnum::DROPSHIPPING, ShopTypeEnum::B2B])) {
+            return $this->webUser->id === $user->id;
         }
 
-        if ($this->shop->type === ShopTypeEnum::DROPSHIPPING && $this->webUser->id === $request->user()->id) {
-            return true;
-        }
-
-        if ($this->shop->type === ShopTypeEnum::B2B && $this->webUser->id === $request->user()->id) {
-            return true;
-        }
 
         // Deny access if none of the above conditions pass.
         return false;
