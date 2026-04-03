@@ -63,7 +63,7 @@ beforeEach(function () {
         $this->organisation,
         $this->user,
         $this->shop
-    ) = createShop();
+        ) = createShop();
 
     $this->group      = $this->organisation->group;
     $this->adminGuest = createAdminGuest($this->organisation->group);
@@ -71,7 +71,7 @@ beforeEach(function () {
     list(
         $this->tradeUnit,
         $this->product
-    ) = createProduct($this->shop);
+        ) = createProduct($this->shop);
 
     $this->customer = createCustomer($this->shop);
 
@@ -175,7 +175,6 @@ test('set offer as permanent', function (Offer $offer) {
         ->and($offerAllowance->end_at)->toBeNull()
         ->and($offerAllowance->state)->toBe(OfferAllowanceStateEnum::ACTIVE)
         ->and($offerAllowance->status)->toBeTrue();
-
 })->depends('create offer');
 
 test('UI Discount Dashboard', function () {
@@ -214,7 +213,7 @@ test('UI show offer campaigns', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', $offerCampaign->name)
                     ->etc()
             )
@@ -338,12 +337,12 @@ test('update offer allowance signature', function () {
     $shop          = $this->shop;
     $offerCampaign = $shop->offerCampaigns()->first();
 
-    $offerData = Offer::factory()->definition();
+    $offerData             = Offer::factory()->definition();
     $offerData['duration'] = OfferDurationEnum::PERMANENT;
-    $offerData['start_at']   = now();
+    $offerData['start_at'] = now();
 
 
-    $offer         = StoreOffer::make()->action($offerCampaign, $offerData);
+    $offer = StoreOffer::make()->action($offerCampaign, $offerData);
     UpdateOfferStatusFromDates::run($offer);
 
 
@@ -479,7 +478,7 @@ test('create product category discount', function () {
         'organisation_id' => $shop->organisation_id,
         'group_id'        => $shop->group_id,
         'code'            => 'CAT-DISC',
-        'type'            => ProductCategoryTypeEnum::FAMILY->value
+        'type'            => ProductCategoryTypeEnum::FAMILY->value,
     ]);
 
     $this->artisan('offer:create_category_discount', [
@@ -504,8 +503,11 @@ test('create product category discount', function () {
     $offer2 = StoreProductCategoryDiscount::make()->action(
         $category,
         [
+            'type'                       => 'quantity',
             'trigger_data_item_quantity' => 2,
             'percentage_off'             => .25,
+            'duration'                   => 'interval',
+            'start_at'                   => now()->addDays(7)->toDateTimeString(),
             'end_at'                     => now()->addDays(14)->toDateTimeString(),
         ]
     );
@@ -693,6 +695,10 @@ describe('calculate order discounts', function () {
             [
                 'trigger_data_item_quantity' => 1,
                 'percentage_off'             => 0.60,
+                'type'                       => 'quantity',
+                'duration'                   => 'interval',
+                'start_at'                   => now()->addDays(7)->toDateTimeString(),
+                'end_at'                     => now()->addDays(14)->toDateTimeString(),
             ]
         );
 
@@ -724,6 +730,10 @@ describe('calculate order discounts', function () {
             [
                 'trigger_data_item_quantity' => 5,
                 'percentage_off'             => 0.30,
+                'type'                       => 'quantity',
+                'duration'                   => 'interval',
+                'start_at'                   => now()->addDays(7)->toDateTimeString(),
+                'end_at'                     => now()->addDays(14)->toDateTimeString(),
             ]
         );
 
@@ -744,7 +754,6 @@ describe('calculate order discounts', function () {
         expect((float)$transaction->net_amount)->toBe(350.0);
 
         SuspendOffer::run($categoryDiscount);
-
     });
 
     test('CalculateOrderDiscounts: Vol/GR', function () {
@@ -782,8 +791,5 @@ describe('calculate order discounts', function () {
 
         $transaction->refresh();
         expect((float)$transaction->net_amount)->toBe(280.0);
-
     });
-
-
 });
