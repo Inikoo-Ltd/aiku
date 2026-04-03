@@ -48,6 +48,9 @@ class CancelOrder extends OrgAction
     private Order $order;
 
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Order $order): Order
     {
         $oldState = $order->state;
@@ -106,7 +109,9 @@ class CancelOrder extends OrgAction
 
         $deliveryNotes = $order->deliveryNotes;
         foreach ($deliveryNotes as $deliveryNote) {
-            CancelDeliveryNote::make()->action($deliveryNote, false);
+            if ($deliveryNote->state != DeliveryNoteStateEnum::CANCELLED) {
+                CancelDeliveryNote::make()->action($deliveryNote, false);
+            }
         }
 
         if ($oldState == OrderStateEnum::CREATING) {
