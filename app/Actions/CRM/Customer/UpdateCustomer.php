@@ -348,7 +348,8 @@ class UpdateCustomer extends OrgAction
             'is_re'                                                 => ['sometimes', 'boolean'],
             'is_credit_customer'                                    => ['sometimes', 'boolean'],
             'accounting_reference'                                  => ['sometimes', 'nullable', 'string', 'max:255'],
-            'disable_order_auto_processing'                         => ['sometimes', 'boolean']
+            'disable_order_auto_processing'                         => ['sometimes', 'boolean'],
+            'eori'                                                  => ['sometimes', 'nullable', 'string', 'max:20'],
         ];
 
         if ($this?->asAction) {

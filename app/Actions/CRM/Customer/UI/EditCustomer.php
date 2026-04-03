@@ -17,6 +17,7 @@ use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
 use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -41,7 +42,162 @@ class EditCustomer extends OrgAction
 
     public function htmlResponse(Customer $customer, ActionRequest $request): Response
     {
-        $spain = \App\Models\Helpers\Country::where('code', 'ES')->first();
+        $spain = Country::where('code', 'ES')->first();
+
+        $isExternal = $customer->shop->type == ShopTypeEnum::EXTERNAL;
+
+
+
+        $contact = [
+            'title'  => __('Contact information'),
+            'label'  => __('Contact'),
+            'fields' => [
+                'contact_name'             => [
+                    'type'  => 'input',
+                    'label' => __('Contact name'),
+                    'value' => $customer->contact_name
+                ],
+                'company_name'             => [
+                    'type'  => 'input',
+                    'label' => __('Company'),
+                    'value' => $customer->company_name
+                ],
+                'phone'                    => [
+                    'type'  => 'phone',
+                    'label' => __('Phone'),
+                    'value' => $customer->phone
+                ],
+                'contact_address'          => [
+                    'type'    => 'address',
+                    'label'   => __('Address'),
+                    'value'   => AddressFormFieldsResource::make($customer->address)->getArray(),
+                    'options' => [
+                        'countriesAddressData' => GetAddressData::run()
+                    ]
+                ],
+                'delivery_address'         => [
+                    'hidden' => $customer->shop->type == ShopTypeEnum::DROPSHIPPING,
+                    'type'    => 'delivery_address',
+                    'label'   => __('Delivery Address'),
+                    'noSaveButton'  => true,
+                    'options' => [
+                        'same_as_contact' => [
+                            'label'         => __('Same as contact address'),
+                            'key_payload'   => 'delivery_address_id',
+                            'payload'       => $customer->address_id
+                        ],
+                        'countriesAddressData'    => GetAddressData::run()
+                    ],
+                    'value'   => [
+                        'is_same_as_contact'    => $customer->delivery_address_id == $customer->address_id,
+                        'address'               => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray()
+                    ],
+                ],
+                'tax_number'               => [
+                    'type'    => 'tax_number',
+                    'label'   => __('Tax number'),
+                    'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
+                    'country' => $customer->address->country_code,
+                ],
+                'eori'             => [
+                    'type'  => 'input',
+                    'label' => __('EORI'),
+                    'value' => $customer->eori
+                ],
+                'is_re'                    => [
+                    'type'   => 'toggle',
+                    'hidden' => $this->organisation->country_id != $spain->id || $customer->address->country_id != $spain->id,
+                    'label'  => 'Recargo de equivalencia',
+                    'value'  => $customer->is_re,
+
+                ],
+                'identity_document_number' => [
+                    'type'  => 'input',
+                    'label' => __('Identity document number'),
+                    'value' => $customer->identity_document_number
+                ],
+            ]
+        ];
+        $accounting = [
+            'title'  => __('Accounting'),
+            'label'  => __('Accounting'),
+            'fields' => [
+
+                'is_credit_customer' => [
+                    'type'  => 'toggle',
+                    'label' => __('Credit Customer'),
+                    'value' => $customer->is_credit_customer,
+                ],
+                'accounting_reference' => [
+                    'type'     => 'input',
+                    'label'    => __('Sage Customer Number'),
+                    'value'    => $customer->accounting_reference,
+                    'required' => false,
+                ],
+            ]
+        ];
+        $tags =  [
+            'title'  =>  __('Tags'),
+            'label'  => __('Tags'),
+            'fields' => [
+                'tags' => [
+                    'type'       => 'tags-customer',
+                    'label'      => __('Tags'),
+                    'value'      => $customer->tags->where('scope', TagScopeEnum::ADMIN_CUSTOMER)->pluck('id')->toArray(),
+                    'noSaveButton' => true,
+                    'isWithRefreshFieldForm' => true,
+                    'tag_routes' => [
+                        'index_tag' => [
+                            'name'       => 'grp.json.customer.tags.index',
+                            'parameters' => [
+                                'customer' => $customer,
+                            ]
+                        ],
+                        'store_tag' => [
+                            'name'       => 'grp.models.customer.tags.store',
+                            'parameters' => [
+                                'customer' => $customer->id,
+                            ]
+                        ],
+                        'update_tag' => [
+                            'name'       => 'grp.models.customer.tags.update',
+                            'parameters' => [
+                                'customer' => $customer->id,
+                            ],
+                            'method'    => 'patch'
+                        ],
+                        'delete_tag' => [
+                            'name'       => 'grp.models.customer.tags.delete',
+                            'parameters' => [
+                                'customer' => $customer->id,
+                            ],
+                            'method'    => 'delete'
+                        ],
+                        'attach_tag' => [
+                            'name'       => 'grp.models.customer.tags.attach',
+                            'parameters' => [
+                                'customer' => $customer->id,
+                            ],
+                            'method'    => 'post'
+                        ],
+                        'detach_tag' => [
+                            'name'       => 'grp.models.customer.tags.detach',
+                            'parameters' => [
+                                'customer' => $customer->id,
+                            ],
+                            'method'    => 'delete'
+                        ],
+                    ],
+                ],
+            ]
+        ];
+
+        $blueprint = [];
+        $blueprint[] = $contact;
+        if (!$isExternal) {
+            $blueprint[] = $accounting;
+            $blueprint[] = $tags;
+        }
 
 
         return Inertia::render(
@@ -72,146 +228,7 @@ class EditCustomer extends OrgAction
 
 
                 'formData' => [
-                    'blueprint' => [
-                        [
-                            'title'  => __('Contact information'),
-                            'label'  => __('Contact'),
-                            'fields' => [
-                                'contact_name'             => [
-                                    'type'  => 'input',
-                                    'label' => __('Contact name'),
-                                    'value' => $customer->contact_name
-                                ],
-                                'company_name'             => [
-                                    'type'  => 'input',
-                                    'label' => __('Company'),
-                                    'value' => $customer->company_name
-                                ],
-                                'phone'                    => [
-                                    'type'  => 'phone',
-                                    'label' => __('Phone'),
-                                    'value' => $customer->phone
-                                ],
-                                'contact_address'          => [
-                                    'type'    => 'address',
-                                    'label'   => __('Address'),
-                                    'value'   => AddressFormFieldsResource::make($customer->address)->getArray(),
-                                    'options' => [
-                                        'countriesAddressData' => GetAddressData::run()
-                                    ]
-                                ],
-                                'delivery_address'         => [
-                                    'hidden' => $customer->shop->type == ShopTypeEnum::DROPSHIPPING,
-                                    'type'    => 'delivery_address',
-                                    'label'   => __('Delivery Address'),
-                                    'noSaveButton'  => true,
-                                    'options' => [
-                                        'same_as_contact' => [
-                                            'label'         => __('Same as contact address'),
-                                            'key_payload'   => 'delivery_address_id',
-                                            'payload'       => $customer->address_id
-                                        ],
-                                        'countriesAddressData'    => GetAddressData::run()
-                                    ],
-                                    'value'   => [
-                                        'is_same_as_contact'    => $customer->delivery_address_id == $customer->address_id,
-                                        'address'               => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray()
-                                    ],
-                                ],
-                                'tax_number'               => [
-                                    'type'    => 'tax_number',
-                                    'label'   => __('Tax number'),
-                                    'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
-                                    'country' => $customer->address->country_code,
-                                ],
-                                'is_re'                    => [
-                                    'type'   => 'toggle',
-                                    'hidden' => $this->organisation->country_id != $spain->id || $customer->address->country_id != $spain->id,
-                                    'label'  => 'Recargo de equivalencia',
-                                    'value'  => $customer->is_re,
-
-                                ],
-                                'identity_document_number' => [
-                                    'type'  => 'input',
-                                    'label' => __('Identity document number'),
-                                    'value' => $customer->identity_document_number
-                                ],
-                            ]
-                        ],
-                        [
-                            'title'  => __('Accounting'),
-                            'label'  => __('Accounting'),
-                            'fields' => [
-
-                                'is_credit_customer' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Credit Customer'),
-                                    'value' => $customer->is_credit_customer,
-                                ],
-                                'accounting_reference' => [
-                                    'type'     => 'input',
-                                    'label'    => __('Sage Customer Number'),
-                                    'value'    => $customer->accounting_reference,
-                                    'required' => false,
-                                ],
-                            ]
-                        ],
-                        [
-                            'title'  =>  __('Tags'),
-                            'label'  => __('Tags'),
-                            'fields' => [
-                                'tags' => [
-                                    'type'       => 'tags-customer',
-                                    'label'      => __('Tags'),
-                                    'value'      => $customer->tags->where('scope', TagScopeEnum::ADMIN_CUSTOMER)->pluck('id')->toArray(),
-                                    'noSaveButton' => true,
-                                    'isWithRefreshFieldForm' => true,
-                                    'tag_routes' => [
-                                        'index_tag' => [
-                                            'name'       => 'grp.json.customer.tags.index',
-                                            'parameters' => [
-                                                'customer' => $customer,
-                                            ]
-                                        ],
-                                        'store_tag' => [
-                                            'name'       => 'grp.models.customer.tags.store',
-                                            'parameters' => [
-                                                'customer' => $customer->id,
-                                            ]
-                                        ],
-                                        'update_tag' => [
-                                            'name'       => 'grp.models.customer.tags.update',
-                                            'parameters' => [
-                                                'customer' => $customer->id,
-                                            ],
-                                            'method'    => 'patch'
-                                        ],
-                                        'delete_tag' => [
-                                            'name'       => 'grp.models.customer.tags.delete',
-                                            'parameters' => [
-                                                'customer' => $customer->id,
-                                            ],
-                                            'method'    => 'delete'
-                                        ],
-                                        'attach_tag' => [
-                                            'name'       => 'grp.models.customer.tags.attach',
-                                            'parameters' => [
-                                                'customer' => $customer->id,
-                                            ],
-                                            'method'    => 'post'
-                                        ],
-                                        'detach_tag' => [
-                                            'name'       => 'grp.models.customer.tags.detach',
-                                            'parameters' => [
-                                                'customer' => $customer->id,
-                                            ],
-                                            'method'    => 'delete'
-                                        ],
-                                    ],
-                                ],
-                            ]
-                        ]
-                    ],
+                    'blueprint' => $blueprint,
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.customer.update',
