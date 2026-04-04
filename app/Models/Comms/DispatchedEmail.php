@@ -17,8 +17,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 /**
  * @property int $id
  * @property int|null $outbox_id
- * @property string|null $parent_type MailShot|EmailBulkRun|EmailPush|EmailOngoingRun
- * @property int|null $parent_id
  * @property int|null $email_address_id
  * @property DispatchedEmailStateEnum $state
  * @property \Illuminate\Support\Carbon|null $sent_at
