@@ -8,8 +8,7 @@ import NotificationList from '@/Components/NotificationList/NotificationList.vue
 import Profile from "@/Pages/Grp/Profile.vue"
 
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { layoutStructure } from "@/Composables/useLayoutStructure"
-
+import { useLayoutStore } from "@/Stores/layout"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCircle } from '@fas'
 import { faSparkles } from '@fas'
@@ -20,12 +19,11 @@ library.add(faCircle, faLampDesk, faSparkles)
 
 /* const Profile = defineAsyncComponent(() => import("@/Pages/Grp/Profile.vue")) */
 
-
 const props = defineProps<{
     urlPrefix: string
 }>()
 
-const layout = inject('layout', layoutStructure)
+const layout = useLayoutStore()
 const isAskBotEnabled =  import.meta.env.VITE_ASK_BOT_UI;
 // const layoutStore = useLayoutStore()
 const showSearchDialog = ref(false)
@@ -34,7 +32,7 @@ const showAskBot = ref(false)
 onMounted(() => {
     if (typeof window !== 'undefined') {
         document.addEventListener('keydown', (event) => {
-            
+
             if( ( isUserMac ? event.metaKey : event.ctrlKey ) && event.key === 'k') {
                 event.preventDefault()
                 showSearchDialog.value = !showSearchDialog.value
@@ -52,7 +50,6 @@ onUnmounted(() => {
 })
 
 const isUserMac = navigator.platform.includes('Mac')  // To check the user's Operating System
-
 </script>
 
 <template>
@@ -71,7 +68,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
                 </div>
                 <SearchBar v-model="showSearchDialog" />
             </button>
-            
+
             <!-- Search: AI -->
             <button v-if="true" @click="showAskBot = !showAskBot" id="ask-bot"
                 class="bg-gradient-to-tr from-pink-200 xvia-pink-200 to-pink-100 border-none ring-1 ring-fuchsia-400 h-7 w-fit flex items-center justify-center gap-x-3 rounded-md px-3">
@@ -81,7 +78,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
                         <span class="">AI</span>
                     </h1>
                 </div>
-                
+
                 <!-- <FontAwesomeIcon icon='fal fa-lamp-desk' size="sm" class='ml-1 text-gray-600' fixed-width aria-hidden='true' /> -->
                 <div class="hidden whitespace-nowrap md:flex items-center justify-end text-gray-500/80 tracking-tight space-x-1">
                     <span v-if="isUserMac" class="ring-1 ring-fuchsia-400 bg-fuchsia-50 text-fuchsia-500 px-2 leading-none text-xl rounded">⌘</span>
@@ -103,7 +100,10 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
                         <template #button>
                             <div tabindex="-1" class="relative text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500">
                                 <FontAwesomeIcon aria-hidden="true" icon="fa-regular fa-bell" size="lg" />
-                                <FontAwesomeIcon v-if="layout?.notifications?.some(notif => !notif.read)" icon='fas fa-circle' class='animate-pulse text-blue-500 absolute top-[1px] -right-0.5 text-[6px]' fixed-width aria-hidden='true' />
+                                <span v-if="layout?.notifications?.filter((n: any) => !n.read).length"
+                                      class="absolute -top-2 -right-2 flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full border-2 border-white shadow-sm">
+                                    {{ layout.notifications.filter((n: any) => !n.read).length > 9 ? '9+' : layout.notifications.filter((n: any) => !n.read).length }}
+                                </span>
                             </div>
                         </template>
                         <template #content="{ close }">

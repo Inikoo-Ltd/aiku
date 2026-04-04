@@ -23,6 +23,7 @@ class NotificationResource extends JsonResource
         return [
             'id'      => $this->id,
             'read_at' => $this->read_at,
+            'created_at' => $this->created_at,
             'title'   => Arr::get($data, 'title'),
             'body'    => Arr::get($data, 'body'),
             'type'    => Arr::get($data, 'type'),

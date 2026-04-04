@@ -27,6 +27,56 @@ class UpdateProfile extends OrgAction
 
     public function handle(User $user, array $modelData): User
     {
+        if (Arr::exists($modelData, 'notification_settings')) {
+            $notificationSettings = Arr::pull($modelData, 'notification_settings');
+
+            if (is_array($notificationSettings)) {
+                foreach ($notificationSettings as $row) {
+                    if (!is_array($row)) {
+                        continue;
+                    }
+
+                    $id = Arr::get($row, 'id');
+                    if (!$id) {
+                        continue;
+                    }
+
+                    $setting = $user->notificationSettings()->whereKey($id)->first();
+                    if (!$setting) {
+                        continue;
+                    }
+
+                    $isEnabled = (bool) Arr::get($row, 'is_enabled', false);
+                    $filters = Arr::get($row, 'filters', []);
+
+                    if (!is_array($filters)) {
+                        $filters = [];
+                    }
+
+                    if (array_key_exists('state', $filters)) {
+                        if (!is_array($filters['state']) || count($filters['state']) === 0) {
+                            unset($filters['state']);
+                        }
+                    }
+
+                    foreach ($filters as $key => $value) {
+                        if ($value === null || $value === '' || (is_array($value) && count($value) === 0)) {
+                            unset($filters[$key]);
+                        }
+                    }
+
+                    if (count($filters) === 0) {
+                        $filters = [];
+                    }
+
+                    $setting->update([
+                        'is_enabled' => $isEnabled,
+                        'filters' => $filters,
+                    ]);
+                }
+            }
+        }
+
         if (Arr::exists($modelData, 'hide_logo')) {
             $hideLogo                           = Arr::pull($modelData, 'hide_logo');
             $modelData['settings']['hide_logo'] = $hideLogo;
@@ -93,6 +143,12 @@ class UpdateProfile extends OrgAction
             ],
             'timezones'         => ['sometimes', 'array'],
             'enable_2fa'        => ['sometimes', 'array'],
+            'notification_settings' => ['sometimes', 'array'],
+            'notification_settings.*.id' => ['required', 'integer', 'exists:user_notification_settings,id'],
+            'notification_settings.*.is_enabled' => ['required', 'boolean'],
+            'notification_settings.*.filters' => ['nullable', 'array'],
+            'notification_settings.*.filters.state' => ['nullable', 'array'],
+            'notification_settings.*.filters.state.*' => ['string'],
             'settings'          => ['sometimes'],
         ];
     }

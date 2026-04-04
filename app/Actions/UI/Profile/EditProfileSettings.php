@@ -10,8 +10,10 @@ namespace App\Actions\UI\Profile;
 
 use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Actions\UI\Notification\GetNotificationStateOptions;
 use App\Actions\UI\WithInertia;
 use App\Http\Resources\UI\LoggedUserResource;
+use App\Models\Notifications\UserNotificationSetting;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
@@ -59,6 +61,56 @@ class EditProfileSettings
             Log::error('Failed to fetch printers: ' . $e->getMessage());
             $printers = [];
         }
+
+        $stateOptionsCache = [];
+        $notificationSettings = $user->notificationSettings()
+            ->with(['notificationType', 'scope'])
+            ->get()
+            ->map(function (UserNotificationSetting $setting) use (&$stateOptionsCache) {
+                $scopeLabel = __('Global');
+                if ($setting->scope_type) {
+                    $scopeName = class_basename($setting->scope_type);
+                    $scopeValue = null;
+                    if ($setting->scope) {
+                        $scopeValue = $setting->scope->name
+                            ?? $setting->scope->code
+                            ?? $setting->scope->contact_name
+                            ?? $setting->scope->username
+                            ?? $setting->scope->slug
+                            ?? (string) $setting->scope->getKey();
+                    }
+                    $scopeLabel = $scopeName . ($scopeValue ? ": {$scopeValue}" : '');
+                }
+
+                $typeId = $setting->notification_type_id;
+                if (!array_key_exists($typeId, $stateOptionsCache)) {
+                    $options = GetNotificationStateOptions::run($typeId);
+                    $stateOptionsCache[$typeId] = $options['states'] ?? [];
+                }
+
+                $filters = is_array($setting->filters) ? $setting->filters : [];
+                if (array_key_exists('state', $filters) && is_array($filters['state']) && count($filters['state']) === 0) {
+                    unset($filters['state']);
+                }
+                if (count($filters) === 0) {
+                    $filters = [];
+                }
+
+                return [
+                    'id' => $setting->id,
+                    'notification_type_id' => $typeId,
+                    'type_name' => $setting->notificationType?->name ?? __('Unknown Type'),
+                    'type_slug' => $setting->notificationType?->slug,
+                    'scope_type' => $setting->scope_type,
+                    'scope_id' => $setting->scope_id,
+                    'scope_label' => $scopeLabel,
+                    'is_enabled' => (bool) $setting->is_enabled,
+                    'filters' => $filters,
+                    'available_states' => $stateOptionsCache[$typeId],
+                ];
+            })
+            ->values()
+            ->toArray();
 
         return [
             "title"       => __("Preferences"),
@@ -121,6 +173,20 @@ class EditProfileSettings
                                 "value"   => Arr::get($user->settings, 'timezones')
                             ]
                         ],
+                    ],
+                    [
+                        "label"  => __("Notification"),
+                        "icon"   => "fal fa-bell",
+                        "fields" => [
+                            "notification_settings"  =>  [
+                                "type"  => "notification_preferences",
+                                "label" => __("Notification preferences"),
+                                "full"  => true,
+                                "noTitle" => true,
+                                "information" => __("Empty filter means you will receive all states."),
+                                "value" => $notificationSettings
+                            ]
+                        ]
                     ],
                 ],
                 "args"      => [
