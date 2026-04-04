@@ -30,11 +30,10 @@ class GetChatConfig
 
 
         $effective = $shop->getEffectiveWorkSchedule();
-        $schedule = $effective['schedule'];
-        $timezone = $effective['timezone'];
+        $schedule  = $effective['schedule'];
+        $timezone  = $effective['timezone'];
 
         if ($schedule) {
-
             $config['is_online'] = $schedule->isOpenNow($timezone);
 
 
@@ -43,13 +42,14 @@ class GetChatConfig
             $dayOfWeek = $now->dayOfWeekIso;
 
             $todaySchedule = $schedule->days->where('day_of_week', $dayOfWeek)->first();
-            $startTime = Carbon::parse($todaySchedule->start_time)
-                ->format('H:i:s');
-
-            $endTime = Carbon::parse($todaySchedule->end_time)
-                ->format('H:i:s');
 
             if ($todaySchedule && $todaySchedule->is_working_day) {
+                $startTime = Carbon::parse($todaySchedule->start_time)
+                    ->format('H:i:s');
+
+                $endTime = Carbon::parse($todaySchedule->end_time)
+                    ->format('H:i:s');
+
                 $config['schedule'] = [
                     'start'    => $startTime,
                     'end'      => $endTime,
