@@ -34,7 +34,8 @@ trait WithFaireApi
 
         $url = $this->baseUrl.trim($endpoint, '/');
 
-        $response = Http::withHeaders($this->defaultHeaders)
+
+        $response = Http::timeout(60)->withHeaders($this->defaultHeaders)
             ->withQueryParameters($params)
             ->$method(
                 $url,

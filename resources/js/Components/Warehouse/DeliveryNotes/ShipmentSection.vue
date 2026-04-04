@@ -71,10 +71,6 @@ const props = defineProps<{
 		email: string
 		address: Address
 	}
-	external_order?: {
-		status: boolean
-		route_view_packing_slip: routeType
-	}
 	currencyCode?: string
 	external_shop?: {
 		engine_value: string

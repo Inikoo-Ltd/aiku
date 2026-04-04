@@ -28,7 +28,8 @@ class AcceptFaireOrder extends OrgAction
                     'expected_ship_date' => Carbon::now()->addDays(Arr::get($shop->settings, 'faire.order_from_days', 6))->toIso8601String()
                 ]
             );
-            DownloadFairePackingPdfSlip::dispatch($order);
+
+            DownloadFairePackingPdfSlip::dispatch($order->id)->delay(now()->addHour());
         }
     }
 
