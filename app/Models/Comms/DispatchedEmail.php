@@ -9,8 +9,6 @@
 namespace App\Models\Comms;
 
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
-use App\Models\CRM\Customer;
-use App\Models\CRM\Prospect;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -22,8 +20,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string|null $parent_type MailShot|EmailBulkRun|EmailPush|EmailOngoingRun
  * @property int|null $parent_id
  * @property int|null $email_address_id
- * @property string|null $recipient_type
- * @property int|null $recipient_id
  * @property DispatchedEmailStateEnum $state
  * @property \Illuminate\Support\Carbon|null $sent_at
  * @property \Illuminate\Support\Carbon|null $first_read_at
@@ -84,18 +80,6 @@ class DispatchedEmail extends Model
     public function outbox(): BelongsTo
     {
         return $this->belongsTo(Outbox::class);
-    }
-
-    public function getName(): string
-    {
-        if ($this->recipient) {
-            /** @var Prospect|Customer $recipient */
-            $recipient = $this->recipient;
-
-            return $recipient->name;
-        }
-
-        return '';
     }
 
     public function emailTrackingEvents(): HasMany
