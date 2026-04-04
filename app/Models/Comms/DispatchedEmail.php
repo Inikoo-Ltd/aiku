@@ -31,8 +31,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
  * @property int $number_email_tracking_events
  * @property-read \App\Models\Comms\EmailAddress|null $emailAddress
@@ -55,8 +53,6 @@ class DispatchedEmail extends Model
         'last_read_at'     => 'datetime',
         'first_clicked_at' => 'datetime',
         'last_clicked_at'  => 'datetime',
-        'fetched_at'       => 'datetime',
-        'last_fetched_at'  => 'datetime',
     ];
 
     protected $attributes = [

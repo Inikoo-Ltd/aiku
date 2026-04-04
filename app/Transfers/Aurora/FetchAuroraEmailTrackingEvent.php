@@ -70,8 +70,6 @@ class FetchAuroraEmailTrackingEvent extends FetchAurora
             'source_id'          => $this->organisation->id.':'.$this->auroraModelData->{'Email Tracking Event Key'},
             'created_at'         => $this->parseDatetime($this->auroraModelData->{'Email Tracking Event Date'}),
             'data'               => $data,
-            'fetched_at'         => now(),
-            'last_fetched_at'    => now(),
         ];
     }
 
