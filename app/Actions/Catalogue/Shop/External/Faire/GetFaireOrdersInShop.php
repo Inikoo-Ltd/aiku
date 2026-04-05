@@ -86,6 +86,14 @@ class GetFaireOrdersInShop extends OrgAction
                     $customerData['phone'] = $phone;
                 }
 
+                $isRe = false;
+                foreach (Arr::get($faireOrder, 'payout_costs.taxes', []) as $taxData) {
+                    if (Arr::get($taxData, 'tax_type') == 'RECARGO' && Arr::get($taxData, 'value.amount_minor', 0) > 0) {
+                        $isRe = true;
+                    }
+                }
+                data_set($customerData, 'is_re', $isRe);
+
                 if ($customer) {
                     $customer = UpdateCustomer::make()->action(customer: $customer, modelData: $customerData, strict: false);
                 } else {

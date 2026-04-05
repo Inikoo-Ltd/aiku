@@ -225,26 +225,8 @@ class UpdateFaireOrder extends OrgAction
             'commission_amount' => $orderCommission,
         ]);
 
-        $tax = 0;
 
-        foreach (Arr::get($orderFaireData, 'payout_costs.taxes', []) as $taxData) {
-            $tax += Arr::get($taxData, 'value.amount_minor', 0) / 100;
-        }
-
-        if ($tax == 0) {
-            if (IsEuropeanUnion::run($shop->organisation->country->code)) {
-                $taxCategory = TaxCategory::where('status', true)->where('type', 'eu_vtc')->first();
-            } else {
-                $taxCategory = TaxCategory::where('status', true)->where('type', 'outside')->first();
-            }
-        } else {
-            $taxCategory = GetTaxCategory::run(
-                country: $order->organisation->country,
-                taxNumber: null,
-                billingAddress: $order->billingAddress,
-                deliveryAddress: $order->deliveryAddress,
-            );
-        }
+        $taxCategory=$this->getCategoryTaxCategory($order, $orderFaireData);
 
         $order = UpdateOrder::run($order, [
             'tax_category_id' => $taxCategory->id,
@@ -288,6 +270,36 @@ class UpdateFaireOrder extends OrgAction
         }
 
         return 0;
+    }
+
+    public function getCategoryTaxCategory(Order $order, array $orderFaireData): TaxCategory
+    {
+        $tax = 0;
+        $isRe=false;
+        foreach (Arr::get($orderFaireData, 'payout_costs.taxes', []) as $taxData) {
+            if(Arr::get($taxData, 'tax_type')=='RECARGO' && Arr::get($taxData, 'value.amount_minor', 0) > 0 ){
+                $isRe=true;
+            }
+
+            $tax += Arr::get($taxData, 'value.amount_minor', 0) / 100;
+        }
+
+        if ($tax == 0) {
+            if (IsEuropeanUnion::run($order->shop->organisation->country->code)) {
+                $taxCategory = TaxCategory::where('status', true)->where('type', 'eu_vtc')->first();
+            } else {
+                $taxCategory = TaxCategory::where('status', true)->where('type', 'outside')->first();
+            }
+        } else {
+            $taxCategory = GetTaxCategory::run(
+                country: $order->organisation->country,
+                taxNumber: null,
+                billingAddress: $order->billingAddress,
+                deliveryAddress: $order->deliveryAddress,
+                isRe: $isRe,
+            );
+        }
+        return $taxCategory;
     }
 
     public function addTransaction($item, $shop, $transactionCommissionsFactor): array
