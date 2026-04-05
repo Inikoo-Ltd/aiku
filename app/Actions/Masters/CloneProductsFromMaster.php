@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters;
 
+use App\Actions\Catalogue\Product\CloneProductParentsFromMaster;
 use App\Actions\Catalogue\Product\StoreProductFromMasterProduct;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
@@ -46,6 +47,7 @@ class CloneProductsFromMaster
         $masterShop = $masterProduct->masterShop;
 
         if (!$shop->products()->where('master_product_id', $masterProduct->id)->exists()) {
+
             list($hasAllOrgStocks, $hasDiscontinuing, $hasDiscontinued) = $this->getOrgStocksData($shop->organisation, $masterProduct->tradeUnits);
 
             if ($hasAllOrgStocks && !$hasDiscontinuing && !$hasDiscontinued) {
@@ -104,7 +106,7 @@ class CloneProductsFromMaster
                         }
 
                         $product = $shop->products()->where('master_product_id', $masterProduct->id)->first();
-                        if ($product) {
+                        if ($product && !$product->webpage) {
                             try {
                                 $webpage = StoreProductWebpage::make()->action($product);
                                 PublishWebpage::make()->action(
@@ -132,6 +134,10 @@ class CloneProductsFromMaster
                     print "Skipping Product $masterProduct->code has discontinuing org stocks in shop $shop->slug \n";
                 }
             }
+        }
+        else{
+            $product = $shop->products()->where('master_product_id', $masterProduct->id)->first();
+            CloneProductParentsFromMaster::run($product);
         }
     }
 
