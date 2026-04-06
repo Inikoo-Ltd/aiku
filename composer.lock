@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "253b9291916690980b4119df14ff376c",
+    "content-hash": "7ffdb6f7b6961db09dc898d0e8ca48a1",
     "packages": [
         {
             "name": "adawolfa/isdoc",
@@ -5376,16 +5376,16 @@
         },
         {
             "name": "kyon147/laravel-shopify",
-            "version": "v24.0.0",
+            "version": "v25.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Kyon147/laravel-shopify.git",
-                "reference": "42e7e2c1667ffa3ffa57f5112e340afffd0b26e3"
+                "reference": "a7ff629182e02990b4b6a2c927da4714fe499a48"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Kyon147/laravel-shopify/zipball/42e7e2c1667ffa3ffa57f5112e340afffd0b26e3",
-                "reference": "42e7e2c1667ffa3ffa57f5112e340afffd0b26e3",
+                "url": "https://api.github.com/repos/Kyon147/laravel-shopify/zipball/a7ff629182e02990b4b6a2c927da4714fe499a48",
+                "reference": "a7ff629182e02990b4b6a2c927da4714fe499a48",
                 "shasum": ""
             },
             "require": {
@@ -5465,7 +5465,7 @@
                     "type": "open_collective"
                 }
             ],
-            "time": "2025-07-16T08:09:28+00:00"
+            "time": "2025-11-08T19:47:25+00:00"
         },
         {
             "name": "laminas/laminas-diactoros",
