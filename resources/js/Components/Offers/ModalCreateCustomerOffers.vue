@@ -78,6 +78,8 @@ const productFetchRoute = {
     }
 }
 
+const today = new Date(new Date().setHours(0, 0, 0, 0))
+
 function formatDate(date: Date | null) {
     if (!date) return null
 
@@ -91,7 +93,7 @@ function formatDate(date: Date | null) {
 const submitCategoryOffer = () => {
     const targets: any[] = []
     
-        if (target.product && productFilters.value.length) {
+    if (target.product && productFilters.value.length) {
             targets.push({
                 type: 'product',
                 ids: productFilters.value,
@@ -173,7 +175,7 @@ const submitCategoryOffer = () => {
 }
 
 const resetForm = () => {
-    offerAmount.value = null
+    offerAmount.value = 0
     discountPercentage.value = null
     categoryType.value = null
     categoryFilters.value = []
@@ -266,14 +268,15 @@ const authorisedShops =
     layout.organisations.data
         .find((o: any) => o.slug === organisation)
         ?.authorised_shops ?? []
-
+        
+resetForm()
 </script>
 
 <template>
     <div>
-        <Button :label="trans('Create Customer Offer')" @click="isOpenModal = true" icon="fas fa-badge-percent" />
+        <Button :label="trans('Create Customer Offer')" @click="isOpenModal = true; resetForm();" icon="fas fa-badge-percent" />
 
-        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
+        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false; resetForm();">
             <div class="p-1 space-y-3">
                 <h2 class="text-2xl font-bold mb-4 text-center">{{ trans('Create Customer Offer') }}</h2>
 
@@ -445,7 +448,7 @@ const authorisedShops =
                                     :information="trans('If start date is empty, will start immediately')" />:
                             </label>
 
-                            <DatePicker v-model="startDate" showIcon dateFormat="yy-mm-dd" class="w-full"
+                            <DatePicker v-model="startDate" :minDate="today" showIcon dateFormat="yy-mm-dd" class="w-full"
                                 :placeholder="trans('Select start date')" />
                         </div>
 
@@ -467,9 +470,9 @@ const authorisedShops =
 
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />
-                    <Button full icon=" fad fa-save" :label="trans('Save')" @click="submitCategoryOffer" class="w-full"
-                        :isLoading="isLoadingSubmit" :disabled="isFormInvalid">
-                    </Button>
+                    <Button full icon="fad fa-save" :label="isLoadingSubmit ? trans('Loading') : trans('Save')" @click="submitCategoryOffer"
+                                           :loading="isLoadingSubmit" :disabled="isFormInvalid">
+                                       </Button>
                 </div>
             </div>
         </Modal>

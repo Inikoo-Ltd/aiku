@@ -131,9 +131,16 @@ trait WithInvoicesExport
                 'transactions'       => $transactions,
                 'totalNet'           => number_format($totalNet, 2, '.', ''),
                 'refunds'            => $refundData,
-                'country_of_origin'  => Arr::get($options, 'country_of_origin', false),
-                'weight'             => Arr::get($options, 'weight', false),
-                'commodity_codes'    => Arr::get($options, 'commodity_codes', false),
+                'pro_mode'             => Arr::get($options, 'pro_mode', false),
+                'country_of_origin'   => Arr::get($options, 'country_of_origin', false),
+                'rrp'                  => Arr::get($options, 'rrp', false),
+                'parts'                => Arr::get($options, 'parts', false),
+                'commodity_codes'      => Arr::get($options, 'commodity_codes', false),
+                'weight'               => Arr::get($options, 'weight', false),
+                'barcode'              => Arr::get($options, 'barcode', false),
+                'cpnp'                 => Arr::get($options, 'cpnp', false),
+                'hide_payment_status'  => Arr::get($options, 'hide_payment_status', false),
+                'group_by_tariff_code' => Arr::get($options, 'group_by_tariff_code', false),
             ], [], $config);
 
             $isAttachIsdocToPdf = Arr::get($invoice->organisation->settings, "invoice_export.attach_isdoc_to_pdf", false);

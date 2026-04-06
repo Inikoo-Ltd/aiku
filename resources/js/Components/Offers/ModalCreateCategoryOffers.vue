@@ -308,14 +308,8 @@ resetForm();
                         :label="isLoadingSubmit ? trans('Loading') : trans('Save')"
                         @click="submitCategoryOffer"
                         :disabled="isFormInvalid || isLoadingSubmit"
-                    >
-                        <template #icon>
-                            <FontAwesomeIcon
-                                :icon="isLoadingSubmit ? 'fas fa-spinner' : 'fad fa-save'"
-                                :class="{ 'animate-spin': isLoadingSubmit }"
-                            />
-                        </template>
-                    </Button>
+                        :loading="isLoadingSubmit"
+                    />
                 </div>
 
 
