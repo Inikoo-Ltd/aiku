@@ -16,6 +16,7 @@ import {
     faPhone,
     faMapMarkerAlt,
     faMale,
+    faGlobe,
     faPencil,
     faArrowAltFromTop,
     faArrowAltFromBottom,
@@ -54,7 +55,7 @@ import CustomerSalesVsRefunds from "@/Components/CustomerSalesVsRefunds.vue"
 import GoldReward from "@/Components/Utils/GoldReward.vue"
 import CustomerMiniTimeline from "@/Components/Showcases/Grp/CustomerMiniTimeline.vue"
 
-library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight)
+library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight)
 
 interface Customer {
     slug: string
@@ -74,6 +75,7 @@ interface Customer {
     created_at: string
     number_current_customer_clients: number | null
     address: Address
+    contact_website?: string | null
     is_dropshipping: boolean
     email_subscriptions?: {
         update_route: {
@@ -475,6 +477,22 @@ function tagColorClass(scope?: string) {
                                 <a :href="`tel:${data.customer.phone}`">{{ data?.customer?.phone }}</a>
                             </dd>
                             <button @click="copyToClipboard(data?.customer?.phone, 'Phone')"
+                                    class="text-gray-400 hover:text-gray-600 transition-colors"
+                                    v-tooltip="trans('Copy to clipboard')">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
+                        </div>
+                        
+                        <!-- Field: Website -->
+                        <div v-if="data?.customer?.contact_website" class="flex items-center w-full flex-none gap-x-4 px-6">
+                            <dt v-tooltip="trans('Website')" class="flex-none">
+                                <span class="sr-only">Website</span>
+                                <FontAwesomeIcon icon="fal fa-globe" class="text-gray-400" fixed-width aria-hidden="true" />
+                            </dt>
+                            <dd class="text-gray-500">
+                                <a :href="data.customer.contact_website.startsWith('http') ? data.customer.contact_website : `https://${data.customer.contact_website}`" target="_blank" rel="noopener noreferrer">{{ data?.customer?.contact_website }}</a>
+                            </dd>
+                            <button @click="copyToClipboard(data?.customer?.contact_website, 'Website')"
                                     class="text-gray-400 hover:text-gray-600 transition-colors"
                                     v-tooltip="trans('Copy to clipboard')">
                                 <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
