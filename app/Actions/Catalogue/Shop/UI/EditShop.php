@@ -593,6 +593,20 @@ class EditShop extends OrgAction
                     'label'  => __('Sales Channels'),
                     'icon'   => 'fal fa-shopping-cart',
                     'fields' => $salesChannelFields,
+                ],
+                [
+                    'label'  => __('Reviews'),
+                    'icon'   => 'fal fa-shopping-cart',
+                    'fields' => [
+                        'reviews' => [
+                                    'type'  => 'website_reviews',
+                                    'label' => __('review'),
+                                    'value' => [
+                                        'provider' => $shop->settings['reviews']['provider'] ?? null,
+                                        'data' =>  $shop->settings['reviews']['data'] ?? null,
+                                    ],
+                                ],
+                    ],
                 ]
             ],
             'args' => [
