@@ -17,7 +17,7 @@ use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\ActionRequest;
 
-class SendProspectMailShotNow extends OrgAction
+class SendProspectMailShot extends OrgAction
 {
     use AsCommand;
     use AsAction;
@@ -25,11 +25,6 @@ class SendProspectMailShotNow extends OrgAction
 
     public function handle(Mailshot $mailshot, array $modelData): Mailshot
     {
-        // NOTE: For testing purposes, only available for Ukraine
-        if ($mailshot->shop_id !== 44) {
-            throw new \Exception('Action only available for Ukraine');
-        }
-
         if ($mailshot->is_second_wave) {
             throw new \Exception('Action not available for second wave mailshot');
         }
@@ -53,13 +48,6 @@ class SendProspectMailShotNow extends OrgAction
 
         return $mailshot;
     }
-
-    public function rules()
-    {
-        // TODO: implement rules
-        return [];
-    }
-
 
     public function asController(Shop $shop, Mailshot $mailshot, ActionRequest $request): Mailshot
     {
