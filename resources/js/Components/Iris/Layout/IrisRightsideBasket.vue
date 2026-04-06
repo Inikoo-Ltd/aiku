@@ -501,23 +501,26 @@ onUnmounted(() => {
         </div>
 
         <!-- Section: Missed Offers -->
-        <div v-if="layout.app.environment === 'local'" class="px-4 pb-6 sm:px-6">
-            <div class="text-xs text-red-500 font-bold">
-                {{ ctrans('You missed ( :number_missed_offer ) offers', { number_missed_offer: dataSideBasket?.missed_offers?.missed_offers_list?.length || 0 }) }}
+        <Transition name="slide-to-right">
+            <div v-if="layout.app.environment === 'local' && Object.values(dataSideBasket?.missed_offers || {})?.length" class="px-4 pb-6 sm:px-6">
+                <div class="text-xs text-red-500 font-bold">
+                    {{ ctrans('You missed ( :number_missed_offer ) offers', { number_missed_offer: Object.values(dataSideBasket?.missed_offers || {})?.length || 0 }) }}
+                </div>
+                <div class="flex flex-col gap-y-2">
+                    <TransitionGroup name="list" tag="ul" class="!m-0">
+                        <li v-for="(missed_offer, misOfferKey) in dataSideBasket?.missed_offers" :key="missed_offer.id" class="list-none">
+                            <MissedOfferFOB v-if="misOfferKey == 'fob'" :data="missed_offer" />
+                            <div v-else class="bg-[#2a919e] text-white px-2 py-2 rounded-md mt-2 text-sm flex items-center justify-between gap-x-2">
+                                <InformationIcon :information="missed_offer.information" class="text-2xl" />
+                                <div>
+                                    {{ missed_offer.description }}
+                                </div>
+                            </div>
+                        </li>
+                    </TransitionGroup>
+                </div>
             </div>
-
-            <div class="flex flex-col gap-y-2">
-                <template v-for="missed_offer in dataSideBasket?.missed_offers?.missed_offers_list" :key="missed_offer.id">
-                    <MissedOfferFOB v-if="missed_offer.type == 'first_order_bonus'" />
-                    <div v-else class="bg-[#2a919e] text-white px-2 py-2 rounded-md mt-2 text-sm flex items-center justify-between gap-x-2">
-                        <InformationIcon :information="missed_offer.information" class="text-2xl" />
-                        <div>
-                            {{ missed_offer.description }}
-                        </div>
-                    </div>
-                </template>
-            </div>
-        </div>
+        </Transition>
         
         <!-- Section: Order Summary -->
         <div class="border-t border-gray-200 px-4 pt-3 pb-6 sm:px-6">
