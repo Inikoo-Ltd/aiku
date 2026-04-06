@@ -305,6 +305,7 @@ resetForm();
 
                    <Button
                         full
+                        icon="fad fa-save"
                         :label="isLoadingSubmit ? trans('Loading') : trans('Save')"
                         @click="submitCategoryOffer"
                         :disabled="isFormInvalid || isLoadingSubmit"

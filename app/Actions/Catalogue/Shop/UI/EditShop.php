@@ -602,17 +602,28 @@ class EditShop extends OrgAction
                     'fields' => $salesChannelFields,
                 ],
                 [
-                    'label'  => __('Reviews'),
+                    'label'  => __('Bundle Discount'),
                     'icon'   => 'fal fa-shopping-cart',
                     'fields' => [
+                        'bundle_discount_percentage' => [
+                            'type'  => 'input',
+                            'label' => __('Bundle Discount Percentage'),
+                            'value' => Arr::get($shop->settings, 'discount.bundle_discount_percentage', ''),
+                        ],
+                    ],
+                ],
+                [
+                    'label'  => __('Reviews'),
+                    'icon'   => 'fal fa-star',
+                    'fields' => [
                         'reviews' => [
-                                    'type'  => 'website_reviews',
-                                    'label' => __('review'),
-                                    'value' => [
-                                        'provider' => $shop->settings['reviews']['provider'] ?? null,
-                                        'data' =>  $shop->settings['reviews']['data'] ?? null,
-                                    ],
-                                ],
+                            'type'  => 'website_reviews',
+                            'label' => __('review'),
+                            'value' => [
+                                'provider' => $shop->settings['reviews']['provider'] ?? null,
+                                'data' =>  $shop->settings['reviews']['data'] ?? null,
+                            ],
+                        ],
                     ],
                 ]
             ],

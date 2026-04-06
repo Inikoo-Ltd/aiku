@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Retina\Dropshipping\Bundle\UI\RedirectIrisToRetinaBundle;
 use App\Actions\Retina\Media\DownloadRetinaAttachment;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Iris\UpdateIrisLocale;
@@ -72,6 +73,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     Route::get('data-feed.csv', DownloadIrisProduct::class)->name('shop.data_feed');
     Route::get('{productCategory}/data-feed.csv', [DownloadIrisProduct::class, 'inProductCategory'])->name('product_category.data_feed');
+    Route::get('redirect-bundle-to-retina', RedirectIrisToRetinaBundle::class)->name('redirect_bundle_to_retina');
 
     Route::prefix("catalogue")
         ->name("catalogue.")

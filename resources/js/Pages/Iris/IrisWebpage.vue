@@ -23,10 +23,9 @@ defineOptions({ layout: LayoutIris })
 library.add(faCheck, faPlus, faMinus)
 
 const layout: any = inject("layout", {})
-const review = usePage().props?.iris?.website?.reviews_settings
+const review = ref(usePage().props?.iris?.website?.reviews_settings)
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const currentUrl = ref('')
-console.log('layout', layout)
 
 const checkScreenType = () => {
   const width = window.innerWidth
@@ -37,7 +36,7 @@ const checkScreenType = () => {
 
 
 const ReviewIframeUrl = computed(() => {
-  const config = review
+  const config = review.value
   const provider = config?.provider
 
   if (provider === 'reviews.io') {
@@ -51,7 +50,7 @@ const ReviewIframeUrl = computed(() => {
     const data = config?.data
     if (!data?.template_id || !data?.business_unit_id) return null
 
-    const locale = layout.iris.locale || 'en-GB'
+    const locale = layout.iris.locale || 'en-us'
 
     return `https://widget.trustpilot.com/trustboxes/${data.template_id}/index.html?businessunitId=${data.business_unit_id}&locale=${locale}`
   }
@@ -96,6 +95,7 @@ onBeforeUnmount(() => {
 
 
 console.log('webpage_data',  props)
+console.log('ReviewIframeUrl : ', ReviewIframeUrl.value, review.value )
 
 </script>
 
