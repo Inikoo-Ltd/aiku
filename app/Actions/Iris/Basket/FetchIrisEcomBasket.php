@@ -189,6 +189,19 @@ class FetchIrisEcomBasket extends IrisAction
 
         $orderArr['products'] = $transactions;
 
+        $orderArr['missed_offers']  = [
+            // TODO INI-990
+            // 'missed_offers_list' => $order->missedOffers()->with('offer')->get()->map(function ($missedOffer) {
+            //     return [
+            //         'id'         => $missedOffer->id,
+            //         'offer_id'   => $missedOffer->offer_id,
+            //         'type'       => $missedOffer->type,
+            //         'offer_name' => $missedOffer->offer?->name,
+            //         'reason'     => $missedOffer->reason,
+            //     ];
+            // }),
+        ];
+
         $orderArr['charges'] = [
             'premium_dispatch' => $premiumDispatch ? [
                 'id'           => $premiumDispatch->id,

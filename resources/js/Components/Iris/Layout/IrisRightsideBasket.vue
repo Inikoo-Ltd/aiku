@@ -350,7 +350,7 @@ onUnmounted(() => {
                 </div> -->
             </div>
             
-            <!-- Section: Bonus list -->
+            <!-- Section: Bonus list (meter) -->
             <div class="text-xs">
                 <div v-if="dataSideBasket?.order_data?.reference" class="-ml-2 bg-gray-200 px-2 mb-3">
                     {{ trans("Order Number #:reference", { reference: dataSideBasket?.order_data?.reference ?? '' }) }}
@@ -495,6 +495,19 @@ onUnmounted(() => {
                     <Button
                         label="Apply"
                     />
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Missed Offers -->
+        <div v-if="layout.app.environment === 'local'" class="px-4 pb-6 sm:px-6">
+            <div class="text-xs text-red-500 font-bold">
+                You missed ( 1 ) offers
+            </div>
+            <div class="bg-[#2a919e] text-white px-2 py-2 rounded-md mt-2 text-sm flex items-center justify-between gap-x-2">
+                <InformationIcon :information="ctrans('First order bonus')" class="text-2xl" />
+                <div>
+                    Spend £100 + Vat to activate Your FIRST ORDER BONUS
                 </div>
             </div>
         </div>
