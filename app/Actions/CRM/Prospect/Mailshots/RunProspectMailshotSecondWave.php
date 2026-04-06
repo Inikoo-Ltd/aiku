@@ -53,7 +53,7 @@ class RunProspectMailshotSecondWave
         // NOTE: for debug the SQL query
         // \Log::info($secondWaveQuery->toRawSql());
         foreach ($secondWaveQuery->cursor() as $secondWave) {
-            ProcessSendProspectMailshotSecondWave::dispatch($secondWave);
+            PrepareProspectMailshotSecondWaveRecipients::dispatch($secondWave);
             $secondWave->update([
                 'state' => MailshotStateEnum::SENDING,
                 'start_sending_at' => Carbon::now()->utc()
