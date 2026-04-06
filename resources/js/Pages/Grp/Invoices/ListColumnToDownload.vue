@@ -32,7 +32,7 @@ const compSelectedDeck = computed(() => {
     <div class="isolate bg-white px-6 lg:px-8">
         <div class="mx-auto max-w-2xl text-center mb-4">
             <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
-                {{ ctrans("Proforma Invoice") }}
+                {{ ctrans("Invoice") }}
             </h2>
         </div>
 
@@ -46,7 +46,7 @@ const compSelectedDeck = computed(() => {
 
         <a :href="compSelectedDeck" target="_blank" rel="noopener noreferrer"
             class="w-full block mt-6">
-            <Button full :label="ctrans('Download Proforma Invoice')" />
+            <Button full :label="ctrans('Download Invoice')" />
         </a>
     </div>
 </template>

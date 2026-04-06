@@ -64,7 +64,8 @@ class ShowGroupDashboard extends OrgAction
 
         $timeSeriesData = GetGroupDashboardTimeSeriesData::run($group, $performanceDates[0], $performanceDates[1]);
 
-        $tabsBox = $this->getTabsBox($group);
+        $tabsBox             = $this->getTabsBox($group);
+        $stockHistoryTabsBox = $this->getStockHistoryTabsBox($group);
 
         $dashboard = [
             'super_blocks' => [
@@ -101,6 +102,9 @@ class ShowGroupDashboard extends OrgAction
                     'tabs_box'    => [
                         'current'    => $this->tab,
                         'navigation' => $tabsBox
+                    ],
+                    'tabs_box_stock' => [
+                        'navigation' => $stockHistoryTabsBox
                     ],
                 ]
             ],

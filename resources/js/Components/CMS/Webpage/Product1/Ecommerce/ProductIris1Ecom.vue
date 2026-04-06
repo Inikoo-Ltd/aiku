@@ -193,8 +193,7 @@ onMounted(async () => {
   varinatNavigation.value.nextEl = variantNextEl.value
 })
 
-
-
+console.log('props', props)
 </script>
 
 

@@ -24,22 +24,24 @@ class GetChatStatus
 
         if (!$website) {
             return [
-                'is_online'   => false,
-                'schedule'    => null,
-                'session'     => $chatSession,
-                'is_user'     => $isUser,
-                'is_metadata' => $isMetadata,
+                'is_online'    => false,
+                'schedule'     => null,
+                'offline_info' => null,
+                'session'      => $chatSession,
+                'is_user'      => $isUser,
+                'is_metadata'  => $isMetadata,
             ];
         }
 
         $chatConfig = GetChatConfig::run($website);
 
         return [
-            'is_online'   => $chatConfig['is_online'],
-            'schedule'    => $chatConfig['schedule'],
-            'session'     => $chatSession,
-            'is_user'     => $isUser,
-            'is_metadata' => $isMetadata,
+            'is_online'    => $chatConfig['is_online'],
+            'schedule'     => $chatConfig['schedule'],
+            'offline_info' => $chatConfig['offline_info'],
+            'session'      => $chatSession,
+            'is_user'      => $isUser,
+            'is_metadata'  => $isMetadata,
         ];
     }
 
