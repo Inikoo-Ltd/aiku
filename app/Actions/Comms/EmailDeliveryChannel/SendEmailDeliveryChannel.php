@@ -123,6 +123,11 @@ class SendEmailDeliveryChannel
                 if ($recipientData) {
                     $additionalData['customer_name'] = $recipientData->name;
                 }
+            } elseif ($recipient->recipient_type == 'Prospect') {
+                $recipientData = DB::table('prospects')->select('name')->where('id', $recipient->recipient_id)->first();
+                if ($recipientData) {
+                    $additionalData['customer_name'] = $recipientData->name;
+                }
             }
 
 
