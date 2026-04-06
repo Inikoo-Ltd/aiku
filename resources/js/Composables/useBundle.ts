@@ -283,7 +283,8 @@ export function useBundle(routes?: any) {
         productIds,
         bundleRoutes,
         resetBundle,
-
+        isStoringBundle,
+        
         addProduct,
         removeProduct,
         increaseQty,

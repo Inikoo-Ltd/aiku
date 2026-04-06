@@ -1480,16 +1480,16 @@ const layout = inject("layout", layoutStructure)
 	</div>
 	<div v-else-if="currentTab === 'bundles'">
 		<div
-		v-if="props.product_count < 1"
+			v-if="props.product_count < 1"
 			class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
 			<h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
-				{{ content?.portfolio_empty?.title || trans(`You don't have a single portfolios`) }}
+				{{ content?.portfolio_empty?.title || trans(`You don't have a single bundles`) }}
 			</h1>
 			<p class="mt-4 text-xl">
 				{{
 					content?.portfolio_empty?.description ||
 					trans(
-						"To get started, add products to your shop. You can sync from your inventory or create a new one."
+						"To get started, add bundles to your shop. You can sync from your inventory or create a new one."
 					)
 				}}
 			</p>
