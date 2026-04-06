@@ -12,11 +12,187 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Inventory\OrganisationStockHistory;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 
 trait WithTabsBox
 {
+    public function getStockHistoryTabsBox(Group $group): array
+    {
+        $group->loadMissing(['organisations' => fn ($q) => $q->where('type', OrganisationTypeEnum::SHOP)->with(['currency'])]);
+        $ecommerceOrgs = $group->organisations->where('type', OrganisationTypeEnum::SHOP)->values();
+
+        $orgHistories = collect();
+        foreach ($ecommerceOrgs as $org) {
+            $history = OrganisationStockHistory::query()
+                ->where('organisation_id', $org->id)
+                ->where('is_week', false)
+                ->where('is_month', false)
+                ->where('is_year', false)
+                ->latest('date')
+                ->first();
+            if ($history) {
+                $orgHistories->push(['org' => $org, 'history' => $history]);
+            }
+        }
+
+        $totalSkus        = $orgHistories->sum(fn ($item) => $item['history']->number_org_stocks);
+        $totalOutOfStock  = $orgHistories->sum(fn ($item) => $item['history']->number_out_of_stock_org_stocks);
+        $totalLocations   = $orgHistories->sum(fn ($item) => $item['history']->number_locations);
+        $totalNotSold1y   = $orgHistories->sum(fn ($item) => $item['history']->number_org_stocks_not_sold_1y);
+        $totalStockValue  = $orgHistories->sum(fn ($item) => (float) $item['history']->grp_stock_value);
+        $totalDormant1y   = $orgHistories->sum(fn ($item) => (float) $item['history']->value_dormant_stock_1y);
+
+        $pctOutOfStock = $totalSkus > 0 ? round($totalOutOfStock / $totalSkus * 100, 1) : 0;
+        $pctDormant1y  = $totalStockValue > 0 ? round($totalDormant1y / $totalStockValue * 100, 1) : 0;
+        $pctNotSold1y  = $totalSkus > 0 ? round($totalNotSold1y / $totalSkus * 100, 1) : 0;
+
+        $currencyCode = $group->currency->code;
+
+        return [
+            [
+                'label'         => __('Total SKUs'),
+                'currency_code' => $currencyCode,
+                'tabs'          => [
+                    [
+                        'tab_slug'    => 'total_skus',
+                        'label'       => __('Total SKUs'),
+                        'value'       => $totalSkus,
+                        'type'        => 'number',
+                        'icon_data'   => ['icon' => 'fal fa-box', 'tooltip' => __('Total SKUs')],
+                        'information' => ['type' => 'currency', 'label' => $totalStockValue],
+                    ],
+                ],
+                'children'      => $orgHistories->map(fn ($item) => [
+                    'label'         => $item['org']->name,
+                    'slug'          => $item['org']->slug,
+                    'currency_code' => $currencyCode,
+                    'tabs'          => [
+                        [
+                            'tab_slug'    => 'total_skus',
+                            'value'       => $item['history']->number_org_stocks,
+                            'type'        => 'number',
+                            'information' => ['type' => 'currency', 'label' => (float) $item['history']->grp_stock_value],
+                        ],
+                    ],
+                ])->values()->toArray(),
+            ],
+            [
+                'label' => __('Locations'),
+                'tabs'  => [
+                    [
+                        'tab_slug'  => 'total_locations',
+                        'label'     => __('Locations'),
+                        'value'     => $totalLocations,
+                        'type'      => 'number',
+                        'icon_data' => ['icon' => 'fal fa-inventory', 'tooltip' => __('Locations')],
+                    ],
+                ],
+                'children' => $orgHistories->map(fn ($item) => [
+                    'label' => $item['org']->name,
+                    'slug'  => $item['org']->slug,
+                    'tabs'  => [
+                        [
+                            'tab_slug' => 'total_locations',
+                            'value'    => $item['history']->number_locations,
+                            'type'     => 'number',
+                        ],
+                    ],
+                ])->values()->toArray(),
+            ],
+            [
+                'label' => __('Out of Stock'),
+                'tabs'  => [
+                    [
+                        'tab_slug'    => 'out_of_stock',
+                        'label'       => __('Out of Stock'),
+                        'value'       => $totalOutOfStock,
+                        'type'        => 'number',
+                        'icon_data'   => ['icon' => 'fas fa-times-circle', 'tooltip' => __('Out of Stock'), 'class' => 'text-red-500'],
+                        'information' => ['label' => $pctOutOfStock . '%'],
+                    ],
+                ],
+                'children' => $orgHistories->map(fn ($item) => [
+                    'label' => $item['org']->name,
+                    'slug'  => $item['org']->slug,
+                    'tabs'  => [
+                        [
+                            'tab_slug'    => 'out_of_stock',
+                            'value'       => $item['history']->number_out_of_stock_org_stocks,
+                            'type'        => 'number',
+                            'information' => [
+                                'label' => ($item['history']->number_org_stocks > 0
+                                    ? round($item['history']->number_out_of_stock_org_stocks / $item['history']->number_org_stocks * 100, 1)
+                                    : 0) . '%',
+                            ],
+                        ],
+                    ],
+                ])->values()->toArray(),
+            ],
+            [
+                'label'         => __('Dormant Stock (1y)'),
+                'currency_code' => $currencyCode,
+                'tabs'          => [
+                    [
+                        'tab_slug'    => 'dormant_stock_1y',
+                        'label'       => __('Dormant Stock'),
+                        'value'       => $totalDormant1y,
+                        'type'        => 'currency',
+                        'icon_data'   => ['icon' => 'fal fa-skull-cow', 'tooltip' => __('Dormant Stock 1y'), 'class' => 'text-red-500'],
+                        'information' => ['label' => $pctDormant1y . '%'],
+                    ],
+                ],
+                'children'      => $orgHistories->map(fn ($item) => [
+                    'label'         => $item['org']->name,
+                    'slug'          => $item['org']->slug,
+                    'currency_code' => $currencyCode,
+                    'tabs'          => [
+                        [
+                            'tab_slug'    => 'dormant_stock_1y',
+                            'value'       => (float) $item['history']->value_dormant_stock_1y,
+                            'type'        => 'currency',
+                            'information' => [
+                                'label' => ((float) $item['history']->grp_stock_value > 0
+                                    ? round((float) $item['history']->value_dormant_stock_1y / (float) $item['history']->grp_stock_value * 100, 1)
+                                    : 0) . '%',
+                            ],
+                        ],
+                    ],
+                ])->values()->toArray(),
+            ],
+            [
+                'label' => __('Not Sold (1y)'),
+                'tabs'  => [
+                    [
+                        'tab_slug'    => 'not_sold_1y',
+                        'label'       => __('Not Sold 1y'),
+                        'value'       => $totalNotSold1y,
+                        'type'        => 'number',
+                        'icon_data'   => ['icon' => 'fal fa-ban', 'tooltip' => __('Not Sold 1y'), 'class' => 'text-red-500'],
+                        'information' => ['label' => $pctNotSold1y . '%'],
+                    ],
+                ],
+                'children' => $orgHistories->map(fn ($item) => [
+                    'label' => $item['org']->name,
+                    'slug'  => $item['org']->slug,
+                    'tabs'  => [
+                        [
+                            'tab_slug'    => 'not_sold_1y',
+                            'value'       => $item['history']->number_org_stocks_not_sold_1y,
+                            'type'        => 'number',
+                            'information' => [
+                                'label' => ($item['history']->number_org_stocks > 0
+                                    ? round($item['history']->number_org_stocks_not_sold_1y / $item['history']->number_org_stocks * 100, 1)
+                                    : 0) . '%',
+                            ],
+                        ],
+                    ],
+                ])->values()->toArray(),
+            ],
+        ];
+    }
+
     public function getTabsBox(Group|Organisation|Shop $parent): array
     {
         $currency = "";
