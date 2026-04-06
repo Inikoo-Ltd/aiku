@@ -470,19 +470,9 @@ resetForm()
 
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />
-                    <Button
-                            full
-                            :label="isLoadingSubmit ? trans('Loading') : trans('Save')"
-                            @click="submitCategoryOffer"
-                            :disabled="isFormInvalid || isLoadingSubmit"
-                        >
-                            <template #icon>
-                                <FontAwesomeIcon
-                                    :icon="isLoadingSubmit ? 'fas fa-spinner' : 'fad fa-save'"
-                                    :class="{ 'animate-spin': isLoadingSubmit }"
-                                />
-                            </template>
-                    </Button>
+                    <Button full icon="fad fa-save" :label="isLoadingSubmit ? trans('Loading') : trans('Save')" @click="submitCategoryOffer"
+                                           :loading="isLoadingSubmit" :disabled="isFormInvalid">
+                                       </Button>
                 </div>
             </div>
         </Modal>
