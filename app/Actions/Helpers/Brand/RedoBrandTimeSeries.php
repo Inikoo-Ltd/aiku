@@ -32,12 +32,12 @@ class RedoBrandTimeSeries implements ShouldBeUnique
     {
         if (!$from || !$to) {
             $dateRange = DB::table('invoice_transactions')
-                ->join('invoice_transaction_has_trade_units', 'invoice_transaction_has_trade_units.invoice_transaction_id', '=', 'invoice_transactions.id')
                 ->join('model_has_brands', function ($join) use ($brand) {
-                    $join->on('model_has_brands.model_id', '=', 'invoice_transaction_has_trade_units.trade_unit_id')
-                         ->where('model_has_brands.model_type', '=', 'TradeUnit')
+                    $join->on('model_has_brands.model_id', '=', 'invoice_transactions.model_id')
+                         ->where('model_has_brands.model_type', '=', 'Product')
                          ->where('model_has_brands.brand_id', '=', $brand->id);
                 })
+                ->where('invoice_transactions.model_type', '=', 'Product')
                 ->whereNull('invoice_transactions.deleted_at')
                 ->selectRaw('MIN(invoice_transactions.date) as first_date, MAX(invoice_transactions.date) as last_date')
                 ->first();
