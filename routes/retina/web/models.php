@@ -56,6 +56,14 @@ use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
 use App\Actions\Retina\Dropshipping\ApiToken\DeleteCustomerAccessToken;
 use App\Actions\Retina\Dropshipping\ApiToken\StoreCustomerToken;
 use App\Actions\Retina\Dropshipping\Basket\DeleteRetinaBasket;
+use App\Actions\Retina\Dropshipping\Bundle\CalculateRetinaBundleItemPriceDetails;
+use App\Actions\Retina\Dropshipping\Bundle\DeleteRetinaBundle;
+use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductImages;
+use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductBundleDescription;
+use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductBundleTitle;
+use App\Actions\Retina\Dropshipping\Bundle\StoreRetinaBundle;
+use App\Actions\Retina\Dropshipping\Bundle\UpdateRetinaBundle;
+use App\Actions\Retina\Dropshipping\Bundle\UploadRetinaBundleProductImages;
 use App\Actions\Retina\Dropshipping\Client\ImportRetinaClients;
 use App\Actions\Retina\Dropshipping\Client\UpdateRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\ImportBulkCustomerSalesChannelPortfolios;
@@ -332,6 +340,20 @@ Route::delete('{token}/access-token', DeleteCustomerAccessToken::class)->name('a
 
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
+    Route::prefix('bundles')->name('bundles.')->group(function () {
+        Route::post('title-generator', GenerateRetinaProductBundleTitle::class)->name('title.generate');
+        Route::post('description-generator', GenerateRetinaProductBundleDescription::class)->name('description.generate');
+    });
+
+    Route::prefix('{customerSalesChannel:id}/bundles')->name('bundles.')->group(function () {
+        Route::post('/', StoreRetinaBundle::class)->name('store');
+        Route::patch('{bundle:id}', UpdateRetinaBundle::class)->name('update')->withoutScopedBindings();
+        Route::delete('{bundle:id}', DeleteRetinaBundle::class)->name('delete')->withoutScopedBindings();
+        Route::post('products/{product:id}/images-generator', GenerateRetinaProductImages::class)->name('products.images.generate')->withoutScopedBindings();
+        Route::post('products/{product:id}/images', UploadRetinaBundleProductImages::class)->name('products.images.store')->withoutScopedBindings();
+        Route::post('calculate-bundle-product', CalculateRetinaBundleItemPriceDetails::class)->name('products.calculate');
+    });
+
     Route::post('{customerSalesChannel:id}/bulk-unlink', UnlinkAndDeleteBulkRetinaPortfolio::class)->name('bulk.unlink');
 
     Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();

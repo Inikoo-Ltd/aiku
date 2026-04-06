@@ -1,0 +1,54 @@
+<?php
+
+/*
+ * author Arya Permana - Kirin
+ * created on 01-07-2025-11h-15m
+ * github: https://github.com/KirinZero0
+ * copyright 2025
+*/
+
+namespace App\Actions\Retina\Dropshipping\Bundle;
+
+use App\Actions\Helpers\AI\GetGeneratedImages;
+use App\Actions\RetinaAction;
+use App\Actions\Traits\WithActionUpdate;
+use App\Http\Resources\Helpers\ImageResource;
+use App\Models\Catalogue\Product;
+use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Traits\SanitizeInputs;
+use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
+
+class GenerateRetinaProductImages extends RetinaAction
+{
+    use WithActionUpdate;
+    use SanitizeInputs;
+
+    public function handle(Product $product, array $modelData): array
+    {
+        $prompt = Arr::get($modelData, 'prompt');
+
+        return GetGeneratedImages::run($product, $prompt, $modelData);
+    }
+
+    public function jsonResponse(array $images): ImageResource
+    {
+        return ImageResource::make(Arr::first($images));
+    }
+
+    public function rules(): array
+    {
+        return [
+            'prompt' => ['required', 'string'],
+            'images' => ['required', 'array']
+        ];
+    }
+
+    public function asController(CustomerSalesChannel $customerSalesChannel, Product $product, ActionRequest $request): array
+    {
+        $this->enableSanitize();
+        $this->initialisation($request);
+
+        return $this->handle($product, $this->validatedData);
+    }
+}

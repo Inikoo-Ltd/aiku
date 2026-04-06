@@ -18,6 +18,7 @@ enum CustomerSalesChannelPortfolioTabsEnum: string
     use HasTabs;
 
     case PRODUCTS = 'products';
+    case BUNDLES = 'bundles';
     case LOGS     = 'logs';
 
     public function blueprint(): array
@@ -26,6 +27,10 @@ enum CustomerSalesChannelPortfolioTabsEnum: string
             CustomerSalesChannelPortfolioTabsEnum::PRODUCTS => [
                 'title' => __('My Products'),
                 'icon'  => 'fal fa-tachometer-alt',
+            ],
+            CustomerSalesChannelPortfolioTabsEnum::BUNDLES => [
+                'title' => __('My Bundles'),
+                'icon'  => 'fal fa-layer-group',
             ],
             CustomerSalesChannelPortfolioTabsEnum::LOGS => [
                 'title' => __('Logs'),
