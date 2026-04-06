@@ -1149,6 +1149,12 @@ Route::prefix('charge/{charge:id}')->name('charge.')->group(function () {
     Route::patch('update', UpdateCharge::class)->name('update');
 });
 
+Route::name('brand.')->prefix('brand')->group(function () {
+    Route::post('store', StoreBrand::class)->name('store')->withoutScopedBindings();
+    Route::patch('{brand:id}/update', UpdateBrand::class)->name('update')->withoutScopedBindings();
+    Route::delete('{brand:id}/delete', DeleteBrand::class)->name('delete')->withoutScopedBindings();
+});
+
 Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function () {
     Route::post('store', StoreTradeUnitFamily::class)->name('store')->withoutScopedBindings();
     Route::patch('{tradeUnitFamily:id}/update', UpdateTradeUnitFamily::class)->name('update')->withoutScopedBindings();

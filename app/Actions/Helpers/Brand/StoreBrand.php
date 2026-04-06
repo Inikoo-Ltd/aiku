@@ -15,7 +15,9 @@ use App\Actions\OrgAction;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
 use App\Models\SysAdmin\Group;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -38,19 +40,21 @@ class StoreBrand extends OrgAction
                 'originalName' => $image->getClientOriginalName(),
                 'extension'    => $image->getClientOriginalExtension(),
             ];
-            $brand     = SaveModelImage::run(
+            $brand = SaveModelImage::run(
                 model: $brand,
                 imageData: $imageData,
                 scope: 'image',
             );
-
         }
-        AttachBrandToModel::make()->handle(
-            $parent,
-            [
-                'brand_id' => $brand->id
-            ],
-        );
+
+        if ($parent instanceof TradeUnit) {
+            AttachBrandToModel::make()->handle(
+                $parent,
+                [
+                    'brand_id' => $brand->id
+                ],
+            );
+        }
 
         return $brand;
     }
@@ -67,6 +71,18 @@ class StoreBrand extends OrgAction
                     ->max(12 * 1024)
             ],
         ];
+    }
+
+    public function htmlResponse(Brand $brand): RedirectResponse
+    {
+        return Redirect::route('grp.trade_units.brands.index');
+    }
+
+    public function asController(ActionRequest $request): Brand
+    {
+        $this->initialisationFromGroup(group(), $request);
+
+        return $this->handle(group(), $this->validatedData);
     }
 
     public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request)
