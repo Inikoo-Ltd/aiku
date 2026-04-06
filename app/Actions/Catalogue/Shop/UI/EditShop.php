@@ -598,7 +598,7 @@ class EditShop extends OrgAction
                     'label'  => __('Reviews'),
                     'icon'   => 'fal fa-shopping-cart',
                     'fields' => [
-                        'review' => [
+                        'reviews' => [
                                     'type'  => 'website_reviews',
                                     'label' => __('review'),
                                     'value' => [

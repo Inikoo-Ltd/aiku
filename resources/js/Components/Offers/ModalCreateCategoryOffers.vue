@@ -88,6 +88,7 @@ const submitCategoryOffer = () => {
         isLoadingSubmit.value = false
     })
 }
+const today = new Date(new Date().setHours(0, 0, 0, 0))
 
 function formatDate(date: Date | null) {
     if (!date) return null
@@ -272,7 +273,7 @@ resetForm();
                                     :information="trans('If start date is empty, will start immediately')" />:
                             </label>
 
-                            <DatePicker v-model="startDate" showIcon dateFormat="yy-mm-dd" class="w-full"
+                            <DatePicker v-model="startDate" :minDate="today" showIcon dateFormat="yy-mm-dd" class="w-full"
                                 :placeholder="trans('Select start date')" />
                         </div>
 
