@@ -21,8 +21,6 @@ const providerSchemas: Record<string, Array<{ key: string; label: string; type: 
         { key: "apikey", label: "API Key", type: "text" },
     ],
     "trust_pilot": [
-        { key: "locale", label: "Locale", type: "text" },
-        { key: "lang", label: "Language", type: "text" },
         { key: "template_id", label: "Template ID", type: "text" },
         { key: "business_unit_id", label: "Business Unit ID", type: "text" },
         { key: "url", label: "Review URL", type: "text" },
