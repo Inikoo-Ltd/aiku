@@ -34,7 +34,10 @@ class RedoProductTimeSeries implements ShouldBeUnique
 
     public function getJobUniqueId(?int $productId, ?string $from, ?string $to): string
     {
-        return $productId ?? 'empty'.'_'.$from.'_'.$to;
+        if ($productId === null) {
+            return 'empty'.'_'.$from.'_'.$to;
+        }
+        return $productId.'_'.$from.'_'.$to;
     }
 
     public function handle(?int $productId, ?string $from = null, ?string $to = null, bool $async = false): void

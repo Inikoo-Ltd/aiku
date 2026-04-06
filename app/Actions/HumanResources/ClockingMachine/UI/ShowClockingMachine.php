@@ -10,6 +10,7 @@ namespace App\Actions\HumanResources\ClockingMachine\UI;
 
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\HumanResources\Clocking\UI\IndexClockings;
+use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\UI\IndexClockingMachineCoordinatePolicies;
 use App\Actions\HumanResources\Workplace\UI\ShowWorkplace;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
@@ -17,8 +18,10 @@ use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\UI\HumanResources\ClockingMachineTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\HumanResources\ClockingMachineResource;
+use App\Http\Resources\HumanResources\ClockingMachineCoordinatePolicyResource;
 use App\Http\Resources\HumanResources\ClockingsResource;
 use App\Models\HumanResources\ClockingMachine;
+use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Workplace;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -42,6 +45,7 @@ class ShowClockingMachine extends OrgAction
 
         if ($clockingMachine->type === ClockingMachineTypeEnum::QR_CODE->value) {
             array_splice($tabs, 1, 0, ClockingMachineTabsEnum::SCAN_QR_CODE->value);
+            array_splice($tabs, 2, 0, ClockingMachineTabsEnum::CLOCKING_POLICIES->value);
         }
 
         return $tabs;
@@ -153,6 +157,27 @@ class ShowClockingMachine extends OrgAction
                     ? fn () => GetClockingMachineShowcase::run($clockingMachine)
                     : Inertia::lazy(fn () => GetClockingMachineShowcase::run($clockingMachine)),
 
+                ClockingMachineTabsEnum::CLOCKING_POLICIES->value =>
+                $this->tab == ClockingMachineTabsEnum::CLOCKING_POLICIES->value
+                    ? fn () => ClockingMachineCoordinatePolicyResource::collection(
+                        IndexClockingMachineCoordinatePolicies::run($clockingMachine, ClockingMachineTabsEnum::CLOCKING_POLICIES->value)
+                    )->additional([
+                        'can_edit_clocking_policies' => $this->canEdit,
+                        'employee_options'           => $this->getEmployeeOptions(),
+                        'workplace_options'          => $this->getWorkplaceOptions(),
+                        'organisation_options'       => $this->getOrganisationOptions(),
+                        'current_organisation_id'    => $this->organisation->id,
+                    ])
+                    : Inertia::lazy(fn () => ClockingMachineCoordinatePolicyResource::collection(
+                        IndexClockingMachineCoordinatePolicies::run($clockingMachine, ClockingMachineTabsEnum::CLOCKING_POLICIES->value)
+                    )->additional([
+                        'can_edit_clocking_policies' => $this->canEdit,
+                        'employee_options'           => $this->getEmployeeOptions(),
+                        'workplace_options'          => $this->getWorkplaceOptions(),
+                        'organisation_options'       => $this->getOrganisationOptions(),
+                        'current_organisation_id'    => $this->organisation->id,
+                    ])),
+
                 ClockingMachineTabsEnum::CLOCKINGS->value => $this->tab == ClockingMachineTabsEnum::CLOCKINGS->value ?
                     fn () => ClockingsResource::collection(IndexClockings::run($clockingMachine, ClockingMachineTabsEnum::CLOCKINGS->value))->additional([
                         'can_edit_clockings' => $this->canEdit,
@@ -167,6 +192,32 @@ class ShowClockingMachine extends OrgAction
 
             ]
         )->table(IndexClockings::make()->tableStructure($clockingMachine, prefix: ClockingMachineTabsEnum::CLOCKINGS->value))
+            ->table(IndexClockingMachineCoordinatePolicies::make()->tableStructure([
+                'create' => [
+                    'route' => [
+                        'name'       => 'grp.models.clocking-machine-coordinate-policy.store',
+                        'parameters' => [
+                            'organisation' => $this->organisation->slug,
+                        ],
+                    ],
+                ],
+                'edit' => [
+                    'route' => [
+                        'name'       => 'grp.models.clocking-machine-coordinate-policy.update',
+                        'parameters' => [
+                            'organisation' => $this->organisation->slug,
+                        ],
+                    ],
+                ],
+                'delete' => [
+                    'route' => [
+                        'name'       => 'grp.models.clocking-machine-coordinate-policy.delete',
+                        'parameters' => [
+                            'organisation' => $this->organisation->slug,
+                        ],
+                    ],
+                ],
+            ], prefix: ClockingMachineTabsEnum::CLOCKING_POLICIES->value))
             ->table(IndexHistory::make()->tableStructure('hst'));
     }
 
@@ -196,7 +247,6 @@ class ShowClockingMachine extends OrgAction
                         ],
                     ],
                     'suffix'         => $suffix,
-
                 ],
             ];
         };
@@ -287,5 +337,49 @@ class ShowClockingMachine extends OrgAction
                 ]
             ]
         };
+    }
+
+    private function getEmployeeOptions(): array
+    {
+        return Employee::query()
+            ->where('organisation_id', $this->organisation->id)
+            ->where('state', 'working')
+            ->orderBy('contact_name')
+            ->get()
+            ->map(fn (Employee $employee) => [
+                'value' => $employee->id,
+                'label' => $employee->contact_name ?: $employee->slug,
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function getWorkplaceOptions(): array
+    {
+        return Workplace::query()
+            ->where('organisation_id', $this->organisation->id)
+            ->where('status', true)
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Workplace $workplace) => [
+                'value' => $workplace->id,
+                'label' => $workplace->name,
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function getOrganisationOptions(): array
+    {
+        return Organisation::query()
+            ->where('id', $this->organisation->id)
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Organisation $organisation) => [
+                'value' => $organisation->id,
+                'label' => $organisation->name,
+            ])
+            ->values()
+            ->all();
     }
 }

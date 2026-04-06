@@ -36,6 +36,7 @@ class GetCatalogueShowcase
                     $this->buildCollectionsStat($shop, $orgSlug, $shopSlug),
                     $this->buildStrayFamiliesStat($orgSlug, $shopSlug),
                     $this->buildOrphanProductsStat($shop, $orgSlug, $shopSlug),
+                    $this->buildRRPViolationStat($shop, $orgSlug, $shopSlug)
                 ]
             );
         }
@@ -361,6 +362,21 @@ class GetCatalogueShowcase
                 ],
                 'count' => $shop->stats->number_current_sub_departments,
             ],
+        ];
+    }
+
+    private function buildRRPViolationStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        return [
+            'label'           => __('Products with RRP Violation'),
+            'is_negative'     => true,
+            'route'           => [
+                'name'       => 'grp.org.shops.show.catalogue.products.rrp_violation_products.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'            => 'fal fa-cube',
+            'backgroundColor' => '#ff000011',
+            'value'           => $shop->stats->number_products_with_rrp_violation,
         ];
     }
 }

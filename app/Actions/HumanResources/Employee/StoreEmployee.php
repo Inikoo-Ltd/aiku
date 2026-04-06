@@ -22,6 +22,7 @@ use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithReorganisePositions;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Workplace;
 use App\Models\SysAdmin\Organisation;
@@ -204,6 +205,7 @@ class StoreEmployee extends OrgAction
             'emergency_contact.address' => ['sometimes', 'nullable', 'string', 'max:512'],
             'emergency_contact.status' => ['sometimes', 'nullable', 'string', 'max:512'],
             'type' => ['required', Rule::enum(EmployeeTypeEnum::class)],
+            'employment_type' => ['required', Rule::enum(EmploymentTypeEnum::class)],
             'contact_address' => ['sometimes', 'nullable', new ValidAddress()],
             'notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
             'identity_document_type' => ['sometimes', 'nullable', 'string', 'max:256'],

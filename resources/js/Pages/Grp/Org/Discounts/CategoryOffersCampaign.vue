@@ -40,6 +40,8 @@ const props = defineProps<{
     shop_data: {
         slug: string
         currency_code: string
+        organisation: string
+        offercampaign: string
     }
 }>()
 
@@ -60,7 +62,7 @@ const component = computed(() => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #button-category-create-offer>
+        <template #otherBefore>
             <ModalCreateCategoryOffers
                 :shop_data="props.shop_data"
             />

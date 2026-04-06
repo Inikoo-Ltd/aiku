@@ -14,12 +14,12 @@ use App\Actions\Comms\Mailshot\RunMailshotScheduled;
 use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
 use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
 use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns;
-use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
-use App\Actions\Comms\Outbox\ReorderRemainder\SendReorderRemainderEmails;
-use App\Actions\Comms\Outbox\RunBasketLowStockEmailBulkRuns;
-use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
-use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
+use App\Actions\Comms\Outbox\ReorderRemainder\RunReorderRemainderEmailBulkRuns;
+use App\Actions\CRM\Customer\PruneCustomerWebActivities;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
+use App\Actions\Web\Website\PruneWebsiteConversionEvents;
+use App\Actions\Web\Website\PruneWebsitePageViews;
+use App\Actions\Web\Website\PruneWebsiteVisitors;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
@@ -43,7 +43,6 @@ class Kernel extends ConsoleKernel
 
     protected function schedule(Schedule $schedule): void
     {
-
         $this->logSchedule(
             $schedule->job(RunNewsletterScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
                 monitorSlug: 'RunNewsletterScheduled',
@@ -68,6 +67,15 @@ class Kernel extends ConsoleKernel
             ),
             name: 'RunMailshotSecondWave',
             type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->command('run:current_stock_history')->twiceDailyAt(0, 22, 5)->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'RunCurrentStockHistory',
+            ),
+            name: 'RunCurrentStockHistory',
+            type: 'command',
             scheduledAt: now()->format('H:i')
         );
 
@@ -224,7 +232,7 @@ class Kernel extends ConsoleKernel
 
 
         $this->logSchedule(
-            $schedule->command('fetch:stock_movements aroma -N -D 2')->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            $schedule->command('fetch:stock_movements -N -D 2')->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'FetchAuroraStockMovements',
             ),
             name: 'FetchAuroraStockMovements',
@@ -415,10 +423,10 @@ class Kernel extends ConsoleKernel
 
 
         $this->logSchedule(
-            $schedule->job(SendReorderRemainderEmails::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'SendReorderRemainderEmails',
+            $schedule->job(RunReorderRemainderEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'RunReorderRemainderEmailBulkRuns',
             ),
-            name: 'SendReorderRemainderEmails',
+            name: 'RunReorderRemainderEmailBulkRuns',
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
@@ -449,7 +457,6 @@ class Kernel extends ConsoleKernel
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
-
 
 
         // $this->logSchedule(
@@ -497,6 +504,42 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
+            $schedule->job(PruneCustomerWebActivities::makeJob())->dailyAt('03:30')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'PruneCustomerWebActivities',
+            ),
+            name: 'PruneCustomerWebActivities',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(PruneWebsitePageViews::makeJob())->dailyAt('03:35')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'PruneWebsitePageViews',
+            ),
+            name: 'PruneWebsitePageViews',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(PruneWebsiteConversionEvents::makeJob())->dailyAt('03:40')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'PruneWebsiteConversionEvents',
+            ),
+            name: 'PruneWebsiteConversionEvents',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(PruneWebsiteVisitors::makeJob())->dailyAt('03:45')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'PruneWebsiteVisitors',
+            ),
+            name: 'PruneWebsiteVisitors',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
             $schedule->command(' offer:update_status_from_dates')->hourly()->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'OfferUpdateStatusFromDates',
             ),
@@ -517,7 +560,7 @@ class Kernel extends ConsoleKernel
 
     protected function commands(): void
     {
-        $this->load(__DIR__ . '/Commands');
+        $this->load(__DIR__.'/Commands');
 
         require base_path('routes/console.php');
     }

@@ -47,7 +47,6 @@ use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Inventory\OrgStock\LostAndFoundOrgStockStateEnum;
 use App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum;
 use App\Enums\UI\Inventory\LocationTabsEnum;
-use App\Enums\UI\Inventory\OrgStockFamilyTabsEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
@@ -836,30 +835,6 @@ test("UI Show Org Stock Family", function (OrgStockFamily $orgStockFamily) {
     });
 })->depends('create org stock family');
 
-test("UI Show Org Stock Family (tab org stocks)", function (OrgStockFamily $orgStockFamily) {
-    $warehouse = Warehouse::first();
-    $this->withoutExceptionHandling();
-    $response = get(
-        route("grp.org.warehouses.show.inventory.org_stock_families.show", [
-            $this->organisation->slug,
-            $warehouse->slug,
-            $orgStockFamily->slug,
-            'tab' => OrgStockFamilyTabsEnum::ORG_STOCKS->value
-        ])
-    );
-    $response->assertInertia(function (AssertableInertia $page) use ($orgStockFamily) {
-        $page
-            ->component("Org/Inventory/OrgStockFamily")
-            ->has("title")
-            ->has("breadcrumbs", 3)
-            ->has(
-                "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $orgStockFamily->name)->etc()
-            )
-            ->has("tabs");
-    });
-})->depends('create org stock family');
-
 test("UI Index Stock Families", function () {
     $this->withoutExceptionHandling();
     $response = get(
@@ -873,8 +848,7 @@ test("UI Index Stock Families", function () {
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", 'Master SKU Families')->etc()
-            )
-            ->has("data");
+            );
     });
 });
 

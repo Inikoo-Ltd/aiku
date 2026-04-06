@@ -76,12 +76,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_on_demand
  * @property bool $has_been_in_warehouse
  * @property HealthRankEnum|null $health_rank
+ * @property bool $movements_fixed
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Location> $locations
  * @property-read \App\Models\Inventory\OrgStockFamily|null $orgStockFamily
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockHistory> $orgStockHistories
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockMovement> $orgStockMovements
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OrgSupplierProduct> $orgSupplierProducts
  * @property-read Organisation $organisation
@@ -215,5 +217,10 @@ class OrgStock extends Model implements Auditable
     {
         return $this->belongsToMany(Location::class, 'location_org_stocks')
             ->withPivot(['type', 'picking_priority', 'value', 'dropshipping_pipe', 'quantity', 'notes']);
+    }
+
+    public function orgStockHistories(): HasMany
+    {
+        return $this->hasMany(OrgStockHistory::class);
     }
 }

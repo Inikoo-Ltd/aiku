@@ -54,6 +54,7 @@ class StoreInvoiceTransaction extends OrgAction
             $modelData['order_id']          = $model->order_id;
             $modelData['asset_id']          = $model->asset_id;
             $modelData['historic_asset_id'] = $model->historic_asset_id;
+            $modelData['marketplace_id']    = $model->marketplace_id;
             if ($this->strict) {
                 $historicAsset = $model->historicAsset;
             } else {

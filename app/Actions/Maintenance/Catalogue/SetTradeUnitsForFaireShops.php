@@ -1,20 +1,16 @@
 <?php
-
 /*
- * author Arya Permana - Kirin
- * created on 02-06-2025-15h-25m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 04 Apr 2026 18:40:36 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Catalogue\Product\UpdateTradeUnitsForExternalProduct;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
-use App\Models\Masters\MasterAsset;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Symfony\Component\Console\Helper\ProgressBar;
@@ -24,7 +20,7 @@ class SetTradeUnitsForFaireShops
     use WithActionUpdate;
 
 
-    public function handle(Product $product, Command $command): void
+    public function handle(Product $product, ?Command $command=null): void
     {
         $code       = $product->code;
         $seederShop = $product->shop->seederShop;
@@ -39,7 +35,7 @@ class SetTradeUnitsForFaireShops
         if ($seederProduct) {
             $productTradeUnits = $product->tradeUnits->pluck('pivot.quantity', 'id');
 
-            if ($product->shop->slug == 'awfe') {
+            if ($product->shop->slug == 'awfe') {// Hack to remove unwanted trade unit
                 $masterAssetTradeUnits = $seederProduct->tradeUnits->pluck('pivot.quantity', 'id')->forget(42894);
             } else {
                 $masterAssetTradeUnits = $seederProduct->tradeUnits->pluck('pivot.quantity', 'id');
@@ -53,7 +49,7 @@ class SetTradeUnitsForFaireShops
 
 
                 if ($product->units == $seederProduct->units && $product->units == $getNumberUnits) {
-                    $command->warn("Product  ".$product->slug.' '.$product->units.' Seeder ');
+                    $command?->warn("Product  ".$product->slug.' '.$product->units.' Seeder ');
 
 
                     $tradeUnitsData = [];
@@ -74,8 +70,6 @@ class SetTradeUnitsForFaireShops
                     }
                 }
             }
-        } else {
-            //$command->error("Product not found in seeder ".$product->code);
         }
     }
 
@@ -99,9 +93,6 @@ class SetTradeUnitsForFaireShops
         }
 
         $countQuery = Product::where('shop_id', $faireShop->id);
-        //        if ($command->option('in_process')) {
-        //            $countQuery->where('state', ProductStateEnum::IN_PROCESS);
-        //        }
 
         $count = $countQuery->count();
 

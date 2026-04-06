@@ -12,6 +12,7 @@ const props = withDefaults(defineProps<{
     imagesUploadRoute: routeType
     snapshot: any
     mergeTags: Array<any>
+    mergeContents: Array<any> | null
     organisationSlug: string
 }>(), {});
 
@@ -67,6 +68,7 @@ const initializeBeefree = async () => {
             disableColorHistory: true,
             templateLanguageAutoTranslation: true,
             mergeTags: props.mergeTags,
+            mergeContents: props.mergeContents || [],
             customAttributes: {
                 attributes: [
                     {

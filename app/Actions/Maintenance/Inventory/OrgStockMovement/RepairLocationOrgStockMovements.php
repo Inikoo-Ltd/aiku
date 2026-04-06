@@ -11,7 +11,6 @@ namespace App\Actions\Maintenance\Inventory\OrgStockMovement;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
-use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
@@ -135,8 +134,8 @@ class RepairLocationOrgStockMovements
         if ($firstMovement) {
             if ($firstMovement->type != OrgStockMovementTypeEnum::ASSOCIATE->value) {
                 $command?->error('error first associate should be fixed by now');
-                return;
 
+                return;
             }
             if (!$firstMovement->fixed_internal_helper) {
                 array_unshift($internalAssociates, $firstMovement->id);
@@ -169,6 +168,7 @@ class RepairLocationOrgStockMovements
 
         if ($firstMovement->type != OrgStockMovementTypeEnum::ASSOCIATE->value) {
             print "Error last disassociate should be fixed by now  $firstMovement->id  $firstMovement->type  $firstMovement->date ";
+
             return null;
         }
 
@@ -205,8 +205,8 @@ class RepairLocationOrgStockMovements
 
             if ($lastMovement->type != OrgStockMovementTypeEnum::DISASSOCIATE->value) {
                 print "Error last disassociate should be fixed by now  $lastMovement->id  $lastMovement->type  $lastMovement->date ";
-                return null;
 
+                return null;
             }
         }
 
@@ -255,7 +255,7 @@ class RepairLocationOrgStockMovements
 
     public function fixHelpersContinuity(Location $location, OrgStock $orgStock, array $errorData, ?Command $command = null): void
     {
-        $movements = DB::table('org_stock_movements')->select('date', 'id', 'quantity', 'audited_quantity', 'type', 'class')
+        $movements = DB::table('org_stock_movements')->select('date', 'id', 'quantity', 'audited_quantity', 'type', 'class', 'source_id')
             ->where('location_id', $location->id)
             ->where('org_stock_id', $orgStock->id)
             ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO])
@@ -270,7 +270,7 @@ class RepairLocationOrgStockMovements
             //  print_r($movement);
             $ok = true;
             if (!in_array($movement->type, $expectedTypes)) {
-                $command?->warn("Movement type $movement->type should be in ".count($expectedTypes)." $movement->id");
+                $command?->warn("Movement ** type $movement->type ".$movement->date."   should be in ".count($expectedTypes)." $movement->id");
 
 
                 if ($movement->type == OrgStockMovementTypeEnum::DISASSOCIATE->value) {
@@ -298,6 +298,22 @@ class RepairLocationOrgStockMovements
                         $command?->warn("Garbage duplicated  disassociates   $movement->id ");
                     }
                 } elseif ($movement->type == OrgStockMovementTypeEnum::AUDIT->value && !$isIn) {
+                    if ($movement->audited_quantity == 0) {
+                        DB::table('org_stock_movements')->where('id', $movement->id)
+                            ->update(
+                                [
+                                    'type'  => OrgStockMovementTypeEnum::ASSOCIATE->value,
+                                    'class' => OrgStockMovementClassEnum::HELPER->value,
+                                    'fixed' => true
+                                ]
+                            );
+                        $command?->warn("Garbage Duplicate disassociates   $movement->id ");
+                    }
+                } elseif ($movement->type == OrgStockMovementTypeEnum::ASSOCIATE->value && $isIn) {
+                    if (!$movement->source_id) {
+                        DB::table('org_stock_movements')->where('id', $movement->id)->delete();
+                        $command?->warn("Deleted misplaced associated $movement->id ");
+                    }
                 }
             }
 
@@ -632,9 +648,7 @@ class RepairLocationOrgStockMovements
                     'audited_quantity' => 0,
                     'org_amount'       => 0,
                     'date'             => Carbon::parse($dateFirstValidMovement)->subMicroseconds(1000)->format('Y-m-d H:i:s.u'),
-                    'type'             => OrgStockMovementTypeEnum::ASSOCIATE->value,
-                    'class'            => OrgStockMovementClassEnum::HELPER->value,
-                    'flow'             => OrgStockMovementFlowEnum::AUDIT->value,
+                    'type'             => OrgStockMovementTypeEnum::ASSOCIATE,
                     'fixed'            => true,
                 ]
             );
@@ -811,9 +825,7 @@ class RepairLocationOrgStockMovements
                     'audited_quantity' => 0,
                     'org_amount'       => 0,
                     'date'             => Carbon::parse(Arr::get($errorData, 'date'))->addMicroseconds(4000)->format('Y-m-d H:i:s.u'),
-                    'type'             => OrgStockMovementTypeEnum::DISASSOCIATE->value,
-                    'class'            => OrgStockMovementClassEnum::HELPER->value,
-                    'flow'             => OrgStockMovementFlowEnum::AUDIT->value,
+                    'type'             => OrgStockMovementTypeEnum::DISASSOCIATE,
                     'fixed'            => true,
                 ]
             );
@@ -953,9 +965,7 @@ class RepairLocationOrgStockMovements
                     'audited_quantity' => 0,
                     'org_amount'       => 0,
                     'date'             => Arr::get($errorData, 'date'),
-                    'type'             => OrgStockMovementTypeEnum::ASSOCIATE->value,
-                    'class'            => OrgStockMovementClassEnum::HELPER->value,
-                    'flow'             => OrgStockMovementFlowEnum::AUDIT->value,
+                    'type'             => OrgStockMovementTypeEnum::ASSOCIATE,
                     'fixed'            => true,
                 ]
             );

@@ -25,26 +25,70 @@ const createDefaultValue = () => ({
   units: "mm"
 })
 
-// keep internal state
-const localValue = ref(props.modelValue ? { ...props.modelValue } : createDefaultValue())
+// Get factor based on unit
+const getFactor = (unit: string) => {
+  if (unit === 'cm') return 100
+  if (unit === 'mm') return 1000
+  if (unit === 'inch') return 39.3701 // 1 meter = 39.3701 inch
+  return 1 // default: meter
+}
 
-// update localValue if parent changes (but only if it's different)
+// Convert value to display
+const toDisplay = (val: any) => {
+  if (!val) return createDefaultValue()
+  const factor = getFactor(val.units)
+  return {
+    ...val,
+    h: val.h != null ? Number((val.h * factor).toFixed(2)) : null,
+    l: val.l != null ? Number((val.l * factor).toFixed(2)) : null,
+    w: val.w != null ? Number((val.w * factor).toFixed(2)) : null,
+  }
+}
+
+// Convert UI value to database (Meter)
+const toDatabase = (val: any) => {
+  if (!val) return null
+  const factor = getFactor(val.units)
+  return {
+    ...val,
+    h: val.h != null ? Number((val.h / factor).toFixed(4)) : null,
+    l: val.l != null ? Number((val.l / factor).toFixed(4)) : null,
+    w: val.w != null ? Number((val.w / factor).toFixed(4)) : null,
+  }
+}
+
+// Keep internal state - initially convert from modelValue to display format
+
+const localValue = ref(toDisplay(props.modelValue))
+
+// Update localValue if parent changes (e.g. when loading existing data), but only if the new value is actually different from the current localValue to avoid overwriting user input
 watch(
   () => props.modelValue,
-  (val) => {
-    if (val && JSON.stringify(val) !== JSON.stringify(localValue.value)) {
-      localValue.value = { ...val }
+  (newVal) => {
+    if (newVal) {
+      const convertedLocal = toDatabase(localValue.value)
+      
+      // Check if the new value from parent is different from the current localValue (after converting localValue back to database format for accurate comparison)
+      if (
+        newVal.h !== convertedLocal?.h ||
+        newVal.l !== convertedLocal?.l ||
+        newVal.w !== convertedLocal?.w ||
+        newVal.type !== convertedLocal?.type ||
+        newVal.units !== convertedLocal?.units
+      ) {
+        localValue.value = toDisplay(newVal)
+      }
     }
   },
   { deep: true }
 )
 
-// emit when localValue changes
+// Emit when localValue changes
 watch(
   localValue,
   (val) => {
-    console.log(val)
-    emits("update:modelValue", { ...val })
+    // Convert localValue back to database format before emitting
+    emits("update:modelValue", toDatabase(val))
   },
   { deep: true }
 )

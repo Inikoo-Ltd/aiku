@@ -19,6 +19,7 @@ use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
 use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\EmailBulkRunRecipient;
@@ -56,7 +57,17 @@ class SendEmailDeliveryChannel
 
         $emailHtmlBody = GetHtmlLayout::run($model);
 
+        $emailBulkRunHasUnsubscribeLink = [
+            OutboxCodeEnum::REORDER_REMINDER,
+            OutboxCodeEnum::REORDER_REMINDER_2ND,
+            OutboxCodeEnum::REORDER_REMINDER_3RD,
+            OutboxCodeEnum::BASKET_LOW_STOCK,
+            OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION
+        ];
+
         if ($model instanceof Mailshot) {
+            $emailHtmlBody = EnsureEmailHasUnsubscribeLink::run($emailHtmlBody);
+        } elseif ($model instanceof EmailBulkRun && in_array($model->outbox->code, $emailBulkRunHasUnsubscribeLink)) {
             $emailHtmlBody = EnsureEmailHasUnsubscribeLink::run($emailHtmlBody);
         }
 

@@ -114,6 +114,7 @@ class CustomerResource extends JsonResource
             'state'               => $customer->state,
             'status'              => $customer->status,
             'currency_code'       => $customer->shop?->currency?->code,
+            'eori'                => $customer->eori,
             'email_subscriptions' => [
                 'update_route'  => [
                     'method'     => 'patch',
