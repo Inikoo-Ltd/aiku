@@ -10,7 +10,6 @@ use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Arr;
 
 /**
  * @property string $slug

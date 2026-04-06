@@ -75,7 +75,7 @@ class StoreInvoiceTransaction extends OrgAction
                 $modelData['department_id']     = $product->department_id;
                 $modelData['sub_department_id'] = $product->sub_department_id;
 
-                $brand=$product->brand();
+                $brand = $product->brand();
                 if ($brand) {
                     $modelData['brand_id']         = $brand->id;
                 }

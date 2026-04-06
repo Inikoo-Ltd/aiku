@@ -51,7 +51,7 @@ class UpdateShopReviewsSettingsFromAurora
 
                 if ($auroraShop->{'Store Reviews Settings'} != '') {
                     $command->info('Updating shop '.$shop->slug);
-                    $reviewSettings=json_decode($auroraShop->{'Store Reviews Settings'}, true);
+                    $reviewSettings = json_decode($auroraShop->{'Store Reviews Settings'}, true);
 
                     data_set($reviewSettings, 'enabled', true);
 

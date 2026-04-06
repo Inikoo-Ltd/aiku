@@ -161,9 +161,7 @@ class UpdateShop extends OrgAction
             UpdateWebsite::make()->action(
                 website: $shop->website,
                 modelData: ['enable_chat' => $enableChat],
-                hydratorsDelay: 0,
-                strict: false,
-                audit: true
+                strict: false
             );
         }
 
@@ -172,9 +170,7 @@ class UpdateShop extends OrgAction
             UpdateWebsite::make()->action(
                 website: $shop->website,
                 modelData: ['jira_help_desk_widget' => $widgetKey],
-                hydratorsDelay: 0,
-                strict: false,
-                audit: true
+                strict: false
             );
         }
 
@@ -401,7 +397,7 @@ class UpdateShop extends OrgAction
             'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
             'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
             'family_webpage_split_description'                        => ['sometimes', 'boolean'],
-            'reviews'                                                 => ['sometimes', 'nullable', 'array'], 
+            'reviews'                                                 => ['sometimes', 'nullable', 'array'],
         ];
 
         $channelIds = SalesChannel::pluck('id');

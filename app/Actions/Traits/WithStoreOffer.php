@@ -32,11 +32,11 @@ trait WithStoreOffer
         }
 
 
-        if(Arr::has($modelData, 'start_at') && Arr::get($modelData, 'start_at')!='' && is_string(Arr::get($modelData, 'start_at'))) {
+        if (Arr::has($modelData, 'start_at') && Arr::get($modelData, 'start_at') != '' && is_string(Arr::get($modelData, 'start_at'))) {
             $startAt = Carbon::parse(Arr::get($modelData, 'start_at'))->startOfDay();
             data_set($modelData, 'start_at', $startAt);
         }
-        if(Arr::has($modelData, 'end_at') && Arr::get($modelData, 'end_at')!='' && is_string(Arr::get($modelData, 'end_at'))) {
+        if (Arr::has($modelData, 'end_at') && Arr::get($modelData, 'end_at') != '' && is_string(Arr::get($modelData, 'end_at'))) {
             $endAt = Carbon::parse(Arr::get($modelData, 'end_at'))->endOfDay();
             data_set($modelData, 'end_at', $endAt);
         }
