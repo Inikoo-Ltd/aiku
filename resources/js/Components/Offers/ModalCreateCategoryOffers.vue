@@ -5,13 +5,20 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { ref, computed, watch } from 'vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
 import { InputNumber, RadioButton, DatePicker } from 'primevue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { trans } from 'laravel-vue-i18n'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
 import axios from 'axios'
+import {
+    faSpinner
+} from "@fas";
+library.add(
+    faSpinner
+);
 
 const props = defineProps<{
     shop_data: {
@@ -39,7 +46,7 @@ const endDate = ref<Date | null>(null)
 const submitCategoryOffer = () => {
     // Section: Submit
     isLoadingSubmit.value = true
-  
+
     axios.post(
         route('grp.models.category_offer.store', {
             shop: props.shop_data.id,
@@ -295,9 +302,19 @@ resetForm();
 
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />
-                    <Button full icon="fad fa-save" :label="trans('Save')" @click="submitCategoryOffer"
-                    :disabled="isFormInvalid || isLoadingSubmit"
-                        :isLoading="isLoadingSubmit" >
+
+                   <Button
+                        full
+                        :label="isLoadingSubmit ? trans('Loading') : trans('Save')"
+                        @click="submitCategoryOffer"
+                        :disabled="isFormInvalid || isLoadingSubmit"
+                    >
+                        <template #icon>
+                            <FontAwesomeIcon
+                                :icon="isLoadingSubmit ? 'fas fa-spinner' : 'fad fa-save'"
+                                :class="{ 'animate-spin': isLoadingSubmit }"
+                            />
+                        </template>
                     </Button>
                 </div>
 
