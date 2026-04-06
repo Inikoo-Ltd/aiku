@@ -8,8 +8,11 @@
 
 namespace App\Actions\Comms\DispatchedEmail\Hydrators;
 
+use App\Actions\CRM\Prospect\UpdateProspectEmailClicked;
+use App\Actions\CRM\Prospect\UpdateProspectEmailHardBounced;
 use App\Actions\CRM\Prospect\UpdateProspectEmailOpened;
 use App\Actions\CRM\Prospect\UpdateProspectEmailSent;
+use App\Actions\CRM\Prospect\UpdateProspectEmailSoftBounced;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\CRM\Prospect;
@@ -51,11 +54,23 @@ class DispatchedEmailHydrateProspect implements ShouldBeUnique
 
         $state = $dispatchedEmail->state;
 
-        // TODO: Update this conditions
-        if ($state == DispatchedEmailStateEnum::DELIVERED || $state == DispatchedEmailStateEnum::SENT) {
-            UpdateProspectEmailSent::make()->action($prospect);
-        } elseif ($state == DispatchedEmailStateEnum::OPENED) {
-            UpdateProspectEmailOpened::make()->action($prospect, now());
+        switch ($state) {
+            case DispatchedEmailStateEnum::DELIVERED:
+            case DispatchedEmailStateEnum::SENT:
+                UpdateProspectEmailSent::make()->action($prospect);
+                break;
+            case DispatchedEmailStateEnum::OPENED:
+                UpdateProspectEmailOpened::make()->action($prospect, now());
+                break;
+            case DispatchedEmailStateEnum::CLICKED:
+                UpdateProspectEmailClicked::make()->action($prospect, now());
+                break;
+            case DispatchedEmailStateEnum::HARD_BOUNCE:
+                UpdateProspectEmailHardBounced::make()->action($prospect, now());
+                break;
+            case DispatchedEmailStateEnum::SOFT_BOUNCE:
+                UpdateProspectEmailSoftBounced::make()->action($prospect, now());
+                break;
         }
     }
 
