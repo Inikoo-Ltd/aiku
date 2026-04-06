@@ -284,7 +284,7 @@ const onUpdateSelectedProducts = (products: any[]) => {
     }))
 }
 
-const isStoringBundle = ref(false)
+const isSubmitBundle = ref(false)
 
 const handleStoreBundle = async () => {
     try {
@@ -306,8 +306,6 @@ const handleStoreBundle = async () => {
 }
 
 const submitBundle = async () => {
-    try {
-        isStoringBundle.value = true
 
         const payload = {
             description: bundle.description.value,
@@ -328,30 +326,34 @@ const submitBundle = async () => {
             {
                 preserveScroll: true,
                 preserveState: true,
+                 onStart: () => {
+					isSubmitBundle.value = true
+				},
                 onSuccess: () => {
                     notify({
                         title: trans('Success'),
                         text: trans('Success submit bundle'),
                         type: 'success'
                     })
+                    bundle.resetBundle()
 
                     props.step.current = 0
                     emits('onDone')
-                }
+                },
+                onError: errors => {
+                                                notify({
+                                                    title: trans("Something went wrong"),
+                                                    text: trans("Failed to submit the data, please try again"),
+                                                    type: "error"
+                                                })
+                                },
+                                 onFinish: () => {
+                                    isSubmitBundle.value = false
+                                },
             }
         )
 
-        bundle.resetBundle()
-    } catch (e) {
-        console.error('ERROR', e)
-        notify({
-            title: trans('Error'),
-            text: trans('Failed to create bundle'),
-            type: 'error'
-        })
-    } finally {
-        isStoringBundle.value = false
-    }
+   
 }
 
 const selectedMediaAIIds = ref<any[]>([])
@@ -554,17 +556,11 @@ onMounted(() => {
                                 <Button type="button" @click="bundle.generateAITitle"
                                     :loading="bundle.isGeneratingAI.value"
                                     :disabled="!bundle.productIds.value.length || bundle.isGeneratingAI.value"
+                                    icon="fal fa-sparkles"
                                     v-tooltip="trans('Generate AI')" class="absolute right-2 top-1/2 -translate-y-1/2 
                                         h-7 w-7 flex items-center justify-center 
                                         rounded-md border bg-white hover:bg-gray-100 
-                                        transition shadow-sm">
-                                    <FontAwesomeIcon
-                                        :icon="bundle.isGeneratingAI.value ? 'fal fa-spinner' : 'fal fa-sparkles'"
-                                        class="text-xs"
-                                        :class="bundle.isGeneratingAI.value ? 'animate-pulse text-primary' : ''"
-                                        fixed-width />
-                                </Button>
-
+                                        transition shadow-sm" />
                             </div>
                         </div>
                     </div>
@@ -584,7 +580,7 @@ onMounted(() => {
                         </div>
 
                         <!-- NEXT BUTTON -->
-                        <Button @click="handleStoreBundle" :loading="bundle.isStoringBundle" label="Next"
+                        <Button @click="handleStoreBundle" :loading="bundle.isStoringBundle.value" label="Next"
                             iconRight="fal fa-arrow-right" :disabled="!bundle.products.value.length" />
 
                     </div>
@@ -627,13 +623,9 @@ onMounted(() => {
                             </div>
 
                             <Button @click="bundle.generateAIDescription" :loading="bundle.isGeneratingAI.value"
-                                type="primary" :disabled="!bundle.productIds.value.length">
-                                <FontAwesomeIcon
-                                    :icon="bundle.isGeneratingAI.value ? 'fal fa-spinner' : 'fal fa-sparkles'"
-                                    class="mr-2" :class="bundle.isGeneratingAI.value ? 'animate-pulse text-primary' : ''" fixed-width />
-                                Generate with AI
-                            </Button>
-
+                            icon="fal fa-sparkles"
+                            :label="trans('Generate with AI')"
+                                type="primary" :disabled="!bundle.productIds.value.length" />
                         </div>
                     </div>
 
@@ -703,11 +695,11 @@ onMounted(() => {
 
                     <!-- SUBMIT -->
                     
-                    <Button @click="submitBundle" class="flex justify-center items-center w-full" type="primary" :disabled="!bundle.description.value.length"
-                        :loading="isStoringBundle">
-                        Create Bundle
-                        <FontAwesomeIcon icon="fal fa-layer-group" class="mr-2" fixed-width />
-                    </Button>
+                    <Button @click="submitBundle" icon="fal fa-layer-group" class="flex justify-center items-center w-full" type="primary" 
+                    :label="trans('Create Bundle')"
+                    :disabled="!bundle.description.value.length || bundle.isStoringBundle.value"
+                        :loading="isSubmitBundle" />
+                  
 
                 </div>
                 <!-- Modal Existing media -->
@@ -795,7 +787,7 @@ onMounted(() => {
                     </div>
 
                     <template #footer>
-                        <Button label="Generate" @click="generateAIImages" :loading="isGeneratingAI"
+                        <Button :label="trans('Generate')" @click="generateAIImages" :loading="isGeneratingAI"
                             :disabled="!selectedMediaForAI.length || !aiPrompt" />
                     </template>
 

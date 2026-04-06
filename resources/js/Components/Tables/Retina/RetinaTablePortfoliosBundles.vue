@@ -511,7 +511,7 @@ const selectedMediaIds = ref<number[]>([])
 const mediaGallery = ref<string[]>([])
 const editMediaGallery = ref<string[]>([])
 const showGenerateModal = ref(false)
-const isStoringBundle = ref(false)
+const isSubmitBundle = ref(false)
 const aiPrompt = ref('')
 const selectedMediaForAI = ref<any[]>([])
 const selectedMediaAIIds = ref<any[]>([])
@@ -811,9 +811,7 @@ const generateAIImages = async () => {
 const bundle = useBundle(props.bundle_routes)
 
 const submitBundle = async () => {
-	try {
-		isStoringBundle.value = true
-
+	
 		const payloadItems = bundleItems.value.map(i => ({
 			bundle_item_id: i.id,
 			quantity: i.quantity
@@ -838,27 +836,31 @@ const submitBundle = async () => {
 			{
 				preserveScroll: true,
 				preserveState: true,
+				onStart: () => {
+					isSubmitBundle.value = true
+				},
 				onSuccess: () => {
 					notify({
 						title: trans('Success'),
 						text: trans('Success edit bundle'),
 						type: 'success'
 					})
+					isSubmitBundle.value = false
 					isOpenModalEditProduct.value = false
-				}
+					bundle.resetBundle()
+				},
+				onError: errors => {
+								notify({
+									title: trans("Something went wrong"),
+									text: trans("Failed to submit the data, please try again"),
+									type: "error"
+								})
+				},
+				 onFinish: () => {
+					isSubmitBundle.value = false
+				},
 			}
 		)
-		bundle.resetBundle()
-	} catch (e) {
-		console.error('ERROR', e)
-		notify({
-			title: trans('Error'),
-			text: trans('Failed to create bundle'),
-			type: 'error'
-		})
-	} finally {
-		isStoringBundle.value = false
-	}
 }
 </script>
 
@@ -1190,8 +1192,8 @@ const submitBundle = async () => {
 		<template #cell(delete)="{ item }" v-if="!disabled">
 			<div class="flex gap-2">
 				<Button v-tooltip="trans('Edit Bundle')" type="tertiary" :style="'white-w-outline'" size="xs"
-					icon="fal fa-pencil" @click="openEditModal(item)" />
-
+				icon="fal fa-pencil" @click="openEditModal(item)" />
+				
 				<ButtonWithLink v-tooltip="trans('Delete Bundle', {
 					platform: props.platform_data.name,
 				})" type="negative" icon="fal fa-trash-alt" size="xs" :style="'white-r-outline'" :method="'delete'"
@@ -1352,12 +1354,9 @@ const submitBundle = async () => {
 				}}</label>
 				<InputText v-model="selectedEditProduct.name" fluid inputId="edit-product-title" size="small"
 					:disabled="isLoadingSubmitErrorTitle" />
-				<Button type="button" @click="generateAITitle" :loading="isGeneratingAI" :disabled="isGeneratingAI"
+				<Button icon="fal fa-sparkles" type="button" @click="generateAITitle" :loading="isGeneratingAI" :disabled="isGeneratingAI"
 					v-tooltip="trans('Generate AI')"
-					class="absolute right-2 top-10 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded-md border bg-white hover:bg-gray-100 transition shadow-sm">
-					<FontAwesomeIcon :icon="isGeneratingAI ? 'fal fa-spinner' : 'fal fa-sparkles'" class="text-xs"
-						:class="isGeneratingAI ? 'animate-pulse text-primary' : ''" fixed-width />
-				</Button>
+					class="absolute right-2 top-10 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded-md border bg-white hover:bg-gray-100 transition shadow-sm" />
 
 			</div>
 
@@ -1365,14 +1364,10 @@ const submitBundle = async () => {
 				<label for="edit-product-description" class="block text-sm font-semibold">{{
 					trans("Description")
 				}}</label>
-				<Textarea v-model="selectedEditProduct.description" rows="6" autoResize class="w-full mt-1"
-					placeholder="Input your description" />
-				<Button @click="generateAIDescription" :loading="isGeneratingAI" type="primary"
-					:disabled="!selectedEditProduct?.description.length">
-					<FontAwesomeIcon :icon="isGeneratingAI ? 'fal fa-spinner' : 'fal fa-sparkles'" class="mr-2"
-						fixed-width />
-					Generate with AI
-				</Button>
+				<Textarea v-model="selectedEditProduct.description" rows="6" autoResize class="w-full mt-1" placeholder="Input your description" />
+				<Button icon="fal fa-sparkles" @click="generateAIDescription" :loading="isGeneratingAI" type="primary"
+				:label="trans('Generate with AI')"
+			:disabled="!selectedEditProduct?.description.length" />
 			</div>
 
 			<div class="mb-5">
@@ -1436,7 +1431,7 @@ const submitBundle = async () => {
 			</div>
 
 			<div class="mt-3 flex gap-2">
-				<Button @click="submitBundle" :label="trans('Save')" full type="save" />
+				<Button @click="submitBundle" :label="isSubmitBundle ? trans('Loading') : trans('Save')" full  icon="fad fa-save" :loading="isSubmitBundle" :disabled="!selectedEditProduct?.description.length || isSubmitBundle"/>
 			</div>
 		</div>
 	</Modal>

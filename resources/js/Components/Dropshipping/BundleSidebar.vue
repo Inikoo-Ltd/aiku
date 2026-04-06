@@ -337,8 +337,6 @@ const handleStoreBundle = async () => {
 }
 
 const submitBundle = async () => {
-    try {
-        isStoringBundle.value = true
 
         const payload = {
             description: bundle.description.value,
@@ -364,6 +362,9 @@ const submitBundle = async () => {
             {
                 preserveScroll: true,
                 preserveState: true,
+                onStart: () => {
+					isStoringBundle.value = true
+				},
                 onSuccess: () => {
                     notify({
                         title: trans('Success'),
@@ -373,19 +374,21 @@ const submitBundle = async () => {
 
                     bundle.step.value = 1
                     bundle.close()
-                }
+                    bundle.resetBundle()
+                },
+                onError: errors => {
+                                                notify({
+                                                    title: trans("Something went wrong"),
+                                                    text: trans("Failed to submit the data, please try again"),
+                                                    type: "error"
+                                                })
+                                },
+                                 onFinish: () => {
+                                    isStoringBundle.value = false
+                                },
             }
         )
-        bundle.resetBundle()
-    } catch (e) {
-        notify({
-            title: trans('Error'),
-            text: trans('Failed to create bundle'),
-            type: 'error'
-        })
-    } finally {
-        isStoringBundle.value = false
-    }
+   
 }
 
 const bundle = useBundle({
@@ -485,15 +488,11 @@ watch(customerChannelsId, (val) => {
                                 :placeholder="ctrans('Bundle Title')" required />
 
                             <!-- AI ICON BUTTON -->
-                            <Button type="button" @click="bundle.generateAITitle" :tooltip="trans('Generate AI')"  :loading="bundle.isGeneratingAI.value"
+                            <Button icon="fal fa-sparkles" type="button" @click="bundle.generateAITitle" :tooltip="trans('Generate AI')"  :loading="bundle.isGeneratingAI.value"
                                 :disabled="isGeneratingAI || !bundle.products.value.length" class="absolute right-2 top-1/2 -translate-y-1/2 
                         h-7 w-7 flex items-center justify-center 
                         rounded-md border bg-white hover:bg-gray-100 
-                        transition shadow-sm">
-                                <FontAwesomeIcon :icon="bundle.isGeneratingAI.value ? 'fal fa-spinner' : 'fal fa-sparkles'"
-                                    class="text-xs" :class="bundle.isGeneratingAI.value ? 'animate-pulse text-primary' : ''"
-                                    fixed-width />
-                            </Button>
+                        transition shadow-sm" />
 
                         </div>
                     </div>
@@ -561,7 +560,7 @@ watch(customerChannelsId, (val) => {
                         </div>
                     </template>
 
-                    <Button @click="handleStoreBundle" :loading="bundle.isStoringBundle" label="Next"
+                    <Button @click="handleStoreBundle" :loading="bundle.isStoringBundle.value" label="Next"
                         iconRight="fas fa-arrow-right"
                         :disabled="!bundle.products.value.length || !bundle.title.value.length || !customerChannelsId"
                         class="w-full text-white rounded" />
@@ -601,13 +600,9 @@ watch(customerChannelsId, (val) => {
                                 Characters {{ bundle.description.value.length }} words
                             </div>
 
-                            <Button @click="bundle.generateAIDescription" :loading="bundle.isGeneratingAI.value" type="primary"
-                                :disabled="!productIds.length">
-                                <FontAwesomeIcon :icon="bundle.isGeneratingAI.value ? 'fal fa-spinner' : 'fas fa-sparkles'"
-                                    class="mr-2" fixed-width />
-                                Generate with AI
-                            </Button>
-
+                            <Button icon="fal fa-sparkles"
+                            :label="trans('Generate with AI')" @click="bundle.generateAIDescription" :loading="bundle.isGeneratingAI.value" type="primary"
+                                :disabled="!productIds.length" />
                         </div>
                     </div>
 
@@ -680,11 +675,7 @@ watch(customerChannelsId, (val) => {
                     </div>
 
                     <!-- SUBMIT -->
-                    <Button @click="submitBundle" :disabled="!bundle.description.value.length" class="flex justify-center items-center w-full" type="primary" :loading="isStoringBundle">
-                        Create Bundle
-                        <FontAwesomeIcon icon="fas fa-layer-group" class="mr-2" fixed-width />
-                    </Button>
-
+                    <Button @click="submitBundle" :disabled="!bundle.description.value.length || isStoringBundle" class="flex justify-center items-center w-full" icon="fas fa-layer-group" :label="trans('Create Bundle')" type="primary" :loading="isStoringBundle" />
                 </div>
                 <!-- Modal Existing media -->
                 <Dialog v-model:visible="showMediaModal" modal header="Select Images" :style="{ width: '600px' }">
