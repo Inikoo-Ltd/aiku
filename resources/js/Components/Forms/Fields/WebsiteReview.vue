@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { isNull } from 'lodash-es'
+import { isNull, get } from 'lodash-es'
 import { faTimes, faCheck } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import PureInput from '@/Components/Pure/PureInput.vue'
@@ -126,7 +126,7 @@ const currentSchema = computed(() => {
                 :key="field.key"
                 class="flex flex-col gap-1"
             >
-                <label class="text-sm">
+                <label class="text-xs">
                     {{ field.label }}
                 </label>
 
@@ -139,4 +139,7 @@ const currentSchema = computed(() => {
         </div>
 
     </div>
+     <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
+        {{ form.errors[fieldName] }}
+    </p>
 </template>
