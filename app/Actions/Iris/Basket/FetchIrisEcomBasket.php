@@ -212,7 +212,7 @@ class FetchIrisEcomBasket extends IrisAction
                     'percentage_off' => Arr::get($shopOffersData, 'fob.percentage_off').''
                 ]);
 
-                $orderArr['missed_offers'][] = [
+                $orderArr['missed_offers']['fob'] = [
                     'label' => $label
                 ];
             }
