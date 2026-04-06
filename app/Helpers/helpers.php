@@ -165,7 +165,7 @@ if (!function_exists('resolveTimezoneHeader')) {
 }
 
 if (!function_exists('percentage')) {
-    function percentage($quantity, $total, int|null $fixed = 1, ?string $errorMessage = null, $percentageSign = '%', $plusSing = false): string
+    function percentage($quantity, $total, int|null $fixed = 1, ?string $errorMessage = null, $percentageSign = '%', $plusSing = false, $removeTailingZeros=true): string
     {
         $locale_info = localeconv();
 
@@ -177,12 +177,18 @@ if (!function_exists('percentage')) {
                 $sign = '';
             }
 
-            $per = $sign.number_format(
+            $number=number_format(
                 ($quantity / $total) * 100,
                 $fixed,
                 $locale_info['decimal_point'],
                 $locale_info['thousands_sep']
-            ).$percentageSign;
+            );
+
+            if($removeTailingZeros){
+                $number=trimDecimalZeros($number);
+            }
+
+            $per = $sign.$number.$percentageSign;
         } else {
             $per = $errorMessage === null ? percentage(0, 1) : $errorMessage;
         }
