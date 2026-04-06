@@ -3,18 +3,18 @@ import { inject, ref, computed } from "vue"
 import Icon from "../Icon.vue"
 import { faSpinnerThird } from '@fad'
 import { router } from '@inertiajs/vue3'
-import { faInfoCircle, faPallet, faCircle } from '@fas'
+import { faInfoCircle, faPallet, faCircle, faTimesCircle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faAppleCrate,faRoad, faClock, faDatabase, faNetworkWired, faEye, faThLarge ,faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream, faBoxOpen, faChevronDown } from '@fal'
+import { faAppleCrate, faRoad, faClock, faDatabase, faNetworkWired, faEye, faThLarge, faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream, faBoxOpen, faChevronDown, faInventory, faSkullCow, faBan } from '@fal'
 
 library.add(
-    faInfoCircle, faRoad, faClock, faDatabase, faPallet, faCircle,
+    faInfoCircle, faRoad, faClock, faDatabase, faPallet, faCircle, faTimesCircle,
     faNetworkWired, faSpinnerThird, faEye, faThLarge, faTachometerAltFast,
     faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream, faAppleCrate,
-    faBoxOpen, faChevronDown
+    faBoxOpen, faChevronDown, faInventory, faSkullCow, faBan
 )
 
 const layoutStore = inject('layout', layoutStructure)
@@ -119,7 +119,7 @@ const getRoute = (tabSlug) => {
 <template>
     <div>
         <!-- TabsBoxDisplay Desktop -->
-        <div class="hidden px-6 md:flex gap-x-6 my-2 items-start">
+        <div class="hidden px-6 md:flex gap-x-6 my-2 item-stretch">
             <div
                 v-for="(box, idx) in tabs_box"
                 :key="box.label"
@@ -176,10 +176,12 @@ const getRoute = (tabSlug) => {
                     </div>
                 </div>
 
+                <div class="flex-1"></div>
+
                 <!-- Children Rows -->
                 <div
                     v-if="box.children && box.children.length > 0 && isAllExpanded"
-                    class="mt-2 border-t pt-2"
+                    class="border-t pt-2"
                     :style="{ borderColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] + '44' : '#e5e7eb' }"
                 >
                     <!-- Table Header -->
