@@ -100,7 +100,6 @@ console.log('webpage_data',  props)
 </script>
 
 <template>
-  {{ ReviewIframeUrl }}
     <Head>
         <title>{{ webpage_data.title }}</title>
         <meta name="description" :content="webpage_data.description" />
