@@ -40,7 +40,7 @@ class RunProspectMailshotScheduled
         $mailshotQuery->whereRaw("scheduled_at AT TIME ZONE 'UTC' <= ?", [$currentDateTime]); // make sure have save time zone before compare
 
         foreach ($mailshotQuery->cursor() as $mailshot) {
-            ProcessSendProspectMailshot::dispatch($mailshot);
+            PrepareProspectMailshotRecipients::dispatch($mailshot);
 
             $mailshot->update([
                 'state' => MailshotStateEnum::SENDING,
