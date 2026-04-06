@@ -326,6 +326,16 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->morphMany(Webpage::class, 'model');
     }
 
+    public function reviews(): MorphMany
+    {
+        return $this->morphMany(Review::class, 'reviewable');
+    }
+
+    public function reviewStat(): MorphOne
+    {
+        return $this->morphOne(ReviewableRatingStat::class, 'reviewable');
+    }
+
     public function masterProductCategory(): BelongsTo
     {
         return $this->belongsTo(MasterProductCategory::class);

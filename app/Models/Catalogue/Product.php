@@ -432,6 +432,16 @@ class Product extends Model implements Auditable, HasMedia
         return $this->morphMany(Portfolio::class, 'item');
     }
 
+    public function reviews(): MorphMany
+    {
+        return $this->morphMany(Review::class, 'reviewable');
+    }
+
+    public function reviewStat(): MorphOne
+    {
+        return $this->morphOne(ReviewableRatingStat::class, 'reviewable');
+    }
+
     public function favourites(): HasMany
     {
         return $this->hasMany(Favourite::class);
