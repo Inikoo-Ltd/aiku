@@ -43,7 +43,7 @@ class SendProspectMailShot extends OrgAction
         $mailshot->update($modelData);
 
         // NOTE: dispatch process
-        ProcessSendProspectMailshot::dispatch($mailshot);
+        PrepareProspectMailshotRecipients::dispatch($mailshot);
 
 
         return $mailshot;
