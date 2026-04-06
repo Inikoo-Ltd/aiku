@@ -51,12 +51,7 @@ class ProcessBrandTimeSeriesRecords implements ShouldBeUnique
         $processedPeriods = [];
 
         $query = DB::table('invoice_transactions')
-            ->join('model_has_brands', function ($join) use ($timeSeries) {
-                $join->on('model_has_brands.model_id', '=', 'invoice_transactions.model_id')
-                     ->where('model_has_brands.model_type', '=', 'Product')
-                     ->where('model_has_brands.brand_id', '=', $timeSeries->brand_id);
-            })
-            ->where('invoice_transactions.model_type', '=', 'Product')
+            ->where('invoice_transactions.brand_id', '=', $timeSeries->brand_id)
             ->where('invoice_transactions.date', '>=', $from)
             ->where('invoice_transactions.date', '<=', $to)
             ->whereNull('invoice_transactions.deleted_at');
