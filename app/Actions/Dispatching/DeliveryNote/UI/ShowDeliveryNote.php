@@ -189,7 +189,7 @@ class ShowDeliveryNote extends OrgAction
             $showCancel = false;
         }
 
-        if (($deliveryNote->shop->engine == ShopEngineEnum::FAIRE)) {
+        if ($deliveryNote->shop->engine == ShopEngineEnum::FAIRE) {
             $showCancel = false;
         }
 
@@ -209,17 +209,6 @@ class ShowDeliveryNote extends OrgAction
                 ]
             ];
         }
-
-        /* if ($deliveryNote->state === DeliveryNoteStateEnum::HANDLING) {
-            $actions[] = [
-                'type'    => 'button',
-                'style'   => 'save',
-                'tooltip' => __('Change picker'),
-                'icon'    => 'fal fa-exchange-alt',
-                'label'   => __('Change Picker'),
-                'key'     => 'change-picker',
-            ];
-        } */
 
         if (in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKED, DeliveryNoteStateEnum::FINALISED])) {
             $actions[] = [
@@ -567,17 +556,6 @@ class ShowDeliveryNote extends OrgAction
             'picked_bays'                  => $pickedBays,
             'trolleys'                     => $trolleys,
             'parcels'                      => $deliveryNote->parcels,
-            'external_order'               => [
-                'status'                  => (bool)$order->external_id,
-                'route_view_packing_slip' => [
-                    'name'       => 'grp.org.shops.show.ordering.faire_packing_slip.download',
-                    'parameters' => [
-                        'organisation' => $deliveryNote->organisation->slug,
-                        'shop'         => $deliveryNote->shop->slug,
-                        'order'        => $order->slug
-                    ]
-                ]
-            ],
             'shipments'                    => $deliveryNote->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->toArray(request()) : null,
             'shipments_routes'             => [
                 ...$additionalShipmentRoutes,

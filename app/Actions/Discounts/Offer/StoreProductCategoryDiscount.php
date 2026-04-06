@@ -186,6 +186,7 @@ class StoreProductCategoryDiscount extends OrgAction
 
 
         $modelData      = [
+            'duration'                   => 'interval',
             'start_at'                   => Carbon::now(),
             'end_at'                     => $command->argument('end_at') ? Carbon::parse($command->argument('end_at')) : null,
             'trigger_data_item_quantity' => $command->argument('item_quantity'),

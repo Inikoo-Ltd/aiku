@@ -27,6 +27,9 @@ class DeleteRetinaTransaction extends RetinaAction
 
     private Order $order;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Order $order, Transaction $transaction): Order
     {
         DeleteTransaction::make()->action($transaction);
@@ -36,10 +39,19 @@ class DeleteRetinaTransaction extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
+        /** @var Transaction $transaction */
+        $transaction = $request->route('transaction');
+        if ($transaction->customer_id != $request->user()->customer_id) {
+            return false;
+        }
+
         return true;
     }
 
-    public function prepareForValidation()
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function prepareForValidation(): void
     {
         if ($this->order->state != OrderStateEnum::CREATING) {
             throw ValidationException::withMessages([
@@ -48,6 +60,9 @@ class DeleteRetinaTransaction extends RetinaAction
         }
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Order $order, Transaction $transaction, ActionRequest $request): Order
     {
         $this->order = $order;

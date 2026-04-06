@@ -9,6 +9,31 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $id
+ * @property string $name User name diambil dari users table
+ * @property int $user_id
+ * @property int $sequence_number Level approval: 1, 2, 3
+ * @property string|null $description
+ * @property bool $is_active
+ * @property int $organisation_id
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read Organisation $organisation
+ * @property-read User $user
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprover active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprover byOrganisation(\App\Models\SysAdmin\Organisation $organisation)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprover bySequence(int $sequence)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprover newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprover newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprover onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprover query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprover withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprover withoutTrashed()
+ * @mixin \Eloquent
+ */
 class LeaveApprover extends Model
 {
     use InOrganisation;

@@ -12,8 +12,6 @@ namespace App\Actions\Catalogue\Product\UI;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Enums\Catalogue\Product\ProductStateEnum;
-use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
@@ -50,7 +48,7 @@ class IndexRRPViolationProducts extends OrgAction
 
         $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
         $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
-        
+
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->where('products.shop_id', $shop->id);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
@@ -58,7 +56,7 @@ class IndexRRPViolationProducts extends OrgAction
             $query->where('products.rrp', 0)
                 ->orWhereNull('products.rrp');
         });
-        
+
 
         $queryBuilder
             ->defaultSort('products.code')

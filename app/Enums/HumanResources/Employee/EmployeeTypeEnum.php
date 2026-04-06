@@ -22,10 +22,10 @@ enum EmployeeTypeEnum: string
     public static function labels(): array
     {
         return [
-            'employee' => __('Employee'),
-            'volunteer' => __('Volunteer'),
+            'employee'        => __('Employee'),
+            'volunteer'       => __('Volunteer'),
             'temporal-worker' => __('Temporal Worker'),
-            'internship' => __('Internship'),
+            'internship'      => __('Internship'),
         ];
     }
 

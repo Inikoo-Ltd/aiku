@@ -142,6 +142,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $accounting_reference Sage customer number
  * @property string|null $external_id
  * @property string|null $searchable_text Normalized search cache for ILIKE queries
+ * @property string|null $eori
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, AllegroUser> $allegroUsers
@@ -270,6 +271,7 @@ class Customer extends Model implements HasMedia, Auditable
         'reference',
         'contact_name',
         'company_name',
+        'eori',
         'email',
         'phone',
         'contact_website',
@@ -282,6 +284,7 @@ class Customer extends Model implements HasMedia, Auditable
         'name',
         'contact_name',
         'company_name',
+        'eori',
         'email',
         'phone',
     ];

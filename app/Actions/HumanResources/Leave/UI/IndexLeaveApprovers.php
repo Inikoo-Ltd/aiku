@@ -87,7 +87,7 @@ class IndexLeaveApprovers extends OrgAction
             ->whereNotNull('user_id')
             ->orderByRaw('COALESCE(contact_name, alias) asc')
             ->get(['id', 'user_id', 'contact_name', 'alias', 'email'])
-            ->map(fn(Employee $employee) => [
+            ->map(fn (Employee $employee) => [
                 'value' => $employee->user_id,
                 'label' => $employee->contact_name ?: $employee->alias ?: __('Employee #:id', ['id' => $employee->id]),
                 'email' => $employee->email,

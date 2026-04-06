@@ -71,10 +71,6 @@ const props = defineProps<{
 		email: string
 		address: Address
 	}
-	external_order?: {
-		status: boolean
-		route_view_packing_slip: routeType
-	}
 	currencyCode?: string
 	external_shop?: {
 		engine_value: string
@@ -610,9 +606,7 @@ const onCopyDataCustomer = (field: string) => {
 							name="select_shipment"
 							value="create_label"
 							size="small" />
-						<label for="create_label" class="ml-1 cursor-pointer"
-							>{{ trans("Create label") }}:</label
-						>
+						<label for="create_label" class="ml-1 cursor-pointer">{{ trans("Create label") }} (API):</label>
 					</div>
 
 					<div v-if="selectedShipment === 'create_label'" class="ml-6 relative">

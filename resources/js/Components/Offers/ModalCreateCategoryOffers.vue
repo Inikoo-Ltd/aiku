@@ -2,7 +2,7 @@
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
 import { InputNumber, RadioButton, DatePicker } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -11,7 +11,6 @@ import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
-import { inject } from "vue"
 import axios from 'axios'
 
 const props = defineProps<{
@@ -26,7 +25,6 @@ const props = defineProps<{
 }>()
 
 const isOpenModal = ref(false)
-const layout = inject('layout', null)
 const offerLabel = ref('')
 const typeOffer = ref('quantity')
 const offerQtyItems = ref<number | null>(null)
@@ -37,10 +35,6 @@ const isLoadingSubmit = ref(false)
 const dateType = ref<'permanent' | 'interval'>('permanent')
 const startDate = ref<Date | null>(null)
 const endDate = ref<Date | null>(null)
-
-function onOfferQtyInput(e: { value: string | number | undefined }) {
-    offerQtyItems.value = e.value == null ? null : Number(e.value)
-}
 
 const submitCategoryOffer = () => {
     // Section: Submit
@@ -107,7 +101,6 @@ const resetForm = () => {
 }
 
 const isFormInvalid = computed(() => {
-
     if (!offerCategoryId.value && !props.product_category_id) return true
 
     if (!offerLabel.value) return true
@@ -127,6 +120,20 @@ const isFormInvalid = computed(() => {
     if (dateType.value === 'interval' && !endDate.value) return true
 
     return false
+})
+
+watch(typeOffer, (val) => {
+    if (val === 'quantity') {
+        offerAmount.value = null
+    } else if (val === 'amount') {
+        offerQtyItems.value = null
+    }
+})
+
+watch(dateType, (val) => {
+    if (val === 'permanent') {
+        endDate.value = null
+    }
 })
 
 resetForm();
@@ -187,7 +194,7 @@ resetForm();
                                 </label>
                             </div>
                             <div class="min-h-[40px]">
-                            <InputNumber :modelValue="offerQtyItems" @input="onOfferQtyInput" v-show="typeOffer === 'quantity'"  fluid
+                            <InputNumber v-model="offerQtyItems" v-show="typeOffer === 'quantity'"  fluid
                                 inputId="offer_quantity_item" :placeholder="trans('Enter number')"
                                 :disabled="typeOffer !== 'quantity'" :min="0" class="w-full" inputClass="w-full"
                                 :suffix="' ' + ((offerQtyItems ?? 0) > 1 ? trans('items') : trans('item'))" />
@@ -277,7 +284,7 @@ resetForm();
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />
                     <Button full icon="fad fa-save" :label="trans('Save')" @click="submitCategoryOffer"
-                        :isLoading="isLoadingSubmit" :disabled="isFormInvalid">
+                        :isLoading="isLoadingSubmit" :disabled="isFormInvalid || isLoadingSubmit">
                     </Button>
                 </div>
 
