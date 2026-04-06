@@ -70,7 +70,7 @@ class ProcessSendProspectMailshot
                         'dispatched_email_id' => $dispatchedEmail->id,
                         'recipient_type'      => class_basename($prospect),
                         'recipient_id'        => $prospect->id,
-                        'recipient_name'      => $prospect->name,
+                        'recipient_name'      => $prospect->name ?? $prospect->contact_name,
                         'channel'             => $emailDeliveryChannel->id,
                     ]
                 );

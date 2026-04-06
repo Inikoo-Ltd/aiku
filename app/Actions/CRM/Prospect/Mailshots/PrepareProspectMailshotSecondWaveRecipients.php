@@ -16,6 +16,7 @@ use App\Actions\Comms\Mailshot\UpdateMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshotRecipientsStoredAt;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Models\Comms\Mailshot;
+use App\Models\CRM\Prospect;
 use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -48,8 +49,10 @@ class PrepareProspectMailshotSecondWaveRecipients
         }
 
         $baseQuery = DB::table('prospects');
-        $baseQuery->join('prospect_has_dispatched_emails', 'prospects.id', '=', 'prospect_has_dispatched_emails.prospect_id');
-        $baseQuery->join('dispatched_emails', 'prospect_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
+        $baseQuery->join('mailshot_recipients', 'prospects.id', '=', 'mailshot_recipients.recipient_id');
+        $baseQuery->join('dispatched_emails', 'mailshot_recipients.dispatched_email_id', '=', 'dispatched_emails.id');
+        $baseQuery->where('mailshot_recipients.mailshot_id', $parentMailshot->id);
+        $baseQuery->where('mailshot_recipients.recipient_type', class_basename(Prospect::class));
 
         $baseQuery->whereIn('dispatched_emails.state', [DispatchedEmailStateEnum::SENT->value, DispatchedEmailStateEnum::DELIVERED->value]);
         $baseQuery->whereNotNull('dispatched_emails.sent_at');
