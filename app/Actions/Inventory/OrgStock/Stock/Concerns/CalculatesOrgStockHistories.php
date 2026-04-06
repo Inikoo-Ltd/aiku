@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStock\Stock\Concerns;
 
 use App\Actions\Inventory\OrganisationStockHistory\Hydrators\OrganisationStockHistoryHydrateFromOrgStockHistories;
+use App\Models\Inventory\GroupStockHistory;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStockHistory;
 use App\Models\Inventory\OrgStock;
@@ -181,13 +182,29 @@ trait CalculatesOrgStockHistories
 
         $nonMovingOneYear = $this->nonMovingOneYear($orgStock, $date, (float)$orgStockQuantity);
 
-        $organisationStockHistory = OrganisationStockHistory::firstOrCreate(
+
+        $groupStockHistory = GroupStockHistory::firstOrCreate(
             [
+                'group_id' => $orgStock->group_id,
+                'date'     => $date->format('Y-m-d')
+            ],
+            [
+                'is_week'  => $date->isFriday(),
+                'is_month' => $date->isLastOfMonth(),
+                'is_year'  => $date->isEndOfYear(),
+            ]
+        );
+
+
+        $organisationStockHistory = OrganisationStockHistory::updateOrCreate(
+            [
+
                 'organisation_id' => $orgStock->organisation_id,
                 'date'            => $date->format('Y-m-d')
             ],
             [
                 'group_id'                       => $orgStock->group_id,
+                'group_stock_history_id'         => $groupStockHistory->id,
                 'org_stock_value'                => 0,
                 'grp_stock_value'                => 0,
                 'org_stock_commercial_value'     => 0,
