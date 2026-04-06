@@ -3,7 +3,7 @@ import { inject, ref, watch } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus } from "@fal"
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
-import { faLaptopCode } from "@fas"
+import { faLaptopCode, faLayerGroup } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
 import { checkVisible, textReplaceVariables } from "@/Composables/Workshop"
@@ -20,7 +20,7 @@ import GoldReward from "@/Components/Utils/GoldReward.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 
-library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck)
+library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck, faLayerGroup)
 
 const props = defineProps<{
     screenType?: "desktop" | "mobile" | "tablet"
@@ -122,6 +122,9 @@ watch(
   { deep: true }
 )
 
+const goToBundle = () => {
+     window.location.href = '/redirect-bundle-to-retina'
+}
 </script>
 
 <template>
@@ -200,6 +203,7 @@ watch(
             <SwitchLanguage
                 v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" />
 
+
             <!-- Section: Profile -->
             <LinkIris v-if="!layout.offer_data" href="/app/dashboard" :type="'internal'" class="flex items-center justify-center">
                 <Button
@@ -240,6 +244,18 @@ watch(
                     </template>
                 </Button>
             </LinkIris>
+
+            <!-- section redirect to bundle -->
+            <Button v-if="isLoggedIn && layout.retina?.type === 'dropshipping'" v-tooltip="trans('Add Bundles')" type="transparent" class="button"
+                @click="goToBundle">
+                <template #loading>
+                    <span v-show="false" class="button"></span>
+                </template>
+
+                <template #label>
+                    <FontAwesomeIcon icon="fas fa-layer-group" class="button" fixed-width />
+                </template>
+            </Button>
 
             <!-- Section: Favourite -->
             <LinkIris href="/app/favourites" :type="'internal'">

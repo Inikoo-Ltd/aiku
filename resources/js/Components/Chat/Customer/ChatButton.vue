@@ -12,6 +12,7 @@ import OfflineChatForm from "../OfflineChatForm.vue"
 import { router } from "@inertiajs/vue3"
 import { faSpinner } from "@fal"
 import { useWindowSize } from "@vueuse/core"
+import { useBundle } from "../../../Composables/useBundle"
 
 interface ChatMessage {
     id: number
@@ -554,12 +555,23 @@ defineExpose({
     isLoadingMore,
 })
 
+const bundle = useBundle()
+
+watch(() => bundle.open.value, (val) => {
+    const widget = document.getElementById('jsd-widget')
+    if (!widget) return
+
+    widget.style.setProperty(
+        'right',
+        val ? '420px' : '16px',
+        'important'
+    )
+})
 </script>
 
 <template>
     <div>
-        <button ref="buttonRef" @click="toggle"
-            class="fixed bottom-36 right-5 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary">
+        <button ref="buttonRef" @click="toggle" class="fixed z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary" :class="['fixed bottom-36 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary transition-all duration-300', bundle.open.value ? 'right-[430px]' : 'right-10']">
             <FontAwesomeIcon :icon="faMessage" class="text-base" />
             <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1
                bg-red-500 text-white text-[10px] font-semibold
@@ -573,7 +585,9 @@ defineExpose({
             leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95" id="chat">
             <div v-if="open" ref="panelRef" class="fixed z-[70] bg-[#f6f6f7] border shadow-xl flex flex-col" :class="isMobile
                 ? 'inset-0 rounded-none h-[100dvh] flex flex-col'
-                : 'right-3 bottom-[180px] w-[350px] rounded-md max-h-[calc(100dvh-12rem)] flex flex-col'">
+                : ['bottom-[180px] w-[350px] rounded-md max-h-[calc(100dvh-12rem)] flex flex-col',
+                    bundle.open.value ? 'right-[430px]' : 'right-3'
+                ]">
                 <!-- header -->
                 <div class="flex items-center px-4 border-b bg-white" :class="isMobile
                     ? 'pt-[calc(env(safe-area-inset-top)+0.5rem)] pb-3'
