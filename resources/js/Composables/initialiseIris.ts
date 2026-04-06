@@ -69,7 +69,7 @@ export const initialiseIrisApp = () => {
         }
         
         if (usePage().props.retina) {
-            layout.retina = usePage().props.retina
+            layout.retina = usePage().props.retina  // HandleIrisInertiaRequests
         }
 
         layout.reload_handle = () => initialiseIrisVarnishCustomerData(layout)
