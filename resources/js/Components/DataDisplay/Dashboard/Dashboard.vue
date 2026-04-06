@@ -40,6 +40,10 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
             <TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" />
         </KeepAlive>
 
+        <KeepAlive v-if="props.dashboard?.super_blocks?.[0]?.tabs_box_stock">
+            <TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box_stock?.navigation" />
+        </KeepAlive>
+
         <ShopIntervalStats v-if="props.dashboard?.super_blocks?.[0]?.shop_blocks" :shop-blocks="props.dashboard?.super_blocks?.[0]?.shop_blocks" />
 
 		<DashboardSettings
