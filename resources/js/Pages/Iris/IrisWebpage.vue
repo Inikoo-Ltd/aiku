@@ -26,7 +26,7 @@ const layout: any = inject("layout", {})
 const review = usePage().props?.iris?.website?.reviews_settings
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const currentUrl = ref('')
-
+console.log('layout', layout)
 
 const checkScreenType = () => {
   const width = window.innerWidth
@@ -38,7 +38,7 @@ const checkScreenType = () => {
 
 const ReviewIframeUrl = computed(() => {
   const config = review
-  const provider = config.provider
+  const provider = config?.provider
 
   if (provider === 'reviews.io') {
     const store = config?.data?.store
@@ -51,7 +51,7 @@ const ReviewIframeUrl = computed(() => {
     const data = config?.data
     if (!data?.template_id || !data?.business_unit_id) return null
 
-    const locale = data.locale || 'en-GB'
+    const locale = layout.iris.locale || 'en-GB'
 
     return `https://widget.trustpilot.com/trustboxes/${data.template_id}/index.html?businessunitId=${data.business_unit_id}&locale=${locale}`
   }
