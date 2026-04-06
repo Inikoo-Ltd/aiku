@@ -417,15 +417,22 @@ class EditShop extends OrgAction
                     'icon'   => 'fal fa-columns',
                     'fields' => [
                         'download_pdf_columns' => [
-                            'type'  => 'checkbox',
-                            'label' => __('Data to display in PDF'),
+                            'type'        => 'checkbox',
+                            'label'       => __('Data to display in PDF'),
                             'information' => __('Default data to include in invoice PDF'),
-                            'value' => (function () use ($shop): array {
+                            'value'       => (function () use ($shop): array {
                                 $savedColumns = Arr::get($shop->settings, 'invoicing.download_pdf_columns', []);
                                 $columns      = [
-                                    ['label' => __('Country of Origin'), 'key' => 'country_of_origin'],
-                                    ['label' => __('Weight'), 'key' => 'weight'],
+                                    ['label' => __('Pro mode'), 'key' => 'pro_mode'],
+                                    ['label' => __('Recommended retail prices'), 'key' => 'rrp'],
+                                    ['label' => __('Parts'), 'key' => 'parts'],
                                     ['label' => __('Commodity Codes'), 'key' => 'commodity_codes'],
+                                    ['label' => __('Barcode'), 'key' => 'barcode'],
+                                    ['label' => __('Weight'), 'key' => 'weight'],
+                                    ['label' => __('Country of Origin'), 'key' => 'country_of_origin'],
+                                    ['label' => __('Hide Payment Status'), 'key' => 'hide_payment_status'],
+                                    ['label' => __('CPNP'), 'key' => 'cpnp'],
+                                    ['label' => __('Group by Tariff Code'), 'key' => 'group_by_tariff_code'],
                                 ];
 
                                 return array_map(fn ($col) => [

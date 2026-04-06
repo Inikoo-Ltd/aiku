@@ -33,9 +33,16 @@ class PdfInvoice extends OrgAction
     public function rules(): array
     {
         return [
-            'country_of_origin' => ['sometimes', 'boolean'],
-            'weight'            => ['sometimes', 'boolean'],
-            'commodity_codes'   => ['sometimes', 'boolean'],
+            'pro_mode'             => ['sometimes', 'boolean'],
+            'country_of_origin'    => ['sometimes', 'boolean'],
+            'rrp'                  => ['sometimes', 'boolean'],
+            'parts'                => ['sometimes', 'boolean'],
+            'commodity_codes'      => ['sometimes', 'boolean'],
+            'weight'               => ['sometimes', 'boolean'],
+            'barcode'              => ['sometimes', 'boolean'],
+            'cpnp'                 => ['sometimes', 'boolean'],
+            'hide_payment_status'  => ['sometimes', 'boolean'],
+            'group_by_tariff_code' => ['sometimes', 'boolean'],
         ];
     }
 
