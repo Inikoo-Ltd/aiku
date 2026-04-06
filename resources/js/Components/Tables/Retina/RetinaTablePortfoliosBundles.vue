@@ -1190,6 +1190,7 @@ const submitBundle = async () => {
 
 		<!-- Column: Actions 3 -->
 		<template #cell(delete)="{ item }" v-if="!disabled">
+			
 			<div class="flex gap-2">
 				<Button v-tooltip="trans('Edit Bundle')" type="tertiary" :style="'white-w-outline'" size="xs"
 				icon="fal fa-pencil" @click="openEditModal(item)" />
@@ -1201,7 +1202,7 @@ const submitBundle = async () => {
 						...props.bundle_routes.delete,
 						parameters: {
 							...props.bundle_routes.delete.parameters,
-							bundle: item.id
+							bundle: item.bundle_id
 						}
 					}" />
 			</div>
