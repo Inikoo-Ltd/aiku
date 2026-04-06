@@ -42,19 +42,19 @@ class ShowMailshotTemplateWorkshop extends OrgAction
         return Inertia::render(
             'Org/Web/Workshop/Mailshot/MailshotTemplateWorkshop',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'breadcrumbs'         => $this->getBreadcrumbs(
                     $emailTemplate,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => $emailTemplate->name,
-                'pageHead'    => [
-                    'title'     => $emailTemplate->name,
-                    'icon'      => [
+                'title'               => $emailTemplate->name,
+                'pageHead'            => [
+                    'title'   => $emailTemplate->name,
+                    'icon'    => [
                         'tooltip' => __('snapshot'),
                         'icon'    => 'fal fa-mail-bulk'
                     ],
-                    'actions'   => [
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exit',
@@ -63,7 +63,7 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                                 'name'       => 'grp.org.shops.show.marketing.templates.index',
                                 'parameters' => [
                                     'organisation' => $this->organisation->slug,
-                                    'shop' => $this->shop->slug
+                                    'shop'         => $this->shop->slug
                                 ]
                             ]
                         ],
@@ -84,64 +84,64 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                     ]
 
                 ],
-                'builder'     => $emailTemplate->builder,
-                'snapshot'    => [
+                'builder'             => $emailTemplate->builder,
+                'snapshot'            => [
                     'layout' => $emailTemplate->layout,
                 ],
                 'updateRoute'         => [
                     'name'       => 'grp.models.shop.email-template.update',
                     'parameters' => [
-                        'shop' => $emailTemplate->shop_id,
+                        'shop'          => $emailTemplate->shop_id,
                         'emailTemplate' => $emailTemplate->id
                     ],
-                    'method' => 'patch'
+                    'method'     => 'patch'
                 ],
-                'storeTemplateRoute' => [
-                    'name' => 'grp.models.shop.email-template.store.as-new-template',
+                'storeTemplateRoute'  => [
+                    'name'       => 'grp.models.shop.email-template.store.as-new-template',
                     'parameters' => [
-                        'shop' => $emailTemplate->shop_id,
+                        'shop'          => $emailTemplate->shop_id,
                         'emailTemplate' => $emailTemplate->id
                     ],
-                    'method' => 'post'
+                    'method'     => 'post'
                 ],
                 'deleteTemplateRoute' => [
-                    'name' => 'grp.models.shop.email-template.delete',
+                    'name'       => 'grp.models.shop.email-template.delete',
                     'parameters' => [
-                        'shop' => $emailTemplate->shop_id,
+                        'shop'          => $emailTemplate->shop_id,
                         'emailTemplate' => $emailTemplate->id
                     ],
-                    'method' => 'delete'
+                    'method'     => 'delete'
                 ],
-                'indexRoute' => [
-                    'name' => 'grp.org.shops.show.marketing.templates.index',
+                'indexRoute'          => [
+                    'name'       => 'grp.org.shops.show.marketing.templates.index',
                     'parameters' => [
                         'organisation' => $this->organisation->slug,
-                        'shop' => $this->shop->slug
+                        'shop'         => $this->shop->slug
                     ],
                 ],
 
                 'sendTestRoute' => [
-                    'name' => 'grp.org.shops.show.marketing.templates.send-test',
+                    'name'       => 'grp.org.shops.show.marketing.templates.send-test',
                     'parameters' => [
-                        'organisation' => $this->organisation->slug,
-                        'shop' => $this->shop->slug,
+                        'organisation'  => $this->organisation->slug,
+                        'shop'          => $this->shop->slug,
                         'emailTemplate' => $emailTemplate->slug
                     ],
-                    'method' => 'post'
+                    'method'     => 'post'
                 ],
 
-                'mergeTags' => GetMailshotMergeTags::run(),
+                'mergeTags'        => GetMailshotMergeTags::run(),
                 'organisationSlug' => $this->organisation->slug,
             ]
         );
     }
 
-    public function getBreadcrumbs(EmailTemplate $emailTemplate, string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(EmailTemplate $emailTemplate, string $routeName, array $routeParameters): array
     {
-        $headCrumb = function (EmailTemplate $emailTemplate, array $routeParameters, string $suffix = null) {
+        $headCrumb = function (EmailTemplate $emailTemplate, array $routeParameters) {
             return [
                 [
-                    'type' => 'simple',
+                    'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => $emailTemplate->name,

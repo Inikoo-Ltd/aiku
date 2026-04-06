@@ -32,6 +32,22 @@ interface ChatSessionData {
     contact_name?: string
 }
 
+interface ChatOfflineInfo {
+    reason?: string
+    today?: {
+        day_of_week?: number
+        day_name?: string
+        is_working_day?: boolean
+    }
+    next_opening?: {
+        day_of_week?: number
+        day_name?: string
+        start?: string | null
+        end?: string | null
+        timezone?: string
+    } | null
+}
+
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
 type LocalChatMessage = ChatMessage & {
@@ -365,6 +381,7 @@ const chatHours = ref({
     start: '',
     end: ''
 })
+const chatOfflineInfo = ref<ChatOfflineInfo | null>(null)
 
 const isUser = ref<boolean>(false)
 const isCheckingStatus = ref(false)
@@ -437,17 +454,24 @@ const checkChatStatus = async (sessionUlid: string) => {
 
         statusChat.value = config?.is_online ?? false
         isUser.value = config?.is_metadata ?? false
+        chatOfflineInfo.value = config?.offline_info ?? null
 
         if (config?.schedule) {
             chatHours.value = {
                 start: config.schedule.start,
                 end: config.schedule.end
             }
+        } else {
+            chatHours.value = {
+                start: '',
+                end: ''
+            }
         }
 
     } catch (e) {
         console.error("Chat status fetch failed", e)
         statusChat.value = false
+        chatOfflineInfo.value = null
     } finally {
         isCheckingStatus.value = false
     }
@@ -611,7 +635,7 @@ watch(() => bundle.open.value, (val) => {
                         @new-session="startNewSession" :assignedAgent="assignedAgent" />
 
                     <OfflineChatForm v-else-if="activeMenu == 'chat' && !isCheckingStatus && !statusChat"
-                        :hours="chatHours" :session="chatSession" :isLoggedIn="isLoggedIn"
+                        :hours="chatHours" :offlineInfo="chatOfflineInfo" :session="chatSession" :isLoggedIn="isLoggedIn"
                         @session-created="handleOfflineSession" />
 
                     <div v-if="activeMenu === 'history'" :class="isMobile

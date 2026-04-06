@@ -179,6 +179,17 @@ class CalculateOrderDiscounts
                         ];
                     }
                 }
+            } elseif ($offerData->type == 'Category Amount Ordered') {
+                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'family_ids', []))) {
+                    $triggerData = json_decode($offerData->trigger_data, true);
+
+                    if (Arr::get($order->categories_data, "family.$offerData->trigger_id.net_amount", 0) >= Arr::get($triggerData, 'item_amount')) {
+                        $enabledOffers[$offerData->allowance_signature] = [
+                            'offer_id'    => $offerData->id,
+                            'offer_label' => $offerData->name,
+                        ];
+                    }
+                }
             } elseif ($offerData->type == 'Category Quantity Ordered Order Interval') {
                 if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'family_ids', []))) {
                     $amnestyOfferId = $this->getGrAmnestyOfferId($order);

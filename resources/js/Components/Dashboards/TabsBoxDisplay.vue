@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { inject, ref } from "vue"
+import { inject, ref, computed } from "vue"
 import Icon from "../Icon.vue"
 import { faSpinnerThird } from '@fad'
 import { router } from '@inertiajs/vue3'
-import { faInfoCircle, faPallet, faCircle } from '@fas'
+import { faInfoCircle, faPallet, faCircle, faTimesCircle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faAppleCrate,faRoad, faClock, faDatabase, faNetworkWired, faEye, faThLarge ,faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream, faBoxOpen, faChevronDown } from '@fal'
+import { faAppleCrate, faRoad, faClock, faDatabase, faNetworkWired, faEye, faThLarge, faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream, faBoxOpen, faChevronDown, faInventory, faSkullCow, faBan } from '@fal'
 
 library.add(
-    faInfoCircle, faRoad, faClock, faDatabase, faPallet, faCircle,
+    faInfoCircle, faRoad, faClock, faDatabase, faPallet, faCircle, faTimesCircle,
     faNetworkWired, faSpinnerThird, faEye, faThLarge, faTachometerAltFast,
     faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream, faAppleCrate,
-    faBoxOpen, faChevronDown
+    faBoxOpen, faChevronDown, faInventory, faSkullCow, faBan
 )
 
 const layoutStore = inject('layout', layoutStructure)
@@ -57,11 +57,9 @@ const props = defineProps<{
     current?: string | number
 }>()
 
-const expandedBoxes = ref<Record<string, boolean>>({})
+const isAllExpanded = ref(false)
 
-const toggleExpand = (boxLabel: string) => {
-    expandedBoxes.value[boxLabel] = !expandedBoxes.value[boxLabel]
-}
+const hasChildren = computed(() => props.tabs_box.some(box => box.children && box.children.length > 0))
 
 const currencyFormat = (currencyCode: string, amount: number | string): string | number => {
     if (!amount) return 0
@@ -120,10 +118,10 @@ const getRoute = (tabSlug) => {
 
 <template>
     <div>
-        <!-- TabsBoxDisplay -->
-        <div class="hidden px-6 md:flex gap-x-6 my-2 items-start">
+        <!-- TabsBoxDisplay Desktop -->
+        <div class="hidden px-6 md:flex gap-x-6 my-2 item-stretch">
             <div
-                v-for="box in tabs_box"
+                v-for="(box, idx) in tabs_box"
                 :key="box.label"
                 class="rounded-md px-3 relative border w-full flex flex-col py-2 select-none transition-all duration-200"
                 :style="{
@@ -178,31 +176,18 @@ const getRoute = (tabSlug) => {
                     </div>
                 </div>
 
-                <!-- Expand Button -->
-                <button
-                    v-if="box.children && box.children.length > 0"
-                    class="mt-1 flex items-center justify-center w-full text-gray-400 hover:text-gray-600 transition-colors"
-                    @click.stop="toggleExpand(box.label)"
-                >
-                    <FontAwesomeIcon
-                        icon="fal fa-chevron-down"
-                        class="text-[10px] transition-transform duration-200"
-                        :class="expandedBoxes[box.label] ? 'rotate-180' : ''"
-                        fixed-width
-                        aria-hidden="true"
-                    />
-                </button>
+                <div class="flex-1"></div>
 
                 <!-- Children Rows -->
                 <div
-                    v-if="box.children && box.children.length > 0 && expandedBoxes[box.label]"
-                    class="mt-2 border-t pt-2"
+                    v-if="box.children && box.children.length > 0 && isAllExpanded"
+                    class="border-t pt-2"
                     :style="{ borderColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] + '44' : '#e5e7eb' }"
                 >
                     <!-- Table Header -->
                     <div class="flex items-center gap-x-2 text-[10px] text-gray-400 mb-1 pb-1 border-b border-gray-100">
-                        <span class="flex-1 min-w-0"></span>
-                        <div class="flex gap-x-3 shrink-0">
+                        <span v-if="idx === 0" class="flex-1 min-w-0"></span>
+                        <div class="flex gap-x-3 shrink-0" :class="idx === 0 ? '' : 'w-full justify-around'">
                             <div
                                 v-for="tab in box.tabs"
                                 :key="'col-header-' + tab.tab_slug"
@@ -218,8 +203,8 @@ const getRoute = (tabSlug) => {
                         :key="child.slug"
                         class="flex items-center gap-x-2 text-xs py-1 border-b border-gray-50 last:border-0"
                     >
-                        <span class="truncate text-gray-600 font-medium flex-1 min-w-0">{{ child.label }}</span>
-                        <div class="flex gap-x-3 shrink-0">
+                        <span v-if="idx === 0" class="truncate text-gray-600 font-medium flex-1 min-w-0">{{ child.label }}</span>
+                        <div class="flex gap-x-3 shrink-0" :class="idx === 0 ? '' : 'w-full justify-around'">
                             <div
                                 v-for="childTab in child.tabs"
                                 :key="childTab.tab_slug"
@@ -238,6 +223,22 @@ const getRoute = (tabSlug) => {
             </div>
         </div>
 
+        <!-- Global Expand Button (Desktop) -->
+        <div v-if="hasChildren" class="hidden md:flex justify-center mt-1 mb-2">
+            <button
+                class="flex items-center gap-x-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors px-3 py-1 rounded hover:bg-gray-100"
+                @click="isAllExpanded = !isAllExpanded"
+            >
+                <FontAwesomeIcon
+                    icon="fal fa-chevron-down"
+                    class="text-[10px] transition-transform duration-200"
+                    :class="isAllExpanded ? 'rotate-180' : ''"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </button>
+        </div>
+
         <!-- Mobile -->
         <div class="mt-2 px-3 md:hidden space-y-3">
             <div
@@ -250,23 +251,11 @@ const getRoute = (tabSlug) => {
                 }"
             >
                 <!-- Box Header -->
-                <div
-                    class="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center"
-                    :class="box.children && box.children.length > 0 ? 'cursor-pointer' : ''"
-                    @click="box.children && box.children.length > 0 ? toggleExpand('mobile-' + box.label) : null"
-                >
+                <div class="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center">
                     <div class="flex items-center justify-center gap-2 text-sm font-semibold text-gray-700 flex-1">
                         <FontAwesomeIcon v-if="box.icon" :icon="box.icon" class="text-gray-500" fixed-width aria-hidden="true" />
                         <span>{{ box.label }}</span>
                     </div>
-                    <FontAwesomeIcon
-                        v-if="box.children && box.children.length > 0"
-                        icon="fal fa-chevron-down"
-                        class="text-gray-400 text-xs transition-transform duration-200"
-                        :class="expandedBoxes['mobile-' + box.label] ? 'rotate-180' : ''"
-                        fixed-width
-                        aria-hidden="true"
-                    />
                 </div>
 
                 <!-- Tabs Grid -->
@@ -288,7 +277,6 @@ const getRoute = (tabSlug) => {
                             } : {}"
                             @click="['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) ? router.get(getRoute(tab.tab_slug)) : null"
                         >
-                            <!-- Tab Icon (if exists) -->
                             <div v-if="tab.icon || tab.icon_data" class="flex justify-center mb-2">
                                 <Icon
                                     v-if="tab.icon_data"
@@ -306,7 +294,6 @@ const getRoute = (tabSlug) => {
                                 />
                             </div>
 
-                            <!-- Tab Value -->
                             <div class="text-center relative">
                                 <div
                                     class="text-xl font-semibold tabular-nums mb-1"
@@ -315,14 +302,12 @@ const getRoute = (tabSlug) => {
                                     {{ renderLabelBasedOnType(tab.value, tab.type, { currency_code: box.currency_code }) }}
                                 </div>
 
-                                <!-- Indicator -->
                                 <template v-if="tab.indicator">
                                     <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 right-0 text-green-500 text-[6px]" fixed-width aria-hidden="true" />
                                     <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 right-0 text-green-500 text-[6px] animate-ping" fixed-width aria-hidden="true" />
                                 </template>
                             </div>
 
-                            <!-- Tab Information Label -->
                             <div class="text-center text-xs text-gray-500 leading-tight">
                                 {{ renderLabelBasedOnType(tab.information?.label, tab.information?.type, { currency_code: box.currency_code }) }}
                             </div>
@@ -332,10 +317,9 @@ const getRoute = (tabSlug) => {
 
                 <!-- Mobile Children -->
                 <div
-                    v-if="box.children && box.children.length > 0 && expandedBoxes['mobile-' + box.label]"
+                    v-if="box.children && box.children.length > 0 && isAllExpanded"
                     class="border-t border-gray-200"
                 >
-                    <!-- Mobile Table Header -->
                     <div class="flex items-center gap-x-2 px-4 py-1.5 bg-gray-50 text-[10px] text-gray-400 border-b border-gray-200">
                         <span class="flex-1 min-w-0"></span>
                         <div class="flex gap-x-4 shrink-0">
@@ -348,7 +332,6 @@ const getRoute = (tabSlug) => {
                             </div>
                         </div>
                     </div>
-                    <!-- Mobile Table Rows -->
                     <div
                         v-for="child in box.children"
                         :key="'mobile-child-' + child.slug"
@@ -372,6 +355,22 @@ const getRoute = (tabSlug) => {
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Global Expand Button (Mobile) -->
+        <div v-if="hasChildren" class="md:hidden flex justify-center mt-2 mb-1 px-3">
+            <button
+                class="w-full flex items-center justify-center gap-x-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors py-1.5 rounded border border-gray-200 hover:bg-gray-50"
+                @click="isAllExpanded = !isAllExpanded"
+            >
+                <FontAwesomeIcon
+                    icon="fal fa-chevron-down"
+                    class="text-[10px] transition-transform duration-200"
+                    :class="isAllExpanded ? 'rotate-180' : ''"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </button>
         </div>
     </div>
 </template>

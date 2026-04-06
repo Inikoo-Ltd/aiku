@@ -203,16 +203,44 @@ class ShowInvoice extends OrgAction
 
         $columns = [
             [
-                'label' => __('Country of Origin'),
-                'value' => 'country_of_origin',
+                'label' => __('Pro mode'),
+                'value' => 'pro_mode',
+            ],
+            [
+                'label' => __('Recommended retail prices'),
+                'value' => 'rrp',
+            ],
+            [
+                'label' => __('Parts'),
+                'value' => 'parts',
+            ],
+            [
+                'label' => __('Commodity Codes'),
+                'value' => 'commodity_codes',
+            ],
+            [
+                'label' => __('Barcode'),
+                'value' => 'barcode',
             ],
             [
                 'label' => __('Weight'),
                 'value' => 'weight',
             ],
             [
-                'label' => __('Commodity Codes'),
-                'value' => 'commodity_codes',
+                'label' => __('Country of Origin'),
+                'value' => 'country_of_origin',
+            ],
+            [
+                'label' => __('Hide Payment Status'),
+                'value' => 'hide_payment_status',
+            ],
+            [
+                'label' => __('CPNP'),
+                'value' => 'cpnp',
+            ],
+            [
+                'label' => __('Group by Tariff Code'),
+                'value' => 'group_by_tariff_code',
             ],
         ];
 
@@ -383,6 +411,7 @@ class ShowInvoice extends OrgAction
                     'workshop_route' => $this->getOutboxRoute($invoice)
                 ],
                 'download_pdf_column'    => $this->getDownloadPdfColumns($invoice),
+                'is_external'            => $invoice->shop?->type->value == 'external',
                 InvoiceTabsEnum::REFUNDS->value => $this->tab == InvoiceTabsEnum::REFUNDS->value
                     ? fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))
                     : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))),

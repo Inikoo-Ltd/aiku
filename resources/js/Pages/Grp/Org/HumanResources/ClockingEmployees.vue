@@ -177,6 +177,12 @@ const component = computed(() => {
 		:tab="currentTab"
 		:isRequestLeaveModalOpen="isRequestLeaveModalOpen"
 		:isRequestOvertimeModalOpen="isRequestOvertimeModalOpen"
+		:activeTimeTracker="scan_qr_code?.active_time_tracker"
+		:clockingStatus="scan_qr_code?.clocking_status"
+		:todayTimesheet="scan_qr_code?.today_timesheet"
+		:lastClockIn="scan_qr_code?.last_clock_in"
+		:lastClockOut="scan_qr_code?.last_clock_out"
+		:timezone="scan_qr_code?.timezone"
 		@update:isRequestLeaveModalOpen="isRequestLeaveModalOpen = $event"
 		@update:isRequestOvertimeModalOpen="isRequestOvertimeModalOpen = $event">
 	</component>

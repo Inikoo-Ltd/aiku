@@ -21,6 +21,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float $quantity_in_locations Stock at the end of the day, min value zero
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property numeric $org_stock_value
+ * @property numeric $grp_stock_value
+ * @property int|null $organisation_stock_history_id
  * @property-read \App\Models\Inventory\Location $location
  * @property-read \App\Models\Inventory\OrgStock $orgStock
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LocationOrgStockHistory newModelQuery()
@@ -35,7 +38,9 @@ class LocationOrgStockHistory extends Model
     protected function casts(): array
     {
         return [
-            'date'                           => 'date',
+            'date'            => 'date',
+            'org_stock_value' => 'decimal:2',
+            'grp_stock_value' => 'decimal:2',
         ];
     }
 

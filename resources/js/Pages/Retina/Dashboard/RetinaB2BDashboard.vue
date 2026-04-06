@@ -6,10 +6,8 @@ import { faUser, faBuilding, faEnvelope, faPhone, faTags, faMedal as fasMedal } 
 import { faMedal } from "@fal"
 import { faMedal as fadMedal } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import EmailSubscribetion from '@/Components/EmailSubscribetion.vue'
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "@inertiajs/vue3";
-import Button from '@/Components/Elements/Buttons/Button.vue'
 import GoldReward from '@/Components/Utils/GoldReward.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 
@@ -98,7 +96,7 @@ onMounted(() => {
 
                 <!-- Right Column: Email Subscriptions -->
                 <!-- <div class="flex justify-start lg:justify-end">
-                    <EmailSubscribetion
+                    <EmailSubscription
                         v-if="data?.customer?.email_subscriptions"
                         :emailSubscriptions="data.customer.email_subscriptions"
                         containerClass="p-3 bg-white rounded-md border border-gray-200 w-full max-w-sm"

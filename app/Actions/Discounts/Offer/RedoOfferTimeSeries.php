@@ -33,7 +33,11 @@ class RedoOfferTimeSeries implements ShouldBeUnique
 
     public function getJobUniqueId(?int $offerID, ?string $from, ?string $to): string
     {
-        return $offerID ?? 'empty'.'_'.$from.'_'.$to;
+        if ($offerID === null) {
+            return 'empty'.'_'.$from.'_'.$to;
+        }
+
+        return $offerID.'_'.$from.'_'.$to;
     }
 
     public function handle(Offer $offer, ?string $from = null, ?string $to = null, bool $async = false): void

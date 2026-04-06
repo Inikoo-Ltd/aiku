@@ -53,6 +53,17 @@ trait WithLeaveSubNavigation
                     'tooltip' => __('Leave Concurrency Rules'),
                 ],
             ],
+            [
+                'label' => __('Leave Approval'),
+                'route' => [
+                    'name' => 'grp.org.hr.leave_approvers.index',
+                    'parameters' => $request->route()->originalParameters(),
+                ],
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-user-shield'],
+                    'tooltip' => __('Leave Approval'),
+                ],
+            ],
         ];
     }
 }

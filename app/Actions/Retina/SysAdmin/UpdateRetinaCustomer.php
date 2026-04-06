@@ -75,6 +75,7 @@ class UpdateRetinaCustomer extends RetinaAction
             'delivery_address_id'           => ['sometimes', 'integer'],
             'tags'                          => ['sometimes', 'array'],
             'disable_order_auto_processing' => ['sometimes', 'boolean'],
+            'eori'                          => ['sometimes', 'nullable', 'string', 'max:20'],
         ];
     }
 

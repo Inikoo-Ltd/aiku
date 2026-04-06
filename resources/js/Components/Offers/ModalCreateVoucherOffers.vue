@@ -122,28 +122,38 @@ const productFetchRoute = {
 
 const submitCategoryOffer = () => {
     // Section: Submit
-    const targetPayload: Record<string, any> = {}
+    const targets: any[] = []
 
-    if (target.product) {
-        targetPayload.target = 'product'
-        targetPayload.product_ids = productFilters.value
+    if (target.product && productFilters.value.length) {
+        targets.push({
+            type: 'product',
+            ids: productFilters.value,
+        })
 
     } else {
-        if (target.category && categoryType.value && categoryFilters.value.length) {
-            targetPayload.target_category = categoryType.value // 'department' | 'subdepartment' | 'family'
-            targetPayload.category_ids = categoryFilters.value
+        if (target.category && categoryFilters.value.length) {
+            targets.push({
+            type: 'category',
+            category_type: categoryType.value,
+            ids: categoryFilters.value,
+            })
         }
 
         if (target.collection && collectionFilters.value.length) {
-            targetPayload.target_collection = true
-            targetPayload.collection_ids = collectionFilters.value
+            targets.push({
+            type: 'collection',
+            ids: collectionFilters.value,
+            })
         }
 
         if (target.shop && selectedShops.value.length) {
-            targetPayload.target_shop = true
-            targetPayload.shop_slugs = selectedShops.value
+            targets.push({
+            type: 'shop',
+            ids: selectedShops.value,
+            })
         }
     }
+    
     const payload = {
         voucher: offerVoucher.value,
         name: offerLabel.value,
@@ -153,19 +163,15 @@ const submitCategoryOffer = () => {
         end_date: endDate.value,
         reuse_customer: reuseCustomer.value,
         discount_percentage: discountPercentage.value,
-        ...targetPayload,
+        targets: targets,
     }
-    console.log("payload", payload)
-    
     router.post(
         route('grp.org.shops.show.discounts.campaigns.store_voucher', {
             organisation: 'sk',
             shop: 'se',
             offerCampaign: 'co-se',
         }),
-        {
-            payload
-        },
+        payload,
         {
             preserveScroll: true,
             preserveState: true,

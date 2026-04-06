@@ -11,6 +11,7 @@ namespace App\Http\Resources\Web;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Web\Website;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 class WebsiteIrisResource extends JsonResource
 {
@@ -20,15 +21,17 @@ class WebsiteIrisResource extends JsonResource
     {
         /** @var Website $website */
         $website = $this;
+
         return [
-            'id'     => $website->id,
-            'slug'   => $website->slug,
-            'code'   => $website->code,
-            'name'   => $website->name,
-            'domain' => $website->domain,
-            'url'    => app()->environment('local') ? 'http://'.$website->domain : 'https://'.$website->domain,
-            'logo'   => $website->imageSources(350, 350),
-            'type'  => $website->shop->type,
+            'id'               => $website->id,
+            'slug'             => $website->slug,
+            'code'             => $website->code,
+            'name'             => $website->name,
+            'domain'           => $website->domain,
+            'url'              => app()->environment('local') ? 'http://'.$website->domain : 'https://'.$website->domain,
+            'logo'             => $website->imageSources(350, 350),
+            'type'             => $website->shop->type,
+            'reviews_settings' => Arr::get($website->shop->settings,'reviews'),
         ];
     }
 }

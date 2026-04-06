@@ -27,6 +27,10 @@ class DeleteProductCategory extends OrgAction
     use WithCatalogueEditAuthorisation;
 
     private ProductCategory $productCategory;
+    /**
+     * @var true
+     */
+    private bool $isFromController = false;
 
     /**
      * @throws \Throwable
@@ -79,6 +83,7 @@ class DeleteProductCategory extends OrgAction
     {
         $this->productCategory = $productCategory;
         $this->initialisationFromShop($productCategory->shop, $request);
+        $this->isFromController = true;
 
         $forceDelete = $request->boolean('force_delete');
 
@@ -89,20 +94,24 @@ class DeleteProductCategory extends OrgAction
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
         if ($this->productCategory->getProducts()->count() > 0) {
-            request()->session()->flash('modal', [
-            'status'  => 'error',
-            'title'   => __('Failed!'),
-            'description' => __('This category has products associated with it.'),
-        ]);
+            if ($this->isFromController) {
+                request()->session()->flash('modal', [
+                    'status'      => 'error',
+                    'title'       => __('Failed!'),
+                    'description' => __('This category has products associated with it.'),
+                ]);
+            }
             $validator->errors()->add('products', 'This category has products associated with it.');
         }
 
         if ($this->productCategory->children()->exists()) {
-            request()->session()->flash('modal', [
-              'status'  => 'error',
-              'title'   => __('Failed!'),
-              'description' => __('This category has children associated with it.'),
-        ]);
+            if ($this->isFromController) {
+                request()->session()->flash('modal', [
+                    'status'      => 'error',
+                    'title'       => __('Failed!'),
+                    'description' => __('This category has children associated with it.'),
+                ]);
+            }
             $validator->errors()->add('children', 'This category has children associated with it.');
         }
     }
@@ -128,6 +137,7 @@ class DeleteProductCategory extends OrgAction
     {
         $productCategory = ProductCategory::findOrFail($command->argument('product_category_id'));
         $this->action($productCategory, true);
+
         return 0;
     }
 

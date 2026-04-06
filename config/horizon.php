@@ -324,7 +324,7 @@ return [
             'balanceCooldown' => 3,
         ],
         'stock-history'        => [
-            'connection'      => 'redis',
+            'connection'      => 'redis-long-running',
             'queue'           => ['stock-history'],
             'balance'         => 'auto',
             'maxProcesses'    => 12,
@@ -332,7 +332,7 @@ return [
             'maxJobs'         => 0,
             'memory'          => 1280,
             'tries'           => 1,
-            'timeout'         => 3600,
+            'timeout'         => 7200,
             'nice'            => 5,
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
