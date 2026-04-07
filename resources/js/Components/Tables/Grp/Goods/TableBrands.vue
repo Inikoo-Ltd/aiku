@@ -22,18 +22,10 @@ defineProps<{
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-        <template #cell(reference)="{ item: brand }">
-            <Link :href="route('grp.trade_units.brands.edit', brand.slug)" class="primaryLink">
-                {{ brand.reference }}
-            </Link>
-        </template>
-
         <template #cell(name)="{ item: brand }">
-            <span>{{ brand.name }}</span>
-        </template>
-
-        <template #cell(number_models)="{ item: brand }">
-            <span class="tabular-nums">{{ brand.number_models }}</span>
+            <Link :href="route('grp.trade_units.brands.edit', brand.slug)" class="primaryLink">
+                {{ brand.name }}
+            </Link>
         </template>
 
         <template #cell(actions)="{ item: brand }">

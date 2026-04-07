@@ -52,12 +52,10 @@ class IndexBrands extends GrpAction
             ->defaultSort('brands.name')
             ->select([
                 'brands.slug',
-                'brands.reference',
                 'brands.name',
                 'brands.id',
-                'brands.number_models',
             ])
-            ->allowedSorts(['name', 'reference', 'number_models'])
+            ->allowedSorts(['name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -79,9 +77,7 @@ class IndexBrands extends GrpAction
                 ->withEmptyState([
                     'title' => __('No brands found'),
                 ])
-                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_models', label: __('Models'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'actions', label: '', canBeHidden: false, align: 'right');
         };
     }
