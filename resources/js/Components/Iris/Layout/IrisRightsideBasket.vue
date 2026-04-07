@@ -533,7 +533,7 @@ onUnmounted(() => {
 
                 <div class="pt-3 border-t border-gray-200 space-y-2.5">
                     <!-- Section: Eligible Gift -->
-                    <div v-if="layout.app.environment === 'local' && dataSideBasket?.gr_gifts?.status" class="text-xs flex justify-end pr-2 xmt-4">
+                    <div v-if="dataSideBasket?.gr_gifts?.status" class="text-xs flex justify-end pr-2 xmt-4">
                         <EligibleGift
                             :routeUpdate="{
                                 name: 'iris.models.order.update_gr_gift',

@@ -2,39 +2,44 @@
 
 /*
  * author Louis Perez
- * created on 22-01-2026-13h-45m
+ * created on 07-04-2026-09h-59m
  * github: https://github.com/louis-perez
  * copyright 2026
 */
 
 namespace App\Actions\Maintenance\Catalogue;
 
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHasLiveWebpage;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
+use App\Models\Helpers\Language;
 use Illuminate\Console\Command;
-use Symfony\Component\Console\Helper\ProgressBar;
+use Illuminate\Support\Collection;
 
-class RepairProductsHasLiveWebpage
+class RepairProductBucketImages
 {
     use WithActionUpdate;
 
-    public string $commandSignature = 'product:repair_has_live_webpage';
+
+    public string $commandSignature = 'products:repair_bucket_images';
 
     public function handle(Product $product)
     {
-        ProductHydrateHasLiveWebpage::run($product);
+        $hasImages = count($product->images) > 0 || !empty($product->video_url);
+
+        $product->updateQuietly([
+            'bucket_images' => $hasImages
+        ]);
     }
 
     public function asCommand(Command $command): void
     {
-        $command->info('Repairing Products has_live_webpage');
+        $command->info('Repairing Products bucket_images');
 
-        $query = Product::query();
+        $query  = Product::query();
+        
+        $totalCount     = $query->clone()->count();
 
-        $total = (clone $query)->count();
-
-        $progressBar   = $command->getOutput()->createProgressBar($total);
+        $progressBar    = $command->getOutput()->createProgressBar($totalCount);
         $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
         $progressBar->start();
 
@@ -43,10 +48,11 @@ class RepairProductsHasLiveWebpage
             ->chunkById(1000, function ($products) use (&$progressBar) {
                 foreach ($products as $product) {
                     $this->handle($product);
+
                     $progressBar->advance();
                 }
             });
-
+                    
         $progressBar->finish();
         $command->newLine();
     }
