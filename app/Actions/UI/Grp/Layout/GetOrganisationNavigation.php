@@ -236,6 +236,20 @@ class GetOrganisationNavigation
             ]
         ];
 
+        $navigation['calendar_offers'] = [
+            'label'   => __('Calendar Offers'),
+            'tooltip' => __('Calendar Offers'),
+            'icon'    => ['fal', 'fa-calendar'],
+            'root'    => 'grp.org.offer.calendar',
+            'route'   => [
+                'name'       => 'grp.org.offer.calendar',
+                'parameters' => [
+                    'organisation' => $organisation->slug,
+                ],
+            ],
+            'topMenu' => [],
+        ];
+
         return $this->getSettingsNavs($user, $organisation, $navigation);
     }
 }

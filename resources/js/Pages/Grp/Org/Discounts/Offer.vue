@@ -78,7 +78,7 @@ const getOfferCampaignLink = (offerCampaign: {}) => {
         <div class="mb-2">
             {{ ctrans("Type") }}: <span class="font-bold">{{ data.offer.type }}</span>
         </div>
-        
+        <!-- {{ data.offer.type }} -->
         <FamilyOfferLabelDiscount v-if="data.offer.type == 'Category Quantity Ordered Order Interval'" :offer="data.offer" />
         <BasicDiscount v-else-if="data.offer.type == 'GR Amnesty'"
             :offers_data="{
@@ -146,7 +146,7 @@ const getOfferCampaignLink = (offerCampaign: {}) => {
                 </dt>
         
                 <div class="relative col-span-3 justify-self-end font-medium overflow-hidden text-right">
-                    {{ useFormatTime(data.offer.start_at, { formatTime: 'hm' }) }} - {{ data.offer.end_at ? useFormatTime(data.offer.end_at, { formatTime: 'hm' }) : ctrans('permanent') }}
+                    {{ useFormatTime(data.offer.start_at, { formatTime: 'hm', keepTimezone: true }) }} - {{ data.offer.end_at ? useFormatTime(data.offer.end_at, { formatTime: 'hm', keepTimezone: true }) : ctrans('Permanent') }}
                 </div>
             </div>
 

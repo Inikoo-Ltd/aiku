@@ -206,7 +206,7 @@ class AutosaveWebsiteMarginal extends OrgAction
                     'families_overview' => $layout
                 ]
             ]);
-        }  elseif ($marginal == 'product') {
+        } elseif ($marginal == 'product') {
             if (!$website->unpublishedProductSnapshot) {
                 $productSnapshot = StoreWebsiteSnapshot::run(
                     $website,
@@ -355,7 +355,7 @@ class AutosaveWebsiteMarginal extends OrgAction
         $this->initialisationFromShop($website->shop, $request);
         $this->handle($website, 'family', $this->validatedData);
     }
-    
+
     public function familiesOverview(Website $website, ActionRequest $request): void
     {
         $this->initialisationFromShop($website->shop, $request);
