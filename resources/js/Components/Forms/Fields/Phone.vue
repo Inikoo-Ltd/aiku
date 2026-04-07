@@ -95,11 +95,10 @@ watch(phone, (val) => {
             <p
                 v-if="!form.errors[fieldName]"
                 class="absolute left-0 text-xs"
-                :class="phoneError ? 'text-red-500 -bottom-10' : 'text-gray-400 -bottom-5'"
+                :class="phoneError ? 'text-red-500 -bottom-5' : 'text-gray-400 -bottom-5'"
             >
-                Example: +44 7400 123456 (UK)
-                <span v-if="phoneError"> | {{ phoneError }}</span>
-                <span v-if="props.fieldData.value"> | {{ props.fieldData.value }}</span>
+                <b>  {{ props.fieldData.value }}</b>             <FontAwesomeIcon icon="fas fa-exclamation-circle" class="h-3 w-3  ml-2 mr-1 text-red-500" aria-hidden="true"/>
+                <span v-if="phoneError"> {{ phoneError }}</span>
             </p>
         </div>
 
