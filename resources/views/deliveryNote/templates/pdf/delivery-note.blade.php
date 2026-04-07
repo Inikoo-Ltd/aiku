@@ -28,19 +28,23 @@
     <tr>
         <td style="width: 50%;">
             <strong>From:</strong> <br>
-            {{$deliveryNote->shop->name}} <br>
+            {{ $shop->company_name ?? 'Company Name' }} <br>
+            {{ $deliveryNote->shop->name }} <br>
             {!! nl2br($shopAddress ?? 'Delivery Address') !!}<br>
             @if($shop->phone)
-            Phone: {{$shop->phone}} <br>
+            Phone: {{ $shop->phone }} <br>
             @endif
             @if($shop->email)
-            Email: {{$shop->email}}
+            Email: {{ $shop->email }}
             @endif
         </td>
         <td style="width: 50%;">
             <strong>To:</strong> <br>
             {{ $customer->name ?? 'Customer Name' }}<br>
             {!! nl2br($deliveryAddress ?? 'Delivery Address') !!}<br>
+            Phone : {{ $customer->phone ?? 'Customer Phone' }} <br>
+            Email : {{ $customer->email ?? 'Customer Email' }} <br>
+            Website : {{ $customer->contact_website ?? 'Customer Website' }}
         </td>
     </tr>
 </table>
