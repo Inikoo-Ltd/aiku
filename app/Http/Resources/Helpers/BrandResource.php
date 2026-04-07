@@ -19,6 +19,10 @@ class BrandResource extends JsonResource
             'name'               => $this->name,
             'id'                 => $this->id,
             'number_trade_units' => $this->number_trade_units,
+            'trade_units_route'  => [
+                'name'       => 'grp.trade_units.brands.trade_units.index',
+                'parameters' => [$this->slug],
+            ],
         ];
     }
 }

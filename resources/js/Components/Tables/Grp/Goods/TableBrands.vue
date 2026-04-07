@@ -28,6 +28,12 @@ defineProps<{
             </Link>
         </template>
 
+        <template #cell(number_trade_units)="{ item: brand }">
+            <Link :href="route(brand.trade_units_route.name, brand.trade_units_route.parameters)" class="primaryLink">
+                {{ brand.number_trade_units }}
+            </Link>
+        </template>
+
         <template #cell(actions)="{ item: brand }">
             <div class="flex gap-2 justify-end">
                 <Link
