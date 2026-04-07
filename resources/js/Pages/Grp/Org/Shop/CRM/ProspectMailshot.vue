@@ -551,7 +551,6 @@ watch(
 
     <PageHeading :data="pageHead">
         <template #afterTitle v-if="
-            props.mailshotType === 'marketing' &&
             ['in_process', 'ready', 'scheduled'].includes(props.status ?? '') && !props.isSecondWave
         ">
             <span>| Estimated Recipients : {{ formatNumber(props.estimatedRecipients) ?? 0 }}</span>

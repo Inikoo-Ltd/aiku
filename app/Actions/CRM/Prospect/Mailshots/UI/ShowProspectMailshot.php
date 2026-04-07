@@ -10,6 +10,7 @@ namespace App\Actions\CRM\Prospect\Mailshots\UI;
 
 use App\Actions\Comms\Mailshot\UI\GetMailshotShowcase;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
+use App\Actions\CRM\Prospect\Mailshots\GetProspectMailshotRecipientsQueryBuilder;
 use App\Actions\CRM\Prospect\UI\IndexProspects;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
@@ -62,6 +63,10 @@ class ShowProspectMailshot extends OrgAction
         }
         $isHasParentMailshot = $mailshot->parentMailshot()->exists();
 
+        $estimatedRecipients = in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY, MailshotStateEnum::SCHEDULED])
+            ? (GetProspectMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count('prospects.id') ?? 0)
+            : 0;
+
         /* NOTE:
          * is_second_wave_enabled is perspective from parent mailshot
          * is_second_wave  is perspective from child mailshot
@@ -86,20 +91,20 @@ class ShowProspectMailshot extends OrgAction
                         ]
                     ] : false,
                     'actions' => [
-                        // $isShowActions ? [
-                        //     'type'  => 'button',
-                        //     'style' => 'edit',
-                        //     'label' => __('Set Up Recipients'),
-                        //     'icon'  => ["fal", "fa-sliders-h"],
-                        //     'route' => [
-                        //         'name'       => "grp.org.shops.show.crm.prospects.mailshots.recipients",
-                        //         'parameters' => [
-                        //             $this->organisation->slug,
-                        //             $this->shop->slug,
-                        //             $mailshot->slug
-                        //         ]
-                        //     ]
-                        // ] : [],
+                        $isShowActions ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Set Up Recipients'),
+                            'icon'  => ["fal", "fa-sliders-h"],
+                            'route' => [
+                                'name'       => "grp.org.shops.show.crm.prospects.mailshots.recipients",
+                                'parameters' => [
+                                    $this->organisation->slug,
+                                    $this->shop->slug,
+                                    $mailshot->slug
+                                ]
+                            ]
+                        ] : [],
                         $isShowActions ? [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -247,7 +252,7 @@ class ShowProspectMailshot extends OrgAction
                 ],
                 'status' => $mailshot->state->value,
                 'secondWaveStatus' => $mailshot->secondWave?->state?->value,
-                'estimatedRecipients' => 0, // update this section if needed
+                'estimatedRecipients' => $estimatedRecipients,
                 'mailshotType' => $mailshot->type->value,
                 'isSecondWaveActive' => $isSecondWaveActive,
                 'secondwaveSubject' => $mailshotSecondWave?->subject,

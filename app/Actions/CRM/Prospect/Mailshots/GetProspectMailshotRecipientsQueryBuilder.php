@@ -50,6 +50,7 @@ class GetProspectMailshotRecipientsQueryBuilder
         $query->where('prospects.can_contact_by_email', true);
         $query->where('prospects.dont_contact_me', false);
         $query->where('prospects.is_valid_email', true);
+        $query->whereNull('prospects.customer_id');
 
         $filters = $mailshot->recipients_recipe;
 

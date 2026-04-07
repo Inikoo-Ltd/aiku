@@ -46,6 +46,18 @@ class CreateProspectMailshot extends OrgAction
                     'required'    => true,
                     'value'       => '',
                 ],
+                'recipients_recipe' => [
+                    'type'        => 'input',
+                    'label'       => __('recipients recipe'),
+                    'placeholder' => __('Email recipients recipe'),
+                    'required'    => true,
+                    'hidden'      => true,
+                    'value'       => [
+                        'all_prospects' => [
+                            'value' => true
+                        ]
+                    ],
+                ],
             ]
         ];
 
