@@ -11,6 +11,7 @@
 namespace App\Actions\Helpers\Brand;
 
 use App\Actions\Helpers\Brand\Hydrators\BrandHydrateModels;
+use App\Actions\Helpers\Brand\Hydrators\BrandHydrateTradeUnits;
 use App\Actions\OrgAction;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
@@ -23,6 +24,7 @@ class DetachBrandFromModel extends OrgAction
         $model->Brands()->detach([$brand->id]);
         $brand->refresh();
         BrandHydrateModels::dispatch($brand);
+        BrandHydrateTradeUnits::dispatch($brand)->delay($this->hydratorsDelay);
     }
 
     public function inTradeUnit(TradeUnit $tradeUnit, Brand $brand, ActionRequest $request)
