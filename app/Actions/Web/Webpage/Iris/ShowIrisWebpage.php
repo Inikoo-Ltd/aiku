@@ -246,8 +246,8 @@ class ShowIrisWebpage
 
             if ($webpage?->state === WebpageStateEnum::LIVE) {
                 $webpageID = $webpage->id;
-            } else if ($webpage?->state === WebpageStateEnum::CLOSED) {
-                $webpageID = $webpage->redirectWebpage->id;
+            } elseif ($webpage?->state === WebpageStateEnum::CLOSED) {
+                $webpageID = $webpage->redirectWebpage?->id;
             } else {
                 $webpageID = null;
             }
