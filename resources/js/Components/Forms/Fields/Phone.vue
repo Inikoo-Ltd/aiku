@@ -99,7 +99,7 @@ watch(phone, (val) => {
             >
                 Example: +44 7400 123456 (UK)
                 <span v-if="phoneError"> | {{ phoneError }}</span>
-                | {{ props.fieldData.value }}
+                <span v-if="props.fieldData.value"> | {{ props.fieldData.value }}</span>
             </p>
         </div>
 
