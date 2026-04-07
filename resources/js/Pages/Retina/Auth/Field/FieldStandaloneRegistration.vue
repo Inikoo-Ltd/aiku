@@ -14,6 +14,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import CustomerDataForm from '@/Components/CustomerDataForm.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import TaxNumber from "@/Components/Forms/Fields/TaxNumber.vue"
+import Phone from '@/Components/Forms/Fields/Phone.vue'
 library.add(faExclamationCircle)
 
 const props = defineProps<{
@@ -24,7 +25,6 @@ const props = defineProps<{
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
-console.log('layout', layout.retina.type)
 
 const addressFieldData = {
     type: "address",
@@ -113,22 +113,12 @@ const toggleInterest = (interestValue: string) => {
             {{ trans("Phone Number") }}
         </label>
         <div class="mt-2">
-            <IconField class="w-full" :class="form.errors.phone ? 'errorShake' : ''">
-                <InputIcon>
-                    <FontAwesomeIcon :icon="faPhone" />
-                </InputIcon>
-                <InputText
-                    v-model="form.phone"
-                    @update:model-value="(e) => form.clearErrors('phone')"
-                    type="text"
-                    id="phone-number"
-                    name="phone"
-                    class="w-full"
-                    :required="props.requiresPhoneNumber" />
-            </IconField>
-            <p v-if="form.errors.phone" class="text-sm text-red-600 mt-1">
-                {{ form.errors.phone }}
-            </p>
+            <Phone
+                :form="form"
+                fieldName="phone"
+                :options="{ defaultCountry: 'GB' }"
+                :fieldData="{ placeholder: trans('Enter phone number') }"
+            />
         </div>
     </div>
 
@@ -193,7 +183,7 @@ const toggleInterest = (interestValue: string) => {
             {{ trans("Country") }}
         </label >
         <Address
-            v-model="form[contact_address]"
+            v-model="form.contact_address"
             fieldName="contact_address"
             :form="form"
             :options="{ countriesAddressData: countriesAddressData }"

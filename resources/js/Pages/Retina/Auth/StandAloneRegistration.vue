@@ -26,19 +26,16 @@ library.add(faEnvelope, faUser, faAsterisk, faExclamationTriangle, faInfoCircle,
 // defineOptions({ layout: RetinaShowIris })
 const props = defineProps<{
   	requiresPhoneNumber: boolean,
-	countriesAddressData: [],
+	countriesAddressData: {},
 	polls: [],
 	registerRoute: {
 		name: string,
 		parameters: string,
 	},
-	timeline: {}
-	current_timeline: string
 	client: {
-		email: string
-		contact_name: string
-
-	}
+		email?: string
+		contact_name?: string
+	} | null
 	registration_settings: {
 		marketing_opt_in_label: string
 		marketing_opt_in_default: boolean
@@ -74,7 +71,10 @@ const isLoading = ref(false)
 
 const submit = () => {
     const fieldsOfSelectedCountry = get(props.countriesAddressData, [get(form, ['contact_address', 'country_id'], []), 'fields'], {});
-
+	if (props.requiresPhoneNumber && !form.phone) {
+		form.setError('phone', 'Phone number is required')
+		return
+	}
     let isAddressFieldFailedPass = false
     for (const [fieldName, fieldData] of Object.entries(fieldsOfSelectedCountry)) {
         if (fieldData.required && !get(form, ['contact_address', fieldName])) {

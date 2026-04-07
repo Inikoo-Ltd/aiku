@@ -54,17 +54,17 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
 
         $percentageOutOfStock = 0;
         if ($stockData->number_org_stocks > 0) {
-            $percentageOutOfStock = $stockData->number_out_of_stock_org_stocks / $stockData->number_org_stocks;
+            $percentageOutOfStock = round($stockData->number_out_of_stock_org_stocks / $stockData->number_org_stocks * 100, 2);
         }
 
         $percentageValueDormantStock1y = 0;
         if ($stockData->org_stock_values > 0) {
-            $percentageValueDormantStock1y = $stockData->value_dormant_stock_1y ?? 0 / $stockData->org_stock_values;
+            $percentageValueDormantStock1y = round(($stockData->value_dormant_stock_1y ?? 0) / $stockData->org_stock_values * 100, 2);
         }
 
         $organisationStockHistory->update([
-            'org_stock_value'                   => $stockData->org_stock_values,
-            'grp_stock_value'                   => $stockData->grp_stock_values,
+            'org_stock_value'                   => $stockData->org_stock_values ?? 0,
+            'grp_stock_value'                   => $stockData->grp_stock_values ?? 0,
             'number_org_stocks'                 => $stockData->number_org_stocks,
             'number_locations'                  => $stockLocationData->number_locations ?? 0,
             'number_out_of_stock_org_stocks'    => $stockData->number_out_of_stock_org_stocks,

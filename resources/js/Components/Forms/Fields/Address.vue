@@ -84,14 +84,18 @@ const handleChange = (fieldAddress?: string) => {
                 <div class="w-full ">
                     <div v-if="`${addressField}` === 'administrative_area'">
                         <label for="administrative_area" class="block text-sm font-medium text-gray-700">
+                            <FontAwesomeIcon v-if="fieldData.isWithRequiredField && addressFieldData.required" icon="fas fa-asterisk" class="text-red-500 text-xxs !text-[0.5rem] align-middle" fixed-width aria-hidden="true" />
                             {{ addressFieldData.label }}
                         </label>
                         <Multiselect
                             v-if="administrativeAreas(addressValues['country_id']).length && (!addressValues['administrative_area'] || inAdministrativeAreas(addressValues['administrative_area'], addressValues['country_id']))"
                             :options="administrativeAreas(addressValues['country_id'])" :label="'name'" :value-prop="'name'"
                             v-model="addressValues['administrative_area']"
+                            @update:modelValue="handleChange(addressField)"
+                            :class="form.errors[fieldName] || form.errors[addressField] ? 'errorShake' : ''"
                         />
                         <input v-else v-model="addressValues['administrative_area']" type="text" name="administrative_area"
+                            @update:modelValue="handleChange(addressField)"
                             id="administrative_area"
                             class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" />
                     </div>
@@ -108,7 +112,6 @@ const handleChange = (fieldAddress?: string) => {
                     </div>
                 </div>
                 <span v-if="form.errors[addressField]" class="mt-1 text-sm text-red-600">{{ form.errors[addressField] }}</span>
-                
             </div>
         </template>
     </div>

@@ -502,7 +502,7 @@ onUnmounted(() => {
 
         <!-- Section: Missed Offers -->
         <Transition name="slide-to-right">
-            <div v-if="layout.app.environment === 'local' && Object.values(dataSideBasket?.missed_offers || {})?.length" class="px-4 pb-6 sm:px-6">
+            <div v-if="Object.values(dataSideBasket?.missed_offers || {})?.length" class="px-4 pb-6 sm:px-6">
                 <div class="text-xs text-red-500 font-bold">
                     {{ ctrans('You missed ( :number_missed_offer ) offers', { number_missed_offer: Object.values(dataSideBasket?.missed_offers || {})?.length || 0 }) }}
                 </div>

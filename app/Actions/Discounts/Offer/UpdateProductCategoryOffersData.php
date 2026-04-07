@@ -9,6 +9,7 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Enums\Discounts\Offer\OfferDurationEnum;
+use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Collection;
@@ -139,6 +140,7 @@ class UpdateProductCategoryOffersData
         $offerData = [
             'id'                      => $offer->id,
             'state'                   => $offer->state->value,
+            'state_icon'              => OfferStateEnum::from($offer->state->value)->stateIcon()[$offer->state->value],
             'type'                    => $offer->type,
             'duration'                => $offer->duration->value,
             'duration_label'          => $durationLabel,
