@@ -415,6 +415,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                             :denominator="proxyItem.is_cut_view ? (Number(item.product_units) > 1 ? Number(item.product_units) : undefined) : undefined"
                         />
 
+                        <!-- Toggle: is_cut_view -->
                         <span
                             v-if="layout.app.environment == 'local'"
                             @click="() => proxyItem.is_transaction_loading ? '' : onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)"

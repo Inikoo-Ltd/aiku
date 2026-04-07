@@ -10,8 +10,10 @@
 
 namespace App\Actions\Helpers\Brand;
 
+use App\Actions\Helpers\Brand\Hydrators\BrandHydrateTradeUnits;
 use App\Actions\OrgAction;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Brand;
 use Lorisleiva\Actions\ActionRequest;
 
 class AttachBrandToModel extends OrgAction
@@ -20,8 +22,22 @@ class AttachBrandToModel extends OrgAction
 
     public function handle(TradeUnit $model, array $modelData): void
     {
+        $previousBrandIds = $model->brands()->pluck('brands.id')->toArray();
+
         $model->brands()->sync($modelData['brand_id']);
         $model->refresh();
+
+        $affectedBrandIds = array_unique(array_filter(array_merge(
+            $previousBrandIds,
+            $modelData['brand_id'] ? [$modelData['brand_id']] : []
+        )));
+
+        foreach ($affectedBrandIds as $brandId) {
+            $brand = Brand::find($brandId);
+            if ($brand) {
+                BrandHydrateTradeUnits::dispatch($brand)->delay($this->hydratorsDelay);
+            }
+        }
     }
 
     public function rules(): array
