@@ -10,9 +10,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
- * @property string $name User name diambil dari users table
+ * @property string $name
  * @property int $user_id
- * @property int $sequence_number Level approval: 1, 2, 3
+ * @property int $sequence_number
  * @property string|null $description
  * @property bool $is_active
  * @property int $organisation_id
