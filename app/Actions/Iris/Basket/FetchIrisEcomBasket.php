@@ -193,10 +193,10 @@ class FetchIrisEcomBasket extends IrisAction
 
 
         $orderArr['products']      = $transactions;
-        $orderArr['missed_offers'] = [];
 
+        // Section: Missed Offers
         $shopOffersData = $this->shop->offers_data;
-
+        $orderArr['missed_offers'] = [];
         if (Arr::get($shopOffersData, 'fob.active')) {
             $numberOrders = DB::table('orders')->where('customer_id', $order->customer_id)
                 ->whereNotIn('state', [
