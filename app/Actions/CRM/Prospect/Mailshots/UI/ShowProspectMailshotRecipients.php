@@ -24,7 +24,7 @@ class ShowProspectMailshotRecipients extends OrgAction
         $requestFilters = $request->input('filters', []);
 
         $defaultFilters = [
-            'never_contacted' => [
+            'all_prospects' => [
                 'value' => true,
             ],
         ];

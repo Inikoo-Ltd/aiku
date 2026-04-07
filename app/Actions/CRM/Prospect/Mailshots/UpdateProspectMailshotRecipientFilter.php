@@ -10,7 +10,6 @@ namespace App\Actions\CRM\Prospect\Mailshots;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -44,9 +43,9 @@ class UpdateProspectMailshotRecipientFilter extends OrgAction
         ];
     }
 
-    public function asController(Shop $shop, Mailshot $mailshot, ActionRequest $request): Mailshot
+    public function asController(Mailshot $mailshot, ActionRequest $request): Mailshot
     {
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($mailshot->shop, $request);
 
         return $this->handle($mailshot, $this->validatedData);
     }
