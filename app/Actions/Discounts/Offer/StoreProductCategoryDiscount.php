@@ -187,8 +187,8 @@ class StoreProductCategoryDiscount extends OrgAction
 
         $modelData      = [
             'duration'                   => 'interval',
-            'start_at'                   => Carbon::now(),
-            'end_at'                     => $command->argument('end_at') ? Carbon::parse($command->argument('end_at')) : null,
+            'start_at'                   => Carbon::now()->format('Y-m-d'),
+            'end_at'                     => $command->argument('end_at') ? Carbon::parse($command->argument('end_at'))->format('Y-m-d') : null,
             'trigger_data_item_quantity' => $command->argument('item_quantity'),
             'percentage_off'             => $command->argument('discount'),
             'type'                       => 'quantity',

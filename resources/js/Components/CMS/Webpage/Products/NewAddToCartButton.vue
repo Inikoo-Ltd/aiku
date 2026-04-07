@@ -58,8 +58,13 @@ const props = withDefaults(
         buttonStyle?: any
         buttonStyleHover?: any
         icon?: string | [string, string]
+        routeGettransactionProductData?: routeType
     }>(),
     {
+        routeGettransactionProductData: 
+        { 
+            name: 'iris.json.basket_transaction_product_data' 
+        },
         hasInBasket: {
             id: null,
             quantity_ordered: 0,
@@ -117,7 +122,7 @@ const fetchProduct = async (transId?: string|number|null) => {
 
     try {
         const response = await axios.get(
-            route('iris.json.basket_transaction_product_data', {transaction: transId})
+            route(props.routeGettransactionProductData.name, {transaction: transId})
         )
 
         const newProduct = response.data

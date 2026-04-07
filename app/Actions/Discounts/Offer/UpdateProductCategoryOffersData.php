@@ -127,7 +127,7 @@ class UpdateProductCategoryOffersData
                 'percentage' => $percentage
             ]);
         }
-        app()->setLocale($currentLocale);
+
 
 
         $durationLabel = '';
@@ -162,7 +162,7 @@ class UpdateProductCategoryOffersData
             $offerData['start_at'] = $offer->start_at;
             $offerData['end_at']   = $offer->end_at;
         }
-
+        app()->setLocale($currentLocale);
         return $offerData;
     }
 

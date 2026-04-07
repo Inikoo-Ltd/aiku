@@ -25,6 +25,7 @@ import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 import EligibleGift from '@/Components/Order/EligibleGift.vue'
+import MissedOfferFOB from '../Offers/MissedOffers/MissedOfferFOB.vue'
 library.add(faMinus, faArrowRight, faPlus, faCheck, faChevronRight, faTrashAlt, faCheckCircle)
 
 interface DataSideBasket {
@@ -350,7 +351,7 @@ onUnmounted(() => {
                 </div> -->
             </div>
             
-            <!-- Section: Bonus list -->
+            <!-- Section: Bonus list (meter) -->
             <div class="text-xs">
                 <div v-if="dataSideBasket?.order_data?.reference" class="-ml-2 bg-gray-200 px-2 mb-3">
                     {{ trans("Order Number #:reference", { reference: dataSideBasket?.order_data?.reference ?? '' }) }}
@@ -498,6 +499,28 @@ onUnmounted(() => {
                 </div>
             </div>
         </div>
+
+        <!-- Section: Missed Offers -->
+        <Transition name="slide-to-right">
+            <div v-if="layout.app.environment === 'local' && Object.values(dataSideBasket?.missed_offers || {})?.length" class="px-4 pb-6 sm:px-6">
+                <div class="text-xs text-red-500 font-bold">
+                    {{ ctrans('You missed ( :number_missed_offer ) offers', { number_missed_offer: Object.values(dataSideBasket?.missed_offers || {})?.length || 0 }) }}
+                </div>
+                <div class="flex flex-col gap-y-2">
+                    <TransitionGroup name="list" tag="ul" class="!m-0">
+                        <li v-for="(missed_offer, misOfferKey) in dataSideBasket?.missed_offers" :key="missed_offer.id" class="list-none">
+                            <MissedOfferFOB v-if="misOfferKey == 'fob'" :data="missed_offer" />
+                            <div v-else class="bg-[#2a919e] text-white px-2 py-2 rounded-md mt-2 text-sm flex items-center justify-between gap-x-2">
+                                <InformationIcon :information="missed_offer.information" class="text-2xl" />
+                                <div>
+                                    {{ missed_offer.description }}
+                                </div>
+                            </div>
+                        </li>
+                    </TransitionGroup>
+                </div>
+            </div>
+        </Transition>
         
         <!-- Section: Order Summary -->
         <div class="border-t border-gray-200 px-4 pt-3 pb-6 sm:px-6">

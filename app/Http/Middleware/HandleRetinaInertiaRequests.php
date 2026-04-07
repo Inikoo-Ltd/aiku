@@ -111,9 +111,7 @@ class HandleRetinaInertiaRequests extends Middleware
                     "currency" => CurrencyResource::make($website->shop->currency)->toArray(request()),
                     'portal_link' => Arr::get($website->shop->settings, 'portal.link', ''),
                     "balance"  => $webUser?->customer?->balance,
-                    'organisation'      => [
-                        'slug'      => $website->organisation->slug
-                    ],
+                    'organisation'      => $website->organisation->slug,
                     'show_cards_modal' => !$webUser?->customer->mitSavedCard()->exists() && $webUser?->customer
                             ->customerSalesChannels()
                             ->whereNot('platform_id', 4)

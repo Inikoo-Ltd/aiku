@@ -103,7 +103,7 @@ const showMemberPrice = computed(() => {
     return layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr
 })
 
-console.log("showMemberPrice", showMemberPrice.value)
+// console.log("showMemberPrice", showMemberPrice.value)
 
 const showDiscount = computed(() => {
     if (props.product?.is_coming_soon) return false
@@ -111,7 +111,7 @@ const showDiscount = computed(() => {
     return !layout?.user?.gr_data?.customer_is_gr
 })
 
-console.log("product_discounted_price", props.product?.discounted_price)
+// console.log("product_discounted_price", props.product?.discounted_price)
 
 const showLeftBlock = computed(() => {
     return showMemberPrice.value || showDiscount.value

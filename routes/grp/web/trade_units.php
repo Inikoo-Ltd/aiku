@@ -15,6 +15,9 @@ use App\Actions\Goods\TradeUnitFamily\UI\CreateTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UI\EditTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UI\IndexTradeUnitFamilies;
 use App\Actions\Goods\TradeUnitFamily\UI\ShowTradeUnitFamily;
+use App\Actions\Helpers\Brand\UI\CreateBrand;
+use App\Actions\Helpers\Brand\UI\EditBrand;
+use App\Actions\Helpers\Brand\UI\IndexBrands;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', ShowTradeUnitsDashboard::class)->name('dashboard');
@@ -37,5 +40,13 @@ Route::prefix('families')->as('families.')->group(function () {
     Route::prefix('{tradeUnitFamily:slug}')->group(function () {
         Route::get('', ShowTradeUnitFamily::class)->name('show');
         Route::get('edit', EditTradeUnitFamily::class)->name('edit');
+    });
+});
+
+Route::prefix('brands')->as('brands.')->group(function () {
+    Route::get('/', IndexBrands::class)->name('index');
+    Route::get('create', CreateBrand::class)->name('create');
+    Route::prefix('{brand:slug}')->group(function () {
+        Route::get('edit', EditBrand::class)->name('edit');
     });
 });

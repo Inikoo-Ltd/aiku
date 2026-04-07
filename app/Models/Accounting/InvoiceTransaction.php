@@ -80,6 +80,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $margin
  * @property bool $is_gift
  * @property string|null $marketplace_id
+ * @property int|null $brand_id
  * @property-read Asset|null $asset
  * @property-read Currency|null $currency
  * @property-read \App\Models\CRM\Customer $customer

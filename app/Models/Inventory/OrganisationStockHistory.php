@@ -34,6 +34,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $value_dormant_stock_1y
  * @property int $number_org_stocks_not_sold_1y
  * @property float $percentage_value_dormant_stock_1y
+ * @property int|null $group_stock_history_id
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStockHistory> $locationOrgStockHistories
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockHistory> $orgStockHistories

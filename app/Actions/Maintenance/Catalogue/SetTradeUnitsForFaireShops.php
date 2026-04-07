@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Sat, 04 Apr 2026 18:40:36 Malaysia Time, Kuala Lumpur, Malaysia
@@ -20,7 +21,7 @@ class SetTradeUnitsForFaireShops
     use WithActionUpdate;
 
 
-    public function handle(Product $product, ?Command $command=null): void
+    public function handle(Product $product, ?Command $command = null): void
     {
         $code       = $product->code;
         $seederShop = $product->shop->seederShop;

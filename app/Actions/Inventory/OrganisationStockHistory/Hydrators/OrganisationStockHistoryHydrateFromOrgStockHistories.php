@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrganisationStockHistory\Hydrators;
 
+use App\Actions\Inventory\GroupStockHistory\Hydrators\GroupStockHistoryHydrateFromOrgStockHistories;
 use App\Models\Inventory\OrganisationStockHistory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -72,6 +73,9 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
             'percentage_value_dormant_stock_1y' => $percentageValueDormantStock1y,
             'value_dormant_stock_1y'            => $stockData->value_dormant_stock_1y ?? 0,
         ]);
+
+        GroupStockHistoryHydrateFromOrgStockHistories::run($organisationStockHistory->group_stock_history_id);
+
     }
 
 

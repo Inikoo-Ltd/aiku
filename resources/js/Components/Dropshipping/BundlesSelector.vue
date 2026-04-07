@@ -1,0 +1,314 @@
+<script setup lang="ts">
+import { inject, ref, watch, computed, onMounted, onUnmounted } from 'vue'
+import axios from 'axios'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import { layoutStructure } from '@/Composables/useLayoutStructure'
+import { notify } from '@kyvg/vue3-notification'
+import PureInput from '@/Components/Pure/PureInput.vue'
+import Tag from '@/Components/Tag.vue'
+import { trans } from 'laravel-vue-i18n'
+import { debounce, get, set } from 'lodash-es'
+import Pagination from '@/Components/Table/Pagination.vue'
+import Image from '@/Components/Image.vue'
+import { routeType } from '@/types/route'
+
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faCheckCircle } from "@fas"
+import { faTimes } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import NumberWithButtonSave from '../NumberWithButtonSave.vue'
+import ToggleSwitch from "primevue/toggleswitch"
+import LoadingIcon from '../Utils/LoadingIcon.vue'
+import QuantitySelector from './QuantitySelector.vue'
+library.add(faCheckCircle)
+
+const props = defineProps<{
+    routeFetch: routeType
+    isLoadingSubmit?: boolean
+    isLoadingComponent?: boolean
+    headLabel?: string
+    submitLabel?: string
+    withQuantity?: boolean
+    label_result?: string
+    valueToRefetch?: string
+    idxSubmitSuccess?: number
+}>()
+
+
+const emits = defineEmits<{
+    (e: "submit", val: {}[]): void
+    (e: "update:selected", val: {}[]): void
+}>()
+
+interface Portfolio {
+    id: number
+    name: string
+    code: string
+    image: string
+    gross_weight: string
+    price: number
+    currency_code: string
+}
+
+const layout = inject('layout', layoutStructure)
+const locale = inject('locale', null)
+
+const isLoadingFetch = ref(false)
+
+// Method: Get a portfolio list
+const queryPortfolio = ref('')
+const portfoliosList = ref<Portfolio[]>([])
+const portfoliosMeta = ref()
+const portfoliosLinks = ref()
+const getPortfoliosList = async (url?: string) => {
+    console.log('getPortfoliosList', url)
+    isLoadingFetch.value = true
+    try {
+        const urlToFetch = url || route(props.routeFetch.name, {
+            ...props.routeFetch.parameters,
+            'filter[global]': queryPortfolio.value
+        })
+        const response = await axios.get(urlToFetch)
+        portfoliosList.value = response.data.data
+        portfoliosMeta.value = response?.data.meta || null
+        portfoliosLinks.value = response?.data.links || null
+        isLoadingFetch.value = false
+    } catch (e) {
+        console.error('Error', e)
+        isLoadingFetch.value = false
+        notify({
+            title: trans("Something went wrong."),
+            text: trans("Error while get the products list."),
+            type: "error"
+        })
+    }
+}
+const debounceGetPortfoliosList = debounce(() => (getPortfoliosList()), 500)
+
+
+// Section: On select product
+const selectedProduct = ref<Portfolio[]>([])
+const compSelectedProduct = computed(() => {
+    return selectedProduct.value?.map((item: Portfolio) => item.id)
+})
+const selectProduct = (item: any) => {
+    const index = selectedProduct.value?.indexOf(item);
+    if (index === -1) {
+        selectedProduct.value?.push(item);
+    } else {
+        selectedProduct.value?.splice(index, 1);
+    }
+}
+
+const isAllSelected = computed(() => {
+    if (portfoliosList.value.length === 0) return false
+    return portfoliosList.value.every(item =>
+        selectedProduct.value.some(selected => selected.id === item.id)
+    )
+})
+
+const selectAllProducts = () => {
+    if (isAllSelected.value) {
+        // If all current page products are selected, deselect only current page products
+        const currentPageIds = portfoliosList.value.map(item => item.id)
+        selectedProduct.value = selectedProduct.value.filter(selected =>
+            !currentPageIds.includes(selected.id)
+        )
+    } else {
+        // If not all current page products are selected, add missing ones
+        const currentSelectedIds = selectedProduct.value.map(item => item.id)
+        const productsToAdd = portfoliosList.value.filter(item =>
+            !currentSelectedIds.includes(item.id)
+        )
+        selectedProduct.value = [...selectedProduct.value, ...productsToAdd]
+        console.log("selectedProduct", selectedProduct.value)
+    }
+}
+
+onMounted(() => {
+    getPortfoliosList()
+})
+
+onUnmounted(() => {
+    portfoliosList.value = []
+    portfoliosMeta.value = null
+    portfoliosLinks.value = null
+    queryPortfolio.value = ''
+})
+
+watch(() => props.valueToRefetch, (newVal, oldVal) => {
+    getPortfoliosList()
+})
+
+// To refresh the selected if success submit
+watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+        selectedProduct.value = []
+        getPortfoliosList()
+    }
+})
+
+watch(selectedProduct, (val) => {
+    emits('update:selected', val)
+}, { deep: true })
+</script>
+
+<template>
+    <div>
+        <slot name="header">
+            <div class="mx-auto text-center text-2xl font-semibold pb-4">
+                {{ headLabel ?? trans("Add products") }}
+            </div>
+        </slot>
+
+        <div class="relative isolate">
+            <div class="text-gray-600 mb-3">
+                Add products to your bundle
+            </div>
+            <div v-if="isLoadingSubmit"
+                class="flex justify-center items-center text-7xl text-white absolute z-10 inset-0 bg-black/40">
+                <LoadingIcon />
+            </div>
+
+            <div class="mb-2">
+                <PureInput v-model="queryPortfolio" @update:modelValue="() => debounceGetPortfoliosList()"
+                    :placeholder="trans('Input to search portfolios')" />
+                <slot name="afterInput">
+                </slot>
+            </div>
+            <div class="h-full md:h-[520px] text-base font-normal">
+                <div class="col-span-4 pb-8 md:pb-2 h-fit overflow-auto flex flex-col">
+                    <div class="flex justify-between items-center">
+                        <div class="font-semibold text-lg py-1">{{ props.label_result ?? trans("Result") }} ({{
+                            locale?.number(portfoliosMeta?.total || 0) }})</div>
+                        <div class="flex gap-2">
+                            <div @click="() => isAllSelected ? null : selectAllProducts()" class=" "
+                                :class="isAllSelected ? 'text-green-400' : 'cursor-pointer text-green-600 hover:text-green-700 hover:underline'">
+                                {{ trans("Select :number products in this page", { number: portfoliosList.length }) }}
+
+                            </div>
+                            <!-- <ToggleSwitch :model-value="isAllSelected" @change="() => selectAllProducts()" /> -->
+                            <div v-if="compSelectedProduct.length" @click="() => selectedProduct = []"
+                                class="cursor-pointer text-red-400 hover:text-red-600 hover:underline">
+                                {{ trans('Clear :number selections', { number: compSelectedProduct.length }) }}
+                                <FontAwesomeIcon :icon="faTimes" class="" fixed-width aria-hidden="true" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-t border-gray-300 mb-1"></div>
+                    <div class="h-full md:h-[400px] overflow-auto py-2 relative">
+                        <!-- Products list -->
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pb-2">
+                            <template v-if="!isLoadingFetch">
+                                <template v-if="portfoliosList.length > 0">
+                                    <div v-for="(item, index) in portfoliosList" :key="index"
+                                        @click="() => selectProduct(item)"
+                                        class="relative h-full rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
+                                        :class="compSelectedProduct.includes(item.id)
+                                            ? 'bg-indigo-100 border-indigo-300'
+                                            : 'bg-white hover:bg-gray-200 border-gray-300'">
+                                        <Transition name="slide-to-right">
+                                            <FontAwesomeIcon v-if="compSelectedProduct.includes(item.id)"
+                                                icon="fas fa-check-circle"
+                                                class="bottom-2 right-2 absolute text-green-500" fixed-width
+                                                aria-hidden="true" />
+                                        </Transition>
+                                        <slot name="product" :item="item">
+                                            <Image v-if="item.image" :src="item.image"
+                                                class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0"
+                                                imageCover :alt="item.name" />
+                                            <div class="flex flex-col justify-between w-full">
+                                                <!-- Left info -->
+                                                <div class="w-fit" xclick="() => selectProduct(item)">
+                                                    <div v-tooltip="trans('Name')"
+                                                        class="w-fit font-semibold leading-none mb-1">
+                                                        {{ item.name || 'no name' }}
+                                                    </div>
+
+                                                    <div v-if="!item.no_code" v-tooltip="trans('Code')"
+                                                        class="w-fit text-xs text-gray-400 italic">
+                                                        {{ item.code || 'no code' }}
+                                                    </div>
+
+                                                    <div v-if="item.reference" v-tooltip="trans('Reference')"
+                                                        class="w-fit text-xs text-gray-400 italic">
+                                                        <span class="font-medium">Reference:</span> {{ item.reference ||
+                                                            'no reference' }}
+                                                    </div>
+
+                                                    <!-- Show Weight in KG -->
+                                                    <div v-if="item.gross_weight" v-tooltip="trans('Weight')"
+                                                        class="w-fit text-xs text-gray-400 italic">
+                                                        <span class="font-medium">Weight:</span> {{ (item.gross_weight /
+                                                            1000).toFixed(2) }} kg
+                                                    </div>
+
+                                                    <!-- Show Stock -->
+                                                    <div v-if="item.available_quantity !== null"
+                                                        v-tooltip="trans('Stock')" class="w-fit text-xs italic" :class="{
+                                                            'text-green-500': item.available_quantity > 5,
+                                                            'text-orange-500': item.available_quantity > 0 && item.available_quantity <= 5,
+                                                            'text-red-500': !item.available_quantity || item.available_quantity === 0
+                                                        }">
+                                                        <span class="font-medium">Stock:</span> {{
+                                                            item.available_quantity || 'Empty' }}
+                                                    </div>
+
+                                                </div>
+
+                                                <!-- Show RRP Price -->
+                                                <div class="flex justify-between">
+                                                    <div v-if="item.rrp" xclick="() => selectProduct(item)"
+                                                        v-tooltip="trans('RRP')" class="w-fit text-xs text-gray-x500">
+                                                        <span class="font-medium">RRP:</span> {{
+                                                            locale?.currencyFormat(item.currency_code || 'usd', item.rrp ||
+                                                                0)
+                                                        }}
+                                                    </div>
+
+                                                    <!-- Show Normal Price -->
+                                                    <div v-if="item.price" xclick="() => selectProduct(item)"
+                                                        v-tooltip="trans('Price')" class="w-fit text-xs text-blue-500">
+                                                        <span class="font-medium">Price:</span> {{
+                                                            locale?.currencyFormat(item.currency_code || 'usd', item.price
+                                                                || 0)
+                                                        }}
+                                                    </div>
+                                                </div>
+
+                                                <!-- Quantity Input -->
+                                                <QuantitySelector
+                                                    v-if="withQuantity && compSelectedProduct.includes(item.id)"
+                                                    :modelValue="item.quantity_selected || 1" @update:modelValue="(val) => {
+                                                        item.quantity_selected = val
+
+                                                        if (!selectedProduct.includes(item)) {
+                                                            selectedProduct.push(item)
+                                                        }
+
+                                                        selectedProduct = [...selectedProduct]
+                                                    }" />
+                                            </div>
+
+                                        </slot>
+                                    </div>
+                                </template>
+                                <div v-else class="text-center text-gray-500 col-span-3">
+                                    {{ trans("No Results found") }}
+                                </div>
+                            </template>
+                            <div v-else v-for="(item, index) in 6" :key="index"
+                                class="rounded cursor-pointer w-full h-20 flex gap-x-2 border skeleton">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pagination -->
+                    <Pagination v-if="portfoliosMeta" :on-click="getPortfoliosList" :has-data="true"
+                        :meta="portfoliosMeta" xexportLinks="queryBuilderProps.exportLinks" :per-page-options="[]"
+                        xon-per-page-change="onPerPageChange" />
+                </div>
+            </div>
+        </div>
+    </div>
+</template>

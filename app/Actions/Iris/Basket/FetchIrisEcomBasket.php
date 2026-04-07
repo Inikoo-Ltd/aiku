@@ -1,12 +1,10 @@
 <?php
 
 /*
- * Author: Ganes <gustiganes@gmail.com>
- * Created on: 30-04-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
- * Copyright: 2025
- *
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 06 Apr 2026 16:00:15 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Iris\Basket;
 
@@ -17,10 +15,12 @@ use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Support\Number;
 
 class FetchIrisEcomBasket extends IrisAction
 {
     use HasBasketDetails;
+
     public function handle(ActionRequest $request): Order|null
     {
         $customer = $request->user()?->customer;
@@ -38,6 +38,11 @@ class FetchIrisEcomBasket extends IrisAction
         return $this->handle($request);
     }
 
+    public function htmlResponse(): array
+    {
+        return [];
+    }
+
     public function jsonResponse(?Order $order): array|null
     {
         if (!$order) {
@@ -52,7 +57,7 @@ class FetchIrisEcomBasket extends IrisAction
             'has_insurance'       => $order->has_insurance,
         ];
 
-        $charges = $this->getBasketCharges($order);
+        $charges         = $this->getBasketCharges($order);
         $premiumDispatch = $charges['premium_dispatch'];
         $extraPacking    = $charges['extra_packing'];
         $insurance       = $charges['insurance'];
@@ -187,7 +192,31 @@ class FetchIrisEcomBasket extends IrisAction
         }
 
 
-        $orderArr['products'] = $transactions;
+        $orderArr['products']      = $transactions;
+        $orderArr['missed_offers'] = [];
+
+        $shopOffersData = $this->shop->offers_data;
+
+        if (Arr::get($shopOffersData, 'fob.active')) {
+            $numberOrders = DB::table('orders')->where('customer_id', $order->customer_id)
+                ->whereNotIn('state', [
+                    OrderStateEnum::CANCELLED->value,
+                    OrderStateEnum::CREATING->value,
+                ])->count();
+
+            $amountNeededToGetFob = (float)Arr::get($shopOffersData, 'fob.min_amount') - $order->gross_amount;
+
+            if ($numberOrders == 0 && $order->gross_amount < Arr::get($shopOffersData, 'fob.min_amount')) {
+                $label = __(Arr::get($shopOffersData, 'fob.missined_offer_label'), [
+                    'amount'         => Number::currency($amountNeededToGetFob, $order->currency->code),
+                    'percentage_off' => Arr::get($shopOffersData, 'fob.percentage_off').''
+                ]);
+
+                $orderArr['missed_offers']['fob'] = [
+                    'label' => $label
+                ];
+            }
+        }
 
         $orderArr['charges'] = [
             'premium_dispatch' => $premiumDispatch ? [
