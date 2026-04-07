@@ -9,11 +9,8 @@
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
 use App\Actions\OrgAction;
-use App\Events\UploadProductToSalesChannelProgressEvent;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 

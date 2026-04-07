@@ -44,6 +44,17 @@ const getCategoryLink = (productCategory: {}) => {
     }
     return '#'
 }
+
+const getOfferCampaignLink = (offerCampaign: {}) => {
+    if (offerCampaign) {
+        return route('grp.org.shops.show.discounts.campaigns.show', {
+            organisation: route().params.organisation,
+            shop: route().params.shop,
+            offerCampaign: offerCampaign.slug,
+        })
+    }
+    return '#'
+}
 </script>
 
 <template>
@@ -90,8 +101,6 @@ const getCategoryLink = (productCategory: {}) => {
         />
         <Coupon v-else :offer="data.offer" :currency_code="currency_code" />
     </div>
-
-    <!-- <pre>{{ data.offer }}</pre> -->
     
     <div class="flex justify-between gap-8 mx-8">
         <!-- Section: Details -->
@@ -100,8 +109,36 @@ const getCategoryLink = (productCategory: {}) => {
                 {{ ctrans("Details") }}
             </div>
 
+            <!-- Detail: Created -->
+            <!-- <div v-if="data.offer.created_at" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
+                <dt class="col-span-4 flex flex-col">
+                    <div class="flex items-center leading-none">
+                        <span>{{ ctrans("Created at") }}</span>
+                    </div>
+                </dt>
+        
+                <div class="relative col-span-3 justify-self-end font-medium overflow-hidden text-right">
+                    {{ useFormatTime(data.offer.created_at, { formatTime: 'hm' }) }}
+                </div>
+            </div> -->
+
+            <!-- Detail: Campaign -->
+            <div v-if="data.offer.offer_campaign" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
+                <dt class="col-span-4 flex flex-col">
+                    <div class="flex items-center leading-none">
+                        <span>{{ ctrans("Campaign") }}</span>
+                    </div>
+                </dt>
+        
+                <div class="relative col-span-3 justify-self-end font-medium overflow-hidden text-right">
+                    <Link :href="getOfferCampaignLink(data.offer.offer_campaign)" class="secondaryLink">
+                        {{ data.offer.offer_campaign.name }}
+                    </Link>
+                </div>
+            </div>
+
             <!-- Detail: Duration -->
-            <div class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
+            <div v-if="data.offer.start_at || data.offer.end_at" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
                 <dt class="col-span-4 flex flex-col">
                     <div class="flex items-center leading-none">
                         <span>{{ ctrans("Duration") }}</span>
@@ -124,12 +161,10 @@ const getCategoryLink = (productCategory: {}) => {
                     </span> -->
                 </dt>
         
-                <div class="relative col-span-3 justify-self-end font-medium overflow-hidden">
-                    <dd class="">
-                        <Link :href="getCategoryLink(data.offer.data_allowance_signature.product_category)" class="secondaryLink">
-                            {{ data.offer.data_allowance_signature.product_category?.name }}
-                        </Link>
-                    </dd>
+                <div class="relative col-span-3 justify-self-end font-medium overflow-hidden text-right">
+                    <Link :href="getCategoryLink(data.offer.data_allowance_signature.product_category)" class="secondaryLink">
+                        {{ data.offer.data_allowance_signature.product_category?.name }}
+                    </Link>
                 </div>
             </div>
         </div>

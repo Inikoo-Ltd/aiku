@@ -58,6 +58,9 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
             };
         }
 
+        foreach (WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes() as $code) {
+            $this->deleteWebBlocksByCode($webpage, $code);
+        }
 
         $countCollectionDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'sub-department-description-1');
         if (count($countCollectionDescriptionBlock) == 0) {
@@ -65,7 +68,7 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
         }
 
         $webpage->refresh();
-        if (count($countCollectionDescriptionBlock) == 0) {
+        if ($command->option('set-description-top')) {
             $this->setDescriptionWebBlockOnTop($webpage);
         }
 
@@ -131,7 +134,7 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
         UpdateWebpageContent::run($webpage);
     }
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_sub_departments_webpages {--website_id=} {--hide-description}';
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_sub_departments_webpages {--website_id=} {--hide-description} {--set-description-top}';
 
     public function asCommand(Command $command): void
     {

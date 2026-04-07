@@ -8,7 +8,6 @@
 
 use App\Actions\Inventory\GroupStockHistory\Hydrators\GroupStockHistoryHydrateFromOrgStockHistories;
 use App\Models\Inventory\GroupStockHistory;
-use App\Models\Inventory\OrganisationStockHistory;
 use Illuminate\Support\Facades\DB;
 
 beforeAll(function () {

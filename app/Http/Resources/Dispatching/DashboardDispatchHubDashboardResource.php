@@ -95,6 +95,17 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                     ];
                 }
 
+                if ($caseKey === 'handling' && ($widget['queued'] ?? 0) > 0) {
+                    $queuedCaseData              = $widget['cases']['queued'] ?? null;
+                    $entry['queued_prefix']       = ['value' => $widget['queued']];
+                    if ($queuedCaseData && isset($queuedCaseData['route'])) {
+                        $entry['queued_prefix']['route_target'] = [
+                            'name'       => $queuedCaseData['route']['name'],
+                            'parameters' => $queuedCaseData['route']['parameters'] ?? [],
+                        ];
+                    }
+                }
+
                 $data[$rowKey][$caseKey] = $entry;
             }
         }

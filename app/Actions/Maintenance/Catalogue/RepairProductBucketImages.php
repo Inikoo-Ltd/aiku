@@ -11,9 +11,7 @@ namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
-use App\Models\Helpers\Language;
 use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
 
 class RepairProductBucketImages
 {
@@ -36,7 +34,7 @@ class RepairProductBucketImages
         $command->info('Repairing Products bucket_images');
 
         $query  = Product::query();
-        
+
         $totalCount     = $query->clone()->count();
 
         $progressBar    = $command->getOutput()->createProgressBar($totalCount);
@@ -52,7 +50,7 @@ class RepairProductBucketImages
                     $progressBar->advance();
                 }
             });
-                    
+
         $progressBar->finish();
         $command->newLine();
     }
