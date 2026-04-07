@@ -111,6 +111,19 @@ const currentTabData = computed(() => {
     return (props as Record<string, any>)[currentTab.value]
 })
 
+const reviewCustomers = computed(() => {
+    const reviewsData = props.reviews as Record<string, any> | undefined
+    return reviewsData?.customers ?? {
+        data: [],
+        meta: {
+            current_page: 1,
+            per_page: 20,
+            next_page: null,
+            has_more: false,
+        },
+    }
+})
+
 const showDialog = ref(false)
 
 
@@ -160,6 +173,7 @@ const showDialog = ref(false)
             <ModalCreateCategoryReviews
                 v-if="currentTab === 'reviews'"
                 :product_category_id="props.product_category_id"
+                :customers="reviewCustomers"
                 v-tooltip="'Create New Review'"
             />
         </template>
@@ -190,7 +204,16 @@ const showDialog = ref(false)
         </Breadcrumb>
     </div>
 
-    <component :is="component" :data="currentTabData" :tab="currentTab" :salesData="salesData" />
+    <component
+        v-if="currentTab === 'reviews'"
+        :is="component"
+        :data="currentTabData"
+        :tab="currentTab"
+        :salesData="salesData"
+        :product_category_id="props.product_category_id"
+        :customers="reviewCustomers"
+    />
+    <component v-else :is="component" :data="currentTabData" :tab="currentTab" :salesData="salesData" />
 
 
     <FormCreateMasterProduct
