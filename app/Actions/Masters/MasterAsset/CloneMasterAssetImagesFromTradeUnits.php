@@ -52,6 +52,7 @@ class CloneMasterAssetImagesFromTradeUnits implements ShouldBeUnique
 
         $masterAsset->images()->sync($images);
         $masterAsset->update([
+            'bucket_images'            => count($images) > 0,
             'image_id'                 => $tradeUnit->image_id,
             'front_image_id'           => $tradeUnit->front_image_id,
             '34_image_id'              => $tradeUnit->{'34_image_id'},
