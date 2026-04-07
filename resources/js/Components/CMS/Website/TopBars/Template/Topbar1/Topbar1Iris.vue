@@ -246,7 +246,7 @@ const goToBundle = () => {
             </LinkIris>
 
             <!-- section redirect to bundle -->
-            <Button v-if="isLoggedIn && layout.retina?.type === 'dropshipping'" v-tooltip="trans('Add Bundles')" type="transparent" class="button"
+            <Button v-if="isLoggedIn && layout.retina?.type === 'dropshipping' &&  Object.keys(layout.user?.customerSalesChannels || {}).length > 0" v-tooltip="trans('Add Bundles')" type="transparent" class="button"
                 @click="goToBundle">
                 <template #loading>
                     <span v-show="false" class="button"></span>
