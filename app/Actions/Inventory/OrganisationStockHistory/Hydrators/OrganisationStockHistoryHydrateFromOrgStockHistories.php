@@ -63,8 +63,8 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
         }
 
         $organisationStockHistory->update([
-            'org_stock_value'                   => $stockData->org_stock_values,
-            'grp_stock_value'                   => $stockData->grp_stock_values,
+            'org_stock_value'                   => $stockData->org_stock_values ?? 0,
+            'grp_stock_value'                   => $stockData->grp_stock_values ?? 0,
             'number_org_stocks'                 => $stockData->number_org_stocks,
             'number_locations'                  => $stockLocationData->number_locations ?? 0,
             'number_out_of_stock_org_stocks'    => $stockData->number_out_of_stock_org_stocks,
