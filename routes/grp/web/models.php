@@ -105,6 +105,7 @@ use App\Actions\CRM\Prospect\ImportShopProspects;
 use App\Actions\CRM\Prospect\Mailshots\SendProspectMailShot;
 use App\Actions\CRM\Prospect\Mailshots\StoreProspectMailshot;
 use App\Actions\CRM\Prospect\Mailshots\UpdateProspectMailshot;
+use App\Actions\CRM\Prospect\Mailshots\UpdateProspectMailshotRecipientFilter;
 use App\Actions\CRM\Prospect\UpdateProspect;
 use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\CRM\WebUser\StoreWebUser;
@@ -1175,6 +1176,7 @@ Route::prefix('prospect/{prospect:id}')->name('prospect.')->group(function () {
     Route::patch('update', UpdateProspect::class)->name('update');
 });
 
+Route::patch('prospect-mailshot/{mailshot:id}/recipient-filter', UpdateProspectMailshotRecipientFilter::class)->name('shop.prospect.mailshot.recipient-filter.update')->withoutScopedBindings();
 Route::patch('prospect-mailshot/{mailshot:id}', UpdateProspectMailshot::class)->name('shop.prospect.mailshot.update');
 
 Route::post('/shop/{shop:id}/shipping-country/', StoreShippingCountry::class)->name('shipping_country.store');

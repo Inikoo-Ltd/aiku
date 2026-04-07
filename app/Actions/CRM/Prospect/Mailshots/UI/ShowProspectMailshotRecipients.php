@@ -1,0 +1,124 @@
+<?php
+
+/*
+ * Author: eka yudinata (https://github.com/ekayudinata)
+ * Created: Tuesday, 7 Apr 2026 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2026, eka yudinata
+ */
+
+namespace App\Actions\CRM\Prospect\Mailshots\UI;
+
+use App\Actions\CRM\Prospect\Mailshots\GetProspectMailshotRecipientsQueryBuilder;
+use App\Actions\OrgAction;
+use App\Models\Catalogue\Shop;
+use App\Models\Comms\Mailshot;
+use App\Models\SysAdmin\Organisation;
+use Inertia\Inertia;
+use Inertia\Response;
+use Lorisleiva\Actions\ActionRequest;
+
+class ShowProspectMailshotRecipients extends OrgAction
+{
+    public function handle(Mailshot $mailshot, ActionRequest $request): Response
+    {
+        $requestFilters = $request->input('filters', []);
+
+        $defaultFilters = [
+            'never_contacted' => [
+                'value' => true,
+            ],
+        ];
+        $currentFilters = empty($requestFilters) ? $defaultFilters : $requestFilters;
+        $previewMailshot = $mailshot->replicate();
+        $previewMailshot->id = $mailshot->id;
+        $previewMailshot->recipients_recipe = $currentFilters;
+
+        $queryBuilder = GetProspectMailshotRecipientsQueryBuilder::make()->handle($previewMailshot);
+        $estimatedRecipients = $queryBuilder?->count('prospects.id') ?? 0;
+
+        $filtersStructure = [
+            'prospects' => [
+                'title'   => 'Prospect Filters',
+                'filters' => [
+                    'never_contacted' => [
+                        'label'       => 'Never Contacted',
+                        'type'        => 'boolean',
+                        'description' => 'Targets prospects who have never been contacted.',
+                    ],
+                    'last_contacted_3_weeks_ago' => [
+                        'label'       => 'Last Contacted 3 Weeks Ago',
+                        'type'        => 'boolean',
+                        'description' => 'Targets prospects whose last contact was 3 weeks ago or more.',
+                    ],
+                    'sent_email_3_times' => [
+                        'label'       => 'Sent Email 3 Times',
+                        'type'        => 'boolean',
+                        'description' => 'Targets prospects who have already been sent emails 3 times.',
+                    ],
+                ]
+            ]
+        ];
+
+        return Inertia::render(
+            'CRM/ProspectMailshotRecipients',
+            [
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $mailshot,
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
+                'mailshot' => $mailshot,
+                'title'    => __('Setup Recipients'),
+                'pageHead' => [
+                    'title' => __('Setup Recipients'),
+                    'actions'   => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'exit',
+                            'label' => __('Exit'),
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.crm.prospects.mailshots.show',
+                                'parameters' => [
+                                    $this->organisation->slug,
+                                    $this->shop->slug,
+                                    $mailshot->slug
+                                ]
+                            ]
+                        ],
+                    ]
+                ],
+                'filtersStructure' => $filtersStructure,
+                'filters'          => $currentFilters,
+                'recipientFilterRoute' => [
+                    'name'       => 'grp.models.shop.prospect.mailshot.recipient-filter.update',
+                    'parameters' => [
+                        'shop' => $mailshot->shop_id,
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'patch'
+                ],
+                'recipients_recipe' => $mailshot->recipients_recipe,
+                'shop_id' => $mailshot->shop_id,
+                'shop_slug' => $this->shop->slug,
+                'estimatedRecipients' => $estimatedRecipients
+            ]
+        );
+    }
+
+    public function asController(Organisation $organisation, Shop $shop, Mailshot $mailshot, ActionRequest $request): Response
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($mailshot, $request);
+    }
+
+    public function getBreadcrumbs(Mailshot $mailshot, string $routeName, array $routeParameters): array
+    {
+        return ShowProspectMailshot::make()->getBreadcrumbs(
+            mailshot: $mailshot,
+            routeName: preg_replace('/recipients$/', 'show', $routeName),
+            routeParameters: $routeParameters,
+            suffix: '(' . __('Recipients') . ')'
+        );
+    }
+}

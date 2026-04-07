@@ -87,7 +87,7 @@ class StoreProspectMailshot extends OrgAction
             ]));
         }
 
-        return Inertia::location(route('grp.org.shops.show.crm.prospects.mailshots.show', [
+        return Inertia::location(route('grp.org.shops.show.crm.prospects.mailshots.recipients', [
             'organisation' => $mailshot->shop->organisation->slug,
             'shop'         => $mailshot->shop->slug,
             'mailshot'     => $mailshot->slug
