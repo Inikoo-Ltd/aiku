@@ -18,13 +18,13 @@ return new class () extends Migration {
             $table->foreign('shop_id')->references('id')->on('shops')->nullOnDelete();
             $table->unsignedInteger('customer_id')->nullable()->index();
             $table->foreign('customer_id')->references('id')->on('customers')->nullOnDelete();
+            $table->unsignedInteger('order_id')->nullable()->index();
+            $table->foreign('order_id')->references('id')->on('orders')->nullOnDelete();
             $table->morphs('reviewable');
             $table->enum('status', ReviewStatusEnum::values())->index()->default(ReviewStatusEnum::Pending->value);
             $table->unsignedTinyInteger('rating')->index();
-            $table->string('title')->nullable();
             $table->text('message')->nullable();
-            $table->boolean('is_verified_purchase')->default(false)->index();
-            $table->unsignedInteger('helpful_count')->default(0);
+            $table->unsignedInteger('like_count')->default(0);
             $table->jsonb('meta')->default('{}');
             $table->timestampsTz();
             $table->softDeletesTz();

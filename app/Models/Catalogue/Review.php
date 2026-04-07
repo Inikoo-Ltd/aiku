@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
+use App\Models\Ordering\Order;
 
 /**
  * @property int $id
@@ -23,10 +24,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $reviewable_id
  * @property ReviewStatusEnum $status
  * @property int $rating
- * @property string|null $title
  * @property string|null $message
- * @property bool $is_verified_purchase
- * @property int $helpful_count
+ * @property int $like_count
  * @property array<array-key, mixed> $meta
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -35,6 +34,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read Customer|null $customer
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ReviewMedia> $media
+ * @property-read Order|null $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read Model|\Eloquent $reviewable
  * @property-read \App\Models\Catalogue\Shop|null $shop
@@ -56,8 +56,7 @@ class Review extends Model implements Auditable
 
     protected $casts = [
         'status'               => ReviewStatusEnum::class,
-        'is_verified_purchase' => 'boolean',
-        'helpful_count'        => 'integer',
+        'like_count'        => 'integer',
         'meta'                 => 'array',
     ];
 
@@ -78,5 +77,10 @@ class Review extends Model implements Auditable
     public function media(): HasMany
     {
         return $this->hasMany(ReviewMedia::class);
+    }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
     }
 }
