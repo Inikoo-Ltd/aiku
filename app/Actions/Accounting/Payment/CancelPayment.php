@@ -47,14 +47,14 @@ class CancelPayment extends OrgAction
 
     public function handle(Payment $payment, array $modelData): Payment
     {
-        if ($payment->is_cancelled) {
+        if ($payment->state === PaymentStateEnum::CANCELLED) {
             throw ValidationException::withMessages([
                 'message' => __('Unable to cancel this payment as it is already cancelled.'),
             ]);
         }
 
         $payment->update([
-            'is_cancelled' => true,
+            'state' => PaymentStateEnum::CANCELLED,
         ]);
 
         if ($payment->paymentAccount->type === PaymentAccountTypeEnum::ACCOUNT) {

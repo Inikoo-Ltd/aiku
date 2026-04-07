@@ -116,7 +116,7 @@ class IndexPayments extends OrgAction
                 'payments.reference',
                 'payments.type',
                 'payments.status',
-                'payments.is_cancelled',
+                'payments.state',
                 'payments.date',
                 'payments.amount',
                 'payments.method',

@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Accounting;
 
+use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Models\Accounting\Payment;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -72,7 +73,7 @@ class PaymentsResource extends JsonResource
             'organisation_slug' => $payment->organisation_slug,
             'shop_name'         => $payment->shop_name,
             'shop_slug'         => $payment->shop_slug,
-            'is_cancelled'      => $payment->is_cancelled,
+            'is_cancelled'      => $payment->state === PaymentStateEnum::CANCELLED,
         );
     }
 }

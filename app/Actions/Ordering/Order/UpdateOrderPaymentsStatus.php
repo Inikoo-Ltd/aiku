@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\Order;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
@@ -38,7 +39,7 @@ class UpdateOrderPaymentsStatus extends OrgAction
         $payStatus             = OrderPayStatusEnum::UNPAID;
         $payDetailedStatus     = OrderPayDetailedStatusEnum::UNPAID;
         /** @var Payment $payment */
-        foreach ($order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->where('payments.is_cancelled', false)->get() as $payment) {
+        foreach ($order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->whereNot('payments.state', PaymentStateEnum::CANCELLED)->get() as $payment) {
             $runningPaymentsAmount += $payment->amount;
         }
         $runningPaymentsAmount = round($runningPaymentsAmount, 2);

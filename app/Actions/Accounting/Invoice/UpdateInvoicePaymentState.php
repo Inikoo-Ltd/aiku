@@ -13,6 +13,7 @@ use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Accounting\Invoice\InvoicePayDetailedStatusEnum;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
@@ -41,7 +42,7 @@ class UpdateInvoicePaymentState extends OrgAction
 
         $payments = $invoice->payments()
             ->where('payments.status', PaymentStatusEnum::SUCCESS)
-            ->where('payments.is_cancelled', false)
+            ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
             ->orderBy('payments.date')
             ->get();
 

@@ -68,7 +68,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $api_point_type
  * @property int|null $api_point_id
  * @property string $total_refund
- * @property bool $is_cancelled
  * @property PaymentClassEnum $class
  * @property bool|null $is_mit
  * @property string|null $debug_mit_status
@@ -136,7 +135,6 @@ class Payment extends Model implements Auditable
         'status',
         'state',
         'amount',
-        'is_cancelled',
     ];
 
     protected static function booted(): void
