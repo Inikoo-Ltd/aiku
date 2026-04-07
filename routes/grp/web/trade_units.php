@@ -15,6 +15,7 @@ use App\Actions\Goods\TradeUnitFamily\UI\CreateTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UI\EditTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UI\IndexTradeUnitFamilies;
 use App\Actions\Goods\TradeUnitFamily\UI\ShowTradeUnitFamily;
+use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInBrand;
 use App\Actions\Helpers\Brand\UI\CreateBrand;
 use App\Actions\Helpers\Brand\UI\EditBrand;
 use App\Actions\Helpers\Brand\UI\IndexBrands;
@@ -48,5 +49,6 @@ Route::prefix('brands')->as('brands.')->group(function () {
     Route::get('create', CreateBrand::class)->name('create');
     Route::prefix('{brand:slug}')->group(function () {
         Route::get('edit', EditBrand::class)->name('edit');
+        Route::get('trade-units', IndexTradeUnitsInBrand::class)->name('trade_units.index');
     });
 });
