@@ -660,12 +660,12 @@
     "aiku_id": null
   },
   {
-    "Tax Category Key": 100,
+    "Tax Category Key": 103,
     "Tax Category Type": "Standard",
     "Tax Category Type Name": "käibemaks",
-    "Tax Category Code": "EE-SR22",
-    "Tax Category Name": "km 22%%",
-    "Tax Category Rate": 0.220000,
+    "Tax Category Code": "EE-SR24",
+    "Tax Category Name": "km 24%",
+    "Tax Category Rate": 0.240000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "EE",
     "Tax Category Metadata": {},
