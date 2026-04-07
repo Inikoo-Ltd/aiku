@@ -12,6 +12,7 @@ use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\InvoiceCategory\UpdateInvoiceCategory;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
+use App\Actions\Accounting\Payment\CancelPayment;
 use App\Actions\Accounting\Payment\RefundPayment;
 use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
 use App\Actions\Accounting\PaymentAccount\UpdatePaymentAccount;
@@ -609,6 +610,8 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post('/payment-service-provider/{paymentServiceProvider:id}/account', StoreOrgPaymentServiceProviderAccount::class)->name('payment-service-provider-account.store')->withoutScopedBindings();
 
     Route::post('/payment/{payment:id}/refund', RefundPayment::class)->name('payment_refund.store')->withoutScopedBindings(); // todo to be deleted
+    
+    Route::patch('/payment/{payment:id}/cancel', CancelPayment::class)->name('payment.cancel')->withoutScopedBindings();
 });
 
 Route::name('fulfilment-transaction.')->prefix('fulfilment_transaction/{fulfilmentTransaction:id}')->group(function () {

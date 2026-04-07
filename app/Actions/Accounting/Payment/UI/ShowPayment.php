@@ -14,6 +14,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithNavigation;
 use App\Actions\Traits\Authorisations\WithAccountingAuthorisation;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\UI\Accounting\PaymentTabsEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Http\Resources\Accounting\PaymentsResource;
@@ -134,6 +135,7 @@ class ShowPayment extends OrgAction
                         'topUp' => $payment->topUp ? $payment->topUp->reference : null,
                     ]
                 ],
+                'is_cancelled' => $payment->state === PaymentStateEnum::CANCELLED,
 
                 PaymentTabsEnum::SHOWCASE->value => $this->tab == PaymentTabsEnum::SHOWCASE->value ?
                     fn () => GetPaymentShowcase::run($payment)
