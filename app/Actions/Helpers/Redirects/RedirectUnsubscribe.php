@@ -37,7 +37,6 @@ class RedirectUnsubscribe
                 abort(404, 'Prospect recipient not found');
             }
         } else {
-            // Default to customer lookup
             $customerDispatchedEmail = DB::table('customer_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
 
             if ($customerDispatchedEmail) {

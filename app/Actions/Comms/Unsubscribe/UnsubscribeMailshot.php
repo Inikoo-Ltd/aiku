@@ -29,7 +29,7 @@ class UnsubscribeMailshot
 {
     use WithActionUpdate;
 
-    public function handle(DispatchedEmail $dispatchedEmail, ActionRequest $request, ?string $tag = null): DispatchedEmail
+    public function handle(DispatchedEmail $dispatchedEmail, ActionRequest $request, ?string $tag = null): array
     {
 
         /** @var Customer|Prospect $recipient */
@@ -123,10 +123,13 @@ class UnsubscribeMailshot
 
         $dispatchedEmail->refresh();
 
-        return $dispatchedEmail;
+        return [
+            'id' => $dispatchedEmail->id,
+            'tag' => $tag,
+        ];
     }
 
-    public function asController(string $encryptedDispatchedEmailID, ActionRequest $request): DispatchedEmail
+    public function asController(string $encryptedDispatchedEmailID, ActionRequest $request): array
     {
         $dispatchedEmailID = Crypt::decryptString($encryptedDispatchedEmailID);
         $dispatchedEmail   = DispatchedEmail::findOrFail($dispatchedEmailID);
@@ -136,8 +139,12 @@ class UnsubscribeMailshot
         return $this->handle($dispatchedEmail, $request, $tag);
     }
 
-    public function jsonResponse(DispatchedEmail $dispatchedEmail, ?string $tag = null): array
+    public function jsonResponse(array $data): array
     {
+        $dispatchedEmailId = $data['id'];
+        $tag = $data['tag'];
+
+        $dispatchedEmail = DispatchedEmail::findOrFail($dispatchedEmailId);
         $recipientName = '';
 
         if ($tag === 'prospect') {
