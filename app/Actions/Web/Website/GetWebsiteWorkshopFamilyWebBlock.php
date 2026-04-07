@@ -19,23 +19,22 @@ use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetWebsiteWorkshopSubDepartment
+class GetWebsiteWorkshopFamilyWebBlock
 {
     use AsObject;
 
     public function handle(Website $website): array
     {
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::FAMILY->value)->whereJsonContains('website_type', $website->shop->type)->get();
-        ;
 
-        $families = $website->shop->productCategories()->where('state', ProductCategoryStateEnum::ACTIVE)->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)->get();
+        $subDepartments = $website->shop->productCategories()->where('state', ProductCategoryStateEnum::ACTIVE)->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)->get();
 
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
-            'sub_departments'   => WorkshopSubDepartmentsResource::collection($families),
-            'layout'    => Arr::get($website->unpublishedSubDepartmentSnapshot, 'layout.sub_department', []),
+            'sub_departments'   => WorkshopSubDepartmentsResource::collection($subDepartments),
+            'layout'    => Arr::get($website->unpublishedFamilySnapshot, 'layout.family', []),
             'autosaveRoute' => [
-                'name'       => 'grp.models.website.autosave.sub_department',
+                'name'       => 'grp.models.website.autosave.family',
                 'parameters' => [
                     'website' => $website->id
                 ]
