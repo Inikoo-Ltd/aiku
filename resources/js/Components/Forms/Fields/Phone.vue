@@ -39,7 +39,7 @@ const onValidate = (data: any) => {
     const raw = phone.value?.trim()
 
     if (isInitialInvalid.value) {
-        if (!raw || raw === '+62') {
+        if (!raw) {
             return
         }
 
