@@ -116,7 +116,7 @@ const clickExpand = (id: string) => {
                     </div>
                 </div>
                 <div 
-                    v-if="getChangedKeys(user.old_values, user.new_values).length > 4"
+                    v-if="getChangedKeys(user.old_values, user.new_values).length ?? 0 > 4"
                     @click="clickExpand(user.id)"
                     class="flex-initial w-[50px] my-auto cursor-pointer"
                 >

@@ -200,14 +200,15 @@ const isWeakValue = (value: number | null | undefined) => {
                         </div>
 
                         <template v-for="row in rows" :key="row.key + '-' + item.key">
-                            <div class="h-9 md:h-11 flex items-center justify-center gap-1 text-xs md:text-lg border-b border-gray-100 last:border-b-0">
-                                <component
-                                    v-if="data.data[row.key]?.[item.key]?.queued_prefix?.value"
-                                    :is="getSafeRoute(data.data[row.key]?.[item.key]?.queued_prefix?.route_target) ? Link : 'span'"
-                                    :href="getSafeRoute(data.data[row.key]?.[item.key]?.queued_prefix?.route_target) ?? undefined"
-                                    v-tooltip="'Queued: ' + data.data[row.key]?.[item.key]?.queued_prefix?.value"
-                                    class="opacity-80 hover:underline cursor-pointer tabular-nums"
-                                >{{ data.data[row.key]?.[item.key]?.queued_prefix?.value }}+</component>
+                            <div class="h-9 md:h-11 flex items-center justify-center gap-2 text-xs md:text-lg border-b border-gray-100 last:border-b-0">
+                                <template v-if="data.data[row.key]?.[item.key]?.queued_prefix?.value">
+                                    <component
+                                        :is="getSafeRoute(data.data[row.key]?.[item.key]?.queued_prefix?.route_target) ? Link : 'span'"
+                                        :href="getSafeRoute(data.data[row.key]?.[item.key]?.queued_prefix?.route_target) ?? undefined"
+                                        v-tooltip="'Queued: ' + data.data[row.key]?.[item.key]?.queued_prefix?.value"
+                                        class="opacity-80 hover:underline cursor-pointer tabular-nums"
+                                    >{{ data.data[row.key]?.[item.key]?.queued_prefix?.value }}<template v-if="row.key !== 'dropshipping'">+</template></component><span v-if="row.key === 'dropshipping'" class="opacity-60">+</span>
+                                </template>
                                 <component
                                     :is="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ? Link : 'span'"
                                     :href="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ?? undefined"
