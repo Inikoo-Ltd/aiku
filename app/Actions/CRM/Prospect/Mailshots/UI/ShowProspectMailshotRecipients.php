@@ -45,10 +45,22 @@ class ShowProspectMailshotRecipients extends OrgAction
                         'type'        => 'boolean',
                         'description' => 'Targets prospects who have never been contacted.',
                     ],
-                    'last_contacted_3_weeks_ago' => [
-                        'label'       => 'Last Contacted 3 Weeks Ago',
+                    'last_contacted' => [
+                        'label'       => 'Last Contacted N Weeks Ago',
                         'type'        => 'boolean',
-                        'description' => 'Targets prospects whose last contact was 3 weeks ago or more.',
+                        'description' => 'Targets prospects whose last contact was a specified number of weeks ago or more.',
+                        'options'     => [
+                            'weeks' => [
+                                'label' => 'Time period',
+                                'presets' => [
+                                    ['label' => '1 week ago', 'value' => 1],
+                                    ['label' => '2 weeks ago', 'value' => 2],
+                                    ['label' => '3 weeks ago', 'value' => 3],
+                                    ['label' => 'Custom date', 'value' => 'custom'],
+                                ],
+                                'default' => 3,
+                            ],
+                        ],
                     ],
                     'sent_email_times' => [
                         'label'       => 'Sent Email N Times',

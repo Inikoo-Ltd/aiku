@@ -57,8 +57,8 @@ export function useFilterRecipients(props: any) {
         gold_reward_status: [],
 
         // prospect
-        never_contacted: ['last_contacted_3_weeks_ago', 'sent_email_times'],
-        last_contacted_3_weeks_ago: ['never_contacted'],
+        never_contacted: ['last_contacted', 'sent_email_times'],
+        last_contacted: ['never_contacted'],
         sent_email_times: ['never_contacted'],
 
     }
@@ -103,6 +103,11 @@ export function useFilterRecipients(props: any) {
 
             if (config.options?.count) {
                 value.count = config.options.count.default ?? 3
+            }
+
+            if (config.options?.weeks) {
+                value.mode = config.options.weeks.default ?? 3
+                value.custom_date = null
             }
         }
 
@@ -150,6 +155,11 @@ export function useFilterRecipients(props: any) {
 
                 if (config.options?.count) {
                     payloadValue.count = val.count ?? 3
+                }
+
+                if (config.options?.weeks) {
+                    payloadValue.mode = val.mode ?? 3
+                    payloadValue.custom_date = val.custom_date ?? null
                 }
 
                 payload[key] = { value: payloadValue }
@@ -314,6 +324,12 @@ export function useFilterRecipients(props: any) {
                 // COUNT
                 if (config.options?.count) {
                     uiValue.count = clean.count ?? config.options.count.default ?? 3
+                }
+
+                // WEEKS
+                if (config.options?.weeks) {
+                    uiValue.mode = clean.mode ?? config.options.weeks.default ?? 3
+                    uiValue.custom_date = clean.custom_date ?? null
                 }
             }
 

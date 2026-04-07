@@ -38,10 +38,12 @@ class UpdateProspectMailshotRecipientFilter extends OrgAction
             'recipients_recipe.never_contacted.value' => ['sometimes', 'array'],
             'recipients_recipe.never_contacted.value.value' => ['sometimes', 'boolean'],
 
-            // last_contacted_3_weeks_ago filter
-            'recipients_recipe.last_contacted_3_weeks_ago' => ['sometimes', 'array'],
-            'recipients_recipe.last_contacted_3_weeks_ago.value' => ['sometimes', 'array'],
-            'recipients_recipe.last_contacted_3_weeks_ago.value.value' => ['sometimes', 'boolean'],
+            // last_contacted filter
+            'recipients_recipe.last_contacted' => ['sometimes', 'array'],
+            'recipients_recipe.last_contacted.value' => ['sometimes', 'array'],
+            'recipients_recipe.last_contacted.value.value' => ['sometimes', 'boolean'],
+            'recipients_recipe.last_contacted.value.mode' => ['sometimes', 'string'],
+            'recipients_recipe.last_contacted.value.custom_date' => ['sometimes', 'date'],
 
             // sent_email_times filter
             'recipients_recipe.sent_email_times' => ['sometimes', 'array'],

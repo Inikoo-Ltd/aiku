@@ -8,8 +8,8 @@
 
 namespace App\Actions\CRM\Prospect\Mailshots;
 
+use App\Actions\CRM\Prospect\Mailshots\Filters\FilterProspectsLastContacted;
 use App\Actions\CRM\Prospect\Mailshots\Filters\FilterProspectsNeverContacted;
-use App\Actions\CRM\Prospect\Mailshots\Filters\FilterProspectsLastContacted3WeeksAgo;
 use App\Actions\CRM\Prospect\Mailshots\Filters\FilterProspectsSentEmailTimes;
 use App\Models\Comms\Mailshot;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -57,8 +57,8 @@ class GetProspectMailshotRecipientsQueryBuilder
         // Filter Never Contacted
         (new FilterProspectsNeverContacted())->apply($query, $filters);
 
-        // Filter Last Contacted 3 Weeks Ago
-        (new FilterProspectsLastContacted3WeeksAgo())->apply($query, $filters);
+        // Filter Last Contacted N Weeks Ago
+        (new FilterProspectsLastContacted())->apply($query, $filters);
 
         // Filter Sent Email N Times
         (new FilterProspectsSentEmailTimes())->apply($query, $filters);

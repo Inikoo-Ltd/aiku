@@ -314,6 +314,20 @@ watch(
                         <InputNumber :min="filter.config.options.count.min ?? 1" v-model="filter.value.count"
                             class="w-full" inputClass="w-full" />
                     </div>
+
+                    <!-- WEEKS -->
+                    <div v-if="filter.config.options?.weeks" class="mt-2">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">
+                            {{ trans(filter.config.options.weeks.label) }}
+                        </label>
+                        <Dropdown v-model="filter.value.mode" :options="filter.config.options.weeks.presets"
+                            optionLabel="label" optionValue="value" placeholder="Select time period" class="w-full mb-2"
+                            appendTo="body" />
+
+                        <!-- CUSTOM DATE (only when mode is custom) -->
+                        <Calendar v-if="filter.value.mode === 'custom'" v-model="filter.value.custom_date"
+                            placeholder="Select date" dateFormat="yy-mm-dd" showIcon class="w-full" appendTo="body" />
+                    </div>
                 </template>
 
                 <!-- SELECT -->
