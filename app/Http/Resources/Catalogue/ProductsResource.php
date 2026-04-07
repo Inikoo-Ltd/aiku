@@ -14,6 +14,7 @@ use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 use Carbon\Carbon;
+
 /**
  * @property string $slug
  * @property string $code

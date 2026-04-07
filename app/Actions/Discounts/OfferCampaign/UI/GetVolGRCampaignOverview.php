@@ -29,166 +29,166 @@ class GetVolGRCampaignOverview
             'tabsBox'       => $this->getTabsBox($offerCampaign),
         ];
     }
-    
-    public function getTabsBox(OfferCampaign $offerCampaign) 
+
+    public function getTabsBox(OfferCampaign $offerCampaign)
     {
         $stats = $offerCampaign->stats;
         $shop = $offerCampaign->shop;
 
         // $timeSeriesData = GetDiscountsDashboardTimeSeriesData::run($shop);
         // $offerCampaignTimeSeriesStats = $timeSeriesData['offerCampaigns'];
-        
+
         // $timeSeriesStat = collect(DashboardOffersResource::collection($offerCampaignTimeSeriesStats)->resolve())->keyBy('slug');
         // $totalSales = data_get($timeSeriesStat, "{$offerCampaign->slug}.columns.sales_grp_currency_external.all.formatted_value");
 
-         return [
-            [
-                'label'         => __('Offers'),
-                'currency_code' => $shop->currency,
-                'tabs'          => [
-                    [
-                        'tab_slug'    => 'offers',
-                        'label'       => __('Offers'),
-                        'value'       => $stats->number_offers,
-                        'type'        => 'number',
-                        'tooltip' => __('Total Offers'),
-                        'icon_data'   => [
-                            'icon'    => 'fal fa-tags',
-                        ],
-                        'visitRoute'  => [
-                            'name'      => request()->route()->getName(),
-                            'parameters'    => [
-                                'organisation'      => $offerCampaign->organisation->slug,
-                                'shop'              => $offerCampaign->shop->slug,
-                                'offerCampaign'     => $offerCampaign->slug,
-                                'tab'               => 'offers',
-                            ]
-                        ],
-                        'information' => [
-                            'label' => 'Total Offers'
-                        ]
-                    ]
-                ],
-            ],
-            [
-                'label'         => __('Active Offers'),
-                'currency_code' => $shop->currency,
-                'tabs'          => [
-                    [
-                        'tab_slug'    => 'in_process_offers',
-                        'label'       => __('Active, not yet started'),
-                        'value'       => $stats->number_offers_state_in_process,
-                        'type'        => 'number',
-                        'tooltip' => __('Active, not yet started'),
-                        'icon_data'   => [
-                            'icon'    => 'fal fa-spinner',
-                        ],
-                        'visitRoute'  => [
-                            'name'      => request()->route()->getName(),
-                            'parameters'    => [
-                                'organisation'      => $offerCampaign->organisation->slug,
-                                'shop'              => $offerCampaign->shop->slug,
-                                'offerCampaign'     => $offerCampaign->slug,
-                                'tab'               => 'offers',
-                                'offers_elements'   =>  [
-                                    'state'         =>  'in_process'
-                                ],
-                            ]
-                        ],
-                        'information' => [
-                            'label' => 'In Process'
-                        ]
-                    ],
-                    [
-                        'tab_slug'    => 'active_offers',
-                        'label'       => __('Active, started offers'),
-                        'value'       => $stats->number_offers_state_active,
-                        'type'        => 'number',
-                        'tooltip' => __('Active, started offers'),
-                        'icon_data'   => [
-                            'icon'    => 'fal fa-play',
-                        ],
-                        'visitRoute'  => [
-                            'name'      => request()->route()->getName(),
-                            'parameters'    => [
-                                'organisation'      => $offerCampaign->organisation->slug,
-                                'shop'              => $offerCampaign->shop->slug,
-                                'offerCampaign'     => $offerCampaign->slug,
-                                'tab'               => 'offers',
-                                'offers_elements'   =>  [
-                                    'state'         =>  'active'
-                                ],
-                            ]
-                        ],
-                        'information' => [
-                            'label' => 'Active'
-                        ]
-                    ]
-                ],
-            ],
-            [
-                'label'         => __('Ended Offers'),
-                'currency_code' => $shop->currency,
-                'tabs'          => [
-                    [
-                        'tab_slug'    => 'ended_offers',
-                        'label'       => __('Finished Offer'),
-                        'value'       => $stats->number_offers_state_finished,
-                        'type'        => 'number',
-                        'tooltip' => __('Finished Offer'),
-                        'icon_data'   => [
-                            'icon'    => 'fal fa-check',
-                        ],
-                        'visitRoute'  => [
-                            'name'      => request()->route()->getName(),
-                            'parameters'    => [
-                                'organisation'      => $offerCampaign->organisation->slug,
-                                'shop'              => $offerCampaign->shop->slug,
-                                'offerCampaign'     => $offerCampaign->slug,
-                                'tab'               => 'offers',
-                                'offers_elements'   =>  [
-                                    'state'         =>  'finished'
-                                ],
-                            ]
-                        ],
-                        'information' => [
-                            'label' => 'Finished'
-                        ]
-                    ]
-                ],
-            ],
-            [
-                'label'         => __('Used By'),
-                'currency_code' => $shop->currency,
-                'tabs'          => [
-                    [
-                        'tab_slug'    => 'customers',
-                        'label'       => __('Customers'),
-                        'value'       => $stats->number_customers,
-                        'type'        => 'number',
-                        'tooltip' => __('Customers'),
-                        'icon_data'   => [
-                            'icon'    => 'fal fa-users',
-                        ],
-                        'information' => [
-                            'label' => 'Customer Usage'
-                        ]
-                    ],
-                    [
-                        'tab_slug'    => 'orders',
-                        'label'       => __('Orders'),
-                        'value'       => $stats->number_orders,
-                        'type'        => 'number',
-                        'tooltip' => __('Orders'),
-                        'icon_data'   => [
-                            'icon'    => 'fal fa-shopping-cart',
-                        ],
-                        'information' => [
-                            'label' => 'Order Usage'
-                        ]
-                    ]
-                ],
-            ],
-         ];
+        return [
+           [
+               'label'         => __('Offers'),
+               'currency_code' => $shop->currency,
+               'tabs'          => [
+                   [
+                       'tab_slug'    => 'offers',
+                       'label'       => __('Offers'),
+                       'value'       => $stats->number_offers,
+                       'type'        => 'number',
+                       'tooltip' => __('Total Offers'),
+                       'icon_data'   => [
+                           'icon'    => 'fal fa-tags',
+                       ],
+                       'visitRoute'  => [
+                           'name'      => request()->route()->getName(),
+                           'parameters'    => [
+                               'organisation'      => $offerCampaign->organisation->slug,
+                               'shop'              => $offerCampaign->shop->slug,
+                               'offerCampaign'     => $offerCampaign->slug,
+                               'tab'               => 'offers',
+                           ]
+                       ],
+                       'information' => [
+                           'label' => 'Total Offers'
+                       ]
+                   ]
+               ],
+           ],
+           [
+               'label'         => __('Active Offers'),
+               'currency_code' => $shop->currency,
+               'tabs'          => [
+                   [
+                       'tab_slug'    => 'in_process_offers',
+                       'label'       => __('Active, not yet started'),
+                       'value'       => $stats->number_offers_state_in_process,
+                       'type'        => 'number',
+                       'tooltip' => __('Active, not yet started'),
+                       'icon_data'   => [
+                           'icon'    => 'fal fa-spinner',
+                       ],
+                       'visitRoute'  => [
+                           'name'      => request()->route()->getName(),
+                           'parameters'    => [
+                               'organisation'      => $offerCampaign->organisation->slug,
+                               'shop'              => $offerCampaign->shop->slug,
+                               'offerCampaign'     => $offerCampaign->slug,
+                               'tab'               => 'offers',
+                               'offers_elements'   =>  [
+                                   'state'         =>  'in_process'
+                               ],
+                           ]
+                       ],
+                       'information' => [
+                           'label' => 'In Process'
+                       ]
+                   ],
+                   [
+                       'tab_slug'    => 'active_offers',
+                       'label'       => __('Active, started offers'),
+                       'value'       => $stats->number_offers_state_active,
+                       'type'        => 'number',
+                       'tooltip' => __('Active, started offers'),
+                       'icon_data'   => [
+                           'icon'    => 'fal fa-play',
+                       ],
+                       'visitRoute'  => [
+                           'name'      => request()->route()->getName(),
+                           'parameters'    => [
+                               'organisation'      => $offerCampaign->organisation->slug,
+                               'shop'              => $offerCampaign->shop->slug,
+                               'offerCampaign'     => $offerCampaign->slug,
+                               'tab'               => 'offers',
+                               'offers_elements'   =>  [
+                                   'state'         =>  'active'
+                               ],
+                           ]
+                       ],
+                       'information' => [
+                           'label' => 'Active'
+                       ]
+                   ]
+               ],
+           ],
+           [
+               'label'         => __('Ended Offers'),
+               'currency_code' => $shop->currency,
+               'tabs'          => [
+                   [
+                       'tab_slug'    => 'ended_offers',
+                       'label'       => __('Finished Offer'),
+                       'value'       => $stats->number_offers_state_finished,
+                       'type'        => 'number',
+                       'tooltip' => __('Finished Offer'),
+                       'icon_data'   => [
+                           'icon'    => 'fal fa-check',
+                       ],
+                       'visitRoute'  => [
+                           'name'      => request()->route()->getName(),
+                           'parameters'    => [
+                               'organisation'      => $offerCampaign->organisation->slug,
+                               'shop'              => $offerCampaign->shop->slug,
+                               'offerCampaign'     => $offerCampaign->slug,
+                               'tab'               => 'offers',
+                               'offers_elements'   =>  [
+                                   'state'         =>  'finished'
+                               ],
+                           ]
+                       ],
+                       'information' => [
+                           'label' => 'Finished'
+                       ]
+                   ]
+               ],
+           ],
+           [
+               'label'         => __('Used By'),
+               'currency_code' => $shop->currency,
+               'tabs'          => [
+                   [
+                       'tab_slug'    => 'customers',
+                       'label'       => __('Customers'),
+                       'value'       => $stats->number_customers,
+                       'type'        => 'number',
+                       'tooltip' => __('Customers'),
+                       'icon_data'   => [
+                           'icon'    => 'fal fa-users',
+                       ],
+                       'information' => [
+                           'label' => 'Customer Usage'
+                       ]
+                   ],
+                   [
+                       'tab_slug'    => 'orders',
+                       'label'       => __('Orders'),
+                       'value'       => $stats->number_orders,
+                       'type'        => 'number',
+                       'tooltip' => __('Orders'),
+                       'icon_data'   => [
+                           'icon'    => 'fal fa-shopping-cart',
+                       ],
+                       'information' => [
+                           'label' => 'Order Usage'
+                       ]
+                   ]
+               ],
+           ],
+        ];
     }
 }

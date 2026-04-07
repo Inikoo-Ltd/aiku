@@ -11,18 +11,9 @@ namespace App\Actions\Maintenance\Web;
 
 use App\Actions\Helpers\Snapshot\StoreWebsiteSnapshot;
 use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Web\Webpage\PublishWebpage;
-use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Helpers\Snapshot\SnapshotScopeEnum;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
-use App\Models\Catalogue\ProductCategory;
-use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 
 class RepairBrokenUnpublishedSnapshot
 {
@@ -32,7 +23,7 @@ class RepairBrokenUnpublishedSnapshot
 
     protected function handle(Website $website, Command $command): void
     {
-        
+
         if ($liveSnapshot = $website->liveSubDepartmentSnapshot) {
             $command->info('~ Repairing: unpublished sub_department web block: From Live');
             $unpublishedSnapshot = $website->unpublishedSubDepartmentSnapshot;
@@ -144,7 +135,7 @@ class RepairBrokenUnpublishedSnapshot
                 ]);
             }
         };
-        
+
         if ($liveSnapshot = $website->liveFamiliesOverviewSnapshot) {
             $command->info('~ Repairing: unpublished families_overview web block: From Live');
             $unpublishedSnapshot = $website->unpublishedFamiliesOverviewSnapshot;
@@ -200,7 +191,7 @@ class RepairBrokenUnpublishedSnapshot
                 ]);
             }
         };
-        
+
         if ($liveSnapshot = $website->liveProductsSnapshot) {
             $command->info('~ Repairing: unpublished products web block: From Live');
             $unpublishedSnapshot = $website->unpublishedProductsSnapshot;
@@ -265,11 +256,12 @@ class RepairBrokenUnpublishedSnapshot
     public function asCommand(Command $command): void
     {
         // dd($command->argument('website_id'));
-        $websites = Website::when($command->argument('website_id'), 
-                function ($query) use ($command) {
-                    $query->where('id', $command->argument('website_id'));
-                }, 
-            )
+        $websites = Website::when(
+            $command->argument('website_id'),
+            function ($query) use ($command) {
+                $query->where('id', $command->argument('website_id'));
+            },
+        )
             ->where('status', true);
 
         $total   = $websites->clone()->count();
