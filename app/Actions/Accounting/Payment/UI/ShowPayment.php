@@ -127,9 +127,9 @@ class ShowPayment extends OrgAction
                         'payment' => $payment->id
                     ]
                 ],
-                // Only enable receipt download if user have accounting authorization
+                // Only enable receipt download if user has accounting authorization
                 'topup_receipt_route' => [
-                    'show' => $this->authorize($request) && $payment->topUp ? true : false,
+                    'show' => $this->authorize($request) && $payment->topUp,
                     'name' => 'grp.org.accounting.payments.topUp.pdf',
                     'parameters' => [
                         'topUp' => $payment->topUp ? $payment->topUp->reference : null,
@@ -173,7 +173,7 @@ class ShowPayment extends OrgAction
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
-                            'label' => $payment->reference ? Str::limit($payment->reference, 12, '...') : __('No reference'),
+                            'label' => $payment->reference ? Str::limit($payment->reference, 12) : __('No reference'),
                         ],
 
                     ],
@@ -189,7 +189,7 @@ class ShowPayment extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __('Payment').': '.($payment->reference ? Str::limit($payment->reference, 12, '...') : __('No reference')),
+                        'label' => __('Payment').': '.($payment->reference ? Str::limit($payment->reference, 12) : __('No reference')),
                     ],
                     'suffix' => $suffix
                 ]

@@ -212,7 +212,7 @@ class IndexPayments extends OrgAction
             $table->column(key: 'method', label: __('Method'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hms');
-            $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'actions', label: __('Action'), canBeHidden: false);
         };
     }
 

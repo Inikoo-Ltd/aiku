@@ -21,7 +21,6 @@ import PaymentShowcase from './PaymentShowcase.vue';
 import RefundModal from '@/Components/RefundModal.vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue";
-import TableHistoryNotes from "@/Components/Tables/Grp/Org/Fulfilment/TableHistoryNotes.vue";
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
