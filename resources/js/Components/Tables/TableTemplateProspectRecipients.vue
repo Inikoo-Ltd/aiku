@@ -305,6 +305,15 @@ watch(
                             {{ trans("Minimum amount is required.") }}
                         </p>
                     </div>
+
+                    <!-- COUNT -->
+                    <div v-if="filter.config.options?.count" class="mt-2">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">
+                            {{ trans(filter.config.options.count.label) }}
+                        </label>
+                        <InputNumber :min="filter.config.options.count.min ?? 1" v-model="filter.value.count"
+                            class="w-full" inputClass="w-full" />
+                    </div>
                 </template>
 
                 <!-- SELECT -->

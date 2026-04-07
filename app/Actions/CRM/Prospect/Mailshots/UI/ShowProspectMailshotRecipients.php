@@ -50,10 +50,17 @@ class ShowProspectMailshotRecipients extends OrgAction
                         'type'        => 'boolean',
                         'description' => 'Targets prospects whose last contact was 3 weeks ago or more.',
                     ],
-                    'sent_email_3_times' => [
-                        'label'       => 'Sent Email 3 Times',
+                    'sent_email_times' => [
+                        'label'       => 'Sent Email N Times',
                         'type'        => 'boolean',
-                        'description' => 'Targets prospects who have already been sent emails 3 times.',
+                        'description' => 'Targets prospects who have already been sent emails a specified number of times.',
+                        'options'     => [
+                            'count' => [
+                                'label' => 'Number of times',
+                                'default' => 3,
+                                'min' => 1,
+                            ],
+                        ],
                     ],
                 ]
             ]

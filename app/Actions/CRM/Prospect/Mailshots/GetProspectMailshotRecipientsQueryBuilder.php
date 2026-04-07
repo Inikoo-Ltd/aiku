@@ -10,7 +10,7 @@ namespace App\Actions\CRM\Prospect\Mailshots;
 
 use App\Actions\CRM\Prospect\Mailshots\Filters\FilterProspectsNeverContacted;
 use App\Actions\CRM\Prospect\Mailshots\Filters\FilterProspectsLastContacted3WeeksAgo;
-use App\Actions\CRM\Prospect\Mailshots\Filters\FilterProspectsSentEmail3Times;
+use App\Actions\CRM\Prospect\Mailshots\Filters\FilterProspectsSentEmailTimes;
 use App\Models\Comms\Mailshot;
 use Lorisleiva\Actions\Concerns\AsObject;
 use Illuminate\Database\Query\Builder;
@@ -60,8 +60,8 @@ class GetProspectMailshotRecipientsQueryBuilder
         // Filter Last Contacted 3 Weeks Ago
         (new FilterProspectsLastContacted3WeeksAgo())->apply($query, $filters);
 
-        // Filter Sent Email 3 Times
-        (new FilterProspectsSentEmail3Times())->apply($query, $filters);
+        // Filter Sent Email N Times
+        (new FilterProspectsSentEmailTimes())->apply($query, $filters);
 
         return $query;
     }

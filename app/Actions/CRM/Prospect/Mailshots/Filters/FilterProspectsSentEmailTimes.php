@@ -12,24 +12,25 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
-class FilterProspectsSentEmail3Times
+class FilterProspectsSentEmailTimes
 {
     /**
-     * Apply the "Sent Email 3 Times" filter to the query.
+     * Apply the "Sent Email N Times" filter to the query.
      *
      */
     public function apply(Builder $query, array $filters): Builder
     {
-        $sentEmail3Times = Arr::get($filters, 'sent_email_3_times');
-        $isSentEmail3TimesActive = is_array($sentEmail3Times) ? ($sentEmail3Times['value'] ?? false) : $sentEmail3Times;
+        $sentEmailTimes = Arr::get($filters, 'sent_email_times');
+        $isSentEmailTimesActive = is_array($sentEmailTimes) ? ($sentEmailTimes['value'] ?? false) : $sentEmailTimes;
+        $count = is_array($sentEmailTimes) ? ($sentEmailTimes['count'] ?? 3) : 3;
 
-        if ($isSentEmail3TimesActive) {
-            $query->whereExists(function ($subQuery) {
+        if ($isSentEmailTimesActive) {
+            $query->whereExists(function ($subQuery) use ($count) {
                 $subQuery->select(DB::raw(1))
                     ->from('prospect_has_dispatched_emails')
                     ->whereRaw('prospect_has_dispatched_emails.prospect_id = prospects.id')
                     ->groupBy('prospect_has_dispatched_emails.prospect_id')
-                    ->havingRaw('COUNT(*) >= 3');
+                    ->havingRaw('COUNT(*) >= ?', [$count]);
             });
         }
 

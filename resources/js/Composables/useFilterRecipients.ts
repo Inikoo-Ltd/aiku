@@ -57,9 +57,9 @@ export function useFilterRecipients(props: any) {
         gold_reward_status: [],
 
         // prospect
-        never_contacted: ['last_contacted_3_weeks_ago', 'sent_email_3_times'],
+        never_contacted: ['last_contacted_3_weeks_ago', 'sent_email_times'],
         last_contacted_3_weeks_ago: ['never_contacted'],
-        sent_email_3_times: ['never_contacted'],
+        sent_email_times: ['never_contacted'],
 
     }
 
@@ -100,6 +100,10 @@ export function useFilterRecipients(props: any) {
             if (config.options?.date_range?.presets) {
                 value.date_range_preset = null
             }
+
+            if (config.options?.count) {
+                value.count = config.options.count.default ?? 3
+            }
         }
 
         if (config.type === 'select') value = config.options?.[0]?.value ?? null
@@ -132,7 +136,7 @@ export function useFilterRecipients(props: any) {
             if (config.type === 'boolean') {
                 const payloadValue: any = {}
 
-                if (!config.options?.date_range && !config.options?.amount_range) {
+                if (!config.options?.date_range && !config.options?.amount_range && !config.options?.count) {
                     payloadValue.value = val.value ?? true
                 }
 
@@ -142,6 +146,10 @@ export function useFilterRecipients(props: any) {
 
                 if (config.options?.amount_range) {
                     payloadValue.amount_range = val.amount_range ?? null
+                }
+
+                if (config.options?.count) {
+                    payloadValue.count = val.count ?? 3
                 }
 
                 payload[key] = { value: payloadValue }
@@ -301,6 +309,11 @@ export function useFilterRecipients(props: any) {
                         max: null,
                         currency: config.options.amount_range.currency || 'GBP'
                     }
+                }
+
+                // COUNT
+                if (config.options?.count) {
+                    uiValue.count = clean.count ?? config.options.count.default ?? 3
                 }
             }
 
