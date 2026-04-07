@@ -17,21 +17,16 @@ import { inject } from 'vue'
 import { routeType } from '@/types/route'
 import { trans } from 'laravel-vue-i18n'
 import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue'
+import BasicDiscount from '@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue'
+import { OfferResource } from '@/types/Catalogue/Offers'
+import { useFormatTime } from '@/Composables/useFormatTime'
 
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
     currency_code: string
     data: {
-        offer: {
-            trigger_data: {
-            }
-            data_allowance_signature: {
-                percentage_off: number|null
-                product_category: {} | null
-            }
-            type: string
-        }
+        offer: OfferResource
     }
     url_master?: routeType
 }>()
@@ -66,28 +61,63 @@ const getCategoryLink = (productCategory: {}) => {
             </div>
         </template>
     </PageHeading>
-
+    
+    <!-- Section: Preview label -->
     <div class="p-5 border-b border-gray-300 mb-4 flex flex-col items-center offer">
         <div class="mb-2">
             {{ ctrans("Type") }}: <span class="font-bold">{{ data.offer.type }}</span>
         </div>
         
         <FamilyOfferLabelDiscount v-if="data.offer.type == 'Category Quantity Ordered Order Interval'" :offer="data.offer" />
+        <BasicDiscount v-else-if="data.offer.type == 'GR Amnesty'"
+            :offers_data="{
+                o: {
+                    p: (data.offer.max_percentage_discount || 0 )*100 + '%',
+                    l: data.offer.label,
+                    st: 'a'
+                }
+            }"
+            class="!text-xl"
+        />
+        <BasicDiscount v-else-if="data.offer.type == 'Category Ordered'"
+            :offers_data="{
+                o: {
+                    p: (data.offer.max_percentage_discount || 0 )*100 + '%',
+                    l: data.offer.label
+                }
+            }"
+            class="!text-3xl"
+        />
         <Coupon v-else :offer="data.offer" :currency_code="currency_code" />
     </div>
+
+    <!-- <pre>{{ data.offer }}</pre> -->
+    
     <div class="flex justify-between gap-8 mx-8">
-        <!-- Trigger -->
+        <!-- Section: Details -->
         <div class="max-w-lg first:pt-0 pr-2 flex flex-col first:border-t-0 gap-y-1 pt-1 pb-1.5">
-            <div class="bg-gray-100 font-bold border-b border-gray-200 text-gray-700 text-center mb-1 py-1">
+            <div class="bg-gray-100 font-bold border-b border-gray-200 text-gray-700 text-center mb-1 py-1 px-2">
                 {{ ctrans("Details") }}
             </div>
 
-            <!-- Trigger: Item Quantity -->
+            <!-- Detail: Duration -->
+            <div class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
+                <dt class="col-span-4 flex flex-col">
+                    <div class="flex items-center leading-none">
+                        <span>{{ ctrans("Duration") }}</span>
+                    </div>
+                </dt>
+        
+                <div class="relative col-span-3 justify-self-end font-medium overflow-hidden text-right">
+                    {{ useFormatTime(data.offer.start_at, { formatTime: 'hm' }) }} - {{ data.offer.end_at ? useFormatTime(data.offer.end_at, { formatTime: 'hm' }) : ctrans('Permanent') }}
+                </div>
+            </div>
+
+            <!-- Detail: Product category -->
             <div v-if="data.offer.data_allowance_signature?.product_category" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
                 <dt class="col-span-4 flex flex-col">
                     <div class="flex items-center leading-none">
                         <span>{{ ctrans("Product category") }}</span>
-                        <FontAwesomeIcon icon='fal fa-question-circle' v-tooltip="'fieldSummary.information_icon'" class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width aria-hidden='true' />
                     </div>
                     <!-- <span v-tooltip="'fieldSummary.information'" class="text-xs text-gray-400 truncate">
                         Minimum of quantity the item ordered
@@ -102,14 +132,16 @@ const getCategoryLink = (productCategory: {}) => {
                     </dd>
                 </div>
             </div>
-            <div v-else class="opacity-70 italic">
-                {{ ctrans("No additional details available.") }}
-            </div>
         </div>
 
         <!-- Section: Trigger -->
-        <div class="max-w-lg first:pt-0 pr-2 flex flex-col first:border-t-0 gap-y-1 pt-1 pb-1.5">
-            <div class="bg-amber-100 font-bold border-b border-gray-200 text-amber-700 text-center mb-1 py-1">
+        <div v-if="
+            (typeof data.offer.trigger_data?.item_quantity !== 'undefined')
+            || (typeof data.offer.trigger_data?.min_amount !== 'undefined')
+            || (typeof data.offer.trigger_data?.order_number !== 'undefined')
+        "
+            class="max-w-lg first:pt-0 pr-2 flex flex-col first:border-t-0 gap-y-1 pt-1 pb-1.5">
+            <div class="bg-amber-100 font-bold border-b border-gray-200 text-amber-700 text-center mb-1 py-1 px-2">
                 {{ ctrans("Trigger") }}
             </div>
             <!-- Trigger: Item Quantity -->
@@ -117,7 +149,6 @@ const getCategoryLink = (productCategory: {}) => {
                 <dt class="col-span-4 flex flex-col">
                     <div class="flex items-center leading-none">
                         <span>{{ ctrans("Item quantity") }}</span>
-                        <FontAwesomeIcon icon='fal fa-question-circle' v-tooltip="'fieldSummary.information_icon'" class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width aria-hidden='true' />
                     </div>
                     <span v-tooltip="'fieldSummary.information'" class="text-xs text-gray-400 truncate">
                         {{ ctrans("Minimum of quantity the item ordered") }}
@@ -136,7 +167,6 @@ const getCategoryLink = (productCategory: {}) => {
                 <dt class="col-span-4 flex flex-col">
                     <div class="flex items-center leading-none">
                         <span>{{ ctrans("Order amount") }}</span>
-                        <FontAwesomeIcon icon='fal fa-question-circle' v-tooltip="'fieldSummary.information_icon'" class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width aria-hidden='true' />
                     </div>
                     <span v-tooltip="'fieldSummary.information'" class="text-xs text-gray-400 truncate">
                         {{ ctrans("Minimum of amount of the order") }}
@@ -155,9 +185,8 @@ const getCategoryLink = (productCategory: {}) => {
                 <dt class="col-span-4 flex flex-col">
                     <div class="flex items-center leading-none">
                         <span>{{ ctrans("Minimum order") }}</span>
-                        <FontAwesomeIcon icon='fal fa-question-circle' v-tooltip="'fieldSummary.information_icon'" class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width aria-hidden='true' />
                     </div>
-                    <span v-tooltip="`The order count required to activate the discount (e.g., '7' is mean their 7th order)`" class="text-xs text-gray-400 truncate">
+                    <span v-tooltip="ctrans('The order count required to activate the discount (e.g., 7 = 7th order)')" class="text-xs text-gray-400 truncate">
                         {{ ctrans("The order count required to activate the discount (e.g., 7 = 7th order)") }}
                     </span>
                 </dt>
@@ -172,16 +201,15 @@ const getCategoryLink = (productCategory: {}) => {
 
         <!-- Section: Discount -->
         <div class="ml-4 max-w-lg first:pt-0 pr-2 flex flex-col first:border-t-0 gap-y-1 pt-1 pb-1.5">
-            <div class="bg-green-100 font-bold border-b border-gray-200 text-green-700 text-center mb-1 py-1">
+            <div class="bg-green-100 font-bold border-b border-gray-200 text-green-700 text-center mb-1 py-1 px-2">
                 {{ ctrans("Discounts") }}
             </div>
             <div v-if="(typeof props.data.offer.data_allowance_signature?.percentage_off !== 'undefined')" class="grid grid-cols-7 gap-x-4 items-center justify-between">
                 <dt class="col-span-4 flex flex-col">
                     <div class="flex items-center leading-none">
                         <span>{{ ctrans("Discount percentage") }}</span>
-                        <FontAwesomeIcon icon='fal fa-question-circle' v-tooltip="'fieldSummary.information_icon'" class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width aria-hidden='true' />
                     </div>
-                    <span v-tooltip="'fieldSummary.information'" class="text-xs text-gray-400 truncate">
+                    <span v-tooltip="ctrans('The discount of the product price')" class="text-xs text-gray-400 truncate">
                         {{ ctrans("The discount of the product price") }}
                     </span>
                 </dt>
