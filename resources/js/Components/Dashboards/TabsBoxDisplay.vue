@@ -34,9 +34,14 @@ const props = defineProps<{
             align?: string
             icon?: string | string[]
             iconClass?: string
+            tooltip?: string
             information?: {
                 label: string | number
                 type?: string // 'icon', 'date', 'number', 'currency'
+            }
+            visitRoute?: {
+                name: string
+                parameters: {}
             }
         }[]
         children?: {
@@ -114,6 +119,17 @@ const getRoute = (tabSlug) => {
             return route(currentRoute, currentParams);
     }
 }
+
+const clickVisitRoute = (visitRoute: {
+    name: string
+    parameters: {}
+}) => {
+    
+    if (!visitRoute) return;
+
+    router.get(route(visitRoute.name, visitRoute.parameters))
+
+}
 </script>
 
 <template>
@@ -130,7 +146,7 @@ const getRoute = (tabSlug) => {
                   borderColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] : 'inherit'
                 }"
             >
-                <div class="text-center mb-2 text-xs">
+                <div class="text-center mb-2 text-xs font-semibold">
                     <FontAwesomeIcon v-if="box.icon" :icon="box.icon" class="" fixed-width aria-hidden="true" />
                     {{ box.label }}
                 </div>
@@ -139,17 +155,18 @@ const getRoute = (tabSlug) => {
                     <div
                         v-for="tab in box.tabs"
                         :key="tab.tab_slug"
-                        class="w-full flex flex-col items-center"
-                        @click="['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) ? router.get(getRoute(tab.tab_slug)) : null"
+                        class="w-fit flex flex-col items-center mx-auto"
+                        :class="!(['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) || tab.visitRoute) ? 'cursor-default' : 'hover:cursor-pointer'"
+                        @click="['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) ? router.get(getRoute(tab.tab_slug)) : clickVisitRoute(tab.visitRoute)"
+                        v-tooltip="tab.tooltip"
                     >
-                        <div class="group flex items-center gap-1 tabular-nums relative text-xl px-2 mb-1 cursor-default">
+                        <div class="group flex items-center gap-1 tabular-nums relative text-xl px-2 mb-1">
                             <div class="mx-auto text-center">
                                 <template v-if="tab.icon || tab.icon_data">
                                     <Icon
                                         v-if="tab.icon_data"
                                         :data="tab.icon_data"
                                         class="text-xl"
-                                        :class="!['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) ? 'cursor-not-allowed' : 'group-hover:cursor-pointer'"
                                     />
                                     <FontAwesomeIcon v-else :icon="tab.icon" class="text-xl" fixed-width aria-hidden="true" />
                                 </template>
@@ -158,7 +175,7 @@ const getRoute = (tabSlug) => {
                             <div class="relative text-center">
                                 <span
                                     class="inline opacity-80 group-hover:opacity-100 transition-all"
-                                    :class="!['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) ? 'cursor-not-allowed' : 'group-hover:cursor-pointer group-hover:underline'"
+                                    :class="!(['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) || tab.visitRoute) ? '' : 'group-hover:underline'"
                                 >
                                   {{ renderLabelBasedOnType(tab.value, tab.type, { currency_code: box.currency_code }) }}
                                 </span>
