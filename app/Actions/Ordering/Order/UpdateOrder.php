@@ -70,9 +70,23 @@ class UpdateOrder extends OrgAction
         }
 
 
+        if ($oldState != $order->state) {
+            $this->orderHydrators($order);
+            $this->orderHandlingHydrators($order, $oldState);
+            $this->orderHandlingHydrators($order, $order->state);
+        }
+
+        if ($oldPlatform != $order->platform) {
+            if ($order->platform) {
+                PlatformHydrateOrders::dispatch($order->platform)->delay($this->hydratorsDelay);
+            }
+            if ($oldPlatform) {
+                PlatformHydrateOrders::dispatch($oldPlatform)->delay($this->hydratorsDelay);
+            }
+        }
+
+
         if (count($changes) > 0) {
-
-
             $deliveryNote = $order->deliveryNotes()->where('delivery_notes.type', DeliveryNoteTypeEnum::ORDER)->first();
             if ($deliveryNote) {
                 if (Arr::has($changes, 'collection_address_id') && !in_array($deliveryNote->state, [DeliveryNoteStateEnum::CANCELLED, DeliveryNoteStateEnum::DISPATCHED])) {
@@ -115,19 +129,6 @@ class UpdateOrder extends OrgAction
                 }
             }
 
-
-            if (array_key_exists('state', $changedFields)) {
-                $this->orderHydrators($order);
-                $this->orderHandlingHydrators($order, $oldState);
-                $this->orderHandlingHydrators($order, $order->state);
-            }
-            if (array_key_exists('platform_id', $changedFields)) {
-                if ($order->platform) {
-                    PlatformHydrateOrders::dispatch($order->platform)->delay($this->hydratorsDelay);
-                } elseif ($oldPlatform) {
-                    PlatformHydrateOrders::dispatch($oldPlatform)->delay($this->hydratorsDelay);
-                }
-            }
 
             if (Arr::hasAny($changedFields, ['reference', 'state', 'net_amount', 'payment_amount', 'date'])) {
                 OrderRecordSearch::dispatch($order);
