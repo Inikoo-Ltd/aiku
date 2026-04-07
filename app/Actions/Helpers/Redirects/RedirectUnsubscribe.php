@@ -8,8 +8,10 @@
 
 namespace App\Actions\Helpers\Redirects;
 
+use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\CRM\Customer;
+use App\Models\CRM\Prospect;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -21,18 +23,29 @@ class RedirectUnsubscribe
 {
     use AsAction;
 
-    public function handle(DispatchedEmail $dispatchedEmail): RedirectResponse
+    public function handle(DispatchedEmail $dispatchedEmail, ?string $tag = null): RedirectResponse
     {
         $baseUrl = null;
 
-        $customerDispatchedEmail =  DB::table('customer_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
+        if ($tag === 'prospect') {
+            $prospectDispatchedEmail = DB::table('prospect_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
 
-        //  TODO: update later for propect
-        if ($customerDispatchedEmail) {
-            $customer = Customer::find($customerDispatchedEmail->customer_id);
-            $shop = $customer->shop;
+            if ($prospectDispatchedEmail) {
+                $prospect = Prospect::find($prospectDispatchedEmail->prospect_id);
+                $shop = Shop::find($prospect->shop_id);
+            } else {
+                abort(404, 'Prospect recipient not found');
+            }
         } else {
-            abort(404, 'Recipient not found');
+            // Default to customer lookup
+            $customerDispatchedEmail = DB::table('customer_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
+
+            if ($customerDispatchedEmail) {
+                $customer = Customer::find($customerDispatchedEmail->customer_id);
+                $shop = $customer->shop;
+            } else {
+                abort(404, 'Customer recipient not found');
+            }
         }
 
 
@@ -43,7 +56,12 @@ class RedirectUnsubscribe
         if ($baseUrl) {
             $safeId = urlencode(Crypt::encryptString($dispatchedEmail->id));
 
-            return Redirect::away($baseUrl.'/unsubscribe/'.$safeId);
+            $redirectUrl = $baseUrl . '/unsubscribe/' . $safeId;
+            if ($tag) {
+                $redirectUrl .= '?tag=' . $tag;
+            }
+
+            return Redirect::away($redirectUrl);
         }
 
         abort(404, 'Shop website not found');
@@ -54,6 +72,8 @@ class RedirectUnsubscribe
         $dispatchedEmailID = Crypt::decryptString($encryptedDispatchedEmailID);
         $dispatchedEmail   = DispatchedEmail::findOrFail($dispatchedEmailID);
 
-        return $this->handle($dispatchedEmail);
+        $tag = $request->get('tag');
+
+        return $this->handle($dispatchedEmail, $tag);
     }
 }

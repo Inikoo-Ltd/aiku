@@ -111,6 +111,17 @@ class SendEmailDeliveryChannel
             // Send redirect URL
             $unsubscribeUrl = route('grp.redirect_unsubscribe', $encryptedDispatchedEmailID);
 
+            // Add tag parameter based on recipient type
+            $tag = match ($recipient->recipient_type) {
+                'Customer' => 'customer',
+                'Prospect' => 'prospect',
+                default => null
+            };
+
+            if ($tag) {
+                $unsubscribeUrl .= '?tag=' . $tag;
+            }
+
             $subject = ($model instanceof EmailBulkRun) ? $model->outbox->emailOngoingRun->email->subject : $model->subject;
 
 

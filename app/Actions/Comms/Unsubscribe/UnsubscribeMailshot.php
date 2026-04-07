@@ -29,13 +29,30 @@ class UnsubscribeMailshot
 {
     use WithActionUpdate;
 
-    public function handle(DispatchedEmail $dispatchedEmail, ActionRequest $request): DispatchedEmail
+    public function handle(DispatchedEmail $dispatchedEmail, ActionRequest $request, ?string $tag = null): DispatchedEmail
     {
-        //  TODO: update later for prospect
-        /** @var Customer|Prospect $recipient */
-        $customerDispatchedEmail =  DB::table('customer_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
 
-        $recipient = Customer::find($customerDispatchedEmail->customer_id);
+        /** @var Customer|Prospect $recipient */
+        $recipient = null;
+
+        if ($tag === 'prospect') {
+            $prospectDispatchedEmail = DB::table('prospect_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
+
+            if ($prospectDispatchedEmail) {
+                $recipient = Prospect::find($prospectDispatchedEmail->prospect_id);
+            } else {
+                abort(404, 'Prospect recipient not found');
+            }
+        } else {
+            // Default to customer lookup
+            $customerDispatchedEmail = DB::table('customer_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
+
+            if ($customerDispatchedEmail) {
+                $recipient = Customer::find($customerDispatchedEmail->customer_id);
+            } else {
+                abort(404, 'Customer recipient not found');
+            }
+        }
 
         if ($recipient instanceof Prospect) {
             UpdateProspectEmailUnsubscribed::run($recipient, now());
@@ -114,17 +131,30 @@ class UnsubscribeMailshot
         $dispatchedEmailID = Crypt::decryptString($encryptedDispatchedEmailID);
         $dispatchedEmail   = DispatchedEmail::findOrFail($dispatchedEmailID);
 
-        return $this->handle($dispatchedEmail, $request);
+        $tag = $request->get('tag');
+
+        return $this->handle($dispatchedEmail, $request, $tag);
     }
 
-    public function jsonResponse(DispatchedEmail $dispatchedEmail): array
+    public function jsonResponse(DispatchedEmail $dispatchedEmail, ?string $tag = null): array
     {
-        $customerDispatchedEmail =  DB::table('customer_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
         $recipientName = '';
-        if ($customerDispatchedEmail) {
-            $customer = Customer::find($customerDispatchedEmail->customer_id);
-            $recipientName = $customer->contact_name;
+
+        if ($tag === 'prospect') {
+            $prospectDispatchedEmail = DB::table('prospect_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
+            if ($prospectDispatchedEmail) {
+                $prospect = Prospect::find($prospectDispatchedEmail->prospect_id);
+                $recipientName = $prospect->name;
+            }
+        } else {
+            // Default to customer lookup
+            $customerDispatchedEmail = DB::table('customer_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
+            if ($customerDispatchedEmail) {
+                $customer = Customer::find($customerDispatchedEmail->customer_id);
+                $recipientName = $customer->contact_name;
+            }
         }
+
         return [
             'api_response_status' => 200,
             'api_response_data'   => [
