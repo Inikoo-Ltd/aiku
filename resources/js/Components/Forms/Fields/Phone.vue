@@ -30,7 +30,7 @@ const isInitialInvalid = ref(false)
 
 onBeforeMount(() => {
     if (phone.value && !phone.value.startsWith('+')) {
-        phoneError.value = 'Invalid phone number format'
+        phoneError.value = trans('Invalid phone number format')
         isInitialInvalid.value = true
     }
 })
@@ -62,7 +62,7 @@ const onValidate = (data: any) => {
         return
     }
 
-    phoneError.value = data?.valid ? '' : 'Invalid phone number format'
+    phoneError.value = data?.valid ? '' : trans('Invalid phone number format')
 }
 
 watch(phone, (val) => {
