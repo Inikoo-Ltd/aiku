@@ -58,7 +58,7 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
             };
         }
 
-        foreach(WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes() as $code) {
+        foreach (WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes() as $code) {
             $this->deleteWebBlocksByCode($webpage, $code);
         }
 

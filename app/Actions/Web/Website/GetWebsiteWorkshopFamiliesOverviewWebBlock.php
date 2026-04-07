@@ -11,8 +11,6 @@ namespace App\Actions\Web\Website;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
-use App\Http\Resources\Catalogue\DepartmentWebsiteResource;
-use App\Http\Resources\Catalogue\SubDepartmentsResource;
 use App\Http\Resources\Catalogue\WebsiteDepartmentsResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Web\WebBlockType;
