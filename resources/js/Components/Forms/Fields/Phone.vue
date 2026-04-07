@@ -26,22 +26,18 @@ const phone = ref(props.form[props.fieldName] || '')
 const phoneError = ref('')
 
 const onValidate = (data: any) => {
-    if (!phone.value) {
+    if (!data?.number || data.number.length <= 4) {
         phoneError.value = ''
         return
     }
     
-    if (data?.number) {
-        phoneError.value = data.valid ? '' : 'Invalid phone number format'
-        return
-    }
+    
+        if (!data.valid) {
+            phoneError.value = 'Invalid phone number format'
+            return
+        }
 
     if (!phone.value.startsWith('+')) {
-        phoneError.value = 'Invalid phone number format'
-        return
-    }
-
-    if (!data.valid) {
         phoneError.value = 'Invalid phone number format'
         return
     }
