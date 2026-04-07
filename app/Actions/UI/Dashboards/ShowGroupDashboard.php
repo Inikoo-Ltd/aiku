@@ -115,7 +115,7 @@ class ShowGroupDashboard extends OrgAction
                 'title'              => __('Dashboard Group'),
                 'breadcrumbs'        => $this->getBreadcrumbs(__('Dashboard')),
                 'dashboard'          => $dashboard,
-                'stockHistoryGroup'  => app()->environment('local') ? $this->getGroupStockHistory($group) : null,
+                'stockHistoryGroup'  => $this->getGroupStockHistory($group),
             ]
         );
     }
