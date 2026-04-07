@@ -22,6 +22,7 @@ import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCommentDollar, faInfoCircle, faTags } from '@fal'
 import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOffers.vue'
+import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 library.add( faCommentDollar, faInfoCircle, faTags )
 
 
@@ -43,6 +44,25 @@ const props = defineProps<{
         organisation: string
         offercampaign: string
     }
+    tabsBox?: {
+        label: string
+        value: string | number
+        indicator?: boolean
+        tab_slug: string
+        type?: string // 'icon', 'date', 'number', 'currency'
+        align?: string
+        icon?: string | string[]
+        iconClass?: string
+        tooltip?: string
+        information?: {
+            label: string | number
+            type?: string // 'icon', 'date', 'number', 'currency'
+        }
+        visitRoute?: {
+            name: string
+            parameters: {}
+        }
+    }
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -51,7 +71,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         overview: CampaignOverview,
-        offers: TableOffers
+        offers: TableOffers,
+        history: TableHistories
     }
 
     return components[currentTab.value]
@@ -69,6 +90,6 @@ const component = computed(() => {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
+    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :tabsBox="tabsBox" />
 
 </template>
