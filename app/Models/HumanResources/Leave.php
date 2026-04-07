@@ -102,6 +102,16 @@ class Leave extends Model implements HasMedia
 
     public function canBeApprovedBy(User $user): bool
     {
+        $hasAllAcceptedAccess = LeaveApprover::byOrganisation($this->organisation)
+            ->active()
+            ->where('user_id', $user->id)
+            ->where('sequence_number', LeaveApprover::SEQUENCE_ALL_ACCEPTED)
+            ->exists();
+
+        if ($hasAllAcceptedAccess) {
+            return true;
+        }
+
         $currentLevel = $this->currentApprovalLevel();
 
         return LeaveApprover::byOrganisation($this->organisation)

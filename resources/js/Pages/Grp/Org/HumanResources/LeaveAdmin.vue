@@ -210,13 +210,30 @@ const closeRejectModal = () => {
 			</template>
 
 			<template #cell(status)="{ item: leave }">
-				<Tag :theme="getStatusTheme(leave.status)" size="xs" :label="leave.status">
-					<template #label>
-						<span class="capitalize">
-							{{ leave.status }}
-						</span>
-					</template>
-				</Tag>
+				<div class="flex flex-col items-start gap-1">
+					<Tag :theme="getStatusTheme(leave.status)" size="xs" :label="leave.status">
+						<template #label>
+							<span class="capitalize">
+								{{ leave.status }}
+							</span>
+						</template>
+					</Tag>
+					<div v-if="leave.approval_progress && leave.approval_progress.length > 1" class="flex gap-1 mt-0.5">
+						<div
+							v-for="step in leave.approval_progress"
+							:key="step.level"
+							v-tooltip="`${trans('Level')} ${step.level}: ${step.status === 'approved' ? trans('Approved by') + ' ' + step.approver_name : trans(step.status)}`"
+							class="h-2 w-2 rounded-full cursor-help"
+							:class="{
+								'bg-green-500': step.status === 'approved',
+								'bg-red-500': step.status === 'rejected',
+								'bg-yellow-400': step.status === 'pending',
+								'bg-gray-300': step.status === 'waiting',
+								'bg-gray-200': step.status === 'skipped'
+							}"
+						></div>
+					</div>
+				</div>
 			</template>
 
 			<template #cell(reason)="{ item: leave }">

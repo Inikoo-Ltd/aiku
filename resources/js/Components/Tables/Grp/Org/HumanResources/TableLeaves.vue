@@ -485,13 +485,59 @@ const submitEdit = () => {
 				</template>
 
 				<template #cell(status_label)="{ item: leave }">
-					<Tag :theme="getStatusTheme(leave.status)" size="xs" :label="leave.status">
-						<template #label>
-							<span class="capitalize">
-								{{ leave.status }}
-							</span>
-						</template>
-					</Tag>
+					<div class="flex flex-col items-start gap-1">
+						<div class="flex flex-wrap items-center gap-2">
+							<Tag
+								:theme="getStatusTheme(leave.status)"
+								size="xs"
+								:label="leave.status">
+								<template #label>
+									<span class="capitalize">
+										{{ leave.status }}
+									</span>
+								</template>
+							</Tag>
+						</div>
+						<div
+							v-if="leave.all_accepted_approval"
+							class="rounded-md border border-amber-200 bg-amber-50/70 px-2.5 py-1 text-xs text-amber-900">
+							{{
+								leave.all_accepted_approval.status === "rejected"
+									? trans("Rejected directly by :name", {
+											name:
+												leave.all_accepted_approval.approver_name ||
+												trans("approver"),
+										})
+									: trans("Approved directly by :name", {
+											name:
+												leave.all_accepted_approval.approver_name ||
+												trans("approver"),
+										})
+							}}
+						</div>
+						<div
+							v-if="
+								!leave.all_accepted_approval &&
+								leave.approval_progress &&
+								leave.approval_progress.length > 1
+							"
+							class="flex gap-1 mt-0.5">
+							<div
+								v-for="step in leave.approval_progress"
+								:key="step.level"
+								v-tooltip="
+									`${trans('Level')} ${step.level}: ${step.status === 'approved' ? trans('Approved by') + ' ' + step.approver_name : trans(step.status)}`
+								"
+								class="h-2 w-2 rounded-full cursor-help"
+								:class="{
+									'bg-green-500': step.status === 'approved',
+									'bg-red-500': step.status === 'rejected',
+									'bg-yellow-400': step.status === 'pending',
+									'bg-gray-300': step.status === 'waiting',
+									'bg-gray-200': step.status === 'skipped',
+								}"></div>
+						</div>
+					</div>
 				</template>
 
 				<template #cell(reason)="{ item: leave }">

@@ -24,18 +24,28 @@ const props = defineProps<{
 		label: string
 		email?: string | null
 		employee_id: number
+		organisation_id: number
 	}[]
+	organisationOptions: {
+		value: number
+		label: string
+	}[]
+	organisationId: number
 }>()
 
 const showCreateModal = ref(false)
 
 const form = useForm<{
 	user_id: number | null
+	organisation_id: number | null
+	organisation_ids: number[]
 	sequence_number: number
 	description: string | null
 	is_active: boolean
 }>({
 	user_id: null,
+	organisation_id: null,
+	organisation_ids: [],
 	sequence_number: 1,
 	description: null,
 	is_active: true,
@@ -44,6 +54,8 @@ const form = useForm<{
 const resetForm = () => {
 	form.reset()
 	form.clearErrors()
+	form.organisation_id = props.organisationId
+	form.organisation_ids = [props.organisationId]
 }
 
 const openModal = () => {
@@ -55,6 +67,27 @@ const closeModal = () => {
 	showCreateModal.value = false
 	resetForm()
 }
+
+const filteredEmployeeOptions = computed(() => {
+	if (!form.organisation_ids.length) {
+		return props.employeeOptions
+	}
+
+	return props.employeeOptions.filter((employee) =>
+		form.organisation_ids.includes(employee.organisation_id)
+	)
+})
+
+const isAllAcceptedSelected = computed(() => form.sequence_number === 0)
+
+const levelOptions = [
+	{ value: 0, label: trans("All Accepted"), hint: trans("Final approval immediately") },
+	{ value: 1, label: trans("Level 1"), hint: trans("First approval step") },
+	{ value: 2, label: trans("Level 2"), hint: trans("Second approval step") },
+	{ value: 3, label: trans("Level 3"), hint: trans("Third approval step") },
+	{ value: 4, label: trans("Level 4"), hint: trans("Fourth approval step") },
+	{ value: 5, label: trans("Level 5"), hint: trans("Fifth approval step") },
+]
 
 const submit = () => {
 	form.post(route("grp.org.hr.leave_approvers.store", route().params), {
@@ -83,8 +116,17 @@ const modalTitle = computed(() => trans("Create Leave Approver"))
 	</PageHeading>
 
 	<Table :resource="data" class="mt-5">
-		<template #cell(user_contact_name)="{ item }">
-			<span class="font-medium text-gray-900">{{ item.user_contact_name || "-" }}</span>
+		<template #cell(organisation_names)="{ item }">
+			<div class="max-w-xl">
+				<p
+					class="text-gray-600 text-sm leading-5 line-clamp-2"
+					v-tooltip="item.organisation_names">
+					{{ item.organisation_names || "-" }}
+				</p>
+				<p v-if="item.organisation_ids?.length" class="mt-1 text-xs text-gray-400">
+					{{ trans(":count organisations", { count: item.organisation_ids.length }) }}
+				</p>
+			</div>
 		</template>
 
 		<template #cell(user_email)="{ item }">
@@ -95,12 +137,17 @@ const modalTitle = computed(() => trans("Create Leave Approver"))
 			<span
 				class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
 				:class="{
+					'bg-amber-100 text-amber-800': item.sequence_number === 0,
 					'bg-indigo-100 text-indigo-800': item.sequence_number === 1,
 					'bg-blue-100 text-blue-800': item.sequence_number === 2,
 					'bg-green-100 text-green-800': item.sequence_number === 3,
 					'bg-purple-100 text-purple-800': item.sequence_number > 3,
 				}">
-				{{ trans("Level :level", { level: item.sequence_number }) }}
+				{{
+					item.sequence_number === 0
+						? trans("All Accepted")
+						: trans("Level :level", { level: item.sequence_number })
+				}}
 			</span>
 		</template>
 
@@ -122,10 +169,11 @@ const modalTitle = computed(() => trans("Create Leave Approver"))
 						parameters: {
 							...route().params,
 							leaveApprover: item.id,
+							leave_approver_ids: item.leave_approver_ids,
 						},
 					}"
 					:isFullLoading="false"
-					:title="trans('Are you sure you want to delete this leave approver?')"
+					:title="trans('Are you sure you want to delete this leave approver entry?')"
 					:noLabel="trans('Delete')"
 					noIcon="fal fa-trash">
 					<template #default="{ changeModel }">
@@ -148,6 +196,45 @@ const modalTitle = computed(() => trans("Create Leave Approver"))
 		</h2>
 
 		<form class="space-y-4" @submit.prevent="submit">
+			<!-- Organisation -->
+			<div>
+				<label class="block text-sm font-medium text-gray-700">
+					{{ trans("Organisations") }}
+				</label>
+				<PureMultiselect
+					v-model="form.organisation_ids"
+					:options="organisationOptions"
+					mode="multiple"
+					placeholder="Select organisations..."
+					:valueProp="'value'"
+					:label="'label'"
+					:required="true"
+					:searchable="true"
+					@update:modelValue="
+						() => {
+							form.errors.organisation_ids = null
+							form.organisation_id = form.organisation_ids[0] ?? null
+							if (
+								form.user_id &&
+								!filteredEmployeeOptions.some(
+									(employee) => employee.value === form.user_id
+								)
+							) {
+								form.user_id = null
+							}
+						}
+					">
+					<template #option="{ option }">
+						<div class="truncate">
+							{{ option.label }}
+						</div>
+					</template>
+				</PureMultiselect>
+				<div v-if="form.errors.organisation_ids" class="mt-1 text-sm text-red-600">
+					{{ form.errors.organisation_ids }}
+				</div>
+			</div>
+
 			<!-- User + Level -->
 			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 				<div>
@@ -156,7 +243,7 @@ const modalTitle = computed(() => trans("Create Leave Approver"))
 					</label>
 					<PureMultiselect
 						v-model="form.user_id"
-						:options="employeeOptions"
+						:options="filteredEmployeeOptions"
 						placeholder="Select employee..."
 						:valueProp="'value'"
 						:label="'label'"
@@ -193,12 +280,30 @@ const modalTitle = computed(() => trans("Create Leave Approver"))
 					<select
 						v-model.number="form.sequence_number"
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-indigo-500">
-						<option :value="1">{{ trans("Level 1") }}</option>
-						<option :value="2">{{ trans("Level 2") }}</option>
-						<option :value="3">{{ trans("Level 3") }}</option>
-						<option :value="4">{{ trans("Level 4") }}</option>
-						<option :value="5">{{ trans("Level 5") }}</option>
+						<option
+							v-for="level in levelOptions"
+							:key="level.value"
+							:value="level.value">
+							{{ level.label }}
+						</option>
 					</select>
+					<div
+						v-if="isAllAcceptedSelected"
+						class="mt-2 rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-white px-3 py-2 text-sm text-amber-900">
+						<div class="font-medium">{{ trans("All Accepted role enabled") }}</div>
+						<div class="mt-1 text-amber-800">
+							{{
+								trans(
+									"This user can approve or reject the leave immediately without waiting for Level 1 to Level 5."
+								)
+							}}
+						</div>
+					</div>
+					<div v-else class="mt-2 text-xs text-gray-500">
+						{{
+							levelOptions.find((level) => level.value === form.sequence_number)?.hint
+						}}
+					</div>
 					<div v-if="form.errors.sequence_number" class="mt-1 text-sm text-red-600">
 						{{ form.errors.sequence_number }}
 					</div>

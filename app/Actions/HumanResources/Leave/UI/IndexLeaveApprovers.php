@@ -33,18 +33,19 @@ class IndexLeaveApprovers extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->where('users.email', 'like', '%' . $value . '%')
-                    ->orWhere('users.contact_name', 'like', '%' . $value . '%');
+                    ->orWhere('users.contact_name', 'like', '%' . $value . '%')
+                    ->orWhere('organisations.name', 'like', '%' . $value . '%');
             });
         });
 
         $queryBuilder = QueryBuilder::for(LeaveApprover::class)
-            ->where('leave_approvers.organisation_id', $organisation->id)
-            ->leftJoin('users', 'leave_approvers.user_id', '=', 'users.id');
+            ->whereIn('leave_approvers.organisation_id', $organisation->group->organisations()->pluck('id'))
+            ->leftJoin('users', 'leave_approvers.user_id', '=', 'users.id')
+            ->leftJoin('organisations', 'leave_approvers.organisation_id', '=', 'organisations.id');
 
         return $queryBuilder
             ->defaultSort('leave_approvers.sequence_number')
             ->select([
-                'leave_approvers.id',
                 'leave_approvers.user_id',
                 'leave_approvers.sequence_number',
                 'leave_approvers.description',
@@ -52,10 +53,33 @@ class IndexLeaveApprovers extends OrgAction
                 'users.contact_name as user_contact_name',
                 'users.email as user_email',
             ])
-            ->allowedSorts(['sequence_number', 'is_active', 'user_contact_name'])
+            ->selectRaw('MIN(leave_approvers.id) as id')
+            ->selectRaw("string_agg(DISTINCT organisations.name, ', ' ORDER BY organisations.name) as organisation_names")
+            ->selectRaw("string_agg(DISTINCT leave_approvers.organisation_id::text, ',' ORDER BY leave_approvers.organisation_id::text) as organisation_ids")
+            ->selectRaw("string_agg(DISTINCT leave_approvers.id::text, ',' ORDER BY leave_approvers.id::text) as leave_approver_ids")
+            ->groupBy([
+                'leave_approvers.user_id',
+                'leave_approvers.sequence_number',
+                'leave_approvers.description',
+                'leave_approvers.is_active',
+                'users.contact_name',
+                'users.email',
+            ])
+            ->allowedSorts(['sequence_number', 'is_active', 'user_contact_name', 'user_email'])
             ->allowedFilters([$globalSearch, 'sequence_number', 'is_active'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+            ->withQueryString()
+            ->through(function ($item) {
+                $item->organisation_ids = $item->organisation_ids
+                    ? array_map('intval', explode(',', $item->organisation_ids))
+                    : [];
+
+                $item->leave_approver_ids = $item->leave_approver_ids
+                    ? array_map('intval', explode(',', $item->leave_approver_ids))
+                    : [];
+
+                return $item;
+            });
     }
 
     public function tableStructure(?string $prefix = null): Closure
@@ -69,9 +93,9 @@ class IndexLeaveApprovers extends OrgAction
 
             $table
                 ->withGlobalSearch()
+                ->column(key: 'organisation_names', label: __('Organisations'), canBeHidden: false)
                 ->column(key: 'user_contact_name', label: __('Approver'), canBeHidden: false, sortable: true)
                 ->column(key: 'user_email', label: __('Email'), canBeHidden: false, sortable: true)
-                ->column(key: 'organisation', label: __('Organisation'), canBeHidden: false, sortable: true)
                 ->column(key: 'sequence_number', label: __('Level'), canBeHidden: false, sortable: true)
                 ->column(key: 'description', label: __('Description'), canBeHidden: false, sortable: true)
                 ->column(key: 'is_active', label: __('Active'), canBeHidden: true, sortable: true)
@@ -82,19 +106,49 @@ class IndexLeaveApprovers extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $leaveApprovers, ActionRequest $request): Response
     {
+        $organisationIds = $this->parent->group->organisations()->pluck('id');
+
         $employeeOptions = Employee::query()
-            ->where('organisation_id', $this->parent->id)
-            ->whereNotNull('user_id')
-            ->orderByRaw('COALESCE(contact_name, alias) asc')
-            ->get(['id', 'user_id', 'contact_name', 'alias', 'email'])
-            ->map(fn (Employee $employee) => [
-                'value' => $employee->user_id,
-                'label' => $employee->contact_name ?: $employee->alias ?: __('Employee #:id', ['id' => $employee->id]),
-                'email' => $employee->email,
-                'employee_id' => $employee->id,
+            ->whereIn('employees.organisation_id', $organisationIds)
+            ->leftJoin('user_has_models as active_employee_users', function ($join) {
+                $join->on('active_employee_users.model_id', '=', 'employees.id')
+                    ->where('active_employee_users.model_type', '=', 'Employee')
+                    ->where('active_employee_users.status', '=', true);
+            })
+            ->leftJoin('organisations', 'organisations.id', '=', 'employees.organisation_id')
+            ->select([
+                'employees.id',
+                'employees.user_id',
+                'employees.contact_name',
+                'employees.alias',
+                'employees.email',
+                'employees.organisation_id',
+                'organisations.name as organisation_name',
+                'active_employee_users.user_id as active_user_id',
             ])
+            ->get()
+            ->map(function (Employee $employee) {
+                $userId = $employee->active_user_id ?: $employee->user_id;
+
+                return [
+                    'value' => $userId,
+                    'label' => ($employee->contact_name ?: $employee->alias ?: __('Employee #:id', ['id' => $employee->id])) . ' (' . $employee->organisation_name . ')',
+                    'email' => $employee->email,
+                    'employee_id' => $employee->id,
+                    'organisation_id' => $employee->organisation_id,
+                ];
+            })
+            ->filter(fn (array $employee) => !empty($employee['value']))
             ->unique('value')
             ->values();
+
+        $organisationOptions = $this->parent->group->organisations()
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (Organisation $org) => [
+                'value' => $org->id,
+                'label' => $org->name,
+            ]);
 
         return Inertia::render(
             'Org/HumanResources/LeaveApprovers',
@@ -120,6 +174,8 @@ class IndexLeaveApprovers extends OrgAction
                 ],
                 'data' => $leaveApprovers,
                 'employeeOptions' => $employeeOptions,
+                'organisationOptions' => $organisationOptions,
+                'organisationId' => $this->parent->id,
             ]
         )->table($this->tableStructure());
     }

@@ -33,6 +33,8 @@ class LeaveApprover extends Model
 {
     use InOrganisation;
 
+    public const SEQUENCE_ALL_ACCEPTED = 0;
+
     protected $casts = [
         'is_active' => 'boolean',
     ];

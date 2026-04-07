@@ -7,6 +7,7 @@ use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Http\Resources\HumanResources\LeaveResource;
 use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\LeaveApprovalRecord;
+use App\Models\HumanResources\LeaveApprover;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -23,7 +24,13 @@ class RejectLeave extends OrgAction
             abort(403, 'You are not authorized to reject this leave at this level.');
         }
 
-        $currentLevel = $leave->currentApprovalLevel();
+        $currentLevel = LeaveApprover::byOrganisation($leave->organisation)
+            ->active()
+            ->where('user_id', $user->id)
+            ->where('sequence_number', LeaveApprover::SEQUENCE_ALL_ACCEPTED)
+            ->exists()
+            ? LeaveApprover::SEQUENCE_ALL_ACCEPTED
+            : $leave->currentApprovalLevel();
 
         LeaveApprovalRecord::create([
             'leave_id' => $leave->id,

@@ -44,7 +44,7 @@ class IndexLeaves extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Leave::class)
             ->where('employee_id', $employee->id)
-            ->with(['media', 'leaveType'])
+            ->with(['media', 'leaveType', 'approvalRecords.approver'])
             ->allowedFilters([$globalSearch, $statusFilter, $typeFilter])
             ->allowedSorts(['start_date', 'end_date', 'duration_days', 'created_at'])
             ->defaultSort('-created_at');
