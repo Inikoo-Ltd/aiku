@@ -97,8 +97,12 @@ watch(phone, (val) => {
                 class="absolute left-0 text-xs"
                 :class="phoneError ? 'text-red-500 -bottom-5' : 'text-gray-400 -bottom-5'"
             >
-                <b>  {{ props.fieldData.value }}</b>             <FontAwesomeIcon icon="fas fa-exclamation-circle" class="h-3 w-3  ml-2 mr-1 text-red-500" aria-hidden="true"/>
-                <span v-if="phoneError"> {{ phoneError }}</span>
+                <template v-if="phoneError">
+                    <b>{{ props.fieldData.value }}</b>
+                    <FontAwesomeIcon icon="fas fa-exclamation-circle" class="h-3 w-3  ml-2 mr-1 text-red-500" aria-hidden="true"/>
+                    <span> {{ phoneError }}</span>
+                </template>
+            
             </p>
         </div>
 
