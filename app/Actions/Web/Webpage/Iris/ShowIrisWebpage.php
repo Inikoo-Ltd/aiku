@@ -239,11 +239,18 @@ class ShowIrisWebpage
         if ($path === null) {
             $webpageID = $website->storefront_id;
         } else {
-            $webpageID = DB::table('webpages')->where('website_id', $website->id)
+            $webpage = Webpage::where('website_id', $website->id)
                 ->where('url', strtolower($path))
-                ->where('state', '=', WebpageStateEnum::LIVE)
                 ->whereNull('deleted_at')
-                ->value('id');
+                ->first();
+
+            if ($webpage?->state === WebpageStateEnum::LIVE) {
+                $webpageID = $webpage->id;
+            } else if ($webpage?->state === WebpageStateEnum::CLOSED) {
+                $webpageID = $webpage->redirectWebpage->id;
+            } else {
+                $webpageID = null;
+            }
         }
 
 
