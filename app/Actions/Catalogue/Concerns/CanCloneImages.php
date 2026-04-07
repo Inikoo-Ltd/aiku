@@ -51,7 +51,7 @@ trait CanCloneImages
         $this->cloneImages($source, $product);
 
         $product->update([
-            'bucket_images'            => count($source->images) > 0,
+            'bucket_images'            => count($product->images) > 0 || !empty($product->video_url),
             'image_id'                 => $source->image_id,
             'front_image_id'           => $source->front_image_id,
             '34_image_id'              => $source->{'34_image_id'},
