@@ -8,7 +8,6 @@
 
 namespace App\Actions\Comms\SesNotification;
 
-use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateProspect;
 use App\Actions\Comms\EmailTrackingEvent\PostProcessingEmailTrackingEvent;
 use App\Actions\Comms\EmailTrackingEvent\StoreEmailTrackingEvent;
 use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateDispatchedEmails;
@@ -148,7 +147,6 @@ class ProcessSesNotification
 
         PostProcessingEmailTrackingEvent::dispatch($emailProcessingTrackingEvent);
         OutboxHydrateDispatchedEmails::dispatch($dispatchedEmail->outbox_id)->delay(5);
-        DispatchedEmailHydrateProspect::dispatch($dispatchedEmail->id)->delay(1);
 
         return null;
     }

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\EmailDeliveryChannel;
 
+use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateProspect;
 use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateCumulativeDispatchedEmails;
 use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateDispatchedEmails;
 use App\Actions\Comms\EmailBulkRun\UpdateEmailBulkRunSentState;
@@ -26,6 +27,7 @@ use App\Models\Comms\EmailBulkRunRecipient;
 use App\Models\Comms\EmailDeliveryChannel;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\MailshotRecipient;
+use App\Models\CRM\Prospect;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Crypt;
@@ -142,7 +144,7 @@ class SendEmailDeliveryChannel
             }
 
 
-            $this->sendEmailWithMergeTags(
+            $dispatchedEmail = $this->sendEmailWithMergeTags(
                 $dispatchedEmail,
                 $model->sender(),
                 $subject,
@@ -151,6 +153,10 @@ class SendEmailDeliveryChannel
                 additionalData: $additionalData,
                 senderName: $model->senderName()
             );
+
+            if ($recipient->recipient_type === class_basename(Prospect::class)) {
+                DispatchedEmailHydrateProspect::dispatch($dispatchedEmail->id)->delay(now()->addSeconds());
+            }
         }
 
 
