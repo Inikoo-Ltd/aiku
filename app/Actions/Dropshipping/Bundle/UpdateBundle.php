@@ -21,7 +21,6 @@ use App\Models\BundleItem;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;

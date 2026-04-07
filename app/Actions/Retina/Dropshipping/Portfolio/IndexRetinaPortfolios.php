@@ -18,7 +18,6 @@ use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Portfolio\CustomerSalesChannelPortfolioTabsEnum;
 use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
-use App\Http\Resources\Dropshipping\DropshippingBundlesResource;
 use App\Http\Resources\Dropshipping\DropshippingPortfoliosResource;
 use App\Http\Resources\Dropshipping\EbayOverseasWarehousePolicy;
 use App\Http\Resources\Dropshipping\PlatformPortfolioLogsResource;
@@ -91,7 +90,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 'products.is_for_sale',
             );
 
-        if($this->tab === CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value) {
+        if ($this->tab === CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value) {
             $query->where('portfolios.is_bundle', true);
         } else {
             $query->where('portfolios.is_bundle', false);

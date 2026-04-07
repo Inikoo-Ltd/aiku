@@ -123,7 +123,6 @@ class EditEmployee extends OrgAction
                         ['value' => EmployeeTypeEnum::INTERNSHIP->value, 'label' => __('Internship')],
                         ['value' => EmployeeTypeEnum::VOLUNTEER->value, 'label' => __('Volunteer')],
                         ['value' => EmployeeTypeEnum::TEMPORAL_WORKER->value, 'label' => __('Temporal Worker')],
-                        ['value' => EmployeeTypeEnum::FREELANCE->value, 'label' => __('Freelance')],
                     ],
                     'value' => $employee->type?->value ?? EmployeeTypeEnum::EMPLOYEE->value,
                 ],

@@ -134,8 +134,7 @@ class CloneProductsFromMaster
                     print "Skipping Product $masterProduct->code has discontinuing org stocks in shop $shop->slug \n";
                 }
             }
-        }
-        else{
+        } else {
             $product = $shop->products()->where('master_product_id', $masterProduct->id)->first();
             CloneProductParentsFromMaster::run($product);
         }

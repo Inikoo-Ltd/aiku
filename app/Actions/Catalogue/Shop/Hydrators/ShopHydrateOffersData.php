@@ -71,17 +71,17 @@ class ShopHydrateOffersData implements ShouldBeUnique
             $offer = Offer::where('offer_campaign_id', $fobCampaign->id)->where('status', true)->first();
             if ($offer) {
                 $minAmount = Arr::get($offer->trigger_data, 'min_amount');
-                $percentageOff=null;
+                $percentageOff = null;
                 foreach ($offer->offerAllowances as $allowance) {
-                    if($allowance->type==OfferAllowanceType::PERCENTAGE_OFF){
-                        $percentageOff=Arr::get($allowance->data,'percentage_off');
+                    if ($allowance->type == OfferAllowanceType::PERCENTAGE_OFF) {
+                        $percentageOff = Arr::get($allowance->data, 'percentage_off');
                     }
                 }
 
-                if($minAmount && $percentageOff) {
+                if ($minAmount && $percentageOff) {
                     data_set($offersData, 'fob.active', true);
                     data_set($offersData, 'fob.min_amount', $minAmount);
-                    data_set($offersData, 'fob.percentage_off', percentage($percentageOff,1));
+                    data_set($offersData, 'fob.percentage_off', percentage($percentageOff, 1));
                     data_set($offersData, 'fob.missined_offer_label', $offer->name.': '.__('Spend :amount more to qualify for :percentage_off off'));
 
                 }

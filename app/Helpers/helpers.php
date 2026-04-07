@@ -121,7 +121,6 @@ if (!function_exists('cleanUtf8')) {
 
         // If it’s already valid UTF-8, strip stray invalid sequences (rare edge cases)
         if (mb_detect_encoding($text, 'UTF-8', true) === 'UTF-8') {
-            //  $text = iconv('UTF-8', 'UTF-8//IGNORE', $text);
 
             if (class_exists(\Normalizer::class)) {
                 $text = \Normalizer::normalize($text, \Normalizer::FORM_C);
@@ -165,7 +164,7 @@ if (!function_exists('resolveTimezoneHeader')) {
 }
 
 if (!function_exists('percentage')) {
-    function percentage($quantity, $total, int|null $fixed = 1, ?string $errorMessage = null, $percentageSign = '%', $plusSing = false, $removeTailingZeros=true): string
+    function percentage($quantity, $total, int|null $fixed = 1, ?string $errorMessage = null, $percentageSign = '%', $plusSing = false, $removeTailingZeros = true): string
     {
         $locale_info = localeconv();
 
@@ -177,15 +176,15 @@ if (!function_exists('percentage')) {
                 $sign = '';
             }
 
-            $number=number_format(
+            $number = number_format(
                 ($quantity / $total) * 100,
                 $fixed,
                 $locale_info['decimal_point'],
                 $locale_info['thousands_sep']
             );
 
-            if($removeTailingZeros){
-                $number=trimDecimalZeros($number);
+            if ($removeTailingZeros) {
+                $number = trimDecimalZeros($number);
             }
 
             $per = $sign.$number.$percentageSign;
