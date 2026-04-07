@@ -55,6 +55,12 @@ export function useFilterRecipients(props: any) {
         by_interest: [],
         by_location: [],
         gold_reward_status: [],
+
+        // prospect
+        never_contacted: ['last_contacted_3_weeks_ago', 'sent_email_3_times'],
+        last_contacted_3_weeks_ago: ['never_contacted'],
+        sent_email_3_times: ['never_contacted'],
+
     }
 
     function hasConflict(newKey: string) {
@@ -392,7 +398,7 @@ export function useFilterRecipients(props: any) {
                 }
             }
         }
-        
+
         axios
             .patch(
                 route(props.recipientFilterRoute.name, props.recipientFilterRoute.parameters) as unknown as string,
@@ -452,7 +458,7 @@ export function useFilterRecipients(props: any) {
             if (data.city || data.formatted_address) {
                 v.location = data.city || data.formatted_address
             }
-            
+
             v.resolved = true
         } finally {
             v.loadingMap = false

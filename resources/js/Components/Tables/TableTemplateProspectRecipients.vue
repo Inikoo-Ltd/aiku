@@ -229,7 +229,7 @@ watch(
             <!-- center side -->
             <div class="flex items-center">
                 <span v-if="isAllCustomers" class="text-blue-600 font-medium">
-                    {{ trans("Audience: All Customers") }}
+                    {{ trans("Audience: All Prospects") }}
                 </span>
             </div>
             <!-- right side -->
