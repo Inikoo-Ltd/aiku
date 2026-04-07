@@ -22,12 +22,21 @@ if (props.options !== undefined && props.options.defaultCountry) {
     defaultCountry = props.options.defaultCountry
 }
 
-// const handleChange = (number, phoneObject) => {
-//     props.form.phone = phoneObject.number || ''
-//     // console.log(props.form.phone)
-// }
-
 const phone = ref(props.form[props.fieldName] || '')
+const phoneError = ref('')
+
+const onValidate = (data: any) => {
+   if (!data.number) {
+        phoneError.value = ''
+        return
+    }
+
+    if (!data.valid) {
+        phoneError.value = 'Invalid phone number format'
+        return
+    }
+    phoneError.value = ''
+}
 
 watch(phone, (val) => {
     props.form[props.fieldName] = val
@@ -36,24 +45,31 @@ watch(phone, (val) => {
 
 <template>
     <div class="relative rounded-md">
-    <!-- {{ phone }} --- {{ form.phone }} -->    
-        <VueTelInput
-            v-if="form && fieldName"
-            v-model="phone"
-            :styleClasses="[
-                form.errors[fieldName] ? 'errorShake' : '',
-                'ring-1 ring-gray-300 focus-within:shadow-none focus-within:ring-2 focus-within:ring-gray-500 rounded-md'
-            ]"
-            :inputOptions="{
-                showDialCode: true,
-                placeholder: fieldData.placeholder || trans('Enter a phone number'),
-                styleClasses: 'placeholder:text-gray-400 rounded-r-lg qwezxc focus:border-none focus:ring-0'
-            }"
-            mode="international"
-            :defaultCountry="defaultCountry"
-            :autoFormat="true"
-            :validCharactersOnly="true"
-        />
+    
+        <div class="relative">
+            <VueTelInput
+                v-if="form && fieldName"
+                v-model="phone"
+                @validate="onValidate"
+                :defaultCountry="defaultCountry"
+                :styleClasses="[
+                    form.errors[fieldName] ? 'errorShake' : '',
+                    'ring-1 ring-gray-300 focus-within:shadow-none focus-within:ring-2 focus-within:ring-gray-500 rounded-md'
+                ]"
+                :inputOptions="{
+                    showDialCode: true,
+                    placeholder: fieldData.placeholder || trans('Enter a phone number'),
+                    styleClasses: 'placeholder:text-gray-400 rounded-r-lg qwezxc focus:border-none focus:ring-0'
+                }"
+                mode="international"
+                :autoFormat="true"
+                :validCharactersOnly="true"
+            />
+            <p class="absolute left-0 text-xs text-gray-400"
+                :class="phoneError ? '-bottom-10' : '-bottom-5'">
+                Example: +44 7400 123456 (UK) <span v-if="phoneError" class="text-xs text-red-500">| {{ phoneError }} {{ props.fieldData.value }}</span>
+            </p>
+        </div>
 
         <div v-if="form.errors[fieldName] || form.recentlySuccessful " class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
             <FontAwesomeIcon icon="fas fa-exclamation-circle" v-if="form.errors[fieldName]" class="h-5 w-5 text-red-500" aria-hidden="true"/>
