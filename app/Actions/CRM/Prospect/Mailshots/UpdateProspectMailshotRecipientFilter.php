@@ -29,17 +29,24 @@ class UpdateProspectMailshotRecipientFilter extends OrgAction
         return [
             'recipients_recipe' => ['required', 'array'],
 
+            // by_all_prospects filter
+            'recipients_recipe.all_prospects' => ['sometimes', 'array'],
+            'recipients_recipe.all_prospects.value' => ['sometimes', 'boolean'],
+
             // never_contacted filter
             'recipients_recipe.never_contacted' => ['sometimes', 'array'],
-            'recipients_recipe.never_contacted.value' => ['sometimes', 'boolean'],
+            'recipients_recipe.never_contacted.value' => ['sometimes', 'array'],
+            'recipients_recipe.never_contacted.value.value' => ['sometimes', 'boolean'],
 
             // last_contacted_3_weeks_ago filter
             'recipients_recipe.last_contacted_3_weeks_ago' => ['sometimes', 'array'],
-            'recipients_recipe.last_contacted_3_weeks_ago.value' => ['sometimes', 'boolean'],
+            'recipients_recipe.last_contacted_3_weeks_ago.value' => ['sometimes', 'array'],
+            'recipients_recipe.last_contacted_3_weeks_ago.value.value' => ['sometimes', 'boolean'],
 
             // sent_email_3_times filter
             'recipients_recipe.sent_email_3_times' => ['sometimes', 'array'],
-            'recipients_recipe.sent_email_3_times.value' => ['sometimes', 'boolean'],
+            'recipients_recipe.sent_email_3_times.value' => ['sometimes', 'array'],
+            'recipients_recipe.sent_email_3_times.value.value' => ['sometimes', 'boolean'],
         ];
     }
 
