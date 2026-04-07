@@ -11,7 +11,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { VueTelInput } from 'vue-tel-input'
 import 'vue-tel-input/vue-tel-input.css'
-import { ref, watch } from 'vue'
+import { ref, watch, onBeforeMount  } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 library.add(faExclamationCircle, faCheckCircle)
 
@@ -22,26 +22,47 @@ if (props.options !== undefined && props.options.defaultCountry) {
     defaultCountry = props.options.defaultCountry
 }
 
+// const initialRaw = 'xxxxxx'
+
 const phone = ref(props.form[props.fieldName] || '')
 const phoneError = ref('')
+const isInitialInvalid = ref(false)
+
+onBeforeMount(() => {
+    if (phone.value && !phone.value.startsWith('+')) {
+        phoneError.value = 'Invalid phone number format'
+        isInitialInvalid.value = true
+    }
+})
 
 const onValidate = (data: any) => {
-    if (!data?.number || data.number.length <= 4) {
-        phoneError.value = ''
-        return
-    }
-    
-    
-        if (!data.valid) {
-            phoneError.value = 'Invalid phone number format'
+    const raw = phone.value?.trim()
+
+    if (isInitialInvalid.value) {
+        if (!raw || raw === '+62') {
             return
         }
 
-    if (!phone.value.startsWith('+')) {
-        phoneError.value = 'Invalid phone number format'
+        if (raw.startsWith('+') && raw.replace(/\D/g, '').length > 4) {
+            isInitialInvalid.value = false
+        } else {
+            return
+        }
+    }
+
+    if (!raw) {
+        phoneError.value = ''
         return
     }
-    phoneError.value = ''
+
+    const digits = raw.replace(/\D/g, '')
+
+    if (digits.length <= 4) {
+        phoneError.value = ''
+        return
+    }
+
+    phoneError.value = data?.valid ? '' : 'Invalid phone number format'
 }
 
 watch(phone, (val) => {
@@ -76,12 +97,9 @@ watch(phone, (val) => {
                 class="absolute left-0 text-xs"
                 :class="phoneError ? 'text-red-500 -bottom-10' : 'text-gray-400 -bottom-5'"
             >
-                <template v-if="phoneError">
-                    Example: +44 7400 123456 (UK) | {{ phoneError }} | {{ props.fieldData.value }}
-                </template>
-                <template v-else>
-                    Example: +44 7400 123456 (UK) | {{ props.fieldData.value }}
-                </template>
+                Example: +44 7400 123456 (UK)
+                <span v-if="phoneError"> | {{ phoneError }}</span>
+                | {{ props.fieldData.value }}
             </p>
         </div>
 
