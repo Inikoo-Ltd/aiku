@@ -19,34 +19,20 @@ use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetWebsiteWorkshopDepartment
+class GetWebsiteWorkshopSubDepartmentWebBlock
 {
     use AsObject;
 
-    public function handle(Website $website, $type = null): array
+    public function handle(Website $website): array
     {
-        if ($type == 'families_overview') {
-            $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::FAMILIES_OVERVIEW->value)->whereJsonContains('website_type', $website->shop->type)->get();
-        } else {
-            $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::SUB_DEPARTMENT->value)->whereJsonContains('website_type', $website->shop->type)->get();
-        }
-
-        // $webBlockTypes->each(function ($blockType) use ($website, $department) {
-        //     $data = $blockType->data ?? [];
-        //     $fieldValue = $data['fieldValue'] ?? [];
-        //     $fieldValue['settings'] = Arr::get($website->settings, 'catalogue_template.department');
-        //     $fieldValue['department'] = DepartmentWebsiteResource::make($department);
-        //     $fieldValue['sub_departments'] = SubDepartmentsResource::collection($department->children);
-        //     $data['fieldValue'] = $fieldValue;
-        //     $blockType->data = $data;
-        // });
+        $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::SUB_DEPARTMENT->value)->whereJsonContains('website_type', $website->shop->type)->get();
 
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
             'departments'   => WebsiteDepartmentsResource::collection($website->shop->departments()->where('state', ProductCategoryStateEnum::ACTIVE)),
-            'layout'    => Arr::get($website->unpublishedDepartmentSnapshot, 'layout.department', []),
+            'layout'    => Arr::get($website->unpublishedSubDepartmentSnapshot, 'layout.sub_department', []),
             'autosaveRoute' => [
-                'name'       => 'grp.models.website.autosave.department',
+                'name'       => 'grp.models.website.autosave.sub_department',
                 'parameters' => [
                     'website' => $website->id
                 ]

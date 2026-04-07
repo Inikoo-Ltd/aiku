@@ -36,8 +36,7 @@ class IndexBrands extends GrpAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('brands.reference', $value)
-                    ->orWhereAnyWordStartWith('brands.name', $value);
+                $query->whereAnyWordStartWith('brands.name', $value);
             });
         });
 
@@ -54,8 +53,9 @@ class IndexBrands extends GrpAction
                 'brands.slug',
                 'brands.name',
                 'brands.id',
+                'brands.number_trade_units',
             ])
-            ->allowedSorts(['name'])
+            ->allowedSorts(['name', 'number_trade_units'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -78,6 +78,7 @@ class IndexBrands extends GrpAction
                     'title' => __('No brands found'),
                 ])
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_trade_units', label: __('Trade Units'), canBeHidden: false, sortable: true, searchable: false)
                 ->column(key: 'actions', label: '', canBeHidden: false, align: 'right');
         };
     }

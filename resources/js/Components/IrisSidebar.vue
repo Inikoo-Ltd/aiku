@@ -21,7 +21,7 @@ const props = defineProps<{
 	customMenusBottom?: Array<any>
 	customMenusTop?: Array<any>
 	sidebarLogo: ImageTS
-	sidebar: {
+	sidebar?: {
 		data: {
 			fieldValue: {
 				sidebar_logo: ImageTS

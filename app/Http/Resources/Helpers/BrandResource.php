@@ -8,15 +8,17 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $slug
  * @property mixed $name
  * @property mixed $id
+ * @property mixed $number_trade_units
  */
 class BrandResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'slug'          => $this->slug,
-            'name'          => $this->name,
-            'id'            => $this->id,
+            'slug'               => $this->slug,
+            'name'               => $this->name,
+            'id'                 => $this->id,
+            'number_trade_units' => $this->number_trade_units,
         ];
     }
 }
