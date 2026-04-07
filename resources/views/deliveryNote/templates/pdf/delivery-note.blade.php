@@ -70,8 +70,8 @@
             <td>{{ $item->orgStock->code }}</td>
             <td>{{ $item->orgStock->name }} [Pack of {{$item->orgStock->packed_in}}]</td>
             <td>{{ number_format($item->quantity_required,0) }}</td>
-            <td></td>
-            <td></td>
+            <td>{{ number_format($item->quantity_picked ?? 0, 0) }}</td>
+            <td>{{ number_format($item->quantity_packed ?? 0, 0) }}</td>
         </tr>
         @endforeach
     </tbody>

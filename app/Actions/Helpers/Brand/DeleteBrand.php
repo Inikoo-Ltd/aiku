@@ -13,6 +13,8 @@ namespace App\Actions\Helpers\Brand;
 use App\Actions\OrgAction;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteBrand extends OrgAction
@@ -22,6 +24,18 @@ class DeleteBrand extends OrgAction
         $brand->tradeUnits()->detach();
         $brand->delete();
         return true;
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return Redirect::route('grp.trade_units.brands.index');
+    }
+
+    public function asController(Brand $brand, ActionRequest $request): bool
+    {
+        $this->initialisationFromGroup(group(), $request);
+
+        return $this->handle($brand);
     }
 
     public function inTradeUnit(TradeUnit $tradeUnit, Brand $brand, ActionRequest $request)

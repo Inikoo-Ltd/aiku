@@ -42,9 +42,10 @@ trait WithSendBulkEmails
         $html = $this->processStyles($html);
 
         // Remove MSO conditional comments temporarily
+        // 's' flag = dot matches newline, 'u' flag = UTF-8 safe
         $msoComments = [];
-        $html        = preg_replace_callback('/<!--\[if mso\]>.*?<!\[endif\]-->/s', function ($matches) use (&$msoComments) {
-            $placeholder               = '___MSO_COMMENT_'.count($msoComments).'___';
+        $html        = preg_replace_callback('/<!--\[if mso\]>.*?<!\[endif\]-->/su', function ($matches) use (&$msoComments) {
+            $placeholder               = '___MSO_COMMENT_' . count($msoComments) . '___';
             $msoComments[$placeholder] = $matches[0];
 
             return $placeholder;
@@ -62,17 +63,17 @@ trait WithSendBulkEmails
             return $mergeTagCache[$fullTag];
         };
 
-        $html = preg_replace_callback('/{{(.*?)}}/', $callback, $html);
-
-
-        $html = preg_replace_callback('/\[(.*?)]/', $callback, $html);
+        // 'u' flag ensures multi-byte UTF-8 characters are not corrupted
+        $html = preg_replace_callback('/{{(.*?)}}/u', $callback, $html);
+        $html = preg_replace_callback('/\[(.*?)]/u', $callback, $html);
 
         // Restore MSO conditional comments
         if ($msoComments) {
             $html = str_replace(array_keys($msoComments), array_values($msoComments), $html);
         }
 
-        $html = preg_replace('/\R+/', '', $html);
+        // 'u' flag ensures multi-byte UTF-8 characters are not corrupted
+        $html = preg_replace('/\R+/u', '', $html);
 
         return SendSesEmail::run(
             subject: $subject,

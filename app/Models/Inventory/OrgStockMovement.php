@@ -36,7 +36,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $location_id
  * @property string|null $operation_type
  * @property int|null $operation_id
- * @property numeric $quantity
+ * @property numeric|null $quantity
  * @property numeric $org_amount
  * @property numeric $grp_amount
  * @property array<array-key, mixed> $data
@@ -47,10 +47,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $source_id
  * @property string|null $fixed
  * @property numeric|null $audited_quantity
- * @property numeric|null $cost_per_sku
  * @property string|null $running_quantity running quantity on org_stock/location
  * @property string|null $running_quantity_org_stock running quantity on org_stock
  * @property bool|null $fixed_internal_helper
+ * @property numeric|null $cost_per_sku
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Inventory\Location|null $location
  * @property-read \App\Models\Inventory\OrgStock $orgStock

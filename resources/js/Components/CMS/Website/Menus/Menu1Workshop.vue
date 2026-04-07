@@ -49,7 +49,7 @@ const props = withDefaults(
                 properties: {}
             }
         };
-        screenType: "mobile" | "tablet" | "desktop";
+        screenType?: "mobile" | "tablet" | "desktop";
     }>(),
     {}
 );

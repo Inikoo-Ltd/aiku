@@ -181,10 +181,10 @@ class StoreTransaction extends OrgAction
         return $rules;
     }
 
-    
+
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
-        if($this->strict) {
+        if ($this->strict) {
             $exists = $this->order->itemTransactions()->where('model_id', $this->historicAsset->asset->model_id)->exists();
             if ($exists) {
                 $validator->errors()->add('quantity_ordered', 'An existing product under order already exists.');
@@ -198,8 +198,8 @@ class StoreTransaction extends OrgAction
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
 
-        $this->order=$order;
-        $this->historicAsset=$historicAsset;
+        $this->order = $order;
+        $this->historicAsset = $historicAsset;
 
         $this->initialisationFromShop($order->shop, $modelData);
 
@@ -208,8 +208,8 @@ class StoreTransaction extends OrgAction
 
     public function asController(Order $order, HistoricAsset $historicAsset, ActionRequest $request): void
     {
-        $this->order=$order;
-        $this->historicAsset=$historicAsset;
+        $this->order = $order;
+        $this->historicAsset = $historicAsset;
         $this->initialisationFromShop($order->shop, $request);
         $this->handle($order, $historicAsset, $this->validatedData);
     }

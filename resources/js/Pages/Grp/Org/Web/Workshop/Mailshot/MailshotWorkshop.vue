@@ -40,6 +40,7 @@ const props = defineProps<{
     updateRoute: routeType
     snapshot: routeType
     mergeTags: Array<any>
+    mergeContents: Array<any> | null
     status: string
     publishRoute: routeType
     sendTestRoute: routeType
@@ -80,13 +81,13 @@ const onSendPublish = async (data) => {
 
                 notify({
                     title: "Warning",
-                    text: "Email saved and published, but no unsubscribe link was found.",
+                    text: "Saved successfully, but no unsubscribe link was found.",
                     type: "warning",
                 });
             } else {
                 notify({
                     title: "Success",
-                    text: "Save and publish email successfully",
+                    text: "Saved successfully",
                     type: "success",
                 });
             }
@@ -166,8 +167,8 @@ const saveTemplate = async () => {
         .then((response) => {
             visibleSAveEmailTemplateModal.value = false
             notify({
-                title: trans('Success!'),
-                text: trans('Success to save template'),
+                title: trans('Success'),
+                text: trans('Saved successfully'),
                 type: 'success',
             })
         })
@@ -322,9 +323,9 @@ watch(
 
     <!-- beefree -->
     <Beetree v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
-        :snapshot="activeSnapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" @onSave="onSendPublish"
-        @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree"
-        @ready="isBeefreeReady = $event" />
+        :snapshot="activeSnapshot" :mergeTags="mergeTags" :mergeContents="mergeContents"
+        :organisationSlug="organisationSlug" @onSave="onSendPublish" @sendTest="openSendTest" @auto-save="autoSave"
+        @saveTemplate="onSaveTemplate" ref="_beefree" @ready="isBeefreeReady = $event" />
 
     <!-- unlayer -->
     <Unlayer v-else-if="builder == 'unlayer'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"

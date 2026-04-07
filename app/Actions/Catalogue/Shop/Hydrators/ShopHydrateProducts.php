@@ -32,6 +32,7 @@ class ShopHydrateProducts implements ShouldBeUnique
 
         $stats = [
             'number_products' => $shop->products()->where('is_main', true)->whereNull('exclusive_for_customer_id')->count(),
+            'number_products_with_rrp_violation'    => $shop->products()->where(fn ($query) => $query->where('rrp', 0)->orWhereNull('rrp'))->count(),
         ];
 
         $stats = array_merge(

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrganisationStockHistory\Hydrators;
 
+use App\Actions\Inventory\GroupStockHistory\Hydrators\GroupStockHistoryHydrateFromOrgStockHistories;
 use App\Models\Inventory\OrganisationStockHistory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +34,7 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
         }
 
         $stockData = DB::table('org_stock_histories')
+            ->selectRaw('sum(non_moving_1y*value_per_sku) as value_dormant_stock_1y')
             ->selectRaw('sum(org_stock_value) as org_stock_values')
             ->selectRaw('sum(grp_stock_value) as grp_stock_values')
             ->selectRaw('COUNT(DISTINCT org_stock_id) as number_org_stocks')
@@ -40,12 +42,40 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
             ->where('organisation_stock_history_id', $organisationStockHistory->id)
             ->first();
 
+        $stockNotSold = DB::table('org_stock_histories')
+            ->where('org_stock_histories.sold_within_1y', false)
+            ->where('organisation_stock_history_id', $organisationStockHistory->id)
+            ->count();
+
+        $stockLocationData = DB::table('location_org_stock_histories')
+            ->selectRaw('COUNT(DISTINCT location_id) as number_locations')
+            ->where('organisation_stock_history_id', $organisationStockHistory->id)
+            ->first();
+
+        $percentageOutOfStock = 0;
+        if ($stockData->number_org_stocks > 0) {
+            $percentageOutOfStock = round($stockData->number_out_of_stock_org_stocks / $stockData->number_org_stocks * 100, 2);
+        }
+
+        $percentageValueDormantStock1y = 0;
+        if ($stockData->org_stock_values > 0) {
+            $percentageValueDormantStock1y = round(($stockData->value_dormant_stock_1y ?? 0) / $stockData->org_stock_values * 100, 2);
+        }
+
         $organisationStockHistory->update([
-            'org_stock_value'                => $stockData->org_stock_values,
-            'grp_stock_value'                => $stockData->grp_stock_values,
-            'number_org_stocks'              => $stockData->number_org_stocks,
-            'number_out_of_stock_org_stocks' => $stockData->number_out_of_stock_org_stocks
+            'org_stock_value'                   => $stockData->org_stock_values ?? 0,
+            'grp_stock_value'                   => $stockData->grp_stock_values ?? 0,
+            'number_org_stocks'                 => $stockData->number_org_stocks,
+            'number_locations'                  => $stockLocationData->number_locations ?? 0,
+            'number_out_of_stock_org_stocks'    => $stockData->number_out_of_stock_org_stocks,
+            'percentage_out_of_stock'           => $percentageOutOfStock,
+            'number_org_stocks_not_sold_1y'     => $stockNotSold,
+            'percentage_value_dormant_stock_1y' => $percentageValueDormantStock1y,
+            'value_dormant_stock_1y'            => $stockData->value_dormant_stock_1y ?? 0,
         ]);
+
+        GroupStockHistoryHydrateFromOrgStockHistories::run($organisationStockHistory->group_stock_history_id);
+
     }
 
 

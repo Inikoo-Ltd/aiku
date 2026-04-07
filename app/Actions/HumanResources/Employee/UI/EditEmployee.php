@@ -16,6 +16,7 @@ use App\Actions\SysAdmin\User\GetUserGroupScopeJobPositionsData;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\EmergencyFormFieldsResource;
@@ -115,18 +116,26 @@ class EditEmployee extends OrgAction
 
                 'type' => [
                     'type' => 'select',
-                    'label' => __('Employment Type'),
+                    'label' => __('Worker Type'),
                     'required' => true,
                     'options' => [
                         ['value' => EmployeeTypeEnum::EMPLOYEE->value, 'label' => __('Employee')],
-                        ['value' => EmployeeTypeEnum::PARTTIME->value, 'label' => __('Part Time')],
-                        ['value' => EmployeeTypeEnum::FULLTIME->value, 'label' => __('Full Time')],
                         ['value' => EmployeeTypeEnum::INTERNSHIP->value, 'label' => __('Internship')],
                         ['value' => EmployeeTypeEnum::VOLUNTEER->value, 'label' => __('Volunteer')],
                         ['value' => EmployeeTypeEnum::TEMPORAL_WORKER->value, 'label' => __('Temporal Worker')],
-                        ['value' => EmployeeTypeEnum::FREELANCE->value, 'label' => __('Freelance')],
                     ],
                     'value' => $employee->type?->value ?? EmployeeTypeEnum::EMPLOYEE->value,
+                ],
+
+                'employment_type' => [
+                    'type' => 'select',
+                    'label' => __('Employment Type'),
+                    'required' => true,
+                    'options' => [
+                        ['value' => EmploymentTypeEnum::FULL_TIME->value, 'label' => __('Full Time')],
+                        ['value' => EmploymentTypeEnum::PART_TIME->value, 'label' => __('Part Time')],
+                    ],
+                    'value' => $employee->employment_type?->value ?? EmploymentTypeEnum::FULL_TIME->value,
                 ],
 
                 'probation_period_days' => [

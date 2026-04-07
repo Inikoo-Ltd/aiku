@@ -362,7 +362,7 @@ watch(
                     </template>
                     <template v-else-if="filter.config.options?.date_range">
                         <label class="block text-xs font-medium text-gray-500 mb-1">
-                            {{ trans('filter.config.options.date_range.label') }}
+                            {{ trans(filter.config.options.date_range.label) }}
                         </label>
 
                         <!-- PRESET SELECT (if exists) -->

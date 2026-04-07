@@ -3,10 +3,13 @@
 namespace App\Actions\HumanResources\ClockingMachine;
 
 use App\Actions\HumanResources\Clocking\StoreClocking;
-use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Enums\HumanResources\Clocking\ClockingActionEnum;
+use App\Enums\HumanResources\ClockingMachine\ClockingPolicyModeEnum;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\ClockingMachine;
+use App\Models\HumanResources\ClockingMachineCoordinatePolicy;
+use App\Models\HumanResources\ClockingMachineCoordinatePolicyRule;
 use App\Models\HumanResources\TimeTracker;
 use App\Models\HumanResources\WorkSchedule;
 use App\Notifications\LateClockInNotification;
@@ -52,7 +55,14 @@ class ValidateClockingMachineQrCode
                 throw new Exception(__('QR Code has expired. Please scan a new one.'));
             }
 
-            if (($config['allow_coordinates'] ?? false) && $userLat && $userLng) {
+            $employeeId = Auth::user()?->employees->first()?->id;
+            $effectiveMode = $this->resolveEffectivePolicyMode($clockingMachine, $employeeId, now());
+
+            if (($config['allow_coordinates'] ?? false) === true && $effectiveMode !== ClockingPolicyModeEnum::REMOTE->value) {
+                if ($userLat === null || $userLng === null) {
+                    throw new Exception(__('Location access is required to validate this QR code.'));
+                }
+
                 $this->validateCoordinates($config, $userLat, $userLng);
             }
 
@@ -75,7 +85,8 @@ class ValidateClockingMachineQrCode
                 'machine' => $clockingMachine,
                 'clocking' => $clockingResult['clocking'],
                 'action_type' => $clockingResult['action_type'],
-                'working_hours' => $workingHours
+                'working_hours' => $workingHours,
+                'effective_mode' => $effectiveMode,
             ];
 
         } catch (Exception $e) {
@@ -157,7 +168,7 @@ class ValidateClockingMachineQrCode
 
     private function calculateLate($employee, Carbon $clockedInAt, ?WorkSchedule $selectedSchedule = null): bool
     {
-        if ($employee->type === EmployeeTypeEnum::PARTTIME) {
+        if ($employee->employment_type === EmploymentTypeEnum::PART_TIME) {
             return false;
         }
 
@@ -217,13 +228,111 @@ class ValidateClockingMachineQrCode
             return;
         }
 
-        [$targetLat, $targetLng] = array_map('trim', explode(',', $targetCoords));
+        $parts = array_map('trim', explode(',', (string) $targetCoords));
+        if (count($parts) !== 2 || !is_numeric($parts[0]) || !is_numeric($parts[1])) {
+            throw new Exception(__('Clocking machine coordinate configuration is invalid.'));
+        }
+
+        [$targetLat, $targetLng] = $parts;
 
         $distance = $this->calculateDistance($userLat, $userLng, (float)$targetLat, (float)$targetLng);
 
         if ($distance > $radius) {
             throw new Exception(__('Device is too far from the designated clocking location.'));
         }
+    }
+
+    private function resolveEffectivePolicyMode(ClockingMachine $clockingMachine, ?int $employeeId, Carbon $now): string
+    {
+        $baseQuery = ClockingMachineCoordinatePolicy::query()
+            ->where('organisation_id', $clockingMachine->organisation_id)
+            ->where('is_active', true)
+            ->where(function ($query) use ($clockingMachine) {
+                $query->whereNull('clocking_machine_id')
+                    ->orWhere('clocking_machine_id', $clockingMachine->id);
+            })
+            ->where(function ($query) use ($now) {
+                $query->whereNull('start_at')->orWhere('start_at', '<=', $now);
+            })
+            ->where(function ($query) use ($now) {
+                $query->whereNull('end_at')->orWhere('end_at', '>=', $now);
+            })
+            ->with('rules');
+
+        $policy = null;
+
+        if ($employeeId) {
+            $policy = (clone $baseQuery)
+                ->where('scope_type', 'employee')
+                ->where('scope_id', $employeeId)
+                ->orderByDesc('start_at')
+                ->orderByDesc('id')
+                ->first();
+        }
+
+        if (!$policy) {
+            $policy = (clone $baseQuery)
+                ->where('scope_type', 'organisation')
+                ->where('scope_id', $clockingMachine->organisation_id)
+                ->orderByDesc('start_at')
+                ->orderByDesc('id')
+                ->first();
+        }
+
+        if (!$policy) {
+            return ClockingPolicyModeEnum::ONSITE->value;
+        }
+
+        $policyMode = (string) $policy->mode->value;
+        if ($policyMode !== ClockingPolicyModeEnum::HYBRID->value) {
+            return $policyMode;
+        }
+
+        $ruleMode = $this->resolveHybridRuleMode($policy, $now);
+        if ($ruleMode === null) {
+            return ClockingPolicyModeEnum::ONSITE->value;
+        }
+
+        return $ruleMode;
+    }
+
+    private function resolveHybridRuleMode(ClockingMachineCoordinatePolicy $policy, Carbon $now): ?string
+    {
+        $timezone = $policy->organisation?->timezone?->name ?? config('app.timezone');
+        $localNow = $now->copy()->setTimezone($timezone);
+        $todayIso = $localNow->dayOfWeekIso;
+
+        $rules = $policy->rules
+            ->filter(function (ClockingMachineCoordinatePolicyRule $rule) use ($todayIso, $localNow) {
+                if (!$rule->is_active) {
+                    return false;
+                }
+
+                if ($rule->day_of_week !== null && (int) $rule->day_of_week !== $todayIso) {
+                    return false;
+                }
+
+                if ($rule->start_at !== null && $rule->start_at->gt($localNow)) {
+                    return false;
+                }
+
+                if ($rule->end_at !== null && $rule->end_at->lt($localNow)) {
+                    return false;
+                }
+
+                return true;
+            })
+            ->sortByDesc(function (ClockingMachineCoordinatePolicyRule $rule) {
+                return $rule->day_of_week !== null ? 1 : 0;
+            })
+            ->sortByDesc('id')
+            ->values();
+
+        if ($rules->isEmpty()) {
+            return null;
+        }
+
+        return (string) $rules->first()->mode_override->value;
     }
 
     private function calculateDistance($lat1, $lon1, $lat2, $lon2)

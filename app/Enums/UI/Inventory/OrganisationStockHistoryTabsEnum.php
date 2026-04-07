@@ -18,7 +18,9 @@ enum OrganisationStockHistoryTabsEnum: string
 
     case ORG_STOCKS = 'org_stocks';
     case LOCATION_ORG_STOCKS = 'location_org_stocks';
-
+    case OUT_OF_STOCK = 'out_of_stock';
+    case DORMANT_STOCK_1Y = 'dormant_stock_1y';
+    case NOT_SOLD_1Y = 'not_sold_1y';
 
     public function blueprint(): array
     {
@@ -30,7 +32,19 @@ enum OrganisationStockHistoryTabsEnum: string
             OrganisationStockHistoryTabsEnum::LOCATION_ORG_STOCKS => [
                 'title' => __('Locations'),
                 'icon'  => 'fal fa-inventory',
-            ]
+            ],
+            OrganisationStockHistoryTabsEnum::OUT_OF_STOCK => [
+                'title' => __('Out of Stock'),
+                'icon'  => 'fal fa-empty-set',
+            ],
+            OrganisationStockHistoryTabsEnum::DORMANT_STOCK_1Y => [
+                'title' => __('Dormant 1Y'),
+                'icon'  => 'fal fa-skull-cow',
+            ],
+            OrganisationStockHistoryTabsEnum::NOT_SOLD_1Y => [
+                'title' => __('Not Sold 1Y'),
+                'icon'  => 'fal fa-ban',
+            ],
         };
     }
 }

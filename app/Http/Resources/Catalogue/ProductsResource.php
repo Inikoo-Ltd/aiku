@@ -13,6 +13,7 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
+use Carbon\Carbon;
 
 /**
  * @property string $slug
@@ -91,7 +92,7 @@ class ProductsResource extends JsonResource
             'code'                              => $this->code,
             'name'                              => $this->name,
             'state'                             => $state,
-            'created_at'                        => $this->created_at,
+            'created_at'                        => Carbon::parse($this->created_at)->toDateTimeString(),
             'updated_at'                        => $this->updated_at,
             'discontinued_at'                   => $this->discontinued_at,
             'shop_slug'                         => $this->shop_slug,

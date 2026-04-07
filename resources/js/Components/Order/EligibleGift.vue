@@ -151,9 +151,12 @@ const convertToFloat2 = (val: any) => {
                         <LoadingIcon v-else-if="isLoadingChanged === gift.id" class="" />
                         <FontAwesomeIcon v-else icon="fal fa-circle" class="" fixed-width aria-hidden="true" />
                     </span>
-                    <div class="w-14 aspect-square h-14 border border-gray-300">
-                        <Image :src="gift.web_images_main?.thumbnail" :alt="gift.name" class="object-contain w-full h-full" />
+                    
+                    <div class="w-14 aspect-square h-14 border border-gray-300 flex items-center justify-center bg-gray-100">
+                        <Image v-if="gift.web_images_main?.thumbnail" :src="gift.web_images_main?.thumbnail" :alt="gift.name" class="object-contain w-full h-full" />
+                        <FontAwesomeIcon v-else icon="fal fa-image" class="text-xl opacity-50" fixed-width aria-hidden="true" />
                     </div>
+
                     <label :for="gift.id.toString()" class="cursor-pointer">
                         <span class="font-bold text-sm">{{ gift.code }}</span>
                         <br />

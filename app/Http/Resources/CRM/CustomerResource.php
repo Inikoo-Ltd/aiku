@@ -108,12 +108,14 @@ class CustomerResource extends JsonResource
             'delivery_address_id' => $customer->delivery_address_id,
             'email'               => $customer->email,
             'phone'               => $customer->phone,
+            'contact_website'     => $customer->contact_website,
             'created_at'          => $customer->created_at,
             'balance'             => $customer->balance,
             'tax_number'          => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : [],
             'state'               => $customer->state,
             'status'              => $customer->status,
             'currency_code'       => $customer->shop?->currency?->code,
+            'eori'                => $customer->eori,
             'email_subscriptions' => [
                 'update_route'  => [
                     'method'     => 'patch',

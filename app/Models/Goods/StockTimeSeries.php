@@ -23,8 +23,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $number_records
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Goods\Stock $stock
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\StockTimeSeriesRecord> $records
+ * @property-read \App\Models\Goods\Stock $stock
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockTimeSeries newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockTimeSeries newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockTimeSeries query()

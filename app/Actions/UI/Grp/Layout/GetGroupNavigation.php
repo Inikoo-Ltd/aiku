@@ -115,6 +115,15 @@ class GetGroupNavigation
                             'parameters' => []
                         ]
                     ],
+                    [
+                        'label' => 'Brands',
+                        'icon'  => ['fal', 'fa-copyright'],
+                        'root'  => 'grp.trade_units.brands.',
+                        'route' => [
+                            'name'       => 'grp.trade_units.brands.index',
+                            'parameters' => []
+                        ]
+                    ],
                 ]
             ]
         ];

@@ -27,6 +27,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_models
  * @property int|null $image_id
  * @property int $group_id
+ * @property int $number_trade_units
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media

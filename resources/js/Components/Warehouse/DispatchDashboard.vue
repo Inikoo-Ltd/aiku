@@ -28,9 +28,15 @@ interface RouteTarget {
     parameters?: object
 }
 
+interface QueuedPrefix {
+    value: number
+    route_target?: RouteTarget
+}
+
 interface MetricData {
     value: number | null
     route_target?: RouteTarget
+    queued_prefix?: QueuedPrefix
 }
 
 interface MetricItem {
@@ -194,18 +200,23 @@ const isWeakValue = (value: number | null | undefined) => {
                         </div>
 
                         <template v-for="row in rows" :key="row.key + '-' + item.key">
-                            <component :is="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ? Link : 'div'"
-                                :href="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ?? undefined" :class="[
-                                    'h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0',
-                                    isWeakValue(data.data[row.key]?.[item.key]?.value)
-                                        ? 'opacity-40'
-                                        : '',
-                                    getSafeRoute(data.data[row.key]?.[item.key]?.route_target)
-                                        ? 'hover:underline cursor-pointer'
-                                        : ''
-                                ]">
-                                {{ data.data[row.key]?.[item.key]?.value ?? '-' }}
-                            </component>
+                            <div class="h-9 md:h-11 flex items-center justify-center gap-1 text-xs md:text-lg border-b border-gray-100 last:border-b-0">
+                                <component
+                                    v-if="data.data[row.key]?.[item.key]?.queued_prefix?.value"
+                                    :is="getSafeRoute(data.data[row.key]?.[item.key]?.queued_prefix?.route_target) ? Link : 'span'"
+                                    :href="getSafeRoute(data.data[row.key]?.[item.key]?.queued_prefix?.route_target) ?? undefined"
+                                    v-tooltip="'Queued: ' + data.data[row.key]?.[item.key]?.queued_prefix?.value"
+                                    class="opacity-80 hover:underline cursor-pointer tabular-nums"
+                                >{{ data.data[row.key]?.[item.key]?.queued_prefix?.value }}+</component>
+                                <component
+                                    :is="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ? Link : 'span'"
+                                    :href="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ?? undefined"
+                                    :class="[
+                                        isWeakValue(data.data[row.key]?.[item.key]?.value) ? 'opacity-40' : '',
+                                        getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
+                                    ]"
+                                >{{ data.data[row.key]?.[item.key]?.value ?? '-' }}</component>
+                            </div>
                         </template>
 
                         <component v-if="data?.dimension"

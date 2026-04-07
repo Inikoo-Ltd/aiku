@@ -8,6 +8,8 @@ use App\Http\Resources\HumanResources\LeaveResource;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\Leave;
+use App\Models\HumanResources\LeaveApprovalRecord;
+use App\Models\HumanResources\LeaveApprover;
 use App\Models\HumanResources\LeaveType;
 use App\Models\HumanResources\Timesheet;
 use App\Services\HumanResources\LeaveConcurrencyService;
@@ -97,6 +99,20 @@ class StoreLeave extends OrgAction
                     ])
                     ->toMediaCollection('attachments');
             }
+        }
+
+        $level1Approvers = LeaveApprover::byOrganisation($leave->organisation)
+            ->bySequence(1)
+            ->active()
+            ->get();
+
+        foreach ($level1Approvers as $approver) {
+            LeaveApprovalRecord::create([
+                'leave_id' => $leave->id,
+                'approver_id' => $approver->user_id,
+                'sequence_number' => 1,
+                'status' => 'pending',
+            ]);
         }
 
         return $leave;

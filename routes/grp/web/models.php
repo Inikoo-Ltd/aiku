@@ -382,6 +382,12 @@ use App\Actions\HumanResources\ClockingMachine\GenerateClockingMachineQrCode;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
 use App\Actions\Masters\MasterAsset\RepairMasterAssetTradeUnitsToChildren;
+use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\StoreClockingMachineCoordinatePolicy;
+use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\UpdateClockingMachineCoordinatePolicy;
+use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\DeleteClockingMachineCoordinatePolicy;
+use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\StoreClockingMachineCoordinatePolicyRule;
+use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\UpdateClockingMachineCoordinatePolicyRule;
+use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\DeleteClockingMachineCoordinatePolicyRule;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
@@ -412,6 +418,18 @@ Route::prefix('position/{jobPosition:id}')->name('job_position.')->group(functio
 Route::prefix('clocking-machine/{clockingMachine:id}')->name('clocking_machine..')->group(function () {
     Route::patch('', UpdateClockingMachine::class)->name('update');
     Route::delete('', DeleteClockingMachine::class)->name('delete');
+});
+
+Route::prefix('clocking-machine-coordinate-policy')->name('clocking-machine-coordinate-policy.')->group(function () {
+    Route::post('', StoreClockingMachineCoordinatePolicy::class)->name('store');
+    Route::patch('{policy:id}', UpdateClockingMachineCoordinatePolicy::class)->name('update');
+    Route::delete('{policy:id}', DeleteClockingMachineCoordinatePolicy::class)->name('delete');
+    Route::post('{policy:id}/rule', StoreClockingMachineCoordinatePolicyRule::class)->name('rule.store');
+});
+
+Route::prefix('clocking-machine-coordinate-policy-rule')->name('clocking-machine-coordinate-policy-rule.')->group(function () {
+    Route::patch('{policyRule:id}', UpdateClockingMachineCoordinatePolicyRule::class)->name('update');
+    Route::delete('{policyRule:id}', DeleteClockingMachineCoordinatePolicyRule::class)->name('delete');
 });
 
 Route::prefix('shipping-zone/{shippingZone:id}')->name('shipping_zone.')->group(function () {
@@ -876,6 +894,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::patch('autosave/department', [AutosaveWebsiteMarginal::class, 'department'])->name('autosave.department');
     Route::patch('autosave/sub_department', [AutosaveWebsiteMarginal::class, 'subDepartment'])->name('autosave.sub_department');
     Route::patch('autosave/family', [AutosaveWebsiteMarginal::class, 'family'])->name('autosave.family');
+    Route::patch('autosave/family_overview', [AutosaveWebsiteMarginal::class, 'familiesOverview'])->name('autosave.families_overview');
     Route::patch('autosave/product', [AutosaveWebsiteMarginal::class, 'product'])->name('autosave.product');
     Route::patch('autosave/products', [AutosaveWebsiteMarginal::class, 'products'])->name('autosave.products');
     Route::patch('autosave/collection', [AutosaveWebsiteMarginal::class, 'collection'])->name('autosave.collection');
@@ -885,6 +904,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('publish/department', [PublishWebsiteMarginal::class, 'department'])->name('publish.department');
     Route::post('publish/sub_department', [PublishWebsiteMarginal::class, 'subDepartment'])->name('publish.sub_department');
     Route::post('publish/family', [PublishWebsiteMarginal::class, 'family'])->name('publish.family');
+    Route::post('publish/family_overview', [PublishWebsiteMarginal::class, 'family'])->name('publish.family_overview');
     Route::post('publish/product', [PublishWebsiteMarginal::class, 'product'])->name('publish.product');
     Route::post('publish/products', [PublishWebsiteMarginal::class, 'products'])->name('publish.products');
     Route::post('publish/collection', [PublishWebsiteMarginal::class, 'collection'])->name('publish.collection');
@@ -1129,6 +1149,12 @@ Route::any('translate/{languageFrom}/{languageTo}', Translate::class)->name('tra
 
 Route::prefix('charge/{charge:id}')->name('charge.')->group(function () {
     Route::patch('update', UpdateCharge::class)->name('update');
+});
+
+Route::name('brand.')->prefix('brand')->group(function () {
+    Route::post('store', StoreBrand::class)->name('store')->withoutScopedBindings();
+    Route::patch('{brand:id}/update', UpdateBrand::class)->name('update')->withoutScopedBindings();
+    Route::delete('{brand:id}/delete', DeleteBrand::class)->name('delete')->withoutScopedBindings();
 });
 
 Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function () {
