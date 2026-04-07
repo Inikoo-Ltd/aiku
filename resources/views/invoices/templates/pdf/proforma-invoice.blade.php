@@ -247,7 +247,10 @@
                 <td style="text-align:left" colspan="2">{{ $transaction->historicAsset?->name }}</td>
             @else
                 <td style="text-align:left" colspan="2">
-                    {{ $transaction->historicAsset?->units . 'x' . $transaction->historicAsset?->name . '(' . $order->currency->symbol . $transaction->net_amount . ')' }}
+                    @if($transaction->historicAsset?->units > 1)
+                        {{ trimDecimalZeros($transaction->historicAsset?->units) . 'x' }}
+                    @endif
+                    {{ $transaction->historicAsset?->name . ' (' . $order->currency->symbol . $transaction->net_amount . ')' }}
                     <br>
                     @if($rrp)
                         RRP: {{ $transaction->model->rrp }} <br>
@@ -329,14 +332,6 @@
         <td>{{ $order->currency->symbol . $order->total_amount }}</td>
     </tr>
 
-    @php
-        $amountToDeduct = (float) ($order->amount_off ?? 0);
-
-        if ($amountToDeduct <= 0) {
-            $amountToDeduct = (float) ($order->payment_amount ?? 0);
-        }
-    @endphp
-
     @if($amountToDeduct > 0)
         <tr class="amount">
             <td style="border:none" colspan="4"></td>
@@ -350,7 +345,6 @@
             <td>{{ $order->currency->symbol . number_format((float) $order->total_amount - $amountToDeduct, 2, '.', '') }}</td>
         </tr>
     @endif
-
     </tbody>
 
 </table>

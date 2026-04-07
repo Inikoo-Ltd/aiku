@@ -47,7 +47,7 @@ class ReconnectRetinaCustomerSalesChannel extends RetinaAction
         };
     }
 
-    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): string
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): ?string
     {
         $this->initialisation($request);
 

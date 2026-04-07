@@ -2,7 +2,7 @@
 import { computed, defineAsyncComponent } from "vue"
 
 const props = defineProps<{
-    template : string
+    template?: string
     offers_data: {
         v: number
         o: {

@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Author: Nickel <nickel@gemini.com>
+ * Author: stewicca <stewicalf@gmail.com> <nickel@gemini.com>
  * Copyright (c) 2026, Nickel
  */
 

@@ -11,6 +11,7 @@ namespace App\Actions\Web\Website\Luigi;
 use App\Actions\OrgAction;
 use App\Actions\Web\Website\UpdateWebsite;
 use App\Models\Web\Website;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\ActionRequest;
 
 class ReindexWebsiteLuigiAsync extends OrgAction
@@ -20,6 +21,7 @@ class ReindexWebsiteLuigiAsync extends OrgAction
      */
     public function handle(Website $website): void
     {
+        Log::info("Running ReindexWebsiteLuigiAsync");
         ReindexWebsiteLuigi::dispatch($website);
 
         UpdateWebsite::run($website, [

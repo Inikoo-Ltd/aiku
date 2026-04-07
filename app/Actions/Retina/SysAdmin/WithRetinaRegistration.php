@@ -175,7 +175,7 @@ trait WithRetinaRegistration
                     ]
                 ),
             ],
-            'phone'           => ['required', 'max:255'],
+            'phone'           => [Arr::get($this->shop->settings, 'registration.require_phone_number', false) ? 'required' : 'nullable', 'max:255'],
             'tiktok_code'     => ['nullable', 'string', 'max:255'],
             'contact_address' => ['required', new ValidAddress()],
             'is_opt_in'       => ['required', 'boolean'],

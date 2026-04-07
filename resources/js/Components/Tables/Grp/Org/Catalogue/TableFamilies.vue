@@ -241,8 +241,8 @@ const getIntervalStateColor = (isPositive: boolean) => {
         @onSelectRow="(item) => (console.log('qqqq', item), emits('selectedRow', item))">
 
         <template #cell(image_thumbnail)="{ item: product }">
-            <div class="flex justify-center">
-                <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+            <div class="flex justify-center items-center w-8 aspect-square rounded-full overflow-hidden shadow">
+                <Image :src="product['image_thumbnail']" />
             </div>
         </template>
 

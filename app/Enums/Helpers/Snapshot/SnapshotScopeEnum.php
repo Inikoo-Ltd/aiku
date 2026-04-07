@@ -25,6 +25,7 @@ enum SnapshotScopeEnum: string
     case PRODUCT_TEMPLATE = 'product_template'; // for website web block
     case DEPARTMENT = 'department';
     case FAMILY = 'family';
+    case FAMILIES_OVERVIEW = 'families_overview';
     case SUB_DEPARTMENT = 'sub_department';
     case COLLECTION = 'collection';
     case PRODUCT = 'product';
@@ -33,21 +34,22 @@ enum SnapshotScopeEnum: string
     public static function labels(): array
     {
         return [
-            'webpage'          => __('Webpage'),
-            'header'           => __('Header'),
-            'footer'           => __('Footer'),
-            'menu'             => __('Menu'),
-            'sidebar'          => __('Sidebar'),
-            'theme'            => __('Theme'),
-            'banner'           => __('Banner'),
-            'email'            => __('Email'),
-            'product_template' => __('Product template'),
-            'department'       => __('Department'),
-            'family'           => __('Family'),
-            'sub_department'   => __('Sub Department'),
-            'collection'       => __('Collection'),
-            'product'          => __('Product'),
-            'products'          => __('Products'),
+            'webpage'               => __('Webpage'),
+            'header'                => __('Header'),
+            'footer'                => __('Footer'),
+            'menu'                  => __('Menu'),
+            'sidebar'               => __('Sidebar'),
+            'theme'                 => __('Theme'),
+            'banner'                => __('Banner'),
+            'email'                 => __('Email'),
+            'product_template'      => __('Product template'),
+            'department'            => __('Department'),
+            'family'                => __('Family'),
+            'families_overview'     => __('Families Overview'),
+            'sub_department'        => __('Sub Department'),
+            'collection'            => __('Collection'),
+            'product'               => __('Product'),
+            'products'              => __('Products'),
         ];
     }
 }

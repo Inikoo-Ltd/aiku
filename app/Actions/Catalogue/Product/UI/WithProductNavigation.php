@@ -107,6 +107,8 @@ trait WithProductNavigation
             'grp.org.shops.show.catalogue.products.orphan_products.edit',
             'grp.org.shops.show.catalogue.products.out_of_stock_products.show',
             'grp.org.shops.show.catalogue.products.out_of_stock_products.edit',
+            'grp.org.shops.show.catalogue.products.rrp_violation_products.show',
+            'grp.org.shops.show.catalogue.products.rrp_violation_products.edit',
             'grp.org.shops.show.catalogue.products.current_products.show',
             'grp.org.shops.show.catalogue.products.current_products.edit',
             'grp.org.shops.show.catalogue.products.in_process_products.show',

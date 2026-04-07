@@ -23,7 +23,7 @@ import ChangePickedBays from "@/Components/DeliveryNote/ChangePickedBays.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ManageTrolleysInDeliveryNote from "@/Components/DeliveryNote/ManageTrolleysInDeliveryNote.vue"
 import Select from 'primevue/select';
-import { faExchangeAlt, faLocation, faLock, faUnlock , faLockOpen} from "@far"
+import { faExchangeAlt, faLock , faLockOpen} from "@far"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
@@ -90,10 +90,6 @@ const props = defineProps<{
                 tracking: string
             }[]
         }[]
-		external_order: {
-			status: boolean
-			route_view_packing_slip: routeType
-		}
         platform?: {
             logo: string
             name: string
@@ -672,7 +668,6 @@ console.log(layout)
                         </dt>
                         <dd class="text-gray-500 w-full">
                             <ShipmentSection
-								:external_order="boxStats.external_order"
                                 :shipping_fields="boxStats.shipping_fields"
                                 :shipping_fields_update_route="boxStats.shipping_fields_update_route"
                                 :shipments="boxStats.shipments"

@@ -24,7 +24,6 @@ use App\Actions\Discounts\OfferCampaign\StoreDiscountShipping;
 use App\Actions\Discounts\OfferCampaign\StoreCustomerOffers;
 use App\Actions\Discounts\OfferCampaign\StoreGiftsOffers;
 use App\Actions\Discounts\OfferCampaign\StoreVoucherOffers;
-use App\Actions\Discounts\OfferCampaign\StoreCategoryOffers;
 use App\Actions\Discounts\OfferCampaign\StoreProductOffers;
 use App\Actions\Discounts\OfferCampaign\UI\IndexOrdersInOffer;
 use App\Actions\Discounts\OfferCampaign\UI\IndexCustomersInOffer;
@@ -92,10 +91,7 @@ Route::name("campaigns.")->prefix('campaigns')
             StoreGiftsOffers::class
         )->name('store_gift');
 
-        Route::post(
-            '{offerCampaign}/category',
-            StoreCategoryOffers::class
-        )->name('store_category');
+
 
         Route::post(
             '{offerCampaign}/product',

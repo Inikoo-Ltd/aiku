@@ -30,26 +30,24 @@ class RepairProductsHasLiveWebpage
     {
         $command->info('Repairing Products has_live_webpage');
 
-        $query = Product::all();
+        $query = Product::query();
 
         $total = (clone $query)->count();
 
-        ProgressBar::setFormatDefinition(
-            'aiku_eta',
-            ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
-        );
-        $bar = $command->getOutput()->createProgressBar($total);
-        $bar->setFormat('aiku_eta');
-        $bar->start();
+        $progressBar   = $command->getOutput()->createProgressBar($total);
+        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
+        $progressBar->start();
 
-        $query->chunk(200, function ($products) use ($bar) {
-            foreach ($products as $product) {
-                $this->handle($product);
-                $bar->advance();
-            }
-        });
+        $query
+            ->orderBy('id')
+            ->chunkById(1000, function ($products) use (&$progressBar) {
+                foreach ($products as $product) {
+                    $this->handle($product);
+                    $progressBar->advance();
+                }
+            });
 
-        $bar->finish();
+        $progressBar->finish();
         $command->newLine();
     }
 

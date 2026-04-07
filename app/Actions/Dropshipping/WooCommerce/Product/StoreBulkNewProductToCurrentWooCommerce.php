@@ -29,45 +29,14 @@ class StoreBulkNewProductToCurrentWooCommerce extends OrgAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): void
     {
-        /** @var WooCommerceUser $wooCommerceUser */
-        $wooCommerceUser = $customerSalesChannel->user;
-
         $portfolios = $customerSalesChannel
             ->portfolios()
             ->where('status', true)
             ->whereIn('id', Arr::get($attributes, 'portfolios'))
             ->get();
 
-        $totalNumber = count($portfolios);
-
-        // Use a unique key per job/session to avoid cross-request pollution
-        $cacheKey = 'upload_progress_' . $customerSalesChannel->id . '_' . uniqid();
-        Cache::put($cacheKey . '_success', 0, now()->addHour());
-        Cache::put($cacheKey . '_fail', 0, now()->addHour());
-
-        $needCheckConnection = false;
-        $result = $wooCommerceUser->checkConnection();
-        if (!$result) {
-            $needCheckConnection = true;
+        foreach ($portfolios->chunk(100) as $portfolioChunk) {
+            StoreBulkDispatchProductToCurrentWooCommerce::dispatch($customerSalesChannel->user, $portfolioChunk, count($portfolios));
         }
-
-        foreach ($portfolios as $portfolio) {
-            $portfolio = StoreNewProductToCurrentWooCommerce::run($customerSalesChannel->user, $portfolio, $needCheckConnection);
-
-            if ($portfolio->platform_status) {
-                Cache::increment($cacheKey . '_success');
-            } else {
-                Cache::increment($cacheKey . '_fail');
-            }
-
-            broadcast(new UploadProductToSalesChannelProgressEvent($customerSalesChannel, $portfolio, [
-                'total'   => $totalNumber,
-                'success' => Cache::get($cacheKey . '_success'),
-                'fail'    => Cache::get($cacheKey . '_fail'),
-            ]));
-        }
-
-        Cache::forget($cacheKey . '_success');
-        Cache::forget($cacheKey . '_fail');
     }
 }

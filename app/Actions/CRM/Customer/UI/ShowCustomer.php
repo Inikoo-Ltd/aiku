@@ -136,7 +136,7 @@ class ShowCustomer extends OrgAction
                         $shopMeta,
                         $webUsersMeta
                     ]),
-                    'actions'       => $customer->shop->type !== ShopTypeEnum::EXTERNAL ? [
+                    'actions'       => [
                         [
                             'key'     => 'edit_customer',
                             'type'    => 'button',
@@ -147,7 +147,7 @@ class ShowCustomer extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ],
-                    ] : null,
+                    ],
                     'subNavigation' => $subNavigation,
                 ],
                 'notes'            => $customer->shop->type !== ShopTypeEnum::EXTERNAL ? $this->getCustomerNotes($customer) : null,

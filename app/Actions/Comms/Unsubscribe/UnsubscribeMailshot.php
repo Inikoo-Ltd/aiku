@@ -43,10 +43,10 @@ class UnsubscribeMailshot
 
         if ($recipient instanceof Customer) {
 
-            $hasMasilhot = DB::table('mailshot_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
+            $hasMailshot = DB::table('mailshot_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
 
-            if ($hasMasilhot) {
-                $mailshot = Mailshot::find($hasMasilhot->mailshot_id);
+            if ($hasMailshot) {
+                $mailshot = Mailshot::find($hasMailshot->mailshot_id);
                 $modelData = match ($mailshot->type) {
                     MailshotTypeEnum::NEWSLETTER => [
                         'is_subscribed_to_newsletter' => false,
@@ -73,13 +73,7 @@ class UnsubscribeMailshot
                     OutboxCodeEnum::BASKET_LOW_STOCK => [
                         'is_subscribed_to_basket_low_stock' => false,
                     ],
-                    OutboxCodeEnum::REORDER_REMINDER => [
-                        'is_subscribed_to_reorder_reminder' => false,
-                    ],
-                    OutboxCodeEnum::REORDER_REMINDER_2ND => [
-                        'is_subscribed_to_reorder_reminder' => false,
-                    ],
-                    OutboxCodeEnum::REORDER_REMINDER_3RD => [
+                    OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD => [
                         'is_subscribed_to_reorder_reminder' => false,
                     ],
                     default => []
@@ -101,8 +95,6 @@ class UnsubscribeMailshot
 
         $eventData = [
             'type'            => EmailTrackingEventTypeEnum::UNSUBSCRIBED,
-            'group_id'        => $dispatchedEmail->outbox->group_id,
-            'organisation_id' => $dispatchedEmail->outbox->organisation_id,
             'data'            => [
                 'ipAddress' => $request->ip(),
                 'userAgent' => $request->userAgent()

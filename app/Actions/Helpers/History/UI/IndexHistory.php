@@ -51,7 +51,8 @@ class IndexHistory
 
         if ($eventScopeFilter !== null) {
             $queryBuilder
-                ->when(is_array($eventScopeFilter), 
+                ->when(
+                    is_array($eventScopeFilter),
                     fn ($query) => $query->whereIn('event', $eventScopeFilter),
                     fn ($query) => $query->where('event', $eventScopeFilter)
                 );
@@ -59,7 +60,8 @@ class IndexHistory
 
         if ($excludeEventScopeFilter !== null) {
             $queryBuilder
-                ->when(is_array($excludeEventScopeFilter), 
+                ->when(
+                    is_array($excludeEventScopeFilter),
                     fn ($query) => $query->whereNotIn('event', $excludeEventScopeFilter),
                     fn ($query) => $query->where('event', '!=', $excludeEventScopeFilter)
                 );

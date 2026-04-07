@@ -2,85 +2,109 @@
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
 import { InputNumber, RadioButton, DatePicker } from 'primevue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { trans } from 'laravel-vue-i18n'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
+import axios from 'axios'
+import {
+    faSpinner
+} from "@fas";
+library.add(
+    faSpinner
+);
 
 const props = defineProps<{
     shop_data: {
+        id: number
         slug: string
         currency_code: string
+        organisation: string
+        offercampaign: string
     }
+    product_category_id?: number
 }>()
 
 const isOpenModal = ref(false)
-
 const offerLabel = ref('')
 const typeOffer = ref('quantity')
 const offerQtyItems = ref<number | null>(null)
-const offerAmount = ref<number | null>(null)
+const offerAmount = ref<number | null>(0)
 const discountPercentage = ref<number | null>(null)
-const offerCategoryId = ref(null)
+const offerCategoryId = ref<number | null>(null)
 const isLoadingSubmit = ref(false)
 const dateType = ref<'permanent' | 'interval'>('permanent')
 const startDate = ref<Date | null>(null)
 const endDate = ref<Date | null>(null)
 
-function onOfferQtyInput(e: { value: string | number | undefined }) {
-    offerQtyItems.value = e.value == null ? null : Number(e.value)
-}
-
 const submitCategoryOffer = () => {
     // Section: Submit
-    router.post(
-        route('grp.org.shops.show.discounts.campaigns.store_category', {
-            organisation: 'sk',
-            shop: 'se',
-            offerCampaign: 'co-se',
+    isLoadingSubmit.value = true
+
+    axios.post(
+        route('grp.models.category_offer.store', {
+            shop: props.shop_data.id,
         }),
         {
             name: offerLabel.value,
             type: typeOffer.value,
-            offerCategoryId: offerCategoryId.value,
-            offer_qty_items: offerQtyItems.value,
-            offer_amount: offerAmount.value,
-            discount_percentage: discountPercentage.value,
-            date_type: dateType.value,
-            start_date: startDate.value,
-            end_date: endDate.value
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingSubmit.value = true
-            },
-            onSuccess: () => {
-                resetForm()
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
-                    type: "success"
-                })
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to submit the data, please try again"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSubmit.value = false
-            },
+            product_category_id: offerCategoryId.value || props.product_category_id,
+            trigger_data_item_quantity: offerQtyItems.value != null ? Math.floor(offerQtyItems.value) : null,
+            trigger_data_item_amount: offerAmount.value,
+            percentage_off: discountPercentage.value != null ? discountPercentage.value / 100 : null,
+            duration: dateType.value,
+            start_at: formatDate(startDate.value),
+            end_at: formatDate(endDate.value)
         }
     )
+    .then((response) => {
+        notify({
+            title: trans("Success"),
+            text: trans("Successfully submit the data"),
+            type: "success"
+        })
+        resetForm();
+        isOpenModal.value = false
+
+        if (!props.product_category_id) {
+            router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
+                organisation: props.shop_data.organisation,
+                shop: props.shop_data.slug,
+                offerCampaign: props.shop_data.offercampaign,
+                offer: response.data.slug
+            }))
+        }
+        router.reload()
+    })
+    .catch((error) => {
+        const errors = error.response?.data?.errors || {}
+        const errMsg = Object.values(errors).join('. ') || trans("Failed to submit the data, please try again");
+        notify({
+            title: trans("Something went wrong"),
+            text: errMsg,
+            type: "error"
+        })
+    })
+    .finally(() => {
+        isLoadingSubmit.value = false
+    })
+}
+const today = new Date(new Date().setHours(0, 0, 0, 0))
+
+function formatDate(date: Date | null) {
+    if (!date) return null
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
 }
 
 const resetForm = () => {
@@ -89,15 +113,14 @@ const resetForm = () => {
     discountPercentage.value = null
     offerQtyItems.value = null
     offerAmount.value = null
-    offerCategoryId.value = null
+    offerCategoryId.value = props.product_category_id ?? null
     dateType.value = 'permanent'
     startDate.value = null
     endDate.value = null
 }
 
 const isFormInvalid = computed(() => {
-
-    if (!offerCategoryId.value) return true
+    if (!offerCategoryId.value && !props.product_category_id) return true
 
     if (!offerLabel.value) return true
 
@@ -117,13 +140,30 @@ const isFormInvalid = computed(() => {
 
     return false
 })
+
+watch(typeOffer, (val) => {
+    if (val === 'quantity') {
+        offerAmount.value = null
+    } else if (val === 'amount') {
+        offerQtyItems.value = null
+    }
+})
+
+watch(dateType, (val) => {
+    if (val === 'permanent') {
+        endDate.value = null
+    }
+})
+
+resetForm();
+
 </script>
 
 <template>
     <div>
-        <Button :label="trans('Create Category Offer')" @click="isOpenModal = true" icon="fas fa-badge-percent" />
+        <Button :label="trans('Create Category Offer')" @click="isOpenModal = true; resetForm();" icon="fas fa-badge-percent" />
 
-        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
+        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false; resetForm();">
             <div class="p-1 space-y-3">
                 <h2 class="text-2xl font-bold mb-4 text-center">{{ trans('Create Category Offer') }}</h2>
 
@@ -139,7 +179,7 @@ const isFormInvalid = computed(() => {
 
                 </div>
 
-                <div class="space-y-2">
+                <div class="space-y-2" v-if="!product_category_id">
                     <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
 
@@ -162,8 +202,8 @@ const isFormInvalid = computed(() => {
                         {{ trans('Select offer type') }}:
                     </div>
 
-                    <div class="flex items-center xjustify-around gap-x-8">
-                        <div class="space-y-2">
+                    <div class="flex items-stretch gap-x-8">
+                        <div class="space-y-2 flex-1">
                             <div class="flex items-center gap-2">
                                 <RadioButton v-model="typeOffer" inputId="type-quantity" name="quantity"
                                     value="quantity" size="small" />
@@ -172,23 +212,26 @@ const isFormInvalid = computed(() => {
                                     <InformationIcon :information="trans('Total quantities of the items')" />
                                 </label>
                             </div>
-
-                            <InputNumber :modelValue="offerQtyItems" @input="onOfferQtyInput"
+                            <div class="min-h-[40px]">
+                            <InputNumber v-model="offerQtyItems" v-show="typeOffer === 'quantity'"  fluid
                                 inputId="offer_quantity_item" :placeholder="trans('Enter number')"
-                                :disabled="typeOffer !== 'quantity'" :min="0"
+                                :disabled="typeOffer !== 'quantity'" :min="0" class="w-full" inputClass="w-full"
                                 :suffix="' ' + ((offerQtyItems ?? 0) > 1 ? trans('items') : trans('item'))" />
+                            </div>
                         </div>
 
-                        <div class="space-y-2">
+                        <div class="space-y-2 flex-1">
                             <div class="flex items-center gap-2">
                                 <RadioButton v-model="typeOffer" inputId="type-amount" name="amount" value="amount"
                                     size="small" />
                                 <label for="type-amount" class="cursor-pointer">{{ trans('By minimum amount')
                                     }}</label>
                             </div>
-                            <InputNumber v-model="offerAmount" inputId="offer_amount" mode="currency"
+                            <div class="min-h-[40px]">
+                            <InputNumber v-show="typeOffer === 'amount'" v-model="offerAmount"   fluid inputId="offer_amount" mode="currency" inputClass="w-full" :placeholder="trans('Enter number')" 
                                 :currency="props.shop_data.currency_code" locale="en-US" class="w-full"
                                 :disabled="typeOffer !== 'amount'" />
+                                </div>
                         </div>
                     </div>
                 </div>
@@ -237,7 +280,7 @@ const isFormInvalid = computed(() => {
                                     :information="trans('If start date is empty, will start immediately')" />:
                             </label>
 
-                            <DatePicker v-model="startDate" showIcon dateFormat="yy-mm-dd" class="w-full"
+                            <DatePicker v-model="startDate" :minDate="today" showIcon dateFormat="yy-mm-dd" class="w-full"
                                 :placeholder="trans('Select start date')" />
                         </div>
 
@@ -250,7 +293,7 @@ const isFormInvalid = computed(() => {
                             </label>
 
                             <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"
-                                :minDate="startDate" :placeholder="trans('Select end date')" />
+                                :minDate="startDate || undefined" :placeholder="trans('Select end date')" />
                         </div>
                     </div>
 
@@ -259,9 +302,15 @@ const isFormInvalid = computed(() => {
 
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />
-                    <Button full icon="fad fa-save" :label="trans('Save')" @click="submitCategoryOffer"
-                        :isLoading="isLoadingSubmit" :disabled="isFormInvalid">
-                    </Button>
+
+                   <Button
+                        full
+                        icon="fad fa-save"
+                        :label="isLoadingSubmit ? trans('Loading') : trans('Save')"
+                        @click="submitCategoryOffer"
+                        :disabled="isFormInvalid || isLoadingSubmit"
+                        :loading="isLoadingSubmit"
+                    />
                 </div>
 
 

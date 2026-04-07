@@ -119,10 +119,16 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Media|null $favicon
  * @property-read Group $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
+ * @property-read Snapshot|null $liveCollectionSnapshot
+ * @property-read Snapshot|null $liveDepartmentSnapshot
  * @property-read Snapshot|null $liveFamiliesOverviewSnapshot
  * @property-read Snapshot|null $liveFamilySnapshot
+ * @property-read Snapshot|null $liveFooterSnapshot
+ * @property-read Snapshot|null $liveHeaderSnapshot
+ * @property-read Snapshot|null $liveMenuSnapshot
  * @property-read Snapshot|null $liveProductSnapshot
  * @property-read Snapshot|null $liveProductsSnapshot
+ * @property-read Snapshot|null $liveSidebarSnapshot
  * @property-read Snapshot|null $liveSnapshot
  * @property-read Snapshot|null $liveSubDepartmentSnapshot
  * @property-read Collection<int, \App\Models\Web\WebsiteLlmsTxt> $llmsTxt

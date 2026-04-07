@@ -19,6 +19,7 @@ class HydrateOfferCampaigns
     use WithHydrateCommand;
 
     public string $commandSignature = 'hydrate:offer_campaigns {organisations?*} {--s|slugs=}';
+    public int $jobTries = 1;
 
     public function __construct()
     {

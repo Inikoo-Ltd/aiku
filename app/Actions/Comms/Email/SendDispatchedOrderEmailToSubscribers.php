@@ -37,6 +37,18 @@ class SendDispatchedOrderEmailToSubscribers extends OrgAction
 
         $customer = $order->customer;
         $deliveryNote = $order->deliveryNotes->first();
+        $invoice = $order->invoices?->first() ?? null;
+        $invoiceLink = '#';
+        $invoiceReference = '';
+
+        if ($invoice) {
+            $invoiceLink = route('grp.org.accounting.invoices.show', [
+                $order->organisation->slug,
+                $invoice->slug
+            ]);
+
+            $invoiceReference = $invoice->reference;
+        }
 
         $this->sendOutboxEmailToSubscribers(
             $outbox,
@@ -55,11 +67,8 @@ class SendDispatchedOrderEmailToSubscribers extends OrgAction
                     $order->shop->slug,
                     $customer->slug
                 ]),
-                'invoice_link' => route('grp.org.accounting.invoices.show', [
-                    $order->organisation->slug,
-                    $order->invoices->first()->slug
-                ]),
-                'invoice_reference' => $order->invoices->first()->reference,
+                'invoice_link' => $invoiceLink,
+                'invoice_reference' => $invoiceReference,
                 'delivery_note_reference' => $deliveryNote->reference,
                 'delivery_note_link' => route('grp.org.shops.show.crm.customers.show.orders.show.delivery-note.show', [
                     $order->organisation->slug,

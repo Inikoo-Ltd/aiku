@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, reactive, ref } from "vue"
+import { computed, inject, reactive, ref } from "vue"
 import axios from "axios"
 import { Textarea, InputText } from "primevue"
 import Button from "../Elements/Buttons/Button.vue"
@@ -10,6 +10,7 @@ import { trans } from "laravel-vue-i18n"
 const props = defineProps({
     isOnline: Boolean,
     hours: Object,
+    offlineInfo: Object,
     session: {
         type: Object as () => any,
         default: null,
@@ -32,6 +33,14 @@ const form = reactive({
 })
 
 const error = ref<string | null>(null)
+const hasWorkingHours = computed(() => Boolean(props.hours?.start && props.hours?.end))
+const nextOpening = computed(() => props.offlineInfo?.next_opening ?? null)
+const showNextOpening = computed(() =>
+    props.offlineInfo?.reason === "non_working_day"
+    && Boolean(nextOpening.value?.day_name)
+    && Boolean(nextOpening.value?.start)
+    && Boolean(nextOpening.value?.end)
+)
 
 const submitOffline = async () => {
     loading.value = true
@@ -76,9 +85,19 @@ const submitOffline = async () => {
             <p class="text-sm text-gray-600">
                 {{ ctrans("Sorry, we aren't online at the moment.") }}
             </p>
-            <p class="text-sm text-gray-600">
+            <p v-if="showNextOpening" class="text-sm text-gray-600">
+                {{ ctrans("Today is not a working day.") }}
+                {{ ctrans("You can chat with us again on") }}
+                <strong>{{ nextOpening?.day_name }}</strong>
+                {{ ctrans("at") }}
+                <strong>{{ nextOpening?.start }} - {{ nextOpening?.end }}</strong>.
+            </p>
+            <p v-else-if="hasWorkingHours" class="text-sm text-gray-600">
                 {{ ctrans("Our working hours are") }}
                 <strong>{{ props.hours?.start }} - {{ props.hours?.end }}</strong>.
+            </p>
+            <p v-else class="text-sm text-gray-600">
+                {{ ctrans("Our team is currently offline.") }}
             </p>
             <p class="text-sm text-gray-500 mt-1">
                 {{ ctrans("Leave a message and we'll get back to you") }}

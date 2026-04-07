@@ -32,7 +32,10 @@ class RedoPlatformTimeSeries implements ShouldBeUnique
 
     public function getJobUniqueId(?int $platformId, ?string $from, ?string $to): string
     {
-        return $platformId ?? 'empty'.'_'.$from.'_'.$to;
+        if ($platformId === null) {
+            return 'empty'.'_'.$from.'_'.$to;
+        }
+        return $platformId.'_'.$from.'_'.$to;
     }
 
     public function handle(?int $platformId, ?string $from = null, ?string $to = null, bool $async = false): void

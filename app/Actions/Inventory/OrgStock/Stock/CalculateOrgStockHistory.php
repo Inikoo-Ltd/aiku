@@ -62,7 +62,7 @@ class CalculateOrgStockHistory implements ShouldBeUnique
         $days = (int)$from->diffInDays($to) + 1;
         $command?->info('Calculating '.$orgStock->slug.' ('.$orgStock->id.') from '.$from->format('Y-m-d').' to '.$to->format('Y-m-d').' ('.$days.' days)');
         foreach (Carbon::parse($from)->daysUntil($to) as $date) {
-            SetOrgStockStockHistories::run($orgStock, $date, $command);
+            CalculateOrgStockHistoricStockHistories::run($orgStock, $date, $command);
         }
     }
 

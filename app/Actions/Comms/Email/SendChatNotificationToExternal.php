@@ -11,6 +11,7 @@ namespace App\Actions\Comms\Email;
 use App\Actions\Comms\Traits\WithSendChatOutboxEmail;
 use App\Actions\OrgAction;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Models\Comms\ChatEmailRecipient;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Catalogue\Shop;
@@ -26,6 +27,14 @@ class SendChatNotificationToExternal extends OrgAction
     {
         /** @var Outbox $outbox */
         $outbox = $shop->outboxes()->where('code', OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER->value)->first();
+
+        if (!$outbox) {
+            return null;
+        }
+
+        if ($outbox->state != OutboxStateEnum::ACTIVE) {
+            return null;
+        }
 
         return $this->sendOutboxEmailToChatRecipient($chatEmailRecipient, $outbox, $additionalData);
     }

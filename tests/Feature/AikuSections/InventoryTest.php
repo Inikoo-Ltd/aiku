@@ -47,7 +47,6 @@ use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Inventory\OrgStock\LostAndFoundOrgStockStateEnum;
 use App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum;
 use App\Enums\UI\Inventory\LocationTabsEnum;
-use App\Enums\UI\Inventory\OrgStockFamilyTabsEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;

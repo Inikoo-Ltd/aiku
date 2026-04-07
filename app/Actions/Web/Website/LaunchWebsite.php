@@ -16,6 +16,7 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Catalogue\Shop;
+use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Exception;
 use Illuminate\Console\Command;
@@ -36,6 +37,7 @@ class LaunchWebsite extends OrgAction
         PublishWebsiteMarginal::run($website, 'header', ['layout' => $website->unpublishedHeaderSnapshot->layout]);
         PublishWebsiteMarginal::run($website, 'footer', ['layout' => $website->unpublishedFooterSnapshot->layout]);
 
+        /** @var Webpage $webpage */
         foreach ($website->webpages()->where('state', WebpageStateEnum::READY)->get() as $webpage) {
             PublishWebpage::run($webpage, ['layout' => $webpage->unpublishedSnapshot->layout]);
         }

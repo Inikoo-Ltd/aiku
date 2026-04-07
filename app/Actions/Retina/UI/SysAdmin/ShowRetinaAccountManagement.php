@@ -38,10 +38,9 @@ class ShowRetinaAccountManagement extends RetinaAction
 
     public function handle(ActionRequest $request): Response
     {
-
         $customer = $request->user()->customer;
-        $spain = \App\Models\Helpers\Country::where('code', 'ES')->first();
-        $isEu = false;
+        $spain    = \App\Models\Helpers\Country::where('code', 'ES')->first();
+        $isEu     = false;
         // To ensure VAT info only shows on EU shop
         if ($this->organisation->country) {
             $isEu = $this->organisation->country->continent == 'EU';
@@ -55,35 +54,35 @@ class ShowRetinaAccountManagement extends RetinaAction
                 'pageHead'    => [
                     'title' => __('Account management'),
                 ],
-                "formData" => [
+                "formData"    => [
                     "blueprint" =>
-                    [
                         [
-                            'title'  => __('Contact Information'),
-                            'label'  => __('Contact'),
-                            'icon'    => 'fa-light fa-address-book',
-                            'fields' => [
-                                    'contact_name' => [
+                            [
+                                'title'  => __('Contact Information'),
+                                'label'  => __('Contact'),
+                                'icon'   => 'fa-light fa-address-book',
+                                'fields' => [
+                                    'contact_name'     => [
                                         'type'  => 'input',
                                         'label' => __('Contact Name'),
                                         'value' => $customer->contact_name
                                     ],
-                                    'company_name' => [
+                                    'company_name'     => [
                                         'type'  => 'input',
                                         'label' => __('Company'),
                                         'value' => $customer->company_name
                                     ],
-                                    'email' => [
+                                    'email'            => [
                                         'type'  => 'input',
                                         'label' => __('Email'),
                                         'value' => $customer->email
                                     ],
-                                    'phone'        => [
+                                    'phone'            => [
                                         'type'  => 'phone',
                                         'label' => __('Phone'),
                                         'value' => $customer->phone
                                     ],
-                                    'contact_address' => [
+                                    'contact_address'  => [
                                         'type'    => 'address',
                                         'label'   => __('Billing Address'),
                                         'value'   => AddressFormFieldsResource::make($customer->address)->getArray(),
@@ -91,32 +90,37 @@ class ShowRetinaAccountManagement extends RetinaAction
                                             'countriesAddressData' => GetAddressData::run()
                                         ]
                                     ],
-                                    'delivery_address'         => [
-                                        'hidden' => $customer->shop->type == ShopTypeEnum::DROPSHIPPING,
-                                        'type'    => 'delivery_address',
-                                        'label'   => __('Delivery Address'),
-                                        'noSaveButton'  => true,
-                                        'options' => [
-                                            'same_as_contact' => [
-                                                'label'         => __('Same as contact address'),
-                                                'key_payload'   => 'delivery_address_id',
-                                                'payload'       => $customer->address_id
+                                    'delivery_address' => [
+                                        'hidden'       => $customer->shop->type == ShopTypeEnum::DROPSHIPPING,
+                                        'type'         => 'delivery_address',
+                                        'label'        => __('Delivery Address'),
+                                        'noSaveButton' => true,
+                                        'options'      => [
+                                            'same_as_contact'      => [
+                                                'label'       => __('Same as contact address'),
+                                                'key_payload' => 'delivery_address_id',
+                                                'payload'     => $customer->address_id
                                             ],
-                                            'countriesAddressData'    => GetAddressData::run()
+                                            'countriesAddressData' => GetAddressData::run()
                                         ],
-                                        'value'   => [
-                                            'is_same_as_contact'    => $customer->delivery_address_id == $customer->address_id,
-                                            'address'               => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray()
+                                        'value'        => [
+                                            'is_same_as_contact' => $customer->delivery_address_id == $customer->address_id,
+                                            'address'            => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray()
                                         ],
                                     ],
-                                    'tax_number'      => [
-                                        'type'    => 'tax_number',
-                                        'label'   => __('Tax number'),
-                                        'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
-                                        'country' => $customer->address->country_code,
+                                    'eori'             => [
+                                        'type'  => 'input',
+                                        'label' => 'EORI',
+                                        'value' => $customer->eori,
+                                    ],
+                                    'tax_number'       => [
+                                        'type'          => 'tax_number',
+                                        'label'         => __('Tax number'),
+                                        'value'         => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
+                                        'country'       => $customer->address->country_code,
                                         'europeanUnion' => $isEu ? implode(', ', IsEuropeanUnion::getEUCountryCodes()) : '',
                                     ],
-                                    'is_re'           => [
+                                    'is_re'            => [
                                         'type'   => 'toggle',
                                         'hidden' => $this->organisation->country_id != $spain->id || $customer->address->country_id != $spain->id,
                                         'label'  => 'Recargo de equivalencia',
@@ -124,60 +128,60 @@ class ShowRetinaAccountManagement extends RetinaAction
 
                                     ]
                                 ]
-                        ],
-                        [
-                            'title'  => __('Order Management'),
-                            'label'  => __('Order Management'),
-                            'icon'    => 'fal fa-shopping-cart',
-                            'fields' => [
-                                'disable_order_auto_processing'    => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Require manual order approval'),
-                                    'information' => __('When enabled, imported orders will not be charged automatically. You can review the order details and choose how to pay before processing.'),
-                                    'value' => data_get($customer->settings, 'disable_order_auto_processing', false),
+                            ],
+                            [
+                                'title'  => __('Order Management'),
+                                'label'  => __('Order Management'),
+                                'icon'   => 'fal fa-shopping-cart',
+                                'fields' => [
+                                    'disable_order_auto_processing' => [
+                                        'type'        => 'toggle',
+                                        'label'       => __('Require manual order approval'),
+                                        'information' => __('When enabled, imported orders will not be charged automatically. You can review the order details and choose how to pay before processing.'),
+                                        'value'       => data_get($customer->settings, 'disable_order_auto_processing', false),
+                                    ]
+                                ]
+                            ],
+                            [
+                                'title'  => __('Interest'),
+                                'label'  => __('Interest'),
+                                'icon'   => 'fal fa-tags',
+                                'fields' => [
+                                    'tags' => [
+                                        'type'                   => 'retina-tags-customer',
+                                        'label'                  => __('Interest'),
+                                        'value'                  => $customer
+                                            ->tags()
+                                            ->where('tags.scope', TagScopeEnum::USER_CUSTOMER->value)
+                                            ->pluck('tags.id')
+                                            ->toArray(),
+                                        'isWithRefreshFieldForm' => true,
+                                        'tag_routes'             => [
+                                            'index_tag'  => [
+                                                'name'       => 'retina.json.customer.tags.index',
+                                                'parameters' => [
+                                                    'customer' => $customer->id,
+                                                ]
+                                            ],
+                                            'attach_tag' => [
+                                                'name'       => 'retina.models.customer.tags.attach',
+                                                'parameters' => [
+                                                    'customer' => $customer->id,
+                                                ],
+                                                'method'     => 'post'
+                                            ],
+                                            'detach_tag' => [
+                                                'name'       => 'retina.models.customer.tags.detach',
+                                                'parameters' => [
+                                                    'customer' => $customer->id,
+                                                ],
+                                                'method'     => 'delete'
+                                            ],
+                                        ],
+                                    ],
                                 ]
                             ]
                         ],
-                        [
-                            'title'  => __('Interest'),
-                            'label'  => __('Interest'),
-                            'icon'    => 'fal fa-tags',
-                            'fields' => [
-                                'tags' => [
-                                    'type'  => 'retina-tags-customer',
-                                    'label' => __('Interest'),
-                                    'value' => $customer
-                                        ->tags()
-                                        ->where('tags.scope', TagScopeEnum::USER_CUSTOMER->value)
-                                        ->pluck('tags.id')
-                                        ->toArray(),
-                                    'isWithRefreshFieldForm' => true,
-                                    'tag_routes' => [
-                                        'index_tag' => [
-                                            'name'       => 'retina.json.customer.tags.index',
-                                            'parameters' => [
-                                                'customer' => $customer->id,
-                                            ]
-                                        ],
-                                        'attach_tag' => [
-                                            'name'       => 'retina.models.customer.tags.attach',
-                                            'parameters' => [
-                                                'customer' => $customer->id,
-                                            ],
-                                            'method'    => 'post'
-                                        ],
-                                        'detach_tag' => [
-                                            'name'       => 'retina.models.customer.tags.detach',
-                                            'parameters' => [
-                                                'customer' => $customer->id,
-                                            ],
-                                            'method'    => 'delete'
-                                        ],
-                                    ],
-                                ],
-                            ]
-                        ]
-                    ],
                     "args"      => [
                         "updateRoute" => [
                             "name"       => "retina.models.customer.update",
@@ -188,7 +192,6 @@ class ShowRetinaAccountManagement extends RetinaAction
             ]
         );
     }
-
 
 
     public function getBreadcrumbs(): array
@@ -203,7 +206,7 @@ class ShowRetinaAccountManagement extends RetinaAction
                             'route' => [
                                 'name' => 'retina.sysadmin.settings.edit'
                             ],
-                            'label'  => __('Account management'),
+                            'label' => __('Account management'),
                         ]
                     ]
                 ]

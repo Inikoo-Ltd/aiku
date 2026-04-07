@@ -43,11 +43,8 @@ class UpdateMailshotRecipientFilter extends OrgAction
             'recipients_recipe.registered_never_ordered' => ['sometimes', 'array'],
             'recipients_recipe.registered_never_ordered.value' => ['sometimes', 'array'],
             'recipients_recipe.registered_never_ordered.value.value' => ['sometimes', 'boolean'],
-            'recipients_recipe.registered_never_ordered.value.date_range' => ['sometimes', 'array'],
+            'recipients_recipe.registered_never_ordered.value.date_range' => ['sometimes', 'nullable', 'array'],
             'recipients_recipe.registered_never_ordered.value.date_range.*' => ['sometimes', 'date'],
-            'recipients_recipe.registered_never_ordered.value.amount_range' => ['sometimes', 'array'],
-            'recipients_recipe.registered_never_ordered.value.amount_range.min' => ['sometimes', 'nullable', 'numeric'],
-            'recipients_recipe.registered_never_ordered.value.amount_range.max' => ['sometimes', 'nullable', 'numeric'],
 
             // by_family filter
             'recipients_recipe.by_family' => ['sometimes', 'array'],

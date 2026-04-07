@@ -1,9 +1,9 @@
 <?php
 
 /*
- * Author: Nickel
- * Created: Tue, 01 Apr 2026
- * Copyright (c) 2026, Inikoo LTD
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Wed, 01 Apr 2026 15:39:13 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Inventory\OrganisationStockHistory\UI;
@@ -11,6 +11,7 @@ namespace App\Actions\Inventory\OrganisationStockHistory\UI;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
+use App\Enums\UI\Inventory\OrganisationStockHistoriesTabsEnum;
 use App\Http\Resources\Inventory\OrganisationStockHistoriesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrganisationStockHistory;
@@ -31,93 +32,102 @@ class IndexOrganisationStockHistories extends OrgAction
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromWarehouse($warehouse, $request);
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrganisationStockHistoriesTabsEnum::values());
 
-        return $this->handle($organisation);
+        return $this->handle($organisation, $this->tab);
     }
 
-    protected function getElementGroups(Organisation $organisation): array
+    public function handle(Organisation $organisation, string $bucket = 'daily'): LengthAwarePaginator
     {
-        return [
-            'bucket' => [
-                'label'    => __('Period'),
-                'elements' => [
-                    'daily'   => [__('Daily')],
-                    'weekly'  => [__('Weekly')],
-                    'monthly' => [__('Monthly')],
-                    'yearly'  => [__('Yearly')],
-                ],
-                'engine' => function ($query, $elements) {
-                    $query->where(function ($q) use ($elements) {
-                        foreach ($elements as $element) {
-                            $q->orWhere(function ($inner) use ($element) {
-                                match ($element) {
-                                    'weekly'  => $inner->where('is_week', true),
-                                    'monthly' => $inner->where('is_month', true),
-                                    'yearly'  => $inner->where('is_year', true),
-                                    default   => $inner->where('is_week', false)->where('is_month', false)->where('is_year', false),
-                                };
-                            });
-                        }
-                    });
-                },
-            ],
+        InertiaTable::updateQueryBuilderParameters($bucket);
+
+        $sameCurrency = $organisation->currency_id === $organisation->group->currency_id;
+
+        $select = [
+            'id',
+            'date as bucket',
+            'org_stock_value',
+            'number_locations',
+            'number_org_stocks',
+            'number_out_of_stock_org_stocks',
+            'percentage_out_of_stock',
+            'percentage_value_dormant_stock_1y',
+            'value_dormant_stock_1y',
+            'number_org_stocks_not_sold_1y',
+            'number_location_org_stocks',
+            DB::raw("'".$organisation->currency->code."' as org_currency_code"),
         ];
-    }
 
-    public function handle(Organisation $organisation): LengthAwarePaginator
-    {
-        $queryBuilder = QueryBuilder::for(OrganisationStockHistory::class)
-            ->select([
-                'id',
-                'date as bucket',
-                'org_stock_value',
-                'grp_stock_value',
-                'org_stock_commercial_value',
-                'grp_stock_commercial_value',
-                'number_org_stocks',
-                'number_out_of_stock_org_stocks',
-                'number_location_org_stocks',
-                DB::raw("'" . $organisation->currency->code . "' as org_currency_code"),
-                DB::raw("'" . $organisation->group->currency->code . "' as grp_currency_code"),
-            ])
-            ->where('organisation_id', $organisation->id);
-
-        foreach ($this->getElementGroups($organisation) as $key => $elementGroup) {
-            $queryBuilder->whereElementGroup(
-                key: $key,
-                allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine'],
-                prefix: null
-            );
+        if (!$sameCurrency) {
+            $select[] = 'grp_stock_value';
+            $select[] = DB::raw("'".$organisation->group->currency->code."' as grp_currency_code");
         }
 
-        return $queryBuilder
+        return QueryBuilder::for(OrganisationStockHistory::class)
+            ->select($select)
+            ->where('organisation_id', $organisation->id)
+            ->when($bucket === 'weekly', fn ($q) => $q->where('is_week', true))
+            ->when($bucket === 'monthly', fn ($q) => $q->where('is_month', true))
+            ->when($bucket === 'yearly', fn ($q) => $q->where('is_year', true))
             ->defaultSort('-date')
-            ->allowedSorts([AllowedSort::field('bucket', 'date')])
-            ->withPaginator(null, tableName: request()->route()->getName())
+            ->allowedSorts([
+                AllowedSort::field('bucket', 'date'),
+                AllowedSort::field('number_org_stocks'),
+                AllowedSort::field('number_out_of_stock_org_stocks'),
+                AllowedSort::field('org_stock_value'),
+                AllowedSort::field('grp_stock_value'),
+            ])
+            ->withPaginator($bucket, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(): Closure
+    public function tableStructure(Organisation $organisation, string $bucket = 'daily'): Closure
     {
-        return function (InertiaTable $table) {
-            foreach ($this->getElementGroups($this->organisation) as $key => $elementGroup) {
-                $table->elementGroup(
-                    key: $key,
-                    label: $elementGroup['label'],
-                    elements: $elementGroup['elements']
-                );
-            }
+        return function (InertiaTable $table) use ($organisation, $bucket) {
+            $table
+                ->name($bucket)
+                ->pageName($bucket.'Page');
+
+            $bucketLabel = match ($bucket) {
+                'weekly' => __('Week'),
+                'monthly' => __('Month'),
+                'yearly' => __('Year'),
+                default => __('Date'),
+            };
+
+            $sameCurrency = $organisation->currency_id === $organisation->group->currency_id;
 
             $table
                 ->withLabelRecord([__('record'), __('records')])
-                ->column(key: 'bucket', label: __('Date'), canBeHidden: false, type: 'date', sortable: true)
-                ->column(key: 'number_org_stocks', label: __('Total SKUs'), canBeHidden: false, align: 'right')
-                ->column(key: 'number_out_of_stock_org_stocks', label: __('Out of Stock'), canBeHidden: false, align: 'right')
-                ->column(key: 'number_location_org_stocks', label: __('In Locations'), canBeHidden: false, align: 'right')
-                ->column(key: 'org_stock_value', label: __('Stock Value (Org)'), canBeHidden: false, type: 'currency', align: 'right')
-                ->column(key: 'grp_stock_value', label: __('Stock Value (Grp)'), canBeHidden: false, type: 'currency', align: 'right');
+                ->column(key: 'bucket', label: $bucketLabel, canBeHidden: false, sortable: true, type: 'date')
+                ->column(key: 'number_org_stocks', label: __('Total SKUs'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'number_out_of_stock_org_stocks', label: __('Out of Stock'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'number_locations', label: __('Locations'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(
+                    key: 'org_stock_value',
+                    label: $sameCurrency ? __('Stock Value') : __('Stock Value').' ('.$organisation->currency->code.')',
+                    canBeHidden: false,
+                    sortable: true,
+                    type: 'currency',
+                    align: 'right'
+                );
+
+            //            if (!$sameCurrency) {
+            //                $table->column(key: 'grp_stock_value', label: __('Stock Value').' ('.$organisation->group->currency->code.')', canBeHidden: false, sortable: true, type: 'currency', align: 'right');
+            //            }
+
+
+            $table->column(key: 'number_org_stocks_not_sold_1y', label: __('No sold 1Y'), icon: 'fal fa-ban', tooltip: __('Number of SKUs not sold in more than 1 year'), canBeHidden: false, sortable: true, align: 'right');
+            $table->column(
+                key: 'value_dormant_stock_1y',
+                label: __('Dormant 1Y'),
+                icon: 'fal fa-skull-cow',
+                tooltip: __('Value of dormant stock for more than 1 year'),
+                canBeHidden: false,
+                sortable: true,
+                type: 'currency',
+                align: 'right'
+            );
         };
     }
 
@@ -139,9 +149,32 @@ class IndexOrganisationStockHistories extends OrgAction
                     'name'       => 'grp.org.warehouses.show.inventory.org_stock_histories.export',
                     'parameters' => $request->route()->originalParameters(),
                 ],
-                'data' => fn () => OrganisationStockHistoriesResource::collection($histories),
+                'tabs'           => [
+                    'current'    => $this->tab,
+                    'navigation' => OrganisationStockHistoriesTabsEnum::navigation(),
+                ],
+
+                OrganisationStockHistoriesTabsEnum::DAILY->value => $this->tab == OrganisationStockHistoriesTabsEnum::DAILY->value
+                    ? fn () => OrganisationStockHistoriesResource::collection($histories)
+                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation))),
+
+                OrganisationStockHistoriesTabsEnum::WEEKLY->value => $this->tab == OrganisationStockHistoriesTabsEnum::WEEKLY->value
+                    ? fn () => OrganisationStockHistoriesResource::collection($histories)
+                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'weekly'))),
+
+                OrganisationStockHistoriesTabsEnum::MONTHLY->value => $this->tab == OrganisationStockHistoriesTabsEnum::MONTHLY->value
+                    ? fn () => OrganisationStockHistoriesResource::collection($histories)
+                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'monthly'))),
+
+                OrganisationStockHistoriesTabsEnum::YEARLY->value => $this->tab == OrganisationStockHistoriesTabsEnum::YEARLY->value
+                    ? fn () => OrganisationStockHistoriesResource::collection($histories)
+                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'yearly'))),
             ]
-        )->table($this->tableStructure());
+        )
+            ->table($this->tableStructure($this->organisation))
+            ->table($this->tableStructure($this->organisation, 'weekly'))
+            ->table($this->tableStructure($this->organisation, 'monthly'))
+            ->table($this->tableStructure($this->organisation, 'yearly'));
     }
 
     public function getBreadcrumbs(array $routeParameters): array

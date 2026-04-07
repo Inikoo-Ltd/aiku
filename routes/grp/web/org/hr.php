@@ -195,6 +195,12 @@ Route::prefix('leaves')->as('leaves.')->group(function () {
     Route::post('{leave}', UpdateLeave::class)->name('update');
 });
 
+Route::prefix('leave_approvers')->as('leave_approvers.')->group(function () {
+    Route::get('', \App\Actions\HumanResources\Leave\UI\IndexLeaveApprovers::class)->name('index');
+    Route::post('', \App\Actions\HumanResources\Leave\StoreLeaveApprover::class)->name('store');
+    Route::delete('{leaveApprover}', \App\Actions\HumanResources\Leave\DeleteLeaveApprover::class)->name('delete');
+});
+
 Route::prefix('restricted-periods')->as('restricted_periods.')->group(function () {
     Route::get('', \App\Actions\HumanResources\RestrictedPeriods\IndexRestrictedPeriods::class)->name('index');
     Route::post('', \App\Actions\HumanResources\RestrictedPeriods\StoreRestrictedPeriod::class)->name('store');
@@ -236,6 +242,7 @@ Route::prefix('shift-schedules')->as('shift_schedules.')->group(function () {
 
 Route::prefix('employees')->as('employees.')->group(function () {
     Route::get('birthdays', GetEmployeesByBirthMonth::class)->name('birthdays');
+    Route::get('picker-users', \App\Actions\HumanResources\Leave\GetUsersForDropdown::class)->name('picker_users');
     Route::patch('{employee}/adjust-leave', AdjustEmployeeLeaveBalance::class)->name('adjust-leave');
     Route::get('{employee}/contract', GetEmployeeContract::class)->name('contract');
 });

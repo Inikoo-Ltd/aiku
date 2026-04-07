@@ -12,7 +12,6 @@ use App\Actions\Comms\DispatchedEmail\UpdateDispatchedEmail;
 use App\Actions\Comms\EmailAddress\Traits\AwsClient;
 use App\Actions\Comms\EmailCopy\StoreEmailCopy;
 use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateDispatchedEmails;
-use App\Actions\CRM\Prospect\UpdateProspectEmailSent;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\DispatchedEmail;
@@ -65,11 +64,6 @@ class SendSesEmail
                 ]
             );
 
-            if ($dispatchedEmail->recipient_type == 'Prospect') {
-                UpdateProspectEmailSent::run($dispatchedEmail->recipient);
-            }
-
-
             UpdateDispatchedEmail::run(
                 $dispatchedEmail,
                 [
@@ -101,8 +95,6 @@ class SendSesEmail
 
         do {
             try {
-
-
                 if ($debug) {
                     print "Start try to send   attempt $attempt  Start  to {$dispatchedEmail->emailAddress?->email} ".now()->toDateTimeString()."\n";
                 }
@@ -144,15 +136,9 @@ class SendSesEmail
                     ]);
                 }
 
-
-                if ($dispatchedEmail->recipient && $dispatchedEmail->recipient_type == 'Prospect') {
-                    UpdateProspectEmailSent::dispatch($dispatchedEmail->recipient);
-                }
-
                 if ($debug) {
                     print "Post  attempt $attempt    to {$dispatchedEmail->emailAddress?->email} ".now()->toDateTimeString()."\n";
                 }
-
             } catch (AwsException $e) {
                 Sentry::captureException($e);
                 if ($e->getAwsErrorCode() == 'Throttling' && $attempt < $numberAttempts - 1) {

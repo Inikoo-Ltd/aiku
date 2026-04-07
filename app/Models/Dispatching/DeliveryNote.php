@@ -383,7 +383,8 @@ class DeliveryNote extends Model implements Auditable
 
     public function getNumberParcels(): int
     {
-        return count($this->parcels);
+        // AIKU-13ZJ Fallback needed
+        return count($this->parcels ?? []);
     }
 
 }
