@@ -33,9 +33,9 @@ class UpdateReview
                 'customer_id'          => data_get($modelData, 'customer_id', $review->customer_id),
                 'status'               => data_get($modelData, 'status', $review->status?->value),
                 'rating'               => data_get($modelData, 'rating', $review->rating),
-                'title'                => data_get($modelData, 'title', $review->title),
                 'message'              => data_get($modelData, 'message', $review->message),
-                'is_verified_purchase' => data_get($modelData, 'is_verified_purchase', $review->is_verified_purchase),
+                'order_id'             => data_get($modelData, 'order_id', $review->order_id),
+                'like_count'           => data_get($modelData, 'like_count', $review->like_count),
                 'meta'                 => data_get($modelData, 'meta', $review->meta ?? []),
             ]);
 
@@ -59,15 +59,15 @@ class UpdateReview
                 }
             }
 
-            if (is_array($images)) {
-                $this->storeUploadedImages($review, $images);
-            }
-
-            if (is_array($videos)) {
-                $this->storeUploadedVideos($review, $videos);
-            }
-
             $reviewable = $review->reviewable;
+            if (is_array($images) && ($reviewable instanceof Product || $reviewable instanceof ProductCategory)) {
+                $this->storeUploadedImages($review, $reviewable, $images);
+            }
+
+            if (is_array($videos) && ($reviewable instanceof Product || $reviewable instanceof ProductCategory)) {
+                $this->storeUploadedVideos($review, $reviewable, $videos);
+            }
+
             if ($reviewable instanceof Product || $reviewable instanceof ProductCategory) {
                 $this->syncRatingStats($reviewable);
             }
@@ -92,9 +92,9 @@ class UpdateReview
             'customer_id'           => ['sometimes', 'nullable', 'integer', 'exists:customers,id'],
             'status'                => ['sometimes', Rule::enum(ReviewStatusEnum::class)],
             'rating'                => ['sometimes', 'integer', 'min:1', 'max:5'],
-            'title'                 => ['sometimes', 'nullable', 'string', 'max:255'],
             'message'               => ['sometimes', 'nullable', 'string', 'max:5000'],
-            'is_verified_purchase'  => ['sometimes', 'boolean'],
+            'order_id'              => ['sometimes', 'nullable', 'integer', 'exists:orders,id'],
+            'like_count'            => ['sometimes', 'integer', 'min:0'],
             'meta'                  => ['sometimes', 'array'],
             'media'                 => ['sometimes', 'array'],
             'media.*.media_id'      => ['required', 'integer', 'exists:media,id'],
@@ -104,11 +104,11 @@ class UpdateReview
             'images'                => ['sometimes', 'array'],
             'images.*'              => ['sometimes', File::image()->max(10 * 1024)],
             'videos'                => ['sometimes', 'array'],
-            'videos.*'              => ['sometimes', File::types(['mp4', 'mov', 'avi', 'mkv', 'webm'])->max(50 * 1024)],
+            'videos.*'              => ['sometimes', File::types(['mp4', 'webm'])->max(10 * 1024)],
         ];
     }
 
-    private function storeUploadedImages(Review $review, array $images): void
+    private function storeUploadedImages(Review $review, Product|ProductCategory $reviewable, array $images): void
     {
         $nextSortOrder = (int) $review->media()->max('sort_order') + 1;
 
@@ -117,12 +117,6 @@ class UpdateReview
                 continue;
             }
 
-            $reviewMedia = $review->media()->create([
-                'type'       => ReviewMediaTypeEnum::IMAGE->value,
-                'sort_order' => $nextSortOrder,
-                'meta'       => [],
-            ]);
-
             $imageData = [
                 'path'         => $image->getPathName(),
                 'originalName' => $image->getClientOriginalName(),
@@ -130,17 +124,20 @@ class UpdateReview
                 'checksum'     => md5_file($image->getPathName()),
             ];
 
-            $storedMedia = StoreMediaFromFile::run($reviewMedia, $imageData, 'review_images', 'image');
+            $storedMedia = StoreMediaFromFile::run($reviewable, $imageData, 'review_images', 'image');
 
-            $reviewMedia->update([
-                'media_id' => $storedMedia->id,
+            $review->media()->create([
+                'media_id'   => $storedMedia->id,
+                'type'       => ReviewMediaTypeEnum::IMAGE->value,
+                'sort_order' => $nextSortOrder,
+                'meta'       => [],
             ]);
 
             $nextSortOrder++;
         }
     }
 
-    private function storeUploadedVideos(Review $review, array $videos): void
+    private function storeUploadedVideos(Review $review, Product|ProductCategory $reviewable, array $videos): void
     {
         $nextSortOrder = (int) $review->media()->max('sort_order') + 1;
 
@@ -149,12 +146,6 @@ class UpdateReview
                 continue;
             }
 
-            $reviewMedia = $review->media()->create([
-                'type'       => ReviewMediaTypeEnum::VIDEO->value,
-                'sort_order' => $nextSortOrder,
-                'meta'       => [],
-            ]);
-
             $videoData = [
                 'path'         => $video->getPathName(),
                 'originalName' => $video->getClientOriginalName(),
@@ -162,10 +153,13 @@ class UpdateReview
                 'checksum'     => md5_file($video->getPathName()),
             ];
 
-            $storedMedia = StoreMediaFromFile::run($reviewMedia, $videoData, 'review_videos', 'file');
+            $storedMedia = StoreMediaFromFile::run($reviewable, $videoData, 'review_videos', 'file');
 
-            $reviewMedia->update([
-                'media_id' => $storedMedia->id,
+            $review->media()->create([
+                'media_id'   => $storedMedia->id,
+                'type'       => ReviewMediaTypeEnum::VIDEO->value,
+                'sort_order' => $nextSortOrder,
+                'meta'       => [],
             ]);
 
             $nextSortOrder++;
@@ -179,26 +173,49 @@ class UpdateReview
             ->where('reviewable_id', $reviewable->id);
 
         $reviewsCount = (clone $baseQuery)->count();
-        $verifiedReviewsCount = (clone $baseQuery)->where('is_verified_purchase', true)->count();
+        $likeCount = (clone $baseQuery)->sum('like_count');
         $ratingAverage = round((float) ((clone $baseQuery)->avg('rating') ?? 0), 2);
 
-        $ratingBreakdown = collect(range(1, 5))
-            ->mapWithKeys(fn (int $rating): array => [(string) $rating => 0])
-            ->merge(
-                (clone $baseQuery)
-                    ->selectRaw('rating, count(*) as aggregate')
-                    ->groupBy('rating')
-                    ->pluck('aggregate', 'rating')
-                    ->map(fn ($count): int => (int) $count)
-                    ->mapWithKeys(fn (int $count, $rating): array => [(string) $rating => $count])
-            )
-            ->all();
+        $ratingBreakdown = [
+            '1' => 0,
+            '2' => 0,
+            '3' => 0,
+            '4' => 0,
+            '5' => 0,
+        ];
+
+        $ratingCounts = (clone $baseQuery)
+            ->selectRaw('rating, count(*) as aggregate')
+            ->groupBy('rating')
+            ->pluck('aggregate', 'rating');
+
+        foreach ($ratingCounts as $rating => $count) {
+            $ratingKey = (string) ((int) $rating);
+
+            if (array_key_exists($ratingKey, $ratingBreakdown)) {
+                $ratingBreakdown[$ratingKey] = (int) $count;
+            }
+        }
+
+        $statusCounts = (clone $baseQuery)
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status')
+            ->map(fn ($count): int => (int) $count);
 
         $attributes = [
             'reviews_count'          => $reviewsCount,
-            'verified_reviews_count' => $verifiedReviewsCount,
+            'number_reviews_like'    => $likeCount,
             'rating_average'         => $ratingAverage,
             'rating_breakdown'       => $ratingBreakdown,
+            'number_reviews_state_pending' => (int) ($statusCounts[ReviewStatusEnum::Pending->value] ?? 0),
+            'number_reviews_state_approved' => (int) ($statusCounts[ReviewStatusEnum::Approved->value] ?? 0),
+            'number_reviews_state_rejected' => (int) ($statusCounts[ReviewStatusEnum::Rejected->value] ?? 0),
+            'number_reviews_rating_1' => (int) ($ratingBreakdown['1'] ?? 0),
+            'number_reviews_rating_2' => (int) ($ratingBreakdown['2'] ?? 0),
+            'number_reviews_rating_3' => (int) ($ratingBreakdown['3'] ?? 0),
+            'number_reviews_rating_4' => (int) ($ratingBreakdown['4'] ?? 0),
+            'number_reviews_rating_5' => (int) ($ratingBreakdown['5'] ?? 0),
             'last_reviewed_at'       => now(),
         ];
 

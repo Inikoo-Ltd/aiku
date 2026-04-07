@@ -6,7 +6,9 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Review;
 use App\Models\Catalogue\ReviewableRatingStat;
+use App\Enums\Catalogue\Review\ReviewStatusEnum;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -32,9 +34,13 @@ class DeleteReview
         });
     }
 
-    public function asController(Review $review, ActionRequest $request): JsonResponse
+    public function asController(Review $review, ActionRequest $request): JsonResponse|RedirectResponse
     {
         $isDeleted = $this->handle($review);
+
+        if (!$request->expectsJson()) {
+            return redirect()->back();
+        }
 
         return response()->json([
             'status' => $isDeleted ? 'success' : 'failed',
@@ -49,26 +55,49 @@ class DeleteReview
             ->where('reviewable_id', $reviewable->id);
 
         $reviewsCount = (clone $baseQuery)->count();
-        $verifiedReviewsCount = (clone $baseQuery)->where('is_verified_purchase', true)->count();
+        $likeCount = (clone $baseQuery)->sum('like_count');
         $ratingAverage = round((float) ((clone $baseQuery)->avg('rating') ?? 0), 2);
 
-        $ratingBreakdown = collect(range(1, 5))
-            ->mapWithKeys(fn (int $rating): array => [(string) $rating => 0])
-            ->merge(
-                (clone $baseQuery)
-                    ->selectRaw('rating, count(*) as aggregate')
-                    ->groupBy('rating')
-                    ->pluck('aggregate', 'rating')
-                    ->map(fn ($count): int => (int) $count)
-                    ->mapWithKeys(fn (int $count, $rating): array => [(string) $rating => $count])
-            )
-            ->all();
+        $ratingBreakdown = [
+            '1' => 0,
+            '2' => 0,
+            '3' => 0,
+            '4' => 0,
+            '5' => 0,
+        ];
+
+        $ratingCounts = (clone $baseQuery)
+            ->selectRaw('rating, count(*) as aggregate')
+            ->groupBy('rating')
+            ->pluck('aggregate', 'rating');
+
+        foreach ($ratingCounts as $rating => $count) {
+            $ratingKey = (string) ((int) $rating);
+
+            if (array_key_exists($ratingKey, $ratingBreakdown)) {
+                $ratingBreakdown[$ratingKey] = (int) $count;
+            }
+        }
+
+        $statusCounts = (clone $baseQuery)
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status')
+            ->map(fn ($count): int => (int) $count);
 
         $attributes = [
             'reviews_count'          => $reviewsCount,
-            'verified_reviews_count' => $verifiedReviewsCount,
+            'number_reviews_like'    => $likeCount,
             'rating_average'         => $ratingAverage,
             'rating_breakdown'       => $ratingBreakdown,
+            'number_reviews_state_pending' => (int) ($statusCounts[ReviewStatusEnum::Pending->value] ?? 0),
+            'number_reviews_state_approved' => (int) ($statusCounts[ReviewStatusEnum::Approved->value] ?? 0),
+            'number_reviews_state_rejected' => (int) ($statusCounts[ReviewStatusEnum::Rejected->value] ?? 0),
+            'number_reviews_rating_1' => (int) ($ratingBreakdown['1'] ?? 0),
+            'number_reviews_rating_2' => (int) ($ratingBreakdown['2'] ?? 0),
+            'number_reviews_rating_3' => (int) ($ratingBreakdown['3'] ?? 0),
+            'number_reviews_rating_4' => (int) ($ratingBreakdown['4'] ?? 0),
+            'number_reviews_rating_5' => (int) ($ratingBreakdown['5'] ?? 0),
             'last_reviewed_at'       => now(),
         ];
 

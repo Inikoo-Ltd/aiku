@@ -108,15 +108,31 @@ class GetReviews
                 ->first();
 
             if ($reviewableStat) {
+                $ratingBreakdownFromColumns = [
+                    '1' => (int) ($reviewableStat->number_reviews_rating_1 ?? 0),
+                    '2' => (int) ($reviewableStat->number_reviews_rating_2 ?? 0),
+                    '3' => (int) ($reviewableStat->number_reviews_rating_3 ?? 0),
+                    '4' => (int) ($reviewableStat->number_reviews_rating_4 ?? 0),
+                    '5' => (int) ($reviewableStat->number_reviews_rating_5 ?? 0),
+                ];
+
+                $ratingBreakdown = $reviewableStat->rating_breakdown ?? [];
+                if (empty($ratingBreakdown)) {
+                    $ratingBreakdown = $ratingBreakdownFromColumns;
+                }
+
                 return [
                     'total' => (int) $reviewableStat->reviews_count,
                     'average_rating' => (float) $reviewableStat->rating_average,
-                    'verified' => (int) $reviewableStat->verified_reviews_count,
-                    'helpful_count' => (int) ((clone $query)->sum('helpful_count') ?? 0),
-                    'status_approved' => (int) ((clone $query)->where('status', ReviewStatusEnum::Approved->value)->count()),
-                    'status_pending' => (int) ((clone $query)->where('status', ReviewStatusEnum::Pending->value)->count()),
-                    'status_rejected' => (int) ((clone $query)->where('status', ReviewStatusEnum::Rejected->value)->count()),
-                    'rating_breakdown' => $reviewableStat->rating_breakdown ?? [],
+                    'like_count' => (int) $reviewableStat->number_reviews_like,
+                    'status_approved' => (int) ($reviewableStat->number_reviews_state_approved ?? 0),
+                    'status_pending' => (int) ($reviewableStat->number_reviews_state_pending ?? 0),
+                    'status_rejected' => (int) ($reviewableStat->number_reviews_state_rejected ?? 0),
+                    'number_reviews_rating_1' => $ratingBreakdownFromColumns['1'],
+                    'number_reviews_rating_2' => $ratingBreakdownFromColumns['2'],
+                    'number_reviews_rating_3' => $ratingBreakdownFromColumns['3'],
+                    'number_reviews_rating_4' => $ratingBreakdownFromColumns['4'],
+                    'number_reviews_rating_5' => $ratingBreakdownFromColumns['5'],
                 ];
             }
         }
@@ -131,12 +147,15 @@ class GetReviews
         return [
             'total' => (int) $total,
             'average_rating' => round((float) ((clone $query)->avg('rating') ?? 0), 1),
-            'verified' => (int) ((clone $query)->where('is_verified_purchase', true)->count()),
-            'helpful_count' => (int) ((clone $query)->sum('helpful_count') ?? 0),
+            'like_count' => (int) ((clone $query)->sum('like_count')),
             'status_approved' => (int) ($statusCounts[ReviewStatusEnum::Approved->value] ?? 0),
             'status_pending' => (int) ($statusCounts[ReviewStatusEnum::Pending->value] ?? 0),
             'status_rejected' => (int) ($statusCounts[ReviewStatusEnum::Rejected->value] ?? 0),
-            'rating_breakdown' => [],
+            'number_reviews_rating_1' => (int) ((clone $query)->where('rating', 1)->count()),
+            'number_reviews_rating_2' => (int) ((clone $query)->where('rating', 2)->count()),
+            'number_reviews_rating_3' => (int) ((clone $query)->where('rating', 3)->count()),
+            'number_reviews_rating_4' => (int) ((clone $query)->where('rating', 4)->count()),
+            'number_reviews_rating_5' => (int) ((clone $query)->where('rating', 5)->count()),
         ];
     }
 }

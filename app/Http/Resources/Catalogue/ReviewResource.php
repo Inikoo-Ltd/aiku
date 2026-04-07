@@ -22,10 +22,8 @@ class ReviewResource extends JsonResource
             'reviewable_id'        => $review->reviewable_id,
             'status'               => $review->status?->value ?? $review->status,
             'rating'               => (int) $review->rating,
-            'title'                => $review->title,
             'message'              => $review->message,
-            'is_verified_purchase' => (bool) $review->is_verified_purchase,
-            'helpful_count'        => (int) $review->helpful_count,
+            'like_count'           => (int) $review->like_count,
             'meta'                 => $review->meta ?? [],
             'customer'             => $this->whenLoaded('customer', function () use ($review): array {
                 return [

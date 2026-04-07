@@ -30,6 +30,7 @@ use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -197,22 +198,8 @@ class ShowFamily extends OrgAction
                 : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))),
 
             FamilyTabsEnum::REVIEWS->value => $this->tab == FamilyTabsEnum::REVIEWS->value ?
-                fn () => (function () use ($family) {
-                    $indexReviews = IndexReviews::make();
-                    $reviews = $indexReviews->inProductCategory(parent: $family, prefix: FamilyTabsEnum::REVIEWS->value);
-
-                    return ReviewsResource::collection($reviews)->additional([
-                        'stats' => $indexReviews->getStats($family),
-                    ]);
-                })()
-                : Inertia::lazy(fn () => (function () use ($family) {
-                    $indexReviews = IndexReviews::make();
-                    $reviews = $indexReviews->inProductCategory(parent: $family, prefix: FamilyTabsEnum::REVIEWS->value);
-
-                    return ReviewsResource::collection($reviews)->additional([
-                        'stats' => $indexReviews->getStats($family),
-                    ]);
-                })()),
+                fn () => $this->getReviewsTabData($family)
+                : Inertia::lazy(fn () => $this->getReviewsTabData($family)),
         ];
 
         $tabs[FamilyTabsEnum::VARIANTS->value] =
@@ -321,6 +308,14 @@ class ShowFamily extends OrgAction
     public function jsonResponse(ProductCategory $family): DepartmentsResource
     {
         return new DepartmentsResource($family);
+    }
+
+    private function getReviewsTabData(ProductCategory $family): AnonymousResourceCollection
+    {
+        return ReviewsResource::collectionWithTabMeta(
+            IndexReviews::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::REVIEWS->value),
+            $family
+        );
     }
 
     public function getBreadcrumbs(ProductCategory $family, string $routeName, array $routeParameters, $suffix = null): array

@@ -19,17 +19,11 @@ class ReviewMediaResource extends JsonResource
             'type'       => $reviewMedia->type?->value ?? $reviewMedia->type,
             'sort_order' => (int) $reviewMedia->sort_order,
             'meta'       => $reviewMedia->meta ?? [],
-            'media'      => $this->whenLoaded('media', function () use ($reviewMedia): array {
-                return [
-                    'id'           => $reviewMedia->media->id,
-                    'name'         => $reviewMedia->media->name,
-                    'file_name'    => $reviewMedia->media->file_name,
-                    'mime_type'    => $reviewMedia->media->mime_type,
-                    'size'         => $reviewMedia->media->size,
-                    'original_url' => $reviewMedia->media->original_url,
-                    'preview_url'  => $reviewMedia->media->preview_url,
-                ];
-            }),
+            'media_url'  => $reviewMedia->imageSources(0, 0, 'media'),
+            'original_url' => $reviewMedia->media?->getUrl(),
+            'file_name'  => $reviewMedia->media?->file_name,
+            'file_size'  => $reviewMedia->media?->size,
+            'file_mime'  => $reviewMedia->media?->mime_type,
             'created_at' => $reviewMedia->created_at,
             'updated_at' => $reviewMedia->updated_at,
         ];
