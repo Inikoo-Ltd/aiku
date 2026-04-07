@@ -7,6 +7,7 @@ import { Head } from "@inertiajs/vue3"
 import { faCog, faFolderOpen, faSeedling, faTriangle, faSitemap, faGiftCard, faBox, faInventory, faSkullCow, faBan, faDollarSign, faBoxesAlt, faCheckCircle, faCircle, faHandsHelping, faMapSigns, faWarehouse } from "@fal"
 import "tippy.js/dist/tippy.css"
 import { ref, provide } from "vue"
+import { Link } from "@inertiajs/vue3"
 import { set } from "lodash-es"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
@@ -53,6 +54,11 @@ const props = defineProps<{
 			percentage_dormant_1y: number
 			number_org_stocks_not_sold_1y: number
 			percentage_not_sold_1y: number
+			routes: {
+				dashboard: { name: string; parameters: Record<string, string> }
+				history: { name: string; parameters: Record<string, string | number> }
+				locations: { name: string; parameters: Record<string, string> }
+			} | null
 		}[]
 	} | null
 }>()
@@ -179,26 +185,49 @@ const isExpanded = ref(false)
 					</thead>
 					<tbody class="divide-y divide-gray-100">
 						<tr v-for="org in stockHistoryGroup.organisations" :key="org.slug" class="hover:bg-gray-50 transition-colors">
-							<td class="px-4 py-2.5 font-medium text-gray-800">{{ org.name }}</td>
-							<td class="px-4 py-2.5 text-right tabular-nums text-gray-700">
-								{{ locale.currencyFormat(org.currency_code, org.org_stock_value) }}
-							</td>
-							<td class="px-4 py-2.5 text-right tabular-nums text-gray-700">
-								{{ locale.number(org.number_org_stocks) }}
-							</td>
-							<td class="px-4 py-2.5 text-right tabular-nums text-gray-700">
-								{{ locale.number(org.number_locations) }}
+							<td class="px-4 py-2.5 font-medium">
+								<Link v-if="org.routes" :href="route(org.routes.dashboard.name, org.routes.dashboard.parameters)" class="text-gray-800 hover:text-blue-600 hover:underline">
+									{{ org.name }}
+								</Link>
+								<span v-else class="text-gray-800">{{ org.name }}</span>
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums">
-								<span class="text-red-500">{{ locale.number(org.number_out_of_stock_org_stocks) }}</span>
+								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'org_stocks' })" class="text-gray-700 hover:text-blue-600 hover:underline">
+									{{ locale.currencyFormat(org.currency_code, org.org_stock_value) }}
+								</Link>
+								<span v-else class="text-gray-700">{{ locale.currencyFormat(org.currency_code, org.org_stock_value) }}</span>
+							</td>
+							<td class="px-4 py-2.5 text-right tabular-nums">
+								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'org_stocks' })" class="text-gray-700 hover:text-blue-600 hover:underline">
+									{{ locale.number(org.number_org_stocks) }}
+								</Link>
+								<span v-else class="text-gray-700">{{ locale.number(org.number_org_stocks) }}</span>
+							</td>
+							<td class="px-4 py-2.5 text-right tabular-nums">
+								<Link v-if="org.routes" :href="route(org.routes.locations.name, org.routes.locations.parameters)" class="text-gray-700 hover:text-blue-600 hover:underline">
+									{{ locale.number(org.number_locations) }}
+								</Link>
+								<span v-else class="text-gray-700">{{ locale.number(org.number_locations) }}</span>
+							</td>
+							<td class="px-4 py-2.5 text-right tabular-nums">
+								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'out_of_stock' })" class="text-red-500 hover:text-red-700 hover:underline">
+									{{ locale.number(org.number_out_of_stock_org_stocks) }}
+								</Link>
+								<span v-else class="text-red-500">{{ locale.number(org.number_out_of_stock_org_stocks) }}</span>
 								<span class="text-xs text-red-400 ml-1">{{ org.percentage_out_of_stock }}%</span>
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums">
-								<span class="text-red-500">{{ locale.currencyFormat(org.currency_code, org.value_dormant_stock_1y) }}</span>
+								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'dormant_stock_1y' })" class="text-red-500 hover:text-red-700 hover:underline">
+									{{ locale.currencyFormat(org.currency_code, org.value_dormant_stock_1y) }}
+								</Link>
+								<span v-else class="text-red-500">{{ locale.currencyFormat(org.currency_code, org.value_dormant_stock_1y) }}</span>
 								<span class="text-xs text-red-400 ml-1">{{ org.percentage_dormant_1y }}%</span>
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums">
-								<span class="text-red-500">{{ locale.number(org.number_org_stocks_not_sold_1y) }}</span>
+								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'not_sold_1y' })" class="text-red-500 hover:text-red-700 hover:underline">
+									{{ locale.number(org.number_org_stocks_not_sold_1y) }}
+								</Link>
+								<span v-else class="text-red-500">{{ locale.number(org.number_org_stocks_not_sold_1y) }}</span>
 								<span class="text-xs text-red-400 ml-1">{{ org.percentage_not_sold_1y }}%</span>
 							</td>
 						</tr>

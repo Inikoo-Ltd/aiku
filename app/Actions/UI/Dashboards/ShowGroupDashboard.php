@@ -143,29 +143,18 @@ class ShowGroupDashboard extends OrgAction
             return null;
         }
 
-        $group->loadMissing(['organisations' => fn ($q) => $q->where('type', OrganisationTypeEnum::SHOP)->with(['currency'])]);
-        $ecommerceOrgs = $group->organisations->where('type', OrganisationTypeEnum::SHOP)->values();
-
-        $orgHistories = collect();
-        foreach ($ecommerceOrgs as $org) {
-            $history = OrganisationStockHistory::query()
-                ->where('organisation_id', $org->id)
-                ->where('is_week', false)
-                ->where('is_month', false)
-                ->where('is_year', false)
-                ->latest('date')
-                ->first();
-            if ($history) {
-                $orgHistories->push(['org' => $org, 'history' => $history]);
-            }
-        }
+        $orgHistories = OrganisationStockHistory::query()
+            ->where('group_stock_history_id', $groupHistory->id)
+            ->whereHas('organisation', fn ($q) => $q->where('type', OrganisationTypeEnum::SHOP))
+            ->with(['organisation.currency', 'organisation.warehouses'])
+            ->get();
 
         $totalSkus       = $groupHistory->number_org_stocks;
         $totalOutOfStock = $groupHistory->number_out_of_stock_org_stocks;
         $totalLocations  = $groupHistory->number_locations;
         $stockValue      = (float) $groupHistory->grp_stock_value;
         $dormant1y       = (float) $groupHistory->grp_value_dormant_stock_1y;
-        $totalNotSold1y  = $orgHistories->sum(fn ($item) => $item['history']->number_org_stocks_not_sold_1y);
+        $totalNotSold1y  = $orgHistories->sum('number_org_stocks_not_sold_1y');
 
         $pctOutOfStock = $totalSkus > 0 ? round($totalOutOfStock / $totalSkus * 100, 1) : 0;
         $pctDormant1y  = $groupHistory->percentage_value_dormant_stock_1y ?? 0;
@@ -183,24 +172,44 @@ class ShowGroupDashboard extends OrgAction
             'percentage_dormant_1y'          => $pctDormant1y,
             'number_org_stocks_not_sold_1y'  => $totalNotSold1y,
             'percentage_not_sold_1y'         => $pctNotSold1y,
-            'organisations'                  => $orgHistories->map(fn ($item) => [
-                'name'                           => $item['org']->name,
-                'slug'                           => $item['org']->slug,
-                'currency_code'                  => $item['org']->currency->code,
-                'number_org_stocks'              => $item['history']->number_org_stocks,
-                'number_out_of_stock_org_stocks' => $item['history']->number_out_of_stock_org_stocks,
-                'percentage_out_of_stock'        => $item['history']->number_org_stocks > 0
-                    ? round($item['history']->number_out_of_stock_org_stocks / $item['history']->number_org_stocks * 100, 1)
-                    : 0,
-                'number_locations'               => $item['history']->number_locations,
-                'org_stock_value'                => (float) $item['history']->org_stock_value,
-                'value_dormant_stock_1y'         => (float) $item['history']->value_dormant_stock_1y,
-                'percentage_dormant_1y'          => $item['history']->percentage_value_dormant_stock_1y ?? 0,
-                'number_org_stocks_not_sold_1y'  => $item['history']->number_org_stocks_not_sold_1y,
-                'percentage_not_sold_1y'         => $item['history']->number_org_stocks > 0
-                    ? round($item['history']->number_org_stocks_not_sold_1y / $item['history']->number_org_stocks * 100, 1)
-                    : 0,
-            ])->values()->toArray(),
+            'organisations'                  => $orgHistories->map(function ($history) {
+                $org           = $history->organisation;
+                $orgSlug       = $org->slug;
+                $warehouseSlug = $org->warehouses->first()?->slug;
+
+                $routeParams = ['organisation' => $orgSlug, 'warehouse' => $warehouseSlug];
+
+                return [
+                    'name'                           => $org->name,
+                    'slug'                           => $orgSlug,
+                    'currency_code'                  => $org->currency->code,
+                    'number_org_stocks'              => $history->number_org_stocks,
+                    'number_out_of_stock_org_stocks' => $history->number_out_of_stock_org_stocks,
+                    'percentage_out_of_stock'        => $history->percentage_out_of_stock,
+                    'number_locations'               => $history->number_locations,
+                    'org_stock_value'                => (float) $history->org_stock_value,
+                    'value_dormant_stock_1y'         => (float) $history->value_dormant_stock_1y,
+                    'percentage_dormant_1y'          => $history->percentage_value_dormant_stock_1y ?? 0,
+                    'number_org_stocks_not_sold_1y'  => $history->number_org_stocks_not_sold_1y,
+                    'percentage_not_sold_1y'         => $history->number_org_stocks > 0
+                        ? round($history->number_org_stocks_not_sold_1y / $history->number_org_stocks * 100, 1)
+                        : 0,
+                    'routes'                         => $warehouseSlug ? [
+                        'dashboard'     => [
+                            'name'       => 'grp.org.warehouses.show.inventory.dashboard',
+                            'parameters' => $routeParams,
+                        ],
+                        'history'       => [
+                            'name'       => 'grp.org.warehouses.show.inventory.org_stock_histories.show',
+                            'parameters' => array_merge($routeParams, ['organisationStockHistory' => $history->id]),
+                        ],
+                        'locations'     => [
+                            'name'       => 'grp.org.warehouses.show.infrastructure.locations.index',
+                            'parameters' => $routeParams,
+                        ],
+                    ] : null,
+                ];
+            })->values()->toArray(),
         ];
     }
 
