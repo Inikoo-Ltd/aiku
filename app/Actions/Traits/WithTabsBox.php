@@ -12,6 +12,7 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Inventory\GroupStockHistory;
 use App\Models\Inventory\OrganisationStockHistory;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -20,6 +21,14 @@ trait WithTabsBox
 {
     public function getStockHistoryTabsBox(Group $group): array
     {
+        $groupHistory = GroupStockHistory::query()
+            ->where('group_id', $group->id)
+            ->where('is_week', false)
+            ->where('is_month', false)
+            ->where('is_year', false)
+            ->latest('date')
+            ->first();
+
         $group->loadMissing(['organisations' => fn ($q) => $q->where('type', OrganisationTypeEnum::SHOP)->with(['currency'])]);
         $ecommerceOrgs = $group->organisations->where('type', OrganisationTypeEnum::SHOP)->values();
 
@@ -37,15 +46,15 @@ trait WithTabsBox
             }
         }
 
-        $totalSkus        = $orgHistories->sum(fn ($item) => $item['history']->number_org_stocks);
-        $totalOutOfStock  = $orgHistories->sum(fn ($item) => $item['history']->number_out_of_stock_org_stocks);
-        $totalLocations   = $orgHistories->sum(fn ($item) => $item['history']->number_locations);
-        $totalNotSold1y   = $orgHistories->sum(fn ($item) => $item['history']->number_org_stocks_not_sold_1y);
-        $totalStockValue  = $orgHistories->sum(fn ($item) => (float) $item['history']->grp_stock_value);
-        $totalDormant1y   = $orgHistories->sum(fn ($item) => (float) $item['history']->value_dormant_stock_1y);
+        $totalSkus       = $groupHistory?->number_org_stocks ?? 0;
+        $totalOutOfStock = $groupHistory?->number_out_of_stock_org_stocks ?? 0;
+        $totalLocations  = $groupHistory?->number_locations ?? 0;
+        $totalStockValue = (float) ($groupHistory?->grp_stock_value ?? 0);
+        $totalDormant1y  = (float) ($groupHistory?->grp_value_dormant_stock_1y ?? 0);
+        $totalNotSold1y  = $orgHistories->sum(fn ($item) => $item['history']->number_org_stocks_not_sold_1y);
 
         $pctOutOfStock = $totalSkus > 0 ? round($totalOutOfStock / $totalSkus * 100, 1) : 0;
-        $pctDormant1y  = $totalStockValue > 0 ? round($totalDormant1y / $totalStockValue * 100, 1) : 0;
+        $pctDormant1y  = $groupHistory?->percentage_value_dormant_stock_1y ?? 0;
         $pctNotSold1y  = $totalSkus > 0 ? round($totalNotSold1y / $totalSkus * 100, 1) : 0;
 
         $currencyCode = $group->currency->code;
