@@ -14,7 +14,7 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('brands', function (Blueprint $table) {
-            $table->unsignedInteger('number_trade_units')->default(0)->after('number_models');
+            $table->unsignedSmallInteger('number_trade_units')->default(0);
         });
     }
 
