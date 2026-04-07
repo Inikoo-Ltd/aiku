@@ -456,13 +456,13 @@ console.log(layout)
                                 <div class="xtext-xs text-gray-600 leading-snug">
                                     <div>
                                         <strong>{{ trans("Name") }}:</strong>
-                                        {{ boxStats.shipping_fields.contact_name || boxStats.customer_client.company_name }}
+                                        {{ boxStats.shipping_fields?.contact_name || boxStats.customer_client?.company_name }}
                                     </div>
                                     <div v-if="boxStats.customer_client.email">
-                                        <strong>{{ trans("Email") }}:</strong> {{ boxStats.shipping_fields.email }}
+                                        <strong>{{ trans("Email") }}:</strong> {{ boxStats.shipping_fields?.email }}
                                     </div>
                                     <div v-if="boxStats.customer_client.phone">
-                                        <strong>{{ trans("Phone") }}:</strong> {{ boxStats.shipping_fields.phone }}
+                                        <strong>{{ trans("Phone") }}:</strong> {{ boxStats.shipping_fields?.phone }}
                                     </div>
                                 </div>
                             </div>
