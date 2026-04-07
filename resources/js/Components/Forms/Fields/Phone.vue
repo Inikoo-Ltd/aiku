@@ -26,8 +26,18 @@ const phone = ref(props.form[props.fieldName] || '')
 const phoneError = ref('')
 
 const onValidate = (data: any) => {
-   if (!data.number) {
+    if (!phone.value) {
         phoneError.value = ''
+        return
+    }
+    
+    if (data?.number) {
+        phoneError.value = data.valid ? '' : 'Invalid phone number format'
+        return
+    }
+
+    if (!phone.value.startsWith('+')) {
+        phoneError.value = 'Invalid phone number format'
         return
     }
 
@@ -65,9 +75,17 @@ watch(phone, (val) => {
                 :autoFormat="true"
                 :validCharactersOnly="true"
             />
-            <p class="absolute left-0 text-xs text-gray-400"
-                :class="phoneError ? '-bottom-10' : '-bottom-5'">
-                Example: +44 7400 123456 (UK) <span v-if="phoneError" class="text-xs text-red-500">| {{ phoneError }} {{ props.fieldData.value }}</span>
+            <p
+                v-if="!form.errors[fieldName]"
+                class="absolute left-0 text-xs"
+                :class="phoneError ? 'text-red-500 -bottom-10' : 'text-gray-400 -bottom-5'"
+            >
+                <template v-if="phoneError">
+                    Example: +44 7400 123456 (UK) | {{ phoneError }} | {{ props.fieldData.value }}
+                </template>
+                <template v-else>
+                    Example: +44 7400 123456 (UK) | {{ props.fieldData.value }}
+                </template>
             </p>
         </div>
 
