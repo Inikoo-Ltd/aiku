@@ -58,6 +58,9 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
             };
         }
 
+        foreach(WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes() as $code) {
+            $this->deleteWebBlocksByCode($webpage, $code);
+        }
 
         $countCollectionDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'sub-department-description-1');
         if (count($countCollectionDescriptionBlock) == 0) {
@@ -129,6 +132,22 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
         }
 
         UpdateWebpageContent::run($webpage);
+    }
+
+    protected function deleteWebBlocksByCode(Webpage $webpage, string $scope)
+    {
+        $unusedWebBlock = $this->getWebpageBlocksByType($webpage, $scope);
+        if (count($unusedWebBlock) > 0) {
+            $webpage
+                ->modelHasWebBlocks()
+                ->whereIn('id', $unusedWebBlock->pluck('model_has_web_blocks_id'))
+                ->delete();
+
+            $webpage
+                ->webBlocks()
+                ->whereIn('web_blocks.id', $unusedWebBlock->pluck('id'))
+                ->delete();
+        }
     }
 
     public string $commandSignature = 'repair:missing_fixed_web_blocks_in_sub_departments_webpages {--website_id=} {--hide-description}';
