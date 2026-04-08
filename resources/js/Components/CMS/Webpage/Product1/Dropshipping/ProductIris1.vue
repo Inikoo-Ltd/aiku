@@ -18,6 +18,7 @@ import "swiper/css"
 import { faImage } from "@far"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
+import ReviewsProduct from "@/Components/CMS/Reviews/ReviewsProduct.vue"
 
 
 
@@ -321,6 +322,8 @@ const toggleExpanded = () => {
             </div>
         </div>
     </div>
+
+      <ReviewsProduct :product="product" class="mt-10" />
 </template>
 
 
