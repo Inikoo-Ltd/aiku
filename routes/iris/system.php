@@ -14,7 +14,18 @@ use App\Actions\CRM\WebUser\Retina\RetinaLogin;
 use Inertia\Inertia;
 
 Route::get('/login', function () {return Inertia::render('RetinaLogin');})->name('login');
-Route::get('/search', function () {return Inertia::render('Search');})->name('search');
+Route::get('/search', function () {
+    $website = request()->website;
+    $webBlockData = [];
+    if ($website) {
+        $layout = $website->liveProductsSnapshot->layout;
+
+        $webBlockData = data_get($layout, 'data.fieldValue');
+    };
+    return Inertia::render('Search', [
+        'data'  => $webBlockData,
+    ]);
+})->name('search');
 Route::post('login', RetinaLogin::class)->name('login.store');
 Route::post('logout', RetinaLogout::class)->name('logout');
 Route::get('/register', function () {return Inertia::render('Register');})->name('register');
