@@ -48,6 +48,30 @@ export function useProspectFilterRecipients(props: any) {
         return activeKeys.find(k => conflicts.includes(k)) || null
     }
 
+    function calculateDateFromPreset(preset: string): string | null {
+        if (preset === 'custom') return null
+
+        const weeks = preset === 'one_week_ago' ? 1 :
+                     preset === 'two_weeks_ago' ? 2 :
+                     preset === 'three_weeks_ago' ? 3 : 3
+
+        const date = new Date()
+        date.setDate(date.getDate() - (weeks * 7))
+        return date.toISOString().split('T')[0]
+    }
+
+    function updateLastContactedMode(filterKey: string, newMode: string) {
+        const filter = activeFilters.value[filterKey]
+        if (!filter || !filter.config.options?.weeks) return
+
+        filter.value.mode = newMode
+        // Only calculate date if mode is not custom
+        if (newMode !== 'custom') {
+            filter.value.custom_date = calculateDateFromPreset(newMode)
+        }
+        // If mode is custom, keep the existing custom_date or set to null
+    }
+
     /* ---------------- FILTER ADD ---------------- */
    const addFilter = (key: string, config: any) => {
         const conflictWith = hasConflict(key)
@@ -85,8 +109,8 @@ export function useProspectFilterRecipients(props: any) {
             }
 
             if (config.options?.weeks) {
-                value.mode = config.options.weeks.default ?? 3
-                value.custom_date = null
+                value.mode = config.options.weeks.default ?? 'three_weeks_ago'
+                value.custom_date = calculateDateFromPreset(value.mode)
             }
         }
 
@@ -137,7 +161,7 @@ export function useProspectFilterRecipients(props: any) {
                 }
 
                 if (config.options?.weeks) {
-                    payloadValue.mode = val.mode ?? 3
+                    payloadValue.mode = val.mode ?? 'three_weeks_ago'
                     payloadValue.custom_date = val.custom_date ?? null
                 }
 
@@ -287,8 +311,13 @@ export function useProspectFilterRecipients(props: any) {
 
                 // WEEKS
                 if (config.options?.weeks) {
-                    uiValue.mode = clean.mode ?? config.options.weeks.default ?? 3
-                    uiValue.custom_date = clean.custom_date ?? null
+                    uiValue.mode = clean.mode ?? config.options.weeks.default ?? 'three_weeks_ago'
+                    // Only calculate date from preset if mode is not custom and no custom_date exists
+                    if (uiValue.mode !== 'custom' && !clean.custom_date) {
+                        uiValue.custom_date = calculateDateFromPreset(uiValue.mode)
+                    } else {
+                        uiValue.custom_date = clean.custom_date ?? null
+                    }
                 }
             }
 
@@ -424,7 +453,9 @@ export function useProspectFilterRecipients(props: any) {
         filtersPayload,
         saveFilters,
         fetchCustomers,
-        preloadedEntities
+        preloadedEntities,
+        updateLastContactedMode,
+        calculateDateFromPreset
     }
 }
 

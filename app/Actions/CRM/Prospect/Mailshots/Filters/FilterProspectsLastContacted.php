@@ -24,19 +24,32 @@ class FilterProspectsLastContacted
         $isLastContactedActive = is_array($lastContacted) ? ($lastContacted['value'] ?? false) : $lastContacted;
 
         if ($isLastContactedActive) {
-            $mode = is_array($lastContacted) ? ($lastContacted['mode'] ?? 3) : 3;
+            $mode = is_array($lastContacted) ? ($lastContacted['mode'] ?? 'three_weeks_ago') : 'three_weeks_ago';
             $customDate = is_array($lastContacted) ? ($lastContacted['custom_date'] ?? null) : null;
 
-            if ($mode === 'custom' && $customDate) {
-                $cutoffDate = Carbon::parse($customDate);
+            // Use custom_date if value exists
+            if (array_key_exists('custom_date', $lastContacted)) {
+                if ($customDate) {
+                    $targetDate = Carbon::parse($customDate)->startOfDay();
+                } else {
+                    // If custom_date exists but is null, don't apply date filter
+                    return $query;
+                }
             } else {
-                $weeks = is_numeric($mode) ? (int) $mode : 3;
-                $cutoffDate = now()->subWeeks($weeks);
+                // Handle string-based presets
+                $weeks = match ($mode) {
+                    'one_week_ago' => 1,
+                    'two_weeks_ago' => 2,
+                    'three_weeks_ago' => 3,
+                    default => 3,
+                };
+                $targetDate = now()->subWeeks($weeks)->startOfDay();
             }
 
-            $query->where(function ($q) use ($cutoffDate) {
+            // Use exact date matching instead of <=
+            $query->where(function ($q) use ($targetDate) {
                 $q->whereNull('prospects.last_contacted_at')
-                    ->orWhere('prospects.last_contacted_at', '<=', $cutoffDate);
+                    ->orWhereDate('prospects.last_contacted_at', '=', $targetDate);
             });
         }
 

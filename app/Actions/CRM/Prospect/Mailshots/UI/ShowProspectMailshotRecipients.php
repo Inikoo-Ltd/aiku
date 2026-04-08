@@ -53,12 +53,12 @@ class ShowProspectMailshotRecipients extends OrgAction
                             'weeks' => [
                                 'label' => 'Time period',
                                 'presets' => [
-                                    ['label' => '1 week ago', 'value' => 1],
-                                    ['label' => '2 weeks ago', 'value' => 2],
-                                    ['label' => '3 weeks ago', 'value' => 3],
+                                    ['label' => '1 week ago', 'value' => 'one_week_ago'],
+                                    ['label' => '2 weeks ago', 'value' => 'two_weeks_ago'],
+                                    ['label' => '3 weeks ago', 'value' => 'three_weeks_ago'],
                                     ['label' => 'Custom date', 'value' => 'custom'],
                                 ],
-                                'default' => 3,
+                                'default' => 'three_weeks_ago',
                             ],
                         ],
                     ],

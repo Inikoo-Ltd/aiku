@@ -42,7 +42,7 @@ import { routeType } from '@/types/route'
 import axios from 'axios'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import '@vuepic/vue-datepicker/dist/main.css'
-import { useProspectFilterRecipients} from "@/Composables/useProspectFilterRecipients";
+import { useProspectFilterRecipients } from "@/Composables/useProspectFilterRecipients";
 import { trans } from "laravel-vue-i18n"
 
 library.add(
@@ -86,13 +86,19 @@ const {
     readyFilters,
     addFilter,
     removeFilter,
-    clearAllFilters, 
+    clearAllFilters,
     fetchCustomers,
     saveFilters,
     hydrateSavedFilters,
+    updateLastContactedMode,
+    calculateDateFromPreset,
 } = useProspectFilterRecipients(props)
 
 const filterMenu = ref()
+
+const handleLastContactedModeChange = (filterKey: string, newMode: string) => {
+    updateLastContactedMode(filterKey, newMode)
+}
 
 const availableFilters = computed(() => {
     const list: any[] = []
@@ -314,11 +320,17 @@ watch(
                         </label>
                         <Dropdown v-model="filter.value.mode" :options="filter.config.options.weeks.presets"
                             optionLabel="label" optionValue="value" placeholder="Select time period" class="w-full mb-2"
-                            appendTo="body" />
+                            appendTo="body"
+                            @update:modelValue="(newMode) => handleLastContactedModeChange(key, newMode)" />
 
                         <!-- CUSTOM DATE (only when mode is custom) -->
                         <Calendar v-if="filter.value.mode === 'custom'" v-model="filter.value.custom_date"
                             placeholder="Select date" dateFormat="yy-mm-dd" showIcon class="w-full" appendTo="body" />
+
+                        <!-- DISPLAY CALCULATED DATE (for presets) -->
+                        <div v-else-if="filter.value.custom_date" class="text-xs text-gray-600 mt-1">
+                            Date: {{ filter.value.custom_date }}
+                        </div>
                     </div>
                 </template>
 
