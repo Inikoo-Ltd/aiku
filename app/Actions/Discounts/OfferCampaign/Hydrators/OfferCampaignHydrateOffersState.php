@@ -54,9 +54,9 @@ class OfferCampaignHydrateOffersState implements ShouldBeUnique
             $state = OfferCampaignOffersStateEnum::SUSPENDED;
         }
 
-        $status=false;
-        if($state == OfferCampaignOffersStateEnum::ACTIVE){
-            $status=true;
+        $status = false;
+        if ($state == OfferCampaignOffersStateEnum::ACTIVE) {
+            $status = true;
         }
 
         $modelData = [
