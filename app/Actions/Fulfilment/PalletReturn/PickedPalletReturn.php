@@ -28,6 +28,7 @@ use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\PalletReturnItem;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -39,10 +40,13 @@ class PickedPalletReturn extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(PalletReturn $palletReturn, array $modelData = []): PalletReturn
+    public function handle(PalletReturn $palletReturn, array $modelData = [], ?User $user = null): PalletReturn
     {
         $modelData[PalletReturnStateEnum::PICKED->value.'_at']   = now();
         $modelData['state']                                      = PalletReturnStateEnum::PICKED;
+        if ($user) {
+            $modelData['packer_user_id'] = $user->id;
+        }
 
         $palletReturn = $this->update($palletReturn, $modelData);
 
@@ -95,7 +99,9 @@ class PickedPalletReturn extends OrgAction
     {
         $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $request);
 
-        return $this->handle($palletReturn, $this->validatedData);
+        $user = $request->user();
+
+        return $this->handle($palletReturn, $this->validatedData, $user instanceof User ? $user : null);
     }
 
     /**
@@ -105,7 +111,9 @@ class PickedPalletReturn extends OrgAction
     {
         $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);
 
-        return $this->handle($palletReturn, $this->validatedData);
+        $user = $request->user();
+
+        return $this->handle($palletReturn, $this->validatedData, $user instanceof User ? $user : null);
     }
 
     /**

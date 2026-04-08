@@ -42,7 +42,10 @@ class ShowPalletReturn extends OrgAction
 
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
-        return $palletReturn;
+        return $palletReturn->load([
+            'pickerUser:id,contact_name',
+            'packerUser:id,contact_name',
+        ]);
     }
 
 

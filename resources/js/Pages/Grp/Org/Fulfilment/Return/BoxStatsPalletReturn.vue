@@ -67,6 +67,8 @@ onMounted(() => {
 })
 
 const deliveryListError = inject('deliveryListError', [])
+const pickingTitle = computed(() => props.dataPalletReturn?.type === 'stored_item' ? trans('Return Stored Item SKU') : trans('Return Pallet'))
+const hasPickingUsers = computed(() => Boolean(props.dataPalletReturn?.picker_user?.contact_name || props.dataPalletReturn?.packer_user?.contact_name))
 
 // Method: Create new address
 const isModalAddress = ref(false)
@@ -299,7 +301,7 @@ const onSubmitParcels = () => {
 // Section: Shipment
 const isDeleteShipment = ref<number | null>(null)
 const onDeleteShipment = (idShipment: number) => {
-	router.delete(route(props.shipments.delete_route.name, { 
+	router.delete(route(props.shipments.delete_route.name, {
 		...props.shipments.delete_route.parameters,
 		shipment: idShipment,
 	}),
@@ -357,7 +359,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 
 	// Decode the Base64 HTML
 	const htmlContent = atob(base64);
-	
+
 	// console.log("HTML Content:", htmlContent);
 
 	// Create a hidden container to render the HTML
@@ -371,7 +373,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 	container.style.background = 'white';
 	container.style.padding = '0';
 	document.body.appendChild(container);
-	
+
 	await new Promise(resolve => setTimeout(resolve, 100)); // Wait for styles to render
 
 	// Render the HTML to canvas
@@ -523,7 +525,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 				<a v-if="boxStats?.is_platform">{{ boxStats?.platform_customer?.phone }}</a>
 				<a v-else>{{ boxStats?.fulfilment_customer?.customer.phone }}</a>
 			</div>
-		
+
 			<!-- Field: Estimated delivery date -->
 			<div v-if="!boxStats?.is_platform" class="flex items-center w-full flex-none gap-x-2" :class="deliveryListError.includes('estimated_delivery_date') ? 'errorShake' : ''">
 				<dt v-tooltip="trans('Estimated delivery date')" class="flex-none">
@@ -659,7 +661,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 							</div>
 						</template>
 					</div>
-					
+
 					<ul v-if="boxStats?.parcels?.length" class="list-disc pl-4">
 						<li v-for="(parcel, parcelIdx) in boxStats?.parcels" :key="parcelIdx" class="text-sm tabular-nums">
 							<span class="truncate">
@@ -682,7 +684,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 						<div>{{ trans("Shipments") }} ({{ boxStats.shipments.length ?? 0 }})</div>
 
 					</div>
-					
+
 					<ul v-if="boxStats.shipments" class="list-disc pl-4">
 						<li v-for="(sments, shipmentIdx) in boxStats.shipments" :key="shipmentIdx" class="hover:bg-gray-100 text-sm tabular-nums relative">
 							<div class="flex justify-between">
@@ -694,7 +696,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 										<FontAwesomeIcon icon="fal fa-external-link" class="ml-1" fixed-width aria-hidden="true" />
 									</a>
 								</div>
-								
+
 								<!-- Type PDF -->
 								<div v-else-if="sments.label && sments.label_type === 'pdf'" class="group">
 									<span class="truncate">
@@ -709,7 +711,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 										<FontAwesomeIcon icon="fal fa-external-link" class="ml-1" fixed-width aria-hidden="true" />
 									</div>
 								</div>
-								
+
 								<!-- Type HTML -->
 								<div v-else-if="sments.label && sments.label_type === 'html'" class="group">
 									<span class="truncate">
@@ -731,7 +733,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 										<LoadingIcon />
 									</div>
 								</div>
-								
+
 								<div v-else>
 									<span class="truncate">
 										{{ sments.name }}
@@ -767,6 +769,18 @@ const base64HtmlToPdf = async (base64: string, index) => {
 				<svg id="palletReturnBarcode" class="w-full h-full"></svg>
 				<div class="text-xs text-gray-500">
 					{{ route().params.palletReturn }}
+				</div>
+			</div>
+
+            <div v-if="hasPickingUsers" class="mb-1 border-t border-gray-300 pt-1">
+				<div class="text-sm font-semibold text-gray-600">{{ pickingTitle }}</div>
+				<div class="flex flex-wrap gap-2 text-sm">
+					<div v-if="dataPalletReturn?.picker_user?.contact_name" class="border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">
+						<span class="font-semibold text-gray-700">{{ trans('Picker') }}:</span> {{ dataPalletReturn.picker_user.contact_name }}
+					</div>
+					<div v-if="dataPalletReturn?.packer_user?.contact_name" class=" border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">
+						<span class="font-semibold text-gray-700">{{ trans('Packer') }}:</span> {{ dataPalletReturn.packer_user.contact_name }}
+					</div>
 				</div>
 			</div>
 
@@ -914,7 +928,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 
 									<template #content="{ close: closed }">
 										<div class="w-[350px]">
-											
+
 										</div>
 									</template>
 								</Popover> -->
