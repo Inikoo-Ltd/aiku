@@ -55,12 +55,6 @@ export function useFilterRecipients(props: any) {
         by_interest: [],
         by_location: [],
         gold_reward_status: [],
-
-        // prospect
-        never_contacted: ['last_contacted', 'sent_email_times'],
-        last_contacted: ['never_contacted'],
-        sent_email_times: ['never_contacted'],
-
     }
 
     function hasConflict(newKey: string) {
@@ -100,15 +94,6 @@ export function useFilterRecipients(props: any) {
             if (config.options?.date_range?.presets) {
                 value.date_range_preset = null
             }
-
-            if (config.options?.count) {
-                value.count = config.options.count.default ?? 3
-            }
-
-            if (config.options?.weeks) {
-                value.mode = config.options.weeks.default ?? 3
-                value.custom_date = null
-            }
         }
 
         if (config.type === 'select') value = config.options?.[0]?.value ?? null
@@ -141,7 +126,7 @@ export function useFilterRecipients(props: any) {
             if (config.type === 'boolean') {
                 const payloadValue: any = {}
 
-                if (!config.options?.date_range && !config.options?.amount_range && !config.options?.count) {
+                if (!config.options?.date_range && !config.options?.amount_range) {
                     payloadValue.value = val.value ?? true
                 }
 
@@ -151,15 +136,6 @@ export function useFilterRecipients(props: any) {
 
                 if (config.options?.amount_range) {
                     payloadValue.amount_range = val.amount_range ?? null
-                }
-
-                if (config.options?.count) {
-                    payloadValue.count = val.count ?? 3
-                }
-
-                if (config.options?.weeks) {
-                    payloadValue.mode = val.mode ?? 3
-                    payloadValue.custom_date = val.custom_date ?? null
                 }
 
                 payload[key] = { value: payloadValue }
@@ -321,16 +297,6 @@ export function useFilterRecipients(props: any) {
                     }
                 }
 
-                // COUNT
-                if (config.options?.count) {
-                    uiValue.count = clean.count ?? config.options.count.default ?? 3
-                }
-
-                // WEEKS
-                if (config.options?.weeks) {
-                    uiValue.mode = clean.mode ?? config.options.weeks.default ?? 3
-                    uiValue.custom_date = clean.custom_date ?? null
-                }
             }
 
             else if (config.type === 'select') {
@@ -427,7 +393,6 @@ export function useFilterRecipients(props: any) {
                 }
             }
         }
-
         axios
             .patch(
                 route(props.recipientFilterRoute.name, props.recipientFilterRoute.parameters) as unknown as string,
@@ -487,7 +452,6 @@ export function useFilterRecipients(props: any) {
             if (data.city || data.formatted_address) {
                 v.location = data.city || data.formatted_address
             }
-
             v.resolved = true
         } finally {
             v.loadingMap = false
