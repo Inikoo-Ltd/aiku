@@ -23,6 +23,7 @@ use App\Http\Resources\Inventory\LocationOrgStockResource;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStock;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -36,6 +37,7 @@ class StoreLocationOrgStock extends OrgAction
 
     private Location $location;
     private OrgStock $orgStock;
+    private User|null $user;
 
 
     /**
@@ -66,6 +68,7 @@ class StoreLocationOrgStock extends OrgAction
                     'date'             => now()->format('Y-m-d H:i:s.u'),
                     'type'             => OrgStockMovementTypeEnum::ASSOCIATE,
                     'cost_per_sku'     => $costPerSku,
+                    'user_id'          => $this->user?->id,
                 ]
             );
 
@@ -135,6 +138,7 @@ class StoreLocationOrgStock extends OrgAction
     {
         $this->location = $location;
         $this->orgStock = $orgStock;
+        $this->user = request()->user();
         $this->initialisation($orgStock->organisation, $request);
 
         $this->handle($orgStock, $location, $this->validatedData);

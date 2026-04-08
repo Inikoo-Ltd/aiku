@@ -20,6 +20,7 @@ use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\LocationOrgStock;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -27,6 +28,8 @@ class DeleteLocationOrgStock extends OrgAction
 {
     use WithLocationOrgStockActionAuthorisation;
     use CalculatesOrgStockHistories;
+
+    private User|null $user;
 
     /**
      * @throws \Throwable
@@ -61,6 +64,7 @@ class DeleteLocationOrgStock extends OrgAction
                     'cost_per_sku'     => $costPerSku,
                     'org_amount'       => $stockDiff * $costPerSku,
                     'grp_amount'       => $stockDiff * $costPerSku * $exchangeRate,
+                    'user_id'          => $this->user?->id,
                 ]
             );
 
@@ -83,6 +87,7 @@ class DeleteLocationOrgStock extends OrgAction
      */
     public function asController(LocationOrgStock $locationOrgStock, ActionRequest $request): void
     {
+        $this->user = request()->user();
         $this->initialisation($locationOrgStock->organisation, $request);
         $this->handle($locationOrgStock);
     }
