@@ -38,8 +38,12 @@ class StoreOffer extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(OfferCampaign $offerCampaign, array $modelData): Offer
+    public function handle(OfferCampaign $offerCampaign, array $modelData, ?int $hydratorDelay = null): Offer
     {
+        if ($hydratorDelay !== null) {
+            $this->hydratorsDelay = $hydratorDelay;
+        }
+
         $modelData  = $this->prepareOfferData($offerCampaign, $modelData);
         $allowances = Arr::pull($modelData, 'allowances', []);
         $offer      = DB::transaction(function () use ($offerCampaign, $modelData, $allowances) {

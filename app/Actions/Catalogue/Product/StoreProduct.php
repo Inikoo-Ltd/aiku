@@ -269,7 +269,7 @@ class StoreProduct extends OrgAction
                 'sometimes',
                 'nullable',
                 'integer',
-                Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
+                Rule::exists('customers', 'id')->where('shop_id', $this->shop->id)
             ],
             'master_product_id'         => ['sometimes'],
             'marketplace_id'            => [
@@ -281,6 +281,7 @@ class StoreProduct extends OrgAction
             'marketing_weight'          => ['sometimes', 'numeric', 'min:0'],
             'gross_weight'              => ['sometimes', 'numeric', 'min:0'],
             'marketing_dimensions'      => ['sometimes'],
+            'is_bundle'      => ['sometimes', 'boolean'],
         ];
 
         if ($this->state == ProductStateEnum::DISCONTINUED) {

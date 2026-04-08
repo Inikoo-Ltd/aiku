@@ -14,6 +14,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithNavigation;
 use App\Actions\Traits\Authorisations\WithAccountingAuthorisation;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\UI\Accounting\PaymentTabsEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Http\Resources\Accounting\PaymentsResource;
@@ -126,14 +127,23 @@ class ShowPayment extends OrgAction
                         'payment' => $payment->id
                     ]
                 ],
-                // Only enable receipt download if user have accounting authorization
+                'cancel_route'  => [
+					'name'          => 'grp.models.org.payment.cancel',
+					'parameters'    => [
+						'organisation'  => $payment->organisation_id,
+						'payment'       => $payment->id,
+                    ]
+                ],
+                // Only enable receipt download if user has accounting authorization
                 'topup_receipt_route' => [
-                    'show' => $this->authorize($request) && $payment->topUp ? true : false,
+                    'show' => $this->authorize($request) && $payment->topUp,
                     'name' => 'grp.org.accounting.payments.topUp.pdf',
                     'parameters' => [
                         'topUp' => $payment->topUp ? $payment->topUp->reference : null,
                     ]
                 ],
+                'payment_account_type' => $payment->paymentAccount?->type,
+                'is_cancelled' => $payment->state === PaymentStateEnum::CANCELLED,
 
                 PaymentTabsEnum::SHOWCASE->value => $this->tab == PaymentTabsEnum::SHOWCASE->value ?
                     fn () => GetPaymentShowcase::run($payment)
@@ -171,7 +181,7 @@ class ShowPayment extends OrgAction
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
-                            'label' => $payment->reference ? Str::limit($payment->reference, 12, '...') : __('No reference'),
+                            'label' => $payment->reference ? Str::limit($payment->reference, 12) : __('No reference'),
                         ],
 
                     ],
@@ -187,7 +197,7 @@ class ShowPayment extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __('Payment').': '.($payment->reference ? Str::limit($payment->reference, 12, '...') : __('No reference')),
+                        'label' => __('Payment').': '.($payment->reference ? Str::limit($payment->reference, 12) : __('No reference')),
                     ],
                     'suffix' => $suffix
                 ]

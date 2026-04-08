@@ -23,7 +23,7 @@ import ChangePickedBays from "@/Components/DeliveryNote/ChangePickedBays.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ManageTrolleysInDeliveryNote from "@/Components/DeliveryNote/ManageTrolleysInDeliveryNote.vue"
 import Select from 'primevue/select';
-import { faExchangeAlt, faLocation, faLock, faUnlock , faLockOpen} from "@far"
+import { faExchangeAlt, faLock , faLockOpen} from "@far"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
@@ -90,10 +90,6 @@ const props = defineProps<{
                 tracking: string
             }[]
         }[]
-		external_order: {
-			status: boolean
-			route_view_packing_slip: routeType
-		}
         platform?: {
             logo: string
             name: string
@@ -460,13 +456,13 @@ console.log(layout)
                                 <div class="xtext-xs text-gray-600 leading-snug">
                                     <div>
                                         <strong>{{ trans("Name") }}:</strong>
-                                        {{ boxStats.shipping_fields.contact_name || boxStats.customer_client.company_name }}
+                                        {{ boxStats.shipping_fields?.contact_name || boxStats.customer_client?.company_name }}
                                     </div>
                                     <div v-if="boxStats.customer_client.email">
-                                        <strong>{{ trans("Email") }}:</strong> {{ boxStats.shipping_fields.email }}
+                                        <strong>{{ trans("Email") }}:</strong> {{ boxStats.shipping_fields?.email }}
                                     </div>
                                     <div v-if="boxStats.customer_client.phone">
-                                        <strong>{{ trans("Phone") }}:</strong> {{ boxStats.shipping_fields.phone }}
+                                        <strong>{{ trans("Phone") }}:</strong> {{ boxStats.shipping_fields?.phone }}
                                     </div>
                                 </div>
                             </div>
@@ -672,7 +668,6 @@ console.log(layout)
                         </dt>
                         <dd class="text-gray-500 w-full">
                             <ShipmentSection
-								:external_order="boxStats.external_order"
                                 :shipping_fields="boxStats.shipping_fields"
                                 :shipping_fields_update_route="boxStats.shipping_fields_update_route"
                                 :shipments="boxStats.shipments"

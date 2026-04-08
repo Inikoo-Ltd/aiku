@@ -107,6 +107,10 @@ class HydrateModels extends HydrateModel
             $this->hydrateDropshipping($command);
         }
 
+        if ($this->checkIfCanHydrate(['stock_histories', 'sh'], $command)) {
+            $this->hydrateStockHistories($command);
+        }
+
         return 0;
     }
 
@@ -287,6 +291,13 @@ class HydrateModels extends HydrateModel
         $command->info('CRM section 👸🏻');
         $command->call('hydrate:customers');
         $command->call('hydrate:web_users');
+    }
+
+    protected function hydrateStockHistories(Command $command): void
+    {
+        $command->info('Stock History section 🗃️');
+        $command->call('hydrate:group_stock_histories');
+        $command->call('hydrate:organisation_stock_histories');
     }
 
     protected function hydrateFulfilment(Command $command): void

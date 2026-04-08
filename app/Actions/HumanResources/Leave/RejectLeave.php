@@ -5,8 +5,9 @@ namespace App\Actions\HumanResources\Leave;
 use App\Actions\OrgAction;
 use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Http\Resources\HumanResources\LeaveResource;
-use App\Models\SysAdmin\Organisation;
 use App\Models\HumanResources\Leave;
+use App\Models\HumanResources\LeaveApprovalRecord;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
@@ -16,9 +17,26 @@ class RejectLeave extends OrgAction
 {
     public function handle(Leave $leave, string $rejectionReason): Leave
     {
+        $user = Auth::user();
+
+        if (!$leave->canBeApprovedBy($user)) {
+            abort(403, 'You are not authorized to reject this leave at this level.');
+        }
+
+        $currentLevel = $leave->currentApprovalLevel();
+
+        LeaveApprovalRecord::create([
+            'leave_id' => $leave->id,
+            'approver_id' => $user->id,
+            'sequence_number' => $currentLevel,
+            'status' => 'rejected',
+            'comments' => $rejectionReason,
+            'decided_at' => now(),
+        ]);
+
         $leave->update([
             'status' => LeaveStatusEnum::REJECTED,
-            'approved_by' => Auth::id(),
+            'approved_by' => $user->id,
             'approved_at' => now(),
             'rejection_reason' => $rejectionReason,
         ]);
@@ -29,7 +47,7 @@ class RejectLeave extends OrgAction
     public function rules(): array
     {
         return [
-            'rejection_reason' => ['required', 'string', 'max:500'],
+            'rejection_reason' => ['required', 'string', 'max:255'],
         ];
     }
 

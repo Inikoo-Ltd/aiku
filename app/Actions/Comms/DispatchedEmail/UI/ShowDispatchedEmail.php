@@ -37,14 +37,14 @@ class ShowDispatchedEmail extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-
         if ($this->parent instanceof Fulfilment) {
-            return    $this->canEdit = $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
+            return $this->canEdit = $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
         }
 
         if ($this->parent instanceof Group) {
             return $request->user()->authTo("group-overview");
         }
+
         return $request->user()->authTo([
             'shop-admin.'.$this->shop->id,
             'marketing.'.$this->shop->id.'.view',
@@ -54,17 +54,21 @@ class ShowDispatchedEmail extends OrgAction
         ]);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inOutboxInFulfilment(Organisation $organisation, Fulfilment $fulfilment, Outbox $outbox, DispatchedEmail $dispatchedEmail, ActionRequest $request): DispatchedEmail
     {
         $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(DispatchedEmailTabsEnum::values());
+
         return $this->handle($dispatchedEmail);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inOutboxInShop(Organisation $organisation, Shop $shop, Outbox $outbox, DispatchedEmail $dispatchedEmail, ActionRequest $request): DispatchedEmail
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(DispatchedEmailTabsEnum::values());
+
         return $this->handle($dispatchedEmail);
     }
 
@@ -77,15 +81,15 @@ class ShowDispatchedEmail extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs($dispatchedEmail, $request->route()->getName(), $request->route()->originalParameters()),
                 'pageHead'    => [
                     'icon'  => [
-                        'icon' => 'fal fa-paper-plane',
+                        'icon'  => 'fal fa-paper-plane',
                         'title' => __('Dispatched Email')
                     ],
-                    'model'     => __('Dispatched Email'),
+                    'model' => __('Dispatched Email'),
                     'title' => $dispatchedEmail->id,
 
                 ],
 
-                'tabs'             => [
+                'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => DispatchedEmailTabsEnum::navigation()
 
@@ -100,27 +104,10 @@ class ShowDispatchedEmail extends OrgAction
         )->table(IndexEmailTrackingEvents::make()->tableStructure($dispatchedEmail, DispatchedEmailTabsEnum::EMAIL_TRACKING_EVENTS->value));
     }
 
-    public function getBreadcrumbs(DispatchedEmail $dispatchedEmail, string $routeName, array $routeParameters, string $suffix = ''): array
+    public function getBreadcrumbs(DispatchedEmail $dispatchedEmail, string $routeName, array $routeParameters): array
     {
-
         return match ($routeName) {
-            'grp.org.fulfilments.show.operations.comms.outboxes.dispatched-email.show',
-            => array_merge(
-                ShowOutbox::make()->getBreadcrumbs($routeName, $routeParameters),
-                [
-                    [
-                        'type'   => 'simple',
-                        'simple' => [
-                            'route' => [
-                                'name'       => $routeName,
-                                'parameters' => $routeParameters
-                            ],
-                            'label' => $dispatchedEmail->id
-                        ]
-                    ]
-                ]
-            ),
-            'grp.org.shops.show.dashboard.comms.outboxes.dispatched-email.show',
+            'grp.org.fulfilments.show.operations.comms.outboxes.dispatched-email.show', 'grp.org.shops.show.dashboard.comms.outboxes.dispatched-email.show',
             => array_merge(
                 ShowOutbox::make()->getBreadcrumbs($routeName, $routeParameters),
                 [

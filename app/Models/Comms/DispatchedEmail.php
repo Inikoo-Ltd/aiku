@@ -9,8 +9,6 @@
 namespace App\Models\Comms;
 
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
-use App\Models\CRM\Customer;
-use App\Models\CRM\Prospect;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -19,11 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 /**
  * @property int $id
  * @property int|null $outbox_id
- * @property string|null $parent_type MailShot|EmailBulkRun|EmailPush|EmailOngoingRun
- * @property int|null $parent_id
  * @property int|null $email_address_id
- * @property string|null $recipient_type
- * @property int|null $recipient_id
  * @property DispatchedEmailStateEnum $state
  * @property \Illuminate\Support\Carbon|null $sent_at
  * @property \Illuminate\Support\Carbon|null $first_read_at
@@ -37,8 +31,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
  * @property int $number_email_tracking_events
  * @property-read \App\Models\Comms\EmailAddress|null $emailAddress
@@ -61,8 +53,6 @@ class DispatchedEmail extends Model
         'last_read_at'     => 'datetime',
         'first_clicked_at' => 'datetime',
         'last_clicked_at'  => 'datetime',
-        'fetched_at'       => 'datetime',
-        'last_fetched_at'  => 'datetime',
     ];
 
     protected $attributes = [
@@ -84,18 +74,6 @@ class DispatchedEmail extends Model
     public function outbox(): BelongsTo
     {
         return $this->belongsTo(Outbox::class);
-    }
-
-    public function getName(): string
-    {
-        if ($this->recipient) {
-            /** @var Prospect|Customer $recipient */
-            $recipient = $this->recipient;
-
-            return $recipient->name;
-        }
-
-        return '';
     }
 
     public function emailTrackingEvents(): HasMany

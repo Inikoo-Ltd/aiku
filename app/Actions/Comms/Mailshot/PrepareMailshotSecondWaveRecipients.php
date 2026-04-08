@@ -53,12 +53,13 @@ class PrepareMailshotSecondWaveRecipients
         $baseQuery->join('dispatched_emails', 'mailshot_recipients.dispatched_email_id', '=', 'dispatched_emails.id');
         $baseQuery->where('mailshot_recipients.mailshot_id', $parentMailshot->id);
 
-        $baseQuery->where('dispatched_emails.state', DispatchedEmailStateEnum::SENT->value);
+        $baseQuery->whereIn('dispatched_emails.state', [ DispatchedEmailStateEnum::SENT->value, DispatchedEmailStateEnum::DELIVERED->value]);
         $baseQuery->whereNotNull('dispatched_emails.sent_at');
 
         $baseQuery->where('customers.shop_id', $mailshot->shop_id);
         $baseQuery->where('mailshot_recipients.recipient_type', 'Customer');
         $baseQuery->whereNotNull('customers.email');
+        $baseQuery->whereNull('customers.deleted_at');
 
         switch ($mailshot->type) {
             case MailshotTypeEnum::NEWSLETTER:

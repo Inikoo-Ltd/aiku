@@ -67,7 +67,7 @@ class EditOffer extends OrgAction
             $discountValue['percentage_off'] = $percentage_off;
         }
 
-
+        // dd($request->route()->originalParameters());
         return Inertia::render(
             'EditModel',
             [
@@ -81,7 +81,17 @@ class EditOffer extends OrgAction
                     'title' => $offer->name,
                     'model' => __('Edit Offer'),
                     'icon'  => 'fal fa-pencil',
-                    'actions' => [
+                    'actions' => array_filter([
+                        app()->environment('local') ? [
+                            'type'  => 'button',
+                            'label' => __('Finish Now'),
+                            'style' => 'secondary',
+                            'icon'  => 'fal fa-check',
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.discounts.offers.finish',
+                                'parameters' => ['organisation' => $request->route()->originalParameters()['organisation']],
+                            ]
+                        ] : null,
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -90,7 +100,7 @@ class EditOffer extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ]
                         ]
-                    ],
+                    ]),
                 ],
                 'warning'   => $warning,
                 'formData'    => [

@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Models\Inventory\OrganisationStockHistory;
 use App\Models\SysAdmin\Organisation;
 use App\Stubs\Migrations\HasInventoryStats;
 use Inertia\Inertia;
@@ -43,7 +44,7 @@ class ShowInventoryDashboard extends OrgAction
                 'title'        => __('Inventory'),
                 'pageHead'     => [
                     'title'     => __('Inventory'),
-                    'model'     => __('warehouse'),
+                    'model'     => __('Warehouse'),
                     'icon'      => [
                         'icon' => 'fal fa-pallet-alt'
                     ],
@@ -55,7 +56,7 @@ class ShowInventoryDashboard extends OrgAction
                 'flatTreeMaps' => [
                     [
                         [
-                            'name'  => __('SKUs families'),
+                            'name'  => __('SKUs Families'),
                             'icon'  => ['fal', 'fa-boxes-alt'],
                             'route' => [
                                 'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.index',
@@ -81,11 +82,68 @@ class ShowInventoryDashboard extends OrgAction
                         ]
                     ]
                 ],
+                'statsBox' => [
+                    [
+                        'is_negative' => true,
+                        'label' => __('SKU Without Product'),
+                        'route' => [
+                            'name'       => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.current',
+                            'parameters' => $routeParameters
+                        ],
+                        'icon'  => 'fal fa-box',
+                        'backgroundColor' => '#ff000011',
+                        'color'           => '#df1c1cff',
+                        'value' => '0', // No stat for this just yet
+                    ],
+                ],
                 // 'dashboardStats' => $this->getDashboardStats(),
-                'dashboard'    => $this->getDashboard(),
+                'dashboard'          => $this->getDashboard(),
+                'stockHistoryToday'  => $this->getTodayStockHistory($routeParameters),
 
             ]
         );
+    }
+
+    private function getTodayStockHistory(array $routeParameters): ?array
+    {
+        $history = OrganisationStockHistory::query()
+            ->where('organisation_id', $this->organisation->id)
+            ->where('is_week', false)
+            ->where('is_month', false)
+            ->where('is_year', false)
+            ->latest('date')
+            ->first();
+
+        if (!$history) {
+            return null;
+        }
+
+        $totalSkus    = $history->number_org_stocks;
+        $pctNotSold1y = $totalSkus > 0
+            ? round($history->number_org_stocks_not_sold_1y / $totalSkus * 100, 1)
+            : 0;
+
+        return [
+            'date'                           => $history->date->toDateString(),
+            'number_org_stocks'              => $totalSkus,
+            'number_out_of_stock_org_stocks' => $history->number_out_of_stock_org_stocks,
+            'percentage_out_of_stock'        => $history->percentage_out_of_stock,
+            'number_locations'               => $history->number_locations,
+            'org_stock_value'                => $history->org_stock_value,
+            'currency_code'                  => $this->organisation->currency->code,
+            'value_dormant_stock_1y'         => $history->value_dormant_stock_1y,
+            'percentage_dormant_1y'          => $history->percentage_value_dormant_stock_1y ?? 0,
+            'number_org_stocks_not_sold_1y'  => $history->number_org_stocks_not_sold_1y,
+            'percentage_not_sold_1y'         => $pctNotSold1y,
+            'history_route'                  => [
+                'name'       => 'grp.org.warehouses.show.inventory.org_stock_histories.show',
+                'parameters' => array_merge($routeParameters, ['organisationStockHistory' => $history->id]),
+            ],
+            'locations_route'                => [
+                'name'       => 'grp.org.warehouses.show.infrastructure.locations.index',
+                'parameters' => $routeParameters,
+            ],
+        ];
     }
 
     public function getDashboard(): array

@@ -23,6 +23,8 @@ enum WebsiteWorkshopTabsEnum: string
     case PRODUCTS           = 'products';
     case PRODUCT            = 'product';
 
+    case HISTORY            = 'history';
+
     public function blueprint(): array
     {
         return match ($this) {
@@ -49,6 +51,12 @@ enum WebsiteWorkshopTabsEnum: string
             WebsiteWorkshopTabsEnum::WEBSITE_LAYOUT => [
                 'title' => __('Layout'),
                 'icon'  => 'fal fa-cheeseburger',
+            ],
+            WebsiteWorkshopTabsEnum::HISTORY => [
+                'title' => __('History'),
+                'icon'  => 'fal fa-clock',
+                'type'  => 'icon',
+                'align' => 'right'
             ],
         };
     }

@@ -10,7 +10,7 @@ namespace App\Models\Ordering;
 
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
-use App\Models\Accounting\Invoice;
+use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\CRM\Customer;
@@ -103,12 +103,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property float $current_discount_factor
  * @property-read Asset|null $asset
  * @property-read Customer $customer
- * @property-read DeliveryNoteItem|null $deliveryNoteItemTODELETE
  * @property-read Collection<int, DeliveryNoteItem> $deliveryNoteItems
  * @property-read Collection<int, Feedback> $feedbacks
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read HistoricAsset|null $historicAsset
- * @property-read Invoice|null $invoice
+ * @property-read InvoiceTransaction|null $invoiceTransaction
  * @property-read Model|\Eloquent|null $model
  * @property-read Collection<int, OfferAllowance> $offerAllowances
  * @property-read Collection<int, OfferCampaign> $offerCampaigns
@@ -222,14 +221,9 @@ class Transaction extends Model
         return $this->belongsToMany(OfferAllowance::class, 'transaction_has_offer_allowances');
     }
 
-    public function deliveryNoteItemTODELETE(): HasOne
+    public function invoiceTransaction(): HasOne
     {
-        return $this->hasOne(DeliveryNoteItem::class);
-    }
-
-    public function invoice(): BelongsTo
-    {
-        return $this->belongsTo(Invoice::class);
+        return $this->hasOne(InvoiceTransaction::class);
     }
 
 }

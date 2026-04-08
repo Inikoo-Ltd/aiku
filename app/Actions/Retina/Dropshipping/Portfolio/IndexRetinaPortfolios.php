@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs;
+use App\Actions\Retina\Dropshipping\Bundle\UI\IndexRetinaBundles;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -89,8 +90,18 @@ class IndexRetinaPortfolios extends RetinaAction
                 'products.is_for_sale',
             );
 
+        if ($this->tab === CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value) {
+            $query->where('portfolios.is_bundle', true);
+        } else {
+            $query->where('portfolios.is_bundle', false);
+        }
+
         return $query->defaultSort('-portfolios.id')
-            ->allowedFilters([$unUploadedFilter, $globalSearch, $this->getStateFilter(), $this->getPlatformStatusFilter(), $this->getForSaleFilter()])
+            ->allowedFilters([
+                            $unUploadedFilter, $globalSearch,
+                            $this->getStateFilter(), $this->getPlatformStatusFilter(),
+                            $this->getForSaleFilter()
+                        ])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -105,15 +116,24 @@ class IndexRetinaPortfolios extends RetinaAction
     public function getPlatformStatusFilter(): AllowedFilter
     {
         return AllowedFilter::callback('platform_status', function ($query, $value) {
-            $query->where('platform_status', $value)
-                ->orWhere('products.state', $value);
+            if ($value === 'true' || $value === true) {
+                $query->where('platform_status', true)
+                    ->orWhere('products.state', true);
+            } elseif ($value === 'false' || $value === false) {
+                $query->where('platform_status', false)
+                    ->orWhere('products.state', true);
+            }
         });
     }
 
     public function getForSaleFilter(): AllowedFilter
     {
         return AllowedFilter::callback('is_for_sale', function ($query, $value) {
-            $query->where('products.is_for_sale', true);
+            if ($value === 'true' || $value === true) {
+                $query->where('products.is_for_sale', true);
+            } elseif ($value === 'false' || $value === false) {
+                $query->where('products.is_for_sale', false);
+            }
         });
     }
 
@@ -292,6 +312,7 @@ class IndexRetinaPortfolios extends RetinaAction
         $downloadPortfolioCustomerSalesChannel = DownloadPortfolioCustomerSalesChannel::where('customer_sales_channel_id', $this->customerSalesChannel->id)->whereNotNull('download_url')->orderBy('created_at', 'desc')->first();
         $last_active_download_portfolio_customer_sales_channel_url = $downloadPortfolioCustomerSalesChannel?->download_url;
         $last_created_at_download_portfolio_customer_sales_channel = $downloadPortfolioCustomerSalesChannel?->created_at;
+        $shop = $this->customer->shop;
         return Inertia::render(
             'Dropshipping/Portfolios',
             [
@@ -460,6 +481,72 @@ class IndexRetinaPortfolios extends RetinaAction
                         ]
                     ]
                 ],
+
+                'bundle_routes' => [
+                    'store' => [
+                        'name'       => 'retina.models.dropshipping.bundles.store',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
+                    'update' => [
+                        'name'       => 'retina.models.dropshipping.bundles.update',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
+                    'delete' => [
+                        'name'       => 'retina.models.dropshipping.bundles.delete',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
+                    'images' => [
+                        'get' => [
+                            'name'       => 'retina.dropshipping.products.images.index',
+                            'parameters' => []
+                        ],
+                        'store' => [
+                            'name'       => 'retina.models.dropshipping.bundles.products.images.store',
+                            'parameters' => [
+                                'customerSalesChannel' => $this->customerSalesChannel->id
+                            ]
+                            ],
+                             'edit' => [
+                            'name'       => 'retina.dropshipping.customer_sales_channels.bundles.show',
+                            'parameters' => [
+                                'customerSalesChannel' => $this->customerSalesChannel->slug
+                            ]
+                        ],
+                    ],
+                    'calculate' => [
+                        'name'       => 'retina.models.dropshipping.bundles.products.calculate',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
+                    'ai' => [
+                        'generate_images' => [
+                            'name'       => 'retina.models.dropshipping.bundles.products.images.generate',
+                            'parameters' => [
+                                'customerSalesChannel' => $this->customerSalesChannel->id
+                            ]
+                        ],
+                        'generate_title' => [
+                            'name'       => 'retina.models.dropshipping.bundles.title.generate',
+                            'parameters' => []
+                        ],
+                        'generate_description' => [
+                            'name'       => 'retina.models.dropshipping.bundles.description.generate',
+                            'parameters' => []
+                        ]
+                    ],
+                ],
+
+                'shop_data' => [
+                    'currency_code' => $shop->currency->symbol,
+                ],
+
                 'order_route'    => isset($this->platform) && $this->platform->type === PlatformTypeEnum::MANUAL ? [
                     'name'       => 'retina.models.customer.order.platform.store',
                     'parameters' => [
@@ -476,11 +563,9 @@ class IndexRetinaPortfolios extends RetinaAction
                     ]
                 ],
 
-
                 'step' => [
                     'current' => 0
                 ],
-
 
                 'product_count' => $this->customerSalesChannel->number_portfolios,
 
@@ -490,6 +575,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 'platform_user_id'         => $platformUser?->id,
                 'platform_data'            => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
                 'products'                 => DropshippingPortfoliosResource::collection($portfolios),
+                'bundles'                  => DropshippingPortfoliosResource::collection($portfolios),
                 'is_platform_connected'    => $this->customerSalesChannel->platform_status,
                 'customer_sales_channel'   => RetinaCustomerSalesChannelResource::make($this->customerSalesChannel)->toArray(request()),
                 'channels'                  => CustomerSalesChannelsResourceTOFIX::collection($channels), //  Do now use the resource. Use an array of necessary data
@@ -502,7 +588,8 @@ class IndexRetinaPortfolios extends RetinaAction
             ]
         )
         ->table($this->tableStructure(prefix: 'products'))
-        ->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, 'logs'));
+        ->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, 'logs'))
+            ->table(IndexRetinaBundles::make()->tableStructure($this->customerSalesChannel, null, 'bundles'));
     }
 
     public function tableStructure(?array $modelOperations = null, $prefix = null): \Closure

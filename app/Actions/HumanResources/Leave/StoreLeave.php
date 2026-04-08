@@ -8,6 +8,8 @@ use App\Http\Resources\HumanResources\LeaveResource;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\Leave;
+use App\Models\HumanResources\LeaveApprovalRecord;
+use App\Models\HumanResources\LeaveApprover;
 use App\Models\HumanResources\LeaveType;
 use App\Models\HumanResources\Timesheet;
 use App\Services\HumanResources\LeaveConcurrencyService;
@@ -67,24 +69,24 @@ class StoreLeave extends OrgAction
     {
         $startDate = Carbon::parse($modelData['start_date']);
         $endDate = Carbon::parse($modelData['end_date']);
-        $isHalfDay = (bool) ($modelData['is_half_day'] ?? false);
+        $isHalfDay = (bool)($modelData['is_half_day'] ?? false);
         $session = $modelData['session'] ?? 'Full';
         $durationDays = $isHalfDay ? 1 : $this->calculateDurationDays($startDate, $endDate, $employee);
 
         $leave = Leave::create([
-            'group_id'        => $employee->group_id,
+            'group_id' => $employee->group_id,
             'organisation_id' => $employee->organisation_id,
-            'employee_id'     => $employee->id,
-            'employee_name'   => $employee->contact_name,
-            'type'            => $modelData['type'],
-            'leave_type_id'   => $this->selectedLeaveType?->id,
-            'start_date'      => $startDate,
-            'end_date'        => $endDate,
-            'duration_days'   => $durationDays,
-            'is_half_day'     => $isHalfDay,
-            'session'         => $session,
-            'reason'          => $modelData['reason'] ?? null,
-            'status'          => LeaveStatusEnum::PENDING,
+            'employee_id' => $employee->id,
+            'employee_name' => $employee->contact_name,
+            'type' => $modelData['type'],
+            'leave_type_id' => $this->selectedLeaveType?->id,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'duration_days' => $durationDays,
+            'is_half_day' => $isHalfDay,
+            'session' => $session,
+            'reason' => $modelData['reason'] ?? null,
+            'status' => LeaveStatusEnum::PENDING,
         ]);
 
         if (isset($modelData['attachments'])) {
@@ -92,11 +94,25 @@ class StoreLeave extends OrgAction
                 $leave->addMedia($file)
                     ->withProperties([
                         'group_id' => $leave->group_id,
-                        'type'     => 'attachment',
-                        'ulid'     => (string) Str::ulid(),
+                        'type' => 'attachment',
+                        'ulid' => (string)Str::ulid(),
                     ])
                     ->toMediaCollection('attachments');
             }
+        }
+
+        $level1Approvers = LeaveApprover::byOrganisation($leave->organisation)
+            ->bySequence(1)
+            ->active()
+            ->get();
+
+        foreach ($level1Approvers as $approver) {
+            LeaveApprovalRecord::create([
+                'leave_id' => $leave->id,
+                'approver_id' => $approver->user_id,
+                'sequence_number' => 1,
+                'status' => 'pending',
+            ]);
         }
 
         return $leave;
@@ -107,8 +123,19 @@ class StoreLeave extends OrgAction
         $days = 0;
         $current = $startDate->copy();
 
+        $holidays = Holiday::query()
+            ->where('organisation_id', $employee->organisation_id)
+            ->whereDate('from', '<=', $endDate->toDateString())
+            ->whereDate('to', '>=', $startDate->toDateString())
+            ->get()
+            ->pluck('from', 'to')
+            ->flatMap(fn ($date, $to) => [
+                $date->toDateString() => true,
+                $to->toDateString() => true,
+            ]);
+
         while ($current->lte($endDate)) {
-            if ($current->isWeekday()) {
+            if ($current->isWeekday() && !isset($holidays[$current->toDateString()])) {
                 $days++;
             }
             $current->addDay();
@@ -133,13 +160,13 @@ class StoreLeave extends OrgAction
 
         return [
             'organisation' => ['nullable', 'string'],
-            'type'         => $typeRules,
-            'start_date'   => ['required', 'date', 'after_or_equal:today'],
-            'end_date'     => ['required', 'date', 'after_or_equal:start_date'],
-            'is_half_day'  => ['sometimes', 'boolean'],
-            'session'      => ['sometimes', Rule::in(['Morning', 'Afternoon', 'Full'])],
-            'reason'       => ['required', 'string', 'max:1000'],
-            'attachments'  => ['nullable', 'array', 'max:3'],
+            'type' => $typeRules,
+            'start_date' => ['required', 'date', 'after_or_equal:today'],
+            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+            'is_half_day' => ['sometimes', 'boolean'],
+            'session' => ['sometimes', Rule::in(['Morning', 'Afternoon', 'Full'])],
+            'reason' => ['required', 'string', 'max:1000'],
+            'attachments' => ['nullable', 'array', 'max:3'],
             'attachments.*' => ['nullable', File::types(['pdf', 'jpg', 'jpeg', 'png'])->max(5 * 1024)],
         ];
     }
@@ -162,7 +189,7 @@ class StoreLeave extends OrgAction
         if ($type) {
             $this->selectedLeaveType = LeaveTypeResolver::findForOrganisationByCode(
                 organisationId: $this->employee->organisation_id,
-                code: (string) $type,
+                code: (string)$type,
                 onlyActive: true
             );
         }
@@ -176,7 +203,7 @@ class StoreLeave extends OrgAction
             return;
         }
 
-        $isHalfDay = (bool) request()->boolean('is_half_day');
+        $isHalfDay = (bool)request()->boolean('is_half_day');
         $session = request()->input('session', 'Full');
         if ($isHalfDay && !$startDate->isSameDay($endDate)) {
             $validator->errors()->add('end_date', __('Half day leave must be a single date.'));
@@ -246,8 +273,8 @@ class StoreLeave extends OrgAction
                 'start_date',
                 __('Leave cannot be submitted for holiday dates. Overlaps with :label (:from - :to).', [
                     'label' => $label,
-                    'from'  => $holidayOverlap->from->format('Y-m-d'),
-                    'to'    => $holidayOverlap->to->format('Y-m-d'),
+                    'from' => $holidayOverlap->from->format('Y-m-d'),
+                    'to' => $holidayOverlap->to->format('Y-m-d'),
                 ])
             );
         }
@@ -268,31 +295,66 @@ class StoreLeave extends OrgAction
         }
 
         $durationDays = $this->calculateDurationDays($startDate, $endDate, $this->employee);
-        $requestedDays = $isHalfDay ? 0.5 : (float) $durationDays;
+        $requestedDays = $isHalfDay ? 0.5 : (float)$durationDays;
         $balanceYear = $startDate->year;
 
-        if (LeaveTypeResolver::bucketFromLeaveType($this->selectedLeaveType, (string) $type) === 'annual') {
+        if (LeaveTypeResolver::bucketFromLeaveType($this->selectedLeaveType, (string)$type) === 'annual') {
             $annualSubmittedDays = Leave::query()
                 ->where('employee_id', $this->employee->id)
                 ->whereYear('start_date', $balanceYear)
                 ->with('leaveType')
                 ->get()
                 ->filter(function (Leave $leave) {
-                    return $leave->status?->value !== LeaveStatusEnum::REJECTED->value;
+                    return $leave->status?->value === LeaveStatusEnum::APPROVED->value;
                 })
                 ->sum(function (Leave $leave) {
                     if (LeaveTypeResolver::bucketFromLeaveType($leave->leaveType, $leave->type) !== 'annual') {
                         return 0;
                     }
 
-                    return $leave->is_half_day ? 0.5 : (float) $leave->duration_days;
+                    return $leave->is_half_day ? 0.5 : (float)$leave->duration_days;
                 });
 
-            $annualAllowance = (float) $this->employee->organisation->getDefaultAnnualLeaveDays();
-            $annualRemaining = max(0, $annualAllowance - (float) $annualSubmittedDays);
+            $orgAnnualAllowance = (float)$this->employee->organisation->getDefaultAnnualLeaveDays();
+            $leaveTypeMaxDays = (float)($this->selectedLeaveType->max_days_per_year ?? PHP_INT_MAX);
+            $annualAllowance = min($orgAnnualAllowance, $leaveTypeMaxDays);
+            $annualRemaining = max(0, $annualAllowance - (float)$annualSubmittedDays);
 
             if ($annualRemaining < $requestedDays) {
-                $validator->errors()->add('duration_days', __('Insufficient leave balance.'));
+                $maxDays = $annualAllowance % 1 === 0 ? (int)$annualAllowance : $annualAllowance;
+                $validator->errors()->add(
+                    'duration_days',
+                    __('Maximum for the selected leave type is :max days.', [
+                        'max' => $maxDays,
+                    ])
+                );
+            }
+        }
+
+        if ($this->selectedLeaveType->max_days_per_year !== null &&
+            LeaveTypeResolver::bucketFromLeaveType($this->selectedLeaveType, (string)$type) !== 'annual') {
+            $leaveTypeSubmittedDays = Leave::query()
+                ->where('employee_id', $this->employee->id)
+                ->where('leave_type_id', $this->selectedLeaveType->id)
+                ->whereYear('start_date', $balanceYear)
+                ->where('status', LeaveStatusEnum::APPROVED->value)
+                ->get()
+                ->sum(function (Leave $leave) {
+                    return $leave->is_half_day ? 0.5 : (float)$leave->duration_days;
+                });
+
+            $leaveTypeAvailable = max(0, (float)$this->selectedLeaveType->max_days_per_year - (float)$leaveTypeSubmittedDays);
+
+            if ($leaveTypeAvailable < $requestedDays) {
+                $maxDays = $this->selectedLeaveType->max_days_per_year % 1 === 0
+                    ? (int)$this->selectedLeaveType->max_days_per_year
+                    : $this->selectedLeaveType->max_days_per_year;
+                $validator->errors()->add(
+                    'duration_days',
+                    __('Maximum for the selected leave type is :max days.', [
+                        'max' => $maxDays,
+                    ])
+                );
             }
         }
     }
@@ -308,7 +370,7 @@ class StoreLeave extends OrgAction
         $this->initialisation($this->employee->organisation, $request);
 
         if (!$this->selectedLeaveType) {
-            $type = (string) ($this->validatedData['type'] ?? '');
+            $type = (string)($this->validatedData['type'] ?? '');
             if ($type !== '') {
                 $this->selectedLeaveType = LeaveTypeResolver::findForOrganisationByCode(
                     organisationId: $this->employee->organisation_id,
@@ -325,8 +387,8 @@ class StoreLeave extends OrgAction
     {
         return Redirect::route('grp.clocking_employees.index', ['tab' => 'leaves'])
             ->with('notification', [
-                'status'     => 'success',
-                'title'      => __('Success!'),
+                'status' => 'success',
+                'title' => __('Success!'),
                 'description' => __('Leave request submitted successfully.'),
             ]);
     }

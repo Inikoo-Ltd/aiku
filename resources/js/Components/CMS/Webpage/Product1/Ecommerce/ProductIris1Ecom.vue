@@ -193,8 +193,7 @@ onMounted(async () => {
   varinatNavigation.value.nextEl = variantNextEl.value
 })
 
-
-
+console.log('props', props)
 </script>
 
 
@@ -300,37 +299,35 @@ onMounted(async () => {
                 />
 
                 <!-- Section: Member/Non Member label, Profit -->
+
                 <div class="flex justify-between mt-1" v-if="layout?.iris?.is_logged_in">
                     <template v-if="product.offers_data?.number_offers > 0">
-                        <div class="flex flex-col w-1/2 offers">
+                        <div class="flex flex-col  offers">
                             <template v-if="bestOffer?.type === 'Category Quantity Ordered Order Interval'">
                                 <GRAmnestyPriceLabel v-if="layout?.user?.gr_data?.amnesty" :offer="bestOffer" />
                                 <MemberPriceLabel v-else-if="(layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty)" :offer="bestOffer" />
                                 <NonMemberPriceLabel v-else :product />
                             </template>
-            
-                            <!-- <AvailableVolOfferLabel
-                                v-if="
-                                    (product.stock && !product.is_coming_soon)  // same as button add to basket conditions
-                                    && !layout?.user?.gr_data?.customer_is_gr"
-                                :offer="bestOffer(product.offers_data?.best_percentage_off?.offer_id)"
-                            /> -->
-                             <DiscountByType 
-                                v-if="showDiscount" 
+
+
+                            <DiscountByType
+                                v-if="showDiscount"
                                 :template="'products_triggers_label'"
-                                :offers_data="product?.offers_data" 
+                                :offers_data="product?.offers_data"
                             />
 
 
-                            <DiscountByType 
-                                v-if="(product.stock  && !product.is_coming_soon && bestOffer?.type != 'Category Quantity Ordered Order Interval')" 
+                            <DiscountByType
+                                v-if="(product.stock  && !product.is_coming_soon && bestOffer?.type != 'Category Quantity Ordered Order Interval')"
                                 :template="'max_discount'"
-                                :offers_data="product?.offers_data" 
+                                :offers_data="product?.offers_data"
                             />
                         </div>
                         <div />
                     </template>
-                    <div v-else />
+                </div>
+
+                <div class="flex justify-between mt-1" v-if="layout?.iris?.is_logged_in"><div/>
 
                     
                     <!-- Section: Profit and the popover -->
@@ -344,9 +341,9 @@ onMounted(async () => {
                         >
                             <FontAwesomeIcon icon="fal fa-plus-circle" class="" fixed-width aria-hidden="true" />
                         </span>
-                        
+
                         <!-- Popover: Question circle GR member -->
-                        <Popover ref="_popoverProfit" :style="{width: '550px'}" class="py-1 px-2">
+                        <Popover ref="_popoverProfit" class="max-w-[90vw] md:max-w-none sm:min-w-[350px]">
                             <ProfitCalculationList :product="fieldValue.product" />
                         </Popover>
                     </div>
@@ -567,7 +564,7 @@ onMounted(async () => {
                     <FontAwesomeIcon icon="fal fa-plus-circle" />
                 </span>
 
-                <Popover ref="_popoverProfit" :style="{ width: '550px' }">
+                <Popover ref="_popoverProfit" class="max-w-[90vw] md:max-w-none sm:min-w-[350px]">
                     <ProfitCalculationList :product="fieldValue.product" />
                 </Popover>
             </div>

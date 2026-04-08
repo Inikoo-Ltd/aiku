@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
-import { useForm } from "@inertiajs/vue3"
+import { useForm, usePage } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -8,9 +8,12 @@ import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
 import Modal from "@/Components/Utils/Modal.vue"
+import AlertMessage from "@/Components/Utils/AlertMessage.vue"
 import { faEdit, faCalendarCheck, faMedkit, faCalendarTimes, faClock } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import DatePicker from "@vuepic/vue-datepicker"
+import "@vuepic/vue-datepicker/dist/main.css"
 
 library.add(faEdit, faCalendarCheck, faMedkit, faCalendarTimes, faClock)
 
@@ -42,6 +45,10 @@ const props = defineProps<{
 const emit = defineEmits<{
 	(e: "update:isRequestLeaveModalOpen", value: boolean): void
 }>()
+
+const page = usePage()
+const errors = computed(() => page.props.errors as Record<string, string>)
+const hasErrors = computed(() => Object.keys(errors.value).length > 0)
 
 const locale = useLocaleStore()
 const isEditModalOpen = ref(false)
@@ -153,11 +160,11 @@ const displayedUnpaidCount = computed(() => {
 	return balanceSummary.value?.unpaid_used ?? 0
 })
 
-const fallbackTypeOptions: Record<string, { label: string, category?: string }> = {
-	'annual': { label: 'Annual Leave', category: 'annual' },
-	'personal': { label: 'Personal Leave', category: 'personal' },
-	'medical': { label: 'Medical Leave', category: 'medical' },
-	'special': { label: 'Special Leave', category: 'special' },
+const fallbackTypeOptions: Record<string, { label: string; category?: string }> = {
+	annual: { label: "Annual Leave", category: "annual" },
+	personal: { label: "Personal Leave", category: "personal" },
+	medical: { label: "Medical Leave", category: "medical" },
+	special: { label: "Special Leave", category: "special" },
 }
 
 const fixedHalfDayTypes: Record<string, "Morning" | "Afternoon"> = {
@@ -166,16 +173,24 @@ const fixedHalfDayTypes: Record<string, "Morning" | "Afternoon"> = {
 }
 
 const typeOptions = computed(() => {
-	const options = props.typeOptions && Object.keys(props.typeOptions).length > 0
-		? props.typeOptions
-		: fallbackTypeOptions
+	const options =
+		props.typeOptions && Object.keys(props.typeOptions).length > 0
+			? props.typeOptions
+			: fallbackTypeOptions
 
 	return Object.entries(options).map(([value, data]) => ({
 		value,
-		label: typeof data === 'string' ? data : data.label,
-		category: typeof data === 'string' ? null : data.category,
+		label: typeof data === "string" ? data : data.label,
+		category: typeof data === "string" ? null : data.category,
+		max_days_per_year:
+			typeof data === "object" && "max_days_per_year" in data ? data.max_days_per_year : null,
 	}))
 })
+
+const disabledWeekends = (date: Date): boolean => {
+	const day = date.getDay()
+	return day === 0 || day === 6
+}
 
 const leaveForm = useForm<{
 	type: string
@@ -213,8 +228,45 @@ const editForm = useForm<{
 })
 
 const isMedicalType = computed(() => {
-	const selectedOption = typeOptions.value.find(opt => opt.value === leaveForm.type);
-	return selectedOption?.category === 'medical';
+	const selectedOption = typeOptions.value.find((opt) => opt.value === leaveForm.type)
+	return selectedOption?.category === "medical"
+})
+
+const selectedLeaveType = computed(() => {
+	return typeOptions.value.find((opt) => opt.value === leaveForm.type)
+})
+
+const maxDaysPerYear = computed(() => {
+	return selectedLeaveType.value?.max_days_per_year ?? null
+})
+
+const calculateBusinessDays = (startDate: string, endDate: string): number => {
+	if (!startDate || !endDate) return 0
+
+	const start = new Date(startDate)
+	const end = new Date(endDate)
+	let days = 0
+	let current = new Date(start)
+
+	while (current <= end) {
+		const day = current.getDay()
+		if (day !== 0 && day !== 6) {
+			days++
+		}
+		current.setDate(current.getDate() + 1)
+	}
+
+	return days
+}
+
+const exceedsLimit = computed(() => {
+	if (!maxDaysPerYear.value || !leaveForm.start_date || !leaveForm.end_date) {
+		return false
+	}
+
+	const selectedDays = calculateBusinessDays(leaveForm.start_date, leaveForm.end_date)
+
+	return selectedDays > maxDaysPerYear.value
 })
 
 const canSubmitLeave = computed(() => {
@@ -392,7 +444,7 @@ const submitEdit = () => {
 							{{ displayedUnpaidCount }}
 						</p>
 						<p class="text-xs text-gray-400">
-							{{ trans("requests submitted") }}
+							{{ trans("Request(s) Submitted") }}
 						</p>
 					</div>
 					<div class="text-3xl text-gray-200">
@@ -443,18 +495,34 @@ const submitEdit = () => {
 				</template>
 
 				<template #cell(reason)="{ item: leave }">
-					<div class="max-w-xs">
-						<span class="text-gray-600 text-sm truncate block">{{ leave.reason }}</span>
-						<span
+					<div class="max-w-md">
+						<div v-if="leave.reason" class="text-sm text-gray-600 break-words">
+							{{ leave.reason }}
+						</div>
+						<div
 							v-if="leave.status === 'rejected' && leave.rejection_reason"
-							class="text-red-600 text-xs truncate block mt-1">
-							{{ leave.rejection_reason }}
+							class="mt-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 animate:bounce">
+							<div class="break-words">
+								{{ leave.rejection_reason }}
+							</div>
+						</div>
+						<span
+							v-if="
+								!leave.reason &&
+								!(leave.status === 'rejected' && leave.rejection_reason)
+							">
+							—
 						</span>
 					</div>
 				</template>
 
 				<template #cell(actions)="{ item: leave }">
-					<div v-if="leave.status === 'pending' && typeOptions.find(opt => opt.value === leave.type)?.category === 'medical'">
+					<div
+						v-if="
+							leave.status === 'pending' &&
+							typeOptions.find((opt) => opt.value === leave.type)?.category ===
+								'medical'
+						">
 						<Button
 							@click="openEditModal(leave)"
 							:label="trans('Edit')"
@@ -474,6 +542,15 @@ const submitEdit = () => {
 				{{ trans("Request Leave") }}
 			</h2>
 
+			<AlertMessage
+				v-if="hasErrors"
+				:alert="{
+					status: 'danger',
+					title: trans('There was a problem with your request.'),
+					description: Object.values(errors)[0],
+				}"
+				class="mb-4" />
+
 			<form @submit.prevent="submitLeave" class="space-y-4">
 				<div>
 					<label class="block text-sm font-medium text-gray-700">{{
@@ -482,13 +559,18 @@ const submitEdit = () => {
 					<select
 						v-model="leaveForm.type"
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-						<option value="" disabled> {{ trans("Please Select Your Leave Type!") }} </option>
+						<option value="" disabled>
+							{{ trans("Please Select Your Leave Type!") }}
+						</option>
 						<option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
 							{{ opt.label }}
 						</option>
 					</select>
 					<p v-if="leaveForm.errors.type" class="mt-1 text-sm text-red-600">
 						{{ leaveForm.errors.type }}
+					</p>
+					<p v-if="maxDaysPerYear" class="mt-1 text-sm text-gray-500">
+						Maximum allowance: {{ maxDaysPerYear }} days
 					</p>
 				</div>
 
@@ -497,10 +579,23 @@ const submitEdit = () => {
 						<label class="block text-sm font-medium text-gray-700">{{
 							trans("Start Date")
 						}}</label>
-						<input
-							v-model="leaveForm.start_date"
-							type="date"
-							class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+						<DatePicker
+							:modelValue="
+								leaveForm.start_date ? new Date(leaveForm.start_date) : null
+							"
+							@update:modelValue="
+								(date: Date) =>
+									(leaveForm.start_date = date
+										? date.toISOString().split('T')[0]
+										: '')
+							"
+							:disabledDates="disabledWeekends"
+							:enableTimePicker="false"
+							:clearable="true"
+							:autoApply="true"
+							:placeholder="trans('Select start date')"
+							class="mt-1 block w-full"
+							inputClassName="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
 						<p v-if="leaveForm.errors.start_date" class="mt-1 text-sm text-red-600">
 							{{ leaveForm.errors.start_date }}
 						</p>
@@ -510,16 +605,34 @@ const submitEdit = () => {
 						<label class="block text-sm font-medium text-gray-700">{{
 							trans("End Date")
 						}}</label>
-						<input
-							v-model="leaveForm.end_date"
-							type="date"
+						<DatePicker
+							:modelValue="leaveForm.end_date ? new Date(leaveForm.end_date) : null"
+							@update:modelValue="
+								(date: Date) =>
+									(leaveForm.end_date = date
+										? date.toISOString().split('T')[0]
+										: '')
+							"
 							:disabled="leaveForm.is_half_day"
-							class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+							:disabledDates="disabledWeekends"
+							:enableTimePicker="false"
+							:clearable="true"
+							:autoApply="true"
+							:placeholder="trans('Select end date')"
+							class="mt-1 block w-full"
+							inputClassName="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
 						<p v-if="leaveForm.errors.end_date" class="mt-1 text-sm text-red-600">
 							{{ leaveForm.errors.end_date }}
 						</p>
 					</div>
 				</div>
+
+				<p v-if="exceedsLimit" class="text-sm text-red-600">
+					Selected dates ({{
+						calculateBusinessDays(leaveForm.start_date, leaveForm.end_date)
+					}}
+					days) exceed the maximum allowance of {{ maxDaysPerYear }} days
+				</p>
 
 				<p v-if="leaveForm.is_half_day" class="text-xs text-gray-500">
 					{{ trans("Half day leave is applied to one date only.") }}
@@ -558,27 +671,29 @@ const submitEdit = () => {
 					</p>
 				</div>
 
-					<p
-						v-if="leaveForm.type === 'annual' && !canSubmitLeave"
-						class="text-sm text-red-600">
-						{{ trans("Insufficient leave balance for the selected type.") }}
-					</p>
+				<p
+					v-if="leaveForm.type === 'annual' && !canSubmitLeave"
+					class="text-sm text-red-600">
+					{{ trans("Insufficient leave balance for the selected type.") }}
+				</p>
 
-					<div class="mt-6 flex justify-end gap-2">
-						<Button
-							@click="closeCreateModal"
-							:label="trans('Cancel')"
-							type="tertiary"
-							nativeType="button" />
-						<Button
-							type="save"
-							nativeType="submit"
-							:label="trans('Submit Request')"
-							:loading="isSubmitting"
-							:disabled="leaveForm.type === 'annual' && !canSubmitLeave" />
-					</div>
-				</form>
-			</Modal>
+				<div class="mt-6 flex justify-end gap-2">
+					<Button
+						@click="closeCreateModal"
+						:label="trans('Cancel')"
+						type="tertiary"
+						nativeType="button" />
+					<Button
+						type="save"
+						nativeType="submit"
+						:label="trans('Submit Request')"
+						:loading="isSubmitting"
+						:disabled="
+							(leaveForm.type === 'annual' && !canSubmitLeave) || exceedsLimit
+						" />
+				</div>
+			</form>
+		</Modal>
 
 		<Modal :isOpen="isEditModalOpen" @onClose="closeEditModal" width="w-full max-w-md">
 			<h2 class="text-lg font-semibold text-gray-800 mb-4">
@@ -609,21 +724,21 @@ const submitEdit = () => {
 					<p v-if="editForm.errors.attachments" class="mt-1 text-sm text-red-600">
 						{{ editForm.errors.attachments }}
 					</p>
-					</div>
+				</div>
 
-					<div class="mt-6 flex justify-end gap-2">
-						<Button
-							@click="closeEditModal"
-							:label="trans('Cancel')"
-							type="tertiary"
-							nativeType="button" />
-						<Button
-							type="save"
-							nativeType="submit"
-							:label="trans('Save')"
-							:loading="isSubmitting" />
-					</div>
-				</form>
-			</Modal>
-		</div>
-	</template>
+				<div class="mt-6 flex justify-end gap-2">
+					<Button
+						@click="closeEditModal"
+						:label="trans('Cancel')"
+						type="tertiary"
+						nativeType="button" />
+					<Button
+						type="save"
+						nativeType="submit"
+						:label="trans('Save')"
+						:loading="isSubmitting" />
+				</div>
+			</form>
+		</Modal>
+	</div>
+</template>

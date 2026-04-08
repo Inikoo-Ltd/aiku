@@ -80,6 +80,7 @@ import {
 	faTimesCircle as faTimesCircleLight,
 	faUserAlien,
 	faTombstone as faTombstoneLight,
+	faCopyright
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import { faViruses } from "@fad"
@@ -183,6 +184,7 @@ library.add(
 	faStarLight, faArrowUpLight, faMinusLight, faTimesCircleLight,
 	faUserAlien,
 	faTombstoneLight,
+	faCopyright
 )
 
 provide("layout", useLayoutStore())
@@ -255,6 +257,7 @@ watch(
 )
 
 // Method: listen if app recently deployed
+const isLoadingRefreshPage = ref(false)
 const isModalNeedToRefresh = ref(false)
 const onCheckAppVersion = () => {
 	const xxx = window.Echo.private("app.general").listen(".post-deployed", (eventData) => {
@@ -269,6 +272,7 @@ const onCheckAppVersion = () => {
 	// console.log('Websocket subscription:', xxx.subscription.subscribed)
 }
 const onRefreshPage = () => {
+	isLoadingRefreshPage.value = true
 	window.location.reload()
 }
 
@@ -309,7 +313,7 @@ const fallbackTheme = useColorTheme[3]
 
 const safeTheme = computed(() => {
 	const t = layout?.app?.theme
-	
+
 	return (t && t.length >= 8) ? t : fallbackTheme
 })
 console.log(Object.values(layout.rightSidebar).some((value) => value.show))
@@ -476,7 +480,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 				</div>
 
 				<div class="mt-5 sm:mt-6">
-					<Button @click="() => onRefreshPage()" :label="trans('Refresh page')" full />
+					<Button @click="() => onRefreshPage()" :label="trans('Refresh page')" full :loading="isLoadingRefreshPage" />
 				</div>
 			</div>
 		</div>

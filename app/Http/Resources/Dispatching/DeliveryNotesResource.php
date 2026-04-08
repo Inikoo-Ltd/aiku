@@ -43,11 +43,26 @@ use Illuminate\Support\Arr;
  * @property mixed $shipping_data
  * @property mixed $in_warehouse_at
  * @property mixed $data
+ * @property mixed $country_name
+ * @property mixed $country_code
  *
  */
 class DeliveryNotesResource extends JsonResource
 {
     public static $wrap = null;
+
+    private function getWeightBracketLabel(int $grams): string
+    {
+        return match (true) {
+            $grams <= 1000  => __('Up to 1 kg'),
+            $grams <= 3000  => __('1 - 3 kg'),
+            $grams <= 6000  => __('3 - 6 kg'),
+            $grams <= 10000 => __('6 - 10 kg'),
+            $grams <= 20000 => __('10 - 20 kg'),
+            $grams <= 31000 => __('20 - 31 kg'),
+            default         => __('Over 31 kg'),
+        };
+    }
 
     public function toArray($request): array
     {
@@ -91,6 +106,11 @@ class DeliveryNotesResource extends JsonResource
             'picked_bays'                => Arr::get($this->data, 'picked_bays'),
             'picker'                      => Arr::get($this->data, 'picker'),
             'packer'                      => Arr::get($this->data, 'packer'),
+            'country'                     => $this->country_name ? [
+                'name' => $this->country_name,
+                'code' => $this->country_code,
+            ] : null,
+            'weight_bracket'              => $this->effective_weight ? $this->getWeightBracketLabel((int) $this->effective_weight) : null,
             'number_of_days_in_warehouse' => round(\Carbon\Carbon::parse($this->in_warehouse_at)->diffInDays(now())),
             'employee_pick_route'         => [
                 'name'       => 'grp.models.delivery_note.employee.pick',

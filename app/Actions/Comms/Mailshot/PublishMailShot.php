@@ -113,4 +113,11 @@ class PublishMailShot extends OrgAction
 
         return $this->handle($mailshot, $this->validatedData);
     }
+
+    public function jsonResponse(Mailshot $mailshot): array
+    {
+        return [
+            "has_unsubscribelink" =>  MailshotHasUnsubscribeLink::run($mailshot)
+        ];
+    }
 }

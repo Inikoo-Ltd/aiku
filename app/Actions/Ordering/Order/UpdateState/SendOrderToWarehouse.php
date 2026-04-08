@@ -76,7 +76,8 @@ class SendOrderToWarehouse extends OrgAction
             'contact_name'              => $this->getContactName($order),
             'shipping_zone_schema_id'   => $order->shipping_zone_schema_id,
             'shipping_zone_id'          => $order->shipping_zone_id,
-            'internal_notes'            => $order->internal_notes,
+            'is_shipping_by_external'   => $order->is_shipping_by_external,
+            'internal_notes'            => $order->internal_notes
 
         ];
 

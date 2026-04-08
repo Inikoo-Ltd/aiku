@@ -103,11 +103,15 @@ const showMemberPrice = computed(() => {
     return layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr
 })
 
+// console.log("showMemberPrice", showMemberPrice.value)
+
 const showDiscount = computed(() => {
     if (props.product?.is_coming_soon) return false
     if (layout?.user?.gr_data?.amnesty) return false
     return !layout?.user?.gr_data?.customer_is_gr
 })
+
+// console.log("product_discounted_price", props.product?.discounted_price)
 
 const showLeftBlock = computed(() => {
     return showMemberPrice.value || showDiscount.value
@@ -122,22 +126,20 @@ const _popoverProfit = ref(null)
             text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] 2xl:text-sm">
 
         <!-- HEADER -->
-        <div class="border-b pb-2 mb-2 flex items-center justify-between gap-1 whitespace-nowrap
-                text-[9px] sm:text-[10px] md:text-[11px]">
+        <div class="border-b pb-2 mb-2 flex items-center justify-between gap-1 whitespace-nowrap text-[9px] sm:text-[10px] md:text-[11px]"
+            v-if="product?.rrp_per_unit ?? 0 > 0"
+        >
 
-            <div class="flex items-baseline gap-1 leading-none">
+            <div class="flex items-baseline gap-1 leading-none" >
                 <span class="text-xs">
                     {{ trans("RRP") }}:
                 </span>
                 <span class="text-xs font-medium relative top-[1px]">
-                    {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit || 0) }}
+                    {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit) }}
                 </span>
             </div>
 
             <div class="flex items-center gap-1 justify-end whitespace-nowrap">
-
-              
-
                 <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show"
                     @mouseleave="_popoverProfit?.hide"
                     class="cursor-pointer opacity-60 hover:opacity-100 text-[8px] sm:text-[9px] md:text-[10px]">
@@ -149,18 +151,18 @@ const _popoverProfit = ref(null)
                 </span>
 
                 <span class="font-bold text-green-700">
-                    [
+                    (
                     {{
                         (layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty)
                             ? product?.discounted_margin
                             : product?.margin
                     }}
-                    ]
+                    )
                 </span>
 
             </div>
 
-            <Popover ref="_popoverProfit" class="py-1 px-2 max-w-[90vw] md:max-w-none">
+            <Popover ref="_popoverProfit" class="max-w-[90vw] md:max-w-none sm:min-w-[350px]">
                 <ProfitCalculationList :product="product" />
             </Popover>
 
@@ -207,7 +209,7 @@ const _popoverProfit = ref(null)
                             <span v-if="product.price_per_unit > 0"
                                 class="font-normal truncate min-w-0 text-[8px] sm:text-[9px] md:text-[10px]"
                                 :title="product.unit">
-                                ({{ product.price_per_unit }}/{{ product.unit }})
+                                ({{ locale.currencyFormat(currency?.code, product.price_per_unit) }}/{{ product.unit }})
                             </span>
 
                         </div>
@@ -230,11 +232,11 @@ const _popoverProfit = ref(null)
             2xl:text-[14px]">
 
                     <span v-if="showMemberPrice" class="text-primary">
-                        {{ trans("GR Active") }}
+                        {{ trans("GR Active") || "GR Active" }}
                     </span>
 
                     <span v-else>
-                        {{ trans("GR Inactive") }}
+                        {{ trans("GR Inactive") || "GR Inactive" }}
                     </span>
 
                     <span class="question-trigger" @click="_popoverQuestionCircle?.toggle($event)"
@@ -285,10 +287,8 @@ const _popoverProfit = ref(null)
                             <span class="whitespace-nowrap">
                                 {{ locale.currencyFormat(currency?.code, product.discounted_price) }}
                             </span>
-
-                            <span class="truncate min-w-0 font-normal text-[8px] sm:text-[9px] md:text-[10px]"
-                                :title="product.unit">
-                                ({{ product.discounted_price_per_unit }}/{{ product.unit }})
+                            <span class="truncate min-w-0 font-normal text-[8px] sm:text-[9px] md:text-[10px]" :title="product.unit">
+                                ({{ locale.currencyFormat(currency?.code, product.discounted_price_per_unit) }}/{{ product.unit }})
                             </span>
 
                         </div>
@@ -303,8 +303,7 @@ const _popoverProfit = ref(null)
 
 
         <!-- MEMBER -->
-        <div v-if="showIntervalOffer"
-            class="mt-1 flex flex-col items-start gap-0.5 text-[8px] sm:text-[9px] md:text-[10px]">
+        <div v-if="showIntervalOffer" class="mt-1 flex flex-col items-start gap-0.5 text-[8px] sm:text-[9px] md:text-[10px]">
             <MemberPriceLabel v-if="showMemberPrice" :offer="bestOffer" />
 
             <DiscountByType v-if="showDiscount" :offers_data="product?.product_offers_data"

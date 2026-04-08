@@ -66,6 +66,7 @@ class DeleteDeliveryNote extends OrgAction
         return 'delete:delivery_note {delivery_note}';
     }
 
+
     /**
      * @throws \Throwable
      */

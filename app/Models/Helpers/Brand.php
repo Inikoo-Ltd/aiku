@@ -13,6 +13,7 @@ namespace App\Models\Helpers;
 use App\Models\Goods\TradeUnit;
 use App\Models\Traits\HasImage;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -26,10 +27,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_models
  * @property int|null $image_id
  * @property int $group_id
+ * @property int $number_trade_units
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Helpers\Media|null $seoImage
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\BrandTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, TradeUnit> $tradeUnits
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Brand newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Brand newQuery()
@@ -59,5 +62,10 @@ class Brand extends Model implements HasMedia
     public function tradeUnits(): MorphToMany
     {
         return $this->morphedByMany(TradeUnit::class, 'model', 'model_has_brands');
+    }
+
+    public function timeSeries(): HasMany
+    {
+        return $this->hasMany(BrandTimeSeries::class);
     }
 }

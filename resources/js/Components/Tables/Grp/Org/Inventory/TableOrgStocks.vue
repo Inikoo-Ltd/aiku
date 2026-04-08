@@ -107,7 +107,63 @@ function stockFamilyRoute(stock: Stock) {
 }
 
 
+const orgStockRouteProductIndex = (orgStock: OrgStock) => {
+    const current = route().current()
 
+    if (current === "grp.org.warehouses.show.inventory.org_stock_families.show") {
+        return route(
+            "grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show.products",
+            {
+                organisation: (route().params as RouteParams).organisation,
+                warehouse: (route().params as RouteParams).warehouse,
+                orgStockFamily: (route().params as RouteParams).orgStockFamily,
+                orgStock: orgStock.slug,
+                tab: 'products'
+            }
+        )
+    } else if (current === "grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.index") {
+        return route(
+            "grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show.products",
+            {
+                organisation: (route().params as RouteParams).organisation,
+                warehouse: (route().params as RouteParams).warehouse,
+                orgStock: orgStock.slug,
+                tab: 'products'
+            }
+        )
+    } else if (current === "grp.overview.inventory.org-stocks.index" || current === "grp.org.shops.show.catalogue.products.all_products.show") {
+        return route(
+            "grp.helpers.redirect_org_stock",
+            [orgStock.id])
+    } else if (current === "grp.org.warehouses.show.inventory.org_stocks.index") {
+        return route(
+            "grp.org.warehouses.show.inventory.org_stocks.show.products",
+            {
+                organisation: (route().params as RouteParams).organisation,
+                warehouse: (route().params as RouteParams).warehouse,
+                orgStock: orgStock.slug,
+                tab: 'products'
+            }
+        )
+    } else if (current === "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.index") {
+        return route(
+            "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show.products",
+            {
+                organisation: (route().params as RouteParams).organisation,
+                warehouse: (route().params as RouteParams).warehouse,
+                orgStock: orgStock.slug,
+                tab: 'products'
+            }
+        )
+    }else{
+      return route(
+            "grp.helpers.redirect_org_stock.to_products_index",
+            [
+                orgStock.id
+            ]
+        )
+    }
+}
 </script>
 
 <template>
@@ -235,5 +291,30 @@ function stockFamilyRoute(stock: Stock) {
                 <FontAwesomeIcon :icon="faEquals" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
             </div>
         </template>
+
+        <template #cell(product_count)="{ item }">
+            <Link :href="orgStockRouteProductIndex(item) as string" class="primaryLink">
+                {{ item.product_count }}
+            </Link>
+        </template>
+
+        <template #cell(quantity_in_locations)="{ item }">
+            <span class="tabular-nums">{{ locale.number(item.quantity_in_locations) }}</span>
+        </template>
+
+        <template #cell(org_stock_value)="{ item }">
+            <span v-if="item.org_stock_value">{{ locale.currencyFormat(item.currency_code, item.org_stock_value) }}</span>
+        </template>
+
+        <template #cell(sold_within_1y)="{ item }">
+            <Icon :data="item.sold_within_1y" />
+        </template>
+
+        <template #cell(non_moving_1y)="{ item }">
+            <span class="tabular-nums">{{ locale.number(item.non_moving_1y) }}</span>
+        </template>
+
+
+
     </Table>
 </template>

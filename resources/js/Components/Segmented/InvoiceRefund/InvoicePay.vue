@@ -54,6 +54,7 @@ const props = defineProps<{
             payment_amount: number
         }[]
     }
+    is_external?: boolean
 }>();
 
 const emits = defineEmits<{
@@ -256,7 +257,6 @@ const compTooltipTotalToPay = computed(() => {
                                     {{ locale.currencyFormat(invoice_pay.currency_code, Number(compTotalToPay).toFixed(2)) }}
                                     <FontAwesomeIcon v-if="Number(compTotalToPay).toFixed(2) == 0" v-tooltip="trans('All well. No need to do anything.')" icon="fas fa-check-circle" class="text-green-500 -ml-0.5 -mr-4 text-xs" fixed-width aria-hidden="true" />
                                 </div>
-
                                 <button v-if="Number(compTotalToPay) > 0"
                                     @click="() => (isOpenModalInvoice = true, fetchPaymentMethod())" size="xxs"
                                     class="secondaryLink text-indigo-500"
@@ -292,7 +292,7 @@ const compTooltipTotalToPay = computed(() => {
                         {{ trans("Payment") }}
                     </dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
-                        {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_paid_in)) }}
+                        {{ !is_external ? locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_paid_in)) : '-' }}
                     </dd>
                 </div>
             </div>
@@ -309,7 +309,7 @@ const compTooltipTotalToPay = computed(() => {
             </div>
 
             <!-- Need to Pay -->
-            <div v-if="Number(invoice_pay.total_need_to_pay) > 0 " class="px-4 pt-2 pb-1 flex justify-between sm:gap-4 sm:px-3">
+            <div v-if="(Number(invoice_pay.total_need_to_pay) > 0) && !is_external" class="px-4 pt-2 pb-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium">
                     {{ trans("Need to pay") }}
                 </dt>

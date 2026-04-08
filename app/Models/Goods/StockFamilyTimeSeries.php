@@ -10,6 +10,7 @@ namespace App\Models\Goods;
 
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -23,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\StockFamilyTimeSeriesRecord> $records
+ * @property-read \App\Models\Goods\StockFamily $stockFamily
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockFamilyTimeSeries newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockFamilyTimeSeries newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockFamilyTimeSeries query()
@@ -34,15 +36,25 @@ class StockFamilyTimeSeries extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'data'      => 'array',
-        'frequency' => TimeSeriesFrequencyEnum::class,
+    protected function casts(): array
+    {
+        return [
+            'data'      => 'array',
+            'frequency' => TimeSeriesFrequencyEnum::class,
+        ];
+    }
 
-    ];
+    protected function attributes(): array
+    {
+        return [
+            'data' => [],
+        ];
+    }
 
-    protected $attributes = [
-        'data' => '{}',
-    ];
+    public function stockFamily(): BelongsTo
+    {
+        return $this->belongsTo(StockFamily::class);
+    }
 
     public function records(): HasMany
     {

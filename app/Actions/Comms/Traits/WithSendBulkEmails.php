@@ -42,9 +42,10 @@ trait WithSendBulkEmails
         $html = $this->processStyles($html);
 
         // Remove MSO conditional comments temporarily
+        // 's' flag = dot matches newline, 'u' flag = UTF-8 safe
         $msoComments = [];
-        $html        = preg_replace_callback('/<!--\[if mso\]>.*?<!\[endif\]-->/s', function ($matches) use (&$msoComments) {
-            $placeholder               = '___MSO_COMMENT_'.count($msoComments).'___';
+        $html        = preg_replace_callback('/<!--\[if mso\]>.*?<!\[endif\]-->/su', function ($matches) use (&$msoComments) {
+            $placeholder               = '___MSO_COMMENT_' . count($msoComments) . '___';
             $msoComments[$placeholder] = $matches[0];
 
             return $placeholder;
@@ -62,17 +63,17 @@ trait WithSendBulkEmails
             return $mergeTagCache[$fullTag];
         };
 
-        $html = preg_replace_callback('/{{(.*?)}}/', $callback, $html);
-
-
-        $html = preg_replace_callback('/\[(.*?)]/', $callback, $html);
+        // 'u' flag ensures multi-byte UTF-8 characters are not corrupted
+        $html = preg_replace_callback('/{{(.*?)}}/u', $callback, $html);
+        $html = preg_replace_callback('/\[(.*?)]/u', $callback, $html);
 
         // Restore MSO conditional comments
         if ($msoComments) {
             $html = str_replace(array_keys($msoComments), array_values($msoComments), $html);
         }
 
-        $html = preg_replace('/\R+/', '', $html);
+        // 'u' flag ensures multi-byte UTF-8 characters are not corrupted
+        $html = preg_replace('/\R+/u', '', $html);
 
         return SendSesEmail::run(
             subject: $subject,
@@ -126,6 +127,10 @@ trait WithSendBulkEmails
                 "<a ses:no-track href=\"$unsubscribeUrl\">%s</a>",
                 __('Unsubscribe')
             ),
+            'unsubscribe_fallback' => sprintf(
+                "<a ses:no-track href=\"$unsubscribeUrl\" style=\"color: white;\">%s</a>",
+                __('Unsubscribe')
+            ),
             'customer-shop' => Arr::get($additionalData, 'customer_shop'),
             'customer-email' => Arr::get($additionalData, 'customer_email'),
             'customer-url' => Arr::get($additionalData, 'customer_url'),
@@ -174,6 +179,7 @@ trait WithSendBulkEmails
             'platform' => Arr::get($additionalData, 'platform'),
             'balance' => Arr::get($additionalData, 'balance'),
             'products' => Arr::get($additionalData, 'products'),
+            'low-stock-items-in-basket' => Arr::get($additionalData, 'low_stock_items_in_basket'),
             'payment-reason' => Arr::get($additionalData, 'payment_reason'),
             'payment-note' => Arr::get($additionalData, 'payment_note'),
             'payment-balance-preview' => Arr::get($additionalData, 'payment_balance_preview'),

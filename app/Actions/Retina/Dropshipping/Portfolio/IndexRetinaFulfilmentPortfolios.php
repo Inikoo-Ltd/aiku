@@ -92,6 +92,12 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
             ];
         }
 
+        $navigation = CustomerSalesChannelPortfolioTabsEnum::navigation();
+
+        if($this->customer->is_fulfilment) {
+            unset($navigation[CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value]);
+        }
+
         return Inertia::render(
             'Dropshipping/Portfolios',
             [
@@ -134,7 +140,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => CustomerSalesChannelPortfolioTabsEnum::navigation()
+                    'navigation' => $navigation
                 ],
 
                 'is_platform_connected' => $this->customerSalesChannel->platform_status,

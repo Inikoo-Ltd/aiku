@@ -14,6 +14,7 @@ import { faPlus, faChevronDown, faTimes, faPencil, faSparkles } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import { routeType } from '@/types/route'
+import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
 
 library.add(faPlus, faChevronDown, faTimes, faPencil)
 
@@ -35,6 +36,25 @@ const props = defineProps<{
         offers: {
 
         }[]
+        tabsBox?: {
+            label: string
+            value: string | number
+            indicator?: boolean
+            tab_slug: string
+            type?: string // 'icon', 'date', 'number', 'currency'
+            align?: string
+            icon?: string | string[]
+            iconClass?: string
+            tooltip?: string
+            information?: {
+                label: string | number
+                type?: string // 'icon', 'date', 'number', 'currency'
+            }
+            visitRoute?: {
+                name: string
+                parameters: {}
+            }
+        }
         currency_code: string
         amnesty_offer: string
         edit_amnesty_route: routeType
@@ -121,13 +141,13 @@ const severity = computed(() => {
                     </span>
                     <div class="flex items-center gap-2">
                         <span>
-                            {{ useFormatTime(campaign.start_at, { formatTime: 'PPP' }) }}
+                            {{ useFormatTime(campaign.start_at, { formatTime: 'PPP', keepTimezone: true }) }}
                         </span>
 
                         <FontAwesomeIcon icon="fas fa-arrow-right" class="" aria-hidden="true" />
 
                         <span>
-                            {{ useFormatTime(campaign.end_at, { formatTime: 'PPP' }) }}
+                            {{ useFormatTime(campaign.end_at, { formatTime: 'PPP', keepTimezone: true }) }}
                         </span>
                     </div>
 
@@ -158,20 +178,30 @@ const severity = computed(() => {
                 </div>
             </div>
         </Message>
+        <TabsBoxDisplay v-if="data.tabsBox" :tabs_box="data.tabsBox" />
         <div class="flex flex-wrap gap-2 md:gap-4 w-full pt-3">
             <div v-for="stat in data.stats" :key="stat.label"
                 class="basis-0 min-w-[110px] sm:min-w-[130px] md:min-w-[160px] flex flex-col items-center rounded-lg md:rounded-xl border border-gray-200 py-3 px-2"
                 :style="{ flexGrow: 1 }">
 
                 <!-- LABEL -->
-                <div class="text-xs md:text-sm text-gray-500 font-medium text-center mb-2">
+                <div class="text-xs md:text-sm text-black font-medium text-center mb-2">
                     {{ stat.label }}
                 </div>
 
                 <!-- ICON -->
                 <div class="mb-2">
-                    <Icon v-if="stat.icon" :data="{ icon: stat.icon }" :title="stat.label"
-                        class="text-gray-400 text-lg md:text-xl" />
+                    <Link v-if="stat.route_target" :href="stat.route_target"
+                        class="flex justify-center gap-2 hover:underline">
+                        <Icon v-if="stat.icon" :data="{ icon: stat.icon }" :title="stat.label" class="text-gray-400 text-lg md:text-xl" />
+                        <CountUp :endVal="stat.value" :duration="1.5" :scrollSpyOnce="true" :options="{
+                            formattingFn: (value: number) => locale.number(value)
+                        }" />
+                    </Link>
+                    <div v-else>
+                        <Icon v-if="stat.icon" :data="{ icon: stat.icon }" :title="stat.label" class="text-gray-400 text-lg md:text-xl" />
+                        <CountUp :endVal="stat.value" :duration="1.5" />
+                    </div>
                 </div>
 
                 <!-- BORDER SEPARATOR -->
@@ -180,15 +210,7 @@ const severity = computed(() => {
                 <!-- VALUE -->
                 <div class="text-lg md:text-2xl font-semibold text-gray-900">
 
-                    <Link v-if="stat.route_target" :href="stat.route_target"
-                        class="flex flex-col items-center hover:underline">
-                        <CountUp :endVal="stat.value" :duration="1.5" :scrollSpyOnce="true" :options="{
-                            formattingFn: (value: number) => locale.number(value)
-                        }" />
-                    </Link>
-                    <div v-else>
-                        <CountUp :endVal="stat.value" :duration="1.5" />
-                    </div>
+                    
                 </div>
             </div>
 

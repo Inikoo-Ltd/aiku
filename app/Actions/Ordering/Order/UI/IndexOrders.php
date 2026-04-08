@@ -170,11 +170,6 @@ class IndexOrders extends OrgAction
         }
 
 
-        $shipmentsExpr =
-            "(SELECT COALESCE(jsonb_agg(jsonb_build_object('id', shipments_sub.id, 'tracking', shipments_sub.tracking, 'tracking_urls', shipments_sub.tracking_urls, 'combined_label_url', shipments_sub.combined_label_url)), '[]'::jsonb) FROM (SELECT s.id, s.tracking, s.tracking_urls, s.combined_label_url FROM delivery_note_order dno JOIN model_has_shipments mhs ON mhs.model_id = dno.delivery_note_id AND mhs.model_type = 'DeliveryNote' JOIN shipments s ON s.id = mhs.shipment_id WHERE dno.order_id = orders.id) AS shipments_sub)";
-
-        $shipmentsSelect = \DB::raw($shipmentsExpr.' as shipments_json');
-
         return $query->defaultSort('-orders.date')
             ->select([
                 'orders.id',
@@ -214,7 +209,6 @@ class IndexOrders extends OrgAction
                 'orders.tracking_number',
                 'orders.shipping_data',
                 'orders.with_replacement',
-                $shipmentsSelect,
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
             ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status', 'submitted_at']) // Ensure `id` is the first sort column
@@ -323,7 +317,6 @@ class IndexOrders extends OrgAction
         $subNavigation = null;
 
         if ($this->parent instanceof CustomerClient) {
-            unset($navigation[OrdersTabsEnum::STATS->value]);
             $subNavigation = $this->getCustomerClientSubNavigation($this->parent, $this->customerSalesChannel);
         } elseif ($this->parent instanceof Customer) {
             if ($this->parent->is_dropshipping) {

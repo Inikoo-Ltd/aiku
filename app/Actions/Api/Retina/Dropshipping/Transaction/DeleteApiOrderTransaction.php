@@ -25,6 +25,9 @@ class DeleteApiOrderTransaction extends RetinaApiAction
     use AsAction;
     use WithAttributes;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Transaction $transaction): Transaction|JsonResponse
     {
         $order = $transaction->order;
@@ -40,6 +43,13 @@ class DeleteApiOrderTransaction extends RetinaApiAction
                 'message' => "This order is already in the '{$order->state->value}' state and cannot be updated.",
             ], 409);
         }
+
+        if ($transaction->invoiceTransaction) {
+            return response()->json([
+                'message' => "This order is already invoiced.",
+            ], 409);
+        }
+
 
         if ($transaction->model_type != class_basename(Product::class)) {
             return response()->json([

@@ -149,7 +149,7 @@ onBeforeUnmount(stopAutoMove)
               >
                 <component
                   :is="data?.link?.href ? LinkIris : 'div'"
-                  :href="data?.link?.url"
+                  :href="data?.link?.url ?? data?.link?.href "
                   :target="data?.link?.target"
                   :type="data?.link?.type"
                   class="overflow-hidden w-full flex items-center justify-center relative image-hover-wrap"

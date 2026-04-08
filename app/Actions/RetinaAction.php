@@ -168,28 +168,26 @@ class RetinaAction
         }
 
         // Option 2: Alternatively, check if the URL path contains any of these segments.
-        foreach ($publicRoutes as $segment) {
-            if (Str::contains($request->path(), $segment) || Str::contains($request->route()->getName(), $segment)) {
-                return true;
-            }
+        if (array_any($publicRoutes, fn ($segment) => Str::contains($request->path(), $segment) || Str::contains($request->route()->getName(), $segment))) {
+            return true;
         }
 
-        if (!$this->shop) {
+        if (!$this->shop || !$this->webUser) {
             return false;
         }
 
-        if ($this->shop->type === ShopTypeEnum::FULFILMENT && $this->webUser->customer->status === CustomerStatusEnum::APPROVED
-            && $this->fulfilmentCustomer->rentalAgreement) {
-            return true;
+        // Handle Fulfilment shops
+        if ($this->shop->type === ShopTypeEnum::FULFILMENT) {
+            return ($this->webUser->customer?->status === CustomerStatusEnum::APPROVED)
+                && ($this->fulfilmentCustomer?->rentalAgreement);
         }
 
-        if ($this->shop->type === ShopTypeEnum::DROPSHIPPING && $this->webUser->id === $request->user()->id) {
-            return true;
+        // Handle Dropshipping and B2B (must be the owner)
+        $user = $request->user();
+        if ($user && in_array($this->shop->type, [ShopTypeEnum::DROPSHIPPING, ShopTypeEnum::B2B])) {
+            return $this->webUser->id === $user->id;
         }
 
-        if ($this->shop->type === ShopTypeEnum::B2B && $this->webUser->id === $request->user()->id) {
-            return true;
-        }
 
         // Deny access if none of the above conditions pass.
         return false;

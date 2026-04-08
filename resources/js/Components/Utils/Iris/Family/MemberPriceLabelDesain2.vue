@@ -15,31 +15,31 @@ const props = defineProps<{
 </script>
 
 <template>
-<div class="relative inline-flex items-center">
-
-    <div
-        class="background-primary flex items-center gap-1 rounded whitespace-nowrap leading-none text-white
-               px-1.5 py-[2px]
-               text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] 2xl:text-[14px]
-               2xl:px-2 2xl:py-[3px]"
-    >
-        <span>{{ trans("Member Price") }}</span>
-
-        <span
-            v-if="offer?.allowances?.[0]?.percentage_off"
-            class="opacity-90
-                   text-[8px] sm:text-[9px] md:text-[10px] lg:text-[11px] xl:text-[12px] 2xl:text-[13px]"
+    <div class="inline-flex items-center gap-1">
+        <img
+            :src="`/assets/promo/gr-${layout.retina.organisation}.png`"
+            alt="Gold Reward logo"
+            v-tooltip="ctrans('Gold Reward logo')"
+            class="pointer-events-none translate-y-[15%]
+                   h-6 sm:h-6 md:h-7 lg:h-7 xl:h-8 2xl:h-8"
+        />
+    
+        <div
+            class="background-primary flex items-center gap-1 rounded whitespace-nowrap leading-none ztext-white
+                   px-1.5 py-[3px]
+                   text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] 2xl:text-[14px]
+                   2xl:px-2 2xl:py-[3px]"
         >
-            {{ offer.allowances[0].percentage_off * 100 }}% {{ trans("OFF") }}
-        </span>
+            <span>{{ trans("Member Price") }}</span>
+    
+            <span
+                v-if="offer?.allowances?.[0]?.percentage_off"
+                class="opacity-90
+                       text-[8px] sm:text-[9px] md:text-[10px] lg:text-[11px] xl:text-[12px] 2xl:text-[13px]"
+            >
+                {{ offer.allowances[0].percentage_off * 100 }}% {{ trans("OFF") }}
+            </span>
+        </div>
+    
     </div>
-
-    <img
-        :src="`/assets/promo/gr-${layout.retina.organisation}.png`"
-        alt="Gold Reward logo"
-        class="absolute -right-6 top-1/2 -translate-y-1/2 pointer-events-none
-               h-4 sm:h-5 md:h-5 lg:h-6 xl:h-6 2xl:h-7"
-    />
-
-</div>
 </template>

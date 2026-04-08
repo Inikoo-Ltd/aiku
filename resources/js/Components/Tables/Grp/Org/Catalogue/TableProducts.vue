@@ -11,7 +11,7 @@ import { Product } from "@/types/product"
 import Icon from "@/Components/Icon.vue"
 import { remove as loRemove, cloneDeep} from "lodash-es"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faConciergeBell, faGarage, faExclamationTriangle, faPencil } from "@fal"
+import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faToolbox, faTools } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -24,10 +24,9 @@ import InputNumber from "primevue/inputnumber"
 import { faPlus } from "@far"
 import { faWarning, faXmark } from "@fortawesome/free-solid-svg-icons"
 import PureInput from "@/Components/Pure/PureInput.vue"
-import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@/Components/Image.vue"
 import { trans } from "laravel-vue-i18n"
-import { faTriangle, faEquals, faMinus, faShapes, faStar, faThumbtack} from "@fas"
+import { faTriangle, faEquals, faMinus, faShapes, faStar, faThumbtack, faRunning} from "@fas"
 import LabelSKU from "@/Components/Utils/Product/LabelSKU.vue"
 import ListSelector from "@/Components/ListSelectorForCreateMasterProduct.vue";
 import axios from "axios"
@@ -50,9 +49,9 @@ const props = defineProps<{
         detach: routeType
     },
     isCheckboxProducts?: boolean
-    master?: boolean
     selectedProductsId?: {}
     variantSlugs?: Record<string, string>;
+    mismatch_trade_unit_with_master?: boolean
 }>()
 
 const emits = defineEmits<{
@@ -160,6 +159,14 @@ function productRoute(product: Product) {
         case "grp.org.shops.show.catalogue.products.out_of_stock_products.index":
             return route(
                 "grp.org.shops.show.catalogue.products.out_of_stock_products.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    product.slug
+                ])
+        case "grp.org.shops.show.catalogue.products.rrp_violation_products.index":
+            return route(
+                "grp.org.shops.show.catalogue.products.rrp_violation_products.show",
                 [
                     (route().params as RouteParams).organisation,
                     (route().params as RouteParams).shop,
@@ -489,6 +496,39 @@ const deleteError = (product) => {
     }
 }
 
+const isLoadingRepairFromChildren = ref("");
+
+const repairTradeUnitFromChildren = async (product) => {
+    if (isLoadingRepairFromChildren.value != "") return;
+
+    if (confirm("Are you sure you want to follow this child product trade unit? Doing so would cause master and the other children to have the same trade unit data.")) {
+        console.log("REPAIRING");
+        
+        router.patch(route('grp.models.products.repair_mismatch_trade_units', {
+            product: product.id,
+        }), {}, {
+            preserveScroll: true,
+            onStart: () => isLoadingRepairFromChildren.value = product.id,
+            onSuccess: () => {
+                notify({
+                    title: trans("Success!"),
+                    text: trans("Successfully repaired the product details"),
+                    type: "success"
+                })
+            },
+            onError: (errors) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: errors.message || trans("Failed to update product quantity in basket"),
+                    type: "error"
+                })
+            },
+            onFinish: () => isLoadingRepairFromChildren.value = ""
+        })
+    }
+
+}
+
 </script>
 
 <template>
@@ -512,6 +552,13 @@ const deleteError = (product) => {
 
         <template #cell(name)="{ item: product }">
             <div class="flex items-center">
+                <span v-if="mismatch_trade_unit_with_master" class="py-1 px-2 border border-solid border-yellow-600 text-yellow-600 mr-2 rounded-md cursor-pointer min-w-[40px] " v-tooltip="trans(`Follow this child's trade unit`)" @click="repairTradeUnitFromChildren(product)">
+                    <FontAwesomeLayers class="w-fit-content">
+                        <FontAwesomeIcon :icon="faTools" style="right:-20; bottom:-5" class="text-xs"/>
+                        <FontAwesomeIcon :icon="faRunning" class="text-lg"/>
+                    </FontAwesomeLayers>
+                    <LoadingIcon v-if="isLoadingRepairFromChildren == product.id"/>
+                </span>
                 <div v-if="product.org_stocks" class="text-xxs shrink-0">
                     <LabelSKU
                         :product="product"
@@ -868,8 +915,7 @@ const deleteError = (product) => {
             <Button icon="fal fa-times" type="negative" size="xs"
                 :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
-
-            <div v-if="master || editable_table">
+            <div v-if="editable_table">
                 <button v-if="!onEditOpen.includes(item.id)" class="h-9 align-bottom text-center" @click="()=>onEdit(item)">
                     <FontAwesomeIcon icon="fal fa-pencil" class="h-5 text-gray-500 hover:text-gray-700"
                         aria-hidden="true" v-tooltip="'edit'" />

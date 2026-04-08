@@ -42,9 +42,12 @@ class CloneAuroraVolGROffers
 
         if ($command->argument('to_shop')) {
             $toShop  = Shop::where('slug', $command->argument('to_shop'))->firstOrFail();
-            $toShops = [$toShop];
+            $toShops = [$toShop->id];
+
         } else {
-            $toShops = Shop::where('is_aiku', true)->where('type', ShopTypeEnum::B2B)->pluck('id')->toArray();
+            $toShops = Shop::where('is_aiku', true)->where('type', ShopTypeEnum::B2B)
+                ->where('master_shop_id', 1)
+                ->pluck('id')->toArray();
         }
 
 
@@ -92,7 +95,8 @@ class CloneAuroraVolGROffers
                                         'trigger_data_item_quantity' => $auroraOffer->{'Deal Terms'},
                                         'percentage_off'             => $auroraOffer->{'Deal Component Allowance'},
                                         'interval'                   => 30
-                                    ]
+                                    ],
+                                    900
                                 );
                                 $command->info("Offer created for $toFamily->code");
                             } else {

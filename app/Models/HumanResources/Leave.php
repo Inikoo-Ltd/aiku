@@ -33,6 +33,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string $session
  * @property string $type
  * @property int|null $leave_type_id
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\HumanResources\LeaveApprovalRecord> $approvalRecords
  * @property-read User|null $approver
  * @property-read \App\Models\HumanResources\Employee $employee
  * @property-read \App\Models\SysAdmin\Group $group
@@ -83,5 +84,40 @@ class Leave extends Model implements HasMedia
     {
         $this->addMediaCollection('attachments')
             ->acceptsMimeTypes(['application/pdf', 'image/jpeg', 'image/png']);
+    }
+
+    public function approvalRecords()
+    {
+        return $this->hasMany(LeaveApprovalRecord::class);
+    }
+
+    public function currentApprovalLevel(): int
+    {
+        $latestApproved = $this->approvalRecords()
+            ->approved()
+            ->max('sequence_number');
+
+        return $latestApproved ? $latestApproved + 1 : 1;
+    }
+
+    public function canBeApprovedBy(User $user): bool
+    {
+        $currentLevel = $this->currentApprovalLevel();
+
+        return LeaveApprover::byOrganisation($this->organisation)
+            ->bySequence($currentLevel)
+            ->active()
+            ->where('user_id', $user->id)
+            ->exists();
+    }
+
+    public function isPendingApproval(): bool
+    {
+        return $this->status === LeaveStatusEnum::PENDING
+            && $this->approvalRecords()
+                ->where('status', '!=', 'rejected')
+                ->where('sequence_number', '<', $this->currentApprovalLevel())
+                ->where('status', 'approved')
+                ->count() >= 0;
     }
 }

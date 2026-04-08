@@ -74,7 +74,13 @@ class StoreOrderFromShopify extends OrgAction
                 foreach ($shopifyProducts as $shopifyProduct) {
                     /** @var Portfolio $portfolio */
                     $portfolio = $shopifyUser->customerSalesChannel->portfolios()
-                        ->where('platform_product_id', $shopifyProduct['product_id'])->first();
+                        ->where('platform_product_variant_id', Arr::get($shopifyProduct, 'product_variant_id'))->first();
+
+                    if (! $portfolio) {
+                        /** @var Portfolio $portfolio */
+                        $portfolio = $shopifyUser->customerSalesChannel->portfolios()
+                            ->where('platform_product_id', $shopifyProduct['product_id'])->first();
+                    }
 
                     if ($portfolio) {
                         /** @var Product $product */
@@ -122,7 +128,7 @@ class StoreOrderFromShopify extends OrgAction
     {
         $receiverDetail = Arr::get($shopifyOrderData, 'shipping_address');
 
-        $reference = trim(Arr::get($receiverDetail, 'firstName') . ' ' . Arr::get($receiverDetail, 'lastName'));
+        $reference = trim(Arr::get($receiverDetail, 'firstName') . ' ' . Arr::get($receiverDetail, 'lastName') . ' ' . $shopifyUser->customer_sales_channel_id);
 
         $customerClientID = DB::table('customer_clients')
             ->select('id')

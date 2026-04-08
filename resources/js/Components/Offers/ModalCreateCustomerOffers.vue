@@ -72,14 +72,56 @@ const activeCategoryRoute = computed(() => {
 })
 
 const productFetchRoute = {
-    name: 'grp.json.shop.products_for_website_workshop',
+    name: 'grp.json.shop.products',
     parameters: {
         shop: (route().params as any).shop
     }
 }
 
-const submitCategoryOffer = () => {
+const today = new Date(new Date().setHours(0, 0, 0, 0))
 
+function formatDate(date: Date | null) {
+    if (!date) return null
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+}
+
+const submitCategoryOffer = () => {
+    const targets: any[] = []
+    
+    if (target.product && productFilters.value.length) {
+            targets.push({
+                type: 'product',
+                ids: productFilters.value,
+            })
+    
+        } else {
+            if (target.category && categoryFilters.value.length) {
+                targets.push({
+                type: 'category',
+                category_type: categoryType.value,
+                ids: categoryFilters.value,
+                })
+            }
+    
+            if (target.collection && collectionFilters.value.length) {
+                targets.push({
+                type: 'collection',
+                ids: collectionFilters.value,
+                })
+            }
+    
+            if (target.shop && selectedShops.value.length) {
+                targets.push({
+                type: 'shop',
+                ids: selectedShops.value,
+                })
+            }
+    }
     const payload = {
         target,
         category_type: categoryType.value,
@@ -88,7 +130,11 @@ const submitCategoryOffer = () => {
         product_ids: productFilters.value,
         offer_amount: offerAmount.value,
         discount_percentage: discountPercentage.value,
-        shops: selectedShops.value
+        shops: selectedShops.value,
+        targets: targets, 
+        date_type: dateType.value,
+        start_at: formatDate(startDate.value),
+        end_at: formatDate(endDate.value)
     }
 
     console.log("SUBMIT PAYLOAD:", payload)
@@ -98,19 +144,8 @@ const submitCategoryOffer = () => {
             organisation: 'sk',
             shop: 'se',
             offerCampaign: 'co-se',
-        }),
-        {
-            target,
-            category_type: categoryType.value,
-            category_ids: categoryFilters.value,
-            collection_ids: collectionFilters.value,
-            product_ids: productFilters.value,
-            offer_amount: offerAmount.value,
-            discount_percentage: discountPercentage.value,
-            date_type: dateType.value,
-            start_date: startDate.value,
-            end_date: endDate.value
-        },
+        }), 
+        payload,
         {
             preserveScroll: true,
             preserveState: true,
@@ -140,7 +175,7 @@ const submitCategoryOffer = () => {
 }
 
 const resetForm = () => {
-    offerAmount.value = null
+    offerAmount.value = 0
     discountPercentage.value = null
     categoryType.value = null
     categoryFilters.value = []
@@ -233,16 +268,15 @@ const authorisedShops =
     layout.organisations.data
         .find((o: any) => o.slug === organisation)
         ?.authorised_shops ?? []
-
-console.log("authorisedShops", authorisedShops)
-console.log("layout create", layout.organisations.data)
+        
+resetForm()
 </script>
 
 <template>
     <div>
-        <Button :label="trans('Create Customer Offer')" @click="isOpenModal = true" icon="fas fa-badge-percent" />
+        <Button :label="trans('Create Customer Offer')" @click="isOpenModal = true; resetForm();" icon="fas fa-badge-percent" />
 
-        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
+        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false; resetForm();">
             <div class="p-1 space-y-3">
                 <h2 class="text-2xl font-bold mb-4 text-center">{{ trans('Create Customer Offer') }}</h2>
 
@@ -265,10 +299,10 @@ console.log("layout create", layout.organisations.data)
 
                     <div class="flex flex-wrap gap-4">
 
-                        <div class="flex items-center gap-2">
+                        <!-- <div class="flex items-center gap-2">
                             <Checkbox v-model="target.shop" binary />
                             <label>{{ trans('Shop') }}</label>
-                        </div>
+                        </div> -->
 
                         <div class="flex items-center gap-2">
                             <Checkbox v-model="target.category" :disabled="target.product" binary />
@@ -414,7 +448,7 @@ console.log("layout create", layout.organisations.data)
                                     :information="trans('If start date is empty, will start immediately')" />:
                             </label>
 
-                            <DatePicker v-model="startDate" showIcon dateFormat="yy-mm-dd" class="w-full"
+                            <DatePicker v-model="startDate" :minDate="today" showIcon dateFormat="yy-mm-dd" class="w-full"
                                 :placeholder="trans('Select start date')" />
                         </div>
 
@@ -436,9 +470,9 @@ console.log("layout create", layout.organisations.data)
 
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />
-                    <Button full icon=" fad fa-save" :label="trans('Save')" @click="submitCategoryOffer" class="w-full"
-                        :isLoading="isLoadingSubmit" :disabled="isFormInvalid">
-                    </Button>
+                    <Button full icon="fad fa-save" :label="isLoadingSubmit ? trans('Loading') : trans('Save')" @click="submitCategoryOffer"
+                                           :loading="isLoadingSubmit" :disabled="isFormInvalid">
+                                       </Button>
                 </div>
             </div>
         </Modal>

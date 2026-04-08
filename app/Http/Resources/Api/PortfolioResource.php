@@ -76,6 +76,7 @@ class PortfolioResource extends JsonResource
             'price'                     => $price,
             'image'                     => $image,
             'type'                      => $this->item_type,
+            'ean_barcode'               => $this->item?->barcode,
             'created_at'                => $this->created_at,
             'updated_at'                => $this->updated_at,
         ];

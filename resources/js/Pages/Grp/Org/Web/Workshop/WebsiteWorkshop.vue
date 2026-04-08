@@ -25,6 +25,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 import { faSpinnerThird } from '@far'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 
 library.add(faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
 
@@ -46,6 +47,7 @@ const props = defineProps<{
   publishRoute: Record<string, routeType>
   website_slug: string
   layout_theme : Array<any>
+  history: {}
 }>()
 
 const layout = inject('layout')
@@ -63,7 +65,8 @@ const component = computed(() => {
     families: FamiliesBlockWorkshop,
     families_overview: FamiliesOverviewBlockWorkshop,
     products: ProductsBlockWorkshop,
-    product: ProductBlockWorkshop
+    product: ProductBlockWorkshop,
+    history: TableHistories
   }
   return mapping[currentTab.value]
 })
@@ -151,7 +154,8 @@ onUnmounted(() => {
 <template>
   <PageHeading :data="pageHead">
     <template #button-publish="{ action }">
-      <Button v-if="currentTab !== 'website_layout'" v-bind="action" @click="onPublish" :disabled="loadingPublish" :loading="loadingPublish">
+      <Button v-if="currentTab !== 'website_layout' && currentTab !== 'history'" v-bind="action" @click="onPublish" :loading="loadingPublish">
+      <!-- <Button v-if="currentTab !== 'website_layout'" v-bind="action" @click="onPublish" :disabled="loadingPublish" :loading="loadingPublish"> -->
         <template #loading v-if="loadingPublish" >
             <FontAwesomeIcon  :icon="faSpinnerThird" class="animate-spin" fixed-width aria-hidden="true" /> {{ progress }}%
         </template>
@@ -164,9 +168,11 @@ onUnmounted(() => {
   <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
   <KeepAlive>
-    <component :is="component" :data="props[currentTab]" :currency="props.currency" :layout_theme/>
+    <component :is="component" :tab="currentTab" :data="props[currentTab]" :currency="props.currency" :layout_theme/>
   </KeepAlive>
 
+  <!-- INI-1362 | Just enable them to scroll through and stuff. Don't softblock it using UI -->
+  <!-- 
   <Dialog v-model:visible="modalPublish" modal :closable="true" :draggable="false" class="w-[90%] md:w-[400px]"
     header="Please Wait...">
     <div class="flex flex-col items-center text-center py-4 relative">
@@ -181,6 +187,7 @@ onUnmounted(() => {
         <div class="bg-blue-600 h-2 rounded" :style="{ width: progress + '%' }"></div>
       </div>
     </div>
-  </Dialog>
+  </Dialog> 
+  -->
 
 </template>

@@ -1,11 +1,10 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 14-07-2025-17h-48m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 07 July 2025 17:48:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
@@ -26,10 +25,12 @@ use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemCancelStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\LocationOrgStock;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class CancelDeliveryNote extends OrgAction
@@ -43,7 +44,15 @@ class CancelDeliveryNote extends OrgAction
      */
     public function handle(DeliveryNote $deliveryNote, $modifyOrder = true): DeliveryNote
     {
-        $oldState     = $deliveryNote->state;
+        $oldState = $deliveryNote->state;
+
+        if (in_array($oldState, [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::CANCELLED])) {
+            throw ValidationException::withMessages([
+                'message' => __('Delivery note can not be cancelled.').' ['.__('Invalid state').': '.$oldState->value.']',
+            ]);
+        }
+
+
         $cancelledRef = $deliveryNote->reference.'-CANCELLED';
 
         $cancelledCount = DB::table('delivery_notes')
@@ -112,7 +121,13 @@ class CancelDeliveryNote extends OrgAction
 
             if ($deliveryNote->type == DeliveryNoteTypeEnum::ORDER && $modifyOrder) {
                 $order = $deliveryNote->orders->first();
-                RollbackOrderAfterDeliveryNoteCancellation::make()->action($order);
+                if (!in_array($order->state, [
+                    OrderStateEnum::CANCELLED,
+                    OrderStateEnum::FINALISED,
+                    OrderStateEnum::DISPATCHED
+                ])) {
+                    RollbackOrderAfterDeliveryNoteCancellation::make()->action($order);
+                }
             }
 
             foreach ($deliveryNote->trolleys as $trolley) {

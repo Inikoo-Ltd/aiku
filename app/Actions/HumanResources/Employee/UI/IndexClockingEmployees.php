@@ -84,6 +84,54 @@ class IndexClockingEmployees extends OrgAction
         $leaveTypeOptions = [];
         $adjustmentsData = collect();
         $overtimeData = collect();
+        $todayTimesheet = null;
+        $clockingStatus = 'clocked_out';
+        $activeTimeTracker = null;
+        $lastClockIn = null;
+        $lastClockOut = null;
+        $timezone = null;
+
+        if ($this->employee && $tab == ClockingEmployeesTabsEnum::SCAN_QR_CODE->value) {
+            $timezone = $this->employee->organisation->timezone?->name ?? config('app.timezone');
+
+            $todayTimesheet = \App\Models\HumanResources\Timesheet::where('subject_type', 'Employee')
+                ->where('subject_id', $this->employee->id)
+                ->where('date', now()->timezone($timezone)->toDateString())
+                ->first();
+
+            if ($todayTimesheet && $todayTimesheet->number_open_time_trackers > 0) {
+                $clockingStatus = 'clocked_in';
+                $activeTimeTracker = \App\Models\HumanResources\TimeTracker::where('timesheet_id', $todayTimesheet->id)
+                    ->where('status', 'open')
+                    ->whereNull('ends_at')
+                    ->first();
+
+                if ($activeTimeTracker) {
+                    $activeTimeTracker->starts_at = $activeTimeTracker->starts_at->timezone($timezone)->toIso8601String();
+                    if ($activeTimeTracker->start_clocking_id) {
+                        $lastClockIn = \App\Models\HumanResources\Clocking::find($activeTimeTracker->start_clocking_id);
+                        if ($lastClockIn) {
+                            $lastClockIn->clocked_at = $lastClockIn->clocked_at->timezone($timezone)->toIso8601String();
+                        }
+                    }
+                }
+            }
+
+            if ($todayTimesheet) {
+                $closedTimeTracker = \App\Models\HumanResources\TimeTracker::where('timesheet_id', $todayTimesheet->id)
+                    ->where('status', 'closed')
+                    ->whereNotNull('end_clocking_id')
+                    ->orderBy('ends_at', 'desc')
+                    ->first();
+
+                if ($closedTimeTracker && $closedTimeTracker->end_clocking_id) {
+                    $lastClockOut = \App\Models\HumanResources\Clocking::find($closedTimeTracker->end_clocking_id);
+                    if ($lastClockOut) {
+                        $lastClockOut->clocked_at = $lastClockOut->clocked_at->timezone($timezone)->toIso8601String();
+                    }
+                }
+            }
+        }
 
         if ($this->tab == ClockingEmployeesTabsEnum::TIMESHEETS->value && $this->employee) {
 
@@ -151,8 +199,8 @@ class IndexClockingEmployees extends OrgAction
                 return $leave->status?->value === LeaveStatusEnum::PENDING->value;
             });
 
-            $medicalRequestCount = $this->sumLeaveDaysByBucket($pendingLeaves, 'medical');
-            $unpaidRequestCount = $this->sumLeaveDaysByBucket($pendingLeaves, 'unpaid');
+            $medicalRequestCount = $this->countLeavesByBucket($submittedLeaves, 'medical');
+            $unpaidRequestCount = $this->countLeavesByBucket($submittedLeaves, 'unpaid');
             $balance = EmployeeLeaveBalance::firstOrCreate(
                 [
                     'employee_id' => $this->employee->id,
@@ -290,6 +338,12 @@ class IndexClockingEmployees extends OrgAction
             'adjustments' => $adjustmentsData,
             'overtime' => $overtimeData,
             'organisation' => $this->employee?->organisation?->slug,
+            'active_time_tracker' => $activeTimeTracker,
+            'clocking_status' => $clockingStatus,
+            'today_timesheet' => $todayTimesheet,
+            'last_clock_in' => $lastClockIn,
+            'last_clock_out' => $lastClockOut,
+            'timezone' => $timezone,
         ];
     }
 
@@ -462,6 +516,13 @@ class IndexClockingEmployees extends OrgAction
         });
     }
 
+    protected function countLeavesByBucket(Collection $leaves, string $bucket): int
+    {
+        return $leaves->filter(function (Leave $leave) use ($bucket) {
+            return LeaveTypeResolver::bucketFromLeaveType($leave->leaveType, $leave->type) === $bucket;
+        })->count();
+    }
+
     public function htmlResponse(array $data, ActionRequest $request): Response
     {
         $organisationId = $this->employee?->organisation_id;
@@ -485,7 +546,15 @@ class IndexClockingEmployees extends OrgAction
                 ],
                 ClockingEmployeesTabsEnum::SCAN_QR_CODE->value =>
                 $data['tab'] == ClockingEmployeesTabsEnum::SCAN_QR_CODE->value
-                    ? fn () => ['status' => 'ready_to_scan']
+                    ? fn () => [
+                        'status' => 'ready_to_scan',
+                        'active_time_tracker' => $data['active_time_tracker'],
+                        'clocking_status' => $data['clocking_status'],
+                        'today_timesheet' => $data['today_timesheet'],
+                        'last_clock_in' => $data['last_clock_in'],
+                        'last_clock_out' => $data['last_clock_out'],
+                        'timezone' => $data['timezone'],
+                    ]
                     : Inertia::lazy(fn () => ['status' => 'loaded_lazy']),
 
                 ClockingEmployeesTabsEnum::TIMESHEETS->value =>

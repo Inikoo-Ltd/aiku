@@ -56,13 +56,10 @@ const idxSlideLoading = ref<string | null>(null)
             ...getStyles(fieldValue.container?.properties, screenType)
         }">
             <h2 class="text-2xl font-bold mb-6">{{ trans("Browse By Product Lines:") }}</h2>
-
-
-
             <div :class="['grid gap-8', responsiveGridClass]">
 
                 <!-- VIEW ALL CARD -->
-                <div class="flex !w-full" v-if="fieldValue?.webpage_data?.webpage_type == 'department'">
+                <!-- <div class="flex !w-full" v-if="fieldValue?.webpage_data?.webpage_type == 'department'">
                     <LinkIris :href="fieldValue?.webpage_data?.overview_url" type="internal" class="w-full h-full flex">
                         <div class="family-item w-full h-full cursor-pointer flex flex-col rounded-xl overflow-hidden border bg-white hover:bg-gray-50 transition-all"
                             :style="{
@@ -70,7 +67,7 @@ const idxSlideLoading = ref<string | null>(null)
                                 fontWeight: 600,
                                 minHeight: maxHeight ? maxHeight + 'px' : undefined
                             }">
-                            <!-- TOP AREA (fill space like image) -->
+                            
                             <div class="flex-1 flex items-center justify-center bg-gray-100">
                                 <span class="text-sm font-semibold">
                                     {{ trans("View All") }}
@@ -78,7 +75,22 @@ const idxSlideLoading = ref<string | null>(null)
                             </div>
                         </div>
                     </LinkIris>
-                </div>
+                </div> -->
+                <template v-if="fieldValue?.webpage_data?.webpage_type == 'department'">
+                    <LinkIris :href="fieldValue?.webpage_data?.overview_url" type="internal" class="block">
+                        
+                        <div class="relative w-full bg-white rounded-md shadow-md overflow-hidden"
+                            :style="getStyles(props.fieldValue?.chip?.container?.properties, props.screenType)"
+                        >
+                            <div class="aspect-[1/1] flex items-center justify-center bg-gray-50 hover:bg-gray-100">
+                                <span class="text-base font-semibold text-center">
+                                    {{ trans("View All") }}
+                                </span>
+                            </div>
+                        </div>
+                    </LinkIris>
+                </template>
+
 
                 <!-- LOOP ITEMS -->
                 <LinkIris v-for="(item, index) in props?.fieldValue?.families || []" :key="index" :href="`${item.url}`"
