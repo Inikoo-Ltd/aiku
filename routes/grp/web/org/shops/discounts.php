@@ -106,7 +106,7 @@ Route::name("offers.")->prefix('offers')
         Route::get('create', CreateOffer::class)->name('create');
         Route::get('{offer}', ShowOffer::class)->name('show');
         Route::get('{offer}/edit', EditOffer::class)->name('edit');
-        Route::post('finish', FinishOffer::class)->name('finish');
+        Route::get('{offer}/finish', FinishOffer::class)->name('finish');
         Route::post('store', StoreOffer::class)->name('store');
         Route::patch('{offer}/update', [UpdateOffer::class, 'inShop'])->name('update');
     });
