@@ -40,6 +40,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\SysAdmin\User;
 
 /**
  * App\Models\Fulfilment\PalletDelivery
@@ -304,6 +305,16 @@ class PalletReturn extends Model implements HasMedia
     public function customerSalesChannel(): BelongsTo
     {
         return $this->belongsTo(CustomerSalesChannel::class);
+    }
+
+    public function pickerUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'picker_user_id');
+    }
+
+    public function packerUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'packer_user_id');
     }
 
 }
