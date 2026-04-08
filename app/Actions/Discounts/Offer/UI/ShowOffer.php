@@ -12,6 +12,7 @@ namespace App\Actions\Discounts\Offer\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Discounts\OfferCampaign\UI\ShowOfferCampaign;
 use App\Actions\OrgAction;
+use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Http\Resources\Catalogue\OfferResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -63,7 +64,7 @@ class ShowOffer extends OrgAction
 
         $vueComponent = match ($offer->type) {
             'VolGr Gift' => 'Org/Discounts/OfferVolGrGift',
-            'Amount AND Order Number' => 'Org/Discounts/OfferAmountOrder',
+            // 'Amount AND Order Number' => 'Org/Discounts/OfferAmountOrder',
             default => 'Org/Discounts/Offer'
         };
 
@@ -104,7 +105,7 @@ class ShowOffer extends OrgAction
                 'pageHead'      => [
                     'title'     => $offer->name,
                     'model'     => __('Offer'),
-                    'iconRight' => $iconRight,
+                    'iconRight' => OfferStateEnum::from($offer->state->value)->stateIcon()[$offer->state->value],
                     'icon'      => $icon,
                     'actions'   => $actions,
                 ],

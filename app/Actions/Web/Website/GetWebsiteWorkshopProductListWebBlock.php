@@ -13,7 +13,7 @@ use Lorisleiva\Actions\Concerns\AsObject;
 use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 
-class GetWebsiteWorkshopFamily
+class GetWebsiteWorkshopProductListWebBlock
 {
     use AsObject;
 
@@ -53,10 +53,10 @@ class GetWebsiteWorkshopFamily
             'products' => $products,
             'top_seller' => $topSeller,
             'family' =>  $family,
-            'layout' => Arr::get($website->unpublishedFamilySnapshot, 'layout.family', []),
+            'layout' => Arr::get($website->unpublishedProductsSnapshot, 'layout.products', []),
             'type_shop' => $website->shop->type,
             'autosaveRoute' => [
-                'name' => 'grp.models.website.autosave.family',
+                'name' => 'grp.models.website.autosave.products',
                 'parameters' => [
                     'website' => $website->id
                 ]

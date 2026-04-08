@@ -21,6 +21,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
@@ -133,7 +134,7 @@ class GenerateInvoiceFromOrder extends OrgAction
                 }
             }
 
-            $totalPaid = $order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->sum('payments.amount');
+            $totalPaid = $order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->whereNot('payments.state', PaymentStateEnum::CANCELLED)->sum('payments.amount');
 
             $amountToCredit = round($totalPaid - $invoice->total_amount, 2);
 

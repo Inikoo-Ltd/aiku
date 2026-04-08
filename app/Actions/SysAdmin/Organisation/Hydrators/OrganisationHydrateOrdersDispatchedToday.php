@@ -8,7 +8,6 @@
 
 namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
-use App\Actions\Traits\WithEnumStats;
 use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -17,14 +16,10 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class OrganisationHydrateOrdersDispatchedToday implements ShouldBeUnique
 {
     use AsAction;
-    use WithEnumStats;
-
-
-    public string $jobQueue = 'sales';
 
     public function getJobUniqueId(int $organisationID): string
     {
-        return $organisationID;
+        return (string) $organisationID;
     }
 
     public function handle(int $organisationID): void

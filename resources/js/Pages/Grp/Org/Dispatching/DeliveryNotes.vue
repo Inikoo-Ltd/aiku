@@ -76,11 +76,11 @@ function createPickingSession() {
   )
 }
 
-console.log("layoutStore", layoutStore)
 
 const isHidden = computed(() => { 
   return props.shopType == 'b2b' || props.shopType == 'external'
 })
+
 </script>
 
 <template>
@@ -96,6 +96,6 @@ const isHidden = computed(() => {
       />
     </template>
   </PageHeading>
-  <HasPickTableDeliveryNote v-if="todo" :data="data" v-model:selectedDeliveryNotes="selectedDeliveryNotes"/>
+   <HasPickTableDeliveryNote v-if="todo" :data="data" v-model:selectedDeliveryNotes="selectedDeliveryNotes"/>
   <TableDeliveryNotes v-else :data="data" />
 </template>

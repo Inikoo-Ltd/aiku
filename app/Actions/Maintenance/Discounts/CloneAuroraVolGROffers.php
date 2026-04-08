@@ -45,7 +45,9 @@ class CloneAuroraVolGROffers
             $toShops = [$toShop->id];
 
         } else {
-            $toShops = Shop::where('is_aiku', true)->where('type', ShopTypeEnum::B2B)->pluck('id')->toArray();
+            $toShops = Shop::where('is_aiku', true)->where('type', ShopTypeEnum::B2B)
+                ->where('master_shop_id', 1)
+                ->pluck('id')->toArray();
         }
 
 

@@ -11,6 +11,7 @@ namespace App\Actions\Transfers\Aurora;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\Helpers\Address\UpdateAddress;
+use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Actions\Ordering\Order\StoreOrder;
@@ -33,6 +34,7 @@ class FetchAuroraOrders extends FetchAuroraAction
 {
     use WithAuroraAttachments;
     use WithAuroraParsers;
+    use HasOrderHydrators;
 
     public string $commandSignature = 'fetch:orders {organisations?*} {--S|shop= : Shop slug} {--s|source_id=} {--d|db_suffix=} {--w|with=* : Accepted values: transactions payments full} {--N|only_new : Fetch only new} {--only_cancelled : Fetch only cancelled}   {--d|db_suffix=} {--r|reset} {--B|basket : fetch updated orders in basket} {--T|only_orders_no_transactions : Fetch only orders with no transactions} {--D|days= : fetch last n days} {--O|order= : order asc|desc}';
 
@@ -206,6 +208,8 @@ class FetchAuroraOrders extends FetchAuroraAction
                     ]));
                 }
 
+                $oldState = $order->state;
+
                 $order = UpdateOrder::make()->action(
                     order: $order,
                     modelData: $orderData['order'],
@@ -213,6 +217,13 @@ class FetchAuroraOrders extends FetchAuroraAction
                     strict: false,
                     audit: false
                 );
+
+                if ($order->state != $oldState) {
+                    $this->orderHydrators($order);
+                    $this->orderHandlingHydrators($order, $oldState);
+                    $this->orderHandlingHydrators($order, $order->state);
+                }
+
             } catch (Exception $e) {
                 $this->recordError($organisationSource, $e, $orderData['order'], 'Order', 'update');
                 $this->errorReported = true;

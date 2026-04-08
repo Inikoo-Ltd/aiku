@@ -557,13 +557,13 @@ defineExpose({
 
 const bundle = useBundle()
 
-watch(() => bundle.open.value, (val) => {
+watch([() => bundle.open.value, () => layout?.rightbasket?.show], ([bundleOpen, basketOpen]) => {
     const widget = document.getElementById('jsd-widget')
     if (!widget) return
 
     widget.style.setProperty(
         'right',
-        val ? '420px' : '16px',
+        (bundleOpen || basketOpen) ? '420px' : '16px',
         'important'
     )
 })
@@ -571,7 +571,7 @@ watch(() => bundle.open.value, (val) => {
 
 <template>
     <div>
-        <button ref="buttonRef" @click="toggle" class="fixed z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary" :class="['fixed bottom-36 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary transition-all duration-300', bundle.open.value ? 'right-[430px]' : 'right-10']">
+        <button ref="buttonRef" @click="toggle" class="fixed z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary" :class="['fixed bottom-36 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary transition-all duration-300', (bundle.open.value || layout?.rightbasket?.show) ? 'right-[470px]' : 'right-10']">
             <FontAwesomeIcon :icon="faMessage" class="text-base" />
             <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1
                bg-red-500 text-white text-[10px] font-semibold
@@ -586,7 +586,7 @@ watch(() => bundle.open.value, (val) => {
             <div v-if="open" ref="panelRef" class="fixed z-[70] bg-[#f6f6f7] border shadow-xl flex flex-col" :class="isMobile
                 ? 'inset-0 rounded-none h-[100dvh] flex flex-col'
                 : ['bottom-[180px] w-[350px] rounded-md max-h-[calc(100dvh-12rem)] flex flex-col',
-                    bundle.open.value ? 'right-[430px]' : 'right-3'
+                    (bundle.open.value || layout?.rightbasket?.show) ? 'right-[430px]' : 'right-3'
                 ]">
                 <!-- header -->
                 <div class="flex items-center px-4 border-b bg-white" :class="isMobile
