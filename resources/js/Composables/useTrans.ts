@@ -8,14 +8,21 @@ import { trans } from 'laravel-vue-i18n'
 import { ReplacementsInterface } from 'laravel-vue-i18n/interfaces/replacements'
 
 // Method: Custom Translation function that falls back to the original text if translation is not found
-export const ctrans = (text: string, replacements: ReplacementsInterface = {}) => {  
+export const ctrans = (text: string, replacements: ReplacementsInterface = {}) => {
     if (!text) return ''
 
-    if (trans(text, replacements)) {
-        return trans(text, replacements)
+    const normalizedReplacements = Object.entries(replacements).reduce(
+        (acc, [key, value]) => {
+            acc[key] = value ?? ''
+            return acc
+        },
+        {} as ReplacementsInterface
+    )
+
+    if (trans(text, normalizedReplacements)) {
+        return trans(text, normalizedReplacements)
     } else {
-        Object.keys(replacements).forEach(key => {
-            const value = replacements[key];
+        Object.entries(normalizedReplacements).forEach(([key, value]) => {
             const regex = new RegExp(`:${key}`, 'g')
             text = text.replace(regex, value.toString())
         })
