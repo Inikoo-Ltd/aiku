@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\Console\Helper\ProgressBar;
 
-class OrgStockHydrateHasBeenInWarehouse implements ShouldBeUnique
+class OrgStockHydrateProductsAvailableQuantity implements ShouldBeUnique
 {
     use AsAction;
 

@@ -11,7 +11,8 @@ namespace App\Actions\Inventory\OrgStockMovement;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateHasBeenInWarehouse;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQuantity;
+use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
@@ -26,6 +27,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreOrgStockMovement extends OrgAction
 {
+    use CalculatesOrgStockHistories;
+
     public function handle(OrgStock $orgStock, Location $location, array $modelData): OrgStockMovement
     {
         data_set($modelData, 'group_id', $location->group_id);
@@ -75,20 +78,31 @@ class StoreOrgStockMovement extends OrgAction
         $orgStockMovement = $orgStock->orgStockMovements()->create($modelData);
 
 
-        if ($this->strict) {
-            $locationOrgStock = LocationOrgStock::where('location_id', $location->id)->where('org_stock_id', $orgStock->id)->first();
+        $locationOrgStock = LocationOrgStock::where('location_id', $location->id)->where('org_stock_id', $orgStock->id)->first();
 
-            if ($locationOrgStock) {
+        if ($locationOrgStock) {
+            if ($this->strict) {
                 UpdateLocationOrgStock::run(
                     $locationOrgStock,
                     [
                         'quantity' => $locationOrgStock->quantity + $orgStockMovement->quantity,
                     ]
                 );
+            } else {
+                $stock = $this->getStockQuantity($orgStock, $location, now());
+                UpdateLocationOrgStock::run(
+                    $locationOrgStock,
+                    [
+                        'quantity' => $stock
+                    ]
+                );
             }
-            OrgStockHydrateMovements::dispatch($orgStock)->delay($this->hydratorsDelay);
-            OrgStockHydrateHasBeenInWarehouse::dispatch($orgStock)->delay($this->hydratorsDelay);
+            // todo make an dispatch to update value in $locationOrgStock
+
         }
+        OrgStockHydrateMovements::dispatch($orgStock)->delay($this->hydratorsDelay);
+        OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock)->delay($this->hydratorsDelay);
+
 
         return $orgStockMovement;
     }
