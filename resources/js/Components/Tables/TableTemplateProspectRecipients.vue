@@ -258,22 +258,6 @@ watch(
                         <ToggleButton v-model="filter.value" onLabel="Active" offLabel="Inactive" class="mb-3 w-full"
                             disabled />
                     </template>
-                    <template v-if="key === 'orders_in_basket'">
-                        <!-- TIME FRAME -->
-                        <Dropdown v-model="filter.value.mode" :options="[
-                            { label: '1–3 Days ago', value: 3 },
-                            { label: 'Last 7 Days', value: 7 },
-                            { label: 'Last 14 Days', value: 14 },
-                            { label: 'Custom range', value: 'custom' }
-                        ]" optionLabel="label" optionValue="value" placeholder="Select time frame" class="w-full mb-2"
-                            appendTo="body" @change="onBasketModeChange(filter, $event)" />
-
-                        <!-- DATE RANGE (only custom) -->
-                        <Calendar v-if="filter.value.mode === 'custom'" v-model="filter.value.date_range"
-                            placeholder="Select a date range" selectionMode="range" dateFormat="yy-mm-dd" showIcon
-                            class="w-full" appendTo="body" />
-
-                    </template>
                     <template v-else-if="filter.config.options?.date_range">
                         <label class="block text-xs font-medium text-gray-500 mb-1">
                             {{ trans(filter.config.options.date_range.label) }}
@@ -291,21 +275,6 @@ watch(
                             v-model="filter.value.date_range" selectionMode="range" dateFormat="yy-mm-dd" showIcon
                             placeholder="Select a date range" class="w-full" appendTo="body" />
                     </template>
-
-                    <!-- AMOUNT RANGE -->
-                    <div v-if="filter.config.options?.amount_range" class="grid grid-cols-2 gap-2 mt-2">
-                        <InputNumber :min="0" v-model="filter.value.amount_range.min" placeholder="Minimum amount"
-                            mode="currency" currency="GBP" locale="en-GB" class="w-full" inputClass="w-full"
-                            :class="{ 'p-invalid': isAmountRangeInvalid(filter) }"
-                            :max="filter.value.amount_range.max ?? undefined" />
-                        <InputNumber v-model="filter.value.amount_range.max" placeholder="Maximum amount"
-                            mode="currency" currency="GBP" locale="en-GB" class="w-full" inputClass="w-full"
-                            :min="filter.value.amount_range.min ?? undefined" />
-
-                        <p v-if="isAmountRangeInvalid(filter)" class="text-xs text-red-500 mt-1 col-span-2">
-                            {{ trans("Minimum amount is required.") }}
-                        </p>
-                    </div>
 
                     <!-- COUNT -->
                     <div v-if="filter.config.options?.count" class="mt-2">
@@ -341,97 +310,6 @@ watch(
                 <Dropdown v-else-if="filter.config.type === 'select'" v-model="filter.value"
                     :options="filter.config.options" optionLabel="label" optionValue="value" placeholder="Select"
                     class="w-full" appendTo="body" />
-
-                <!-- MULTISELECT -->
-                <template v-else-if="filter.config.type === 'multiselect'">
-                    <div class="min-w-0 w-full">
-                        <MultiselectTagsInfiniteScroll :form="filter.value" fieldName="ids" :fieldData="{
-                            options: filter.config.options || filter.config.fields.content.options,
-                            labelProp: 'label',
-                            valueProp: 'value',
-                            placeholder: 'Select items...'
-                        }" />
-                    </div>
-                </template>
-
-                <template v-else-if="filter.config.type === 'entity_behaviour'">
-                    <div class="mb-3">
-                        <div class="flex items-center gap-6">
-                            <div class="flex items-center gap-2">
-                                <RadioButton v-model="filter.value.combine_logic" :value="true" inputId="multi" />
-                                <label for="multi" class="text-sm">{{ trans("Allow multiple behaviours") }}</label>
-                            </div>
-
-                            <div class="flex items-center gap-2">
-                                <RadioButton v-model="filter.value.combine_logic" :value="false" inputId="single" />
-                                <label for="single" class="text-sm">{{ trans("Single behaviour only") }}</label>
-                            </div>
-                        </div>
-                    </div>
-                    <div v-if="filter.config.fields.behaviours" class="mt-3">
-                        <!-- MULTI MODE -->
-                        <div v-if="filter.value.combine_logic === true">
-                            <div v-for="behavior in filter.config.fields.behaviours.options" :key="behavior.value"
-                                class="flex items-center gap-2">
-                                <Checkbox v-model="filter.value.behaviors" :value="behavior.value" />
-                                <label>{{ behavior.label }}</label>
-                            </div>
-                        </div>
-                        <!-- SINGLE MODE -->
-                        <div v-else>
-                            <div v-for="behavior in filter.config.fields.behaviours.options" :key="behavior.value"
-                                class="flex items-center gap-2">
-                                <RadioButton v-model="filter.value.behaviors[0]" :value="behavior.value" />
-                                <label>{{ behavior.label }}</label>
-                            </div>
-                        </div>
-                    </div>
-                </template>
-                <!-- LOCATION -->
-                <template v-else-if="filter.config.type === 'location'">
-                    <div class="space-y-3">
-
-                        <!-- MODE -->
-                        <Dropdown v-model="filter.value.mode"
-                            :options="Object.entries(filter.config.fields.mode.options).map(([value, label]) => ({ value, label }))"
-                            optionLabel="label" optionValue="value" class="w-full" />
-
-                        <!-- DIRECT MODE -->
-                        <template v-if="filter.value.mode === 'direct'">
-                            <MultiselectTagsInfiniteScroll :form="filter.value" v-model="filter.value.country_ids"
-                                fieldName="country_ids" :fieldData="{
-                                    options: filter.config.fields.country_ids.options,
-                                    labelProp: 'label',
-                                    valueProp: 'value',
-                                    placeholder: filter.config.fields.country_ids.placeholder
-                                }" class="w-full !p-0" />
-                            <InputText v-model="getPostalCodeModel(filter).value"
-                                :placeholder="filter.config.fields.postal_codes.placeholder" class="w-full" />
-                            <small class="text-gray-500">
-                                {{ trans("You can enter multiple postal codes separated by commas.") }}
-                            </small>
-                        </template>
-
-                        <!-- RADIUS MODE -->
-                        <template v-else>
-
-                            <InputText v-model="filter.value.location"
-                                :placeholder="filter.config.fields.location.placeholder" class="w-full" />
-
-                            <Dropdown v-model="filter.value.radius"
-                                :options="Object.entries(filter.config.fields.radius.options).map(([value, label]) => ({ value, label }))"
-                                optionLabel="label" optionValue="value" class="w-full" placeholder="Radius in km" />
-
-                            <InputNumber v-if="filter.value.radius === 'custom'" v-model="filter.value.radius_custom"
-                                placeholder="Radius in km" class="w-full" />
-
-                            <Button label="Find On Map" @click="() => {
-                                filter.value.lastSource = 'input'
-                                getLatLngToLocation(filter, 'forward')
-                            }" />
-                        </template>
-                    </div>
-                </template>
             </div>
         </div>
 

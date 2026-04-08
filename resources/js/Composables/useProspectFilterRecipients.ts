@@ -17,8 +17,6 @@ export function useProspectFilterRecipients(props: any) {
         props.filters ? { ...props.filters } : {}
     )
 
-    const preloadedEntities = reactive<Record<string, any[]>>({})
-
     /* ---------------- COMPUTED ---------------- */
     const activeFilterCount = computed(() =>
         Object.keys(activeFilters.value ?? {}).length
@@ -89,24 +87,24 @@ export function useProspectFilterRecipients(props: any) {
        if (config.type === 'boolean') {
             value = { value: true }
 
-            if (config.options?.date_range) {
-                value.date_range = null
-            }
+            // if (config.options?.date_range) {
+            //     value.date_range = null
+            // }
 
-            if (config.options?.amount_range) {
-                value.amount_range = {
-                    min: null,
-                    max: null,
-                }
-            }
+            // if (config.options?.amount_range) {
+            //     value.amount_range = {
+            //         min: null,
+            //         max: null,
+            //     }
+            // }
 
-            if (config.options?.date_range?.presets) {
-                value.date_range_preset = null
-            }
+            // if (config.options?.date_range?.presets) {
+            //     value.date_range_preset = null
+            // }
 
-            if (config.options?.count) {
-                value.count = config.options.count.default ?? 3
-            }
+            // if (config.options?.count) {
+            //     value.count = config.options.count.default ?? 3
+            // }
 
             if (config.options?.weeks) {
                 value.mode = config.options.weeks.default ?? 'three_weeks_ago'
@@ -453,7 +451,6 @@ export function useProspectFilterRecipients(props: any) {
         filtersPayload,
         saveFilters,
         fetchCustomers,
-        preloadedEntities,
         updateLastContactedMode,
         calculateDateFromPreset
     }
