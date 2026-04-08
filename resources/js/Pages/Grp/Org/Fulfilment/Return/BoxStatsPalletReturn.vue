@@ -67,7 +67,7 @@ onMounted(() => {
 })
 
 const deliveryListError = inject('deliveryListError', [])
-const pickingTitle = computed(() => props.dataPalletReturn?.type === 'stored_item' ? trans('Return Stored Item SKU') : trans('Return Pallet'))
+const pickingTitle = computed(() => props.dataPalletReturn?.type === 'stored_item' ? trans("Return Customer's SKUs") : trans('Return Whole pallets'))
 const hasPickingUsers = computed(() => Boolean(props.dataPalletReturn?.picker_user?.contact_name || props.dataPalletReturn?.packer_user?.contact_name))
 
 // Method: Create new address
