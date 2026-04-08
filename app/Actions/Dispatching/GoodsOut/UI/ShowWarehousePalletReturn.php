@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\GoodsOut\UI;
 
 use App\Actions\Fulfilment\PalletReturn\IndexPalletsInReturnPalletWholePallets;
+use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnActions;
 use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnAddressManagement;
 use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnBoxStats;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexPhysicalGoodInPalletReturn;
@@ -58,7 +59,21 @@ class ShowWarehousePalletReturn extends OrgAction
         $subNavigation = [];
 
 
-        $actions = [];
+        $actions = array_values(
+            Arr::where(
+                GetPalletReturnActions::run($palletReturn, true, false),
+                fn (array $action) => in_array($action['key'] ?? null, [
+                    'confirm',
+                    'start picking',
+                    'pick all',
+                    'pdf',
+                    'cancel-pallet-return',
+                    'Dispatching',
+                    'delete_dispatched',
+                    'action'
+                ], true)
+            )
+        );
 
 
         $navigation = PalletReturnTabsEnum::navigation($palletReturn);
