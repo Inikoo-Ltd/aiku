@@ -53,8 +53,10 @@ class GetPalletReturnActions
     public function getPalletReturnInProcessActions(PalletReturn $palletReturn): array
     {
         if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
-            $isDisabled = !($palletReturn->estimated_delivery_date);
-            if ($palletReturn->pallets()->count() < 1) {
+            $hasSelectedPallet = $palletReturn->pallets()->count() > 0;
+            $isDisabled = !($palletReturn->estimated_delivery_date) || !$hasSelectedPallet;
+
+            if (!$hasSelectedPallet) {
                 $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __('Select pallet before submit');
             } else {
                 $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __('Submit');

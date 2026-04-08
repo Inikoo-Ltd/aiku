@@ -43,6 +43,10 @@ const props = defineProps<{
     palletReturn: {}
 }>()
 
+const emit = defineEmits<{
+    (e: 'isStoredItemAdded', value: boolean): void
+}>()
+
 console.log('s',props)
 
 const isPickingLoading = ref(false)
@@ -162,6 +166,7 @@ const onCheckTable = async (item: {}) => {
                 {},
             )
 
+            emit('isStoredItemAdded', true)
             debounceReloadBoxStats()
         } catch (error) {
             notify({
@@ -178,10 +183,11 @@ const onCheckTable = async (item: {}) => {
             if(!item.deleteFromReturnRoute?.name) {
                 throw new Error('Delete route is not defined')
             }
-            axios.delete(
+            await axios.delete(
                 route(item.deleteFromReturnRoute.name, {palletReturn : props.palletReturn.id , pallet : item.pallet_id })
             )
 
+            emit('isStoredItemAdded', false)
             debounceReloadBoxStats()
         } catch (error) {
             console.log('sssss',error)
