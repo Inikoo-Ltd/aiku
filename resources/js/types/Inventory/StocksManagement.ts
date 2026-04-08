@@ -46,6 +46,8 @@ export interface StockLocation {
     created_at: string
     updated_at: string
     location: Location
+    default_wholesale_location: boolean
+    default_dropshipping_location: boolean
 }
 
 export interface StockManagementRoutes {
