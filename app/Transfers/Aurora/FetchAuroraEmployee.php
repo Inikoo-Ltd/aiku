@@ -9,6 +9,7 @@
 namespace App\Transfers\Aurora;
 
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -112,6 +113,7 @@ class FetchAuroraEmployee extends FetchAurora
                     'No' => EmployeeStateEnum::LEFT,
                     default => EmployeeStateEnum::WORKING
                 },
+                'employment_type'          => EmploymentTypeEnum::FULL_TIME,
                 'data'                     => $data,
                 'errors'                   => $errors,
                 'source_id'                => $this->organisation->id.':'.$this->auroraModelData->{'Staff Key'},
