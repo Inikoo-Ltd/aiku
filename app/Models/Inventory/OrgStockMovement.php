@@ -11,6 +11,7 @@ namespace App\Models\Inventory;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
+use App\Models\SysAdmin\User;
 use App\Models\Traits\InWarehouse;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -97,5 +98,10 @@ class OrgStockMovement extends Model
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }
