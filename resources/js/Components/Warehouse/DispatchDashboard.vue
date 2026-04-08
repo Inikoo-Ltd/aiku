@@ -105,10 +105,36 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
 const isWeakValue = (value: number | null | undefined) => {
     return value === null || value === 0
 }
+
+const waitingItemsUrl = computed((): string | null => {
+    try {
+        const params = route().params as Record<string, string>
+        if (params.organisation && params.warehouse) {
+            return route('grp.org.warehouses.show.dispatching.waiting_items', {
+                organisation: params.organisation,
+                warehouse: params.warehouse,
+            })
+        }
+    } catch {
+        return null
+    }
+    return null
+})
 </script>
 
 <template>
     <div class="bg-white px-1 sm:px-2 md:px-4 overflow-x-auto pb-4">
+        
+        <div class="bg-yellow-500 px-4 py-2 rounded-md text-gray-800 mb-4 mt-2">
+            You have 5 items that still on waiting..
+            <Link v-if="waitingItemsUrl" :href="waitingItemsUrl" class="underline">
+                Click here to see
+            </Link>
+            <span v-else class="underline">
+                Click here to see
+            </span>
+        </div>
+        
         <div class="flex gap-1 md:gap-3 w-full pt-3">
 
             <!-- ================= DIMENSION COLUMN ================= -->
