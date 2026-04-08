@@ -66,7 +66,8 @@ class ShowIrisWebpage
                 'description'   => $webpage->description,
                 'canonical_url' => $webpage->canonical_url,
                 'type'          => $webpage->type,
-
+                'sub_type'      => $webpage->sub_type,
+                'model_type'    => $webpage->model_type
             ],
             'webpage_img'  => $webpageImg,
         ];

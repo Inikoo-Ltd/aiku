@@ -20,6 +20,7 @@ import ConfirmDialog from "primevue/confirmdialog"
 import { trans } from "laravel-vue-i18n"
 import RenderProduct from "@/Components/CMS/Webpage/Products/Ecommerce/RenderProduct.vue"
 import Image from "@/Components/Image.vue"
+import ReviewFamily from "@/Components/CMS/Reviews/ReviewFamily.vue"
 
 
 const props = defineProps<{
@@ -627,6 +628,9 @@ watch(
             </Drawer>
         </div>
     </div>
+    
+    <!-- <ReviewFamily v-if="layout?.iris?.website?.reviews_settings" :products="products" code="family" /> -->
+     
 </template>
 
 
