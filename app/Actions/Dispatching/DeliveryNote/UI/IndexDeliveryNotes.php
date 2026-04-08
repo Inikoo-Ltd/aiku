@@ -61,7 +61,10 @@ class IndexDeliveryNotes extends OrgAction
             $model     = __('Goods Out');
         }
 
-        $todo = $this->bucket == 'unassigned' || $this->bucket == 'queued';
+        $isQueueBucket = in_array($this->bucket, ['unassigned', 'queued'], true);
+        $isHiddenShop  = !in_array($this->shopType, ['b2b', 'external'], true);
+
+        $todo = $isQueueBucket && $isHiddenShop;
 
         $pickingSessionRoute = [
                     'name' => 'grp.models.warehouse.picking_session.store',
