@@ -245,6 +245,9 @@ watch(
                     <span class="font-medium flex items-center">{{ filter.config.label ?? '-' }}</span>
                     <Button :icon="faTimes" type="negative" @click="removeFilter(key)" />
                 </div>
+                <p v-if="filter.config.description" class="text-xs text-gray-600 mb-2">
+                    {{ trans(filter.config.description) }}
+                </p>
                 <span
                     class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 mb-2">
                     {{ trans("Active") }}
