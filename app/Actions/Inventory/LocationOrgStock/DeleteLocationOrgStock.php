@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\LocationOrgStock;
 
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateStocks;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
@@ -38,24 +39,28 @@ class DeleteLocationOrgStock extends OrgAction
         DB::transaction(function () use ($locationOrgStock, $location, $orgStock) {
             $currentStock = $locationOrgStock->quantity;
 
+            $costPerSku = $this->getCostPerSku($orgStock, now());
+
             if ($currentStock != 0) {
-                $costPerSku = $this->getCostPerSku($orgStock, now());
-                $quantity   = -$currentStock;
-                $orgAmount  = $currentStock * $costPerSku;
+                $stockDiff   = -$currentStock;
+                $exchangeRate = GetCurrencyExchange::run($locationOrgStock->organisation->currency, $locationOrgStock->group->currency);
+
             } else {
-                $quantity  = 0;
-                $orgAmount = 0;
+                $stockDiff  = 0;
+                $exchangeRate = 1;// no need to calculate exchange rate
             }
 
             StoreOrgStockMovement::make()->action(
                 $orgStock,
                 $location,
                 [
-                    'quantity'         => $quantity,
+                    'quantity'         => $stockDiff,
                     'audited_quantity' => 0,
-                    'org_amount'       => $orgAmount,
                     'date'             => now()->format('Y-m-d H:i:s.u'),
                     'type'             => OrgStockMovementTypeEnum::DISASSOCIATE,
+                    'cost_per_sku'     => $costPerSku,
+                    'org_amount'       => $stockDiff * $costPerSku,
+                    'grp_amount'       => $stockDiff * $costPerSku * $exchangeRate,
                 ]
             );
 

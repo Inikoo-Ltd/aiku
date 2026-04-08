@@ -13,6 +13,7 @@ use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories;
+use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
@@ -31,6 +32,7 @@ use Illuminate\Validation\Validator;
 class StoreLocationOrgStock extends OrgAction
 {
     use WithLocationOrgStockActionAuthorisation;
+    use CalculatesOrgStockHistories;
 
     private Location $location;
     private OrgStock $orgStock;
@@ -46,12 +48,13 @@ class StoreLocationOrgStock extends OrgAction
         data_set($modelData, 'warehouse_id', $location->warehouse_id);
         data_set($modelData, 'warehouse_area_id', $location->warehouse_area_id);
         data_set($modelData, 'org_stock_id', $orgStock->id);
+        $costPerSku = $this->getCostPerSku($orgStock, now());
 
         if (!Arr::has($modelData, 'quantity')) {
             data_set($modelData, 'quantity', 0);
         }
 
-        $locationStock = DB::transaction(function () use ($location, $orgStock, $modelData) {
+        $locationStock = DB::transaction(function () use ($location, $orgStock, $modelData, $costPerSku) {
             StoreOrgStockMovement::make()->action(
                 $orgStock,
                 $location,
@@ -62,6 +65,7 @@ class StoreLocationOrgStock extends OrgAction
                     'grp_amount'       => 0,
                     'date'             => now()->format('Y-m-d H:i:s.u'),
                     'type'             => OrgStockMovementTypeEnum::ASSOCIATE,
+                    'cost_per_sku'     => $costPerSku,
                 ]
             );
 
