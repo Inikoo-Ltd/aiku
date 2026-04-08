@@ -42,9 +42,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $quantity_picked
  * @property string|null $quantity_packed
  * @property string|null $quantity_dispatched
- * @property numeric $revenue_amount
- * @property numeric $org_revenue_amount
- * @property numeric $grp_revenue_amount
+ * @property string $revenue_amount
+ * @property string $org_revenue_amount
+ * @property string $grp_revenue_amount
  * @property string|null $profit_amount
  * @property string|null $org_profit_amount
  * @property string|null $grp_profit_amount
@@ -83,6 +83,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $batch_code
  * @property \Illuminate\Support\Carbon|null $expiry_date
  * @property string|null $locked_at
+ * @property numeric $quantity_waiting_warehouse
+ * @property numeric $quantity_waiting_crm
+ * @property bool $has_waiting_warehouse
+ * @property bool $has_waiting_crm
  * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read OrgStock|null $orgStock
@@ -121,9 +125,14 @@ class DeliveryNoteItem extends Model
         'fetched_at'         => 'datetime',
         'last_fetched_at'    => 'datetime',
         'expiry_date'        => 'date',
-        'revenue_amount'     => 'decimal:2',
-        'org_revenue_amount' => 'decimal:2',
-        'grp_revenue_amount' => 'decimal:2',
+        'is_handled'                 => 'boolean',
+        'is_packed'                  => 'boolean',
+        'is_done'                    => 'boolean',
+        'need_packing'               => 'boolean',
+        'has_waiting_warehouse'      => 'boolean',
+        'has_waiting_crm'            => 'boolean',
+        'quantity_waiting_warehouse' => 'decimal:6',
+        'quantity_waiting_crm'       => 'decimal:6',
     ];
 
     protected $attributes = [
