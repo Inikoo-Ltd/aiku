@@ -46,15 +46,6 @@ class AuditLocationOrgStock extends OrgAction
 
             $costPerSku = $this->getCostPerSku($locationOrgStock->orgStock, now());
 
-
-            $locationOrgStock = $this->update(
-                $locationOrgStock,
-                [
-                    'quantity' => $newQuantity,
-                    'value'    => $newQuantity * $costPerSku,
-                ]
-            );
-
             $exchangeRate = GetCurrencyExchange::run($locationOrgStock->organisation->currency, $locationOrgStock->group->currency);
 
             StoreOrgStockMovement::make()->action(
