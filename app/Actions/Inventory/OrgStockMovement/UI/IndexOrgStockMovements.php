@@ -126,13 +126,15 @@ class IndexOrgStockMovements extends OrgAction
                 'locations.code as location_code',
                 'org_stocks.slug as org_stock_slug',
                 'org_stocks.name as org_stock_name',
+                'org_stock_movements.user_id'
             ])
             ->selectRaw("'{$organisation->currency->code}'  as currency_code")
             ->leftJoin('organisations', 'org_stock_movements.organisation_id', 'organisations.id')
             ->leftJoin('warehouses', 'warehouses.id', 'org_stock_movements.warehouse_id')
             ->leftJoin('locations', 'locations.id', 'org_stock_movements.location_id')
             ->leftJoin('org_stocks', 'org_stocks.id', 'org_stock_movements.org_stock_id')
-            ->allowedSorts(['date', 'flow', 'type', 'class', 'quantity', 'org_amount', 'grp_amount', 'org_stock_name', 'organisation_name'])
+            ->with('user')
+            ->allowedSorts(['date', 'flow', 'type', 'class', 'quantity', 'org_amount', 'grp_amount', 'org_stock_name', 'organisation_name', 'user'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -163,7 +165,8 @@ class IndexOrgStockMovements extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->column(key: 'date', label: __('Date'), sortable: true, type: 'date_hm');
+                ->column(key: 'date', label: __('Date'), sortable: true, type: 'date_hm')
+                ->column(key: 'user', label: __('User'), sortable: true);
 
             if (!($parent instanceof OrgStock)) {
                 $table->column(key: 'org_stock_name', label: __('Stock'), sortable: true);
