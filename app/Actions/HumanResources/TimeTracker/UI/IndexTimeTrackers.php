@@ -78,16 +78,16 @@ class IndexTimeTrackers extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
             $table
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [
-                        'title'       => __('no clockings'),
+                        'title' => __('no clockings'),
                         'description' => $this->canEdit ? __('Get started by creating a new clocking.') : null,
-                        'count'       =>
+                        'count' =>
                             class_basename($parent) == 'ClockingMachine' ? $parent->humanResourcesStats?->number_clockings : $parent->stats?->number_clockings,
                     ]
                 )

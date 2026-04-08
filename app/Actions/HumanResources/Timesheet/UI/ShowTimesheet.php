@@ -61,27 +61,27 @@ class ShowTimesheet extends OrgAction
         return Inertia::render(
             'Org/HumanResources/Timesheet',
             [
-                'title'       => __('timesheet'),
+                'title' => __('timesheet'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation' => [
                     'previous' => $this->getPrevious($timesheet, $request),
-                    'next'     => $this->getNext($timesheet, $request),
+                    'next' => $this->getNext($timesheet, $request),
                 ],
-                'pageHead'    => [
+                'pageHead' => [
                     'model' => $timesheet->subject_name,
                     'title' => $timesheet->date->format('l, j F Y'),
-                    'edit'  => $this->canEdit ? [
+                    'edit' => $this->canEdit ? [
                         'route' => [
-                            'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                            'name' => preg_replace('/show$/', 'edit', $request->route()->getName()),
                             'parameters' => $request->route()->originalParameters()
                         ]
                     ] : false,
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
+                'tabs' => [
+                    'current' => $this->tab,
                     'navigation' => TimesheetTabsEnum::navigation()
                 ],
 
@@ -136,24 +136,24 @@ class ShowTimesheet extends OrgAction
                     (new ShowHumanResourcesDashboard())->getBreadcrumbs($routeParameters),
                     [
                         [
-                            'type'           => 'modelWithIndex',
+                            'type' => 'modelWithIndex',
                             'modelWithIndex' => [
                                 'index' => [
                                     'route' => [
-                                        'name'       => 'grp.org.hr.timesheets.index',
+                                        'name' => 'grp.org.hr.timesheets.index',
                                         'parameters' => Arr::only($routeParameters, 'organisation')
                                     ],
                                     'label' => __('Timesheets')
                                 ],
                                 'model' => [
                                     'route' => [
-                                        'name'       => 'grp.org.hr.timesheets.show',
+                                        'name' => 'grp.org.hr.timesheets.show',
                                         'parameters' => $routeParameters
                                     ],
-                                    'label' => $timesheet->subject_name.' '.$timesheet->date->format('Y-m-d'),
+                                    'label' => $timesheet->subject_name . ' ' . $timesheet->date->format('Y-m-d'),
                                 ],
                             ],
-                            'suffix'         => $suffix,
+                            'suffix' => $suffix,
 
                         ],
                     ]
@@ -162,11 +162,11 @@ class ShowTimesheet extends OrgAction
                     ShowEmployee::make()->getBreadcrumbs($timesheet->subject, Arr::only($routeParameters, ['organisation', 'employee'])),
                     [
                         [
-                            'type'           => 'modelWithIndex',
+                            'type' => 'modelWithIndex',
                             'modelWithIndex' => [
                                 'index' => [
                                     'route' => [
-                                        'name'       => 'grp.org.hr.employees.show',
+                                        'name' => 'grp.org.hr.employees.show',
                                         'parameters' => Arr::only($routeParameters, ['organisation', 'employee'])
                                     ],
                                     'label' => __('Timesheets')
@@ -175,7 +175,7 @@ class ShowTimesheet extends OrgAction
                                     'label' => $timesheet->start_at->format('Y-m-d'),
                                 ],
                             ],
-                            'suffix'         => $suffix,
+                            'suffix' => $suffix,
 
                         ],
                     ]
@@ -222,23 +222,23 @@ class ShowTimesheet extends OrgAction
 
         return match ($routeName) {
             'grp.org.hr.timesheets.show' => [
-                'label' => $timesheet->subject_name.' '.$timesheet->date->format('l, j F Y'),
+                'label' => $timesheet->subject_name . ' ' . $timesheet->date->format('l, j F Y'),
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
                         'organisation' => $this->organisation->slug,
-                        'timesheet'    => $timesheet->id,
+                        'timesheet' => $timesheet->id,
                     ]
                 ]
             ],
             'grp.org.hr.employees.show.timesheets.show' => [
                 'label' => $timesheet->date->format('l, j F Y'),
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
                         'organisation' => $this->organisation->slug,
-                        'employee'     => $subject->slug,
-                        'timesheet'    => $timesheet->id,
+                        'employee' => $subject->slug,
+                        'timesheet' => $timesheet->id,
                     ]
                 ]
             ]

@@ -316,6 +316,7 @@ const tabIconClass = function (
 								aria-hidden="true" />
 						</button>
 					</template>
+					<slot name="right" />
 				</nav>
 			</div>
 		</div>
