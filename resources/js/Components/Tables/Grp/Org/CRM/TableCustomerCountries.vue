@@ -9,6 +9,14 @@ const props = defineProps<{
     tab?: string
 }>()
 
+function countryUrl(countryCode: string): string {
+    return route('grp.org.shops.show.crm.countries.show', {
+        organisation: (route().params as RouteParams).organisation,
+        shop: (route().params as RouteParams).shop,
+        country: countryCode,
+    })
+}
+
 function customersUrl(countryCode: string, extra: Record<string, string> = {}): string {
     const base = route('grp.org.shops.show.crm.customers.index', {
         organisation: (route().params as RouteParams).organisation,
@@ -37,7 +45,9 @@ function customersUrl(countryCode: string, extra: Record<string, string> = {}): 
                     :alt="item.country_code"
                     :title="capitalize(item.country_name)"
                 />
-                <span>{{ capitalize(item.country_name) }}</span>
+                <Link :href="countryUrl(item.country_code)" class="primaryLink">
+                    {{ capitalize(item.country_name) }}
+                </Link>
             </div>
         </template>
 
