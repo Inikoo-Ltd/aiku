@@ -42,7 +42,7 @@ import { routeType } from '@/types/route'
 import axios from 'axios'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import '@vuepic/vue-datepicker/dist/main.css'
-import { useFilterRecipients } from "@/Composables/useFilterRecipients";
+import { useProspectFilterRecipients} from "@/Composables/useProspectFilterRecipients";
 import { trans } from "laravel-vue-i18n"
 
 library.add(
@@ -80,25 +80,17 @@ const props = defineProps<{
 }>();
 
 const {
-    isByOrderValueInvalid,
     activeFilters,
     activeFilterCount,
     isAllCustomers,
     readyFilters,
     addFilter,
     removeFilter,
-    clearAllFilters,
-    isAmountRangeInvalid,
+    clearAllFilters, 
     fetchCustomers,
-    getLatLngToLocation,
-    onMapClick,
-    onMarkerDrag,
-    radiusInMeters,
-    shouldShowMap,
     saveFilters,
-    getPostalCodeModel,
     hydrateSavedFilters,
-} = useFilterRecipients(props)
+} = useProspectFilterRecipients(props)
 
 const filterMenu = ref()
 

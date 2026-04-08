@@ -46,7 +46,7 @@ class ShowProspectMailshotRecipients extends OrgAction
                         'description' => 'Targets prospects who have never been contacted.',
                     ],
                     'last_contacted' => [
-                        'label'       => 'Last Contacted N Weeks Ago',
+                        'label'       => 'Last Contacted',
                         'type'        => 'boolean',
                         'description' => 'Targets prospects whose last contact was a specified number of weeks ago or more.',
                         'options'     => [
