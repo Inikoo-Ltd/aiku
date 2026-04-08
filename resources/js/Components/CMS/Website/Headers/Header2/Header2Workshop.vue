@@ -132,7 +132,8 @@ const layout = inject('layout', {})
 
 
 				<div class="relative w-full h-auto">
-					<Editor v-model="modelValue.text.text" :editable="editable" @update:model-value="
+					<Editor v-model="modelValue.text.text" :editable="editable" 
+					@update:model-value="
 						(e) => {
 							modelValue.text.text = e
 							emits('update:modelValue', modelValue)
