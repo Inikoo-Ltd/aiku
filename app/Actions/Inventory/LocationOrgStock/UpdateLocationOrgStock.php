@@ -32,19 +32,19 @@ class UpdateLocationOrgStock extends OrgAction
         
         $dropshippingPriority = Arr::pull($modelData, 'set_as_priority_dropshipping', null);
         if ($dropshippingPriority) {
-            data_set($modelData, 'default_dropshipping_location', $dropshippingPriority);
+            data_set($modelData, 'default_dropshipping_picking_location', $dropshippingPriority);
 
             $locationOrgStock->orgStock->locationOrgStocks()->whereNot('location_org_stocks.id', $locationOrgStock->id)->update([
-                'default_dropshipping_location' => false
+                'default_dropshipping_picking_location' => false
             ]);
         }
 
         $wholesalePriority = Arr::pull($modelData, 'set_as_priority_wholesale', null);
         if ($wholesalePriority) {
-            data_set($modelData, 'default_wholesale_location', $wholesalePriority);
+            data_set($modelData, 'default_wholesale_picking_location', $wholesalePriority);
 
             $locationOrgStock->orgStock->locationOrgStocks()->whereNot('location_org_stocks.id', $locationOrgStock->id)->update([
-                'default_wholesale_location'    => false
+                'default_wholesale_picking_location'    => false
             ]);
         }
 

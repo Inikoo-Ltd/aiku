@@ -5,25 +5,17 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class () extends Migration {
-    /**
-     * Run the migrations.
-     *
-     * @return void
-     */
-    public function up()
+
+    public function up(): void
     {
         Schema::table('location_org_stocks', function (Blueprint $table) {
-            $table->boolean('default_wholesale_location')->default(false);
-            $table->boolean('default_dropshipping_location')->default(false);
+            $table->boolean('default_wholesale_picking_location')->default(false);
+            $table->boolean('default_dropshipping_picking_location')->default(false);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
-    public function down()
+
+    public function down(): void
     {
         Schema::table('location_org_stocks', function (Blueprint $table) {
             $table->dropColumn([

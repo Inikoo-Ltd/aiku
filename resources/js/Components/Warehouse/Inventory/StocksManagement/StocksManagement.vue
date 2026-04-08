@@ -250,8 +250,8 @@ onMounted(() => {
     // Initialize activePickingLocationWholesale
     console.log(props.stocks_management.locations);
     
-    activePickingLocationWholesale.value = props.stocks_management.locations.find((data) => data.default_wholesale_location == true)?.id ?? null;
-    activePickingLocationDropshipping.value = props.stocks_management.locations.find((data) => data.default_dropshipping_location == true)?.id ?? null;
+    activePickingLocationWholesale.value = props.stocks_management.locations.find((data) => data.default_wholesale_picking_location == true)?.id ?? null;
+    activePickingLocationDropshipping.value = props.stocks_management.locations.find((data) => data.default_dropshipping_picking_location == true)?.id ?? null;
 
     // Initialize Min/Max or Replenishment values
     tempMinMaxStock.value = Object.fromEntries(

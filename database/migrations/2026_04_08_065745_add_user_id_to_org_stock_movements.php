@@ -14,7 +14,7 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('org_stock_movements', function (Blueprint $table) {
-            $table->unsignedSmallInteger('user_id')->index()->nullable();
+            $table->unsignedSmallInteger('user_id')->nullable();
             $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
         });
     }
@@ -24,8 +24,6 @@ return new class () extends Migration {
     {
         Schema::table('org_stock_movements', function (Blueprint $table) {
             $table->dropColumn(['user_id']);
-            $table->dropForeign(['user_id']);
-            $table->dropIndex(['user_id']);
         });
     }
 };

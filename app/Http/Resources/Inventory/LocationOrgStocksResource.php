@@ -47,8 +47,8 @@ class LocationOrgStocksResource extends JsonResource
             'created_at'                    => $this->created_at,
             'updated_at'                    => $this->updated_at,
             'location'                      => new LocationsResource($this->location),
-            'default_wholesale_location'    => $this->default_wholesale_location,
-            'default_dropshipping_location' => $this->default_dropshipping_location,
+            'default_wholesale_picking_location'    => $this->default_wholesale_picking_location,
+            'default_dropshipping_picking_location' => $this->default_dropshipping_picking_location,
         ];
     }
 }
