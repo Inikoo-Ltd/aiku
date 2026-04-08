@@ -128,10 +128,10 @@ class ShowPayment extends OrgAction
                     ]
                 ],
                 'cancel_route'  => [
-					'name'          => 'grp.models.org.payment.cancel',
-					'parameters'    => [
-						'organisation'  => $payment->organisation_id,
-						'payment'       => $payment->id,
+                    'name'          => 'grp.models.org.payment.cancel',
+                    'parameters'    => [
+                        'organisation'  => $payment->organisation_id,
+                        'payment'       => $payment->id,
                     ]
                 ],
                 // Only enable receipt download if user has accounting authorization
