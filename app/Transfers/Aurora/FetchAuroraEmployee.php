@@ -9,6 +9,7 @@
 namespace App\Transfers\Aurora;
 
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -108,6 +109,7 @@ class FetchAuroraEmployee extends FetchAurora
                 'employment_start_at'      => $this->parseDatetime($this->auroraModelData->{'Staff Valid From'}),
                 'employment_end_at'        => $this->parseDatetime($this->auroraModelData->{'Staff Valid To'}),
                 'type'                     => $type,
+                'employment_type'          => EmploymentTypeEnum::FULL_TIME,
                 'state'                    => match ($this->auroraModelData->{'Staff Currently Working'}) {
                     'No' => EmployeeStateEnum::LEFT,
                     default => EmployeeStateEnum::WORKING
