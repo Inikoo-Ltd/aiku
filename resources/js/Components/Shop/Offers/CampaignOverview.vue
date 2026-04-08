@@ -141,13 +141,13 @@ const severity = computed(() => {
                     </span>
                     <div class="flex items-center gap-2">
                         <span>
-                            {{ useFormatTime(campaign.start_at, { formatTime: 'PPP', keepTimezone: true }) }}
+                            {{ useFormatTime(campaign.start_at, { formatTime: 'PPP' }) }}
                         </span>
 
                         <FontAwesomeIcon icon="fas fa-arrow-right" class="" aria-hidden="true" />
 
                         <span>
-                            {{ useFormatTime(campaign.end_at, { formatTime: 'PPP', keepTimezone: true }) }}
+                            {{ useFormatTime(campaign.end_at, { formatTime: 'PPP' }) }}
                         </span>
                     </div>
 
