@@ -17,6 +17,7 @@ import { faLayerGroup, faSparkles, faTrash, faImages } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { router } from '@inertiajs/vue3';
 import { useBundle } from '@/Composables/useBundle';
+import { useConfirm, ConfirmDialog } from "primevue"
 library.add(faLayerGroup, faSparkles, faTrash, faImages)
 
 const props = defineProps<{
@@ -26,6 +27,7 @@ const props = defineProps<{
     bundle_routes: {
         store: routeType
         update: routeType
+        delete: routeType
         images: routeType
         calculate: routeType
         ai: any
@@ -55,7 +57,10 @@ const props = defineProps<{
     }
 }>()
 
-const emits = defineEmits<(e: "onDone") => void>()
+const emits = defineEmits<{
+  (e: "onDone"): void
+  (e: "onClose"): void
+}>()
 
 // Section: Add portfolios
 const isLoadingSubmit = ref(false)
@@ -284,6 +289,8 @@ const onUpdateSelectedProducts = (products: any[]) => {
     }))
 }
 
+const confirm = useConfirm()
+
 const isSubmitBundle = ref(false)
 
 const handleStoreBundle = async () => {
@@ -336,7 +343,9 @@ const submitBundle = async () => {
                         type: 'success'
                     })
                     bundle.resetBundle()
-
+                    selectedMedia.value = []
+                    selectedMediaIds.value = []
+                    selectedMediaForAI.value = []
                     props.step.current = 0
                     emits('onDone')
                 },
@@ -457,6 +466,49 @@ const onFileChange = (e: Event) => {
     uploadFilesLocal(target.files)
 }
 
+const handleClose = () => {
+    emits('onClose')
+}
+
+const handleBack = () => {
+    confirm.require({
+        message: 'Going back will discard this bundle. You’ll need to start again.',
+        header: 'Discard bundle?',
+        acceptLabel: 'Discard',
+        rejectLabel: 'Stay',        
+        accept: () => {
+            handleDelete()
+            props.step.current = 0
+        },
+    })
+}
+
+const handleDelete = () => {
+    router.delete(route(props.bundle_routes.delete.name, {
+        ...props.bundle_routes.delete.parameters,
+        bundle: bundle.bundle_id.value
+    }), {
+        preserveScroll: true,
+
+        onSuccess: () => {
+            bundle.resetBundle()
+            bundle.products.value = []
+            selectedMedia.value = []
+            selectedMediaIds.value = []
+            selectedMediaForAI.value = []
+            idxSubmitSuccess.value++
+        },
+
+        onError: () => {
+            notify({
+                title: trans('Error'),
+                text: trans('Failed to delete bundle'),
+                type: 'error'
+            })
+        }
+    })
+}
+
 watch(bundle.products.value, () => {
     if (bundle.products.value.length) {
         bundle.addProduct(bundle.products.value)
@@ -502,31 +554,40 @@ onMounted(() => {
             </div>
 
             <!-- RIGHT SUMMARY -->
-            <div class="w-[320px] text-sm space-y-2">
-                <div class="flex justify-between border-b pb-1">
-                    <span class="text-gray-500">Cost Price (Individual Purchase)</span>
-                    <span class="font-medium">{{ bundle.summary.value.total_price }} {{ props.shop_data.currency_code
+             <div class="relative">
+                <!-- <button
+                    @click="handleClose"
+                    class="absolute -top-4 -right-4 text-gray-500 hover:text-red-500"
+                    >
+                    <FontAwesomeIcon icon="fal fa-times" class="text-lg" />
+                </button> -->
+                <div class="w-[320px] text-sm space-y-2">
+                    <div class="flex justify-between border-b pb-1">
+                        <span class="text-gray-500">Cost Price (Individual Purchase)</span>
+                        <span class="font-medium">{{ bundle.summary.value.total_price }} {{ props.shop_data.currency_code
+                            }}</span>
+                    </div>
+
+                    <div class="flex justify-between border-b pb-1">
+                        <span class="text-gray-500">Bundle Price</span>
+                        <span class="font-medium text-green-600">{{ bundle.summary.value.total_bundle_price }} {{
+                            props.shop_data.currency_code }}</span>
+                    </div>
+
+                    <div class="flex justify-between border-b pb-1">
+                        <span class="text-gray-500">RRP</span>
+                        <span class="font-medium">{{ bundle.summary.value.total_rrp }} {{ props.shop_data.currency_code
                         }}</span>
-                </div>
+                    </div>
 
-                <div class="flex justify-between border-b pb-1">
-                    <span class="text-gray-500">Bundle Price</span>
-                    <span class="font-medium text-green-600">{{ bundle.summary.value.total_bundle_price }} {{
-                        props.shop_data.currency_code }}</span>
+                    <div class="flex justify-between pt-1">
+                        <span class="text-gray-500">Profit</span>
+                        <span class="font-semibold text-green-600"> [{{ bundle.summary.value.profit_percentage }}%] {{
+                            bundle.summary.value.profit }}
+                            {{ props.shop_data.currency_code }}</span>
+                    </div>
                 </div>
-
-                <div class="flex justify-between border-b pb-1">
-                    <span class="text-gray-500">RRP</span>
-                    <span class="font-medium">{{ bundle.summary.value.total_rrp }} {{ props.shop_data.currency_code
-                    }}</span>
-                </div>
-
-                <div class="flex justify-between pt-1">
-                    <span class="text-gray-500">Profit</span>
-                    <span class="font-semibold text-green-600"> [{{ bundle.summary.value.profit_percentage }}%] {{
-                        bundle.summary.value.profit }}
-                        {{ props.shop_data.currency_code }}</span>
-                </div>
+                
             </div>
         </div>
 
@@ -582,7 +643,7 @@ onMounted(() => {
                         <!-- NEXT BUTTON -->
                         <Button @click="handleStoreBundle" :loading="bundle.isStoringBundle.value" label="Next"
                             iconRight="fal fa-arrow-right" :disabled="!bundle.products.value.length" />
-
+                        
                     </div>
                 </template>
             </BundlesSelector>
@@ -594,17 +655,45 @@ onMounted(() => {
 
                 <div class="w-full">
                     <!-- HEADER -->
-                    <div class="mb-5">
-                        <div class="text-xl font-semibold flex items-center gap-2">
-                            Create Your Bundle
+                     <div class="mb-5 flex items-start justify-between">
 
-                            <FontAwesomeIcon v-tooltip="trans('Bundle generator')" icon="fal fa-layer-group"
-                                class="text-gray-500" fixed-width />
+                        <!-- LEFT: BACK BUTTON -->
+                         <div class="flex flex-col gap-2">
+                            <button
+                                @click="handleBack"
+                                class="flex items-center gap-2 text-gray-600 hover:text-black"
+                            >
+                                <FontAwesomeIcon icon="fal fa-arrow-left" />
+                                <span class="text-sm">Back</span>
+                            </button>
+
+                            <!-- CENTER: TITLE -->
+                            <div class="text-left">
+                                <div class="text-xl font-semibold flex items-center justify-center gap-2">
+                                    Create Your Bundle
+
+                                    <FontAwesomeIcon
+                                        v-tooltip="trans('Bundle generator')"
+                                        icon="fal fa-layer-group"
+                                        class="text-gray-500"
+                                        fixed-width
+                                    />
+                                </div>
+
+                                <div class="text-sm text-gray-400">
+                                    STEP 2 / 2
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="text-sm text-gray-400">
-                            STEP 2 / 2
-                        </div>
+                        <!-- RIGHT: CLOSE BUTTON -->
+                        <button
+                            @click="handleClose"
+                            class="text-gray-500 hover:text-red-500"
+                        >
+                            <FontAwesomeIcon icon="fal fa-times" class="text-lg" />
+                        </button>
+
                     </div>
 
                     <!-- DESCRIPTION -->
@@ -674,9 +763,9 @@ onMounted(() => {
                             {{ trans('Bundle media') }}
                         </label>
 
-                        <div class="bg-gray-100 rounded-xl p-3 mt-1 grid grid-cols-3 gap-3 min-h-[110px]">
-                            <div v-for="img in selectedMedia" class="relative group">
-                                <Image :key="img.id" :src="img.image" class="h-24 w-full rounded-lg" imageCover />
+                        <div class="bg-gray-100 rounded-xl p-4 mt-2 grid grid-cols-2 md:grid-cols-3 gap-4 min-h-[140px]">
+                            <div v-for="img in selectedMedia" class="relative group rounded-xl border bg-white flex items-center justify-center h-36 md:h-44">
+                                <Image :key="img.id" :src="img.image" class="h-36 md:h-40 object-contain rounded-xl" />
 
                                 <input type="radio" name="main_image" :checked="img.is_main"
                                     @change="setMainImage(img.image_id)" class="absolute top-2 left-2 z-20" />
@@ -687,7 +776,7 @@ onMounted(() => {
                                 <button
                                     class="absolute top-1 right-1 bg-black/70 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
                                     @click="removeMedia(img)">
-                                    ✕
+                                    <FontAwesomeIcon icon="fal fa-times" class="text-lg text-red-500" />
                                 </button>
                             </div>
                         </div>
@@ -702,6 +791,7 @@ onMounted(() => {
                   
 
                 </div>
+                
                 <!-- Modal Existing media -->
                 <Dialog v-model:visible="showMediaModal" modal header="Select Images" :style="{ width: '600px' }">
                     <div v-if="isLoadingMedia" class="py-10 text-center">
@@ -795,5 +885,55 @@ onMounted(() => {
             </div>
 
         </KeepAlive>
+        <ConfirmDialog>
+                    <template #container="{ message, acceptCallback, rejectCallback }">
+                        <div class="p-5 w-[360px]">
+
+                            <!-- ICON -->
+                            <div class="flex justify-center mb-3">
+                               <FontAwesomeIcon
+                                    :icon="message.data?.type === 'danger'
+                                        ? 'fas fa-exclamation-triangle'
+                                        : 'fas fa-question-circle'"
+                                    class="text-3xl text-red-500"
+                                />
+                            </div>
+
+                            <!-- TITLE -->
+                            <div class="text-center font-semibold text-lg mb-2">
+                                {{ message.header }}
+                            </div>
+
+                            <!-- MESSAGE -->
+                            <div class="text-center text-sm text-gray-500 mb-5 leading-relaxed">
+                                {{ message.message }}
+                            </div>
+
+                            <!-- ACTIONS -->
+                            <div class="flex justify-center gap-3">
+
+                                <!-- CANCEL -->
+                                <button
+                                    @click="rejectCallback"
+                                    class="px-4 py-2 text-sm border rounded-md hover:bg-gray-100"
+                                >
+                                    {{ message.rejectLabel || 'Cancel' }}
+                                </button>
+
+                                <!-- ACCEPT -->
+                                <button
+                                    @click="acceptCallback"
+                                    :class="[
+                                        'px-4 py-2 text-sm text-white rounded-md bg-red-500 hover:bg-red-600'
+                                    ]"
+                                >
+                                    {{ message.acceptLabel || 'Yes' }}
+                                </button>
+
+                            </div>
+
+                        </div>
+                    </template>
+                </ConfirmDialog>
     </div>
 </template>

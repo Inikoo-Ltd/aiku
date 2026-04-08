@@ -584,7 +584,7 @@ const fetchMediaGallery = async () => {
 		const url = route(
 			props.bundle_routes.images.get.name,
 			{
-				product_ids: [selectedEditProduct.value.bundle_id]
+				product_ids: [selectedEditProduct.value.product_id]
 			}
 		)
 		const response = await axios.get(url)
@@ -682,6 +682,8 @@ const generateAITitle = async () => {
 	}
 }
 
+const editorKey = ref(0)
+
 const generateAIDescription = async () => {
 	try {
 		isGeneratingAI.value = true
@@ -694,8 +696,16 @@ const generateAIDescription = async () => {
 				products: bundleItems.value.map(item => item.product_id)
 			}
 		)
-		selectedEditProduct.value.description = data
+		const html = data
+					.split('\n')
+					.map(line => `<p>${line}</p>`)
+					.join('')
+		
+		selectedEditProduct.value.description = html
 
+		editorKey.value++ 
+		await nextTick()
+		
 		notify({
 			title: trans('Success'),
 			text: trans('Success generate AI'),
@@ -1365,7 +1375,39 @@ const submitBundle = async () => {
 				<label for="edit-product-description" class="block text-sm font-semibold">{{
 					trans("Description")
 				}}</label>
-				<Textarea v-model="selectedEditProduct.description" rows="6" autoResize class="w-full mt-1" placeholder="Input your description" />
+				<Editor2
+					:key="editorKey"
+					v-model="selectedEditProduct.description"
+					class="w-full"
+					:placeholder="trans('Input your description')"
+					:toogle="[
+					'heading1',
+					'heading2',
+					'heading3',
+					'fontSize',
+					'bold',
+					'italic',
+					'underline',
+					'bulletList',
+					'orderedList',
+					'blockquote',
+					'alignLeft',
+					'alignCenter',
+					'alignRight',
+					'link',
+					'undo',
+					'redo',
+					'color',
+					'highlight',
+					'clear'
+					]"
+				>
+					<template #editor-content="{ editor }">
+					<div class="editor-wrapper border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus-within:border-gray-400">
+						<EditorContent :editor="editor" class="focus:outline-none min-h-[120px]" />
+					</div>
+					</template>
+				</Editor2>
 				<Button icon="fal fa-sparkles" @click="generateAIDescription" :loading="isGeneratingAI" type="primary"
 				:label="trans('Generate with AI')"
 			:disabled="!selectedEditProduct?.description.length" />
@@ -1376,9 +1418,9 @@ const submitBundle = async () => {
 					{{ trans('Bundle media') }}
 				</label>
 
-				<div class="bg-gray-100 rounded-xl p-3 mt-1 grid grid-cols-3 gap-3 min-h-[110px]">
-					<div v-for="img in selectedMedia" class="relative group">
-						<Image :key="img.id" :src="img.image" class="h-24 w-full rounded-lg" imageCover />
+				<div class="bg-gray-100 rounded-xl p-4 mt-2 grid grid-cols-2 md:grid-cols-3 gap-4 min-h-[140px]">
+					<div v-for="img in selectedMedia" class="relative group rounded-xl border bg-white flex items-center justify-center h-36 md:h-44">
+						<Image :key="img.id" :src="img.image"  class="h-36 md:h-40 object-contain rounded-xl" />
 						<input type="radio" name="main_image" :checked="img.is_main"
 							@change="setMainImage(img.image_id)" class="absolute top-2 left-2 z-20" />
 						<div v-if="img.is_main"
@@ -1388,7 +1430,7 @@ const submitBundle = async () => {
 						<button
 							class="absolute top-1 right-1 bg-black/70 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
 							@click="removeMedia(img)">
-							✕
+							<FontAwesomeIcon icon="fal fa-times" class="text-lg text-red-500" />
 						</button>
 					</div>
 				</div>
