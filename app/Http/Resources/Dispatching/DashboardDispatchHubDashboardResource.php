@@ -142,6 +142,18 @@ class DashboardDispatchHubDashboardResource extends JsonResource
             }
         }
 
+        $totalQueued = $widgets->sum('queued');
+        if ($totalQueued > 0 && $deliveryNotesWidget && isset($deliveryNotesWidget['cases']['queued']['route'])) {
+            $queuedRoute                            = $deliveryNotesWidget['cases']['queued']['route'];
+            $totals['handling']['queued_prefix']    = [
+                'value'        => $totalQueued,
+                'route_target' => [
+                    'name'       => str_replace('.shop', '', $queuedRoute['name']),
+                    'parameters' => array_slice($queuedRoute['parameters'], 0, -1),
+                ],
+            ];
+        }
+
         $grandTotal = $widgets->sum('total');
 
         $routeParams = $totals['todo']['route_target']['parameters'] ?? [];

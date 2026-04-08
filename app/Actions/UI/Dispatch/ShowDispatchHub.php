@@ -56,7 +56,7 @@ class ShowDispatchHub extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'       => 'dispatch',
                 'pageHead'    => [
-                    'title' => __('Dispatching backlog'),
+                    'title' => __('Dispatching Backlog'),
                     'icon'  => [
                         'icon' => ['fal', 'fa-conveyor-belt-alt'],
                     ],

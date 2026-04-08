@@ -69,7 +69,7 @@ interface DashboardData {
         [rowKey: string]: { value: number; route_target?: RouteTarget }
     }
     totals: {
-        [metricKey: string]: { value: number; route_target?: RouteTarget }
+        [metricKey: string]: { value: number; route_target?: RouteTarget; queued_prefix?: QueuedPrefix }
     }
     grand_total: {
         value: number
@@ -220,15 +220,22 @@ const isWeakValue = (value: number | null | undefined) => {
                             </div>
                         </template>
 
-                        <component v-if="data?.dimension"
-                            :is="getSafeRoute(data.totals[item.key]?.route_target) ? Link : 'div'"
-                            :href="getSafeRoute(data.totals[item.key]?.route_target) ?? undefined"
-                            :class="[
-                                'h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200',
-                                getSafeRoute(data.totals[item.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
-                            ]">
-                            {{ data.totals[item.key]?.value ?? '-' }}
-                        </component>
+                        <div v-if="data?.dimension"
+                            class="h-10 md:h-12 flex items-center justify-center gap-2 text-xs md:text-lg border-t border-gray-200">
+                            <template v-if="data.totals[item.key]?.queued_prefix?.value">
+                                <component
+                                    :is="getSafeRoute(data.totals[item.key]?.queued_prefix?.route_target) ? Link : 'span'"
+                                    :href="getSafeRoute(data.totals[item.key]?.queued_prefix?.route_target) ?? undefined"
+                                    v-tooltip="'Queued: ' + data.totals[item.key]?.queued_prefix?.value"
+                                    class="opacity-80 hover:underline cursor-pointer tabular-nums"
+                                >{{ data.totals[item.key]?.queued_prefix?.value }}</component><span class="opacity-60">+</span>
+                            </template>
+                            <component
+                                :is="getSafeRoute(data.totals[item.key]?.route_target) ? Link : 'span'"
+                                :href="getSafeRoute(data.totals[item.key]?.route_target) ?? undefined"
+                                :class="getSafeRoute(data.totals[item.key]?.route_target) ? 'hover:underline cursor-pointer' : ''"
+                            >{{ data.totals[item.key]?.value ?? '-' }}</component>
+                        </div>
                     </div>
                 </div>
             </template>
