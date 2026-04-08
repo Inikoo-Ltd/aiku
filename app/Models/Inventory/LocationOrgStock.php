@@ -41,6 +41,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $source_location_id
  * @property string|null $fetched_at
  * @property string|null $last_fetched_at
+ * @property bool $default_wholesale_picking_location
+ * @property bool $default_dropshipping_picking_location
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Inventory\Location $location

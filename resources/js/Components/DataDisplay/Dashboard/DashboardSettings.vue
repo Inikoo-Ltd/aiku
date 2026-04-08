@@ -147,7 +147,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="relative px-1 md:px-4 md:mt-4">
+    <div class="relative px-1 md:px-4 md:mt-1">
         <div class="mb-2 flex justify-between gap-2">
             <!-- Section: Period options list with overflow indicators -->
             <div class="relative flex-1 min-w-0">

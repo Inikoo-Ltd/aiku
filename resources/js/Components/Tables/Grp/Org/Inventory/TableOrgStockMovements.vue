@@ -65,6 +65,11 @@ function stockRoute(stock: Stock) {
 <template>
 
   <Table :resource="data" :name="tab" class="mt-5">
+    <template #cell(user)="{item: orgStockMovement}">
+      <span :class="orgStockMovement.user?.contact_name ? 'font-semibold' : ''">
+        {{ orgStockMovement.user ? `${orgStockMovement.user?.contact_name} [${orgStockMovement.user?.username}]` : 'System' }}
+      </span>
+    </template>
   </Table>
 </template>
 

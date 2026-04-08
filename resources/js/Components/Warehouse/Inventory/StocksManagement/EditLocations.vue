@@ -4,7 +4,7 @@ import { trans } from 'laravel-vue-i18n'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faDotCircle, faUnlink, faExclamationTriangle, faUndo, faPlus, faSeedling, faTrash } from "@fal"
-import { faDotCircle as fasDotCircle } from "@fas"
+import { faBan, faDotCircle as fasDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { InputNumber, AutoComplete } from 'primevue'
 import { ref, computed, inject } from 'vue'
@@ -18,6 +18,8 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 import { stockLocation } from '@/types/StockLocation'
 library.add(faDotCircle, fasDotCircle, faUnlink, faExclamationTriangle, faUndo, faPlus, faSeedling, faTrash)
+
+const layout = inject('layout', layoutStructure)
 
 const props = defineProps<{
     locations: StockLocation[]
@@ -83,15 +85,15 @@ const newLocation = ref<stockLocation | null>(null)
             <div class="flex flex-col gap-y-3">
                 <div v-for="(loc, idx) in props.locations" :key="'existing-' + loc.id"
                     class="grid grid-cols-7 gap-x-3 items-center gap-2">
-                    <div class="flex items-center gap-x-2">
+                    <div class="col-span-2 flex items-center gap-x-2">
                         {{ loc.code }}
                     </div>
-                    <div class="col-span-3">
+                    <div class="col-span-4">
                         <span class="text-sm italic text-gray-400">
                             {{ trans("Current Stock") }} {{ Number(loc.quantity) }}
                         </span>
                     </div>
-                    <div class="isolate col-span-3 flex justify-end items-center gap-x-2">
+                    <div class="isolate flex justify-end items-center gap-x-2">
                         <ModalConfirmationDelete
                             :routeDelete="{
                                 name: props.routes.disassociate_location_route.name,
@@ -105,10 +107,11 @@ const newLocation = ref<stockLocation | null>(null)
                             class="z-50"
                         >
                             <template #default="{ isOpenModal, changeModel, isLoadingdelete }">
-                                <div @click="() => changeModel()" xclick="handleUnlink(loc)" class="cursor-pointer text-red-500 opacity-50 hover:opacity-100" v-tooltip="trans('Unlink Location')">
+                                <div v-if="layout.app.environment === 'local'" @click="() => changeModel()" xclick="handleUnlink(loc)" class="cursor-pointer text-red-500 opacity-50 hover:opacity-100" v-tooltip="trans('Unlink Location')">
                                     <LoadingIcon v-if="isLoadingdelete" />
                                     <FontAwesomeIcon v-else icon="fal fa-unlink" class="" fixed-width aria-hidden="true" />
                                 </div>
+                                <FontAwesomeIcon v-else :icon="faBan" class="text-red-500" v-tooltip="'Work in Progress. Remember to disable this on Production when done'"/>
                             </template>
                         </ModalConfirmationDelete>
                     </div>
@@ -129,18 +132,20 @@ const newLocation = ref<stockLocation | null>(null)
                     </div>
 
                     <Button
+                        v-if="layout.app.environment === 'local'"
                         @click="() => onAddNewLocation()"
                         :disabled="!newLocation"
                         :loading="isLoadingAddNewLocation"
                         :label="trans('Add')"
                         icon="fal fa-plus"
                     />
+                    <FontAwesomeIcon v-else :icon="faBan" class="text-red-500" v-tooltip="'Work in Progress. Remember to disable this on Production when done'"/>
                 </div>
             </div>
         </div>
 
         <!-- Section: buttons -->
-        <div class="relative flex gap-x-2 isolate z-30 mt-4">
+        <div class="relative flex gap-x-2 isolate z-30 mt-4 justify-self-end">
             <Button :label="trans('Cancel')" type="cancel" key="2" class="bg-red-100" @click="() => emits('onClickBackground')" />
         </div>
 

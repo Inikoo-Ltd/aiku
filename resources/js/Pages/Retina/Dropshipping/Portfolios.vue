@@ -1572,6 +1572,7 @@ const layout = inject("layout", layoutStructure)
 			:bundle_routes="props.bundle_routes"
 			:platform_data
 			:shop_data="props.shop_data"
+			@onClose="isOpenModalCreateBundle = false"
 			@onDone="
 				() => {
 					;((isOpenModalCreateBundle = false), (key = ulid()))

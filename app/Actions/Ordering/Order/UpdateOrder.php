@@ -72,8 +72,8 @@ class UpdateOrder extends OrgAction
 
         if ($oldState != $order->state) {
             $this->orderHydrators($order);
-            $this->orderHandlingHydrators($order, $oldState,30);
-            $this->orderHandlingHydrators($order, $order->state,30);
+            $this->orderHandlingHydrators($order, $oldState, 30);
+            $this->orderHandlingHydrators($order, $order->state, 30);
         }
 
         if ($oldPlatform != $order->platform) {
