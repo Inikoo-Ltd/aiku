@@ -8,8 +8,9 @@
 
 namespace App\Actions\Inventory\LocationOrgStock;
 
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
-use App\Actions\Inventory\OrgStockAuditDelta\StoreOrgStockAuditDelta;
+use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
@@ -24,7 +25,7 @@ class AuditLocationOrgStock extends OrgAction
 {
     use WithActionUpdate;
     use WithLocationOrgStockActionAuthorisation;
-
+    use CalculatesOrgStockHistories;
 
     private LocationOrgStock $locationOrgStock;
 
@@ -37,27 +38,37 @@ class AuditLocationOrgStock extends OrgAction
 
 
         $locationOrgStock = DB::transaction(function () use ($locationOrgStock, $modelData) {
-            $currentStock     = $locationOrgStock->quantity;
-            $locationOrgStock = $this->update($locationOrgStock, $modelData);
-            $newStock         = $locationOrgStock->quantity;
-            $stockDiff        = $newStock - $currentStock;
+            $currentStock = $locationOrgStock->quantity;
+            $newQuantity  = Arr::pull($modelData, 'quantity');
+            $stockDiff    = $newQuantity - $currentStock;
 
+            $costPerSku = $this->getCostPerSku($locationOrgStock->orgStock, now());
+
+
+            $locationOrgStock = $this->update(
+                $locationOrgStock,
+                [
+                    'quantity' => $newQuantity,
+                    'value'    => $newQuantity * $costPerSku,
+                ]
+            );
+
+            $exchangeRate = GetCurrencyExchange::run($locationOrgStock->organisation->currency, $locationOrgStock->group->currency);
 
             StoreOrgStockMovement::make()->action(
                 $locationOrgStock->orgStock,
                 $locationOrgStock->location,
                 [
                     'quantity'         => $stockDiff,
-                    'audited_quantity' => Arr::get($modelData, 'quantity'),
+                    'audited_quantity' => $newQuantity,
                     'date'             => now()->format('Y-m-d H:i:s.u'),
                     'type'             => OrgStockMovementTypeEnum::AUDIT,
+                    'cost_per_sku'     => $costPerSku,
+                    'org_amount'       => $stockDiff * $costPerSku,
+                    'grp_amount'       => $stockDiff * $costPerSku * $exchangeRate,
+
                 ]
             );
-
-            StoreOrgStockAuditDelta::make()->action($locationOrgStock, [
-                'original_quantity' => $newStock,
-                'audited_quantity'  => $stockDiff,
-            ]);
 
             return $locationOrgStock;
         });
