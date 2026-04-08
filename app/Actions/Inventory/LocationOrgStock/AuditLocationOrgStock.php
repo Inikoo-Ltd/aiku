@@ -17,6 +17,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\LocationOrgStock;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -28,6 +29,7 @@ class AuditLocationOrgStock extends OrgAction
     use CalculatesOrgStockHistories;
 
     private LocationOrgStock $locationOrgStock;
+    private User|null $user;
 
     /**
      * @throws \Throwable
@@ -66,6 +68,7 @@ class AuditLocationOrgStock extends OrgAction
                     'cost_per_sku'     => $costPerSku,
                     'org_amount'       => $stockDiff * $costPerSku,
                     'grp_amount'       => $stockDiff * $costPerSku * $exchangeRate,
+                    'user_id'          => $this->user?->id,
 
                 ]
             );
@@ -111,6 +114,7 @@ class AuditLocationOrgStock extends OrgAction
      */
     public function asController(LocationOrgStock $locationOrgStock, ActionRequest $request): LocationOrgStock
     {
+        $this->user = request()->user();
         $this->locationOrgStock = $locationOrgStock;
         $this->initialisation($locationOrgStock->organisation, $request);
 
