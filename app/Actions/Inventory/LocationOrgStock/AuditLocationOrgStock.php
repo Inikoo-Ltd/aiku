@@ -29,7 +29,7 @@ class AuditLocationOrgStock extends OrgAction
     use CalculatesOrgStockHistories;
 
     private LocationOrgStock $locationOrgStock;
-    private User|null $user;
+    private User|null $user = null;
 
     /**
      * @throws \Throwable
@@ -63,7 +63,7 @@ class AuditLocationOrgStock extends OrgAction
 
                 ]
             );
-
+            $locationOrgStock->refresh();
             return $locationOrgStock;
         });
 

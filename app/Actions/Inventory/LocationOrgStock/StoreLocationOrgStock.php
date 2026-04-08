@@ -37,7 +37,7 @@ class StoreLocationOrgStock extends OrgAction
 
     private Location $location;
     private OrgStock $orgStock;
-    private User|null $user;
+    private User|null $user = null;
 
 
     /**

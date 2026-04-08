@@ -119,7 +119,7 @@ class StoreOrgStockMovement extends OrgAction
             'is_delivered'     => ['sometimes', 'boolean'],
             'is_received'      => ['sometimes', 'boolean'],
             'fixed'            => ['sometimes', 'boolean'],
-            'user_id'          => ['sometimes', 'numeric']
+            'user_id'          => ['sometimes', 'nullable', 'numeric']
         ];
         if (!$this->strict) {
             $rules['fetched_at'] = ['sometimes', 'date'];
