@@ -77,6 +77,12 @@ class ShowDispatchHub extends OrgAction
                 ],
                 'delivery_note'   => DashboardDispatchHubDashboardResource::make(GetDispatchHubShowcase::make()->handle($warehouse)),
                 'picking_session' => $this->getPickingSessionStats($warehouse),
+                'waiting_items' => [
+                    'count' => $warehouse->deliveryNotes()
+                        ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                        ->where('delivery_note_items.state', 'handling_blocked')
+                        ->count(),
+                ]
             ]
         );
     }

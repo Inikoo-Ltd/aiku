@@ -30,6 +30,9 @@ const props = defineProps<{
     picking_session: object
     intervals: any
     settings: any
+    waiting_items: {
+        count: number
+    }
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -54,5 +57,5 @@ const tabData = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :tab="currentTab" :data="tabData"></component>
+    <component :is="component" :tab="currentTab" :data="tabData" :waiting_items></component>
 </template>

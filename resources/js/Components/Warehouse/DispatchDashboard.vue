@@ -20,6 +20,7 @@ import {
     faAllergies,
     faChartLine,
 } from "@fal"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(faClock, faList, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine)
 
@@ -81,6 +82,9 @@ interface DashboardData {
 const props = defineProps<{
     tab: string
     data: DashboardData
+    waiting_items: {
+        count: number
+    }
 }>()
 
 const rows = computed(() => {
@@ -125,13 +129,15 @@ const waitingItemsUrl = computed((): string | null => {
 <template>
     <div class="bg-white px-1 sm:px-2 md:px-4 overflow-x-auto pb-4">
         
-        <div class="bg-yellow-500 px-4 py-2 rounded-md text-gray-800 mb-4 mt-2">
-            You have 5 items that still on waiting..
-            <Link v-if="waitingItemsUrl" :href="waitingItemsUrl" class="underline">
-                Click here to see
+        <!-- Section: Waiting Items -->
+        <div v-if="props.waiting_items.count > 0" class="bg-yellow-300 border border-yellow-500 px-4 py-2 rounded-md text-gray-800 mb-4 mt-4">
+            <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-yellow-700" fixed-width aria-hidden="true" />
+            {{ ctrans('You have :waitingItemsCount items that still on waiting..', { waitingItemsCount: props.waiting_items.count }) }}
+            <Link v-if="waitingItemsUrl" :href="waitingItemsUrl" class="underline cursor-pointer opacity-80 hover:opacity-100">
+                {{ ctrans("Click here to see") }}
             </Link>
             <span v-else class="underline">
-                Click here to see
+                {{ ctrans("Click here to see") }}
             </span>
         </div>
         
