@@ -20,6 +20,8 @@ use Throwable;
 
 class ApproveLeave extends OrgAction
 {
+    protected bool $isAuthorized = true;
+
     /**
      * @throws Throwable
      */
@@ -28,7 +30,9 @@ class ApproveLeave extends OrgAction
         $user = Auth::user();
 
         if (!$leave->canBeApprovedBy($user)) {
-            abort(403, 'You are not authorized to approve this leave at this level.');
+            $this->isAuthorized = false;
+
+            return $leave;
         }
 
         $isAllAcceptedApprover = LeaveApprover::byOrganisation($leave->organisation)
@@ -120,6 +124,15 @@ class ApproveLeave extends OrgAction
 
     public function htmlResponse(Leave $leave, ActionRequest $request): RedirectResponse
     {
+        if (!$this->isAuthorized) {
+            return Redirect::back()
+                ->with('notification', [
+                    'status' => 'error',
+                    'title' => __('Unauthorized'),
+                    'description' => __('Sorry, You are not listed on the Leave Approval. '),
+                ]);
+        }
+
         return Redirect::back()
             ->with('notification', [
                 'status' => 'success',
@@ -128,8 +141,14 @@ class ApproveLeave extends OrgAction
             ]);
     }
 
-    public function jsonResponse(Leave $leave): LeaveResource
+    public function jsonResponse(Leave $leave): LeaveResource|\Illuminate\Http\JsonResponse
     {
+        if (!$this->isAuthorized) {
+            return response()->json([
+                'message' => __('You are not authorized to approve this leave at this level.'),
+            ], 403);
+        }
+
         return LeaveResource::make($leave);
     }
 }

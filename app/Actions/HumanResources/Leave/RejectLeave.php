@@ -16,12 +16,16 @@ use Lorisleiva\Actions\ActionRequest;
 
 class RejectLeave extends OrgAction
 {
+    protected bool $isAuthorized = true;
+
     public function handle(Leave $leave, string $rejectionReason): Leave
     {
         $user = Auth::user();
 
         if (!$leave->canBeApprovedBy($user)) {
-            abort(403, 'You are not authorized to reject this leave at this level.');
+            $this->isAuthorized = false;
+
+            return $leave;
         }
 
         $currentLevel = LeaveApprover::byOrganisation($leave->organisation)
@@ -67,6 +71,15 @@ class RejectLeave extends OrgAction
 
     public function htmlResponse(Leave $leave, ActionRequest $request): RedirectResponse
     {
+        if (!$this->isAuthorized) {
+            return Redirect::back()
+                ->with('notification', [
+                    'status' => 'error',
+                    'title' => __('Unauthorized'),
+                    'description' => __('You are not authorized to reject this leave at this level.'),
+                ]);
+        }
+
         return Redirect::back()
             ->with('notification', [
                 'status' => 'success',
@@ -75,8 +88,14 @@ class RejectLeave extends OrgAction
             ]);
     }
 
-    public function jsonResponse(Leave $leave): LeaveResource
+    public function jsonResponse(Leave $leave): LeaveResource|\Illuminate\Http\JsonResponse
     {
+        if (!$this->isAuthorized) {
+            return response()->json([
+                'message' => __('You are not authorized to reject this leave at this level.'),
+            ], 403);
+        }
+
         return LeaveResource::make($leave);
     }
 }
