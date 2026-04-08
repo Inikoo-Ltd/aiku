@@ -6,7 +6,7 @@ import formatDistanceStrict from 'date-fns/formatDistanceStrict'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle } from "@fal"
-import { faShoppingBasket, faStickyNote, faShoppingCart, faPlusCircle, faBox } from "@fas"
+import { faShoppingBasket, faStickyNote, faShoppingCart, faPlusCircle, faBox, faBan } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref } from 'vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
@@ -21,8 +21,10 @@ import { routeType } from '@/types/route'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import { StockLocation, StocksManagementTS } from '@/types/Inventory/StocksManagement'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
+import { router } from '@inertiajs/vue3'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 library.add(faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faShoppingBasket, faStickyNote, faShoppingCart)
 
 const props = defineProps<{
@@ -160,6 +162,8 @@ const cancelMinMaxStock = (locationId: number) => {
 const _popoverNotes = ref<Record<number, any>>({})
 const tempLocToEdit = ref<StockLocation | null>(null)
 const toggleNotePopover = (event: Event, loc: StockLocation) => {
+    if(isLoadingNoteUpdate.value === loc.id) return;
+
     event.stopPropagation()
 
     tempLocToEdit.value = {...loc}
@@ -250,29 +254,49 @@ onMounted(() => {
     )
 })
 
-// TODO Refactor Update Location
+const isLoadingNoteUpdate = ref<Number|null>(null)
+const isLoadingQtyUpdate = ref<Number|null>(null)
+
 const updateStockLocation = async (stockLoc: StockLocation, body: {}) => {
-    await axios.patch(route('grp.models.location_org_stock.update', {
+    console.info(Object.keys(body));
+    let successMsg = `Successfully modified ${stockLoc.code} data`
+    let failMsg = `Failed to modify ${stockLoc.code} data`
+
+    if (Object.keys(body).includes('notes')) {
+        successMsg = `Successfully updated '${stockLoc.code}' Note`
+        failMsg = `There was an error updating ${stockLoc.code} Note`
+        isLoadingNoteUpdate.value = stockLoc.id;
+    } else if (Object.keys(body).find(key =>
+        ['min_stock', 'max_stock', 'replenishment_stock'].includes(key)
+    )) {
+        isLoadingQtyUpdate.value = stockLoc.id;
+    }
+
+
+    router.patch(route('grp.models.location_org_stock.update', {
         locationOrgStock: stockLoc.id
-    }), body)
-    .then((res) => {
-        // TODO hydrate back to notePopovers
-        notify({
-            title: "Success",
-            text: "Successfully updated location org stocks data",
-            type: "success"
-        })
+    }), body, 
+    {
+        preserveScroll: true,
+        onSuccess: () => {
+            notify({
+                title: "Success",
+                text: successMsg,
+                type: "success"
+            })
+        },
+        onError: (err) => {
+            notify({
+                title: "Failed",
+                text: failMsg,
+                type: "error"
+            })
+        },
+        onFinish: () => {
+            isLoadingNoteUpdate.value = null;
+            isLoadingQtyUpdate.value = null;
+        }
     })
-    .catch((err) => {
-        notify({
-            title: "Failed",
-            text: "Unable to modify location org stocks data",
-            type: "error"
-        })
-    })
-    .finally(() => {
-        // isLoading.value = false
-    });
 }
 </script>
 
@@ -372,12 +396,13 @@ const updateStockLocation = async (stockLoc: StockLocation, body: {}) => {
                                     class="cursor-pointer transition-colors duration-200"
                                     :class="loc.notes ? 'text-orange-600' : 'text-gray-400 hover:text-gray-700'"
                                 >
-                                    <FontAwesomeIcon :icon="loc.notes ? 'fas fa-sticky-note' : 'fal fa-sticky-note'" class="" fixed-width aria-hidden="true" />
+                                    <LoadingIcon v-if="isLoadingNoteUpdate === loc.id"/>
+                                    <FontAwesomeIcon v-else :icon="loc.notes ? 'fas fa-sticky-note' : 'fal fa-sticky-note'" class="" fixed-width aria-hidden="true" />
                                 </div>
                             </div>
 
                             <!-- Shopping Basket Icon -->
-                            <div @click="() => setActivePickingLocation(loc)"
+                            <div v-if="layout.app.environment === 'local'" @click="() => setActivePickingLocation(loc)"
                                 v-tooltip="trans('Set as active picking location')"
                                 class="cursor-pointer transition-colors duration-200" :class="{
                                     'text-blue-700': activePickingLocation === loc.id,
@@ -386,6 +411,9 @@ const updateStockLocation = async (stockLoc: StockLocation, body: {}) => {
                                 <FontAwesomeIcon :icon="activePickingLocation === loc.id ? 'fas fa-shopping-basket' : 'fal fa-shopping-basket'"
                                     class="" fixed-width aria-hidden="true" />
                             </div>
+                            <div v-else>
+                                <FontAwesomeIcon :icon="faBan" class="text-red-500" v-tooltip="'Work in Progress. Remember to disable this on Production when done'"/>
+                            </div>
 
                             <span class="font-medium">{{ loc.code }}</span>
 
@@ -393,7 +421,8 @@ const updateStockLocation = async (stockLoc: StockLocation, body: {}) => {
                             <div @click="(event) => toggleQuestionPopover(loc.id, event)"
                                 v-tooltip="getQuestionTooltip(loc.id)"
                                 class="cursor-pointer text-gray-400 hover:text-gray-700 flex gap-1">
-                                <span v-if="(tempMinMaxStock[loc?.id]?.min_stock || tempMinMaxStock[loc?.id]?.max_stock) && activePickingLocation === loc.id">( {{ tempMinMaxStock[loc?.id]?.min_stock }}, {{ tempMinMaxStock[loc?.id]?.max_stock }}
+                                <LoadingIcon v-if="isLoadingQtyUpdate === loc.id"/>
+                                <span v-else-if="(tempMinMaxStock[loc?.id]?.min_stock || tempMinMaxStock[loc?.id]?.max_stock) && activePickingLocation === loc.id">( {{ tempMinMaxStock[loc?.id]?.min_stock }}, {{ tempMinMaxStock[loc?.id]?.max_stock }}
                                     )</span>
                                 <span v-else-if="tempMinMaxStock[loc?.id]?.replenishment_stock && activePickingLocation !== loc.id">( {{ tempMinMaxStock[loc?.id]?.replenishment_stock }} )</span>
                                 <div v-else>
