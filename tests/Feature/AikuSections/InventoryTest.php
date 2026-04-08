@@ -369,7 +369,8 @@ test('audit stock in location', function () {
     $locationOrgStock = AuditLocationOrgStock::run($locationOrgStock, [
         'quantity' => 2
     ]);
-    expect($locationOrgStock->quantity)->toBe(2);
+
+    expect($locationOrgStock->quantity)->toEqual(2);
 });
 
 test('move stock location', function () {
