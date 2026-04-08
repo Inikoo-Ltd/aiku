@@ -100,7 +100,7 @@ const getHistoricCLV = computed(() => {
 </script>
 
 <template>
-    <div v-if="props.shopBlocks?.interval_data" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 px-4 pt-4">
+    <div v-if="props.shopBlocks?.interval_data" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 px-4 py-4">
         <!-- Expected Sales -->
         <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
             <div class="text-sm w-full">
