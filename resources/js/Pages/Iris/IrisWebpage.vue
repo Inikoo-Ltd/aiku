@@ -12,6 +12,7 @@ import { Head } from '@inertiajs/vue3'
 import LayoutIris from '@/Layouts/Iris.vue'
 import { getIrisComponent } from '@/Composables/getIrisComponents'
 import { usePage } from '@inertiajs/vue3'
+import ReviewByStore from "@/Components/CMS/Reviews/ReviewByStore.vue"
 
 const props = defineProps<{
   webpage_data : any
@@ -35,7 +36,7 @@ const checkScreenType = () => {
 }
 
 
-const ReviewIframeUrl = computed(() => {
+/* const ReviewIframeUrl = computed(() => {
   const config = review.value
   const provider = config?.provider
 
@@ -56,7 +57,7 @@ const ReviewIframeUrl = computed(() => {
   }
 
   return null
-})
+}) */
 
 onMounted(() => {
   currentUrl.value = window.location.href
@@ -94,8 +95,8 @@ onBeforeUnmount(() => {
 })
 
 
-console.log('webpage_data',  props)
-console.log('ReviewIframeUrl : ', ReviewIframeUrl.value, review.value )
+/* console.log('webpage_data',  props)
+console.log('ReviewIframeUrl : ', ReviewIframeUrl.value, review.value ) */
 
 </script>
 
@@ -129,7 +130,7 @@ console.log('ReviewIframeUrl : ', ReviewIframeUrl.value, review.value )
 
        
       </div>
-        <div v-if="webpage_data.type == 'storefront'" class="my-10">
+        <!-- <div v-if="webpage_data.type == 'storefront' " class="my-10">
           <iframe
             v-if="ReviewIframeUrl"
             :src="ReviewIframeUrl"
@@ -139,6 +140,10 @@ console.log('ReviewIframeUrl : ', ReviewIframeUrl.value, review.value )
             title="Customer Reviews"
             loading="lazy"
           />
+        </div> -->
+
+        <div v-if="webpage_data.type == 'storefront' || webpage_data.model_type == 'ProductCategory'" class="my-10">
+          <ReviewByStore :code="'review-by-store'"/>
         </div>
   </div>
 </template>
