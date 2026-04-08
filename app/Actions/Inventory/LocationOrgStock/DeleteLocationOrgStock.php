@@ -13,6 +13,7 @@ use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories;
+use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
@@ -24,7 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 class DeleteLocationOrgStock extends OrgAction
 {
     use WithLocationOrgStockActionAuthorisation;
-
+    use CalculatesOrgStockHistories;
 
     /**
      * @throws \Throwable
@@ -35,14 +36,26 @@ class DeleteLocationOrgStock extends OrgAction
         $orgStock = $locationOrgStock->orgStock;
 
         DB::transaction(function () use ($locationOrgStock, $location, $orgStock) {
+            $currentStock = $locationOrgStock->quantity;
+
+            if ($currentStock != 0) {
+                $costPerSku = $this->getCostPerSku($orgStock, now());
+                $quantity   = -$currentStock;
+                $orgAmount  = $currentStock * $costPerSku;
+            } else {
+                $quantity  = 0;
+                $orgAmount = 0;
+            }
+
             StoreOrgStockMovement::make()->action(
                 $orgStock,
                 $location,
                 [
-                    'quantity' => 0,
-                    'org_amount' => 0,
-                    'date' => now()->format('Y-m-d H:i:s.u'),
-                    'type' => OrgStockMovementTypeEnum::DISASSOCIATE,
+                    'quantity'         => $quantity,
+                    'audited_quantity' => 0,
+                    'org_amount'       => $orgAmount,
+                    'date'             => now()->format('Y-m-d H:i:s.u'),
+                    'type'             => OrgStockMovementTypeEnum::DISASSOCIATE,
                 ]
             );
 
