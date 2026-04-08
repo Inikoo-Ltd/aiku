@@ -471,23 +471,23 @@ class Kernel extends ConsoleKernel
         );
 
 
-        // $this->logSchedule(
-        //     $schedule->job(RunPriceChangeNotificationEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-        //         monitorSlug: 'RunPriceChangeNotificationEmailBulkRuns',
-        //     ),
-        //     name: 'RunPriceChangeNotificationEmailBulkRuns',
-        //     type: 'job',
-        //     scheduledAt: now()->format('H:i')
-        // );
+        $this->logSchedule(
+            $schedule->job(RunPriceChangeNotificationEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'RunPriceChangeNotificationEmailBulkRuns',
+            ),
+            name: 'RunPriceChangeNotificationEmailBulkRuns',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
 
-        // $this->logSchedule(
-        //     $schedule->job(RunBasketLowStockEmailBulkRuns::makeJob())->hourly()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-        //         monitorSlug: 'RunBasketLowStockEmailBulkRuns',
-        //     ),
-        //     name: 'RunBasketLowStockEmailBulkRuns',
-        //     type: 'job',
-        //     scheduledAt: now()->format('H:i')
-        // );
+        $this->logSchedule(
+            $schedule->job(RunBasketLowStockEmailBulkRuns::makeJob())->hourly()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'RunBasketLowStockEmailBulkRuns',
+            ),
+            name: 'RunBasketLowStockEmailBulkRuns',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
 
         $this->logSchedule(
             $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
