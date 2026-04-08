@@ -273,19 +273,9 @@ const GetQuantityToPickFractional = (item) => {
 
 
 // Section: Set Transaction as waiting
-const listSetAsWaitingType = [
-    {
-        label: trans("Waiting for Customer"),
-        value: 'waiting_for_customer'
-    },
-    {
-        label: trans("Waiting for Warehouse"),
-        value: 'waiting_for_warehouse'
-    }
-]
 const dataToSendAsWaiting = ref({
-    type: '',
-    reason: '',
+    note: '',
+
 })
 const isOpenModalSetAsWaiting = ref(false)
 const selectedTransactionToSetAsWaiting = ref(null)
@@ -298,6 +288,7 @@ const submitTransactionAsWaiting = () => {
         }),
         {
             ...dataToSendAsWaiting.value,
+            transaction_id: selectedTransactionToSetAsWaiting.value?.id,
             quantity: selectedTransactionToSetAsWaiting.value?.quantity_to_pick
         },
         {
@@ -309,16 +300,15 @@ const submitTransactionAsWaiting = () => {
             onSuccess: () => {
                 notify({
                     title: trans("Success"),
-                    text: trans("Successfully set transaction as waiting"),
+                    text: trans("Successfully set item as waiting"),
                     type: "success"
                 })
-                dataToSendAsWaiting.value.type = ''
-                dataToSendAsWaiting.value.reason = ''
+                dataToSendAsWaiting.value.note = ''
             },
             onError: errors => {
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to set transaction as waiting. Try again"),
+                    text: trans("Failed to set item as waiting. Try again"),
                     type: "error"
                 })
             },
@@ -708,7 +698,7 @@ watch(modalResource, (val) => {
 
                             <!-- Button: Set Transaction as not picked -->
                             <!-- Button: Not picked -->
-                            <ButtonWithLink
+                            <!-- <ButtonWithLink
                                 v-if="!itemValue.is_handled"
                                 type="negative"
                                 iconRight="fal fa-debug"
@@ -717,14 +707,13 @@ watch(modalResource, (val) => {
                                 :bindToLink="{preserveScroll: true}"
                                 v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
                             >
-                            
                                 <template #label>
                                     <div>
                                         <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)" :fractionData="GetQuantityToPickFractional(itemValue)" />
                                         <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
                                     </div>
                                 </template>
-                            </ButtonWithLink>
+                            </ButtonWithLink> -->
 
                             <!-- Button: Set Transaction as Waiting -->
                             <Button
@@ -1060,42 +1049,22 @@ watch(modalResource, (val) => {
 
     <!-- Modal: Set Transaction as Waiting -->
     <Modal :isOpen="isOpenModalSetAsWaiting" width="w-full max-w-2xl" @close="isOpenModalSetAsWaiting = false">
-        <div class="font-semibold text-xl text-center mb-8">
+        <div class="font-semibold text-xl text-center">
             {{ trans("Set :itemName as waiting", { itemName: selectedTransactionToSetAsWaiting?.org_stock_name ?? '-' }) }}
+        </div>
+        <div class="text-center mb-8 italic opacity-80">
+            {{ selectedTransactionToSetAsWaiting?.org_stock_code }}
         </div>
 
         <div class="mt-8 space-y-8">
             <div>
                 <label for="amount" class="font-medium mb-1 flex items-center gap-x-1">
-                    <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle"/>
-
-                    {{ trans('Select type waiting') }}:
-                </label>
-
-                <div class="pl-4 grid grid-cols-2 py-1 px-2 gap-x-4">
-                    <div v-for="waitingType in listSetAsWaitingType" :key="waitingType.value">
-                        <Button
-                            full
-                            @click="() => dataToSendAsWaiting.type = waitingType.value"
-                            :label="waitingType.label"
-                            :type="dataToSendAsWaiting.type === waitingType.value ? 'secondary' : 'dashed'"
-                            :key="dataToSendAsWaiting.type"
-                            xdisabled="isLoadingSubmitBay !== undefined"
-                            xloading="isLoadingSubmitBay === waitingType.value"
-                        />
-
-                    </div>
-                </div>
-            </div>
-
-            <div>
-                <label for="amount" class="font-medium mb-1 flex items-center gap-x-1">
-                    {{ trans('Reason') }}:
+                    {{ trans('Note') }}:
                 </label>
 
                 <div class="pl-4">
                     <PureTextarea
-                        v-model="dataToSendAsWaiting.reason"
+                        v-model="dataToSendAsWaiting.note"
                     />
                 </div>
             </div>
@@ -1108,7 +1077,6 @@ watch(modalResource, (val) => {
                 full
                 iconRight="far fa-arrow-right"
                 class="mt-4"
-                :disabled="!dataToSendAsWaiting.type"
                 :loading="isLoadingSetAsWaiting"
             />
         </div>

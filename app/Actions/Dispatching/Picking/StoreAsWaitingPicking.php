@@ -36,8 +36,8 @@ class StoreAsWaitingPicking extends OrgAction
     public function rules(): array
     {
         return [
-            'type'              => ['required', 'string'],
-            'reason'           => ['sometimes', 'string', 'nullable'],
+            'note'              => ['sometimes', 'string', 'nullable'],
+            'transaction_id'    => ['required', 'integer'],
             'quantity'          => ['required', 'numeric'],
         ];
     }
