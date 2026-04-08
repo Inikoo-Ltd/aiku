@@ -116,14 +116,17 @@ class IndexPayments extends OrgAction
                 'payments.reference',
                 'payments.type',
                 'payments.status',
+                'payments.state',
                 'payments.date',
                 'payments.amount',
                 'payments.method',
                 'payment_accounts.name as payment_account_name',
                 'payment_accounts.slug as payment_accounts_slug',
+                'payment_accounts.type as payment_account_type',
                 'payment_service_providers.slug as payment_service_providers_slug',
                 'shops.name as shop_name',
                 'shops.slug as shop_slug',
+                'organisations.id as organisation_id',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
                 'currencies.code as currency_code',
@@ -209,6 +212,7 @@ class IndexPayments extends OrgAction
             $table->column(key: 'method', label: __('Method'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hms');
+            $table->column(key: 'actions', label: __('Action'), canBeHidden: false);
         };
     }
 

@@ -8,7 +8,6 @@
 
 namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
-use App\Actions\Traits\WithEnumStats;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;
@@ -19,14 +18,10 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class OrganisationHydrateOrderStatePacking implements ShouldBeUnique
 {
     use AsAction;
-    use WithEnumStats;
-
-
-    public string $jobQueue = 'sales';
 
     public function getJobUniqueId(int $organisationID): string
     {
-        return $organisationID;
+        return (string) $organisationID;
     }
 
     public function handle(int $organisationID): void

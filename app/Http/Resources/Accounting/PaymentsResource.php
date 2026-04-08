@@ -8,6 +8,8 @@
 
 namespace App\Http\Resources\Accounting;
 
+use App\Enums\Accounting\Payment\PaymentStateEnum;
+use App\Models\Accounting\Payment;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -27,44 +29,51 @@ class PaymentsResource extends JsonResource
 {
     public function toArray($request): array
     {
+        /** @var Payment $payment */
+        $payment = $this->resource;
+
         return array(
-            'id'         => $this->id,
-            'status'     => $this->status,
-            'type'      => $this->type,
-            'payment_account_name' => $this->payment_account_name,
-            'payment_account' => $this->paymentAccount ? [
-                'type' => $this->paymentAccount->type,
-                'code' => $this->paymentAccount->code,
-                'name' => $this->paymentAccount->name,
+            'id'         => $payment->id,
+            'status'     => $payment->status,
+            'type'      => $payment->type,
+            'payment_account_name' => $payment->payment_account_name,
+            'payment_account_slug' => $payment->payment_account_slug,
+            'payment_account_type' => $payment->payment_account_type,
+            'payment_account' => $payment->paymentAccount ? [
+                'type' => $payment->paymentAccount->type,
+                'code' => $payment->paymentAccount->code,
+                'name' => $payment->paymentAccount->name,
             ] : null,
-            'state_icon' => $this->status->stateIcon()[$this->status->value],
-            'date'       => $this->date,
-            'reference'  => $this->reference,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-            'method'     => $this->method,
-            'amount'     => $this->amount,
+            'status_icon' => $payment->status->statusIcon()[$payment->status->value],
+            'date'       => $payment->date,
+            'reference'  => $payment->reference,
+            'created_at' => $payment->created_at,
+            'updated_at' => $payment->updated_at,
+            'method'     => $payment->method,
+            'amount'     => $payment->amount,
             'route' => match ($request->route()->getName()) {
                 'grp.org.shops.show.crm.customers.show' => [
-                        'name' => 'grp.org.shops.show.crm.customers.show.'.$this->type->value.'s.show',
+                        'name' => 'grp.org.shops.show.crm.customers.show.'.$payment->type->value.'s.show',
                         'params' => [
                             ...$request->route()->originalParameters(),
-                            'payment' => $this->id
+                            'payment' => $payment->id
                         ]
                 ],
                 default => [
                     'name' => 'grp.org.accounting.payments.show',
                     'params' => [
-                        'organisation' => $this->organisation_slug,
-                        'payment' => $this->id
+                        'organisation' => $payment->organisation_slug,
+                        'payment' => $payment->id
                     ]
                 ]
             },
-            'currency_code' => $this->currency_code,
-            'organisation_name' => $this->organisation_name,
-            'organisation_slug' => $this->organisation_slug,
-            'shop_name'         => $this->shop_name,
-            'shop_slug'         => $this->shop_slug,
+            'currency_code' => $payment->currency_code,
+            'organisation_id'   => $payment->organisation_id,
+            'organisation_name' => $payment->organisation_name,
+            'organisation_slug' => $payment->organisation_slug,
+            'shop_name'         => $payment->shop_name,
+            'shop_slug'         => $payment->shop_slug,
+            'is_cancelled'      => $payment->state === PaymentStateEnum::CANCELLED,
         );
     }
 }
