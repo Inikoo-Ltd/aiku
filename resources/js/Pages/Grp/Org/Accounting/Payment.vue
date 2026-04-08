@@ -15,6 +15,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue';
 import {computed, defineAsyncComponent, ref, inject} from "vue";
 import {useTabChange} from "@/Composables/tab-change";
 import ModelDetails from "@/Components/ModelDetails.vue";
+import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import {capitalize} from "@/Composables/capitalize"
 import PaymentShowcase from './PaymentShowcase.vue';
@@ -173,6 +174,13 @@ interface Props {
             payment: number
         }
     }
+    cancel_route: {
+        name: string
+        parameters: {
+            organisation: number
+            payment: number
+        }
+    }
     topup_receipt_route?: {
         show: boolean
         name: string
@@ -181,6 +189,7 @@ interface Props {
         }
     }
     is_cancelled?: boolean
+    payment_account_type?: string
 }
 
 const props = defineProps<Props>()
@@ -260,6 +269,39 @@ const openSingleTopUpReceipt = () => {
             <FontAwesomeIcon :icon="faFileTimes" class="text-red-500" v-tooltip="trans('This payment is cancelled')" v-if="is_cancelled"/>
         </template>
         <template #other>
+            <ModalConfirmation
+				v-if="is_cancelled === false" 
+				:routeYes="{
+					name: cancel_route.name,
+					parameters: cancel_route?.parameters,
+					method: 'patch'
+				}"
+				:title="trans('Are you sure you want to cancel this payment?')"
+				:description="payment_account_type === 'account' ? trans('This payment will be cancelled. This action would also affect the customer balance.') : trans('This payment will be cancelled.')"
+				:noLabel="trans('Return')"
+				:iconClass="'text-red-500'"
+				:iconContainerClass="'bg-red-100 border-1 border-red-500'"
+			>
+				<template #default="{ changeModel }">
+					<Button 
+						v-tooltip="trans('Cancel Payment')"
+						class="text-sm" :type="'negative'"
+						@click="changeModel"
+					>
+                        <FontAwesomeIcon :icon="faFileTimes" class="text-red-500"/>
+                        {{ trans('Cancel Payment') }}
+					</Button>
+				</template>
+
+				<template #btn-yes="{ isLoadingdelete, clickYes}">
+					<Button
+						:style="'delete'"
+						:loading="isLoadingdelete"
+						@click="() => clickYes()"
+						:label="trans('Cancel Payment')"
+					/>
+				</template>
+			</ModalConfirmation>
             <Button v-if="showRefundButton && layout?.app?.environment !== 'production'" @click="openRefundModal" :icon="faUndo" label="Proceed Refund">
             </Button>
             <Button v-if="showReceiptButton" :type="'tertiary'" @click="openSingleTopUpReceipt" :icon="faFilePdf" :label="trans('Download Receipt')">
