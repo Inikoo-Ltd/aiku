@@ -408,7 +408,7 @@ export function useProspectFilterRecipients(props: any) {
 
         if (!payload || Object.keys(payload).length === 0) {
             payload = {
-                all_customers: {
+                all_prospects: {
                     value: true
                 }
             }
