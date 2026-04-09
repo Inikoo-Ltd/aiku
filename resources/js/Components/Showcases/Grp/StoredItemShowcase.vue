@@ -104,17 +104,19 @@ const generateLinkPallet = () => {
 }
 
 // Generate link to audit
-const generateLinkAudit = (data) => {
+const generateLinkAudit = (data: { last_audit_slug?: string | null }) => {
+    if (!data?.last_audit_slug) {
+        return ''
+    }
+
     switch (route().current()) {
         case 'grp.org.fulfilments.show.crm.customers.show.stored-items.show':
-            return route('grp.org.fulfilments.show.crm.customers.show.stored-item-audits.show',
-                [
-                    route().params['organisation'],
-                    route().params['fulfilment'],
-                    route().params['fulfilmentCustomer'],
-                    data.last_audit_slug
-                ]
-            );
+            return route('grp.org.fulfilments.show.crm.customers.show.stored-item-audits.show', {
+                organisation: route().params['organisation'],
+                fulfilment: route().params['fulfilment'],
+                fulfilmentCustomer: route().params['fulfilmentCustomer'],
+                storedItemAudit: data.last_audit_slug
+            });
         case 'retina.fulfilment.itemised_storage.stored_items.show':
             return route('retina.fulfilment.storage.stored-items-audits.show',
                 [
@@ -214,7 +216,7 @@ onMounted(() => {
                     <div class="flex justify-between gap-x-4 py-3">
                         <dt class="text-gray-500">{{ trans("Last audit") }}</dt>
                         <dd class="flex items-start gap-x-2">
-                      
+
                             <Link v-if="data.stored_item?.last_audit_at && generateLinkAudit(data)"
                                 :href="generateLinkAudit(data)" class="primaryLink">
                                 {{ useFormatTime(data.stored_item?.last_audit_at) }}
@@ -271,10 +273,10 @@ onMounted(() => {
 
         <!-- Mini Table -->
         <!-- <div v-if="false" class="flex flex-col col-span-4 gap-x-5 border border-gray-100 shadow rounded-md px-5 py-3 text-gray-500">
-            <TableStoredItemEdit 
-                :data="data.pallets" 
-                :route_pallets="data.route_pallets" 
-                @Save="onChangeStoredItem" 
+            <TableStoredItemEdit
+                :data="data.pallets"
+                :route_pallets="data.route_pallets"
+                @Save="onChangeStoredItem"
                 :loading="isLoading"
                 ref="_editTable"
             />
