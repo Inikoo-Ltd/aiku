@@ -35,10 +35,12 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
         $collection = $webpage->model;
 
         // FIX FOR DUPLICATED FAMILIES WEBBLOCK UNDER COLLECTION
-        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES->value);
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES);
 
         // FIX FOR DUPLICATED PRODUCTS WEBBLOCK UNDER COLLECTION
-        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS->value);
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
+
+        $this->deleteWebBlocksByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS);
 
         $countCollectionDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'collection-description-1');
         if (count($countCollectionDescriptionBlock) == 0) {
@@ -94,7 +96,6 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
         }
         UpdateWebpageContent::run($webpage);
     }
-
 
     public string $commandSignature = 'repair:missing_fixed_web_blocks_in_collections_webpages';
 
