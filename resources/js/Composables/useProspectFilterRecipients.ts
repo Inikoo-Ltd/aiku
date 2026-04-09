@@ -136,7 +136,8 @@ export function useProspectFilterRecipients(props: any) {
                 if (config.options?.weeks) {
                     payloadValue.mode = val.mode ?? 'three_weeks_ago'
                     // Normalize custom_date to remove timestamps
-                    payloadValue.custom_date = val.custom_date ? val.custom_date.split('T')[0] : null
+                    // payloadValue.custom_date = val.custom_date ? val.custom_date.split('T')[0] : null
+                    payloadValue.custom_date = val.custom_date ? val.custom_date : null
                 }
 
                 payload[key] = { value: payloadValue }
