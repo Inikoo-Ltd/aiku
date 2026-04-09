@@ -39,7 +39,6 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
         $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
         $query->leftjoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id');
         $query->leftjoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
-
         return $query
             ->defaultSort('locations.sort_code', 'org_stocks.code')
             ->select([
@@ -50,6 +49,8 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                 'delivery_note_items.quantity_not_picked',
                 'delivery_note_items.quantity_packed',
                 'delivery_note_items.quantity_dispatched',
+                'delivery_note_items.quantity_waiting_warehouse',
+                'delivery_note_items.quantity_waiting_crm',
                 'delivery_note_items.is_handled',
                 'delivery_note_items.batch_code',
                 'delivery_note_items.expiry_date',
