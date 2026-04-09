@@ -13,12 +13,12 @@ use App\Actions\HumanResources\Clocking\StoreClocking;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\Employee;
-use App\Models\HumanResources\TimeTracker;
 use App\Models\HumanResources\Timesheet;
+use App\Models\HumanResources\TimeTracker;
 use App\Models\HumanResources\Workplace;
-use App\Models\SysAdmin\User;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
@@ -27,6 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ManualClockOut extends OrgAction
 {
     use WithHumanResourcesEditAuthorisation;
+
     public function handle(Timesheet $timesheet, User $generator, ?string $time = null): void
     {
         /** @var TimeTracker|null $openTimeTracker */
@@ -35,15 +36,14 @@ class ManualClockOut extends OrgAction
             ->latest('id')
             ->first();
 
-        if (!$openTimeTracker) {
-            // Fallback: check by end_clocking_id just in case status is out of sync
+        if (! $openTimeTracker) {
             $openTimeTracker = $timesheet->timeTrackers()
                 ->whereNull('end_clocking_id')
                 ->latest('id')
                 ->first();
         }
 
-        if (!$openTimeTracker) {
+        if (! $openTimeTracker) {
             throw ValidationException::withMessages([
                 'timesheet' => __('This timesheet does not have an open tracker.'),
             ]);
@@ -51,7 +51,7 @@ class ManualClockOut extends OrgAction
 
         /** @var Workplace|null $workplace */
         $workplace = Workplace::find($openTimeTracker->workplace_id);
-        if (!$workplace) {
+        if (! $workplace) {
             throw ValidationException::withMessages([
                 'timesheet' => __('Unable to determine the workplace for this open tracker.'),
             ]);
@@ -63,26 +63,27 @@ class ManualClockOut extends OrgAction
         $timezone = $this->organisation->timezone->name ?? 'UTC';
 
         if ($time) {
-            $timeString = $time;
-            if (strlen($time) > 8) {
-                try {
-                    $timeString = \Illuminate\Support\Carbon::parse($time)->toTimeString();
-                } catch (\Exception) {
-                    $timeString = substr($time, 0, 8);
-                }
-            }
+            $timeString = (strlen($time) > 8)
+                ? \Illuminate\Support\Carbon::parse($time)->toTimeString()
+                : $time;
 
-            $clockedAt = $timesheet->date->copy()->shiftTimezone($timezone)->setTimeFromTimeString($timeString);
+            $clockedAt = \Illuminate\Support\Carbon::parse($timesheet->date->toDateString(), $timezone)
+                ->setTimeFromTimeString($timeString);
+
         } else {
             $clockedAt = now()->setTimezone($timezone);
         }
+
+        $normalizedTime = $clockedAt->isUtc()
+            ? $clockedAt->toIso8601String()
+            : $clockedAt->timezone('UTC')->toIso8601String();
 
         StoreClocking::make()->action(
             generator: $generator,
             parent: $workplace,
             subject: $subject,
             modelData: [
-                'clocked_at' => $clockedAt->toIso8601String(),
+                'clocked_at' => $normalizedTime,
             ]
         );
     }
