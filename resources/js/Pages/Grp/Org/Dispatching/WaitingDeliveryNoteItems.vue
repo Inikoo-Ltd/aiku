@@ -12,7 +12,7 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { ref, computed, watch } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
-import TableWaitingDeliveryNoteItems from '@/Components/Tables/Grp/Org/Dispatching/TableWaitingDeliveryNoteItems.vue'
+import TableWaitingDeliveryNoteItemsByLocation from '@/Components/Tables/Grp/Org/Dispatching/TableWaitingDeliveryNoteItemsByLocation.vue'
 import TableWaitingDeliveryNoteItemsGrouped from '@/Components/Tables/Grp/Org/Dispatching/TableWaitingDeliveryNoteItemsGrouped.vue'
 
 const props = defineProps<{
@@ -31,8 +31,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
     const components: Record<string, any> = {
+        itemized: TableWaitingDeliveryNoteItemsByLocation,
         grouped: TableWaitingDeliveryNoteItemsGrouped,
-        itemized: TableWaitingDeliveryNoteItems,
     }
     return components[currentTab.value]
 })

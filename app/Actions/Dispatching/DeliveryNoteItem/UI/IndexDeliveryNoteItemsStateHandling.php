@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -19,7 +20,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDeliveryNoteItemsStateHandling extends OrgAction
 {
-    public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false): LengthAwarePaginator
+    public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false, ?DeliveryNoteItemStateEnum $stateFilter = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -35,6 +36,10 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
         $query = QueryBuilder::for(DeliveryNoteItem::class);
 
         $query->where('delivery_note_items.delivery_note_id', $parent->id);
+
+        if ($stateFilter) {
+            $query->where('delivery_note_items.state', $stateFilter);
+        }
 
         $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
         $query->leftjoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id');

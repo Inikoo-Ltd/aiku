@@ -1,0 +1,271 @@
+<!--
+  - Author: Raul Perusquia <raul@inikoo.com>
+  - Created: Wed, 08 Apr 2026 00:00:00 Malaysia Time, Kuala Lumpur, Malaysia
+  - Copyright (c) 2026, Raul A Perusquia Flores
+  -->
+
+<script setup lang="ts">
+import { Link, router } from "@inertiajs/vue3"
+import Table from "@/Components/Table/Table.vue"
+import type { Table as TableTS } from "@/types/Table"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faInventory, faListOl, faHandHoldingBox, faClipboardListCheck, faUndoAlt, faDebug } from "@fal"
+import { faSkull, faHeadset } from "@fas"
+import Icon from "@/Components/Icon.vue"
+import { reactive, ref } from "vue"
+import { get, set } from "lodash-es"
+import { trans } from "laravel-vue-i18n"
+import { RouteParams } from "@/types/route-params"
+import { routeType } from "@/types/route"
+import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import Modal from "@/Components/Utils/Modal.vue"
+import { RadioButton } from "primevue"
+import NotesDisplay from "@/Components/NotesDisplay.vue"
+import axios from "axios"
+import { twBreakPoint } from "@/Composables/useWindowSize"
+
+library.add(faInventory, faListOl, faHandHoldingBox, faClipboardListCheck, faUndoAlt, faDebug, faSkull, faHeadset)
+
+defineProps<{
+    data: TableTS
+    tab?: string
+}>()
+
+const routeToDeliveryNote = (slug: string) => {
+    return route('grp.org.warehouses.show.dispatching.delivery_notes.show', [
+        (route().params as RouteParams).organisation,
+        (route().params as RouteParams).warehouse,
+        slug,
+    ])
+}
+
+const generateLocationRoute = (location: any) => {
+    if (!location.location_slug) return "#"
+    return route("grp.org.warehouses.show.infrastructure.locations.show", [
+        (route().params as RouteParams).organisation,
+        (route().params as RouteParams).warehouse,
+        location.location_slug,
+    ])
+}
+
+const findLocation = (locationsList: any[], selectedCode: string) => {
+    return locationsList?.find(x => x.location_code === selectedCode) || locationsList?.[0]
+}
+
+const isModalLocation = ref(false)
+const selectedItemValue = ref<any>(null)
+const selectedItemProxy = ref<any>(null)
+
+const onCloseModal = () => {
+    isModalLocation.value = false
+    setTimeout(() => { selectedItemValue.value = null }, 300)
+}
+
+const isLoadingUndoPick = reactive<Record<string, boolean>>({})
+
+const onUndoPick = async (routeTarget: routeType, loadingKey: string) => {
+    try {
+        set(isLoadingUndoPick, loadingKey, true)
+        await axios[routeTarget.method || "delete"](route(routeTarget.name, routeTarget.parameters))
+        router.reload()
+    } catch (error) {
+        console.error(error)
+    } finally {
+        set(isLoadingUndoPick, loadingKey, false)
+    }
+}
+</script>
+
+<template>
+    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop>
+        <template #cell(state)="{ item }">
+            <Icon :data="item.state_icon" />
+        </template>
+
+        <template #cell(delivery_note_reference)="{ item }">
+            <div class="flex gap-2 flex-wrap items-center">
+                <Link :href="routeToDeliveryNote(item.delivery_note_slug)" class="primaryLink">
+                    {{ item.delivery_note_reference }}
+                </Link>
+                <FontAwesomeIcon v-if="item.delivery_note_is_premium_dispatch" v-tooltip="trans('Priority dispatch')" icon="fas fa-star" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="item.delivery_note_has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
+                <NotesDisplay reference-field="delivery_note_reference" :item="item" :note-fields="{
+                    shipping: 'delivery_note_shipping_notes',
+                    customer: 'delivery_note_customer_notes',
+                    internal: 'delivery_note_internal_notes',
+                    public:   'delivery_note_public_notes',
+                }" />
+            </div>
+        </template>
+
+        <template #cell(pickings)="{ item }">
+            <div v-if="item.pickings?.length" class="space-y-1">
+                <div v-for="picking in item.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
+                    <div v-if="picking.type === 'pick'" class="flex gap-x-2 items-center">
+                        <Link :href="generateLocationRoute(picking)" class="secondaryLink text-xs">{{ picking.location_code }}</Link>
+                        <span v-tooltip="trans('Total picked in this location')" class="text-gray-500 whitespace-nowrap text-xs">
+                            <FontAwesomeIcon icon="fal fa-hand-holding-box" fixed-width aria-hidden="true" />
+                            {{ picking.quantity_picked }}
+                        </span>
+                    </div>
+                    <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 text-xs">
+                        <FontAwesomeIcon icon="fas fa-skull" fixed-width aria-hidden="true" />
+                        {{ picking.quantity_picked }}
+                    </div>
+                    <ButtonWithLink
+                        v-tooltip="trans('Undo')" type="negative" size="xxs" icon="fal fa-undo-alt"
+                        :routeTarget="picking.undo_picking_route"
+                        :bindToLink="{ preserveScroll: true }"
+                        @click="onUndoPick(picking.undo_picking_route, `undo-pick-${picking.id}`)"
+                        :loading="get(isLoadingUndoPick, `undo-pick-${picking.id}`, false)"
+                    />
+                </div>
+            </div>
+            <span v-else class="text-xs text-gray-400 italic">{{ trans('No item picked yet') }}</span>
+        </template>
+
+        <!-- picking_position column: location picker + quantity + not-picked + call CS -->
+        <template #cell(picking_position)="{ item: itemValue, proxyItem }">
+            <div v-if="itemValue.quantity_to_pick > 0">
+                <div v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)" class="rounded p-1 flex flex-col gap-2">
+                    <div class="flex justify-between items-center gap-x-4">
+                        <!-- Location info -->
+                        <div class="flex items-center gap-1 flex-wrap">
+                            <Link v-tooltip="itemValue.warehouse_area" :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.org_stock_id))" class="secondaryLink">
+                                {{ findLocation(itemValue.locations, proxyItem.org_stock_id).location_code }}
+                            </Link>
+                            <span v-tooltip="trans('Total stock in this location')" class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1 text-xs">
+                                <FontAwesomeIcon icon="fal fa-inventory" fixed-width aria-hidden="true" />
+                                {{ Number(findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity ?? 0) }}
+                            </span>
+                            <span
+                                v-if="itemValue.locations?.length > 1"
+                                @click="() => { isModalLocation = true; selectedItemValue = itemValue; selectedItemProxy = proxyItem }"
+                                v-tooltip="trans('Other :_count_location locations', { _count_location: String(itemValue.locations.length - 1) })"
+                                class="cursor-pointer hover:bg-orange-50 ml-1 whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded px-1 text-xs"
+                            >
+                                <FontAwesomeIcon icon="fal fa-list-ol" fixed-width aria-hidden="true" />
+                                {{ itemValue.locations.length - 1 }}
+                            </span>
+                        </div>
+
+                        <!-- Quantity + pick all + not picked + call CS -->
+                        <div class="flex items-center gap-x-2">
+                            <NumberWithButtonSave
+                                v-if="!itemValue.is_handled && findLocation(itemValue.locations, proxyItem.org_stock_id).quantity > 0"
+                                :key="findLocation(itemValue.locations, proxyItem.org_stock_id).location_code"
+                                noUndoButton
+                                @onError="(error: any) => { proxyItem.errors = Object.values(error || {}) }"
+                                :modelValue="findLocation(itemValue.locations, proxyItem.org_stock_id).quantity_picked"
+                                @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
+                                saveOnForm
+                                :routeSubmit="{
+                                    name: itemValue.upsert_picking_route.name,
+                                    parameters: itemValue.upsert_picking_route.parameters,
+                                }"
+                                :bindToTarget="{
+                                    step: 1, min: 0,
+                                    max: Math.min(
+                                        findLocation(itemValue.locations, proxyItem.org_stock_id).quantity,
+                                        itemValue.quantity_required,
+                                        itemValue.quantity_to_pick + findLocation(itemValue.locations, proxyItem.org_stock_id).quantity_picked
+                                    )
+                                }"
+                                :additionalData="{
+                                    location_org_stock_id: findLocation(itemValue.locations, proxyItem.org_stock_id).id,
+                                    picking_id: itemValue.pickings?.find((p: any) => p.location_id === findLocation(itemValue.locations, proxyItem.org_stock_id).location_id)?.id,
+                                }"
+                                autoSave
+                                :readonly="itemValue.is_handled || itemValue.quantity_required === itemValue.quantity_picked"
+                            >
+                                <template #save="{ isProcessing }">
+                                    <ButtonWithLink
+                                        v-tooltip="trans('Pick all required quantity in this location')"
+                                        icon="fal fa-clipboard-list-check"
+                                        :disabled="itemValue.is_handled || itemValue.quantity_required === itemValue.quantity_picked"
+                                        size="xs" type="secondary" :loading="isProcessing"
+                                        :routeTarget="itemValue.picking_all_route"
+                                        :bind-to-link="{ preserveScroll: true, preserveState: true }"
+                                        :body="{ location_org_stock_id: findLocation(itemValue.locations, proxyItem.org_stock_id).id }"
+                                        isWithError
+                                    >
+                                        <template #label>
+                                            <FractionDisplay v-if="itemValue.quantity_to_pick_fractional" :fractionData="itemValue.quantity_to_pick_fractional" />
+                                            <span v-else>{{ itemValue.quantity_to_pick }}</span>
+                                        </template>
+                                    </ButtonWithLink>
+                                </template>
+                            </NumberWithButtonSave>
+
+                            <ButtonWithLink
+                                v-if="!itemValue.is_handled"
+                                type="negative" tooltip="Set as not picked" icon="fal fa-debug"
+                                :size="twBreakPoint().includes('lg') ? undefined : 'lg'"
+                                :routeTarget="itemValue.not_picking_route"
+                                :bindToLink="{ preserveScroll: true }"
+                            />
+
+                            <Button icon="fas fa-headset" :label="trans('Call CS')" size="xs" type="tertiary" />
+                        </div>
+                    </div>
+
+                    <!-- Error messages -->
+                    <div v-if="proxyItem.errors?.length">
+                        <p v-for="error in proxyItem.errors" class="text-xs text-red-500 italic">*{{ error }}</p>
+                    </div>
+                </div>
+            </div>
+            <div v-else class="flex gap-x-2 items-center">
+                <ButtonWithLink
+                    v-if="!itemValue.is_handled"
+                    type="negative" tooltip="Set as not picked" icon="fal fa-debug"
+                    :size="twBreakPoint().includes('lg') ? undefined : 'lg'"
+                    :routeTarget="itemValue.not_picking_route"
+                    :bindToLink="{ preserveScroll: true }"
+                />
+                <Button icon="fas fa-headset" :label="trans('Call CS')" size="xs" type="tertiary" />
+            </div>
+        </template>
+    </Table>
+
+    <!-- Location list modal -->
+    <Modal :isOpen="isModalLocation" @onClose="onCloseModal" width="w-full max-w-2xl" :dialogStyle="{ background: '#ffffffcc' }">
+        <div class="text-center font-semibold mb-4 text-2xl">
+            {{ trans('Location list for') }} {{ selectedItemValue?.org_stock_code }}
+        </div>
+        <div class="rounded p-1 grid grid-cols-2 lg:grid-cols-3 gap-3">
+            <div
+                v-for="location in selectedItemValue?.locations"
+                :key="location.location_code"
+                class="bg-white rounded w-full flex justify-between gap-x-3 items-center px-2 py-1"
+            >
+                <label :for="location.location_code">
+                    <span v-if="location.location_code" v-tooltip="location.quantity <= 0 ? trans('Location has no stock') : ''" :class="location.quantity <= 0 ? 'text-gray-400' : ''">
+                        <Link :href="generateLocationRoute(location)" class="bg-gradient-to-t from-yellow-300/50 to-yellow-200/50 px-1">
+                            {{ location.location_code }}
+                        </Link>
+                    </span>
+                    <span v-else class="text-gray-400 italic">({{ trans('Unknown') }})</span>
+                    <span v-tooltip="trans('Total stock in this location')" class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border border-gray-300 rounded px-1 text-xs">
+                        <FontAwesomeIcon icon="fal fa-inventory" fixed-width aria-hidden="true" />
+                        {{ Number(location.quantity ?? 0) }}
+                    </span>
+                </label>
+                <RadioButton
+                    v-if="selectedItemProxy"
+                    v-model="selectedItemProxy.org_stock_id"
+                    @update:modelValue="onCloseModal"
+                    :size="twBreakPoint().includes('lg') ? undefined : 'large'"
+                    :inputId="location.location_code"
+                    :disabled="location.quantity <= 0"
+                    name="location"
+                    :value="location.location_code"
+                />
+            </div>
+        </div>
+    </Modal>
+</template>

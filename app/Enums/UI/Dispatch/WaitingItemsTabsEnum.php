@@ -17,19 +17,19 @@ enum WaitingItemsTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case GROUPED = 'grouped';
     case ITEMIZED = 'itemized';
+    case GROUPED = 'grouped';
 
     public function blueprint(): array
     {
         return match ($this) {
-            WaitingItemsTabsEnum::GROUPED => [
-                'title' => __('Group by delivery'),
-                'icon'  => 'fal fa-truck',
-            ],
             WaitingItemsTabsEnum::ITEMIZED => [
                 'title' => __('Pick by location'),
                 'icon'  => 'fal fa-inventory',
+            ],
+            WaitingItemsTabsEnum::GROUPED => [
+                'title' => __('Group by delivery'),
+                'icon'  => 'fal fa-truck',
             ],
         };
     }

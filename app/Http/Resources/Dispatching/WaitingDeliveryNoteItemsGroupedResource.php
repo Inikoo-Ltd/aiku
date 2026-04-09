@@ -9,10 +9,10 @@
 
 namespace App\Http\Resources\Dispatching;
 
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\DB;
 
 /**
  * @property mixed $delivery_note_id
@@ -31,22 +31,6 @@ class WaitingDeliveryNoteItemsGroupedResource extends JsonResource
     {
         $deliveryNote = DeliveryNote::find($this->delivery_note_id);
 
-        $items = DB::table('delivery_note_items')
-            ->leftJoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id')
-            ->where('delivery_note_items.delivery_note_id', $this->delivery_note_id)
-            ->where('delivery_note_items.state', DeliveryNoteItemStateEnum::HANDLING_BLOCKED->value)
-            ->select([
-                'delivery_note_items.id',
-                'org_stocks.id as org_stock_id',
-                'org_stocks.code as org_stock_code',
-                'org_stocks.name as org_stock_name',
-                'delivery_note_items.quantity_required',
-                'delivery_note_items.quantity_picked',
-                DB::raw('(delivery_note_items.quantity_required - COALESCE(delivery_note_items.quantity_picked, 0)) as quantity_waiting'),
-            ])
-            ->get()
-            ->toArray();
-
         return [
             'delivery_note_id'                  => $this->delivery_note_id,
             'delivery_note_slug'                => $this->delivery_note_slug,
@@ -58,7 +42,15 @@ class WaitingDeliveryNoteItemsGroupedResource extends JsonResource
             'delivery_note_public_notes'        => $this->delivery_note_public_notes,
             'delivery_note_internal_notes'      => $this->delivery_note_internal_notes,
             'delivery_note_shipping_notes'      => $this->delivery_note_shipping_notes,
-            'items'                             => $items,
+            'items'                             => $deliveryNote
+                ? DeliveryNoteItemsStateHandlingResource::collection(
+                    IndexDeliveryNoteItemsStateHandling::run(
+                        $deliveryNote,
+                        ignoreParentPagination: true,
+                        stateFilter: DeliveryNoteItemStateEnum::HANDLING_BLOCKED
+                    )
+                )->resolve()
+                : [],
         ];
     }
 }
