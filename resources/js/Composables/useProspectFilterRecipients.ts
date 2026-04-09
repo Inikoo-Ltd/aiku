@@ -4,7 +4,7 @@
  * Copyright (c) 2026, eka yudinata
  */
 
-import { ref, computed, reactive, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { debounce } from 'lodash-es'
 import axios from 'axios'
 import { router } from '@inertiajs/vue3'
@@ -84,39 +84,14 @@ export function useProspectFilterRecipients(props: any) {
 
         let value: any = true
 
-       if (config.type === 'boolean') {
+           if (config.type === 'boolean') {
             value = { value: true }
-
-            // if (config.options?.date_range) {
-            //     value.date_range = null
-            // }
-
-            // if (config.options?.amount_range) {
-            //     value.amount_range = {
-            //         min: null,
-            //         max: null,
-            //     }
-            // }
-
-            // if (config.options?.date_range?.presets) {
-            //     value.date_range_preset = null
-            // }
-
-            // if (config.options?.count) {
-            //     value.count = config.options.count.default ?? 3
-            // }
 
             if (config.options?.weeks) {
                 value.mode = config.options.weeks.default ?? 'three_weeks_ago'
                 value.custom_date = calculateDateFromPreset(value.mode)
             }
         }
-
-        if (config.type === 'select') value = config.options?.[0]?.value ?? null
-        if (config.type === 'multiselect') value = config.label === 'By Family Never Ordered' ? { ids: null } : config.behavior_options ? { ids: [], behaviors: ['purchased'], combine_logic: 'or' } : { ids: [] }
-        if (config.type === 'daterange') value = { date_range: null }
-        if (config.type === 'entity_behaviour') value = { ids: [], behaviors: [], combine_logic: true }
-        if (config.type === 'location') value = { mode:'direct', country_ids:[], postal_codes:[], location:'', radius:null, radius_custom:null, lat:null, lng:null, resolved:false }
 
         activeFilters.value[key] = { value, config }
     }
@@ -167,41 +142,6 @@ export function useProspectFilterRecipients(props: any) {
                 return
             }
 
-            // ENTITY BEHAVIOUR
-            if (config.type === 'entity_behaviour') {
-                payload[key] = {
-                    value: {
-                        ids: val.ids ?? [],
-                        behaviors: val.combine_logic
-                            ? (val.behaviors ?? [])
-                            : (val.behaviors?.length ? [val.behaviors[0]] : []),
-                        combine_logic: val.combine_logic ?? true
-                    }
-                }
-                return
-            }
-
-            // MULTISELECT (simple)
-            if (config.type === 'multiselect') {
-                if (config.label === 'By Family Never Ordered') {
-                    payload[key] = {
-                        value: val.ids != null ? [val.ids] : []
-                    }
-                } else {
-                    payload[key] = {
-                        value: val.ids ?? []
-                    }
-                }
-                return
-            }
-
-            // SELECT
-            if (config.type === 'select') {
-                payload[key] = {
-                    value: val
-                }
-                return
-            }
             payload[key] = { value: val }
         })
 
@@ -245,12 +185,6 @@ export function useProspectFilterRecipients(props: any) {
         return v
     }
 
-    function dayDiff(start: string | number | Date, end: string | number | Date): number {
-        const s = new Date(start).getTime()
-        const e = new Date(end).getTime()
-        return Math.round((e - s) / (1000*60*60*24))
-    }
-
     function hydrateSavedFilters(saved: any, structure: any) {
         const hydrated: any = {}
 
@@ -277,31 +211,6 @@ export function useProspectFilterRecipients(props: any) {
                     value: clean.value ?? true
                 }
 
-                // DATE RANGE
-                if (config.options?.date_range) {
-                    const dr = clean.date_range
-
-                    uiValue.date_range = Array.isArray(dr)
-                        ? [normalizeDate(dr[0]), normalizeDate(dr[1])]
-                        : null
-
-                    // preset detection
-                    if (key === 'orders_in_basket' && Array.isArray(dr)) {
-                        const diff = dayDiff(dr[0], dr[1])
-                        if ([3,7,14].includes(diff)) uiValue.mode = diff
-                        else uiValue.mode = 'custom'
-                    }
-                }
-
-                // AMOUNT RANGE
-                if (config.options?.amount_range) {
-                    uiValue.amount_range = clean.amount_range ?? {
-                        min: null,
-                        max: null,
-                        currency: config.options.amount_range.currency || 'GBP'
-                    }
-                }
-
                 // COUNT
                 if (config.options?.count) {
                     uiValue.count = clean.count ?? config.options.count.default ?? 3
@@ -318,87 +227,8 @@ export function useProspectFilterRecipients(props: any) {
                     }
                 }
             }
-
-            else if (config.type === 'select') {
-                uiValue = typeof val === 'object' && 'value' in val
-                    ? val.value
-                    : val
-            }
-
-            else if (config.type === 'multiselect') {
-                if (config.behavior_options) {
-                    uiValue = {
-                        ids: val?.ids ?? [],
-                        behaviors: val?.behaviors ?? ['purchased'],
-                        combine_logic: val?.combine_logic ?? 'or'
-                    }
-                }
-
-                else {
-                    const src = wrapper?.value ?? wrapper
-
-                    if (config.label === 'By Family Never Ordered') {
-                        uiValue = {
-                            ids: Array.isArray(src) ? src[0] ?? null : src ?? null
-                        }
-                    } else {
-                        uiValue = {
-                            ids: Array.isArray(src)
-                                ? src
-                                : Array.isArray(src?.ids)
-                                    ? src.ids
-                                    : []
-                        }
-                    }
-                }
-            }
-
-            else if (config.type === 'entity_behaviour') {
-                uiValue = {
-                    ids: raw.ids ?? [],
-                    behaviors: Array.isArray(raw.behaviors)
-                        ? raw.behaviors
-                        : raw.behaviors
-                            ? [raw.behaviors]
-                            : [],
-                    combine_logic: typeof raw.combine_logic === 'boolean'
-                        ? raw.combine_logic
-                        : true
-                }
-            }
-
-            else if (config.type === 'location') {
-                const v = val?.value ?? {}
-
-                let radiusPreset = '5000'
-                let radiusCustom = null
-
-                if (v.radius) {
-                    const asString = String(v.radius)
-
-                    if (presetMeters.includes(asString)) {
-                        radiusPreset = asString
-                    } else {
-                        radiusPreset = 'custom'
-                        radiusCustom = Number(v.radius)
-                    }
-                }
-
-                uiValue = {
-                    mode: v.mode ?? 'direct',
-                    country_ids: v.country_ids ?? [],
-                    postal_codes: v.postal_codes ?? [],
-                    location: v.location ?? '',
-                    radius: radiusPreset,
-                    radius_custom: radiusCustom,
-                    lat: v.lat ?? 0,
-                    lng: v.lng ?? 0,
-                    zoom: 10
-                }
-            }
             hydrated[key] = { config, value: uiValue }
         })
-
         return hydrated
     }
 
@@ -456,3 +286,4 @@ export function useProspectFilterRecipients(props: any) {
     }
 }
 
+    

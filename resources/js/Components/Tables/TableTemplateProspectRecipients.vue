@@ -7,11 +7,9 @@
 <script setup lang="ts">
 import {
     faCheck,
-    faDumpster,
     faEnvelopeOpen,
     faExclamationCircle,
     faExclamationTriangle,
-    faHandPaper,
     faInboxIn,
     faMousePointer,
     faPaperPlane,
@@ -26,21 +24,16 @@ import {
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { reactive, computed, watch, ref, onMounted, nextTick } from "vue";
-import { useFormatTime } from "@/Composables/useFormatTime";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronDown, faFilter, faTimes, faPlus } from "@fas"
-import MultiselectTagsInfiniteScroll from '@/Components/Forms/Fields/MultiselectTagsInfiniteScroll.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { Button as ButtonPrime, InputNumber, InputText, RadioButton } from 'primevue'
+import { InputNumber } from 'primevue'
 import Menu from 'primevue/menu'
 import Badge from 'primevue/badge'
 import Dropdown from 'primevue/dropdown'
 import Calendar from 'primevue/calendar'
-import Checkbox from 'primevue/checkbox'
 import ToggleButton from 'primevue/togglebutton'
 import { routeType } from '@/types/route'
-import axios from 'axios'
-import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import '@vuepic/vue-datepicker/dist/main.css'
 import { useProspectFilterRecipients } from "@/Composables/useProspectFilterRecipients";
 import { trans } from "laravel-vue-i18n"
@@ -55,9 +48,6 @@ library.add(
     faExclamationTriangle,
     faSquare,
     faEnvelopeOpen,
-    faMousePointer,
-    faDumpster,
-    faHandPaper,
     faCheck,
     faTimesCircle,
     faEnvelope,
@@ -118,54 +108,8 @@ const availableFilters = computed(() => {
     return list
 })
 
-const onPresetChange = (filter: any, event: any) => {
-    const preset = event.value
-
-    filter.value.date_range_preset = preset
-
-    if (preset === 'custom') {
-        filter.value.date_range = null
-        return
-    }
-
-    const days = Number(preset)
-    if (!isNaN(days)) {
-        const end = new Date()
-        const start = new Date()
-        start.setDate(end.getDate() - days)
-        filter.value.date_range = [start, end]
-    }
-}
-
 const formatNumber = (num: number | null | undefined) => {
     return new Intl.NumberFormat('en-GB').format(num ?? 0)
-}
-
-function onBasketModeChange(filter: { value: { mode: any; date_range: any[] | null; }; }, event: { value: any; }) {
-    const val = event.value
-
-    filter.value.mode = val
-
-    if (val === 'custom') {
-        filter.value.date_range = null
-        return
-    }
-
-    const days = Number(val)
-    if (!isNaN(days)) {
-        const end = new Date()
-        const start = new Date()
-        start.setDate(end.getDate() - days)
-
-        filter.value.date_range = [
-            formatDate(start),
-            formatDate(end)
-        ]
-    }
-}
-
-function formatDate(d: Date) {
-    return d.toISOString().split('T')[0]
 }
 
 onMounted(async () => {
@@ -233,8 +177,7 @@ watch(
             <!-- right side -->
             <div class="flex items-center gap-3">
 
-                <Button :label="trans('Save')" type="positive" icon="save" @click="saveFilters" class="h-10 px-4"
-                    :disabled="isByOrderValueInvalid" />
+                <Button :label="trans('Save')" type="positive" icon="save" @click="saveFilters" class="h-10 px-4" />
             </div>
         </div>
         <div v-if="Object.keys(activeFilters).length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
@@ -254,11 +197,7 @@ watch(
                 </span>
                 <!-- BOOLEAN -->
                 <template v-if="filter.config.type === 'boolean'" class="mt-2">
-                    <template v-if="key === 'orders_collection' || key === 'by_showroom_orders'">
-                        <ToggleButton v-model="filter.value" onLabel="Active" offLabel="Inactive" class="mb-3 w-full"
-                            disabled />
-                    </template>
-                    <template v-else-if="filter.config.options?.date_range">
+                    <template v-if="filter.config.options?.date_range">
                         <label class="block text-xs font-medium text-gray-500 mb-1">
                             {{ trans(filter.config.options.date_range.label) }}
                         </label>
@@ -266,8 +205,7 @@ watch(
                         <!-- PRESET SELECT (if exists) -->
                         <Dropdown v-if="filter.config.options.date_range.presets"
                             :options="filter.config.options.date_range.presets" v-model="filter.value.date_range_preset"
-                            class="w-full mb-2" placeholder="Select time frame"
-                            @change="onPresetChange(filter, $event)" />
+                            class="w-full mb-2" placeholder="Select time frame" />
 
                         <!-- CALENDAR -->
                         <Calendar
