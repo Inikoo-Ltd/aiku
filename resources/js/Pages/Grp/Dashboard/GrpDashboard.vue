@@ -82,7 +82,7 @@ const isExpanded = ref(false)
 			<TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" />
 		</KeepAlive>
 
-		<div v-if="stockHistoryGroup" class="px-6 mt-2">
+		<div v-if="stockHistoryGroup" class="px-6 mt-1">
 			<dl class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-gray-100 bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden">
 				<div class="px-5 py-4">
 					<dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
@@ -170,7 +170,7 @@ const isExpanded = ref(false)
 				</button>
 			</div>
 
-			<div v-if="isExpanded && stockHistoryGroup.organisations.length > 0" class="mt-1 bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden">
+			<div v-if="isExpanded && stockHistoryGroup.organisations.length > 0" class="mt-1 mb-4 bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden">
 				<table class="w-full text-sm">
 					<thead>
 						<tr class="bg-gray-50 border-b border-gray-200">
