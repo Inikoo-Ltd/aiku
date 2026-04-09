@@ -22,7 +22,7 @@ import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { Switch, SwitchGroup, SwitchLabel } from "@headlessui/vue"
 import Popover from '@/Components/Popover.vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faQuestionCircle, faPencil, faPenSquare, faCalendarDay, faExternalLink } from "@fal"
+import { faQuestionCircle, faPencil, faPenSquare, faCalendarDay, faExternalLink, faExchange } from "@fal"
 import { faCubes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
@@ -39,7 +39,8 @@ import { retinaUseDaysLeftFromToday, useFormatTime } from "@/Composables/useForm
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { AddressManagement } from "@/types/PureComponent/Address";
 import { useTruncate } from "@/Composables/useTruncate"
-library.add(faQuestionCircle, faPencil, faPenSquare, faCalendarDay, faExternalLink, faCubes)
+import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
+library.add(faQuestionCircle, faPencil, faPenSquare, faCalendarDay, faExternalLink, faCubes, faExchange)
 
 const props = defineProps<{
 
@@ -53,6 +54,11 @@ const props = defineProps<{
 	},
 	shipments: {
 		delete_route: routeType
+	},
+	picker_packer_routes?: {
+		pickers_list: routeType
+		packers_list: routeType
+		update: routeType
 	}
 
 }>()
@@ -69,6 +75,83 @@ onMounted(() => {
 const deliveryListError = inject('deliveryListError', [])
 const pickingTitle = computed(() => props.dataPalletReturn?.type === 'stored_item' ? trans("Return Customer's SKUs") : trans('Return Whole pallets'))
 const hasPickingUsers = computed(() => Boolean(props.dataPalletReturn?.picker_user?.contact_name || props.dataPalletReturn?.packer_user?.contact_name))
+const canUpdatePickingUsers = computed(() => Boolean(props.picker_packer_routes?.update?.name))
+const isPickingState = computed(() => props.dataPalletReturn?.state === 'picking')
+const isPickedState = computed(() => props.dataPalletReturn?.state === 'picked')
+const showPickerInfo = computed(() => ['picking', 'picked', 'dispatched', 'cancel'].includes(props.dataPalletReturn?.state || ''))
+const showPackerInfo = computed(() => ['picked', 'dispatched', 'cancel'].includes(props.dataPalletReturn?.state || ''))
+const canChangePicker = computed(() => canUpdatePickingUsers.value && isPickingState.value)
+const canChangePacker = computed(() => canUpdatePickingUsers.value && isPickedState.value)
+const changePickingUsersLabel = computed(() => {
+	if (canChangePicker.value) {
+		return trans('Change picker')
+	}
+	if (canChangePacker.value) {
+		return trans('Change packer')
+	}
+	return trans('Change picker / packer')
+})
+const pickersListRoute = computed(() => props.picker_packer_routes?.pickers_list)
+const packersListRoute = computed(() => props.picker_packer_routes?.packers_list)
+const isModalPickingUsers = ref(false)
+const isLoadingPickingUsers = ref(false)
+const selectedPicker = ref<{ id: number; contact_name?: string | null } | null>(props.dataPalletReturn?.picker_user ?? null)
+const selectedPacker = ref<{ id: number; contact_name?: string | null } | null>(props.dataPalletReturn?.packer_user ?? null)
+
+const onOpenModalPickingUsers = () => {
+	selectedPicker.value = props.dataPalletReturn?.picker_user ?? null
+	selectedPacker.value = props.dataPalletReturn?.packer_user ?? null
+	isModalPickingUsers.value = true
+}
+
+const onUpdatePickingUsers = () => {
+	if (!props.picker_packer_routes?.update?.name) {
+		return
+	}
+
+	const payload: Record<string, number | null> = {}
+
+	if (canChangePicker.value) {
+		payload.picker_user_id = selectedPicker.value?.id ?? null
+	}
+
+	if (canChangePacker.value) {
+		payload.packer_user_id = selectedPacker.value?.id ?? null
+	}
+
+	if (!Object.keys(payload).length) {
+		return
+	}
+
+	router.patch(
+		route(props.picker_packer_routes.update.name, props.picker_packer_routes.update.parameters),
+		payload,
+		{
+			preserveScroll: true,
+			onStart: () => {
+				isLoadingPickingUsers.value = true
+			},
+			onSuccess: () => {
+				isModalPickingUsers.value = false
+				notify({
+					title: trans("Success"),
+					text: canChangePicker.value ? trans("Picker updated successfully") : trans("Packer updated successfully"),
+					type: "success",
+				})
+			},
+			onError: () => {
+				notify({
+					title: trans("Something went wrong"),
+					text: trans("Failed to update picker and packer"),
+					type: "error",
+				})
+			},
+			onFinish: () => {
+				isLoadingPickingUsers.value = false
+			},
+		}
+	)
+}
 
 // Method: Create new address
 const isModalAddress = ref(false)
@@ -772,15 +855,22 @@ const base64HtmlToPdf = async (base64: string, index) => {
 				</div>
 			</div>
 
-            <div v-if="hasPickingUsers" class="mb-1 border-t border-gray-300 pt-1">
+            <div v-if="hasPickingUsers || canChangePicker || canChangePacker" class="mb-1 border-t border-gray-300 pt-1">
 				<div class="text-sm font-semibold text-gray-600">{{ pickingTitle }}</div>
 				<div class="flex flex-wrap gap-2 text-sm">
-					<div v-if="dataPalletReturn?.picker_user?.contact_name" class="border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">
-						<span class="font-semibold text-gray-700">{{ trans('Picker') }}:</span> {{ dataPalletReturn.picker_user.contact_name }}
+					<div v-if="showPickerInfo" class="border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">
+						<span class="font-semibold text-gray-700">{{ trans('Picker') }}:</span> {{ dataPalletReturn?.picker_user?.contact_name || '-' }}
 					</div>
-					<div v-if="dataPalletReturn?.packer_user?.contact_name" class=" border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">
-						<span class="font-semibold text-gray-700">{{ trans('Packer') }}:</span> {{ dataPalletReturn.packer_user.contact_name }}
+					<div v-if="showPackerInfo" class=" border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">
+						<span class="font-semibold text-gray-700">{{ trans('Packer') }}:</span> {{ dataPalletReturn?.packer_user?.contact_name || '-' }}
 					</div>
+					<Button
+						v-if="canChangePicker || canChangePacker"
+						@click="onOpenModalPickingUsers"
+                        :icon="faExchange"
+						type="tertiary"
+						size="xs"
+						:label="changePickingUsersLabel" />
 				</div>
 			</div>
 
@@ -865,6 +955,67 @@ const base64HtmlToPdf = async (base64: string, index) => {
 			@onDone="() => (isDeliveryAddressManagementModal = false)"
 			@onHasChange="() => listError.box_stats_delivery_address = false"
 		/>
+	</Modal>
+	<Modal :isOpen="isModalPickingUsers" @onClose="() => (isModalPickingUsers = false)" width="w-full max-w-xl">
+		<div class="flex flex-col gap-4">
+			<div class="text-center text-lg font-semibold">{{ pickingTitle }}</div>
+			<div v-if="canChangePicker" class="flex flex-col gap-2">
+				<div class="text-sm font-medium">{{ trans('Picker') }}</div>
+				<PureMultiselectInfiniteScroll
+					v-if="pickersListRoute"
+					v-model="selectedPicker"
+					:fetchRoute="pickersListRoute"
+					placeholder="Select picker"
+					labelProp="contact_name"
+					valueProp="id"
+					object
+					clearOnBlur
+					:disabled="isLoadingPickingUsers">
+					<template #singlelabel="{ value }">
+						<div class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
+							{{ value.contact_name }}
+						</div>
+					</template>
+					<template #option="{ option }">
+						<div class="w-full text-left text-sm whitespace-nowrap truncate">
+							{{ option.contact_name }}
+						</div>
+					</template>
+				</PureMultiselectInfiniteScroll>
+				<div v-else class="text-xs text-gray-500">{{ trans('Picker list route is not available') }}</div>
+			</div>
+			<div v-if="canChangePacker" class="flex flex-col gap-2">
+				<div class="text-sm font-medium">{{ trans('Packer') }}</div>
+				<PureMultiselectInfiniteScroll
+					v-if="packersListRoute"
+					v-model="selectedPacker"
+					:fetchRoute="packersListRoute"
+					placeholder="Select packer"
+					labelProp="contact_name"
+					valueProp="id"
+					object
+					clearOnBlur
+					:disabled="isLoadingPickingUsers">
+					<template #singlelabel="{ value }">
+						<div class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
+							{{ value.contact_name }}
+						</div>
+					</template>
+					<template #option="{ option }">
+						<div class="w-full text-left text-sm whitespace-nowrap truncate">
+							{{ option.contact_name }}
+						</div>
+					</template>
+				</PureMultiselectInfiniteScroll>
+				<div v-else class="text-xs text-gray-500">{{ trans('Packer list route is not available') }}</div>
+			</div>
+			<Button
+				@click="onUpdatePickingUsers"
+				:label="trans('Save')"
+				type="save"
+				full
+				:loading="isLoadingPickingUsers" />
+		</div>
 	</Modal>
 
 	<!-- Modal: Shipment -->

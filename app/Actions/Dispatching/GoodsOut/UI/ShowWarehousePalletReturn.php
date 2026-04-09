@@ -39,7 +39,10 @@ class ShowWarehousePalletReturn extends OrgAction
 
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
-        return $palletReturn;
+        return $palletReturn->load([
+            'pickerUser:id,contact_name',
+            'packerUser:id,contact_name',
+        ]);
     }
 
 
@@ -150,6 +153,27 @@ class ShowWarehousePalletReturn extends OrgAction
                     'parameters' => [
                         'palletReturn'       => $palletReturn->id
                     ]
+                ],
+                'picker_packer_routes' => [
+                    'pickers_list' => [
+                        'name'       => 'grp.json.employees.picker_users',
+                        'parameters' => [
+                            'organisation' => $palletReturn->organisation->slug,
+                        ],
+                    ],
+                    'packers_list' => [
+                        'name'       => 'grp.json.employees.packers',
+                        'parameters' => [
+                            'organisation' => $palletReturn->organisation->slug,
+                        ],
+                    ],
+                    'update' => [
+                        'name'       => 'grp.models.pallet-return.update',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id,
+                        ],
+                        'method'     => 'patch',
+                    ],
                 ],
 
                 'deleteServiceRoute' => [

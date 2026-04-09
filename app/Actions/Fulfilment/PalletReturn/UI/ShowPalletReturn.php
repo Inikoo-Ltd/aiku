@@ -197,6 +197,27 @@ class ShowPalletReturn extends OrgAction
                 'data' => PalletReturnResource::make($palletReturn),
 
                 'address_management' => GetPalletReturnAddressManagement::run(palletReturn: $palletReturn),
+                'picker_packer_routes' => [
+                    'pickers_list' => [
+                        'name'       => 'grp.json.employees.picker_users',
+                        'parameters' => [
+                            'organisation' => $palletReturn->organisation->slug,
+                        ],
+                    ],
+                    'packers_list' => [
+                        'name'       => 'grp.json.employees.packers',
+                        'parameters' => [
+                            'organisation' => $palletReturn->organisation->slug,
+                        ],
+                    ],
+                    'update' => [
+                        'name'       => 'grp.models.pallet-return.update',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id,
+                        ],
+                        'method'     => 'patch',
+                    ],
+                ],
 
 
                 'box_stats' => GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $this->parent),

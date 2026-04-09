@@ -145,6 +145,11 @@ const props = defineProps<{
 		submit_route: routeType
 		delete_route: routeType
 	}
+	picker_packer_routes?: {
+		pickers_list: routeType
+		packers_list: routeType
+		update: routeType
+	}
 	warning?: {
 		text: string
 		picking_sessions: {
@@ -707,7 +712,7 @@ provide("listError", listError.value)
 	</div>
 
 	<!-- Section: Box Stats -->
-	<BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :address_management :shipments />
+	<BoxStatsPalletReturn :dataPalletReturn="data.data" :boxStats="box_stats" :address_management :shipments :picker_packer_routes="picker_packer_routes" />
 
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 	<component

@@ -45,7 +45,10 @@ class ShowStoredItemReturn extends OrgAction
 
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
-        return $palletReturn;
+        return $palletReturn->load([
+            'pickerUser:id,contact_name',
+            'packerUser:id,contact_name',
+        ]);
     }
 
 
@@ -186,6 +189,27 @@ class ShowStoredItemReturn extends OrgAction
                 ],
                 'data'               => PalletReturnResource::make($palletReturn),
                 'address_management' => GetPalletReturnAddressManagement::run(palletReturn: $palletReturn),
+                'picker_packer_routes' => [
+                    'pickers_list' => [
+                        'name'       => 'grp.json.employees.picker_users',
+                        'parameters' => [
+                            'organisation' => $palletReturn->organisation->slug,
+                        ],
+                    ],
+                    'packers_list' => [
+                        'name'       => 'grp.json.employees.packers',
+                        'parameters' => [
+                            'organisation' => $palletReturn->organisation->slug,
+                        ],
+                    ],
+                    'update' => [
+                        'name'       => 'grp.models.pallet-return.update',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id,
+                        ],
+                        'method'     => 'patch',
+                    ],
+                ],
                 'box_stats' => $this->parent instanceof CustomerSalesChannel ? GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $palletReturn->fulfilmentCustomer) : GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $this->parent),
 
                 'notes_data' => GetNotesData::run(model: $palletReturn),
