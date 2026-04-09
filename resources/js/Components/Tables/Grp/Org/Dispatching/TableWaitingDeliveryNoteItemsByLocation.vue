@@ -82,6 +82,10 @@ const onUndoPick = async (routeTarget: routeType, loadingKey: string) => {
         set(isLoadingUndoPick, loadingKey, false)
     }
 }
+
+const onCallCs = () => {
+    console.log('onCallCsonCallCs')
+}
 </script>
 
 <template>
@@ -234,15 +238,15 @@ const onUndoPick = async (routeTarget: routeType, loadingKey: string) => {
                                 </template>
                             </NumberWithButtonSave>
 
-                            <ButtonWithLink
+                            <!-- <ButtonWithLink
                                 v-if="!itemValue.is_handled"
                                 type="negative" tooltip="Set as not picked" icon="fal fa-debug"
                                 :size="twBreakPoint().includes('lg') ? undefined : 'lg'"
                                 :routeTarget="itemValue.not_picking_route"
                                 :bindToLink="{ preserveScroll: true }"
-                            />
+                            /> -->
 
-                            <Button icon="fas fa-headset" :label="trans('Call CS')" size="xs" type="tertiary" />
+                            <Button @click="() => onCallCs()" icon="fal fa-user-headset" :label="trans('Pass to CS')" size="xs" type="tertiary" />
                         </div>
                     </div>
 
@@ -255,14 +259,16 @@ const onUndoPick = async (routeTarget: routeType, loadingKey: string) => {
             <div v-else class="flex gap-x-2 items-center justify-between">
                 <div></div>
                 <div>
-                    <ButtonWithLink
+                    <!-- <ButtonWithLink
                         v-if="!itemValue.is_handled"
                         type="negative" tooltip="Set as not picked" icon="fal fa-debug"
                         :size="twBreakPoint().includes('lg') ? undefined : 'lg'"
                         :routeTarget="itemValue.not_picking_route"
                         :bindToLink="{ preserveScroll: true }"
-                    />
-                    <Button icon="fas fa-headset" :label="trans('Call CS')" size="xs" type="tertiary" />
+                    /> -->
+
+                    <Button @click="() => onCallCs()" icon="fal fa-user-headset" :label="trans('Pass to CS')" size="xs" type="tertiary" />
+
                 </div>
             </div>
         </template>
