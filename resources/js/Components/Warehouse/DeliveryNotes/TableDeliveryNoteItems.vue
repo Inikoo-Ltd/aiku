@@ -283,7 +283,7 @@ const isLoadingSetAsWaiting = ref(false)
 const submitTransactionAsWaiting = () => {
     // Section: Submit
     router.post(
-        route('grp.models.delivery_note_item.set_as_waiting.store', {
+        route('grp.models.delivery_note_item.set_as_waiting_warehouse', {
             deliveryNoteItem: selectedTransactionToSetAsWaiting.value?.id
         }),
         {
