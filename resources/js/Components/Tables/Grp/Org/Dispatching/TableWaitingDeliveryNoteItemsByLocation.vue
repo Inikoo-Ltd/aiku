@@ -157,6 +157,7 @@ const onPassItemToCs = () => {
             </div>
         </template>
 
+        <!-- Section: Pickings -->
         <template #cell(pickings)="{ item }">
             <div v-if="item.pickings?.length" class="space-y-1">
                 <div v-for="picking in item.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
@@ -167,23 +168,56 @@ const onPassItemToCs = () => {
                             {{ picking.quantity_picked }}
                         </span>
                     </div>
+
                     <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 text-xs">
                         <FontAwesomeIcon icon="fas fa-skull" fixed-width aria-hidden="true" />
                         {{ picking.quantity_picked }}
                     </div>
-                    <ButtonWithLink
+
+                    <!-- <ButtonWithLink
                         v-tooltip="trans('Undo')" type="negative" size="xxs" icon="fal fa-undo-alt"
                         :routeTarget="picking.undo_picking_route"
                         :bindToLink="{ preserveScroll: true }"
                         @click="onUndoPick(picking.undo_picking_route, `undo-pick-${picking.id}`)"
                         :loading="get(isLoadingUndoPick, `undo-pick-${picking.id}`, false)"
-                    />
+                    /> -->
                 </div>
             </div>
             <span v-else class="text-xs text-gray-400 italic">{{ trans('No item picked yet') }}</span>
+
+            
+            <!-- Section: items are waiting for warehouse -->
+            <div v-if="Number(item.quantity_waiting_warehouse) > 0" class="mt-2 xmx-auto w-fit">
+                <div v-tooltip="trans('Quantity of items waiting for warehouse')" class="border-l-2 border-yellow-400 relative bg-yellow-500/20 py-1 pr-2 pl-1 text-yellow-700 whitespace-nowrap w-fit">
+                    <FontAwesomeIcon icon="fal fa-hourglass-start" class="mr opacity-70" fixed-width aria-hidden="true" />
+                    <!-- <FractionDisplay v-if="item.quantity_picked_fractional"
+                        :fractionData="item.quantity_picked_fractional" /> -->
+                    <span>
+                        {{ trans(":quantityWaitingWarehouse items are waiting for warehouse", { quantityWaitingWarehouse: Number(item.quantity_waiting_warehouse) }) }}
+                    </span>
+
+                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
+                </div>
+            </div>
+
+            <!-- Section: items are waiting for CRM -->
+            <div v-if="Number(item.quantity_waiting_crm) > 0" class="mt-2 xmx-auto w-fit">
+                <div v-tooltip="trans('Quantity of items waiting for CRM')" class="border-l-2 border-yellow-400 relative bg-yellow-500/20 py-1 pr-2 pl-1 text-yellow-700 whitespace-nowrap w-fit">
+                    <FontAwesomeIcon icon="fal fa-hourglass-start" class="mr opacity-70" fixed-width aria-hidden="true" />
+                    <!-- <FractionDisplay v-if="item.quantity_picked_fractional"
+                        :fractionData="item.quantity_picked_fractional" /> -->
+                    <span>
+                        {{ trans(":quantityWaitingCRM items are waiting for CRM", { quantityWaitingCRM: Number(item.quantity_waiting_crm) }) }}
+                    </span>
+
+                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
+                </div>
+            </div>
         </template>
 
-        <!-- picking_position column: location picker + quantity + not-picked + call CS -->
+        <!-- Column: Actions (location picker + quantity + not-picked + button pass to CS) -->
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
             <div v-if="itemValue.quantity_to_pick > 0">
                 <div v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)" class="rounded p-1 flex flex-col gap-2">
@@ -306,14 +340,6 @@ const onPassItemToCs = () => {
             <div v-else class="flex gap-x-2 items-center justify-between">
                 <div></div>
                 <div>
-                    <!-- <ButtonWithLink
-                        v-if="!itemValue.is_handled"
-                        type="negative" tooltip="Set as not picked" icon="fal fa-debug"
-                        :size="twBreakPoint().includes('lg') ? undefined : 'lg'"
-                        :routeTarget="itemValue.not_picking_route"
-                        :bindToLink="{ preserveScroll: true }"
-                    /> -->
-
                     <Button @click="() => (isOpenModalSetAsWaiting = true, selectedTransactionToSetAsWaiting = itemValue, dataToSendAsWaiting.note = itemValue.notes)" icon="fal fa-user-headset" :label="trans('Pass to CS')" size="xs" type="tertiary" />
 
                 </div>
