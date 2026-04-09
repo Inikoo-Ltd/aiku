@@ -25,9 +25,7 @@ const props = defineProps<{
     }[]
 }>()
 
-const emits = defineEmits<{
-    (e: "onClickBackground"): void
-}>()
+const emits = defineEmits(['close'])
 
 const layout = inject('layout', layoutStructure)
 
@@ -188,11 +186,7 @@ const submitCheckStock = () => {
 </script>
 
 <template>
-    <div>
-        <div @click="() => emits('onClickBackground')" class="cursor-pointer fixed inset-0 bg-black/40 z-30" />
-        <div class="relative bg-white z-40 py-2 px-3 space-y-1">
-            <div class="text-center">Move stock</div>
-            
+    <div class="space-y-4">
             <!-- Move Stock Section -->
             <div v-if="moveStock.isActive" class="border border-gray-200 rounded p-3 bg-gray-50 relative">
                 <button 
@@ -292,16 +286,12 @@ const submitCheckStock = () => {
                     </div>
                 </div>
             </div>
-        </div>
-
         <!-- Section: buttons -->
         <div class="relative flex gap-x-2 z-40 mt-4">
             <Button
                 label="Cancel"
                 type="cancel"
-                key="2"
-                class="bg-red-100"
-                @click="() => emits('onClickBackground')"
+                @click="() => emits('close')"
             />
 
             <Button
@@ -313,6 +303,6 @@ const submitCheckStock = () => {
             />
 
         </div>
-        <pre v-if="layout.app.environment === 'local'">{{ form }}</pre>
+        <!-- <pre v-if="layout.app.environment === 'local'">{{ form }}</pre> -->
     </div>
 </template>
