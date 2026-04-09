@@ -36,9 +36,6 @@ class AuditLocationOrgStock extends OrgAction
      */
     public function handle(LocationOrgStock $locationOrgStock, array $modelData): LocationOrgStock
     {
-        data_set($modelData, 'audited_at', now());
-
-
         $locationOrgStock = DB::transaction(function () use ($locationOrgStock, $modelData) {
             $currentStock = $locationOrgStock->quantity;
             $newQuantity  = Arr::pull($modelData, 'quantity');
@@ -63,7 +60,12 @@ class AuditLocationOrgStock extends OrgAction
 
                 ]
             );
+            // Update audited_at
+            $locationOrgStock->updateQuietly([
+                'audited_at'    =>  now()
+            ]);
             $locationOrgStock->refresh();
+
             return $locationOrgStock;
         });
 

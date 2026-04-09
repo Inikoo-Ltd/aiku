@@ -70,6 +70,7 @@ const submitCheckStock = (locationOrgStock: StockLocation, value?: number) => {
 
 watch(() => props.locations, (newValue) => {
     cloneLocations.value = cloneDeep(newValue)
+    cloneLocations.value.sort((a, b) => a.code.localeCompare(b.code));
 })
 </script>
 

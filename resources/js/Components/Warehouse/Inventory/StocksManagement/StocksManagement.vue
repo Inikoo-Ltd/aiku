@@ -422,10 +422,11 @@ const openModal = (type: string) => {
         <!-- Section: Location Grid -->
         <div class="border-t pt-2 gap-2 items-center text-gray-700">
             
-                <Dialog v-model:visible="isStockCheckModalOpen" :header="trans('Audit Stock')" modal :style="{ width: '50vw' }"
+                <Dialog v-model:visible="isStockCheckModalOpen" :header="trans('Audit Stock')" modal 
+                    :style="{ width: '70vw' }"
                     :breakpoints="{
-                        '1200px': '60vw',
-                        '992px': '75vw',
+                        '1200px': '75vw',
+                        '992px': '80vw',
                         '768px': '90vw',
                         '576px': '95vw'
                     }"
@@ -437,10 +438,11 @@ const openModal = (type: string) => {
                     />
                 </Dialog>
                 
-                 <Dialog v-model:visible="isMoveStockModalOpen" modal :header="trans('Move Stock')" :style="{ width: '50vw' }"
+                 <Dialog v-model:visible="isMoveStockModalOpen" modal :header="trans('Move Stock')"
+                    :style="{ width: '70vw' }"
                     :breakpoints="{
-                        '1200px': '60vw',
-                        '992px': '75vw',
+                        '1200px': '75vw',
+                        '992px': '80vw',
                         '768px': '90vw',
                         '576px': '95vw'
                     }">
@@ -456,10 +458,11 @@ const openModal = (type: string) => {
                     :routes="props.stocks_management.routes"
                 />
 
-                <Dialog v-model:visible="isAddLocationModalOpen" modal :header="trans('Add Location')" :style="{ width: '50vw' }"
+                <Dialog v-model:visible="isAddLocationModalOpen" modal :header="trans('Add Location')"
+                    :style="{ width: '70vw' }"
                     :breakpoints="{
-                        '1200px': '60vw',
-                        '992px': '75vw',
+                        '1200px': '75vw',
+                        '992px': '80vw',
                         '768px': '90vw',
                         '576px': '95vw'
                     }"
