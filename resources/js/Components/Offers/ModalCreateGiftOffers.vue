@@ -14,8 +14,8 @@ import PureInput from '../Pure/PureInput.vue'
 import integer from "../../../../vendor/swagger-api/swagger-ui/src/core/plugins/json-schema-2020-12-samples/fn/types/integer"
 
 const props = defineProps<{
-    offer_campaign_id: number
     shop_data: {
+        id: number
         slug: string
         currency_code: string
     }
@@ -35,8 +35,8 @@ const isLoadingSubmit = ref(false)
 const submitCategoryOffer = () => {
     // Section: Submit
     router.post(
-        route('grp.org.shops.show.discounts.campaigns.store_gift', {
-            offerCampaign: offer_campaign_id,
+        route('grp.models.gift_offer.store', {
+            shop: props.shop_data.id,
         }),
         {
             name: offerLabel.value,

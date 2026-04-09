@@ -1,28 +1,27 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 09 Apr 2026 16:01:20 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Discounts\OfferCampaign;
 
-use Lorisleiva\Actions\Concerns\AsAction;
-use Illuminate\Http\Request;
+use App\Actions\OrgAction;
+use App\Models\Catalogue\Shop;
+use Lorisleiva\Actions\ActionRequest;
 
-class StoreGiftsOffers
+class StoreGiftsOffers extends OrgAction
 {
-    use AsAction;
-
     public function handle(array $data)
     {
         // create offer logic
     }
 
-    public function asController(Request $request, $organisation, $shop, $offerCampaign)
+    public function asController(Shop $shop, ActionRequest $request)
     {
-        $data = $request->all();
+        dd($request->all());
 
-        dd([
-            'organisation' => $organisation,
-            'shop' => $shop,
-            'offerCampaign' => $offerCampaign,
-            'payload' => $data
-        ]);
+
     }
 }
