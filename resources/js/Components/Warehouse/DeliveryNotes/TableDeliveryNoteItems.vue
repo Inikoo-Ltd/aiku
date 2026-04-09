@@ -290,7 +290,7 @@ const submitTransactionAsWaiting = () => {
         {
             ...dataToSendAsWaiting.value,
             transaction_id: selectedTransactionToSetAsWaiting.value?.id,
-            quantity: selectedTransactionToSetAsWaiting.value?.quantity_to_pick
+            quantity: selectedTransactionToSetAsWaiting.value?.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.value?.quantity_waiting_warehouse || 0)
         },
         {
             preserveScroll: true,
@@ -721,7 +721,7 @@ watch(modalResource, (val) => {
                             <!-- Button: Set Transaction as Waiting -->
                             <Button
                                 v-if="layout.app.environment === 'local'"
-                                @click="() => (isOpenModalSetAsWaiting = true, selectedTransactionToSetAsWaiting = itemValue)"
+                                @click="() => (isOpenModalSetAsWaiting = true, dataToSendAsWaiting.note = itemValue.notes, selectedTransactionToSetAsWaiting = itemValue)"
                                 type="tertiary"
                                 iconRight="fal fa-hourglass-half"
                                 :size="screenType == 'desktop' ? 'sm' : 'lg'"
@@ -780,7 +780,7 @@ watch(modalResource, (val) => {
                 </div>
             </div>
 
-            <div v-else class="flex justify-between gap-x-2 gap-y-1">
+            <div v-else-if="Number(itemValue.quantity_waiting_warehouse) < 1" class="flex justify-between gap-x-2 gap-y-1">
                 <div v-if="!itemValue.is_handled" class="text-gray-400 italic text-sm">
                     {{ trans("No quantity to pick") }}
                 </div>
@@ -796,6 +796,36 @@ watch(modalResource, (val) => {
                         :routeTarget="itemValue.not_picking_route"
                         :bindToLink="{preserveScroll: true}"
                     />
+                </div>
+            </div>
+
+            <!-- Section: items are waiting for warehouse -->
+            <div v-if="Number(itemValue.quantity_waiting_warehouse) > 0" class="mt-2 mx-auto w-fit">
+                <div v-tooltip="trans('Quantity of items waiting for warehouse')" class="border-l-2 border-yellow-400 relative bg-yellow-500/20 py-1 pr-2 pl-1 text-yellow-700 whitespace-nowrap w-fit">
+                    <FontAwesomeIcon icon="fal fa-hourglass-start" class="mr opacity-70" fixed-width aria-hidden="true" />
+                    <!-- <FractionDisplay v-if="item.quantity_picked_fractional"
+                        :fractionData="item.quantity_picked_fractional" /> -->
+                    <span>
+                        {{ trans(":quantityWaitingWarehouse items are waiting for warehouse", { quantityWaitingWarehouse: Number(itemValue.quantity_waiting_warehouse) }) }}
+                    </span>
+
+                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
+                </div>
+            </div>
+
+            <!-- Section: items are waiting for CRM -->
+            <div v-if="Number(itemValue.quantity_waiting_crm) > 0" class="mt-2 mx-auto w-fit">
+                <div v-tooltip="trans('Quantity of items waiting for CRM')" class="border-l-2 border-yellow-400 relative bg-yellow-500/20 py-1 pr-2 pl-1 text-yellow-700 whitespace-nowrap w-fit">
+                    <FontAwesomeIcon icon="fal fa-hourglass-start" class="mr opacity-70" fixed-width aria-hidden="true" />
+                    <!-- <FractionDisplay v-if="item.quantity_picked_fractional"
+                        :fractionData="item.quantity_picked_fractional" /> -->
+                    <span>
+                        {{ trans(":quantityWaitingCRM items are waiting for CRM", { quantityWaitingCRM: Number(itemValue.quantity_waiting_crm) }) }}
+                    </span>
+
+                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
                 </div>
             </div>
 
@@ -1077,18 +1107,20 @@ watch(modalResource, (val) => {
             </div>
         </div>
 
-        <!-- Quantity badge -->
+        <!-- Section: Quantity badge -->
         <div class="flex items-center gap-2 mb-6 p-3 rounded-lg bg-amber-50 border border-amber-200">
             <FontAwesomeIcon icon="fal fa-hourglass-half" class="text-amber-500" fixed-width aria-hidden="true" />
             <span class="text-sm text-amber-700">
                 {{ trans('Quantity to set as waiting') }}:
             </span>
             <span class="font-bold text-amber-800">
-                <FractionDisplay
+                <!-- <FractionDisplay
                     v-if="GetQuantityToPickFractional(selectedTransactionToSetAsWaiting)"
                     :fractionData="GetQuantityToPickFractional(selectedTransactionToSetAsWaiting)"
                 />
-                <template v-else>{{ locale.number(selectedTransactionToSetAsWaiting?.quantity_to_pick ?? 0) }}</template>
+                <template v-else>{{ locale.number(selectedTransactionToSetAsWaiting.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) ?? 0) }}</template> -->
+                {{ selectedTransactionToSetAsWaiting.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) }}
+                
             </span>
         </div>
 
