@@ -27,8 +27,12 @@ import { RadioButton } from "primevue"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
 import axios from "axios"
 import { twBreakPoint } from "@/Composables/useWindowSize"
+import { inject } from "vue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 library.add(faInventory, faListOl, faHandHoldingBox, faClipboardListCheck, faUndoAlt, faDebug, faSkull, faHeadset)
+
+const locale = inject('locale', aikuLocaleStructure)
 
 defineProps<{
     data: TableTS
@@ -133,24 +137,53 @@ const onUndoPick = async (routeTarget: routeType, loadingKey: string) => {
             <div v-if="itemValue.quantity_to_pick > 0">
                 <div v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)" class="rounded p-1 flex flex-col gap-2">
                     <div class="flex justify-between items-center gap-x-4">
-                        <!-- Location info -->
-                        <div class="flex items-center gap-1 flex-wrap">
-                            <Link v-tooltip="itemValue.warehouse_area" :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.org_stock_id))" class="secondaryLink">
-                                {{ findLocation(itemValue.locations, proxyItem.org_stock_id).location_code }}
-                            </Link>
-                            <span v-tooltip="trans('Total stock in this location')" class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1 text-xs">
-                                <FontAwesomeIcon icon="fal fa-inventory" fixed-width aria-hidden="true" />
-                                {{ Number(findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity ?? 0) }}
-                            </span>
-                            <span
-                                v-if="itemValue.locations?.length > 1"
-                                @click="() => { isModalLocation = true; selectedItemValue = itemValue; selectedItemProxy = proxyItem }"
-                                v-tooltip="trans('Other :_count_location locations', { _count_location: String(itemValue.locations.length - 1) })"
-                                class="cursor-pointer hover:bg-orange-50 ml-1 whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded px-1 text-xs"
-                            >
-                                <FontAwesomeIcon icon="fal fa-list-ol" fixed-width aria-hidden="true" />
-                                {{ itemValue.locations.length - 1 }}
-                            </span>
+                        <!-- Section: location -->
+                        <div class="">
+                            <Transition name="spin-to-down">
+                                <div :key="findLocation(itemValue.locations, proxyItem.org_stock_id)?.location_code">
+
+                                    <!-- Section: number of locations available to pick -->
+                                    <span v-if="itemValue.locations?.length > 1" @click="() => {
+                                            isModalLocation = true;
+                                            selectedItemValue = itemValue;
+                                            selectedItemProxy = proxyItem;
+                                        }" v-tooltip="`Other ${itemValue.locations?.length - 1} locations`"
+                                        class="mr-1 cursor-pointer hover:bg-orange-50 whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded px-1">
+                                        <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
+                                            aria-hidden="true" />
+                                        {{ itemValue.locations?.length - 1 }}
+                                    </span>
+
+                                    <span v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)" class="text-base">
+                                        <Link v-tooltip="`${itemValue.warehouse_area}`"
+                                            :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.org_stock_id))"
+                                            class="secondaryLink">
+                                            {{ findLocation(itemValue.locations, proxyItem.org_stock_id).location_code }}
+                                        </Link>
+                                    </span>
+                                    <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">
+                                        ({{ trans("Unknown") }})
+                                    </span>
+                                    
+                                    <!-- Section: number of stocks -->
+                                    <span
+                                        v-tooltip="trans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity || 0), stockLocation: findLocation(itemValue.locations, proxyItem.org_stock_id)?.location_code || '' })"
+                                        class="align-middle whitespace-nowrap text-base py-0.5 xopacity-70 tabular-nums xborder border-gray-300 rounded xpx-1"
+                                    >
+                                        <!-- <FontAwesomeIcon icon="fal fa-inventory" class="mr-1 text-base" fixed-width aria-hidden="true" /> -->
+                                        (<span class="text-lg font-bold">
+                                            <FractionDisplay
+                                                v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity_fractional"
+                                                :fractionData="findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity_fractional"
+                                            />
+                                            <template v-else>
+                                                {{ locale.number(findLocation(itemValue.locations, proxyItem.org_stock_id).quantity) }}
+                                            </template>
+                                        </span>
+                                        <span class="text-sm ml-1">{{ ctrans("stocks") }}</span>)
+                                    </span>
+                                </div>
+                            </Transition>
                         </div>
 
                         <!-- Quantity + pick all + not picked + call CS -->
@@ -219,15 +252,18 @@ const onUndoPick = async (routeTarget: routeType, loadingKey: string) => {
                     </div>
                 </div>
             </div>
-            <div v-else class="flex gap-x-2 items-center">
-                <ButtonWithLink
-                    v-if="!itemValue.is_handled"
-                    type="negative" tooltip="Set as not picked" icon="fal fa-debug"
-                    :size="twBreakPoint().includes('lg') ? undefined : 'lg'"
-                    :routeTarget="itemValue.not_picking_route"
-                    :bindToLink="{ preserveScroll: true }"
-                />
-                <Button icon="fas fa-headset" :label="trans('Call CS')" size="xs" type="tertiary" />
+            <div v-else class="flex gap-x-2 items-center justify-between">
+                <div></div>
+                <div>
+                    <ButtonWithLink
+                        v-if="!itemValue.is_handled"
+                        type="negative" tooltip="Set as not picked" icon="fal fa-debug"
+                        :size="twBreakPoint().includes('lg') ? undefined : 'lg'"
+                        :routeTarget="itemValue.not_picking_route"
+                        :bindToLink="{ preserveScroll: true }"
+                    />
+                    <Button icon="fas fa-headset" :label="trans('Call CS')" size="xs" type="tertiary" />
+                </div>
             </div>
         </template>
     </Table>

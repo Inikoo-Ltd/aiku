@@ -12,7 +12,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTruck, faInventory, faListOl, faHandHoldingBox, faClipboardListCheck, faUndoAlt, faDebug } from "@fal"
 import { faSkull, faHeadset } from "@fas"
-import { reactive, ref } from "vue"
+import { inject, reactive, ref } from "vue"
 import { get, set } from "lodash-es"
 import { trans } from "laravel-vue-i18n"
 import { RouteParams } from "@/types/route-params"
@@ -26,8 +26,12 @@ import { RadioButton } from "primevue"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
 import axios from "axios"
 import { twBreakPoint } from "@/Composables/useWindowSize"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 library.add(faTruck, faInventory, faListOl, faHandHoldingBox, faClipboardListCheck, faUndoAlt, faDebug, faSkull, faHeadset)
+
+
+const locale = inject('locale', aikuLocaleStructure)
 
 defineProps<{
     data: TableTS
@@ -115,24 +119,54 @@ const onUndoPick = async (routeTarget: routeType, item: any, loadingKey: string)
 
                         <!-- Actions: location + pick qty + not-picked -->
                         <div v-if="findLocation(deliveryItem.locations, proxyItem.org_stock_id)" class="flex flex-wrap items-center gap-x-2">
-                            <!-- Location info -->
-                            <div class="flex items-center gap-1">
-                                <Link :href="generateLocationRoute(findLocation(deliveryItem.locations, proxyItem.org_stock_id))" class="secondaryLink">
-                                    {{ findLocation(deliveryItem.locations, proxyItem.org_stock_id).location_code }}
-                                </Link>
-                                <span v-tooltip="trans('Total stock in this location')" class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1 text-xs">
-                                    <FontAwesomeIcon icon="fal fa-inventory" fixed-width aria-hidden="true" />
-                                    {{ findLocation(deliveryItem.locations, proxyItem.org_stock_id).quantity }}
-                                </span>
-                                <span
-                                    v-if="deliveryItem.locations?.length > 1"
-                                    @click="() => { isModalLocation = true; selectedItemValue = deliveryItem; selectedItemProxy = proxyItem }"
-                                    v-tooltip="trans('Other :_count_location locations', { _count_location: String(deliveryItem.locations.length - 1) })"
-                                    class="cursor-pointer hover:bg-orange-50 ml-1 whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded px-1 text-xs"
-                                >
-                                    <FontAwesomeIcon icon="fal fa-list-ol" fixed-width aria-hidden="true" />
-                                    {{ deliveryItem.locations.length - 1 }}
-                                </span>
+
+                            <!-- Section: Location -->
+                            <div class="">
+                                <Transition name="spin-to-down">
+                                    <div :key="findLocation(deliveryItem.locations, proxyItem.org_stock_id)?.location_code">
+
+                                        <!-- Section: number of locations available to pick -->
+                                        <span v-if="deliveryItem.locations?.length > 1" @click="() => {
+                                                isModalLocation = true;
+                                                selectedItemValue = deliveryNoteRow;
+                                                selectedItemProxy = proxyItem;
+                                            }" v-tooltip="`Other ${deliveryItem.locations?.length - 1} locations`"
+                                            class="mr-1 cursor-pointer hover:bg-orange-50 whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded px-1">
+                                            <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
+                                                aria-hidden="true" />
+                                            {{ deliveryItem.locations?.length - 1 }}
+                                        </span>
+
+                                        <span v-if="findLocation(deliveryItem.locations, proxyItem.org_stock_id)" class="text-base">
+                                            <Link v-tooltip="`${deliveryItem.warehouse_area}`"
+                                                :href="generateLocationRoute(findLocation(deliveryItem.locations, proxyItem.org_stock_id))"
+                                                class="secondaryLink">
+                                                {{ findLocation(deliveryItem.locations, proxyItem.org_stock_id).location_code }}
+                                            </Link>
+                                        </span>
+                                        <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">
+                                            ({{ trans("Unknown") }})
+                                        </span>
+                                        
+                                        <!-- Section: number of stocks -->
+                                        <span
+                                            v-tooltip="trans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(findLocation(deliveryItem.locations, proxyItem.org_stock_id)?.quantity || 0), stockLocation: findLocation(deliveryItem.locations, proxyItem.org_stock_id)?.location_code || '' })"
+                                            class="align-middle whitespace-nowrap text-base py-0.5 xopacity-70 tabular-nums xborder border-gray-300 rounded xpx-1"
+                                        >
+                                            <!-- <FontAwesomeIcon icon="fal fa-inventory" class="mr-1 text-base" fixed-width aria-hidden="true" /> -->
+                                            (<span class="text-lg font-bold">
+                                                <FractionDisplay
+                                                    v-if="findLocation(deliveryItem.locations, proxyItem.org_stock_id)?.quantity_fractional"
+                                                    :fractionData="findLocation(deliveryItem.locations, proxyItem.org_stock_id)?.quantity_fractional"
+                                                />
+                                                <template v-else>
+                                                    {{ locale.number(findLocation(deliveryItem.locations, proxyItem.org_stock_id)?.quantity || 0) }}
+                                                </template>
+                                            </span>
+                                            <span class="text-sm ml-1">{{ ctrans("stocks") }}</span>)
+                                        </span>
+                                    </div>
+                                </Transition>
                             </div>
 
                             <!-- Quantity picker + pick-all -->

@@ -573,6 +573,7 @@ watch(modalResource, (val) => {
                     class="flex flex-col justify-between gap-x-6 items-center">
                     <!-- Action: decrease and increase quantity -->
                     <div class="mb-3 w-full flex justify-between gap-x-6 xitems-center">
+                        <!-- Section: Locations -->
                         <div class="">
                             <Transition name="spin-to-down">
                                 <div :key="findLocation(itemValue.locations, proxyItem.org_stock_id).location_code">
