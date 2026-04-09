@@ -53,9 +53,12 @@ class IndexWaitingDeliveryNoteItems extends OrgAction
         return $query->defaultSort('delivery_note_items.id')
             ->select([
                 'delivery_note_items.id',
+                'delivery_note_items.delivery_note_id',
                 'delivery_note_items.quantity_required',
                 'delivery_note_items.quantity_picked',
                 'delivery_note_items.state',
+                'delivery_notes.slug as delivery_note_slug',
+                'delivery_notes.reference as delivery_note_reference',
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
@@ -89,9 +92,9 @@ class IndexWaitingDeliveryNoteItems extends OrgAction
         return Inertia::render(
             'Org/Dispatching/WaitingDeliveryNoteItems',
             [
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __('Waiting Items') . ' (' . $items->total() . ')',
-                'pageHead'    => [
+                'breadcrumbs'          => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'title'                => __('Waiting Items') . ' (' . $items->total() . ')',
+                'pageHead'             => [
                     'title' => __('Waiting Items'),
                     'model' => __('Delivery Note'),
                     'icon'  => [
@@ -99,7 +102,13 @@ class IndexWaitingDeliveryNoteItems extends OrgAction
                         'title' => __('Waiting Items'),
                     ],
                 ],
-                'data' => WaitingDeliveryNoteItemsResource::collection($items),
+                'data'                 => WaitingDeliveryNoteItemsResource::collection($items),
+                'picking_session_route' => [
+                    'name'       => 'grp.models.warehouse.picking_session.store',
+                    'parameters' => [
+                        'warehouse' => $this->warehouse->id,
+                    ],
+                ],
             ]
         )->table($this->tableStructure());
     }
