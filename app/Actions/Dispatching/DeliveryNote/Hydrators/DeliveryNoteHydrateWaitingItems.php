@@ -13,7 +13,7 @@ use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class DeliveryNoteHydrateWarehouseWaiting implements ShouldBeUnique
+class DeliveryNoteHydrateWaitingItems implements ShouldBeUnique
 {
     use AsAction;
     use WithActionUpdate;
@@ -36,6 +36,7 @@ class DeliveryNoteHydrateWarehouseWaiting implements ShouldBeUnique
 
         $deliveryNote->update([
             'number_items_waiting_warehouse' => $deliveryNote->deliveryNoteItems()->where('has_waiting_warehouse', true)->count(),
+            'number_items_waiting_crm'       => $deliveryNote->deliveryNoteItems()->where('has_waiting_crm', true)->count(),
         ]);
     }
 

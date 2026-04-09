@@ -7,7 +7,7 @@
 
 namespace App\Actions\Dispatching\Picking;
 
-use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWarehouseWaiting;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -29,10 +29,15 @@ class SetAsWaitingCrm extends OrgAction
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): DeliveryNoteItem
     {
+        $quantityToMove              = $modelData['quantity'];
+        $newQuantityWaitingWarehouse = $deliveryNoteItem->quantity_waiting_warehouse - $quantityToMove;
+
         $dataToUpdate = [
             'state'                      => DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
-            'quantity_waiting_warehouse' => $modelData['quantity'],
-            'has_waiting_warehouse'      => true,
+            'quantity_waiting_warehouse' => $newQuantityWaitingWarehouse,
+            'quantity_waiting_crm'       => $deliveryNoteItem->quantity_waiting_crm + $quantityToMove,
+            'has_waiting_crom'           => true,
+            'has_waiting_warehouse'      => $newQuantityWaitingWarehouse > 0,
         ];
         if (Arr::has($modelData, 'note')) {
             $dataToUpdate['notes'] = $modelData['note'];
@@ -41,7 +46,7 @@ class SetAsWaitingCrm extends OrgAction
         $deliveryNoteItem->update(
             $dataToUpdate
         );
-        DeliveryNoteHydrateWarehouseWaiting::run($deliveryNoteItem->delivery_note_id);
+        DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 
 
         return $deliveryNoteItem;

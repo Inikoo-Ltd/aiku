@@ -7,7 +7,7 @@
 
 namespace App\Actions\Dispatching\Picking;
 
-use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWarehouseWaiting;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -41,7 +41,7 @@ class SetAsWaitingWarehouse extends OrgAction
         $deliveryNoteItem->update(
             $dataToUpdate
         );
-        DeliveryNoteHydrateWarehouseWaiting::run($deliveryNoteItem->delivery_note_id);
+        DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 
 
         return $deliveryNoteItem;
