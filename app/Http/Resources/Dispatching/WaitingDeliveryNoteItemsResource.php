@@ -113,25 +113,35 @@ class WaitingDeliveryNoteItemsResource extends JsonResource
             'delivery_note_slug'                => $this->delivery_note_slug,
             'delivery_note_reference'           => $this->delivery_note_reference,
             'delivery_note_state'               => $this->delivery_note_state,
+
             'delivery_note_customer_notes'      => $this->delivery_note_customer_notes,
             'delivery_note_public_notes'        => $this->delivery_note_public_notes,
             'delivery_note_internal_notes'      => $this->delivery_note_internal_notes,
             'delivery_note_shipping_notes'      => $this->delivery_note_shipping_notes,
+            'notes'                             => $this->notes,
+
             'delivery_note_is_premium_dispatch' => $this->delivery_note_is_premium_dispatch,
             'delivery_note_has_extra_packing'   => $this->delivery_note_has_extra_packing,
             'delivery_note_shop_type'           => $this->shop_type,
+
             'org_stock_id'                      => $this->org_stock_id,
             'org_stock_code'                    => $this->org_stock_code,
             'org_stock_name'                    => $this->org_stock_name,
             'org_stock_slug'                    => $this->org_stock_slug,
+            'org_stock_image_thumbnail'         => $deliveryNoteItem->orgStock?->tradeUnits->first()?->imageSources(64, 64),
+
             'packed_in'                         => $packedIn,
             'packed_in_message'                 => $packedInMessage,
+
             'quantity_required'                 => $this->quantity_required,
             'quantity_to_pick'                  => $quantityToPick,
             'quantity_to_pick_fractional'       => $quantityToPickFractional,
             'quantity_to_pick_fractional_ds'    => $quantityToPickFractionalDS,
             'quantity_picked'                   => $this->quantity_picked,
             'quantity_not_picked'               => $this->quantity_not_picked,
+            'quantity_waiting_warehouse'        => $this->quantity_waiting_warehouse,
+            'quantity_waiting_crm'              => $this->quantity_waiting_crm,
+
             'is_handled'                        => $this->is_handled,
             'picking_position'                  => $this->picking_position,
             'warehouse_area'                    => $warehouseArea,

@@ -57,6 +57,7 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
                 'delivery_note_items.is_handled',
                 'delivery_note_items.batch_code',
                 'delivery_note_items.expiry_date',
+                'delivery_note_items.notes',
                 'delivery_notes.slug as delivery_note_slug',
                 'delivery_notes.reference as delivery_note_reference',
                 'delivery_notes.state as delivery_note_state',

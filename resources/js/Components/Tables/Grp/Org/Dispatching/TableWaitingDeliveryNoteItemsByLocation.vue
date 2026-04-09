@@ -29,6 +29,9 @@ import axios from "axios"
 import { twBreakPoint } from "@/Composables/useWindowSize"
 import { inject } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { notify } from "@kyvg/vue3-notification"
+import PureTextarea from "@/Components/Pure/PureTextarea.vue"
+import Image from "@/Components/Image.vue"
 
 library.add(faInventory, faListOl, faHandHoldingBox, faClipboardListCheck, faUndoAlt, faDebug, faSkull, faHeadset)
 
@@ -83,8 +86,52 @@ const onUndoPick = async (routeTarget: routeType, loadingKey: string) => {
     }
 }
 
-const onCallCs = () => {
-    console.log('onCallCsonCallCs')
+
+// Section: method Pass to CS
+const dataToSendAsWaiting = ref({
+    note: '',
+})
+const isOpenModalSetAsWaiting = ref(false)
+const selectedTransactionToSetAsWaiting = ref(null)
+const isLoadingSetAsWaiting = ref(false)
+const onPassItemToCs = () => {
+    // Section: Submit
+    router.post(
+        route('grp.models.delivery_note_item.set_as_waiting_crm', {
+            deliveryNoteItem: selectedTransactionToSetAsWaiting.value?.id
+        }),
+        {
+            ...dataToSendAsWaiting.value,
+            transaction_id: selectedTransactionToSetAsWaiting.value?.id,
+            quantity: selectedTransactionToSetAsWaiting.value?.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.value?.quantity_waiting_warehouse || 0) + Number(selectedTransactionToSetAsWaiting.value?.quantity_waiting_crm || 0)
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingSetAsWaiting.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully set item as waiting"),
+                    type: "success"
+                })
+                dataToSendAsWaiting.value.note = ''
+                isOpenModalSetAsWaiting.value = false
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to set item as waiting. Try again"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSetAsWaiting.value = false
+            },
+        }
+    )
 }
 </script>
 
@@ -246,7 +293,7 @@ const onCallCs = () => {
                                 :bindToLink="{ preserveScroll: true }"
                             /> -->
 
-                            <Button @click="() => onCallCs()" icon="fal fa-user-headset" :label="trans('Pass to CS')" size="xs" type="tertiary" />
+                            <Button @click="() => (isOpenModalSetAsWaiting = true, selectedTransactionToSetAsWaiting = itemValue, dataToSendAsWaiting.note = itemValue.notes)" icon="fal fa-user-headset" :label="trans('Pass to CS')" size="xs" type="tertiary" />
                         </div>
                     </div>
 
@@ -267,14 +314,14 @@ const onCallCs = () => {
                         :bindToLink="{ preserveScroll: true }"
                     /> -->
 
-                    <Button @click="() => onCallCs()" icon="fal fa-user-headset" :label="trans('Pass to CS')" size="xs" type="tertiary" />
+                    <Button @click="() => (isOpenModalSetAsWaiting = true, selectedTransactionToSetAsWaiting = itemValue, dataToSendAsWaiting.note = itemValue.notes)" icon="fal fa-user-headset" :label="trans('Pass to CS')" size="xs" type="tertiary" />
 
                 </div>
             </div>
         </template>
     </Table>
 
-    <!-- Location list modal -->
+    <!-- Modal: Locations -->
     <Modal :isOpen="isModalLocation" @onClose="onCloseModal" width="w-full max-w-2xl" :dialogStyle="{ background: '#ffffffcc' }">
         <div class="text-center font-semibold mb-4 text-2xl">
             {{ trans('Location list for') }} {{ selectedItemValue?.org_stock_code }}
@@ -308,6 +355,75 @@ const onCallCs = () => {
                     :value="location.location_code"
                 />
             </div>
+        </div>
+    </Modal>
+
+
+    <!-- Modal: Set Transaction as Waiting -->
+    <Modal :isOpen="isOpenModalSetAsWaiting" width="w-full max-w-lg" @close="isOpenModalSetAsWaiting = false">
+        <!-- Product info header -->
+        <div class="font-semibold text-center text-2xl mb-8">
+            {{ trans("Pass item to CS") }}
+        </div>
+
+        <div class="flex items-center gap-4 mb-2">
+            <div class="shrink-0 size-16 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
+                <Image
+                    v-if="selectedTransactionToSetAsWaiting?.org_stock_image_thumbnail"
+                    :src="selectedTransactionToSetAsWaiting.org_stock_image_thumbnail"
+                    :alt="selectedTransactionToSetAsWaiting.org_stock_name"
+                />
+                <FontAwesomeIcon v-else icon="fal fa-box" class="text-2xl text-gray-400" fixed-width aria-hidden="true" />
+            </div>
+
+            <div class="min-w-0">
+                <div class="text-xl leading-tight">
+                    {{ selectedTransactionToSetAsWaiting?.org_stock_name ?? '-' }}
+                </div>
+                <div class="text-sm opacity-75 italic">
+                    {{ selectedTransactionToSetAsWaiting?.org_stock_code }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Quantity badge -->
+        <div class="flex items-center gap-2 mb-6 p-3 rounded-lg bg-amber-50 border border-amber-200">
+            <FontAwesomeIcon icon="fal fa-hourglass-half" class="text-amber-500" fixed-width aria-hidden="true" />
+            <span class="text-sm text-amber-700">
+                {{ trans('Quantity to pass to CS') }}:
+            </span>
+            <span class="font-bold text-amber-800">
+                <!-- <FractionDisplay
+                    v-if="GetQuantityToPickFractional(selectedTransactionToSetAsWaiting)"
+                    :fractionData="GetQuantityToPickFractional(selectedTransactionToSetAsWaiting)"
+                />
+                <template v-else>{{ locale.number(selectedTransactionToSetAsWaiting.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) ?? 0) }}</template> -->
+                {{ selectedTransactionToSetAsWaiting.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) + Number(selectedTransactionToSetAsWaiting.quantity_waiting_crm || 0)  }}
+                
+            </span>
+        </div>
+
+        <!-- Note textarea -->
+        <div>
+            <label class="font-medium mb-1 flex items-center gap-x-1 text-sm">
+                {{ trans('Note') }}:
+            </label>
+            <PureTextarea v-model="dataToSendAsWaiting.note" :rows="4" />
+        </div>
+
+        <div class="flex gap-2 mt-6">
+            <Button
+                @click="() => isOpenModalSetAsWaiting = false"
+                :label="ctrans('Cancel')"
+                type="negative"
+            />
+            <Button
+                @click="() => onPassItemToCs()"
+                :label="trans('Pass item to CS')"
+                full
+                iconRight="far fa-arrow-right"
+                :loading="isLoadingSetAsWaiting"
+            />
         </div>
     </Modal>
 </template>
