@@ -22,18 +22,22 @@ class DeliveryNoteResource extends JsonResource
         $deliverNote = $this;
 
         return [
-            'id'             => $deliverNote->id,
-            'slug'           => $deliverNote->slug,
-            'reference'      => $deliverNote->reference,
-            'date'           => $deliverNote->date,
-            'state'          => $deliverNote->state,
-            'type'           => $deliverNote->type,
-            'weight'         => $deliverNote->weight,
-            'created_at'     => $deliverNote->created_at,
-            'is_premium_dispatch'       => $deliverNote->is_premium_dispatch,
-            'has_extra_packing'         => $deliverNote->has_extra_packing,
-            'updated_at'     => $deliverNote->updated_at,
-            'is_cash_on_delivery' => $deliverNote->is_cash_on_delivery
+            'id'                             => $deliverNote->id,
+            'slug'                           => $deliverNote->slug,
+            'reference'                      => $deliverNote->reference,
+            'date'                           => $deliverNote->date,
+            'state'                          => $deliverNote->state,
+            'type'                           => $deliverNote->type,
+            'weight'                         => $deliverNote->weight,
+            'created_at'                     => $deliverNote->created_at,
+            'is_premium_dispatch'            => $deliverNote->is_premium_dispatch,
+            'has_extra_packing'              => $deliverNote->has_extra_packing,
+            'updated_at'                     => $deliverNote->updated_at,
+            'is_cash_on_delivery'            => $deliverNote->is_cash_on_delivery,
+            'number_items_waiting_warehouse' => $deliverNote->number_items_waiting_warehouse,
+            'number_items_waiting_crm'       => $deliverNote->number_items_waiting_crm,
+
+
         ];
     }
 }
