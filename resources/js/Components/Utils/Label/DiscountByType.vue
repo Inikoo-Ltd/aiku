@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent } from "vue"
 import { getBestOffer } from "@/Composables/useOffers";
-
 type Offer = {
     id: number
     type: string
@@ -23,8 +22,7 @@ const props = defineProps<{
 const componentsMap = {
     'Category Quantity Ordered Order Interval': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/OfferPivotGr.vue")),
     'Category Ordered': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryOrdered/OfferPivotCategoryOrdered.vue")),
-   /*  'Amount AND Order Number': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue")),
-    'Category Quantity Ordered': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/ACDiscount.vue")), */
+    'First Order Bonus': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/FirstOrder/OfferPivotFirstOrder.vue")),
 } as const
 
 const fallbackComponent = null
