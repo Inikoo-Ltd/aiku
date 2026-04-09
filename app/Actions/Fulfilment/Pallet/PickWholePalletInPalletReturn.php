@@ -11,6 +11,7 @@ namespace App\Actions\Fulfilment\Pallet;
 use App\Actions\Fulfilment\PickingSession\AutoFinishPickingFulfilmentPickingSession;
 use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks;
 use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
+use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsPickedIfAllItemsPicked;
 use App\Actions\Fulfilment\PalletReturn\Hydrators\PalletReturnHydratePallets;
 use App\Actions\Fulfilment\PalletStoredItem\SetPalletStoredItemStateToReturned;
 use App\Actions\Fulfilment\StoredItemMovement\StoreStoredItemMovementFromPickingAFullPallet;
@@ -24,8 +25,10 @@ use App\Http\Resources\Fulfilment\PalletReturnItemUIResource;
 use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturnItem;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturn;
 
 class PickWholePalletInPalletReturn extends OrgAction
 {
@@ -37,13 +40,18 @@ class PickWholePalletInPalletReturn extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(PalletReturnItem $palletReturnItem): PalletReturnItem
+    public function handle(PalletReturnItem $palletReturnItem, ?User $user = null): PalletReturnItem
     {
-        return DB::transaction(function () use ($palletReturnItem) {
+        return DB::transaction(function () use ($palletReturnItem, $user) {
             $modelData = [];
             data_set($modelData, 'picking_location_id', $palletReturnItem->pallet->location_id);
             data_set($modelData, 'state', PalletReturnItemStateEnum::PICKED);
 
+            if ($user && !$palletReturnItem->palletReturn->packer_user_id) {
+                UpdatePalletReturn::run($palletReturnItem->palletReturn, [
+                    'packer_user_id' => $user->id
+                ]);
+            }
             if ($palletReturnItem->type == 'Pallet') {
                 data_set($modelData, 'quantity_picked', $palletReturnItem->quantity_ordered);
                 $this->update($palletReturnItem, $modelData);
@@ -71,6 +79,7 @@ class PickWholePalletInPalletReturn extends OrgAction
                 StoreStoredItemMovementFromPickingAFullPallet::run($palletReturnItem, $palletStoredItem);
                 SetPalletStoredItemStateToReturned::run($palletStoredItem);
             }
+            AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($palletReturnItem->palletReturn);
 
             PalletReturnHydratePallets::dispatch($palletReturnItem->palletReturn);
             PalletRecordSearch::dispatch($pallet);
@@ -114,7 +123,9 @@ class PickWholePalletInPalletReturn extends OrgAction
 
         $this->initialisation($request->input('website')->organisation, $request);
 
-        return $this->handle($palletReturnItem);
+        $user = $request->user();
+
+        return $this->handle($palletReturnItem, $user instanceof User ? $user : null);
     }
 
     /**
@@ -125,21 +136,23 @@ class PickWholePalletInPalletReturn extends OrgAction
         $this->pallet = $palletReturnItem;
         $this->initialisationFromFulfilment($palletReturnItem->palletReturn->fulfilment, $request);
 
-        return $this->handle($palletReturnItem);
+        $user = $request->user();
+
+        return $this->handle($palletReturnItem, $user instanceof User ? $user : null);
     }
 
 
     /**
      * @throws \Throwable
      */
-    public function action(PalletReturnItem $palletReturnItem, array $modelData, int $hydratorsDelay = 0): PalletReturnItem
+    public function action(PalletReturnItem $palletReturnItem, array $modelData, int $hydratorsDelay = 0, ?User $user = null): PalletReturnItem
     {
         $this->pallet         = $palletReturnItem;
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromFulfilment($palletReturnItem->palletReturn->fulfilment, $modelData);
 
-        return $this->handle($palletReturnItem);
+        return $this->handle($palletReturnItem, $user);
     }
 
     public function jsonResponse(PalletReturnItem $palletReturnItem, ActionRequest $request): PalletReturnItemUIResource|MayaPalletReturnItemUIResource

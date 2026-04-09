@@ -76,6 +76,7 @@ const deliveryListError = inject('deliveryListError', [])
 const pickingTitle = computed(() => props.dataPalletReturn?.type === 'stored_item' ? trans("Return Customer's SKUs") : trans('Return Whole pallets'))
 const hasPickingUsers = computed(() => Boolean(props.dataPalletReturn?.picker_user?.contact_name || props.dataPalletReturn?.packer_user?.contact_name))
 const canUpdatePickingUsers = computed(() => Boolean(props.picker_packer_routes?.update?.name))
+const isWarehouseDispatchingPalletReturnPage = computed(() => route().current('grp.org.warehouses.show.dispatching.pallet-returns.show'))
 const isPickingState = computed(() => props.dataPalletReturn?.state === 'picking')
 const isPickedState = computed(() => props.dataPalletReturn?.state === 'picked')
 const showPickerInfo = computed(() => ['picking', 'picked', 'dispatched', 'cancel'].includes(props.dataPalletReturn?.state || ''))
@@ -865,7 +866,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 						<span class="font-semibold text-gray-700">{{ trans('Packer') }}:</span> {{ dataPalletReturn?.packer_user?.contact_name || '-' }}
 					</div>
 					<Button
-						v-if="canChangePicker || canChangePacker"
+						v-if="(canChangePicker || canChangePacker) && isWarehouseDispatchingPalletReturnPage"
 						@click="onOpenModalPickingUsers"
                         :icon="faExchange"
 						type="tertiary"

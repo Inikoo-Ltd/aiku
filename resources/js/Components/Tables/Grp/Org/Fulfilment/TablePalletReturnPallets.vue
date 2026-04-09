@@ -14,7 +14,7 @@ import '@/Composables/Icon/Pallet/PalletType'  // Import all icon for State
 
 import Icon from "@/Components/Icon.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { inject, reactive, ref, onBeforeMount } from 'vue'
+import { computed, inject, reactive, ref, onBeforeMount } from 'vue'
 import { trans } from "laravel-vue-i18n"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import Popover from '@/Components/Popover.vue'
@@ -97,7 +97,7 @@ const onSubmitNotPicked = async (idPallet: number, closePopup: Function, routeNo
         onFinish: () => {
             isSubmitNotPickedLoading.value = false
         },
-        only: ['pallets', 'pageHead'],
+        only: ['pallets', 'pageHead', 'data'],
         preserveScroll: true
     })
 }
@@ -151,6 +151,8 @@ const debounceReloadBoxStats = debounce(() => {
         only: ['pageHead', 'box_stats'],
     })
 }, 700)
+
+const isWarehouseDispatchingPalletReturnPage = computed(() => route().current('grp.org.warehouses.show.dispatching.pallet-returns.show'))
 
 const onCheckTable = async (item: {}) => {
     if (item.is_checked) {
@@ -382,7 +384,7 @@ const generateLinkPallet = (pallet: any) => {
                     @start="() => isPickingLoading = pallet.id"
                     @finish="() => isPickingLoading = false"
                     preserveScroll
-                    :only="['pallets', 'pageHead']"
+                    :only="['pallets', 'pageHead', 'data']"
                     method="patch"
                     v-tooltip="trans(`Set as picked`)"
                 >
@@ -432,19 +434,19 @@ const generateLinkPallet = (pallet: any) => {
                 </Popover>
 
                 <!-- Button: Unlink -->
-                <Link v-if="pallet.state === 'picking' && pallet.unlinkRoute" as="div"
+                <Link v-if="pallet.state === 'picking' && pallet.unlinkRoute && !isWarehouseDispatchingPalletReturnPage" as="div"
                     :href="route(pallet.unlinkRoute.name, pallet.unlinkRoute.parameters)"
                     @start="() => isUnlinkLoading = pallet.id"
-                    @finish="() => isPickingLoading = false"
+                    @finish="() => isUnlinkLoading = false"
                     preserveScroll
-                    :only="['pallets', 'pageHead']"
+                    :only="['pallets', 'pageHead', 'data']"
                     method="patch"
                     v-tooltip="trans(`Unlink pallet from this return order (Will set it as in-warehouse)`)"
                 >
                     <!-- <div class="border border-green-500 rounded py-2 px-6 hover:bg-green-500/10 cursor-pointer">
                         <FontAwesomeIcon icon='fal fa-check' class='flex items-center justify-center text-green-500' fixed-width aria-hidden='true' />
                     </div> -->
-                    <Button icon="fal fa-backspace" type="warning" :loading="isPickingLoading === pallet.id" class="py-0" />
+                    <Button icon="fal fa-backspace" type="warning" :loading="isUnlinkLoading === pallet.id" class="py-0" />
                 </Link>
 
                 <!-- Button: Undo picking -->
@@ -454,7 +456,7 @@ const generateLinkPallet = (pallet: any) => {
                     @finish="() => isUndoLoading = false"
                     method="patch"
                     preserveScroll
-                    :only="['pallets', 'pageHead']"
+                    :only="['pallets', 'pageHead', 'data']"
                     v-tooltip="`Undo`"
                 >
                     <Button icon="fal fa-undo" label="Undo picking" type="tertiary" size="xs" :loading="isUndoLoading === pallet.id" class="py-0" />

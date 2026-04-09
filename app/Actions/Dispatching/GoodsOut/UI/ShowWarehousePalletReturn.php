@@ -71,7 +71,6 @@ class ShowWarehousePalletReturn extends OrgAction
                     'pdf',
                     'cancel-pallet-return',
                     'Dispatching',
-                    'delete_dispatched',
                     'action'
                 ], true)
             )

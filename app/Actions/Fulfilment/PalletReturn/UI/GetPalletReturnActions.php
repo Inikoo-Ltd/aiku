@@ -194,24 +194,24 @@ class GetPalletReturnActions
         $actions = [];
 
         if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
-            $actions[] =
-                [
-                    'type'    => 'button',
-                    'style'   => 'save',
-                    'tooltip' => __('Set all pending as picked'),
-                    'label'   => __('Pick all'),
-                    'key'     => 'pick all',
-                    'route'   => [
-                        'method'     => 'post',
-                        'name'       => 'grp.models.fulfilment-customer.pallet-return.picked',
-                        'parameters' => [
-                            'organisation'       => $palletReturn->organisation->slug,
-                            'fulfilment'         => $palletReturn->fulfilment->slug,
-                            'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->id,
-                            'palletReturn'       => $palletReturn->id
-                        ]
-                    ]
-                ];
+            // $actions[] =
+            //     [
+            //         'type'    => 'button',
+            //         'style'   => 'save',
+            //         'tooltip' => __('Set all pending as picked'),
+            //         'label'   => __('Pick all'),
+            //         'key'     => 'pick all',
+            //         'route'   => [
+            //             'method'     => 'post',
+            //             'name'       => 'grp.models.fulfilment-customer.pallet-return.picked',
+            //             'parameters' => [
+            //                 'organisation'       => $palletReturn->organisation->slug,
+            //                 'fulfilment'         => $palletReturn->fulfilment->slug,
+            //                 'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->id,
+            //                 'palletReturn'       => $palletReturn->id
+            //             ]
+            //         ]
+            //     ];
 
             $actions[] =
                 [
