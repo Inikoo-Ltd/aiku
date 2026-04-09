@@ -11,7 +11,10 @@ namespace App\Actions\Inventory\LocationOrgStock;
 use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\LocationOrgStock;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class MoveOrgStockToOtherLocation extends OrgAction
@@ -19,19 +22,26 @@ class MoveOrgStockToOtherLocation extends OrgAction
     use WithActionUpdate;
     use WithLocationOrgStockActionAuthorisation;
 
-
-
-    public function handle(LocationOrgStock $currentLocationStock, LocationOrgStock $targetLocation, array $movementData): LocationOrgStock
+    public function handle(LocationOrgStock $currentLocationStock, LocationOrgStock $targetLocation, array $modelData): LocationOrgStock
     {
-        $this->update($currentLocationStock, [
-            'quantity' => (int) $currentLocationStock->quantity - (int) $movementData['quantity'],
-        ]);
+        DB::transaction(function () use ($currentLocationStock, $targetLocation, $modelData) {    
+            $quantity = Arr::pull($modelData, 'quantity');
+            // Source
+            AuditLocationOrgStock::make()->action($currentLocationStock, [
+                'quantity'              => $currentLocationStock->quantity - $quantity,
+                'stock_movement_type'   => OrgStockMovementTypeEnum::LOCATION_TRANSFER,
+                'user_request'                  => request()->user()
+            ]);
+            // Destination
+            AuditLocationOrgStock::make()->action($targetLocation, [
+                'quantity'  => $targetLocation->quantity + $quantity,
+                'stock_movement_type'   => OrgStockMovementTypeEnum::LOCATION_TRANSFER,
+                'user_request'                  => request()->user()
+            ]);
+        });
 
-        $this->update($targetLocation, [
-            'quantity' => (int) $targetLocation->quantity + (int) $movementData['quantity'],
-        ]);
-
-        RepairOrgStockMissingLocationIds::dispatch($targetLocation->orgStock);
+        $currentLocationStock->refresh();
+        $targetLocation->refresh();
 
         return $currentLocationStock;
     }
@@ -50,9 +60,10 @@ class MoveOrgStockToOtherLocation extends OrgAction
         return $this->handle($currentLocationStock, $targetLocationOrgStock, $this->validatedData);
     }
 
-    public function asController(LocationOrgStock $locationOrgStock, LocationOrgStock $targetLocationOrgStock, ActionRequest $request): LocationOrgStock
+    public function asController(LocationOrgStock $locationOrgStock, LocationOrgStock $targetLocationOrgStock, ActionRequest $request): void
     {
         $this->initialisation($locationOrgStock->organisation, $request);
-        return $this->handle($locationOrgStock, $targetLocationOrgStock, $this->validatedData);
+        
+        $this->handle($locationOrgStock, $targetLocationOrgStock, $this->validatedData);
     }
 }

@@ -11,9 +11,10 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { InputNumber } from 'primevue'
 import { inject, ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { useForm } from '@inertiajs/vue3'
+import { router, useForm } from '@inertiajs/vue3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import formatDistanceStrict from 'date-fns/formatDistanceStrict'
+import { notify } from '@kyvg/vue3-notification'
 library.add(faDotCircle, fasDotCircle, faForklift, faTimes)
 
 const props = defineProps<{
@@ -186,23 +187,45 @@ const handleForkliftClick = (warehouse: { id: any }) => {
 
 }
 
+const isLoadingSubmit = ref(false);
+
 const submitCheckStock = () => {
-    // form.post(route('grp.dashboard.show'), {
-    //     preserveScroll: true,
-    //     onStart: () => {
-    //         console.log("Submitting stock check...")
-    //     },
-    //     onSuccess: () => {
-    //         console.log("Stock check submitted successfully!")
-    //         emits('onClickBackground')
-    //     },
-    //     onError: (errors) => {
-    //         console.error("Failed to submit stock check:", errors)
-    //     },
-    //     onFinish: () => {
-    //         console.log("Stock check submission finished.")
-    //     }
-    // })
+    if (!moveStock.value.from?.id || !moveStock.value.to?.id) return;
+
+    router.patch(route('grp.models.location_org_stock.move', {
+        locationOrgStock: moveStock.value.from.id,
+        targetLocationOrgStock: moveStock.value.to.id
+    }), {
+        quantity: moveStock.value.quantity
+    }, {
+        preserveScroll: true,
+        onStart: () => {
+            isLoadingSubmit.value = true;
+        },
+        onSuccess: () => {            
+            notify({
+                title: trans("Something went wrong"),
+                text: trans('Moved :_qtyItem stocks from :_locationSource to :_locationDestination', {
+                    _qtyItem: moveStock.value.quantity.toString(),
+                    _locationSource: moveStock.value.from?.name ?? 'A',
+                    _locationDestination: moveStock.value.to?.name ?? 'B',
+                }),
+                type: "success",
+            })
+            emits('close');
+        },
+        onError: (errors) => {
+            notify({
+                title: trans("Something went wrong"),
+                text: trans('Unable to move stock. An error occured.'),
+                type: "error",
+            })
+        },
+        onFinish: () => {
+            isLoadingSubmit.value = false;
+            console.log("Stock check submission finished.")
+        }
+    })
 
     console.log("Submitting stock check data:", form)
 }
@@ -215,6 +238,7 @@ const resetForm = (scope: string = 'all') => {
     } else if (scope == 'to') {
         moveStock.value.to = null;
     }
+    moveStock.value.quantity = 0;
 }
 
 </script>
@@ -336,7 +360,9 @@ const resetForm = (scope: string = 'all') => {
                     </div>
                     <!-- Original stock change indicator -->
                     <div v-else-if="form.stock != part_locations[idx].quantity" class="mr-2">
+                        {{ part_locations[idx].quantity }}
                         <span v-if="form.stock > part_locations[idx].quantity" class="text-green-600">
+                            asd
                             +{{ form.stock - part_locations[idx].quantity }}
                         </span>
                         <span v-else class="text-red-500">
@@ -399,6 +425,7 @@ const resetForm = (scope: string = 'all') => {
 
             <Button
                 v-if="layout.app.environment === 'local'"
+                :loading="isLoadingSubmit"
                 :disabled="!form.isDirty"
                 label="Save"
                 full
