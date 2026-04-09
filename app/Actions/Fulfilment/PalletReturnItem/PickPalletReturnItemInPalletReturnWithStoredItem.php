@@ -13,6 +13,7 @@ use App\Actions\Fulfilment\PickingSession\AutoFinishPickingFulfilmentPickingSess
 use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks;
 use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsPickedIfAllItemsPicked;
 use App\Actions\Fulfilment\PalletReturn\SetStoredItemReturnAutoServices;
+use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturn;
 use App\Actions\Fulfilment\PalletStoredItem\SetPalletStoredItemStateToReturned;
 use App\Actions\Fulfilment\StoredItemMovement\StoreStoredItemMovementFromPicking;
 use App\Actions\OrgAction;
@@ -24,6 +25,7 @@ use App\Models\Fulfilment\PalletReturnItem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\SysAdmin\User;
 
 class PickPalletReturnItemInPalletReturnWithStoredItem extends OrgAction
 {
@@ -34,11 +36,17 @@ class PickPalletReturnItemInPalletReturnWithStoredItem extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(PalletReturnItem $palletReturnItem, array $modelData): PalletReturnItem
+    public function handle(PalletReturnItem $palletReturnItem, array $modelData, ?User $user = null): PalletReturnItem
     {
-        return DB::transaction(function () use ($palletReturnItem, $modelData) {
+        return DB::transaction(function () use ($palletReturnItem, $modelData, $user) {
             $quantity = Arr::get($modelData, 'quantity_picked');
             $palletStoredItemQuantity = $palletReturnItem->palletStoredItem->quantity;
+
+            if ($user && !$palletReturnItem->palletReturn->packer_user_id) {
+                UpdatePalletReturn::run($palletReturnItem->palletReturn, [
+                    'packer_user_id' => $user->id
+                ]);
+            }
 
             $this->update($palletReturnItem, $modelData);
 
@@ -79,7 +87,8 @@ class PickPalletReturnItemInPalletReturnWithStoredItem extends OrgAction
     {
         $this->initialisationFromFulfilment($palletReturnItem->palletReturn->fulfilment, $request);
 
-        return $this->handle($palletReturnItem, $this->validatedData);
+        $user = $request->user() instanceof User ? $request->user() : null;
+        return $this->handle($palletReturnItem, $this->validatedData, $user);
     }
 
     public function action(PalletReturnItem $palletReturnItem, array $modelData): PalletReturnItem
