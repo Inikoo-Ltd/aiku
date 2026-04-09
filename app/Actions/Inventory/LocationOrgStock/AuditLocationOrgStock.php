@@ -99,7 +99,7 @@ class AuditLocationOrgStock extends OrgAction
     {
         $this->asAction         = true;
         $this->locationOrgStock = $locationOrgStock;
-        
+
         $this->initialisation($locationOrgStock->organisation, $modelData);
 
 
