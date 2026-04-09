@@ -55,7 +55,10 @@ export const retinaLayoutStructure = {
         }
     },
     retina: {
-        type: '' as string  // 'dropshipping' | 'fulfilment' | 'ecom'
+        type: '' as string,  // 'dropshipping' | 'fulfilment' | 'ecom'
+        organisation: {
+            slug: ''
+        }
     },
     root_active: null as string | null,
     stackedComponents: [] as StackedComponent[],

@@ -9,7 +9,6 @@
 namespace App\Actions\Accounting\InvoiceTransaction;
 
 use App\Actions\OrgAction;
-use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Accounting\InvoiceTransactionHasOrgStock;
 use App\Models\Accounting\InvoiceTransactionHasStock;
@@ -19,7 +18,6 @@ class DeleteInvoiceTransaction extends OrgAction
 {
     public function handle(InvoiceTransaction $invoiceTransaction): InvoiceTransaction
     {
-        $intervals   = DateIntervalEnum::allExceptHistorical();
 
         InvoiceTransactionHasTradeUnit::where('invoice_transaction_id', $invoiceTransaction->id)->delete();
         InvoiceTransactionHasOrgStock::where('invoice_transaction_id', $invoiceTransaction->id)->delete();

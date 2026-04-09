@@ -8,7 +8,6 @@
 
 namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
-use App\Actions\Traits\WithEnumStats;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;
@@ -19,14 +18,10 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class OrganisationHydrateOrderStatePacking implements ShouldBeUnique
 {
     use AsAction;
-    use WithEnumStats;
-
-
-    public string $jobQueue = 'sales';
 
     public function getJobUniqueId(int $organisationID): string
     {
-        return $organisationID;
+        return (string) $organisationID;
     }
 
     public function handle(int $organisationID): void
@@ -38,13 +33,13 @@ class OrganisationHydrateOrderStatePacking implements ShouldBeUnique
         $stats = [
 
 
-            'number_orders_state_packing'              => $organisation->orderFromActiveShops()->where('state', OrderStateEnum::PACKING)->count(),
-            'orders_state_packing_amount_org_currency' => $organisation->orderFromActiveShops()->where('state', OrderStateEnum::PACKING)->sum('org_net_amount'),
-            'orders_state_packing_amount_grp_currency' => $organisation->orderFromActiveShops()->where('state', OrderStateEnum::PACKING)->sum('grp_net_amount'),
+            'number_orders_state_packing'              => $organisation->orders()->where('state', OrderStateEnum::PACKING)->count(),
+            'orders_state_packing_amount_org_currency' => $organisation->orders()->where('state', OrderStateEnum::PACKING)->sum('org_net_amount'),
+            'orders_state_packing_amount_grp_currency' => $organisation->orders()->where('state', OrderStateEnum::PACKING)->sum('grp_net_amount'),
 
-            'number_orders_packing_today'              => $organisation->orderFromActiveShops()->whereDate('packing_at', Carbon::today())->count(),
-            'orders_packing_today_amount_org_currency' => $organisation->orderFromActiveShops()->whereDate('packing_at', Carbon::today())->sum('org_net_amount'),
-            'orders_packing_today_amount_grp_currency' => $organisation->orderFromActiveShops()->whereDate('packing_at', Carbon::today())->sum('grp_net_amount'),
+            'number_orders_packing_today'              => $organisation->orders()->whereDate('packing_at', Carbon::today())->count(),
+            'orders_packing_today_amount_org_currency' => $organisation->orders()->whereDate('packing_at', Carbon::today())->sum('org_net_amount'),
+            'orders_packing_today_amount_grp_currency' => $organisation->orders()->whereDate('packing_at', Carbon::today())->sum('grp_net_amount'),
 
         ];
 

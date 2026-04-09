@@ -9,6 +9,7 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Enums\Discounts\Offer\OfferDurationEnum;
+use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Collection;
@@ -18,6 +19,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferAllowance;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateProductCategoryOffersData
@@ -126,14 +128,24 @@ class UpdateProductCategoryOffersData
                 'percentage' => $percentage
             ]);
         }
-        app()->setLocale($currentLocale);
 
+
+
+        $durationLabel = '';
+
+        if ($offer->duration == OfferDurationEnum::INTERVAL && $offer->end_at) {
+            $durationLabel = __('Until').' '.Carbon::parse($offer->end_at)->translatedFormat('D, d M');
+        }
 
         $offerData = [
             'id'                      => $offer->id,
             'state'                   => $offer->state->value,
+            'state_icon'              => OfferStateEnum::from($offer->state->value)->stateIcon()[$offer->state->value],
             'type'                    => $offer->type,
             'duration'                => $offer->duration->value,
+            'duration_label'          => $durationLabel,
+            'end_at'                  => $offer->end_at,
+            'start_at'                => $offer->start_at,
             'label'                   => $offer->label ?? $offer->name,
             'allowances'              => $allowances,
             'triggers_labels'         => $triggerLabels,
@@ -143,6 +155,7 @@ class UpdateProductCategoryOffersData
 
         ];
 
+
         if ($categoryQuantityTrigger) {
             $offerData['category_qty_trigger'] = $categoryQuantityTrigger;
         }
@@ -151,7 +164,7 @@ class UpdateProductCategoryOffersData
             $offerData['start_at'] = $offer->start_at;
             $offerData['end_at']   = $offer->end_at;
         }
-
+        app()->setLocale($currentLocale);
         return $offerData;
     }
 
@@ -213,7 +226,9 @@ class UpdateProductCategoryOffersData
         $modelOfferData['number_offers'] = count(Arr::get($modelOfferData, 'offers', []));
         $modelOfferData                  = $this->getBestOffers($modelOfferData);
         $modelOfferData['v']             = 1;
-        $model->update(['offers_data' => $modelOfferData]);
+        $model->update([
+            'offers_data' => $modelOfferData
+        ]);
     }
 
 }

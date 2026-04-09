@@ -32,7 +32,11 @@ class RedoOrganisationTimeSeries implements ShouldBeUnique
 
     public function getJobUniqueId(?int $organisationId, ?string $from, ?string $to): string
     {
-        return $organisationId ?? 'empty'.'_'.$from.'_'.$to;
+        if ($organisationId === null) {
+            $organisationId = 'empty';
+        }
+
+        return $organisationId.'_'.$from.'_'.$to;
     }
 
     public function handle(?int $organisationId, ?string $from = null, ?string $to = null, bool $async = false): void

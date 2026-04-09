@@ -9,19 +9,18 @@
 namespace App\Actions\Inventory\OrgStock\Stock;
 
 use App\Models\Inventory\OrgStock;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CalculateAllOrgStocksDayOrgStockHistory implements ShouldBeUnique
+class CalculateAllOrgStocksDayOrgStockHistory
 {
     use AsAction;
 
     public string $jobQueue = 'stock-history';
 
-    public function getJobUniqueId(?int $organisationId, string $date): string
+    public function tags(): array
     {
-        return 'v2'.$organisationId??'empty'.'-'.$date;
+        return ['stock_history'];
     }
 
     public function handle(?int $organisationId, string $date): void

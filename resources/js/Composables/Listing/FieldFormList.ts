@@ -79,6 +79,7 @@ import InputWorkingHours from '@/Components/Forms/Fields/InputWorkingHours.vue'
 import InputWithWarning from '@/Components/Forms/Fields/InputWithWarning.vue'
 import Ratio from '@/Components/Forms/Fields/Ratio.vue'
 import EmergencyContact from '@/Components/Forms/Fields/EmergencyContact.vue'
+import WebsiteReview from '@/Components/Forms/Fields/WebsiteReview.vue'
 
 
 export const componentsList: { [key: string]: Component } = {
@@ -160,6 +161,7 @@ export const componentsList: { [key: string]: Component } = {
     'ratio' : Ratio,
     'free_gift': FreeGift,
     'emergency_contact' : EmergencyContact,
+    'website_reviews' : WebsiteReview,
 }
 
 export const getComponent = (componentName: string) => {

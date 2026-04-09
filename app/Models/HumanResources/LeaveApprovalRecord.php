@@ -7,6 +7,31 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $id
+ * @property int $leave_id
+ * @property int $approver_id
+ * @property int $sequence_number
+ * @property string $status
+ * @property string|null $comments
+ * @property \Illuminate\Support\Carbon|null $decided_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read User $approver
+ * @property-read \App\Models\HumanResources\Leave $leave
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord approved()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord byLeave(\App\Models\HumanResources\Leave $leave)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord pending()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord rejected()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord withoutTrashed()
+ * @mixin \Eloquent
+ */
 class LeaveApprovalRecord extends Model
 {
     use SoftDeletes;

@@ -144,7 +144,7 @@ const showDialog = ref(false)
 
         <template #otherBefore>
             <ModalCreateCategoryOffers
-                v-if="currentTab === 'offers' && layout?.app.environment === 'local'"
+                v-if="currentTab === 'offers'"
                 :shop_data="props.shop_data" 
                 :product_category_id="props.product_category_id"
                 v-tooltip="'Create New Offer'"

@@ -21,7 +21,7 @@ class OrganisationHydrateWebUserRequests implements ShouldBeUnique
 
     public function getJobUniqueId(int $organisationID): string
     {
-        return $organisationID;
+        return (string) $organisationID;
     }
 
     public function handle(int $organisationID): void

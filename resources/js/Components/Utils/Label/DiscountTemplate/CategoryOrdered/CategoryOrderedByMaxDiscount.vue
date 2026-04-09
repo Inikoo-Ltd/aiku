@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import Popover from "primevue/popover"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from 'laravel-vue-i18n';
-
+import { faClock } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faClock)
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 interface Offer {
     max_percentage_discount?: number | string | null
 }
@@ -23,18 +25,19 @@ const maxDiscountLabel = computed(() => {
 
     return (val * 100).toFixed(2).replace(/\.00$/, "")
 })
-console.log('maxDiscountLabel', props)
+console.log('maxDiscountLabel', props.offer)
 </script>
 
 <template>
-    <div class="offer-max-discount">
+     <div class="offer-wrapper gap-2">
+    <div class="offer-max-discount bg-white">
         <div class="offer-label">
             <span v-if="maxDiscountLabel" class="discount">
                 - {{ maxDiscountLabel }}% <strong>OFF</strong>
             </span>
 
             <span class="label-text">
-                {{ trans("Special Offers") }}
+                {{ props.offer?.label || trans("Special Offers") }}
             </span>
 
             <span v-if="!layout?.user?.gr_data?.customer_is_gr" @click="_popoverInfoCircle?.toggle"
@@ -52,9 +55,32 @@ console.log('maxDiscountLabel', props)
 
         </Popover>
     </div>
+    <div v-if="props.offer.duration_label" class="offer-valid-until">
+            <span class="clock"><FontAwesomeIcon
+							
+							icon="fal fa-clock"
+							class="mr-1 text-blue-500" /></span>
+            <span>
+                <strong>{{ props.offer.duration_label }}</strong>
+            </span>
+        </div>
+         </div>
 </template>
 
 <style scoped>
+.offer-wrapper {
+    @apply flex flex-col sm:flex-row items-start sm:items-stretch gap-1 sm:gap-2;
+}
+.offer-valid-until {
+    @apply flex items-center px-2 
+           bg-gray-100 text-gray-700 
+           text-[10px] sm:text-xs 
+           rounded-sm
+           w-fit max-w-full;
+}
+.offer-valid-until span {
+    @apply truncate sm:whitespace-nowrap;
+}
 .offer-max-discount {
     @apply bg-[#A80000] border border-red-900 text-gray-100 w-fit flex items-center rounded-sm px-1 py-0.5 text-[10px] sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1;
 }

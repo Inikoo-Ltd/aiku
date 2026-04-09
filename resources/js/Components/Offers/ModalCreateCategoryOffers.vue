@@ -2,17 +2,23 @@
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
 import { InputNumber, RadioButton, DatePicker } from 'primevue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { trans } from 'laravel-vue-i18n'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
-import { inject } from "vue"
 import axios from 'axios'
+import {
+    faSpinner
+} from "@fas";
+library.add(
+    faSpinner
+);
 
 const props = defineProps<{
     shop_data: {
@@ -26,7 +32,6 @@ const props = defineProps<{
 }>()
 
 const isOpenModal = ref(false)
-const layout = inject('layout', null)
 const offerLabel = ref('')
 const typeOffer = ref('quantity')
 const offerQtyItems = ref<number | null>(null)
@@ -38,13 +43,10 @@ const dateType = ref<'permanent' | 'interval'>('permanent')
 const startDate = ref<Date | null>(null)
 const endDate = ref<Date | null>(null)
 
-function onOfferQtyInput(e: { value: string | number | undefined }) {
-    offerQtyItems.value = e.value == null ? null : Number(e.value)
-}
-
 const submitCategoryOffer = () => {
     // Section: Submit
     isLoadingSubmit.value = true
+
     axios.post(
         route('grp.models.category_offer.store', {
             shop: props.shop_data.id,
@@ -57,8 +59,8 @@ const submitCategoryOffer = () => {
             trigger_data_item_amount: offerAmount.value,
             percentage_off: discountPercentage.value != null ? discountPercentage.value / 100 : null,
             duration: dateType.value,
-            start_at: startDate.value,
-            end_at: endDate.value
+            start_at: formatDate(startDate.value),
+            end_at: formatDate(endDate.value)
         }
     )
     .then((response) => {
@@ -93,6 +95,17 @@ const submitCategoryOffer = () => {
         isLoadingSubmit.value = false
     })
 }
+const today = new Date(new Date().setHours(0, 0, 0, 0))
+
+function formatDate(date: Date | null) {
+    if (!date) return null
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+}
 
 const resetForm = () => {
     offerLabel.value = ''
@@ -107,7 +120,6 @@ const resetForm = () => {
 }
 
 const isFormInvalid = computed(() => {
-
     if (!offerCategoryId.value && !props.product_category_id) return true
 
     if (!offerLabel.value) return true
@@ -127,6 +139,20 @@ const isFormInvalid = computed(() => {
     if (dateType.value === 'interval' && !endDate.value) return true
 
     return false
+})
+
+watch(typeOffer, (val) => {
+    if (val === 'quantity') {
+        offerAmount.value = null
+    } else if (val === 'amount') {
+        offerQtyItems.value = null
+    }
+})
+
+watch(dateType, (val) => {
+    if (val === 'permanent') {
+        endDate.value = null
+    }
 })
 
 resetForm();
@@ -187,7 +213,7 @@ resetForm();
                                 </label>
                             </div>
                             <div class="min-h-[40px]">
-                            <InputNumber :modelValue="offerQtyItems" @input="onOfferQtyInput" v-show="typeOffer === 'quantity'"  fluid
+                            <InputNumber v-model="offerQtyItems" v-show="typeOffer === 'quantity'"  fluid
                                 inputId="offer_quantity_item" :placeholder="trans('Enter number')"
                                 :disabled="typeOffer !== 'quantity'" :min="0" class="w-full" inputClass="w-full"
                                 :suffix="' ' + ((offerQtyItems ?? 0) > 1 ? trans('items') : trans('item'))" />
@@ -254,7 +280,7 @@ resetForm();
                                     :information="trans('If start date is empty, will start immediately')" />:
                             </label>
 
-                            <DatePicker v-model="startDate" showIcon dateFormat="yy-mm-dd" class="w-full"
+                            <DatePicker v-model="startDate" :minDate="today" showIcon dateFormat="yy-mm-dd" class="w-full"
                                 :placeholder="trans('Select start date')" />
                         </div>
 
@@ -276,9 +302,15 @@ resetForm();
 
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />
-                    <Button full icon="fad fa-save" :label="trans('Save')" @click="submitCategoryOffer"
-                        :isLoading="isLoadingSubmit" :disabled="isFormInvalid">
-                    </Button>
+
+                   <Button
+                        full
+                        icon="fad fa-save"
+                        :label="isLoadingSubmit ? trans('Loading') : trans('Save')"
+                        @click="submitCategoryOffer"
+                        :disabled="isFormInvalid || isLoadingSubmit"
+                        :loading="isLoadingSubmit"
+                    />
                 </div>
 
 

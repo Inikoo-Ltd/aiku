@@ -18,6 +18,7 @@ use App\Enums\UI\Inventory\WarehouseTabsEnum;
 use App\Http\Resources\Inventory\LocationsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\Location;
+use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
 use App\Models\SysAdmin\Group;
@@ -39,12 +40,14 @@ class IndexLocations extends OrgAction
     use WithWarehouseAuthorisation;
 
     private Group|Warehouse|WarehouseArea|Organisation $parent;
+    private OrgStock $orgStock;
+    private $mode = 'exclude';
 
     public function maya(Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->maya   = true;
         $this->parent = $warehouse;
-        $this->initialisation($this->parent, $request);
+        $this->initialisationFromWarehouse($this->parent, $request);
 
         return $this->handle(parent: $warehouse);
     }
@@ -72,6 +75,25 @@ class IndexLocations extends OrgAction
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(WarehouseAreaTabsEnum::values());
 
         return $this->handle(parent: $warehouseArea);
+    }
+
+    public function excludeOrgStockLocs(Organisation $organisation, Warehouse $warehouse, OrgStock $orgStock, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $warehouse;
+        $this->orgStock = $orgStock;
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(WarehouseAreaTabsEnum::values());
+
+        return $this->handle(parent: $warehouse);
+    }
+
+    public function onlyOrgStockLocs(Organisation $organisation, Warehouse $warehouse, OrgStock $orgStock, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $warehouse;
+        $this->orgStock = $orgStock;
+        $this->mode = 'only';
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(WarehouseAreaTabsEnum::values());
+
+        return $this->handle(parent: $warehouse);
     }
 
     public function handle(Group|Warehouse|WarehouseArea|Organisation $parent, $prefix = null): LengthAwarePaginator
@@ -126,6 +148,13 @@ class IndexLocations extends OrgAction
             ->leftJoin('location_stats', 'location_stats.location_id', 'locations.id')
             ->leftJoin('warehouses', 'locations.warehouse_id', 'warehouses.id')
             ->leftJoin('warehouse_areas', 'locations.warehouse_area_id', 'warehouse_areas.id')
+            ->when($this->orgStock, function ($q) {
+                if ($this->mode == 'exclude') {
+                    $q->whereNotIn('locations.code', $this->orgStock->locations->pluck('code'));
+                } elseif ($this->mode == 'only') {
+                    $q->whereIn('locations.code', $this->orgStock->locations->pluck('code'));
+                }
+            })
             ->allowedSorts(['code'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())

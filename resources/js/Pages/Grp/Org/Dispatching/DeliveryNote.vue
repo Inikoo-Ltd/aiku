@@ -119,10 +119,6 @@ const props = defineProps<{
         submit_route: routeType
         fetch_route: routeType
     }
-	external_order: {
-		status: boolean
-		route_view_packing_slip: routeType
-	}
     address: {
         delivery: {}
         options: {
@@ -527,7 +523,7 @@ onMounted(() => {
 	<!-- Section: Box Note -->
 	<div
 		v-if="
-			(pickingView && !box_stats.is_replacement) ||
+			pickingView ||
 			delivery_note_state.value === 'dispatched' ||
 			delivery_note_state.value === 'cancelled'
 		"

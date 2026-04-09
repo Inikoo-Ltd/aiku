@@ -103,7 +103,7 @@ const showMemberPrice = computed(() => {
     return layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr
 })
 
-console.log("showMemberPrice", showMemberPrice.value)
+// console.log("showMemberPrice", showMemberPrice.value)
 
 const showDiscount = computed(() => {
     if (props.product?.is_coming_soon) return false
@@ -111,7 +111,7 @@ const showDiscount = computed(() => {
     return !layout?.user?.gr_data?.customer_is_gr
 })
 
-console.log("product_discounted_price", props.product?.discounted_price)
+// console.log("product_discounted_price", props.product?.discounted_price)
 
 const showLeftBlock = computed(() => {
     return showMemberPrice.value || showDiscount.value
@@ -223,7 +223,7 @@ const _popoverProfit = ref(null)
             <!-- GR PRICE -->
             <div v-if="product.discounted_price" class="grid grid-cols-[auto_1fr] items-center gap-x-2">
 
-                <div class="whitespace-nowrap
+                <div v-if="bestOffer.type == 'Category Quantity Ordered Order Interval'"  class="whitespace-nowrap
             text-[9px]
             sm:text-[10px]
             md:text-[11px]
@@ -262,8 +262,16 @@ const _popoverProfit = ref(null)
 
                 </div>
 
-                <div class="text-primary font-bold text-right min-w-0">
+                <DiscountByType v-if="bestOffer.type == 'Category Ordered'" :offers_data="product?.product_offers_data" template="max_discount" />
+                <DiscountByType v-if="bestOffer.type == 'First Order Bonus'" :offers_data="product?.product_offers_data" template="first-order" />
 
+
+                <div class="font-bold text-right min-w-0" :class="bestOffer?.type === 'Category Ordered'
+                        ? 'text-red-700'
+                        : bestOffer?.type === 'First Order'
+                            ? 'text-[#2a919e]'
+                            : 'text-primary'
+                    ">
                     <template v-if="product.units == 1">
 
                         <div class="flex justify-end items-center gap-1 min-w-0">
@@ -277,7 +285,6 @@ const _popoverProfit = ref(null)
                             </span>
 
                         </div>
-
                     </template>
 
                     <template v-else>
@@ -297,6 +304,7 @@ const _popoverProfit = ref(null)
 
                 </div>
 
+            
             </div>
 
         </div>

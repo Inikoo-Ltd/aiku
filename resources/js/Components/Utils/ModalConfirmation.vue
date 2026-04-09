@@ -29,6 +29,8 @@ const props = defineProps<{
     message?: {
         placeholder?: string
     }
+    iconClass?: string
+    iconContainerClass?: string
 }>()
 
 const emits = defineEmits<{
@@ -140,8 +142,8 @@ const messageDelete = ref('')
 
                                 <div class="sm:flex sm:items-start">
                                     <div
-                                        class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-amber-100 border border-amber-300 sm:mx-0 sm:size-10">
-                                        <FontAwesomeIcon icon='fal fa-exclamation-triangle' class='text-amber-600' fixed-width aria-hidden='true' />
+                                        class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-amber-100 border border-amber-300 sm:mx-0 sm:size-10" :class="iconContainerClass">
+                                        <FontAwesomeIcon icon='fal fa-exclamation-triangle' class='text-amber-600' :class="iconClass" fixed-width aria-hidden='true' />
                                     </div>
                                     <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                                         <DialogTitle as="h3" class="text-base font-semibold">
@@ -181,7 +183,7 @@ const messageDelete = ref('')
                                             <Button
                                                 type="tertiary"
                                                 icccon="far fa-arrow-left"
-                                                :label="trans('cancel')"
+                                                :label="noLabel ?? trans('cancel')"
                                                 
                                                 @click="() => (isOpenModal = false, emits('onNo'))"
                                             />

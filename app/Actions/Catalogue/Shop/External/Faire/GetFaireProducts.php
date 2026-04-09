@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Maintenance\Catalogue\SetTradeUnitsForFaireShops;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
@@ -131,6 +132,7 @@ class GetFaireProducts extends OrgAction
                                 'faire' => $variant
                             ]
                         ], strict: false);
+                        SetTradeUnitsForFaireShops::run($product);
                         $command?->info("Product added: ".$product->slug);
                     } catch (Exception|Throwable $e) {
                         $command?->error("Product creation failed: ".$faireProduct['name'].' - '.$variant['name'].' '.$e->getMessage());

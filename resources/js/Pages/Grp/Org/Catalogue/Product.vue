@@ -8,7 +8,8 @@ import {
     faFolderTree, faBrowser, faLanguage,faFolders, faPaperclip,
     faFolderDownload,faQuoteLeft,
     faSync,
-    faSearch
+    faSearch,
+    faBadgePercent
 } from '@fal'
 import { ref, computed } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -43,6 +44,7 @@ import { faMagnifyingGlass, faMagnifyingGlassArrowRight } from '@fortawesome/fre
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import { faShapes, faStar } from '@fas'
 import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
+import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
 
 
 library.add(
@@ -66,7 +68,8 @@ library.add(
     faFolderTree,
     faFolderDownload,
     faQuoteLeft,
-    faMagnifyingGlass
+    faMagnifyingGlass,
+    faBadgePercent
 )
 
 const props = defineProps<{
@@ -152,6 +155,7 @@ const component = computed(() => {
         attachments: AttachmentManagement,
         sales: ProductCategoryTimeSeriesTable,
         content: ProductContent,
+        offers: TableOffers,
     }
     return components[currentTab.value]
 })

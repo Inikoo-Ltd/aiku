@@ -8,7 +8,6 @@
 
 use App\Actions\Accounting\Invoice\UI\ShowInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowRefund;
-use App\Actions\Catalogue\Shop\External\Faire\GetFairePackingPdfSlip;
 use App\Actions\Dispatching\DeliveryNote\SetTempPickerToDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\CreateReplacementDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInOrdering;
@@ -34,8 +33,6 @@ Route::get('/backlog', ShowOrdersBacklog::class)->name('backlog');
 Route::get('/orders/', IndexOrders::class)->name('orders.index');
 
 
-
-
 Route::get('/orders/delivery_notes', IndexDeliveryNotesInOrdering::class)->name('delivery-notes.index');
 Route::get('/orders/delivery_notes/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderingInShop'])->name('delivery-notes.show');
 Route::patch('delivery-note/{deliveryNote}/set-temp-picker', SetTempPickerToDeliveryNote::class)->name('orders.show.delivery-note.temp-picker');
@@ -52,8 +49,6 @@ Route::prefix('orders/{order}')->group(function () {
     Route::get('replacement', CreateReplacementDeliveryNote::class)->name('orders.show.replacement.create');
     Route::get('order-transaction-templates', DownloadOrderTransactionsTemplate::class)->name('order.uploads.templates');
     Route::get('proforma-invoice', PdfProformaInvoice::class)->name('proforma_invoice.download');
-
-    Route::get('faire-packing-slip', GetFairePackingPdfSlip::class)->name('faire_packing_slip.download');
 });
 
 Route::get('/purges/', IndexPurges::class)->name('purges.index');

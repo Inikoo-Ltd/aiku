@@ -41,7 +41,7 @@ class IndexDispatchedEmails extends OrgAction
 
         switch (class_basename($parent)) {
             case 'Customer':
-                $queryBuilder->leftJoin('customer_has_dispatched_emails', 'customer_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
+                $queryBuilder->join('customer_has_dispatched_emails', 'customer_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
                 $queryBuilder->where('customer_has_dispatched_emails.customer_id', $parent->id);
                 break;
             case 'Outbox':
@@ -57,8 +57,8 @@ class IndexDispatchedEmails extends OrgAction
                     OutboxCodeEnum::REORDER_REMINDER_3RD,
                     OutboxCodeEnum::ORDER_CONFIRMATION
                 ])) {
-                    // make sure this think
                     $queryBuilder->leftJoin('customer_has_dispatched_emails', 'customer_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
+                    $queryBuilder->leftJoin('customers', 'customer_has_dispatched_emails.customer_id', '=', 'customers.id');
 
                     // for fulfilment customer
                     if ($parent->fulfilment_id) {
@@ -80,8 +80,8 @@ class IndexDispatchedEmails extends OrgAction
                 $queryBuilder->whereNull('test_email_recipient_has_dispatched_emails.dispatched_email_id');
                 break;
             case 'Prospect':
-                $queryBuilder->where('dispatched_emails.recipient_type', 'Prospect');
-                $queryBuilder->where('dispatched_emails.recipient_id', $parent->id);
+                $queryBuilder->join('prospect_has_dispatched_emails', 'prospect_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
+                $queryBuilder->where('prospect_has_dispatched_emails.prospect_id', $parent->id);
                 break;
             default:
                 abort(404);

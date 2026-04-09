@@ -67,6 +67,9 @@ Route::prefix('{shop}')->name('show.')
                 Route::prefix("system-tags")
                     ->name("system_tags.")
                     ->group(__DIR__."/system_tags.php");
+                Route::prefix("countries")
+                    ->name("countries.")
+                    ->group(__DIR__ . "/countries.php");
             }
         );
 

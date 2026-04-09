@@ -9,7 +9,6 @@
 namespace App\Models\Comms;
 
 use App\Enums\Comms\EmailTrackingEvent\EmailTrackingEventTypeEnum;
-use App\Models\Traits\InOrganisation;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -32,8 +31,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $ip
  * @property string|null $device
  * @property-read \App\Models\Comms\DispatchedEmail $dispatchedEmail
- * @property-read \App\Models\SysAdmin\Group $group
- * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|EmailTrackingEvent newModelQuery()
  * @method static Builder<static>|EmailTrackingEvent newQuery()
  * @method static Builder<static>|EmailTrackingEvent query()
@@ -41,8 +38,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class EmailTrackingEvent extends Model
 {
-    use inOrganisation;
-
     protected $casts = [
         'data'  => 'array',
         'type'  => EmailTrackingEventTypeEnum::class

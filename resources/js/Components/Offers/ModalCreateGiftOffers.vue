@@ -11,9 +11,11 @@ import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
+import integer from "../../../../vendor/swagger-api/swagger-ui/src/core/plugins/json-schema-2020-12-samples/fn/types/integer"
 
 const props = defineProps<{
     shop_data: {
+        id: number
         slug: string
         currency_code: string
     }
@@ -23,29 +25,39 @@ const isOpenModal = ref(false)
 
 const offerLabel = ref('')
 const offerAmount = ref<number | null>(0)
-const discountPercentage = ref<number | null>(null)
-const offerCategoryId = ref<number | null>(0)
+const quantity = ref<number | null>(1)
+const productId = ref<number | null>(0)
 const dateType = ref<'permanent' | 'interval'>('permanent')
 const startDate = ref<Date | null>(null)
 const endDate = ref<Date | null>(null)
+
+const today = new Date(new Date().setHours(0, 0, 0, 0))
+
+function formatDate(date: Date | null) {
+    if (!date) return null
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+}
 
 const isLoadingSubmit = ref(false)
 const submitCategoryOffer = () => {
     // Section: Submit
     router.post(
-        route('grp.org.shops.show.discounts.campaigns.store_gift', {
-            organisation: 'sk',
-            shop: 'se',
-            offerCampaign: 'co-se',
+        route('grp.models.gift_offer.store', {
+            shop: props.shop_data.id,
         }),
         {
             name: offerLabel.value,
-            offerCategoryId: offerCategoryId.value,
+            productId: productId.value,
             offer_amount: offerAmount.value,
-            discount_percentage: discountPercentage.value,
+            quantity: quantity.value,
             date_type: dateType.value,
-            start_date: startDate.value,
-            end_date: endDate.value
+            start_date: formatDate(startDate.value),
+            end_date: formatDate(endDate.value)
         },
         {
             preserveScroll: true,
@@ -84,9 +96,9 @@ const productFetchRoute = {
 
 const resetForm = () => {
     offerLabel.value = ''
-    offerAmount.value = null
-    offerCategoryId.value = null
-    discountPercentage.value = null
+    offerAmount.value = 0
+    productId.value = null
+    quantity.value = 1
     dateType.value = 'permanent'
     startDate.value = null
     endDate.value = null
@@ -94,21 +106,21 @@ const resetForm = () => {
 
 const isFormInvalid = computed(() => {
     if (!offerLabel.value) return true
-    if (!offerCategoryId.value) return true
-    if (!discountPercentage.value) return true
+    if (!productId.value) return true
+    if (!quantity.value) return true
     if (!dateType.value) return true
     if (!startDate.value) return true
-    // if (!endDate.value) return true
-    // if (startDate.value && endDate.value < startDate.value) return true
+    if (dateType.value === 'interval' && !endDate.value) return true
     return false
 })
+resetForm()
 </script>
 
 <template>
     <div>
-        <Button :label="trans('Create Gift Offer')" @click="isOpenModal = true" icon="fas fa-badge-percent" />
+        <Button :label="trans('Create Gift Offer')" @click="isOpenModal = true; resetForm();" icon="fas fa-badge-percent" />
 
-        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
+        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false; resetForm();">
             <div class="p-1 space-y-3">
                 <h2 class="text-2xl font-bold mb-4 text-center">{{ trans('Create Gift Offer') }}</h2>
 
@@ -127,12 +139,23 @@ const isFormInvalid = computed(() => {
 
                         {{ trans('Select product') }}:
                     </label>
-                    <PureMultiselectInfiniteScroll v-model="offerCategoryId" :fetchRoute="productFetchRoute"
+                    <PureMultiselectInfiniteScroll v-model="productId" :fetchRoute="productFetchRoute"
                         labelProp="name" placeholder="Select product" valueProp="id" :required="true" mode="single" />
                 </div>
+                 <div>
+                        <div class="font-medium mb-2 flex items-center gap-x-1">
+                            <FontAwesomeIcon icon="fas fa-asterisk"
+                                class="font-light text-xs text-red-400 align-middle" />
+                            {{ trans('Quantity') }}:
+                        </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="space-y-2">
+
+                        <InputNumber v-model="quantity" inputId="offer_discount"
+                            :placeholder="trans('Enter quantity')" :min="1" class="w-full" />
+
+                    </div>
+
+                <div class="space-y-2">
                         <label class="font-medium flex items-center gap-x-1">
                             <FontAwesomeIcon icon="fas fa-asterisk"
                                 class="font-light text-xs text-red-400 align-middle" />
@@ -141,23 +164,8 @@ const isFormInvalid = computed(() => {
                         <InputNumber v-model="offerAmount" inputId="offer_amount" class="w-full" mode="currency"
                             :currency="props.shop_data.currency_code" locale="en-US"
                             :placeholder="trans('Enter minimum amount')" />
-                    </div>
-                    <!-- Section: Discount -->
-                    <div>
-                        <div class="font-medium mb-2 flex items-center gap-x-1">
-                            <FontAwesomeIcon icon="fas fa-asterisk"
-                                class="font-light text-xs text-red-400 align-middle" />
-                            {{ trans('Discount') }}:
-                        </div>
-
-
-                        <InputNumber v-model="discountPercentage" inputId="offer_discount"
-                            :placeholder="trans('Enter percentage')" suffix="%" :min="0" :max="100" class="w-full" />
-
-                    </div>
                 </div>
-
-
+             
                 <!-- Section: Offer Duration -->
                 <div class="space-y-3">
 

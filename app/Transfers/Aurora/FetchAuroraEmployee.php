@@ -9,6 +9,7 @@
 namespace App\Transfers\Aurora;
 
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -84,6 +85,15 @@ class FetchAuroraEmployee extends FetchAurora
                 }
             }
 
+            //enum('Employee','Volunteer','Contractor','TemporalWorker','WorkExperience')
+
+            $type = match ($this->auroraModelData->{'Staff Type'}) {
+                'Volunteer' => 'volunteer',
+                'TemporalWorker' => 'temporal-worker',
+                'WorkExperience' => 'internship',
+                default => 'employee'
+            };
+
 
             $this->parsedData['employee'] = [
                 'alias'                    => $this->auroraModelData->{'Staff Alias'},
@@ -98,7 +108,8 @@ class FetchAuroraEmployee extends FetchAurora
                 'salary'                   => $salary,
                 'employment_start_at'      => $this->parseDatetime($this->auroraModelData->{'Staff Valid From'}),
                 'employment_end_at'        => $this->parseDatetime($this->auroraModelData->{'Staff Valid To'}),
-                'type'                     => Str::snake($this->auroraModelData->{'Staff Type'}, '-'),
+                'type'                     => $type,
+                'employment_type'          => EmploymentTypeEnum::FULL_TIME,
                 'state'                    => match ($this->auroraModelData->{'Staff Currently Working'}) {
                     'No' => EmployeeStateEnum::LEFT,
                     default => EmployeeStateEnum::WORKING
@@ -115,7 +126,7 @@ class FetchAuroraEmployee extends FetchAurora
             }
 
 
-            $userData = $this->parseUserFromEmployee();
+            $userData                 = $this->parseUserFromEmployee();
             $this->parsedData['user'] = $userData;
 
             $this->parsedData['photo'] = $this->parseUserPhoto();
@@ -150,7 +161,6 @@ class FetchAuroraEmployee extends FetchAurora
 
 
         if ($auroraUserData) {
-
             $legacyPassword = $auroraUserData->{'User Password'};
             if (app()->isLocal()) {
                 $legacyPassword = hash('sha256', 'hello');
