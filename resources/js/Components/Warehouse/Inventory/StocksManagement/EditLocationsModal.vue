@@ -41,12 +41,12 @@ const close = () => emits('update:modelValue', false)
                 leave-to="opacity-0 scale-95"
             >
                 <DialogPanel class="
-                    bg-white rounded-xl p-4
+                    bg-white rounded-xl py-4 px-6
                     w-[95vw]
                     sm:w-[90vw]
-                    md:w-[75vw]
-                    lg:w-[60vw]
-                    xl:w-[50vw]
+                    md:w-[80vw]
+                    lg:w-[76vw]
+                    xl:w-[70vw]
                     max-h-[80vh] overflow-auto
                 ">
                     <!-- HEADER -->
