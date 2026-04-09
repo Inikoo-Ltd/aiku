@@ -77,17 +77,17 @@ watch(() => props.locations, (newValue) => {
 <template>
     <div class="space-y-2">
             <!-- list -->
-            <div v-for="(location, idx) in cloneLocations"  class="grid grid-cols-1 md:grid-cols-7 gap-2 border-b pb-2">
-                <div class="col-span-3 flex items-center gap-x-2">
+            <div v-for="(location, idx) in cloneLocations"  class="grid grid-cols-7 gap-2 border-b pb-2">
+                <div class="col-span-2 md:col-span-3  flex items-center gap-x-2">
                     {{ location.code }}
                 </div>
 
-                <div v-tooltip="trans('Last audit  :date', { date: useFormatTime(new Date(location.audited_at)) })" class="col-span-2 text-right">
+                <div v-tooltip="trans('Last audit  :date', { date: useFormatTime(new Date(location.audited_at)) })" class="col-span-2 md:col-span-2 text-right">
                     {{ formatDistanceStrict(new Date(location.audited_at), new Date()) }}
                     <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400" fixed-width aria-hidden="true" />
                 </div>
 
-                <div class="col-span-2 text-right flex items-center justify-end gap-x-1">
+                <div class="col-span-3 md:col-span-2 text-right flex items-center justify-end gap-x-1">
                     <div v-if="location.quantity != props.locations.find(l => l.id === location.id)?.quantity">
                         <span v-if="location.quantity > props.locations.find(l => l.id === location.id)?.quantity" class="text-green-600">
                             +{{ location.quantity - (props.locations.find(l => l.id === location.id)?.quantity ?? 0) }}

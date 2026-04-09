@@ -13,6 +13,7 @@ import { inject, ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useForm } from '@inertiajs/vue3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
+import formatDistanceStrict from 'date-fns/formatDistanceStrict'
 library.add(faDotCircle, fasDotCircle, faForklift, faTimes)
 
 const props = defineProps<{
@@ -319,7 +320,7 @@ const resetForm = (scope: string = 'all') => {
                 </div>
                 <div v-tooltip="trans('Last audit :date', { date: useFormatTime(form.audited_at) })" class="text-right flex col-span-2 grid">
                      <span class="justify-self-end">
-                        {{ useFormatTime(form.audited_at) }}
+                        {{ formatDistanceStrict(new Date(form.audited_at), new Date()) }}
                         <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400" fixed-width aria-hidden="true" />
                      </span>
                 </div>
