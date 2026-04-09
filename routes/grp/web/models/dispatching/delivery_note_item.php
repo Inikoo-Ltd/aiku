@@ -6,9 +6,9 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\Picking\PickAllItem;
 use App\Actions\Dispatching\Picking\PickFromMagicPlace;
+use App\Actions\Dispatching\Picking\SetAsWaitingCrm;
 use App\Actions\Dispatching\Picking\SetAsWaitingWarehouse;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\Dispatching\Picking\StorePicking;
@@ -21,6 +21,7 @@ Route::name('delivery_note_item.')->prefix('delivery-note-item/{deliveryNoteItem
     Route::post('picking', UpsertPicking::class)->name('picking.upsert');
     Route::post('picking-all', PickAllItem::class)->name('picking_all.store')->withoutScopedBindings();
     Route::post('not-picking', StoreNotPickPicking::class)->name('not_picking.store')->withoutScopedBindings();
-    Route::post('set-as-waiting', SetAsWaitingWarehouse::class)->name('set_as_waiting.store')->withoutScopedBindings();
+    Route::post('set-as-waiting-warehouse', SetAsWaitingWarehouse::class)->name('set_as_waiting.store')->withoutScopedBindings();
+    Route::post('set-as-waiting-crm', SetAsWaitingCrm::class)->name('set_as_waiting_crm')->withoutScopedBindings();
     Route::post('pick-from-magic-place', PickFromMagicPlace::class)->name('picking.magic_place')->withoutScopedBindings();
 });
