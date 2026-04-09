@@ -99,6 +99,17 @@ class TransactionsResource extends JsonResource
             'product_units'             => $this->product_units,
             'is_cut_view'               => $this->is_cut_view,
             'is_gift'                   => $this->is_gift,
+            'pickings'                  => $this->deliveryNoteItems->flatMap(function ($item) {
+                return $item->pickings->map(function ($picking) {
+                    return [
+                        'id'             => $picking->id,
+                        'quantity'       => $picking->quantity,
+                        'location_code'  => $picking->location ? $picking->location->code : null,
+                        'location_slug'  => $picking->location ? $picking->location->slug : null,
+                        'warehouse_slug' => $picking->location && $picking->location->warehouse ? $picking->location->warehouse->slug : null,
+                    ];
+                });
+            })->values()->toArray(),
 
 
             'deleteRoute' => $request->user() instanceof User

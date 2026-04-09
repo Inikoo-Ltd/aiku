@@ -447,6 +447,20 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                 </div>
             </template>
 
+            <!-- Section: Pickings -->
+            <template #cell(pickings)="{ item }">
+                <div v-if="item.pickings && item.pickings.length > 0" class="flex flex-col gap-1">
+                    <div v-for="picking in item.pickings" :key="picking.id" class="text-sm flex items-center gap-2">
+                        <Link v-if="picking.location_code" 
+                              :href="route('grp.org.warehouses.show.infrastructure.locations.show', [route().params.organisation, picking.warehouse_slug, picking.location_slug])"
+                              :class="['primaryLink font-medium', picking.location_code ? '' : 'text-gray-400 italic']">
+                            {{ picking.location_code }}
+                        </Link>
+                        <span v-else class="text-gray-400 italic">No Location</span>
+                    </div>
+                </div>
+                <div v-else class="text-gray-400 italic text-sm">No items picked yet</div>
+            </template>
             <!-- Section: Price -->
             <template #cell(price)="{ item }">
                 <div v-if="item.is_gift">
