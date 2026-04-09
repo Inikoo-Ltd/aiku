@@ -11,111 +11,60 @@ namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
-use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Enums\UI\Dispatch\WaitingItemsTabsEnum;
+use App\Http\Resources\Dispatching\WaitingDeliveryNoteItemsGroupedResource;
 use App\Http\Resources\Dispatching\WaitingDeliveryNoteItemsResource;
-use App\InertiaTable\InertiaTable;
-use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
-use App\Services\QueryBuilder;
-use Closure;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexWaitingDeliveryNoteItems extends OrgAction
 {
     use WithDispatchingAuthorisation;
 
-    public function handle(Warehouse $warehouse, ?string $prefix = null): LengthAwarePaginator
+    public function handle(Warehouse $warehouse): Warehouse
     {
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query->whereStartWith('org_stocks.code', $value)
-                    ->orWhereStartWith('org_stocks.name', $value);
-            });
-        });
-
-        if ($prefix) {
-            InertiaTable::updateQueryBuilderParameters($prefix);
-        }
-
-        $query = QueryBuilder::for(DeliveryNoteItem::class);
-
-        $query->join('delivery_notes', 'delivery_note_items.delivery_note_id', '=', 'delivery_notes.id')
-            ->leftJoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id')
-            ->where('delivery_notes.warehouse_id', $warehouse->id)
-            ->where('delivery_note_items.state', DeliveryNoteItemStateEnum::HANDLING_BLOCKED);
-
-        return $query->defaultSort('delivery_note_items.id')
-            ->select([
-                'delivery_note_items.id',
-                'delivery_note_items.delivery_note_id',
-                'delivery_note_items.quantity_required',
-                'delivery_note_items.quantity_picked',
-                'delivery_note_items.state',
-                'delivery_notes.slug as delivery_note_slug',
-                'delivery_notes.reference as delivery_note_reference',
-                'org_stocks.id as org_stock_id',
-                'org_stocks.code as org_stock_code',
-                'org_stocks.name as org_stock_name',
-                DB::raw('(delivery_note_items.quantity_required - COALESCE(delivery_note_items.quantity_picked, 0)) as quantity_waiting'),
-            ])
-            ->allowedSorts(['org_stock_name', 'org_stock_code', 'quantity_waiting'])
-            ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+        return $warehouse;
     }
 
-    public function tableStructure(?string $prefix = null): Closure
+    public function htmlResponse(Warehouse $warehouse, ActionRequest $request): Response
     {
-        return function (InertiaTable $table) use ($prefix) {
-            if ($prefix) {
-                $table->name($prefix)->pageName($prefix.'Page');
-            }
+        $grouped  = IndexWaitingDeliveryNoteItemsGrouped::make()->handle($warehouse, WaitingItemsTabsEnum::GROUPED->value);
+        $itemized = IndexWaitingDeliveryNoteItemsItemized::make()->handle($warehouse, WaitingItemsTabsEnum::ITEMIZED->value);
 
-            $table->withEmptyState([
-                'title' => __('No waiting items found'),
-            ]);
-
-            $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity_waiting', label: __('Quantity Waiting'), canBeHidden: false, sortable: true, align: 'right');
-            $table->column(key: 'action', label: __('Action'), canBeHidden: false);
-        };
-    }
-
-    public function htmlResponse(LengthAwarePaginator $items, ActionRequest $request): Response
-    {
-        return Inertia::render(
-            'Org/Dispatching/WaitingDeliveryNoteItems',
-            [
-                'breadcrumbs'          => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'                => __('Waiting Items') . ' (' . $items->total() . ')',
-                'pageHead'             => [
+        $props = [
+            'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+            'title'       => __('Waiting Items'),
+            'pageHead'    => [
+                'title' => __('Waiting Items'),
+                'model' => __('Delivery Note'),
+                'icon'  => [
+                    'icon'  => ['fal', 'fa-hourglass-start'],
                     'title' => __('Waiting Items'),
-                    'model' => __('Delivery Note'),
-                    'icon'  => [
-                        'icon'  => ['fal', 'fa-hourglass-start'],
-                        'title' => __('Waiting Items'),
-                    ],
                 ],
-                'data'                 => WaitingDeliveryNoteItemsResource::collection($items),
-                'picking_session_route' => [
-                    'name'       => 'grp.models.warehouse.picking_session.store',
-                    'parameters' => [
-                        'warehouse' => $this->warehouse->id,
-                    ],
-                ],
-            ]
-        )->table($this->tableStructure());
+            ],
+            'tabs' => [
+                'current'    => $this->tab,
+                'navigation' => WaitingItemsTabsEnum::navigation(),
+            ],
+            WaitingItemsTabsEnum::GROUPED->value  => $this->tab == WaitingItemsTabsEnum::GROUPED->value
+                ? fn () => WaitingDeliveryNoteItemsGroupedResource::collection($grouped)
+                : Inertia::lazy(fn () => WaitingDeliveryNoteItemsGroupedResource::collection($grouped)),
+            WaitingItemsTabsEnum::ITEMIZED->value => $this->tab == WaitingItemsTabsEnum::ITEMIZED->value
+                ? fn () => WaitingDeliveryNoteItemsResource::collection($itemized)
+                : Inertia::lazy(fn () => WaitingDeliveryNoteItemsResource::collection($itemized)),
+        ];
+
+        return Inertia::render('Org/Dispatching/WaitingDeliveryNoteItems', $props)
+            ->table(IndexWaitingDeliveryNoteItemsGrouped::make()->tableStructure(WaitingItemsTabsEnum::GROUPED->value))
+            ->table(IndexWaitingDeliveryNoteItemsItemized::make()->tableStructure(WaitingItemsTabsEnum::ITEMIZED->value));
     }
 
-    public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Warehouse
     {
-        $this->initialisationFromWarehouse($warehouse, $request);
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(WaitingItemsTabsEnum::values());
 
         return $this->handle($warehouse);
     }

@@ -5,76 +5,51 @@
   -->
 
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3'
-import { notify } from "@kyvg/vue3-notification"
+import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from '@/types/PageHeading'
+import Tabs from "@/Components/Navigation/Tabs.vue"
+import { ref, computed, watch } from "vue"
+import { useTabChange } from "@/Composables/tab-change"
 import TableWaitingDeliveryNoteItems from '@/Components/Tables/Grp/Org/Dispatching/TableWaitingDeliveryNoteItems.vue'
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import { ref } from "vue"
-import { routeType } from '@/types/route'
-import { trans } from 'laravel-vue-i18n'
+import TableWaitingDeliveryNoteItemsGrouped from '@/Components/Tables/Grp/Org/Dispatching/TableWaitingDeliveryNoteItemsGrouped.vue'
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
-    data: {}
-    picking_session_route: routeType
+    tabs: {
+        current: string
+        navigation: Record<string, any>
+    }
+    grouped?: object
+    itemized?: object
 }>()
 
-const selectedDeliveryNoteIds = ref<number[]>([])
-const loading = ref(false)
+let currentTab = ref(props.tabs.current)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
-function createPickingSession() {
-    if (selectedDeliveryNoteIds.value.length === 0) return
-
-    if (!props.picking_session_route) {
-        notify({
-            title: trans('Something went wrong'),
-            text: trans('Please try again or contact support.'),
-            type: 'error',
-        })
-        return
+const component = computed(() => {
+    const components: Record<string, any> = {
+        grouped: TableWaitingDeliveryNoteItemsGrouped,
+        itemized: TableWaitingDeliveryNoteItems,
     }
+    return components[currentTab.value]
+})
 
-    loading.value = true
+const tabData = computed(() => {
+    return (props as Record<string, any>)[currentTab.value]
+})
 
-    router.post(
-        route(props.picking_session_route.name, props.picking_session_route.parameters),
-        { delivery_notes: selectedDeliveryNoteIds.value },
-        {
-            onFinish: () => {
-                loading.value = false
-            },
-            onError: (errors) => {
-                loading.value = false
-                if (errors.message) {
-                    notify({
-                        title: 'Validation Error',
-                        text: errors.message,
-                        type: 'error',
-                    })
-                }
-            },
-        }
-    )
-}
+watch(() => props.tabs.current, (newTab) => {
+    currentTab.value = newTab
+}, { immediate: true })
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead">
-        <template #other>
-            <Button
-                type="create"
-                :label="trans('Picking session') + (selectedDeliveryNoteIds.length > 0 ? ` (${selectedDeliveryNoteIds.length})` : '')"
-                :loading="loading"
-                @click="createPickingSession"
-                :disabled="selectedDeliveryNoteIds.length < 1"
-                v-tooltip="selectedDeliveryNoteIds.length > 0 ? '' : ctrans('Select items to add Picking Session')"
-            />
-        </template>
-    </PageHeading>
-    <TableWaitingDeliveryNoteItems :data="data" v-model:selectedDeliveryNoteIds="selectedDeliveryNoteIds" />
+    <PageHeading :data="pageHead" />
+    <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
+    <component :is="component" :data="tabData" :tab="currentTab" />
 </template>
+

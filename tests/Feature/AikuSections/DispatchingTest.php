@@ -540,7 +540,7 @@ test("UI Index dispatching waiting items", function () {
                     ->where("title", "Waiting Items")
                     ->etc()
             )
-            ->has("data");
+            ->has("tabs");
     });
 });
 
