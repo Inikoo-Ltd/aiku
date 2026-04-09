@@ -65,7 +65,7 @@ class StoreReplacementDeliveryNote extends OrgAction
         data_set($modelData, 'phone', SendOrderToWarehouse::make()->getPhone($order));
         data_set($modelData, 'company_name', SendOrderToWarehouse::make()->getCompanyName($order));
         data_set($modelData, 'contact_name', SendOrderToWarehouse::make()->getContactName($order));
-        
+
         data_set($modelData, 'customer_notes', $order->customer_notes);
         data_set($modelData, 'internal_notes', $order->internal_notes);
         data_set($modelData, 'public_notes', $order->public_notes);

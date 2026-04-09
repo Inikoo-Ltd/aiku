@@ -146,7 +146,7 @@ const getOfferCampaignLink = (offerCampaign: {}) => {
                 </dt>
         
                 <div class="relative col-span-3 justify-self-end font-medium overflow-hidden text-right">
-                    {{ useFormatTime(data.offer.start_at, { formatTime: 'hm', keepTimezone: true }) }} - {{ data.offer.end_at ? useFormatTime(data.offer.end_at, { formatTime: 'hm', keepTimezone: true }) : ctrans('Permanent') }}
+                    {{ useFormatTime(data.offer.start_at, { formatTime: 'hm' }) }} - {{ data.offer.end_at ? useFormatTime(data.offer.end_at, { formatTime: 'hm' }) : ctrans('Permanent') }}
                 </div>
             </div>
 

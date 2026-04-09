@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Shopify\Order;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Fulfilment\PalletReturn\StorePalletReturn;
+use App\Actions\Fulfilment\PalletReturn\SubmitPalletReturn;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItemsToReturn;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
@@ -93,6 +94,8 @@ class StoreFulfilmentOrderFromShopify extends OrgAction
                     'stored_items' => $storedItemModels
                 ]
             );
+
+            SubmitPalletReturn::run($palletReturn);
 
             $palletReturn->refresh();
         }

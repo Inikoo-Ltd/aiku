@@ -99,7 +99,7 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
                 }
 
                 if (is_string($rawMessage)) {
-                    $messageData = json_decode(Arr::get($stockUpdated, '0'), true);
+                    $messageData = json_decode($rawMessage, true);
                     if ($messageData) {
                         if (Arr::get($messageData, 'code') == 'rest_invalid_param' || Arr::get($messageData, 'code') == 'woocommerce_rest_product_invalid_id' || Arr::get($messageData, 'data.status') == 404 || Arr::get($messageData, 'data.status') == 400) {
                             $ban = false;

@@ -11,6 +11,7 @@ namespace App\Models\Inventory;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
+use App\Models\SysAdmin\User;
 use App\Models\Traits\InWarehouse;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,10 +52,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $running_quantity_org_stock running quantity on org_stock
  * @property bool|null $fixed_internal_helper
  * @property numeric|null $cost_per_sku
+ * @property int|null $user_id
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Inventory\Location|null $location
  * @property-read \App\Models\Inventory\OrgStock $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read User|null $user
  * @property-read \App\Models\Inventory\Warehouse $warehouse
  * @method static Builder<static>|OrgStockMovement newModelQuery()
  * @method static Builder<static>|OrgStockMovement newQuery()
@@ -96,5 +99,10 @@ class OrgStockMovement extends Model
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

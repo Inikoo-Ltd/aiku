@@ -79,7 +79,7 @@ trait HasOrderHydrators
         }
     }
 
-    public function orderHandlingHydrators(Order $order, OrderStateEnum $orderState, $delay=0): void
+    public function orderHandlingHydrators(Order $order, OrderStateEnum $orderState, $delay = 0): void
     {
         if ($orderState == OrderStateEnum::CREATING) {
             GroupHydrateOrderStateCreating::dispatch($order->group_id)->delay($delay);
