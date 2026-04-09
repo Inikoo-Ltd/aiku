@@ -91,7 +91,7 @@ const onUndoPick = async (routeTarget: routeType, loadingKey: string) => {
 const dataToSendAsWaiting = ref({
     note: '',
 })
-const isOpenModalSetAsWaiting = ref(false)
+const isOpenModalPassToCs = ref(false)
 const selectedTransactionToSetAsWaiting = ref(null)
 const isLoadingSetAsWaiting = ref(false)
 const onPassItemToCs = () => {
@@ -103,7 +103,7 @@ const onPassItemToCs = () => {
         {
             ...dataToSendAsWaiting.value,
             transaction_id: selectedTransactionToSetAsWaiting.value?.id,
-            quantity: selectedTransactionToSetAsWaiting.value?.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.value?.quantity_waiting_warehouse || 0) + Number(selectedTransactionToSetAsWaiting.value?.quantity_waiting_crm || 0)
+            quantity: Number(selectedTransactionToSetAsWaiting.value?.quantity_waiting_warehouse || 0) + Number(selectedTransactionToSetAsWaiting.value?.quantity_waiting_crm || 0)
         },
         {
             preserveScroll: true,
@@ -118,7 +118,7 @@ const onPassItemToCs = () => {
                     type: "success"
                 })
                 dataToSendAsWaiting.value.note = ''
-                isOpenModalSetAsWaiting.value = false
+                isOpenModalPassToCs.value = false
             },
             onError: errors => {
                 notify({
@@ -219,7 +219,7 @@ const onPassItemToCs = () => {
 
         <!-- Column: Actions (location picker + quantity + not-picked + button pass to CS) -->
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
-            <div v-if="itemValue.quantity_to_pick > 0">
+            <div v-if="Number(itemValue.quantity_waiting_warehouse) > 0">
                 <div v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)" class="rounded p-1 flex flex-col gap-2">
                     <div class="flex justify-between items-center gap-x-4">
                         <!-- Section: location -->
@@ -278,7 +278,8 @@ const onPassItemToCs = () => {
                                 :key="findLocation(itemValue.locations, proxyItem.org_stock_id).location_code"
                                 noUndoButton
                                 @onError="(error: any) => { proxyItem.errors = Object.values(error || {}) }"
-                                :modelValue="findLocation(itemValue.locations, proxyItem.org_stock_id).quantity_picked"
+                                xmodelValue="findLocation(itemValue.locations, proxyItem.org_stock_id).quantity_picked"
+                                :modelValue="null"
                                 @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
                                 saveOnForm
                                 :routeSubmit="{
@@ -290,7 +291,7 @@ const onPassItemToCs = () => {
                                     max: Math.min(
                                         findLocation(itemValue.locations, proxyItem.org_stock_id).quantity,
                                         itemValue.quantity_required,
-                                        itemValue.quantity_to_pick + findLocation(itemValue.locations, proxyItem.org_stock_id).quantity_picked
+                                        Number(itemValue.quantity_waiting_warehouse) + findLocation(itemValue.locations, proxyItem.org_stock_id).quantity_picked
                                     )
                                 }"
                                 :additionalData="{
@@ -312,8 +313,8 @@ const onPassItemToCs = () => {
                                         isWithError
                                     >
                                         <template #label>
-                                            <FractionDisplay v-if="itemValue.quantity_to_pick_fractional" :fractionData="itemValue.quantity_to_pick_fractional" />
-                                            <span v-else>{{ itemValue.quantity_to_pick }}</span>
+                                            <FractionDisplay v-if="itemValue.quantity_waiting_warehouse_fractional" :fractionData="itemValue.quantity_waiting_warehouse_fractional" />
+                                            <span v-else>{{ Number(itemValue.quantity_waiting_warehouse) }}</span>
                                         </template>
                                     </ButtonWithLink>
                                 </template>
@@ -327,7 +328,7 @@ const onPassItemToCs = () => {
                                 :bindToLink="{ preserveScroll: true }"
                             /> -->
 
-                            <Button @click="() => (isOpenModalSetAsWaiting = true, selectedTransactionToSetAsWaiting = itemValue, dataToSendAsWaiting.note = itemValue.notes)" icon="fal fa-user-headset" :label="trans('Pass to CS')" size="xs" type="tertiary" />
+                            <Button @click="() => (isOpenModalPassToCs = true, selectedTransactionToSetAsWaiting = itemValue, dataToSendAsWaiting.note = itemValue.notes)" icon="fal fa-user-headset" :label="trans('Pass to CS')" size="xs" type="tertiary" />
                         </div>
                     </div>
 
@@ -340,7 +341,7 @@ const onPassItemToCs = () => {
             <div v-else class="flex gap-x-2 items-center justify-between">
                 <div></div>
                 <div>
-                    <Button @click="() => (isOpenModalSetAsWaiting = true, selectedTransactionToSetAsWaiting = itemValue, dataToSendAsWaiting.note = itemValue.notes)" icon="fal fa-user-headset" :label="trans('Pass to CS')" size="xs" type="tertiary" />
+                    <Button @click="() => (isOpenModalPassToCs = true, selectedTransactionToSetAsWaiting = itemValue, dataToSendAsWaiting.note = itemValue.notes)" icon="fal fa-user-headset" :label="trans('Pass to CS')" size="xs" type="tertiary" />
 
                 </div>
             </div>
@@ -386,7 +387,7 @@ const onPassItemToCs = () => {
 
 
     <!-- Modal: Set Transaction as Waiting -->
-    <Modal :isOpen="isOpenModalSetAsWaiting" width="w-full max-w-lg" @close="isOpenModalSetAsWaiting = false">
+    <Modal :isOpen="isOpenModalPassToCs" width="w-full max-w-lg" @close="isOpenModalPassToCs = false">
         <!-- Product info header -->
         <div class="font-semibold text-center text-2xl mb-8">
             {{ trans("Pass item to CS") }}
@@ -423,8 +424,8 @@ const onPassItemToCs = () => {
                     v-if="GetQuantityToPickFractional(selectedTransactionToSetAsWaiting)"
                     :fractionData="GetQuantityToPickFractional(selectedTransactionToSetAsWaiting)"
                 />
-                <template v-else>{{ locale.number(selectedTransactionToSetAsWaiting.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) ?? 0) }}</template> -->
-                {{ selectedTransactionToSetAsWaiting.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) + Number(selectedTransactionToSetAsWaiting.quantity_waiting_crm || 0)  }}
+                <template v-else>{{ locale.number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) + Number(selectedTransactionToSetAsWaiting.quantity_waiting_crm || 0)  ) }}</template> -->
+                {{ selectedTransactionToSetAsWaiting.quantity_waiting_warehouse + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) + Number(selectedTransactionToSetAsWaiting.quantity_waiting_crm || 0)  }}
                 
             </span>
         </div>
@@ -439,7 +440,7 @@ const onPassItemToCs = () => {
 
         <div class="flex gap-2 mt-6">
             <Button
-                @click="() => isOpenModalSetAsWaiting = false"
+                @click="() => isOpenModalPassToCs = false"
                 :label="ctrans('Cancel')"
                 type="negative"
             />

@@ -54,6 +54,7 @@ class WaitingDeliveryNoteItemsResource extends JsonResource
 
         $quantityToPick = max(0, $this->quantity_required - $this->quantity_picked - ($this->quantity_not_picked ?? 0) - ($this->quantity_waiting_warehouse ?? 0) - ($this->quantity_waiting_crm ?? 0));
 
+        // dump($this->quantity_required, $this->quantity_picked, $this->quantity_not_picked, $this->quantity_waiting_warehouse, $this->quantity_waiting_crm, 'xxxxxxxxxxxxxxxxxxxxxxx');
         $pickingLocations = DB::table('location_org_stocks')
             ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
             ->where('org_stock_id', $this->org_stock_id)
@@ -99,10 +100,10 @@ class WaitingDeliveryNoteItemsResource extends JsonResource
         }
 
         $quantityToPickFractional   = riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $packedIn);
-        $quantityToPickFractionalDS = $quantityToPickFractional;
-        if (floor($quantityToPick) == $quantityToPick && $packedIn > 1) {
-            $quantityToPickFractionalDS = [0, [$quantityToPick * $packedIn, $packedIn]];
-        }
+        // $quantityToPickFractionalDS = $quantityToPickFractional;
+        // if (floor($quantityToPick) == $quantityToPick && $packedIn > 1) {
+        //     $quantityToPickFractionalDS = [0, [$quantityToPick * $packedIn, $packedIn]];
+        // }
 
         $deliveryNoteItem = DeliveryNoteItem::find($this->id);
 
@@ -136,7 +137,7 @@ class WaitingDeliveryNoteItemsResource extends JsonResource
             'quantity_required'                 => $this->quantity_required,
             'quantity_to_pick'                  => $quantityToPick,
             'quantity_to_pick_fractional'       => $quantityToPickFractional,
-            'quantity_to_pick_fractional_ds'    => $quantityToPickFractionalDS,
+            // 'quantity_to_pick_fractional_ds'    => $quantityToPickFractionalDS,
             'quantity_picked'                   => $this->quantity_picked,
             'quantity_not_picked'               => $this->quantity_not_picked,
             'quantity_waiting_warehouse'        => $this->quantity_waiting_warehouse,
