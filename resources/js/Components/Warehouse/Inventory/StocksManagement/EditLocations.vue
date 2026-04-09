@@ -75,11 +75,11 @@ const newLocation = ref<stockLocation | null>(null)
 </script>
 
 <template>
-    <div class="space-y-4">
+    <div class="space-y-6">
             <!-- V-FOR 1: Existing locations -->
-            <div class="flex flex-col gap-y-3">
+            <div class="flex flex-col gap-y-6">
                 <div v-for="(loc, idx) in props.locations" :key="'existing-' + loc.id"
-                    class="grid grid-cols-7 gap-x-3 items-center gap-2">
+                    class="grid grid-cols-1 md:grid-cols-7 border-b pb-2 items-center gap-2">
                     <div class="col-span-2 flex items-center gap-x-2">
                         {{ loc.code }}
                     </div>
@@ -102,8 +102,8 @@ const newLocation = ref<stockLocation | null>(null)
                         >
                             <template #default="{ isOpenModal, changeModel, isLoadingdelete }">
                                 <div v-if="layout.app.environment === 'local'" @click="() => {
-    changeModel()
-}" xclick="handleUnlink(loc)" class="cursor-pointer text-red-500 opacity-50 hover:opacity-100" v-tooltip="trans('Unlink Location')">
+                                    changeModel()
+                                }" xclick="handleUnlink(loc)" class="cursor-pointer text-red-500 opacity-50 hover:opacity-100" v-tooltip="trans('Unlink Location')">
                                     <LoadingIcon v-if="isLoadingdelete" />
                                     <FontAwesomeIcon v-else icon="fal fa-unlink" class="" fixed-width aria-hidden="true" />
                                 </div>

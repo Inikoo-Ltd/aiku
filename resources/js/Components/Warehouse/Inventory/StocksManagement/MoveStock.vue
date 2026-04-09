@@ -18,7 +18,7 @@ library.add(faDotCircle, fasDotCircle, faForklift, faTimes)
 const props = defineProps<{
     part_locations: {
         id: number
-        name: string
+        code: string
         slug: string
         stock: number
         isAudited: boolean
@@ -28,14 +28,6 @@ const props = defineProps<{
 const emits = defineEmits(['close'])
 
 const layout = inject('layout', layoutStructure)
-
-// const dummyData = ref([
-//     { id: 1, name: 'E1', lastAudit: new Date(), stock: 45, isAudited: true },
-//     { id: 2, name: 'E2', lastAudit: new Date(), stock: 30, isAudited: false },
-//     { id: 3, name: 'E3', lastAudit: new Date(), stock: 60, isAudited: true },
-//     { id: 4, name: 'E4', lastAudit: new Date(), stock: 20, isAudited: false },
-//     { id: 5, name: 'E5', lastAudit: new Date(), stock: 80, isAudited: true }
-// ])
 
 // Move stock state
 const moveStock = ref({
@@ -48,14 +40,20 @@ const moveStock = ref({
 const form = useForm({
     stockCheck: props.part_locations.map(item => ({
         id: item.id,
-        name: item.name,
-        stock: item.stock,
+        name: item.code,
+        stock: Number(item.quantity ?? 0) ,
         isAudited: item.isAudited
     })),
     moveStock: null
 })
 
 const selectSourceWarehouse = (warehouse: any) => {
+    if (!warehouse.stock || warehouse.stock <= 0) {
+        console.warn('❌ Cannot select source with 0 stock', warehouse)
+        return
+    }
+
+    console.log('SOURCE selected:', warehouse)
     moveStock.value.from = warehouse
     moveStock.value.to = null
     moveStock.value.quantity = 0
@@ -63,6 +61,8 @@ const selectSourceWarehouse = (warehouse: any) => {
 }
 
 const selectDestinationWarehouse = (warehouse: any) => {
+    console.log('DESTINATION selected:', warehouse)
+
     moveStock.value.to = warehouse
     form.moveStock = {
         from: moveStock.value.from.name,
@@ -82,17 +82,21 @@ const closeMoveStock = () => {
 }
 
 const updateMoveQuantity = (value: number) => {
+    console.log('Input quantity:', value)
     // Ensure value is valid and within bounds
-    const validValue = value || 0
+    const validValue = Number(value || 0)
     const maxQuantity = getMaxQuantity()
     
     // Reset to 0 if value is invalid or exceeds maximum
     if (validValue < 0 || validValue > maxQuantity) {
+         console.log('Input quantity:', value)
         moveStock.value.quantity = 0
     } else {
         moveStock.value.quantity = validValue
     }
     
+    console.warn('Invalid quantity:', validValue)
+
     if (form.moveStock) {
         form.moveStock.quantity = moveStock.value.quantity
     }
@@ -108,13 +112,16 @@ const getCalculatedStock = (warehouse: { stock: number; id: any }) => {
     }
     
     // If this is the source warehouse, subtract the quantity
-    if (moveStock.value.from && moveStock.value.from.id === warehouse.id) {
-        return warehouse.stock - moveStock.value.quantity
+    if (moveStock.value.from?.id === warehouse.id) {
+        const result = warehouse.stock - moveStock.value.quantity
+        console.log('FROM calc:', warehouse.stock, '-', moveStock.value.quantity, '=', result)
+        return result
     }
-    
-    // If this is the destination warehouse, add the quantity
-    if (moveStock.value.to && moveStock.value.to.id === warehouse.id) {
-        return warehouse.stock + moveStock.value.quantity
+
+    if (moveStock.value.to?.id === warehouse.id) {
+        const result = warehouse.stock + moveStock.value.quantity
+        console.log('TO calc:', warehouse.stock, '+', moveStock.value.quantity, '=', result)
+        return result
     }
     
     return warehouse.stock
@@ -196,7 +203,8 @@ const submitCheckStock = () => {
                     <FontAwesomeIcon icon="fas fa-times" class="text-xs" />
                 </button>
                 
-                <div class="flex items-center gap-2 mb-3">
+               
+                <div class="flex items-center gap-x-12 mb-3">
                     <span class="font-medium">{{ moveStock.from?.name || '?' }}</span>
                     <FontAwesomeIcon icon="fas fa-forklift" class="text-gray-600" />
                     <span class="font-medium">{{ moveStock.to?.name || '?' }}</span>
@@ -219,17 +227,35 @@ const submitCheckStock = () => {
                     <span class="text-xs text-gray-500">/ {{ getMaxQuantity() }}</span>
                 </div>
                 
-                <div v-else class="text-sm text-gray-500">
+                <!-- <div v-else class="text-sm text-gray-500">
                     Select destination warehouse by clicking forklift icon
-                </div>
+                </div> -->
             </div>
-            
-            <div v-for="(forrrmm, idx) in form.stockCheck" class="grid grid-cols-7 gap-x-3 items-center gap-2">
+             <div class="text-sm text-gray-500 mb-2">
+                    <span v-if="!moveStock.isActive">
+                        <FontAwesomeIcon icon="fas fa-arrow-right" /> Select source location by clicking forklift icon
+                    </span>
+
+                    <span v-else-if="moveStock.from && !moveStock.to">
+                        <FontAwesomeIcon icon="fas fa-arrow-right" /> Select destination location by clicking forklift icon
+                    </span>
+
+                    <span v-else>
+                        <FontAwesomeIcon icon="fas fa-arrow-right" /> Enter quantity to move
+                    </span>
+                </div>
+            <div v-for="(forrrmm, idx) in form.stockCheck" :key="forrrmm.id"
+                :class="[
+                    'grid grid-cols-7 gap-x-3 items-center gap-2 px-2 py-2 rounded transition',
+                    moveStock.from?.id === forrrmm.id ? 'bg-red-50 border border-red-100' :
+                    moveStock.to?.id === forrrmm.id ? 'bg-green-50 border border-green-100' :
+                    'hover:bg-gray-50'
+                ]">
                 <div class="col-span-4 flex items-center gap-x-2">
                     {{ forrrmm.name }}
                 </div>
                 <div v-tooltip="trans('Last audit :date', { date: useFormatTime(new Date()) })" class="text-right">
-                    0
+                     {{forrrmm.stock}}
                     <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400" fixed-width aria-hidden="true" />
                 </div>
                 <div class="col-span-2 text-right flex items-center justify-end gap-x-1">
@@ -243,12 +269,12 @@ const submitCheckStock = () => {
                         </span>
                     </div>
                     <!-- Original stock change indicator -->
-                    <div v-else-if="forrrmm.stock != part_locations[idx].stock">
-                        <span v-if="forrrmm.stock > part_locations[idx].stock" class="text-green-600">
-                            +{{ forrrmm.stock - part_locations[idx].stock }}
+                    <div v-else-if="forrrmm.stock != part_locations[idx].quantity">
+                        <span v-if="forrrmm.stock > part_locations[idx].quantity" class="text-green-600">
+                            +{{ forrrmm.stock - part_locations[idx].quantity }}
                         </span>
                         <span v-else class="text-red-500">
-                            -{{ part_locations[idx].stock - forrrmm.stock }}
+                            -{{ part_locations[idx].quantity - forrrmm.stock }}
                         </span>
                     </div>
                     <!-- <div v-else @click="() => forrrmm.isAudited = !forrrmm.isAudited" class="cursor-pointer" :class="forrrmm.isAudited ? 'text-green-500' : 'text-gray-400 hover:text-green-500'">
@@ -264,20 +290,39 @@ const submitCheckStock = () => {
                             :modelValue="getCalculatedStock(forrrmm)"
                             @input="(event: { value: any }) => forrrmm.stock = event.value"
                             :min="0"
-                            :disabled="true"
+                            disabled
                             :step="1"
                             size="small"
                             fluid
                             inputClass="!py-0 !pr-6"
+                            :inputClass="[
+                                moveStock.from?.id === forrrmm.id ? '!text-red-500' :
+                                moveStock.to?.id === forrrmm.id ? '!text-green-600' :
+                                ''
+                            ]"
                         />
                         <FontAwesomeIcon
                             icon="fas fa-forklift"
                             :class="[
-                                'text-xs cursor-pointer',
-                                !moveStock.isActive ? 'text-gray-400 hover:text-gray-600' : 
-                                moveStock.from && moveStock.from.id === forrrmm.id ? 'text-gray-300 cursor-not-allowed' :
-                                !moveStock.from ? 'text-gray-400 hover:text-gray-600' :
-                                'text-blue-500 hover:text-blue-700'
+                                'text-sm cursor-pointer transition',
+                                
+                                // SOURCE
+                                moveStock.from?.id === forrrmm.id 
+                                    ? 'text-red-500 scale-110' :
+
+                                // DESTINATION
+                                moveStock.to?.id === forrrmm.id 
+                                    ? 'text-green-600 scale-110' :
+
+                                // NORMAL
+                                !moveStock.isActive 
+                                    ? 'text-gray-400 hover:text-gray-600' :
+
+                                // ACTIVE MODE
+                                moveStock.from && !moveStock.to
+                                    ? 'text-blue-500 hover:text-blue-700' :
+
+                                'text-gray-400'
                             ]"
                             fixed-width
                             aria-hidden="true"
