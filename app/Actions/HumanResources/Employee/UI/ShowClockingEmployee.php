@@ -67,6 +67,11 @@ class ShowClockingEmployee extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => TimesheetTabsEnum::navigation()
                 ],
+                'manual_clock_out' => [
+                    'can_edit' => false,
+                    'has_open_tracker' => false,
+                    'route' => null,
+                ],
 
                 'timesheet' => GetTimesheetShowcase::run($timesheet),
 

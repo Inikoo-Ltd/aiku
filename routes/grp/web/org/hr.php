@@ -34,6 +34,7 @@ use App\Actions\HumanResources\JobPosition\UI\ShowJobPosition;
 use App\Actions\HumanResources\Timesheet\Pdf\PdfTimesheet;
 use App\Actions\HumanResources\Timesheet\Pdf\PdfTimesheets;
 use App\Actions\HumanResources\Timesheet\UI\IndexTimesheets;
+use App\Actions\HumanResources\Timesheet\ManualClockOut;
 use App\Actions\HumanResources\Timesheet\UI\ShowTimesheet;
 use App\Actions\HumanResources\Overtime\UI\IndexOvertime;
 use App\Actions\HumanResources\Overtime\UI\IndexOvertimeTypes;
@@ -99,6 +100,7 @@ Route::prefix('employees')->as('employees.')->group(function () {
             Route::get('timesheets', [IndexTimesheets::class,'inEmployee'])->name('timesheets.index');
             Route::get('timesheets/export', ExportEmployeeTimesheets::class)->name('timesheets.export');
             Route::get('timesheets/{timesheet}', [ShowTimesheet::class, 'inEmployee'])->name('timesheets.show');
+            Route::post('timesheets/{timesheet}/manual-clock-out', [ManualClockOut::class, 'inEmployee'])->name('timesheets.manual_clock_out');
         });
     });
 });
@@ -125,6 +127,7 @@ Route::patch('/holiday-years/{holidayYear}/activate', ActivateHolidayYear::class
 Route::get('/timesheets', IndexTimesheets::class)->name('timesheets.index');
 Route::get('/timesheets-export', PdfTimesheets::class)->name('timesheets.export');
 Route::get('/timesheets/{timesheet}', ShowTimesheet::class)->name('timesheets.show');
+Route::post('/timesheets/{timesheet}/manual-clock-out', ManualClockOut::class)->name('timesheets.manual_clock_out');
 
 Route::get('/workplaces', IndexWorkplaces::class)->name('workplaces.index');
 Route::get('/workplaces/create', CreateWorkplace::class)->name('workplaces.create');

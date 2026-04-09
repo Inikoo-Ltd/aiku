@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3"
+import { Head, router } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { computed, ref } from "vue"
@@ -23,6 +23,9 @@ import { faVoteYea, faArrowsH, faPlus } from "@fal"
 import { format, parseISO } from "date-fns"
 import { useSecondsToMS, useHMAP } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
+import ConfirmPopup from "primevue/confirmpopup"
+import { useConfirm } from "primevue/useconfirm"
+import type { routeType } from "@/types/route"
 
 library.add(faVoteYea, faArrowsH, faPlus)
 
@@ -37,6 +40,11 @@ const props = defineProps<{
 	override?: {}
 	time_trackers?: {}
 	clockings?: {}
+	manual_clock_out?: {
+		can_edit: boolean
+		has_open_tracker: boolean
+		route?: routeType | null
+	}
 	timesheet: {
 		work_start_at?: string
 		work_end_at?: string
@@ -50,6 +58,53 @@ const props = defineProps<{
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+const confirm = useConfirm()
+
+const manualClockOutActions = computed(() => {
+	if (!props.manual_clock_out?.can_edit || !props.manual_clock_out?.has_open_tracker || !props.manual_clock_out?.route) {
+		return []
+	}
+
+	return [
+		{
+			label: trans("Manual Clock Out"),
+			icon: "fal fa-plus",
+			type: "icon",
+			onClick: (event: MouseEvent) => {
+				const target = event.currentTarget as HTMLElement | null
+				if (!target) return
+
+				confirm.require({
+					target,
+					message: trans("Are you sure you want to manually clock out this user?"),
+					icon: "pi pi-exclamation-triangle",
+					rejectProps: {
+						label: trans("Cancel"),
+						severity: "secondary",
+						outlined: true,
+					},
+					acceptProps: {
+						label: trans("Yes"),
+						severity: "danger",
+					},
+					accept: () => {
+						const manualClockOutRoute = props.manual_clock_out?.route
+						if (!manualClockOutRoute) return
+
+						router.post(
+							route(manualClockOutRoute.name, manualClockOutRoute.parameters),
+							manualClockOutRoute.body ?? {},
+							{
+								preserveScroll: true,
+								preserveState: false,
+							}
+						)
+					},
+				})
+			},
+		},
+	]
+})
 
 const component = computed(() => {
 	const components: Component = {
@@ -129,10 +184,8 @@ const component = computed(() => {
 		:navigation="tabs['navigation']"
 		@update:tab="handleTabUpdate">
 		<template #right>
-			<TabsRightActions
-				:actions="[
-					{ label: 'Override', icon: 'fal fa-plus', type: 'icon', onClick: () => {} },
-				]" />
+			<ConfirmPopup />
+			<TabsRightActions :actions="manualClockOutActions" />
 		</template>
 	</Tabs>
 	<component

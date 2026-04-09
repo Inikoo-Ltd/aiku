@@ -14,7 +14,7 @@ interface ActionButton {
 	label: string
 	icon?: string
 	type?: string
-	onClick: () => void
+	onClick: (event: MouseEvent) => void
 }
 
 defineProps<{
@@ -30,7 +30,7 @@ const layoutStore = inject("layout", layoutStructure)
 			v-for="(action, index) in actions"
 			:key="`action-${index}`"
 			v-tooltip="action.label"
-			@click="action.onClick"
+			@click="action.onClick($event)"
 			class="relative group inline-flex gap-x-1.5 justify-center items-center py-2 px-2 border-b-2 font-medium text-sm tabNavigation">
 			<FontAwesomeIcon
 				v-if="action.icon"

@@ -84,6 +84,28 @@ class ShowTimesheet extends OrgAction
                     'current' => $this->tab,
                     'navigation' => TimesheetTabsEnum::navigation()
                 ],
+                'manual_clock_out' => [
+                    'can_edit' => $this->canEdit,
+                    'has_open_tracker' => $timesheet->number_open_time_trackers > 0,
+                    'route' => $this->canEdit && $timesheet->number_open_time_trackers > 0 ? [
+                        'name' => match ($request->route()->getName()) {
+                            'grp.org.hr.employees.show.timesheets.show' => 'grp.org.hr.employees.show.timesheets.manual_clock_out',
+                            default => 'grp.org.hr.timesheets.manual_clock_out',
+                        },
+                        'parameters' => match ($request->route()->getName()) {
+                            'grp.org.hr.employees.show.timesheets.show' => [
+                                'organisation' => $this->organisation->slug,
+                                'employee' => $timesheet->subject->slug,
+                                'timesheet' => $timesheet->id,
+                            ],
+                            default => [
+                                'organisation' => $this->organisation->slug,
+                                'timesheet' => $timesheet->id,
+                            ],
+                        },
+                        'method' => 'post',
+                    ] : null,
+                ],
 
                 'timesheet' => GetTimesheetShowcase::run($timesheet),
 
