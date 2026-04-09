@@ -23,9 +23,10 @@ import { faVoteYea, faArrowsH, faPlus } from "@fal"
 import { format, parseISO } from "date-fns"
 import { useSecondsToMS, useHMAP } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
+import type { routeType } from "@/types/route"
 import ConfirmPopup from "primevue/confirmpopup"
 import { useConfirm } from "primevue/useconfirm"
-import type { routeType } from "@/types/route"
+import ManualClockOutModal from "@/Components/HumanResources/ManualClockOutModal.vue"
 
 library.add(faVoteYea, faArrowsH, faPlus)
 
@@ -42,6 +43,7 @@ const props = defineProps<{
 	clockings?: {}
 	manual_clock_out?: {
 		can_edit: boolean
+		is_today: boolean
 		has_open_tracker: boolean
 		route?: routeType | null
 	}
@@ -60,6 +62,8 @@ const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const confirm = useConfirm()
 
+const isManualClockOutOpen = ref(false)
+
 const manualClockOutActions = computed(() => {
 	if (!props.manual_clock_out?.can_edit || !props.manual_clock_out?.has_open_tracker || !props.manual_clock_out?.route) {
 		return []
@@ -71,36 +75,40 @@ const manualClockOutActions = computed(() => {
 			icon: "fal fa-plus",
 			type: "icon",
 			onClick: (event: MouseEvent) => {
-				const target = event.currentTarget as HTMLElement | null
-				if (!target) return
+				if (props.manual_clock_out?.is_today) {
+					const target = event.currentTarget as HTMLElement | null
+					if (!target) return
 
-				confirm.require({
-					target,
-					message: trans("Are you sure you want to manually clock out this user?"),
-					icon: "pi pi-exclamation-triangle",
-					rejectProps: {
-						label: trans("Cancel"),
-						severity: "secondary",
-						outlined: true,
-					},
-					acceptProps: {
-						label: trans("Yes"),
-						severity: "danger",
-					},
-					accept: () => {
-						const manualClockOutRoute = props.manual_clock_out?.route
-						if (!manualClockOutRoute) return
+					confirm.require({
+						target,
+						message: trans("Are you sure you want to manually clock out this user?"),
+						icon: "pi pi-exclamation-triangle",
+						rejectProps: {
+							label: trans("Cancel"),
+							severity: "secondary",
+							outlined: true,
+						},
+						acceptProps: {
+							label: trans("Yes"),
+							severity: "danger",
+						},
+						accept: () => {
+							const manualClockOutRoute = props.manual_clock_out?.route
+							if (!manualClockOutRoute) return
 
-						router.post(
-							route(manualClockOutRoute.name, manualClockOutRoute.parameters),
-							manualClockOutRoute.body ?? {},
-							{
-								preserveScroll: true,
-								preserveState: false,
-							}
-						)
-					},
-				})
+							router.post(
+								route(manualClockOutRoute.name, manualClockOutRoute.parameters),
+								manualClockOutRoute.body ?? {},
+								{
+									preserveScroll: true,
+									preserveState: false,
+								}
+							)
+						},
+					})
+				} else {
+					isManualClockOutOpen.value = true
+				}
 			},
 		},
 	]
@@ -192,4 +200,12 @@ const component = computed(() => {
 		:is="component"
 		:data="props[currentTab as keyof typeof props]"
 		:tab="currentTab"></component>
+
+	<ManualClockOutModal
+		v-if="props.manual_clock_out?.route"
+		:isOpen="isManualClockOutOpen"
+		:submitRoute="props.manual_clock_out.route"
+		:timesheetDate="pageHead.title"
+		@onClose="isManualClockOutOpen = false"
+	/>
 </template>

@@ -86,6 +86,7 @@ class ShowTimesheet extends OrgAction
                 ],
                 'manual_clock_out' => [
                     'can_edit' => $this->canEdit,
+                    'is_today' => $timesheet->date->isToday(),
                     'has_open_tracker' => $timesheet->number_open_time_trackers > 0,
                     'route' => $this->canEdit && $timesheet->number_open_time_trackers > 0 ? [
                         'name' => match ($request->route()->getName()) {

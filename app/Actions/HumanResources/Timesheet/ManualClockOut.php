@@ -27,15 +27,21 @@ use Lorisleiva\Actions\ActionRequest;
 class ManualClockOut extends OrgAction
 {
     use WithHumanResourcesEditAuthorisation;
-
-    public function handle(Timesheet $timesheet, User $generator): void
+    public function handle(Timesheet $timesheet, User $generator, ?string $time = null): void
     {
         /** @var TimeTracker|null $openTimeTracker */
         $openTimeTracker = $timesheet->timeTrackers()
-            ->whereNull('end_clocking_id')
             ->where('status', 'open')
             ->latest('id')
             ->first();
+
+        if (!$openTimeTracker) {
+            // Fallback: check by end_clocking_id just in case status is out of sync
+            $openTimeTracker = $timesheet->timeTrackers()
+                ->whereNull('end_clocking_id')
+                ->latest('id')
+                ->first();
+        }
 
         if (!$openTimeTracker) {
             throw ValidationException::withMessages([
@@ -54,12 +60,29 @@ class ManualClockOut extends OrgAction
         /** @var Employee|Guest $subject */
         $subject = $timesheet->subject;
 
+        $timezone = $this->organisation->timezone->name ?? 'UTC';
+
+        if ($time) {
+            $timeString = $time;
+            if (strlen($time) > 8) {
+                try {
+                    $timeString = \Illuminate\Support\Carbon::parse($time)->toTimeString();
+                } catch (\Exception) {
+                    $timeString = substr($time, 0, 8);
+                }
+            }
+
+            $clockedAt = $timesheet->date->copy()->shiftTimezone($timezone)->setTimeFromTimeString($timeString);
+        } else {
+            $clockedAt = now()->setTimezone($timezone);
+        }
+
         StoreClocking::make()->action(
             generator: $generator,
             parent: $workplace,
             subject: $subject,
             modelData: [
-                'clocked_at' => now(),
+                'clocked_at' => $clockedAt->toIso8601String(),
             ]
         );
     }
@@ -68,7 +91,7 @@ class ManualClockOut extends OrgAction
     {
         $this->initialisation($organisation, $request);
 
-        $this->handle($timesheet, $request->user());
+        $this->handle($timesheet, $request->user(), $request->input('time'));
     }
 
     public function inEmployee(Organisation $organisation, Employee $employee, Timesheet $timesheet, ActionRequest $request): void
@@ -79,7 +102,7 @@ class ManualClockOut extends OrgAction
 
         $this->initialisation($organisation, $request);
 
-        $this->handle($timesheet, $request->user());
+        $this->handle($timesheet, $request->user(), $request->input('time'));
     }
 
     public function htmlResponse(): RedirectResponse
