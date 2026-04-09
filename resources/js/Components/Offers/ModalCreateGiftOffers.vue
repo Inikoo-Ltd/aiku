@@ -96,9 +96,9 @@ const productFetchRoute = {
 
 const resetForm = () => {
     offerLabel.value = ''
-    offerAmount.value = null
+    offerAmount.value = 0
     productId.value = null
-    quantity.value = null
+    quantity.value = 1
     dateType.value = 'permanent'
     startDate.value = null
     endDate.value = null
@@ -113,13 +113,14 @@ const isFormInvalid = computed(() => {
     if (dateType.value === 'interval' && !endDate.value) return true
     return false
 })
+resetForm()
 </script>
 
 <template>
     <div>
-        <Button :label="trans('Create Gift Offer')" @click="isOpenModal = true" icon="fas fa-badge-percent" />
+        <Button :label="trans('Create Gift Offer')" @click="isOpenModal = true; resetForm();" icon="fas fa-badge-percent" />
 
-        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
+        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false; resetForm();">
             <div class="p-1 space-y-3">
                 <h2 class="text-2xl font-bold mb-4 text-center">{{ trans('Create Gift Offer') }}</h2>
 
