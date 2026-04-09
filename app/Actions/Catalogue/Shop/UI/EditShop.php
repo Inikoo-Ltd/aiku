@@ -622,6 +622,7 @@ class EditShop extends OrgAction
                             'value' => [
                                 'provider' => $shop->settings['reviews']['provider'] ?? null,
                                 'data' =>  $shop->settings['reviews']['data'] ?? null,
+                                'enabled' => $shop->settings['reviews']['enabled'] ?? true,
                             ],
                         ],
                     ],

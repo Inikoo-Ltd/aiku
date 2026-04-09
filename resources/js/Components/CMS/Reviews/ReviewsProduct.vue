@@ -29,8 +29,10 @@ const resolvedComponent = computed(() => {
 </script>
 
 <template>
-    <div v-if="!resolvedComponent"></div>
-    <component v-else :is="resolvedComponent" :product="product" :review="review" />
+    <div v-if="review?.enabled ?? true">
+        <div v-if="!resolvedComponent"></div>
+        <component v-else :is="resolvedComponent" :product="product" :review="review" />
+    </div>
 </template>
 
 <style scoped></style>
