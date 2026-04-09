@@ -145,6 +145,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'org_stock_code'               => $this->org_stock_code,
             'org_stock_slug'               => $this->org_stock_slug,
             'org_stock_name'               => $this->org_stock_name,
+            'org_stock_image_thumbnail'    => $deliveryNoteItem->orgStock?->tradeUnits->first()?->imageSources(64, 64),
             'locations'                    => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
             'pickings'                     => PickingResource::collection($pickings),
             'packings'                     => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],

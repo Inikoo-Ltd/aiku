@@ -17,7 +17,7 @@ import { trans } from "laravel-vue-i18n";
 import { routeType } from "@/types/route";
 import { ref, onMounted, reactive, inject, computed, watch } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo } from "@fal";
+import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox } from "@fal";
 import { faSkull, faWandMagic } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
@@ -31,7 +31,8 @@ import ExpiryDateLabel from "@/Components/Utils/Label/ExpiryDateLabel.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import axios from "axios";
-library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic);
+import Image from "@/Components/Image.vue"
+library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox);
 
 
 const props = defineProps<{
@@ -304,6 +305,7 @@ const submitTransactionAsWaiting = () => {
                     type: "success"
                 })
                 dataToSendAsWaiting.value.note = ''
+                isOpenModalSetAsWaiting.value = false
             },
             onError: errors => {
                 notify({
@@ -1049,35 +1051,66 @@ watch(modalResource, (val) => {
     </Modal>
 
     <!-- Modal: Set Transaction as Waiting -->
-    <Modal :isOpen="isOpenModalSetAsWaiting" width="w-full max-w-2xl" @close="isOpenModalSetAsWaiting = false">
-        <div class="font-semibold text-xl text-center">
-            {{ trans("Set :itemName as waiting", { itemName: selectedTransactionToSetAsWaiting?.org_stock_name ?? '-' }) }}
-        </div>
-        <div class="text-center mb-8 italic opacity-80">
-            {{ selectedTransactionToSetAsWaiting?.org_stock_code }}
+    <Modal :isOpen="isOpenModalSetAsWaiting" width="w-full max-w-lg" @close="isOpenModalSetAsWaiting = false">
+        <!-- Product info header -->
+        <div class="font-semibold text-center text-2xl mb-8">
+            {{ trans("Set item as waiting") }}
         </div>
 
-        <div class="mt-8 space-y-8">
-            <div>
-                <label for="amount" class="font-medium mb-1 flex items-center gap-x-1">
-                    {{ trans('Note') }}:
-                </label>
+        <div class="flex items-center gap-4 mb-2">
+            <div class="shrink-0 size-16 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
+                <Image
+                    v-if="selectedTransactionToSetAsWaiting?.org_stock_image_thumbnail"
+                    :src="selectedTransactionToSetAsWaiting.org_stock_image_thumbnail"
+                    :alt="selectedTransactionToSetAsWaiting.org_stock_name"
+                />
+                <FontAwesomeIcon v-else icon="fal fa-box" class="text-2xl text-gray-400" fixed-width aria-hidden="true" />
+            </div>
 
-                <div class="pl-4">
-                    <PureTextarea
-                        v-model="dataToSendAsWaiting.note"
-                    />
+            <div class="min-w-0">
+                <div class="text-xl leading-tight">
+                    {{ selectedTransactionToSetAsWaiting?.org_stock_name ?? '-' }}
+                </div>
+                <div class="text-sm opacity-75 italic">
+                    {{ selectedTransactionToSetAsWaiting?.org_stock_code }}
                 </div>
             </div>
         </div>
 
-        <div class="">
+        <!-- Quantity badge -->
+        <div class="flex items-center gap-2 mb-6 p-3 rounded-lg bg-amber-50 border border-amber-200">
+            <FontAwesomeIcon icon="fal fa-hourglass-half" class="text-amber-500" fixed-width aria-hidden="true" />
+            <span class="text-sm text-amber-700">
+                {{ trans('Quantity to set as waiting') }}:
+            </span>
+            <span class="font-bold text-amber-800">
+                <FractionDisplay
+                    v-if="GetQuantityToPickFractional(selectedTransactionToSetAsWaiting)"
+                    :fractionData="GetQuantityToPickFractional(selectedTransactionToSetAsWaiting)"
+                />
+                <template v-else>{{ locale.number(selectedTransactionToSetAsWaiting?.quantity_to_pick ?? 0) }}</template>
+            </span>
+        </div>
+
+        <!-- Note textarea -->
+        <div>
+            <label class="font-medium mb-1 flex items-center gap-x-1 text-sm">
+                {{ trans('Note') }}:
+            </label>
+            <PureTextarea v-model="dataToSendAsWaiting.note" :rows="4" />
+        </div>
+
+        <div class="flex gap-2 mt-6">
+            <Button
+                @click="() => isOpenModalSetAsWaiting = false"
+                :label="ctrans('Cancel')"
+                type="negative"
+            />
             <Button
                 @click="() => submitTransactionAsWaiting()"
                 :label="trans('Set as waiting')"
                 full
                 iconRight="far fa-arrow-right"
-                class="mt-4"
                 :loading="isLoadingSetAsWaiting"
             />
         </div>
