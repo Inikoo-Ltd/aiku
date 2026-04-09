@@ -151,17 +151,12 @@ class WaitingDeliveryNoteItemsResource extends JsonResource
             'packings'                          => $deliveryNoteItem?->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
 
             'upsert_picking_route' => [
-                'name'       => 'grp.models.delivery_note_item.picking.upsert',
+                'name'       => 'grp.models.delivery_note_item.picking.upsert_from_waiting_warehouse',
                 'parameters' => ['deliveryNoteItem' => $this->id],
                 'method'     => 'post',
             ],
             'picking_all_route'    => [
-                'name'       => 'grp.models.delivery_note_item.picking_all.store',
-                'parameters' => ['deliveryNoteItem' => $this->id],
-                'method'     => 'post',
-            ],
-            'not_picking_route'    => [
-                'name'       => 'grp.models.delivery_note_item.not_picking.store',
+                'name'       => 'grp.models.delivery_note_item.picking_all_from_waiting_warehouse.store',
                 'parameters' => ['deliveryNoteItem' => $this->id],
                 'method'     => 'post',
             ],
