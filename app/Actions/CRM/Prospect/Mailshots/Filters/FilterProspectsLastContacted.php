@@ -49,7 +49,7 @@ class FilterProspectsLastContacted
             // Use exact date matching instead of <=
             $query->where(function ($q) use ($targetDate) {
                 $q->whereNull('prospects.last_contacted_at')
-                    ->orWhereDate('prospects.last_contacted_at', '=', $targetDate);
+                    ->orWhereDate('prospects.last_contacted_at', $targetDate);
             });
         }
 
