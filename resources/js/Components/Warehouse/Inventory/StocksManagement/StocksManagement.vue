@@ -27,6 +27,7 @@ import { notify } from '@kyvg/vue3-notification'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import AddLocations from './AddLocations.vue'
 import EditLocationsModal from './EditLocationsModal.vue'
+import { WINDOW } from '@sentry/vue'
 library.add(faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faShoppingBasket, faStickyNote, faShoppingCart)
 
 const props = defineProps<{
@@ -494,6 +495,7 @@ const openModal = (type: string) => {
                             </div>
 
                             <!-- Shopping Basket Icon -->
+                            <!-- TODO ENABLE ON PRODUCTION  -->
                             <div v-if="layout.app.environment === 'local'" @click="() => setActivePickingLocation(loc, 'dropshipping')"
                                 v-tooltip="trans('Set as active picking location [Dropshipping]')"
                                 class="cursor-pointer transition-colors duration-200" :class="{
@@ -508,6 +510,7 @@ const openModal = (type: string) => {
                                 <FontAwesomeIcon :icon="faBan" class="text-red-500" v-tooltip="'Work in Progress. Remember to disable this on Production when done'"/>
                             </div>
 
+                            <!-- TODO ENABLE ON PRODUCTION  -->
                             <div v-if="layout.app.environment === 'local'" @click="() => setActivePickingLocation(loc, 'wholesale')"
                                 v-tooltip="trans('Set as active picking location [Wholesale]')"
                                 class="cursor-pointer transition-colors duration-200" :class="{
@@ -618,13 +621,19 @@ const openModal = (type: string) => {
                 </div>            
         </div>
 
-        <!-- Action Buttons -->      
-        <div class="flex justify-between border-t pt-3 gap-2">
-            <Button @click="openModal(MODALS.STOCK_CHECK)" iconRight="fal fa-clipboard-check"
-                :label="trans('Audit Stock')" size="sm" type="tertiary" />
-            <Button @click="openModal(MODALS.MOVE_STOCK)" iconRight="fal fa-forklift" :label="trans('Move Stock')" size="sm" type="tertiary" v-if="layout.app.environment === 'local'"/>
+        <!-- Action Buttons -->
+        <!-- TODO ENABLE ON PRODUCTION  -->
+        <div class="flex justify-between border-t pt-3 gap-2" v-if="layout.app.environment === 'local'">
+            <Button @click="openModal(MODALS.STOCK_CHECK)" iconRight="fal fa-clipboard-check" :label="trans('Audit Stock')" size="sm" type="tertiary" />
+            <Button @click="openModal(MODALS.MOVE_STOCK)" iconRight="fal fa-forklift" :label="trans('Move Stock')" size="sm" type="tertiary" />
             <Button @click="openModal(MODALS.EDIT_LOCATION)" iconRight="fal fa-edit" :label="trans('Edit Locations')" size="sm" type="tertiary" />
-            <Button @click="openModal(MODALS.ADD_LOCATION)" iconRight="fal fa-plus" :label="trans('Add Location')" size="sm" type="tertiary" v-if="layout.app.environment === 'local'"/>
+            <Button @click="openModal(MODALS.ADD_LOCATION)" iconRight="fal fa-plus" :label="trans('Add Location')" size="sm" type="tertiary" />
+        </div>
+        <div class="flex justify-between border-t pt-3 gap-2" v-else>
+            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-clipboard-check" :label="trans('Audit Stock')" size="sm" type="tertiary" />
+            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-forklift" :label="trans('Move Stock')" size="sm" type="tertiary" v-if="layout.app.environment === 'local'"/>
+            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-edit" :label="trans('Edit Locations')" size="sm" type="tertiary" />
+            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-plus" :label="trans('Add Location')" size="sm" type="tertiary" v-if="layout.app.environment === 'local'"/>
         </div>
 
         <!-- Popover: Notes -->
