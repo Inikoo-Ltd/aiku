@@ -151,7 +151,7 @@ class IndexLocations extends OrgAction
             ->when($this->orgStock, function ($q) {
                 if ($this->mode == 'exclude') {
                     $q->whereNotIn('locations.code', $this->orgStock->locations->pluck('code'));
-                }elseif ($this->mode == 'only') {
+                } elseif ($this->mode == 'only') {
                     $q->whereIn('locations.code', $this->orgStock->locations->pluck('code'));
                 }
             })
