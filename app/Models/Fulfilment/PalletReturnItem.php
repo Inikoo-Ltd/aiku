@@ -32,7 +32,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string $quantity_picked
  * @property string|null $not_setup_reason
- * @property int|null $picking_session_id
  * @property-read \App\Models\Fulfilment\Pallet $pallet
  * @property-read \App\Models\Fulfilment\PalletReturn $palletReturn
  * @property-read \App\Models\Fulfilment\PalletStoredItem|null $palletStoredItem
