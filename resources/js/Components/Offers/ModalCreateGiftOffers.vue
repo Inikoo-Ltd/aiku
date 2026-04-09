@@ -11,8 +11,10 @@ import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
+import integer from "../../../../vendor/swagger-api/swagger-ui/src/core/plugins/json-schema-2020-12-samples/fn/types/integer"
 
 const props = defineProps<{
+    offer_campaign_id: number
     shop_data: {
         slug: string
         currency_code: string
@@ -34,9 +36,7 @@ const submitCategoryOffer = () => {
     // Section: Submit
     router.post(
         route('grp.org.shops.show.discounts.campaigns.store_gift', {
-            organisation: 'sk',
-            shop: 'se',
-            offerCampaign: 'co-se',
+            offerCampaign: offer_campaign_id,
         }),
         {
             name: offerLabel.value,

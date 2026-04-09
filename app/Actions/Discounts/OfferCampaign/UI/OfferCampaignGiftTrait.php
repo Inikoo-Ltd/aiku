@@ -57,7 +57,9 @@ trait OfferCampaignGiftTrait
                         OfferCampaignTabsEnum::GR_AMNESTY
                     ])
                 ],
+                'offer_campaign_id' => $offerCampaign->id,
                 'shop_data' => [
+                    'id'            => $offerCampaign->shop_id,
                     'slug'          => $offerCampaign->shop->slug,
                     'currency_code' => $offerCampaign->shop->currency->code,
                 ],
