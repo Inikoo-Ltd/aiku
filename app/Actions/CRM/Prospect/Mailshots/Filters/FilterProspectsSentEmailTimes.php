@@ -10,7 +10,6 @@ namespace App\Actions\CRM\Prospect\Mailshots\Filters;
 
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 
 class FilterProspectsSentEmailTimes
 {
@@ -22,16 +21,10 @@ class FilterProspectsSentEmailTimes
     {
         $sentEmailTimes = Arr::get($filters, 'sent_email_times');
         $isSentEmailTimesActive = is_array($sentEmailTimes) ? ($sentEmailTimes['value'] ?? false) : $sentEmailTimes;
-        $count = is_array($sentEmailTimes) ? ($sentEmailTimes['count'] ?? 3) : 3;
+        $count = is_array($sentEmailTimes['value'] ?? null) ? ($sentEmailTimes['value']['count'] ?? null) : null;
 
         if ($isSentEmailTimesActive) {
-            $query->whereExists(function ($subQuery) use ($count) {
-                $subQuery->select(DB::raw(1))
-                    ->from('prospect_has_dispatched_emails')
-                    ->whereRaw('prospect_has_dispatched_emails.prospect_id = prospects.id')
-                    ->groupBy('prospect_has_dispatched_emails.prospect_id')
-                    ->havingRaw('COUNT(*) >= ?', [$count]);
-            });
+            $query->where('prospects.number_dispatched_emails', $count);
         }
 
         return $query;

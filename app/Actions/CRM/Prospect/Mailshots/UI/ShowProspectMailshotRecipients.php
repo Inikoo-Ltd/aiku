@@ -63,7 +63,7 @@ class ShowProspectMailshotRecipients extends OrgAction
                         ],
                     ],
                     'sent_email_times' => [
-                        'label'       => 'Number of Emails Sent',
+                        'label'       => 'Number of Emails',
                         'type'        => 'boolean',
                         'description' => 'Targets prospects who have already been sent emails a specified number of times.',
                         'options'     => [
