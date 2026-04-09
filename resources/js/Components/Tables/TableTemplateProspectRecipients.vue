@@ -118,10 +118,55 @@ const availableFilters = computed(() => {
     return list
 })
 
+const onPresetChange = (filter: any, event: any) => {
+    const preset = event.value
+
+    filter.value.date_range_preset = preset
+
+    if (preset === 'custom') {
+        filter.value.date_range = null
+        return
+    }
+
+    const days = Number(preset)
+    if (!isNaN(days)) {
+        const end = new Date()
+        const start = new Date()
+        start.setDate(end.getDate() - days)
+        filter.value.date_range = [start, end]
+    }
+}
+
 const formatNumber = (num: number | null | undefined) => {
     return new Intl.NumberFormat('en-GB').format(num ?? 0)
 }
 
+function onBasketModeChange(filter: { value: { mode: any; date_range: any[] | null; }; }, event: { value: any; }) {
+    const val = event.value
+
+    filter.value.mode = val
+
+    if (val === 'custom') {
+        filter.value.date_range = null
+        return
+    }
+
+    const days = Number(val)
+    if (!isNaN(days)) {
+        const end = new Date()
+        const start = new Date()
+        start.setDate(end.getDate() - days)
+
+        filter.value.date_range = [
+            formatDate(start),
+            formatDate(end)
+        ]
+    }
+}
+
+function formatDate(d: Date) {
+    return d.toISOString().split('T')[0]
+}
 
 onMounted(async () => {
     if (props.recipientsRecipe) {
@@ -147,6 +192,12 @@ watch(
             if (!filter?.config || !filter?.value) return
 
             const val = filter.value
+
+            if (filter.config.type === 'entity_behaviour') {
+                if (val.combine_logic === false && Array.isArray(val.behaviors) && val.behaviors.length > 1) {
+                    val.behaviors = [val.behaviors[0]]
+                }
+            }
         })
     },
     { deep: true }
@@ -207,6 +258,23 @@ watch(
                         <ToggleButton v-model="filter.value" onLabel="Active" offLabel="Inactive" class="mb-3 w-full"
                             disabled />
                     </template>
+                    <template v-else-if="filter.config.options?.date_range">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">
+                            {{ trans(filter.config.options.date_range.label) }}
+                        </label>
+
+                        <!-- PRESET SELECT (if exists) -->
+                        <Dropdown v-if="filter.config.options.date_range.presets"
+                            :options="filter.config.options.date_range.presets" v-model="filter.value.date_range_preset"
+                            class="w-full mb-2" placeholder="Select time frame"
+                            @change="onPresetChange(filter, $event)" />
+
+                        <!-- CALENDAR -->
+                        <Calendar
+                            v-if="filter.value.date_range_preset === 'custom' || !filter.config.options.date_range_presets"
+                            v-model="filter.value.date_range" selectionMode="range" dateFormat="yy-mm-dd" showIcon
+                            placeholder="Select a date range" class="w-full" appendTo="body" />
+                    </template>
 
                     <!-- COUNT -->
                     <div v-if="filter.config.options?.count" class="mt-2">
@@ -237,6 +305,11 @@ watch(
                         </div>
                     </div>
                 </template>
+
+                <!-- SELECT -->
+                <Dropdown v-else-if="filter.config.type === 'select'" v-model="filter.value"
+                    :options="filter.config.options" optionLabel="label" optionValue="value" placeholder="Select"
+                    class="w-full" appendTo="body" />
             </div>
         </div>
 

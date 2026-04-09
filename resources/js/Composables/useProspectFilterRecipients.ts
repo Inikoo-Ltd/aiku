@@ -87,9 +87,24 @@ export function useProspectFilterRecipients(props: any) {
        if (config.type === 'boolean') {
             value = { value: true }
 
-            if (config.options?.count) {
-                value.count = config.options.count.default ?? 3
-            }
+            // if (config.options?.date_range) {
+            //     value.date_range = null
+            // }
+
+            // if (config.options?.amount_range) {
+            //     value.amount_range = {
+            //         min: null,
+            //         max: null,
+            //     }
+            // }
+
+            // if (config.options?.date_range?.presets) {
+            //     value.date_range_preset = null
+            // }
+
+            // if (config.options?.count) {
+            //     value.count = config.options.count.default ?? 3
+            // }
 
             if (config.options?.weeks) {
                 value.mode = config.options.weeks.default ?? 'three_weeks_ago'
@@ -127,6 +142,18 @@ export function useProspectFilterRecipients(props: any) {
             if (config.type === 'boolean') {
                 const payloadValue: any = {}
 
+                if (!config.options?.date_range && !config.options?.amount_range && !config.options?.count) {
+                    payloadValue.value = val.value ?? true
+                }
+
+                if (config.options?.date_range) {
+                    payloadValue.date_range = val.date_range ?? null
+                }
+
+                if (config.options?.amount_range) {
+                    payloadValue.amount_range = val.amount_range ?? null
+                }
+
                 if (config.options?.count) {
                     payloadValue.count = val.count ?? 3
                 }
@@ -137,6 +164,42 @@ export function useProspectFilterRecipients(props: any) {
                 }
 
                 payload[key] = { value: payloadValue }
+                return
+            }
+
+            // ENTITY BEHAVIOUR
+            if (config.type === 'entity_behaviour') {
+                payload[key] = {
+                    value: {
+                        ids: val.ids ?? [],
+                        behaviors: val.combine_logic
+                            ? (val.behaviors ?? [])
+                            : (val.behaviors?.length ? [val.behaviors[0]] : []),
+                        combine_logic: val.combine_logic ?? true
+                    }
+                }
+                return
+            }
+
+            // MULTISELECT (simple)
+            if (config.type === 'multiselect') {
+                if (config.label === 'By Family Never Ordered') {
+                    payload[key] = {
+                        value: val.ids != null ? [val.ids] : []
+                    }
+                } else {
+                    payload[key] = {
+                        value: val.ids ?? []
+                    }
+                }
+                return
+            }
+
+            // SELECT
+            if (config.type === 'select') {
+                payload[key] = {
+                    value: val
+                }
                 return
             }
             payload[key] = { value: val }
@@ -230,6 +293,15 @@ export function useProspectFilterRecipients(props: any) {
                     }
                 }
 
+                // AMOUNT RANGE
+                if (config.options?.amount_range) {
+                    uiValue.amount_range = clean.amount_range ?? {
+                        min: null,
+                        max: null,
+                        currency: config.options.amount_range.currency || 'GBP'
+                    }
+                }
+
                 // COUNT
                 if (config.options?.count) {
                     uiValue.count = clean.count ?? config.options.count.default ?? 3
@@ -253,6 +325,77 @@ export function useProspectFilterRecipients(props: any) {
                     : val
             }
 
+            else if (config.type === 'multiselect') {
+                if (config.behavior_options) {
+                    uiValue = {
+                        ids: val?.ids ?? [],
+                        behaviors: val?.behaviors ?? ['purchased'],
+                        combine_logic: val?.combine_logic ?? 'or'
+                    }
+                }
+
+                else {
+                    const src = wrapper?.value ?? wrapper
+
+                    if (config.label === 'By Family Never Ordered') {
+                        uiValue = {
+                            ids: Array.isArray(src) ? src[0] ?? null : src ?? null
+                        }
+                    } else {
+                        uiValue = {
+                            ids: Array.isArray(src)
+                                ? src
+                                : Array.isArray(src?.ids)
+                                    ? src.ids
+                                    : []
+                        }
+                    }
+                }
+            }
+
+            else if (config.type === 'entity_behaviour') {
+                uiValue = {
+                    ids: raw.ids ?? [],
+                    behaviors: Array.isArray(raw.behaviors)
+                        ? raw.behaviors
+                        : raw.behaviors
+                            ? [raw.behaviors]
+                            : [],
+                    combine_logic: typeof raw.combine_logic === 'boolean'
+                        ? raw.combine_logic
+                        : true
+                }
+            }
+
+            else if (config.type === 'location') {
+                const v = val?.value ?? {}
+
+                let radiusPreset = '5000'
+                let radiusCustom = null
+
+                if (v.radius) {
+                    const asString = String(v.radius)
+
+                    if (presetMeters.includes(asString)) {
+                        radiusPreset = asString
+                    } else {
+                        radiusPreset = 'custom'
+                        radiusCustom = Number(v.radius)
+                    }
+                }
+
+                uiValue = {
+                    mode: v.mode ?? 'direct',
+                    country_ids: v.country_ids ?? [],
+                    postal_codes: v.postal_codes ?? [],
+                    location: v.location ?? '',
+                    radius: radiusPreset,
+                    radius_custom: radiusCustom,
+                    lat: v.lat ?? 0,
+                    lng: v.lng ?? 0,
+                    zoom: 10
+                }
+            }
             hydrated[key] = { config, value: uiValue }
         })
 
@@ -265,7 +408,7 @@ export function useProspectFilterRecipients(props: any) {
 
         if (!payload || Object.keys(payload).length === 0) {
             payload = {
-                all_prospects: {
+                all_customers: {
                     value: true
                 }
             }
