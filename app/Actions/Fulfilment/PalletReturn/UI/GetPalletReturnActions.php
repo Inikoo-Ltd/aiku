@@ -296,8 +296,8 @@ class GetPalletReturnActions
             [
                 'type'    => 'button',
                 'style'   => 'save',
-                'tooltip' => __('Set as dispatched'),
-                'label'   => __('Dispatch'),
+                'tooltip' => __('Set as Collected'),
+                'label'   => __('Set as Collected'),
                 'key'     => 'Dispatching',
                 'route'   => [
                     'method'     => 'post',

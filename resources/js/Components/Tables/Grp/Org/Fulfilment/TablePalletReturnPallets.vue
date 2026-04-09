@@ -153,6 +153,7 @@ const debounceReloadBoxStats = debounce(() => {
 }, 700)
 
 const isWarehouseDispatchingPalletReturnPage = computed(() => route().current('grp.org.warehouses.show.dispatching.pallet-returns.show'))
+const isFulfilmentOperationsPalletReturnPage = computed(() => route().current('grp.org.fulfilments.show.operations.pallet-returns.show'))
 
 const onCheckTable = async (item: {}) => {
     if (item.is_checked) {
@@ -378,7 +379,7 @@ const generateLinkPallet = (pallet: any) => {
                 4. NEW -> if pallet state is picking have a button to unlink -->
 
                 <!-- Button: Picking -->
-                <Link v-if="pallet.state === 'picking'" as="div"
+                <Link v-if="pallet.state === 'picking' && !isFulfilmentOperationsPalletReturnPage" as="div"
                     :href="route(pallet.updateRoute.name, pallet.updateRoute.parameters)"
                     :data="{ state: 'picked' }"
                     @start="() => isPickingLoading = pallet.id"
@@ -394,7 +395,7 @@ const generateLinkPallet = (pallet: any) => {
                     <Button icon="fal fa-check" type="positive" :loading="isPickingLoading === pallet.id" class="py-0" />
                 </Link>
                 <!-- Button: Set as not picked -->
-                <Popover v-if="pallet.state === 'picking'">
+                <Popover v-if="pallet.state === 'picking' && !isFulfilmentOperationsPalletReturnPage">
                     <template #button="{ open }">
                         <Button icon="fal fa-times"
                             v-tooltip="trans('Set as not picked')"
