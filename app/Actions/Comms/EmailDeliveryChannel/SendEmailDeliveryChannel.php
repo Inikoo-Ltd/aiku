@@ -16,6 +16,7 @@ use App\Actions\Comms\Mailshot\GetHtmlLayout;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
 use App\Actions\Comms\Mailshot\UpdateMailshotSentState;
 use App\Actions\Comms\Traits\WithSendBulkEmails;
+use App\Actions\CRM\Prospect\Mailshots\ProspectHydrateDispatchedEmails;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
 use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
@@ -156,6 +157,7 @@ class SendEmailDeliveryChannel
 
             if ($recipient->recipient_type === class_basename(Prospect::class)) {
                 DispatchedEmailHydrateProspect::dispatch($dispatchedEmail->id)->delay(now()->addSeconds());
+                ProspectHydrateDispatchedEmails::dispatch($recipient->recipient_id)->delay(now()->addSeconds());
             }
         }
 
