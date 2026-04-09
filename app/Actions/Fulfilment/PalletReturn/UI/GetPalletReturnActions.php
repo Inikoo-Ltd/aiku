@@ -79,12 +79,13 @@ class GetPalletReturnActions
                 'disabled' => $isDisabled
             ];
         } else {
-            $isDisabled = false;
-            if ($palletReturn->pallets()->count() < 1) {
-                $tooltipSubmit = __("Select Customer's SKU before submit");
-                $isDisabled    = true;
+            $hasSelectedStoredItem = $palletReturn->storedItems()->count() > 0;
+            $isDisabled = !($palletReturn->estimated_delivery_date) || !$hasSelectedStoredItem;
+
+            if (!$hasSelectedStoredItem) {
+                $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __("Select Customer's SKU before submit");
             } else {
-                $tooltipSubmit = __('Submit');
+                $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __('Submit');
             }
 
             $buttonSubmit = [
