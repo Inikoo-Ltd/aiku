@@ -99,7 +99,6 @@ class AuditLocationOrgStock extends OrgAction
     {
         $this->asAction         = true;
         $this->locationOrgStock = $locationOrgStock;
-        $this->user = Arr::pull($modelData, 'user_request', null);
         
         $this->initialisation($locationOrgStock->organisation, $modelData);
 

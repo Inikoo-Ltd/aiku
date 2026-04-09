@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStockMovement;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Inventory\OrgStockMovement\CalculateRunningQuantityOrgStockMovement;
 use App\Actions\Inventory\LocationOrgStock\CalculateValueLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
@@ -102,6 +103,7 @@ class StoreOrgStockMovement extends OrgAction
         }
         OrgStockHydrateMovements::dispatch($orgStock)->delay($this->hydratorsDelay);
         OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock)->delay($this->hydratorsDelay);
+        CalculateRunningQuantityOrgStockMovement::dispatch($orgStockMovement, $locationOrgStock)->delay($this->hydratorsDelay);
 
 
         return $orgStockMovement;
