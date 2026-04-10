@@ -210,7 +210,7 @@ class IndexPalletsInReturnPalletWholePallets extends OrgAction
             }
 
 
-            $table->column(key: 'actions', label: 'actions', canBeHidden: false, searchable: true);
+            $table->column(key: 'actions', label: 'Actions', canBeHidden: false, searchable: true);
 
 
             $table->defaultSort('reference');
