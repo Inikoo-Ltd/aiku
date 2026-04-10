@@ -12,18 +12,18 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use App\Actions\RetinaAction;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use Sentry;
+use Illuminate\Support\Arr;
 
 class ExportDropshippingInvoicesByDate extends RetinaAction
 {
     use AsAction;
 
-    public function handle(Customer $customer, ?string $startDate = null, ?string $endDate = null): Response
+    public function handle(Customer $customer, ?string $startDate = null, ?string $endDate = null, array $options = []): Response
     {
         if (!$startDate) {
             return response()->json(['error' => 'Start date is required'], 400);
         }
 
-        try {
             $query = Invoice::where('invoices.customer_id', $customer->id);
 
             if ($startDate && $endDate) {
@@ -74,21 +74,30 @@ class ExportDropshippingInvoicesByDate extends RetinaAction
                     $recipientName = $invoice->customerClient->contact_name ?? $invoice->customerClient->name;
                 }
 
-                $html = view('invoices.templates.pdf.invoice', [
-                    'shop'               => $invoice->shop,
-                    'invoice'            => $invoice,
-                    'deliveryNote'       => $invoice->order?->deliveryNotes?->first(),
-                    'deliveryAddress'    => $invoice->order?->deliveryNotes?->first()?->deliveryAddress,
-                    'recipientName'      => $recipientName,
-                    'invoiceNumberLabel' => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice number') : __('Refund Number'),
-                    'dateLabel'          => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice date') : __('Refund Date'),
-                    'typeLabel'          => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice') : __('Refund'),
-                    'transactions'       => $invoice->invoiceTransactions()->with('model')->get(),
-                    'totalNet'           => number_format($invoice->total_amount + ($invoice->order?->shipping_amount ?? 0), 2, '.', ''),
-                    'refunds'            => [],
-                    'country_of_origin'  => true,
-                    'weight'             => true,
-                    'commodity_codes'    => true,
+                $html = view('invoices.templates.pdf.dropshipping_invoice', [
+                    'shop'                  => $invoice->shop,
+                    'invoice'               => $invoice,
+                    'deliveryNote'          => $invoice->order?->deliveryNotes?->first(),
+                    'deliveryAddress'       => $invoice->order?->deliveryNotes?->first()?->deliveryAddress,
+                    'recipientName'         => $recipientName,
+                    'invoiceNumberLabel'    => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice number') : __('Refund Number'),
+                    'dateLabel'             => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice date') : __('Refund Date'),
+                    'typeLabel'             => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice') : __('Refund'),
+                    'transactions'          => $invoice->invoiceTransactions()->with('model')->get(),
+                    'totalNet'              => number_format($invoice->total_amount + ($invoice->order?->shipping_amount ?? 0), 2, '.', ''),
+                    'refunds'               => [],
+                    // Additional configs for the separated blade
+                    'pro_mode'              => false,
+                    'group_by_tariff_code'  => false,
+                    'hide_payment_status'   => false,
+                    'rrp'                   => false,
+                    'parts'                 => false,
+                    'barcode'               => false,
+                    'cpnp'                  => false,
+                    // Keep the original true values
+                    'country_of_origin'     => true,
+                    'weight'                => true,
+                    'commodity_codes'       => true,
                 ])->render();
 
                 if ($index > 0) {
@@ -100,10 +109,6 @@ class ExportDropshippingInvoicesByDate extends RetinaAction
 
             return response($mpdf->output('invoices-' . $fileName . '.pdf', 'S'), 200)
                 ->header('Content-Type', 'application/pdf');
-        } catch (\Exception $e) {
-            Sentry::captureException($e);
-            return response()->json(['error' => 'Failed to generate PDF'], 500);
-        }
     }
 
     public function asController(ActionRequest $request): Response
