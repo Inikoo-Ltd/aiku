@@ -457,6 +457,9 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                             {{ picking.location_code }}
                         </Link>
                         <span v-else class="text-gray-400 italic">No Location</span>
+                        <div class="px-2 py-0.5 bg-gray-100 rounded-full text-xs font-medium">
+                            {{ picking.quantity }}
+                        </div>
                     </div>
                 </div>
                 <div v-else class="text-gray-400 italic text-sm">No items picked yet</div>

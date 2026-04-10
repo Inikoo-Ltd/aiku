@@ -100,16 +100,20 @@ class TransactionsResource extends JsonResource
             'is_cut_view'               => $this->is_cut_view,
             'is_gift'                   => $this->is_gift,
             'pickings'                  => $this->deliveryNoteItems->flatMap(function ($item) {
-                return $item->pickings->map(function ($picking) {
-                    return [
-                        'id'             => $picking->id,
-                        'quantity'       => $picking->quantity,
-                        'location_code'  => $picking->location ? $picking->location->code : null,
-                        'location_slug'  => $picking->location ? $picking->location->slug : null,
-                        'warehouse_slug' => $picking->location && $picking->location->warehouse ? $picking->location->warehouse->slug : null,
-                    ];
-                });
-            })->values()->toArray(),
+                return $item->pickings;
+            })->where('type', '!=', \App\Enums\Dispatching\Picking\PickingTypeEnum::NOT_PICK)
+              ->where('quantity', '>', 0)
+              ->groupBy('location_id')
+              ->map(function ($pickings) {
+                  $firstPicking = $pickings->first();
+                  return [
+                      'id'             => 'loc_' . ($firstPicking->location_id ?? 'none'),
+                      'quantity'       => $pickings->sum('quantity'),
+                      'location_code'  => $firstPicking->location ? $firstPicking->location->code : null,
+                      'location_slug'  => $firstPicking->location ? $firstPicking->location->slug : null,
+                      'warehouse_slug' => $firstPicking->location && $firstPicking->location->warehouse ? $firstPicking->location->warehouse->slug : null,
+                  ];
+              })->values()->toArray(),
 
 
             'deleteRoute' => $request->user() instanceof User
