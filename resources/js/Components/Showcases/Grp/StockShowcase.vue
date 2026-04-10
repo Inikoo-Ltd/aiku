@@ -107,7 +107,7 @@ console.log(props)
         <!-- Section: Stocks Management -->
         <div class="md:col-span-2">
             <StocksManagement v-if="data.stocks_management" :stocks_management="data.stocks_management" />
-            <pre v-if="layout.app.environment === 'local'">{{ data.stocks_management?.locations }}</pre>
+            <!-- <pre v-if="layout.app.environment === 'local'">{{ data.stocks_management?.locations }}</pre> -->
         </div>
     </div>
 </template>

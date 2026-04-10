@@ -89,6 +89,10 @@ class InertiaTable
 
     public static function updateQueryBuilderParameters(string $name): void
     {
+        if (request()->wantsJson() && !request()->header('X-Inertia')) {
+            return;
+        }
+
         if (empty(static::$defaultQueryBuilderConfig)) {
             static::$defaultQueryBuilderConfig = config('query-builder.parameters');
         }

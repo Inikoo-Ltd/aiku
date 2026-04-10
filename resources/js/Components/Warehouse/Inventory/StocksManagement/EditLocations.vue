@@ -75,20 +75,20 @@ const newLocation = ref<stockLocation | null>(null)
 </script>
 
 <template>
-    <div class="space-y-4">
+    <div class="space-y-6">
             <!-- V-FOR 1: Existing locations -->
-            <div class="flex flex-col gap-y-3">
+            <div class="flex flex-col gap-y-6">
                 <div v-for="(loc, idx) in props.locations" :key="'existing-' + loc.id"
-                    class="grid grid-cols-7 gap-x-3 items-center gap-2">
-                    <div class="col-span-2 flex items-center gap-x-2">
+                    class="grid grid-cols-7 border-b pb-2 items-center gap-2">
+                    <div class="col-span-2 md:col-span-3 flex items-center gap-x-2">
                         {{ loc.code }}
                     </div>
-                    <div class="col-span-4">
+                    <div class="col-span-3 md:col-span-2">
                         <span class="text-sm italic text-gray-400">
                             {{ trans("Current Stock") }} {{ Number(loc.quantity) }}
                         </span>
                     </div>
-                    <div class="flex justify-end items-center gap-x-2">
+                    <div class="col-span-2 md:col-span-2 flex justify-end items-center gap-x-2">
                         <ModalConfirmationDelete
                             :routeDelete="{
                                 name: props.routes.disassociate_location_route.name,
@@ -102,8 +102,8 @@ const newLocation = ref<stockLocation | null>(null)
                         >
                             <template #default="{ isOpenModal, changeModel, isLoadingdelete }">
                                 <div v-if="layout.app.environment === 'local'" @click="() => {
-    changeModel()
-}" xclick="handleUnlink(loc)" class="cursor-pointer text-red-500 opacity-50 hover:opacity-100" v-tooltip="trans('Unlink Location')">
+                                    changeModel()
+                                }" xclick="handleUnlink(loc)" class="cursor-pointer text-red-500 opacity-50 hover:opacity-100" v-tooltip="trans('Unlink Location')">
                                     <LoadingIcon v-if="isLoadingdelete" />
                                     <FontAwesomeIcon v-else icon="fal fa-unlink" class="" fixed-width aria-hidden="true" />
                                 </div>
@@ -113,31 +113,6 @@ const newLocation = ref<stockLocation | null>(null)
                     </div>
                 </div>
             </div>
-
-            <!-- Add new location section -->
-            <!-- <div class="border-t border-gray-200 pt-3 mt-3">
-                <div class="text-sm font-medium text-gray-600 mb-2">{{ trans("Add New Location") }}</div>
-                <div class="flex gap-x-2 items-center">
-                    <div class="flex-1">
-                        <PureMultiselectInfiniteScroll
-                            v-model="newLocation"
-                            :fetchRoute="routes.location_route"
-                            object
-                            labelProp="code"
-                        />
-                    </div>
-
-                    <Button
-                        v-if="layout.app.environment === 'local'"
-                        @click="() => onAddNewLocation()"
-                        :disabled="!newLocation"
-                        :loading="isLoadingAddNewLocation"
-                        :label="trans('Add')"
-                        icon="fal fa-plus"
-                    />
-                    <FontAwesomeIcon v-else :icon="faBan" class="text-red-500" v-tooltip="'Work in Progress. Remember to disable this on Production when done'"/>
-                </div>
-            </div> -->
         <!-- Section: buttons -->
         <div class="relative flex gap-x-2 isolate z-30 mt-4 justify-self-end">
             <Button :label="trans('Cancel')" type="cancel" @click="() => emits('close')" />
