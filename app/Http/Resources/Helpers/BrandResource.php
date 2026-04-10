@@ -9,6 +9,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $name
  * @property mixed $id
  * @property mixed $number_trade_units
+ * @property mixed $number_products
  */
 class BrandResource extends JsonResource
 {
@@ -19,6 +20,7 @@ class BrandResource extends JsonResource
             'name'               => $this->name,
             'id'                 => $this->id,
             'number_trade_units' => $this->number_trade_units,
+            'number_products'    => $this->number_products,
             'trade_units_route'  => [
                 'name'       => 'grp.trade_units.brands.trade_units.index',
                 'parameters' => [$this->slug],

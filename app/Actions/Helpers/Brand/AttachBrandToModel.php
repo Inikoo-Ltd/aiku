@@ -10,6 +10,7 @@
 
 namespace App\Actions\Helpers\Brand;
 
+use App\Actions\Helpers\Brand\Hydrators\BrandHydrateProducts;
 use App\Actions\Helpers\Brand\Hydrators\BrandHydrateTradeUnits;
 use App\Actions\OrgAction;
 use App\Models\Goods\TradeUnit;
@@ -36,6 +37,7 @@ class AttachBrandToModel extends OrgAction
             $brand = Brand::find($brandId);
             if ($brand) {
                 BrandHydrateTradeUnits::dispatch($brand)->delay($this->hydratorsDelay);
+                BrandHydrateProducts::dispatch($brand)->delay($this->hydratorsDelay);
             }
         }
     }
