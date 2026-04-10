@@ -220,12 +220,12 @@ const onPassItemToCs = () => {
         <!-- Column: Actions (location picker + quantity + not-picked + button pass to CS) -->
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
             <div v-if="Number(itemValue.quantity_waiting_warehouse) > 0">
-                <div v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)" class="rounded p-1 flex flex-col gap-2">
+                <div v-if="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)" class="rounded p-1 flex flex-col gap-2">
                     <div class="flex justify-between items-center gap-x-4">
                         <!-- Section: location -->
                         <div class="">
                             <Transition name="spin-to-down">
-                                <div :key="findLocation(itemValue.locations, proxyItem.org_stock_id)?.location_code">
+                                <div :key="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.location_code">
 
                                     <!-- Section: number of locations available to pick -->
                                     <span v-if="itemValue.locations?.length > 1" @click="() => {
@@ -239,11 +239,11 @@ const onPassItemToCs = () => {
                                         {{ itemValue.locations?.length - 1 }}
                                     </span>
 
-                                    <span v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)" class="text-base">
+                                    <span v-if="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)" class="text-base">
                                         <Link v-tooltip="`${itemValue.warehouse_area}`"
-                                            :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.org_stock_id))"
+                                            :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode))"
                                             class="secondaryLink">
-                                            {{ findLocation(itemValue.locations, proxyItem.org_stock_id).location_code }}
+                                            {{ findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).location_code }}
                                         </Link>
                                     </span>
                                     <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">
@@ -252,17 +252,17 @@ const onPassItemToCs = () => {
                                     
                                     <!-- Section: number of stocks -->
                                     <span
-                                        v-tooltip="trans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity || 0), stockLocation: findLocation(itemValue.locations, proxyItem.org_stock_id)?.location_code || '' })"
+                                        v-tooltip="trans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.quantity || 0), stockLocation: findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.location_code || '' })"
                                         class="align-middle whitespace-nowrap text-base py-0.5 xopacity-70 tabular-nums xborder border-gray-300 rounded xpx-1"
                                     >
                                         <!-- <FontAwesomeIcon icon="fal fa-inventory" class="mr-1 text-base" fixed-width aria-hidden="true" /> -->
                                         (<span class="text-lg font-bold">
                                             <FractionDisplay
-                                                v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity_fractional"
-                                                :fractionData="findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity_fractional"
+                                                v-if="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.quantity_fractional"
+                                                :fractionData="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.quantity_fractional"
                                             />
                                             <template v-else>
-                                                {{ locale.number(findLocation(itemValue.locations, proxyItem.org_stock_id).quantity) }}
+                                                {{ locale.number(findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).quantity) }}
                                             </template>
                                         </span>
                                         <span class="text-sm ml-1">{{ ctrans("stocks") }}</span>)
@@ -274,11 +274,11 @@ const onPassItemToCs = () => {
                         <!-- Quantity + pick all + not picked + call CS -->
                         <div class="flex items-center gap-x-2">
                             <NumberWithButtonSave
-                                v-if="!itemValue.is_handled && findLocation(itemValue.locations, proxyItem.org_stock_id).quantity > 0"
-                                :key="findLocation(itemValue.locations, proxyItem.org_stock_id).location_code"
+                                v-if="!itemValue.is_handled && findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).quantity > 0"
+                                :key="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).location_code"
                                 noUndoButton
                                 @onError="(error: any) => { proxyItem.errors = Object.values(error || {}) }"
-                                xmodelValue="findLocation(itemValue.locations, proxyItem.org_stock_id).quantity_picked"
+                                xmodelValue="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).quantity_picked"
                                 :modelValue="null"
                                 @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
                                 saveOnForm
@@ -289,14 +289,14 @@ const onPassItemToCs = () => {
                                 :bindToTarget="{
                                     step: 1, min: 0,
                                     max: Math.min(
-                                        findLocation(itemValue.locations, proxyItem.org_stock_id).quantity,
+                                        findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).quantity,
                                         itemValue.quantity_required,
-                                        Number(itemValue.quantity_waiting_warehouse) + findLocation(itemValue.locations, proxyItem.org_stock_id).quantity_picked
+                                        Number(itemValue.quantity_waiting_warehouse) + findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).quantity_picked
                                     )
                                 }"
                                 :additionalData="{
-                                    location_org_stock_id: findLocation(itemValue.locations, proxyItem.org_stock_id).id,
-                                    picking_id: itemValue.pickings?.find((p: any) => p.location_id === findLocation(itemValue.locations, proxyItem.org_stock_id).location_id)?.id,
+                                    location_org_stock_id: findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).id,
+                                    picking_id: itemValue.pickings?.find((p: any) => p.location_id === findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).location_id)?.id,
                                 }"
                                 autoSave
                                 :readonly="itemValue.is_handled || itemValue.quantity_required === itemValue.quantity_picked"
@@ -309,7 +309,7 @@ const onPassItemToCs = () => {
                                         size="xs" type="secondary" :loading="isProcessing"
                                         :routeTarget="itemValue.picking_all_route"
                                         :bind-to-link="{ preserveScroll: true, preserveState: true }"
-                                        :body="{ location_org_stock_id: findLocation(itemValue.locations, proxyItem.org_stock_id).id }"
+                                        :body="{ location_org_stock_id: findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).id }"
                                         isWithError
                                     >
                                         <template #label>
@@ -373,8 +373,9 @@ const onPassItemToCs = () => {
                 </label>
                 <RadioButton
                     v-if="selectedItemProxy"
-                    v-model="selectedItemProxy.org_stock_id"
-                    @update:modelValue="onCloseModal"
+                    vxmodel="selectedItemProxy.org_stock_id"
+                    :modelValue="get(selectedItemProxy, 'selectedRadioLocationCode', selectedItemValue?.locations?.[0]?.location_code)"
+                    @update:modelValue="(e) => (selectedItemProxy.selectedRadioLocationCode = e, onCloseModal())"
                     :size="twBreakPoint().includes('lg') ? undefined : 'large'"
                     :inputId="location.location_code"
                     :disabled="location.quantity <= 0"
