@@ -385,13 +385,20 @@ const setInputRef = (el: any, id: number) => {
             </button>
         </div>
         <!-- Section: Summary Stats -->
-        <div class="grid grid-cols-4 gap-2 text-center">
-            <div v-for="(item, key) in stocks_management.summary" class="bg-gray-100 p-2 rounded" v-tooltip="item.icon_state.tooltip">
-                <span>
-                    <Icon :data="{...item.icon_state, tooltip : null}" />
-                </span>
-                <span class="ml-2 text-lg font-bold">
-                    {{ locale.number(item.value ?? 0) }}
+        <div class="grid grid-cols-7 gap-x-3 gap-2 p-2">
+            <div class="grid grid-cols-3 gap-2 text-center col-span-6">
+                <div v-for="(item, key) in stocks_management.summary" class="bg-gray-100 p-2 rounded" v-tooltip="item.icon_state.tooltip">
+                    <span>
+                        <Icon :data="{...item.icon_state, tooltip : null}" />
+                    </span>
+                    <span class="ml-2 text-lg font-bold">
+                        {{ locale.number(item.value ?? 0) }}
+                    </span>
+                </div>
+            </div>
+            <div class="grid align-item-middle border-l">
+                <span class="my-auto text-right font-semibold" v-tooltip="trans('Stock in Location')">
+                    {{ locale.number(stocks_management.qty_in_location ?? 0) }}
                 </span>
             </div>
         </div>
@@ -453,10 +460,13 @@ const setInputRef = (el: any, id: number) => {
                 </Dialog>
 
                 <div v-for="(loc, idx) in props.stocks_management.locations" :key="loc.id"
-                        class="grid grid-cols-7 gap-x-3 items-center gap-2 p-2 rounded transition-colors duration-200"
+                        class="grid grid-cols-7 gap-x-3 items-center gap-2 p-2 rounded transition-colors duration-200 mb-1"
                         :class="{
-                            'bg-blue-50 border border-blue-200': activePickingLocationWholesale === loc.id,
-                            'hover:bg-gray-50': activePickingLocationWholesale !== loc.id
+                            'bg-blue-50 border border-blue-200': activePickingLocationDropshipping === loc.id && activePickingLocationWholesale !== loc.id,
+                            'bg-orange-50 border border-orange-200': activePickingLocationDropshipping !== loc.id && activePickingLocationWholesale === loc.id,
+                            'bg-purple-50 border border-purple-200': activePickingLocationDropshipping === loc.id && activePickingLocationWholesale === loc.id,
+                            'hover:bg-gray-50': activePickingLocationDropshipping !== loc.id && activePickingLocationWholesale !== loc.id,
+
                         }">
                         <div class="col-span-4 flex items-center gap-x-2">
                             <!-- Note Icon with Popover -->
@@ -489,14 +499,12 @@ const setInputRef = (el: any, id: number) => {
 
                             <!-- TODO ENABLE ON PRODUCTION  -->
                             <div v-if="layout.app.environment === 'local'" @click="() => setActivePickingLocation(loc, 'dropshipping')"
-                                v-tooltip="loc.enabled_on_dropshipping ? trans('Set as active picking location [Dropshipping]') : trans('Location is disabled for Dropshipping')"
-                                class="transition-colors duration-200" :class="{
-                                    'cursor-not-allowed': !loc.enabled_on_dropshipping,
-                                    'cursor-pointer': loc.enabled_on_dropshipping,
-                                    'text-gray-400': activePickingLocationDropshipping !== loc.id  && !loc.enabled_on_dropshipping,
-                                    'text-gray-600  opacity-30 hover:opacity-60': activePickingLocationDropshipping !== loc.id  && loc.enabled_on_dropshipping,
-                                    'text-blue-700': activePickingLocationDropshipping === loc.id && loc.enabled_on_dropshipping,
-                                    'hover:text-blue-500': activePickingLocationDropshipping !== loc.id && loc.enabled_on_dropshipping
+                                v-tooltip="trans('Set as active picking location [Dropshipping]')"
+                                class="transition-colors duration-200 cursor-pointer" :class="{
+                                    'text-gray-400': activePickingLocationDropshipping !== loc.id,
+                                    'text-gray-600  opacity-30 hover:opacity-60': activePickingLocationDropshipping !== loc.id,
+                                    'text-blue-700': activePickingLocationDropshipping === loc.id,
+                                    'hover:text-blue-500': activePickingLocationDropshipping !== loc.id
                                 }">
                                 <LoadingIcon v-if="isLoadingActiveLocationDropshipping === loc.id" />
                                 <FontAwesomeIcon v-else :icon="activePickingLocationDropshipping === loc.id ? 'fas fa-shopping-basket' : 'fal fa-shopping-basket'"
@@ -604,13 +612,13 @@ const setInputRef = (el: any, id: number) => {
                             {{ trans("Never audited") }}
                         </div>
                         
-                        <div class="text-right font-semibold">
+                        <div class="text-right font-semibold border-l">
                             <span
                                 v-tooltip="trans('Stock quantity')"
                                 class="cursor-pointer hover:text-blue-500 transition"
                                 @dblclick="openModal(MODALS.STOCK_CHECK, loc.id)"
                             >
-                                {{ Number(loc.quantity) }} qty
+                                {{ Number(loc.quantity) }}
                             </span>
                         </div>
                 </div>            
