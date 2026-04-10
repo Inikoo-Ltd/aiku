@@ -67,8 +67,12 @@ class ProcessLowStockInBasketPerOutbox
         });
 
         // check Order Item
-        $baseQuery->join('transactions', function ($join) {
+        $baseQuery->join('transactions', function ($join) use ($lastOutBoxSent) {
             $join->on('orders.id', '=', 'transactions.order_id');
+            if ($lastOutBoxSent) {
+                $join->where('transactions.created_at', '>', $lastOutBoxSent);
+            }
+            $join->whereNull('transactions.deleted_at');
         });
 
         // check product

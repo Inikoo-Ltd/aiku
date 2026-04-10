@@ -114,6 +114,18 @@ export function useFilterRecipients(props: any) {
         fetchCustomers()
     }
 
+    function formatDate(date: Date | string | null) {
+        if (!date) return null
+
+        const d = typeof date === "string" ? new Date(date) : date
+
+        const year = d.getFullYear()
+        const month = String(d.getMonth() + 1).padStart(2, '0')
+        const day = String(d.getDate()).padStart(2, '0')
+
+        return `${year}-${month}-${day}`
+    }
+    
     /* ---------------- PAYLOAD ---------------- */
     const filtersPayload = computed(() => {
         const payload: any = {}
@@ -131,7 +143,7 @@ export function useFilterRecipients(props: any) {
                 }
 
                 if (config.options?.date_range) {
-                    payloadValue.date_range = val.date_range ?? null
+                    payloadValue.date_range = val.date_range ? val.date_range.map((d: string) => formatDate(d)) : null
                 }
 
                 if (config.options?.amount_range) {
