@@ -306,6 +306,14 @@ watch(currentView, (newValue) => {
                             :blueprint="getBlueprint(usedTemplates[selectedTab.key].code)"
                             :uploadImageRoute="uploadImageRoute" :panelOpen="panelActive" 
                             @update:model-value="e => usedTemplates[selectedTab.key].data.fieldValue = e"/>
+
+                        <div v-else>
+                            <EmptyState :data="{ description: 'No template selected', title: 'Pick Template' }">
+                                <template #button-empty-state>
+                                    <Button label="template" icon="fas fa-th-large" @click="isModalOpen = true" />
+                                </template>
+                            </EmptyState>
+                        </div>
                     </div>
                 </div>
             </div>
