@@ -82,14 +82,14 @@ const isExpanded = ref(false)
 			<TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" />
 		</KeepAlive>
 
-		<div v-if="stockHistoryGroup" class="px-6 mt-1">
+		<div v-if="stockHistoryGroup" class="px-3 sm:px-6 mt-1">
 			<dl class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-gray-100 bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden">
 				<div class="px-5 py-4">
 					<dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
 						<FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true" />
 						{{ trans('Stock Value') }}
 					</dt>
-					<dd class="mt-1 text-3xl font-semibold tabular-nums text-gray-800">
+					<dd class="mt-1 text-xl sm:text-3xl font-semibold tabular-nums text-gray-800">
 						{{ locale.currencyFormat(stockHistoryGroup.currency_code, Number(stockHistoryGroup.grp_stock_value)) }}
 					</dd>
 				</div>
@@ -98,7 +98,7 @@ const isExpanded = ref(false)
 						<FontAwesomeIcon icon="fal fa-box" fixed-width aria-hidden="true" />
 						{{ trans('Stored SKUs') }}
 					</dt>
-					<dd class="mt-1 text-2xl font-semibold tabular-nums text-gray-800">
+					<dd class="mt-1 text-xl sm:text-2xl font-semibold tabular-nums text-gray-800">
 						{{ locale.number(stockHistoryGroup.number_org_stocks) }}
 					</dd>
 				</div>
@@ -107,7 +107,7 @@ const isExpanded = ref(false)
 						<FontAwesomeIcon icon="fal fa-inventory" fixed-width aria-hidden="true" />
 						{{ trans('Locations') }}
 					</dt>
-					<dd class="mt-1 text-2xl font-semibold tabular-nums text-gray-800">
+					<dd class="mt-1 text-xl sm:text-2xl font-semibold tabular-nums text-gray-800">
 						{{ locale.number(stockHistoryGroup.number_locations) }}
 					</dd>
 				</div>
@@ -170,7 +170,7 @@ const isExpanded = ref(false)
 				</button>
 			</div>
 
-			<div v-if="isExpanded && stockHistoryGroup.organisations.length > 0" class="mt-1 mb-4 bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden">
+			<div v-if="isExpanded && stockHistoryGroup.organisations.length > 0" class="mt-1 mb-4 bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden overflow-x-auto">
 				<table class="w-full text-sm">
 					<thead>
 						<tr class="bg-gray-50 border-b border-gray-200">
@@ -185,45 +185,45 @@ const isExpanded = ref(false)
 					</thead>
 					<tbody class="divide-y divide-gray-100">
 						<tr v-for="org in stockHistoryGroup.organisations" :key="org.slug" class="hover:bg-gray-50 transition-colors">
-							<td class="px-4 py-2.5 font-medium">
+							<td class="px-4 py-2.5 font-medium whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.dashboard.name, org.routes.dashboard.parameters)" class="text-gray-800 hover:text-blue-600 hover:underline">
 									{{ org.name }}
 								</Link>
 								<span v-else class="text-gray-800">{{ org.name }}</span>
 							</td>
-							<td class="px-4 py-2.5 text-right tabular-nums">
+							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'org_stocks' })" class="text-gray-700 hover:text-blue-600 hover:underline">
 									{{ locale.currencyFormat(org.currency_code, org.org_stock_value) }}
 								</Link>
 								<span v-else class="text-gray-700">{{ locale.currencyFormat(org.currency_code, org.org_stock_value) }}</span>
 							</td>
-							<td class="px-4 py-2.5 text-right tabular-nums">
+							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'org_stocks' })" class="text-gray-700 hover:text-blue-600 hover:underline">
 									{{ locale.number(org.number_org_stocks) }}
 								</Link>
 								<span v-else class="text-gray-700">{{ locale.number(org.number_org_stocks) }}</span>
 							</td>
-							<td class="px-4 py-2.5 text-right tabular-nums">
+							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.locations.name, org.routes.locations.parameters)" class="text-gray-700 hover:text-blue-600 hover:underline">
 									{{ locale.number(org.number_locations) }}
 								</Link>
 								<span v-else class="text-gray-700">{{ locale.number(org.number_locations) }}</span>
 							</td>
-							<td class="px-4 py-2.5 text-right tabular-nums">
+							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'out_of_stock' })" class="text-red-500 hover:text-red-700 hover:underline">
 									{{ locale.number(org.number_out_of_stock_org_stocks) }}
 								</Link>
 								<span v-else class="text-red-500">{{ locale.number(org.number_out_of_stock_org_stocks) }}</span>
 								<span class="text-xs text-red-400 ml-1">{{ org.percentage_out_of_stock }}%</span>
 							</td>
-							<td class="px-4 py-2.5 text-right tabular-nums">
+							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'dormant_stock_1y' })" class="text-red-500 hover:text-red-700 hover:underline">
 									{{ locale.currencyFormat(org.currency_code, org.value_dormant_stock_1y) }}
 								</Link>
 								<span v-else class="text-red-500">{{ locale.currencyFormat(org.currency_code, org.value_dormant_stock_1y) }}</span>
 								<span class="text-xs text-red-400 ml-1">{{ org.percentage_dormant_1y }}%</span>
 							</td>
-							<td class="px-4 py-2.5 text-right tabular-nums">
+							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'not_sold_1y' })" class="text-red-500 hover:text-red-700 hover:underline">
 									{{ locale.number(org.number_org_stocks_not_sold_1y) }}
 								</Link>

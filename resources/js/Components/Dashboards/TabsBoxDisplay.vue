@@ -195,7 +195,7 @@ const clickVisitRoute = (visitRoute: {
 <template>
     <div>
         <!-- TabsBoxDisplay Desktop -->
-        <div class="hidden px-6 md:flex gap-x-6 mt-4 mb-1 item-stretch">
+        <div class="hidden px-6 md:flex flex-wrap xl:flex-nowrap gap-x-6 gap-y-4 mt-4 mb-1 items-stretch">
             <div
                 v-for="(box, idx) in tabs_box"
                 :key="box.label"
@@ -275,7 +275,7 @@ const clickVisitRoute = (visitRoute: {
 
         <!-- Children Table (Desktop, below expand button) -->
         <div v-if="isAllExpanded && hasChildren" class="hidden md:block px-6 mt-1 mb-4">
-            <div class="bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden">
+            <div class="bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="bg-gray-50 border-b border-gray-200">
@@ -332,7 +332,7 @@ const clickVisitRoute = (visitRoute: {
 
                 <!-- Tabs Grid -->
                 <div class="p-3">
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div
                             v-for="tab in box.tabs"
                             :key="tab.tab_slug"
