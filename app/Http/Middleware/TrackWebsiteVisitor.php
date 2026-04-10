@@ -27,6 +27,7 @@ class TrackWebsiteVisitor
                 referrer: $request->header('referer'),
             );
         }
+
         return $next($request);
     }
 
@@ -42,11 +43,12 @@ class TrackWebsiteVisitor
             return false;
         }
 
-
         $routeName = $request->route()?->getName();
+
         if (!$routeName) {
             return false;
         }
+
         $excludedRoutes = [
             'iris.models',
             'retina.models',
@@ -58,6 +60,4 @@ class TrackWebsiteVisitor
 
         return array_all($excludedRoutes, fn ($excluded) => !str_starts_with($routeName, $excluded));
     }
-
-
 }
