@@ -76,22 +76,6 @@ const initWidget = async () => {
             },
         },
 
-          reviews: {
-            enable_customer_name: true,
-            enable_customer_location: true,
-            enable_verified_badge: true,
-            enable_subscriber_badge: true,
-            enable_recommends_badge: true,
-            enable_photos: true,
-            enable_videos: true,
-            enable_review_date: true,
-            disable_same_customer: true, 
-            min_review_percent: 4,
-            third_party_source: true,
-            hide_empty_reviews: false,
-            enable_product_name: true,
-        },
-
          styles: {
         '--common-star-color': '#facc15',          // ⭐ yellow
         '--common-star-disabled-color': 'rgba(0,0,0,0.25)',
