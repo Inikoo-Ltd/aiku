@@ -23,7 +23,7 @@ import { debounce, isNull } from 'lodash-es'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTrashAlt, faPaperPlane } from "@far"
-import { faSignOutAlt, faTimes, faShare, faCross, faUndo, faStickyNote, faBackspace } from "@fal"
+import { faSignOutAlt, faTimes, faShare, faCross, faUndo, faStickyNote, faBackspace, faDebug } from "@fal"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import { routeType } from "@/types/route"
@@ -32,8 +32,9 @@ import FieldEditableTable from "@/Components/FieldEditableTable.vue"
 import axios from "axios"
 
 const layout = inject('layout', layoutStructure)
+const screenType = inject('screenType', ref('desktop'))
 
-library.add(faTrashAlt, faSignOutAlt, faTimes, faShare, faCross, faUndo, faStickyNote, faPaperPlane, faBackspace)
+library.add(faTrashAlt, faSignOutAlt, faTimes, faShare, faCross, faUndo, faStickyNote, faPaperPlane, faBackspace, faDebug)
 
 const props = defineProps<{
     data: {}
@@ -392,14 +393,16 @@ const generateLinkPallet = (pallet: any) => {
                     <!-- <div class="border border-green-500 rounded py-2 px-6 hover:bg-green-500/10 cursor-pointer">
                         <FontAwesomeIcon icon='fal fa-check' class='flex items-center justify-center text-green-500' fixed-width aria-hidden='true' />
                     </div> -->
-                    <Button icon="fal fa-check" type="positive" :loading="isPickingLoading === pallet.id" class="py-0" />
+                    <Button icon="fal fa-clipboard-list-check" type="secondary"
+                        :size="screenType == 'desktop' ? 'sm' : 'lg'" :loading="isPickingLoading === pallet.id" class="py-0" />
                 </Link>
                 <!-- Button: Set as not picked -->
                 <Popover v-if="pallet.state === 'picking' && !isFulfilmentOperationsPalletReturnPage">
                     <template #button="{ open }">
-                        <Button icon="fal fa-times"
+                        <Button icon="fal fa-debug"
                             v-tooltip="trans('Set as not picked')"
                             :type="'negative'"
+                            :size="screenType == 'desktop' ? 'sm' : 'lg'"
                             :key="pallet.id + open"
                             :loading="isSubmitNotPickedLoading == pallet.id"
                         />
@@ -447,7 +450,8 @@ const generateLinkPallet = (pallet: any) => {
                     <!-- <div class="border border-green-500 rounded py-2 px-6 hover:bg-green-500/10 cursor-pointer">
                         <FontAwesomeIcon icon='fal fa-check' class='flex items-center justify-center text-green-500' fixed-width aria-hidden='true' />
                     </div> -->
-                    <Button icon="fal fa-backspace" type="warning" :loading="isUnlinkLoading === pallet.id" class="py-0" />
+                    <Button icon="fal fa-backspace" type="warning" :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                        :loading="isUnlinkLoading === pallet.id" class="py-0" />
                 </Link>
 
                 <!-- Button: Undo picking -->
