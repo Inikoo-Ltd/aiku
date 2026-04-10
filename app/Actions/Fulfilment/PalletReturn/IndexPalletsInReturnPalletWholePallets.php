@@ -210,7 +210,9 @@ class IndexPalletsInReturnPalletWholePallets extends OrgAction
             }
 
 
-            $table->column(key: 'actions', label: 'Actions', canBeHidden: false, searchable: true);
+            if ($palletReturn->state === PalletReturnStateEnum::PICKING) {
+                $table->column(key: 'actions', label: 'Actions', canBeHidden: false, searchable: true);
+            }
 
 
             $table->defaultSort('reference');
