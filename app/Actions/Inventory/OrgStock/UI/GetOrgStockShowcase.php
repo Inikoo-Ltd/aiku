@@ -80,13 +80,6 @@ class GetOrgStockShowcase
                             'cost_current_price_outer' => $orgStock->unit_cost * $orgStock->quantity_available,
                         ],
                     'summary'        => [
-                        'quantity_in_locations'        => [
-                            'icon_state' => [
-                                'icon'    => 'fal fa-inventory',
-                                'tooltip' => __("Stock in locations"),
-                            ],
-                            'value'      => $orgStock->quantity_in_locations,
-                        ],
                         'quantity_in_submitted_orders' => [
                             'icon_state' => [
                                 'icon'    => 'fas fa-shopping-cart',
@@ -110,7 +103,8 @@ class GetOrgStockShowcase
                             'value'      => $orgStock->quantity_available
                         ],
                     ],
-                    'locations'      => $locations,
+                    'locations'         => $locations,
+                    'qty_in_location'   => $orgStock->quantity_in_locations
                 ]
             ]
         );
