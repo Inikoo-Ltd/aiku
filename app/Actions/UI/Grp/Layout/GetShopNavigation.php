@@ -513,6 +513,16 @@ class GetShopNavigation
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
+                        [
+                            "label"   => __("Couriers"),
+                            "tooltip" => __("Couriers"),
+                            "icon"    => ["fal", "fa-shipping-fast"],
+                            'root'    => 'grp.org.shops.show.ordering.couriers.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.ordering.couriers.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
                     ],
                 ],
             ];
