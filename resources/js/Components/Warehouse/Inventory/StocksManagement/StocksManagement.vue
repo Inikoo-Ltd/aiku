@@ -489,14 +489,12 @@ const setInputRef = (el: any, id: number) => {
 
                             <!-- TODO ENABLE ON PRODUCTION  -->
                             <div v-if="layout.app.environment === 'local'" @click="() => setActivePickingLocation(loc, 'dropshipping')"
-                                v-tooltip="loc.enabled_on_dropshipping ? trans('Set as active picking location [Dropshipping]') : trans('Location is disabled for Dropshipping')"
-                                class="transition-colors duration-200" :class="{
-                                    'cursor-not-allowed': !loc.enabled_on_dropshipping,
-                                    'cursor-pointer': loc.enabled_on_dropshipping,
-                                    'text-gray-400': activePickingLocationDropshipping !== loc.id  && !loc.enabled_on_dropshipping,
-                                    'text-gray-600  opacity-30 hover:opacity-60': activePickingLocationDropshipping !== loc.id  && loc.enabled_on_dropshipping,
-                                    'text-blue-700': activePickingLocationDropshipping === loc.id && loc.enabled_on_dropshipping,
-                                    'hover:text-blue-500': activePickingLocationDropshipping !== loc.id && loc.enabled_on_dropshipping
+                                v-tooltip="trans('Set as active picking location [Dropshipping]')"
+                                class="transition-colors duration-200 cursor-pointer" :class="{
+                                    'text-gray-400': activePickingLocationDropshipping !== loc.id,
+                                    'text-gray-600  opacity-30 hover:opacity-60': activePickingLocationDropshipping !== loc.id,
+                                    'text-blue-700': activePickingLocationDropshipping === loc.id,
+                                    'hover:text-blue-500': activePickingLocationDropshipping !== loc.id
                                 }">
                                 <LoadingIcon v-if="isLoadingActiveLocationDropshipping === loc.id" />
                                 <FontAwesomeIcon v-else :icon="activePickingLocationDropshipping === loc.id ? 'fas fa-shopping-basket' : 'fal fa-shopping-basket'"
