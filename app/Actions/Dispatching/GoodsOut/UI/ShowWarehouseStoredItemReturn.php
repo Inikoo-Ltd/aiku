@@ -17,6 +17,8 @@ use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseAuthorisation;
+use App\Enums\Fulfilment\Pallet\PalletStateEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\UI\Fulfilment\PalletReturnTabsEnum;
@@ -88,6 +90,37 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                             'palletReturn'       => $palletReturn->id
                         ]
                     ]
+                ];
+            }
+            if ($palletReturn->state == PalletReturnStateEnum::PICKING) {
+                $baseQuery = $palletReturn->pallets()->whereNot('pallets.state', [PalletStateEnum::DISPATCHED]);
+                $palletCount = (clone $baseQuery)->count();
+                $completedPickingCount = (clone $baseQuery)
+                    ->wherePivotIn('state', [
+                        PalletReturnItemStateEnum::PICKED->value,
+                        PalletReturnItemStateEnum::NOT_PICKED->value,
+                        PalletReturnItemStateEnum::CANCEL->value,
+                    ])
+                    ->count();
+                $canSetAsPicked = $palletCount > 0 && $palletCount === $completedPickingCount;
+
+                $actions[] = [
+                    'type'     => 'button',
+                    'style'    => 'save',
+                    'tooltip'  => $canSetAsPicked ? __('Set as picked') : __('Set all items as picked or not picked first'),
+                    'label'    => __('Set as Picked'),
+                    'key'      => 'set-to-picked',
+                    'route'    => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.fulfilment-customer.pallet-return.picked',
+                        'parameters' => [
+                            'organisation'       => $palletReturn->organisation->slug,
+                            'fulfilment'         => $palletReturn->fulfilment->slug,
+                            'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->id,
+                            'palletReturn'       => $palletReturn->id
+                        ]
+                    ],
+                    'disabled' => !$canSetAsPicked
                 ];
             }
 

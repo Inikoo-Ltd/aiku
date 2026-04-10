@@ -154,7 +154,10 @@ const debounceReloadBoxStats = debounce(() => {
 }, 700)
 
 const isWarehouseDispatchingPalletReturnPage = computed(() => route().current('grp.org.warehouses.show.dispatching.pallet-returns.show'))
-const isFulfilmentOperationsPalletReturnPage = computed(() => route().current('grp.org.fulfilments.show.operations.pallet-returns.show'))
+const isFulfilmentOperationsPalletReturnPage = computed(() => {
+    return route().current('grp.org.fulfilments.show.operations.pallet-returns.show')
+        || route().current('grp.org.fulfilments.show.crm.customers.show.pallet_returns.show')
+})
 
 const onCheckTable = async (item: {}) => {
     if (item.is_checked) {

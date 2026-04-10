@@ -11,7 +11,6 @@ namespace App\Actions\Fulfilment\Pallet;
 
 use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
 use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsCancelledIfEmpty;
-use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsPickedIfAllItemsPicked;
 use App\Actions\Fulfilment\PalletReturn\Hydrators\PalletReturnHydratePallets;
 use App\Actions\OrgAction;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
@@ -42,9 +41,7 @@ class SetPalletBackToStoring extends OrgAction
             ]); // To declare it as cancelled in the relationship
             $pallet->save();
 
-            if ($currPalletReturn->pallets()->whereNot('pallet_id', $pallet->id)->whereNotIn('pallet_return_items.state', [PalletReturnStateEnum::DISPATCHED, PalletReturnStateEnum::CANCEL])->exists()) {
-                AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($currPalletReturn);
-            } else {
+            if (!$currPalletReturn->pallets()->whereNot('pallet_id', $pallet->id)->whereNotIn('pallet_return_items.state', [PalletReturnStateEnum::DISPATCHED, PalletReturnStateEnum::CANCEL])->exists()) {
                 AutomaticallySetPalletReturnAsCancelledIfEmpty::run($currPalletReturn);
             }
             PalletReturnHydratePallets::run($currPalletReturn);

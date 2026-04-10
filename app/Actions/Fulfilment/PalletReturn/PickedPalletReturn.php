@@ -60,7 +60,7 @@ class PickedPalletReturn extends OrgAction
             $palletReturnItem = PalletReturnItem::find($pallet->pivot->id);
             PickWholePalletInPalletReturn::make()->action($palletReturnItem, []);
         }
-        AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($palletReturn);
+        // AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($palletReturn);
 
         $pickingSessions = $palletReturn->pickingSessions()->get();
         foreach ($pickingSessions as $pickingSession) {

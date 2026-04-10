@@ -8,6 +8,8 @@
 
 namespace App\Actions\Fulfilment\PalletReturn\UI;
 
+use App\Enums\Fulfilment\Pallet\PalletStateEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
@@ -192,6 +194,35 @@ class GetPalletReturnActions
     public function getPalletReturnPickingActions(PalletReturn $palletReturn): array
     {
         $actions = [];
+        $baseQuery = $palletReturn->pallets()->whereNot('pallets.state', [PalletStateEnum::DISPATCHED]);
+        $palletCount = (clone $baseQuery)->count();
+        $completedPickingCount = (clone $baseQuery)
+            ->wherePivotIn('state', [
+                PalletReturnItemStateEnum::PICKED->value,
+                PalletReturnItemStateEnum::NOT_PICKED->value,
+                PalletReturnItemStateEnum::CANCEL->value,
+            ])
+            ->count();
+        $canSetAsPicked = $palletCount > 0 && $palletCount === $completedPickingCount;
+
+        $actions[] = [
+            'type'     => 'button',
+            'style'    => 'save',
+            'tooltip'  => $canSetAsPicked ? __('Set as picked') : __('Set all items as picked or not picked first'),
+            'label'    => __('Set as Picked'),
+            'key'      => 'set-to-picked',
+            'route'    => [
+                'method'     => 'post',
+                'name'       => 'grp.models.fulfilment-customer.pallet-return.picked',
+                'parameters' => [
+                    'organisation'       => $palletReturn->organisation->slug,
+                    'fulfilment'         => $palletReturn->fulfilment->slug,
+                    'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->id,
+                    'palletReturn'       => $palletReturn->id
+                ]
+            ],
+            'disabled' => !$canSetAsPicked
+        ];
 
         if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
             // $actions[] =
