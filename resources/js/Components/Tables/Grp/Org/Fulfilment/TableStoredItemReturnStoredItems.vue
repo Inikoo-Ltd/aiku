@@ -209,14 +209,18 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
             route(routeTarget.name, routeTarget.parameters)
         )
         pallet_stored_item.state = 'picking'
+        router.reload({
+            only: ['stored_items', 'box_stats', 'pageHead', 'data'],
+            preserveScroll: true
+        })
         // console.log('qqqqq', pallet_stored_item)
     } catch (error) {
         console.error('hehehe', error)
-        
+
     } finally {
         set(isLoadingUndoPick, loadingKey, false)
     }
-    
+
 }
 </script>
 
@@ -225,19 +229,19 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
     <!-- <pre>{{ palletReturn.state }}</pre> -->
     <Table :resource="data" :name="'stored_items'" class="mt-5" :xxisCheckBox="state == 'in_process' ? true : false"
         @onSelectRow="onChangeCheked" ref="_table" :selectedRow="selectedRow">
-        
+
         <!-- Column: Type icon -->
         <template #cell(type_icon)="{ item: value }">
             <Icon :data="value['type_icon']" class="px-1" />
         </template>
-        
+
         <!-- Column: Reference -->
         <template #cell(reference)="{ item: value }">
             <Link :href="generateLinkReference(value)" class="primaryLink">
                 {{ value.reference }}
             </Link>
         </template>
-        
+
         <!-- Column: Pallet of Stored items -->
         <template #cell(pallet_stored_items)="{ item: value, proxyItem }">
             <div class="grid gap-y-1">
@@ -314,7 +318,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
 
                                 <div v-if="palletReturn.state === 'in_process'" v-tooltip="trans('Available quantity')" class="text-base">{{ pallet_stored_item.available_quantity }}</div>
                                 <!-- <div v-else-if="palletReturn.state === 'picking'" v-tooltip="trans(`Quantity of Customer's SKU that should be picked`)" class="text-base">{{ pallet_stored_item.selected_quantity }}</div> -->
-    
+
                                 <!-- Button: input number (in_process) -->
                                 <NumberWithButtonSave
                                     v-if="palletReturn.state === 'in_process'"
@@ -351,7 +355,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                 <div v-else-if="palletReturn.state === 'submitted' || palletReturn.state === 'confirmed'" class="flex flex-nowrap gap-x-1 items-center">
                                     {{ locale.number(pallet_stored_item.selected_quantity) }}
                                 </div>
-    
+
                                 <!-- Button: input number (picking) -->
                                 <template v-else-if="palletReturn.state === 'picking' && pallet_stored_item.state !== 'picked'">
                                     <div>
@@ -417,7 +421,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                 </template>
                                 <div v-else class="flex flex-nowrap gap-x-1 items-center tabular-nums">
                                     <!-- <ButtonWithLink
-                                        
+
                                         icon="fal fa-undo-alt"
                                         :label="trans('Undo pick')"
                                         size="xs"
@@ -442,11 +446,11 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                     {{ locale.number(pallet_stored_item.picked_quantity) }}/{{ locale.number(pallet_stored_item.selected_quantity) }}
                                     <FontAwesomeIcon v-if="pallet_stored_item.state == 'picked'" v-tooltip="trans('Picked')" icon='fal fa-check' class='text-green-500' fixed-width aria-hidden='true' />
                                 </div>
-    
+
                             </div>
                             <!-- {{ get(isLoadingUndoPick, [`row${value.rowIndex}.id${pallet_stored_item.id}`], '000') }} --  -->
                             <!-- {{ pallet_stored_item.isLoadingUndo }} -->
-                            
+
                         </div>
                     </Teleport>
                 </template>
@@ -494,7 +498,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                             :modelValue="item.data.quantity"
                             :maxValue="item.total_quantity"
                             :minValue="1"
-                            @update:modelValue="(e) => e ? (set(proxyItem, 'error_quantity', false), changeValueQty(e)) : set(proxyItem, 'error_quantity', true)"  
+                            @update:modelValue="(e) => e ? (set(proxyItem, 'error_quantity', false), changeValueQty(e)) : set(proxyItem, 'error_quantity', true)"
                         />
                         <PureInputNumber
                             v-else
@@ -505,7 +509,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
 
                         <p v-if="proxyItem.error_quantity" class="mt-1 text-left text-xs text-red-500 italic">*{{ trans(`Quantity can't empty`) }}</p>
                     </template>
-                    
+
                     <div v-else class="py-3">{{ item.data.quantity }}</div>
                 </div>
             </div>
@@ -557,21 +561,21 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
 
                     <template #content="{ close }">
                         <div class="w-[250px]">
-                    
+
                             <div class="mb-3">
                                 <div class="text-xs px-1 mb-1"><span class="text-red-500 text-sm mr-0.5">*</span>Select status: </div>
                                 <PureMultiselect v-model="selectedStatusNotPicked.status" @update:modelValue="() => errorNotPicked.status = null" :options="listStatusNotPicked" required caret :class="errorNotPicked.status ? 'errorShake' : ''" />
                                 <div v-if="errorNotPicked.status" class="mt-1 text-red-500 italic text-xxs">{{ errorNotPicked.status }}</div>
                             </div>
 
-                           
+
                             <div class="mb-4 ">
                                 <div class="text-xs px-1 mb-1"><span class="text-red-500 text-sm mr-0.5">*</span>Description:</div>
                                 <PureTextarea v-model="selectedStatusNotPicked.notes" @update:modelValue="() => errorNotPicked.notes = null" placeholder="Enter reason why the pallet is not picked" :class="errorNotPicked.notes ? 'errorShake' : ''" />
                                 <div v-if="errorNotPicked.notes" class="mt-1 text-red-500 italic text-xxs">{{ errorNotPicked.notes }}</div>
                             </div>
 
-                            
+
                             <div class="flex justify-end mt-2">
                                 <Button @click="async () => onSubmitNotPicked(pallet.id, close, pallet.notPickedRoute)"
                                     full
@@ -587,6 +591,6 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
             </div>
         </template>
 
-        
+
     </Table>
 </template>
