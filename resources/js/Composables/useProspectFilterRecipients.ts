@@ -70,6 +70,15 @@ export function useProspectFilterRecipients(props: any) {
         // If mode is custom, keep the existing custom_date or set to null
     }
 
+    function formatDate(date: Date | null) {
+        if (!date) return null
+
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+
+        return `${year}-${month}-${day}`
+    }
     /* ---------------- FILTER ADD ---------------- */
    const addFilter = (key: string, config: any) => {
         const conflictWith = hasConflict(key)
@@ -137,7 +146,7 @@ export function useProspectFilterRecipients(props: any) {
                     payloadValue.mode = val.mode ?? 'three_weeks_ago'
                     // Normalize custom_date to remove timestamps
                     // payloadValue.custom_date = val.custom_date ? val.custom_date.split('T')[0] : null
-                    payloadValue.custom_date = val.custom_date ? val.custom_date : null
+                    payloadValue.custom_date = val.custom_date ? formatDate(new Date(val.custom_date)) : null
                 }
 
                 payload[key] = { value: payloadValue }
