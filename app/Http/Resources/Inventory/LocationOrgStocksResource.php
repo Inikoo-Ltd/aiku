@@ -32,23 +32,49 @@ class LocationOrgStocksResource extends JsonResource
 
     public function toArray($request): array
     {
+        /** @var LocationOrgStock */ 
+        $locationOrgStock = $this->resource;
+        
+        $location = $locationOrgStock->location;
+
+        $locationData = [
+            'id'                        => $location->id,
+            'slug'                      => $location->slug,
+            'code'                      => $location->code,
+            'stock_value'               => $location->stock_value ?? 0,
+            'stock_commercial_value'    => $location->stock_commercial_value,
+            'allow_stocks'              => $location->allow_stocks,
+            'allow_fulfilment'          => $location->allow_fulfilment,
+            'allow_dropshipping'        => $location->allow_dropshipping,
+            'has_stock_slots'           => $location->has_stock_slots,
+            'has_fulfilment'            => $location->has_fulfilment,
+            'has_dropshipping_slots'    => $location->has_dropshipping_slots,
+            'organisation_slug'         => $location->organisation->slug,
+            'organisation_name'         => $location->organisation->name,
+            'warehouse_slug'            => $location->warehouse->slug,
+            'max_weight'                => $location->max_weight ?? 0,
+            'max_volume'                => $location->max_volume ?? 0,
+            'quantity'                  => $locationOrgStock->quantity,
+        ];
+
         return [
-            'id'                            => $this->id,
-            'code'                          => $this->location->code,
-            'quantity'                      => $this->quantity,
-            'value'                         => $this->value,
-            'audited_at'                    => $this->audited_at,
-            'commercial_value'              => $this->commercial_value,
-            'type'                          => $this->type,
-            'picking_priority'              => $this->picking_priority,
-            'notes'                         => $this->notes,
-            'data'                          => $this->data,
-            'settings'                      => $this->settings,
-            'created_at'                    => $this->created_at,
-            'updated_at'                    => $this->updated_at,
-            'location'                      => new LocationsResource($this->location),
-            'default_wholesale_picking_location'    => $this->default_wholesale_picking_location,
-            'default_dropshipping_picking_location' => $this->default_dropshipping_picking_location,
+            'id'                            => $locationOrgStock->id,
+            'code'                          => $locationOrgStock->location->code,
+            'quantity'                      => $locationOrgStock->quantity,
+            'value'                         => $locationOrgStock->value,
+            'audited_at'                    => $locationOrgStock->audited_at,
+            'commercial_value'              => $locationOrgStock->commercial_value,
+            'type'                          => $locationOrgStock->type,
+            'picking_priority'              => $locationOrgStock->picking_priority,
+            'notes'                         => $locationOrgStock->notes,
+            'data'                          => $locationOrgStock->data,
+            'settings'                      => $locationOrgStock->settings,
+            'created_at'                    => $locationOrgStock->created_at,
+            'updated_at'                    => $locationOrgStock->updated_at,
+            'location'                      => $locationData,
+            'default_wholesale_picking_location'    => $locationOrgStock->default_wholesale_picking_location,
+            'enabled_on_dropshipping'               => (bool) $locationOrgStock->location?->allow_dropshipping,
+            'default_dropshipping_picking_location' => $locationOrgStock->default_dropshipping_picking_location,
         ];
     }
 }
