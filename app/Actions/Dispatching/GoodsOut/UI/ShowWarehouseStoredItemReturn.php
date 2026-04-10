@@ -56,20 +56,20 @@ class ShowWarehouseStoredItemReturn extends OrgAction
     public function getActions(PalletReturn $palletReturn): array
     {
         $actions   = [];
-        $actions[] = [
-            'type'   => 'button',
-            'style'  => 'tertiary',
-            'label'  => 'PDF',
-            'target' => '_blank',
-            'icon'   => 'fal fa-file-pdf',
-            'key'    => 'action',
-            'route'  => [
-                'name'       => 'grp.models.pallet-return.pdf',
-                'parameters' => [
-                    'palletReturn' => $palletReturn->id
-                ]
-            ]
-        ];
+        // $actions[] = [
+        //     'type'   => 'button',
+        //     'style'  => 'tertiary',
+        //     'label'  => 'PDF',
+        //     'target' => '_blank',
+        //     'icon'   => 'fal fa-file-pdf',
+        //     'key'    => 'action',
+        //     'route'  => [
+        //         'name'       => 'grp.models.pallet-return.pdf',
+        //         'parameters' => [
+        //             'palletReturn' => $palletReturn->id
+        //         ]
+        //     ]
+        // ];
         if ($this->canEdit) {
             if ($palletReturn->state == PalletReturnStateEnum::CONFIRMED) {
                 $actions[] = [
@@ -92,11 +92,14 @@ class ShowWarehouseStoredItemReturn extends OrgAction
             }
 
             if ($palletReturn->state == PalletReturnStateEnum::PICKED) {
+                $dispatchTooltip = $palletReturn->is_collection ? __('Set as collected') : __('Set as dispatched');
+                $dispatchLabel = $palletReturn->is_collection ? __('Set as Collected') : __('Dispatch');
+
                 $actions[] = [
                     'type'    => 'button',
                     'style'   => 'save',
-                    'tooltip' => __('Set as dispatched'),
-                    'label'   => __('Dispatch'),
+                    'tooltip' => $dispatchTooltip,
+                    'label'   => $dispatchLabel,
                     'key'     => 'Dispatching',
                     'route'   => [
                         'method'     => 'post',

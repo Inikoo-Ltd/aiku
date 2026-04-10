@@ -292,12 +292,15 @@ class GetPalletReturnActions
                 ];
         }
 
+        $dispatchTooltip = $palletReturn->is_collection ? __('Set as collected') : __('Set as dispatched');
+        $dispatchLabel = $palletReturn->is_collection ? __('Set as Collected') : __('Dispatch');
+
         $actions[] =
             [
                 'type'    => 'button',
                 'style'   => 'save',
-                'tooltip' => __('Set as Collected'),
-                'label'   => __('Set as Collected'),
+                'tooltip' => $dispatchTooltip,
+                'label'   => $dispatchLabel,
                 'key'     => 'Dispatching',
                 'route'   => [
                     'method'     => 'post',

@@ -20,6 +20,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Http\Resources\Fulfilment\MayaPalletReturnItemUIResource;
 use App\Http\Resources\Fulfilment\PalletReturnItemUIResource;
 use App\Models\CRM\WebUser;
@@ -47,11 +48,16 @@ class PickWholePalletInPalletReturn extends OrgAction
             data_set($modelData, 'picking_location_id', $palletReturnItem->pallet->location_id);
             data_set($modelData, 'state', PalletReturnItemStateEnum::PICKED);
 
-            if ($user && !$palletReturnItem->palletReturn->packer_user_id) {
+            if (
+                $user
+                && $palletReturnItem->palletReturn->type == PalletReturnTypeEnum::STORED_ITEM
+                && !$palletReturnItem->palletReturn->packer_user_id
+            ) {
                 UpdatePalletReturn::run($palletReturnItem->palletReturn, [
                     'packer_user_id' => $user->id
                 ]);
             }
+
             if ($palletReturnItem->type == 'Pallet') {
                 data_set($modelData, 'quantity_picked', $palletReturnItem->quantity_ordered);
                 $this->update($palletReturnItem, $modelData);
