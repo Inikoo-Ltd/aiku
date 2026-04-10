@@ -328,7 +328,7 @@ const onPassItemToCs = () => {
                                 :bindToLink="{ preserveScroll: true }"
                             /> -->
 
-                            <Button @click="() => (isOpenModalPassToCs = true, selectedTransactionToSetAsWaiting = itemValue, dataToSendAsWaiting.note = itemValue.notes)" icon="fal fa-user-headset" :label="trans('Pass to CS')" size="xs" type="tertiary" />
+                            <Button v-if="Number(itemValue.quantity_waiting_warehouse) > 0" @click="() => (isOpenModalPassToCs = true, selectedTransactionToSetAsWaiting = itemValue, dataToSendAsWaiting.note = itemValue.notes)" icon="fal fa-user-headset" :label="trans('Pass :qtyInWarehouse to CS', { qtyInWarehouse: Number(itemValue.quantity_waiting_warehouse) })" size="xs" type="tertiary" />
                         </div>
                     </div>
 
@@ -341,7 +341,7 @@ const onPassItemToCs = () => {
             <div v-else class="flex gap-x-2 items-center justify-between">
                 <div></div>
                 <div>
-                    <Button @click="() => (isOpenModalPassToCs = true, selectedTransactionToSetAsWaiting = itemValue, dataToSendAsWaiting.note = itemValue.notes)" icon="fal fa-user-headset" :label="trans('Pass to CS')" size="xs" type="tertiary" />
+                    <Button v-if="Number(itemValue.quantity_waiting_warehouse) > 0" @click="() => (isOpenModalPassToCs = true, selectedTransactionToSetAsWaiting = itemValue, dataToSendAsWaiting.note = itemValue.notes)" icon="fal fa-user-headset" :label="trans('Pass :qtyInWarehouse to CS', { qtyInWarehouse: Number(itemValue.quantity_waiting_warehouse) })" size="xs" type="tertiary" />
 
                 </div>
             </div>
@@ -425,7 +425,7 @@ const onPassItemToCs = () => {
                     :fractionData="GetQuantityToPickFractional(selectedTransactionToSetAsWaiting)"
                 />
                 <template v-else>{{ locale.number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) + Number(selectedTransactionToSetAsWaiting.quantity_waiting_crm || 0)  ) }}</template> -->
-                {{ selectedTransactionToSetAsWaiting.quantity_waiting_warehouse + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) + Number(selectedTransactionToSetAsWaiting.quantity_waiting_crm || 0)  }}
+                {{ Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) + Number(selectedTransactionToSetAsWaiting.quantity_waiting_crm || 0)  }}
                 
             </span>
         </div>
@@ -435,7 +435,7 @@ const onPassItemToCs = () => {
             <label class="font-medium mb-1 flex items-center gap-x-1 text-sm">
                 {{ trans('Note') }}:
             </label>
-            <PureTextarea v-model="dataToSendAsWaiting.note" :rows="4" />
+            <PureTextarea v-model="dataToSendAsWaiting.note" :rows="4" counter :maxlength="255" />
         </div>
 
         <div class="flex gap-2 mt-6">
