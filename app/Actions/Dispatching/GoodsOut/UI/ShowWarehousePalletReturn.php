@@ -69,6 +69,7 @@ class ShowWarehousePalletReturn extends OrgAction
                     'confirm',
                     'start picking',
                     'Dispatching',
+                    'revert-to-picking'
                 ], true)
             )
         );

@@ -190,6 +190,7 @@ use App\Actions\Fulfilment\PalletReturn\Pdf\PdfPickingPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\Pdf\PdfPickingStoredItemReturn;
 use App\Actions\Fulfilment\PalletReturn\PickedPalletReturnWithStoredItems;
 use App\Actions\Fulfilment\PalletReturn\RevertPalletReturnToInProcess;
+use App\Actions\Fulfilment\PalletReturn\RevertPalletReturnToPicking;
 use App\Actions\Fulfilment\PalletReturn\SwitchPalletReturnDeliveryAddress;
 use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturnDeliveryAddress;
@@ -695,6 +696,7 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     Route::post('pallet-return-item-upload', [ImportPalletReturnItem::class, 'fromGrp'])->name('pallet-return-item.upload');
 
     Route::post('revert-to-in-process', RevertPalletReturnToInProcess::class)->name('revert-to-in-process');
+    Route::post('revert-to-picking', RevertPalletReturnToPicking::class)->name('revert-to-picking');
     Route::post('pallet-upload', ImportPalletsInPalletDelivery::class)->name('pallet.upload');
     Route::patch('/', UpdatePalletReturn::class)->name('update');
     Route::get('stored-item-picking-pdf', PdfPickingStoredItemReturn::class)->name('stored_item_picking.pdf');

@@ -92,6 +92,22 @@ class ShowWarehouseStoredItemReturn extends OrgAction
             }
 
             if ($palletReturn->state == PalletReturnStateEnum::PICKED) {
+                $actions[] = [
+                    'type'    => 'button',
+                    'style'   => 'negative',
+                    'label'   => __('Revert to Picking'),
+                    'tooltip' => __('Send return back to picking'),
+                    'key'     => 'revert-to-picking',
+                    'icon'    => 'fal fa-arrow-alt-left',
+                    'route'   => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.pallet-return.revert-to-picking',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id
+                        ]
+                    ]
+                ];
+
                 $dispatchTooltip = $palletReturn->is_collection ? __('Set as collected') : __('Set as dispatched');
                 $dispatchLabel = $palletReturn->is_collection ? __('Set as Collected') : __('Dispatch');
 
