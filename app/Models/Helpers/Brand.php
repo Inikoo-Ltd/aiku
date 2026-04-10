@@ -10,6 +10,7 @@
 
 namespace App\Models\Helpers;
 
+use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Traits\HasImage;
 use Illuminate\Database\Eloquent\Model;
@@ -62,6 +63,11 @@ class Brand extends Model implements HasMedia
     public function tradeUnits(): MorphToMany
     {
         return $this->morphedByMany(TradeUnit::class, 'model', 'model_has_brands');
+    }
+
+    public function products(): MorphToMany
+    {
+        return $this->morphedByMany(Product::class, 'model', 'model_has_brands');
     }
 
     public function timeSeries(): HasMany
