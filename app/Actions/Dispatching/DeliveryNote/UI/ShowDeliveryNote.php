@@ -521,9 +521,9 @@ class ShowDeliveryNote extends OrgAction
             'customer_client'              => $deliveryNote->customerClient,
             'currency_code'                => $deliveryNote->shop->currency->code,
             'external_shop'                => $deliveryNote->shop->type == ShopTypeEnum::EXTERNAL ? [  // TODO: Artha
-                                                                                                       'engine_value'            => $deliveryNote->shop->engine->value,
-                                                                                                       'engine_label'            => ShopEngineEnum::from($deliveryNote->shop->engine->value)->label(),
-                                                                                                       'external_shipping_label' => $deliveryNote->shop->engine == ShopEngineEnum::FAIRE ? __('Ship with Faire') : __('External shipping')
+                'engine_value'            => $deliveryNote->shop->engine->value,
+                'engine_label'            => ShopEngineEnum::from($deliveryNote->shop->engine->value)->label(),
+                'external_shipping_label' => $deliveryNote->shop->engine == ShopEngineEnum::FAIRE ? __('Ship with Faire') : __('External shipping')
             ] : null,
             'platform'                     => [
                 'name' => $deliveryNote->platform?->name,

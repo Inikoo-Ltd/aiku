@@ -9,6 +9,8 @@
 namespace App\Http\Resources\Mail;
 
 use App\Models\Comms\Mailshot;
+use App\Models\CRM\Customer;
+use App\Models\Ordering\Order;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -39,6 +41,9 @@ class DispatchedEmailsResource extends JsonResource
         /** @var Mailshot $mailshot */
         $mailshot = $this;
 
+        $customer = $this->customer_id ? Customer::find($this->customer_id) : null;
+        $order = $this->order_id ? Order::find($this->order_id) : null;
+
         return array(
             'id'                           => $this->id,
             'number_clicks'                => $this->number_clicks,
@@ -56,9 +61,10 @@ class DispatchedEmailsResource extends JsonResource
             'number_email_tracking_events' => $this->number_email_tracking_events,
             'organisation_name'            => $this->organisation_name,
             'organisation_slug'            => $this->organisation_slug,
-            'customer_name'                => $this->customer_name,
-            'order_slug'                   => $this->order_slug,
-            'customer_slug'                => $this->customer_slug,
+            'customer_name'                => $customer?->name ?? null,
+            'order_slug'                   => $order?->slug ?? null,
+            'customer_slug'                => $customer?->slug ?? null,
+            'shop_slug'                    => $customer?->shop?->slug ?? null,
             'fulfilment_customer_slug'     => $this->fulfilment_customer_slug,
         );
     }

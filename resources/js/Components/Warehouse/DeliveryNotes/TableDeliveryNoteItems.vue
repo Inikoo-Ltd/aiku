@@ -810,7 +810,7 @@ watch(modalResource, (val) => {
         </template>
 
         <template #cell(action)="{ item: item }">
-                <template v-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && item.quantity_not_picked == 0" >
+                <template v-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && item.quantity_picked > 0" >
                     
                     <div class="flex justify-start items-center">
                     <ButtonWithLink
