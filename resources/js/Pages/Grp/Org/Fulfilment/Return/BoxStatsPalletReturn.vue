@@ -681,30 +681,35 @@ const base64HtmlToPdf = async (base64: string, index) => {
 				</div>
 
 				<div v-if="dataPalletReturn.is_collection" class="w-full">
-					<span class="block mb-1">{{ trans("Collection by:") }}</span>
-					<div class="flex space-x-4">
-						<label class="inline-flex items-center">
-							<input
-								type="radio"
-								value="myself"
-								v-model="collectionBy"
-								@change="updateCollectionType"
-								:disabled="isWarehouseDispatchingPalletReturnPage"
-								class="form-radio"
-							/>
-							<span class="ml-2">{{ trans("My Self") }}</span>
-						</label>
-						<label class="inline-flex items-center">
-							<input
-								type="radio"
-								value="thirdParty"
-								v-model="collectionBy"
-								@change="updateCollectionType"
-								:disabled="isWarehouseDispatchingPalletReturnPage"
-								class="form-radio"
-							/>
-							<span class="ml-2">{{ trans("Third Party") }}</span>
-						</label>
+					<div v-if="isWarehouseDispatchingPalletReturnPage" class="flex items-center gap-x-2">
+                        <!-- <FontAwesomeIcon icon="fal fa-map-marker-alt" size="xs" class="text-gray-400" fixed-width aria-hidden="true" /> -->
+						<span>{{ trans("Collection by:") }}</span>
+						<span>{{ collectionBy === 'thirdParty' ? trans("Third Party") : trans("My Self") }}</span>
+					</div>
+					<div v-else class="flex flex-col gap-y-2">
+						<span>{{ trans("Collection by:") }}</span>
+						<div class="flex gap-x-4">
+							<label class="inline-flex items-center">
+								<input
+									type="radio"
+									value="myself"
+									v-model="collectionBy"
+									@change="updateCollectionType"
+									class="form-radio"
+								/>
+								<span class="ml-2">{{ trans("My Self") }}</span>
+							</label>
+							<label class="inline-flex items-center">
+								<input
+									type="radio"
+									value="thirdParty"
+									v-model="collectionBy"
+									@change="updateCollectionType"
+									class="form-radio"
+								/>
+								<span class="ml-2">{{ trans("Third Party") }}</span>
+							</label>
+						</div>
 					</div>
 
 					<div v-if="collectionBy === 'thirdParty' && !isWarehouseDispatchingPalletReturnPage" class="mt-3">
