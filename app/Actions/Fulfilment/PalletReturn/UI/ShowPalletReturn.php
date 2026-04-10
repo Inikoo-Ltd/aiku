@@ -84,7 +84,7 @@ class ShowPalletReturn extends OrgAction
 
         $actions = GetPalletReturnActions::run($palletReturn, $this->canEdit, $this->isSupervisor);
         $actions = array_values(array_filter($actions, function (array $action): bool {
-            return !in_array($action['key'] ?? null, ['in process', 'start picking', 'revert-to-picking', 'Dispatching', 'cancel-pallet-return'], true);
+            return !in_array($action['key'] ?? null, ['in process', 'start picking', 'revert-to-picking', 'Dispatching', 'cancel-pallet-return', 'delete_dispatched', 'delete_return', 'pdf'], true);
         }));
 
 

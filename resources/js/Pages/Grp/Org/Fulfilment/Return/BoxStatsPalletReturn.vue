@@ -495,7 +495,9 @@ const base64HtmlToPdf = async (base64: string, index) => {
 			isWarehouseDispatchingPalletReturnPage ? 'lg:grid-cols-3' : 'lg:grid-cols-4',
 		]">
 		<!-- Box: Customer -->
-		<BoxStatPallet class="py-1 sm:py-2 px-3">
+		<BoxStatPallet :class="[
+			'py-1 sm:py-2 px-3',
+		]">
 			<!-- Field: Platform -->
 			<div v-if="boxStats?.platform" class="pl-0.5 flex items-center w-full flex-none gap-x-2">
 				<div v-tooltip="trans('Platform')" class="flex-none">
@@ -740,7 +742,11 @@ const base64HtmlToPdf = async (base64: string, index) => {
 
 		<!-- Box Stats: 2 -->
 		<BoxStatPallet
-			class="py-1 sm:py-2 px-3"
+			:class="[
+				'py-1 sm:py-2 px-3 mr-3 z-10',
+                isWarehouseDispatchingPalletReturnPage ? 'border-gray-900' : '',
+			]"
+            :style="isWarehouseDispatchingPalletReturnPage ? 'border-right-width:1px !important' : ''"
 			:label="capitalize(dataPalletReturn?.state)"
 			icon="fal fa-truck-couch">
 
