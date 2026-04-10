@@ -212,6 +212,12 @@ class PublishWebsiteMarginal extends OrgAction
         $this->handle($website, 'family', $this->validatedData);
     }
 
+    public function familiesOverview(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'families_overview', $this->validatedData);
+    }
+
     public function product(Website $website, ActionRequest $request): void
     {
         $this->initialisationFromShop($website->shop, $request);

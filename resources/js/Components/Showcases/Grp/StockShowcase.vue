@@ -79,7 +79,6 @@ console.log(props)
                             <th class="px-3 py-2 text-left">Image</th>
                             <th class="px-3 py-2 text-left">Code</th>
                             <th class="px-3 py-2 text-left">Name</th>
-                            <th class="px-3 py-2 text-left">Stock</th>
                         </tr>
                     </thead>
 
@@ -95,18 +94,59 @@ console.log(props)
                             <td class="px-3 py-2">
                                 {{ tradeUnit.name }}
                             </td>
-                            <td class="px-3 py-2">
-                                {{ tradeUnit.stock }}
-                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+
+             <!-- Card: Stock Summary -->
+        <div class="border rounded-lg mt-4 p-4 bg-white">
+            <!-- Out of Stock -->
+            <div class="border-b pb-2 mb-2">
+                <p class="font-semibold text-gray-600">Out of stock</p>
+            </div>
+
+            <!-- Stock Value Section -->
+            <div class="space-y-2">
+                <div class="grid grid-cols-7 gap-x-3 items-center">
+                    <div class="col-span-2 font-semibold text-gray-600">
+                        Stock value:
+                    </div>
+
+                    <div class="col-span-3 text-right">
+                        {{ locale.currencyFormat(currency_code, data.stocks_management?.stock_cost?.cost_stock_price_outer || 0) }}
+                        <span class="text-gray-500 text-xs">total</span>
+                    </div>
+
+                    <div class="col-span-2 text-right">
+                        {{ locale.currencyFormat(currency_code, data.stocks_management?.stock_cost?.cost_stock_price_per_unit || 0) }}
+                        <span class="text-gray-500 text-xs">/ SKO</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-7 gap-x-3 items-center">
+                    <div class="col-span-2 font-semibold text-gray-600">
+                        Current cost:
+                    </div>
+
+                    <div class="col-span-3 text-right">
+                        {{ locale.currencyFormat(currency_code, data.stocks_management?.stock_cost?.cost_current_price_outer || 0) }}
+                        <span class="text-gray-500 text-xs">total</span>
+                    </div>
+
+                    <div class="col-span-2 text-right">
+                        {{ locale.currencyFormat(currency_code, data.stocks_management?.stock_cost?.cost_current_price_per_unit || 0) }}
+                        <span class="text-gray-500 text-xs">/ Unit</span>
+                    </div>
+                </div>
+            </div>
+        </div>
         </div>
 
+       
         <!-- Section: Stocks Management -->
         <div class="md:col-span-2">
-            <StocksManagement v-if="data.stocks_management" :stocks_management="data.stocks_management" />
+            <StocksManagement v-if="data.stocks_management" :stocks_management="data.stocks_management" :trade_units="data.trade_units"/>
             <!-- <pre v-if="layout.app.environment === 'local'">{{ data.stocks_management?.locations }}</pre> -->
         </div>
     </div>

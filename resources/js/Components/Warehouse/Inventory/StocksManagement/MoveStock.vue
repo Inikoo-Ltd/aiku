@@ -245,93 +245,94 @@ const resetForm = (scope: string = 'all') => {
 
 <template>
     <div class="space-y-4">
-            <!-- Move Stock Section -->
-            <div  class="border border-gray-200 rounded p-3 bg-gray-50 relative">
-                <div class="text-sm">
-                    <button 
-                        @click="closeMoveStock"
-                        class="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
-                    >
-                        <FontAwesomeIcon icon="fas fa-times" class="text-xs" />
-                    </button>
-                </div>
-                <div class="flex items-center lg:text-xl text-lg justify-self-center grid grid-cols-8 w-full pt-4 pb-5">
-                    <div class="grid col-span-3">
-                        <span class="font-bold h-[30px]">
-                            {{ trans('Source Location') }}
-                        </span>
-                        <span class="font-medium underline h-[30px] transition-all" :class="moveStock.from ? 'cursor-pointer hover:opacity-80' : ''" @click="resetForm()">
-                            {{ moveStock.from?.name || '?' }}
-                        </span>
-                        <div class="text-xs text-yellow-600 h-[16px]">
-                            <span v-if="!moveStock.isActive">
-                                <FontAwesomeIcon :icon="faInfoCircle" /> 
-                                {{ trans('Select') }}
-                                <span class="underline">
-                                    {{ trans('Source location') }}
-                                </span>
-                                {{ trans('by clicking forklift icon!') }}
+        <!-- Move Stock Section -->
+        <div  class="border border-gray-200 rounded p-3 bg-gray-50 relative">
+            <div class="text-sm">
+                <button 
+                    @click="closeMoveStock"
+                    class="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                >
+                    <FontAwesomeIcon icon="fas fa-times" class="text-xs" />
+                </button>
+            </div>
+            <div class="flex items-center lg:text-xl text-lg justify-self-center grid grid-cols-8 w-full pt-4 pb-5">
+                <div class="grid col-span-3">
+                    <span class="font-bold h-[30px]">
+                        {{ trans('Source Location') }}
+                    </span>
+                    <span class="font-medium underline h-[30px] transition-all" :class="moveStock.from ? 'cursor-pointer hover:opacity-80' : ''" @click="resetForm()">
+                        {{ moveStock.from?.name || '?' }}
+                    </span>
+                    <div class="text-xs text-yellow-600 h-[16px]">
+                        <span v-if="!moveStock.isActive">
+                            <FontAwesomeIcon :icon="faInfoCircle" /> 
+                            {{ trans('Select') }}
+                            <span class="underline">
+                                {{ trans('Source location') }}
                             </span>
-                        </div>
-                    </div>
-                    <div class="grid px-2 py-auto col-span-2">
-                        <span class="justify-self-center h-[30px]">
-                            <FontAwesomeIcon icon="fas fa-forklift" class="text-gray-600 mr-2" />
-                            <FontAwesomeIcon :icon="faArrowRight" class="text-gray-600 text-sm" />
+                            {{ trans('by clicking forklift icon!') }}
                         </span>
-                        <div class="flex items-center gap-2 justify-self-center h-[30px] w-fit">
-                            <label class="text-sm text-gray-600">Quantity:</label>
-                            <div class="w-full max-w-20">
-                                <InputNumber
-                                     v-if="moveStock.to" 
-                                    :modelValue="moveStock.quantity"
-                                    @input="(event: { value: any }) => updateMoveQuantity(event.value)"
-                                    :min="0"
-                                    :max="getMaxQuantity()"
-                                    :step="1"
-                                    size="small"
-                                    fluid
-                                    inputClass="!py-0"
-                                />
-                                <div v-else class="text-sm text-gray-500 text-nowrap">
-                                    ?
-                                </div>
+                    </div>
+                </div>
+                <div class="grid px-2 py-auto col-span-2">
+                    <span class="justify-self-center h-[30px]">
+                        <FontAwesomeIcon icon="fas fa-forklift" class="text-gray-600 mr-2" />
+                        <FontAwesomeIcon :icon="faArrowRight" class="text-gray-600 text-sm" />
+                    </span>
+                    <div class="flex items-center gap-2 justify-self-center h-[30px] w-fit">
+                        <label class="text-sm text-gray-600">Quantity:</label>
+                        <div class="w-full max-w-20">
+                            <InputNumber
+                                    v-if="moveStock.to" 
+                                :modelValue="moveStock.quantity"
+                                @input="(event: { value: any }) => updateMoveQuantity(event.value)"
+                                :min="0"
+                                :max="getMaxQuantity()"
+                                :step="1"
+                                size="small"
+                                fluid
+                                inputClass="!py-0"
+                            />
+                            <div v-else class="text-sm text-gray-500 text-nowrap">
+                                ?
                             </div>
-                            <span class="text-sm text-gray-500 text-nowrap" >
-                                / {{ getMaxQuantity() }}
-                            </span>
                         </div>
-                        <div class="text-yellow-600 text-xs text-center h-[16px]">
-                            <span v-if="moveStock.isActive && moveStock.from && moveStock.to && !moveStock.quantity">
-                                <FontAwesomeIcon :icon="faInfoCircle" /> {{ trans('Enter quantity to move') }}
-                            </span>
-                        </div>
+                        <span class="text-sm text-gray-500 text-nowrap" >
+                            / {{ getMaxQuantity() }}
+                        </span>
                     </div>
-                    <div class="grid col-span-3 text-end">
-                        <div class="font-bold h-[30px]">
-                            {{ trans('Destination Location') }}
-                        </div>
-                        <div class="font-medium underline h-[30px] transition-all" :class="moveStock.to ? 'cursor-pointer hover:opacity-80' : ''" @click="resetForm('to')">
-                            {{ moveStock.to?.name || '?' }}
-                        </div>
-                        <div class="text-xs text-yellow-600 h-[16px]">
-                            <span v-if="moveStock.from && !moveStock.to">
-                                <FontAwesomeIcon :icon="faInfoCircle" />
-                                {{ trans('Select') }}
-                                <span class="underline">
-                                    {{ trans('Destination Location') }}
-                                </span>
-                                {{ trans('by clicking forklift icon!') }}
-                            </span>
-                        </div>
+                    <div class="text-yellow-600 text-xs text-center h-[16px]">
+                        <span v-if="moveStock.isActive && moveStock.from && moveStock.to && !moveStock.quantity">
+                            <FontAwesomeIcon :icon="faInfoCircle" /> {{ trans('Enter quantity to move') }}
+                        </span>
                     </div>
                 </div>
-                <!-- <div v-else class="text-sm text-gray-500">
-                    Select destination warehouse by clicking forklift icon
-                </div> -->
+                <div class="grid col-span-3 text-end">
+                    <div class="font-bold h-[30px]">
+                        {{ trans('Destination Location') }}
+                    </div>
+                    <div class="font-medium underline h-[30px] transition-all" :class="moveStock.to ? 'cursor-pointer hover:opacity-80' : ''" @click="resetForm('to')">
+                        {{ moveStock.to?.name || '?' }}
+                    </div>
+                    <div class="text-xs text-yellow-600 h-[16px]">
+                        <span v-if="moveStock.from && !moveStock.to">
+                            <FontAwesomeIcon :icon="faInfoCircle" />
+                            {{ trans('Select') }}
+                            <span class="underline">
+                                {{ trans('Destination Location') }}
+                            </span>
+                            {{ trans('by clicking forklift icon!') }}
+                        </span>
+                    </div>
+                </div>
             </div>
-            <div class="text-sm text-yellow-600 mb-2 text-end">
-            </div>
+            <!-- <div v-else class="text-sm text-gray-500">
+                Select destination warehouse by clicking forklift icon
+            </div> -->
+        </div>
+        <div class="text-sm text-yellow-600 mb-2 text-end">
+        </div>
+        <template v-if="form.stockCheck.length > 0">
             <div v-for="(form, idx) in form.stockCheck" :key="form.id"
                 :class="[
                     'grid grid-cols-7 gap-x-3 items-center gap-2 ps-2 pe-2 py-2 rounded transition',
@@ -343,10 +344,10 @@ const resetForm = (scope: string = 'all') => {
                     {{ form.name }}
                 </div>
                 <div v-tooltip="trans('Last audit :date', { date: useFormatTime(form.audited_at) })" class="text-right flex col-span-2 grid">
-                     <span class="justify-self-end">
+                    <span class="justify-self-end">
                         {{ formatDistanceStrict(new Date(form.audited_at), new Date()) }}
                         <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400" fixed-width aria-hidden="true" />
-                     </span>
+                    </span>
                 </div>
                 <div class="col-span-2 text-right flex items-center justify-end gap-x-1">
                     <!-- Stock change indicator for move stock -->
@@ -415,6 +416,19 @@ const resetForm = (scope: string = 'all') => {
                     </div>
                 </div>
             </div>
+        </template>
+        <div
+            v-else
+            class="flex flex-col items-center justify-center text-center py-10 border border-dashed border-gray-300 rounded-lg"
+        >
+            <div class="text-gray-600 font-medium">
+                {{ trans("No locations available") }}
+            </div>
+
+            <div class="text-sm text-gray-400 mt-1">
+                {{ trans("You haven't added any locations yet") }}
+            </div>
+        </div>
         <!-- Section: buttons -->
         <div class="relative flex gap-x-2 z-40 mt-4">
             <Button

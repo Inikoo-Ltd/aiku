@@ -7,7 +7,7 @@ import { faDotCircle, faSave } from "@fal"
 import { faDotCircle as fasDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { InputNumber } from 'primevue'
-import { inject, ref, watch } from 'vue'
+import { inject, ref, watch, nextTick } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { router, useForm } from '@inertiajs/vue3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
@@ -21,6 +21,7 @@ library.add(faDotCircle, fasDotCircle, faSave)
 
 const props = defineProps<{
     locations: StockLocation[]
+    selectedLocationId: Number
     auditRoute?: routeType
 }>()
 
@@ -29,7 +30,7 @@ const emits = defineEmits(['close'])
 const layout = inject('layout', layoutStructure)
 
 const cloneLocations = ref(cloneDeep(props.locations))
-
+const inputRefs = ref<Record<number, any>>({})
 const listLoadingLocations = ref<number[]>([])
 const submitCheckStock = (locationOrgStock: StockLocation, value?: number) => {
 
@@ -72,12 +73,30 @@ watch(() => props.locations, (newValue) => {
     cloneLocations.value = cloneDeep(newValue)
     cloneLocations.value.sort((a, b) => a.code.localeCompare(b.code));
 })
+
+watch(
+    () => props.selectedLocationId,
+    async (id) => {
+        if (!id) return
+
+        await nextTick()
+
+        const input = inputRefs.value[id]
+
+        if (input?.$el) {
+            const el = input.$el.querySelector('input')
+            el?.focus()
+        }
+    },
+    { immediate: true }
+)
 </script>
 
 <template>
     <div class="space-y-2">
-            <!-- list -->
-            <div v-for="(location, idx) in cloneLocations"  class="grid grid-cols-7 gap-2 border-b pb-2">
+        <!-- list -->
+        <template v-if="cloneLocations.length > 0">
+            <div v-for="(location, idx) in cloneLocations" :key="location.id" class="grid grid-cols-7 gap-2 border-b pb-2">
                 <div class="col-span-2 md:col-span-3  flex items-center gap-x-2">
                     {{ location.code }}
                 </div>
@@ -111,7 +130,9 @@ watch(() => props.locations, (newValue) => {
 
                     <div class="w-14">
                         <InputNumber
+                            :ref="el => inputRefs[location.id] = el"
                             :modelValue="location.quantity"
+                            @keydown.enter.prevent="submitCheckStock(location)"
                             @input="(event: { value: any }) => location.quantity = event.value"
                             :min="0"
                             :step="1"
@@ -131,6 +152,19 @@ watch(() => props.locations, (newValue) => {
                     </div>
                 </div>
             </div>
+        </template>
+        <div
+            v-else
+            class="flex flex-col items-center justify-center text-center py-10 border border-dashed border-gray-300 rounded-lg"
+        >
+            <div class="text-gray-600 font-medium">
+                {{ trans("No locations available") }}
+            </div>
+
+            <div class="text-sm text-gray-400 mt-1">
+                {{ trans("You haven't added any locations yet") }}
+            </div>
+        </div>
         <!-- Section: buttons -->
          <div class="flex justify-end gap-2 pt-3">
             <Button label="Close" type="cancel" @click="emits('close')" />
