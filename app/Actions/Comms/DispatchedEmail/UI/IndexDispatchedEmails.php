@@ -58,7 +58,6 @@ class IndexDispatchedEmails extends OrgAction
                     OutboxCodeEnum::ORDER_CONFIRMATION
                 ])) {
                     $queryBuilder->leftJoin('customer_has_dispatched_emails', 'customer_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
-                    $queryBuilder->leftJoin('customers', 'customer_has_dispatched_emails.customer_id', '=', 'customers.id');
 
                     // for fulfilment customer
                     if ($parent->fulfilment_id) {
