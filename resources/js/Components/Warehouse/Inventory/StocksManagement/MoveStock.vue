@@ -9,7 +9,7 @@ import { faForklift } from "@fas"
 import { faTimes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { InputNumber } from 'primevue'
-import { inject, ref } from 'vue'
+import { inject, ref, nextTick, onMounted } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { router, useForm } from '@inertiajs/vue3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
@@ -24,7 +24,10 @@ const props = defineProps<{
         slug: string
         stock: number
         isAudited: boolean
-    }[]
+    }[],
+    replenishment_data: Record<number, {
+        replenishment_stock?: number
+    }>
 }>()
 
 const emits = defineEmits(['close'])
@@ -56,7 +59,7 @@ const selectSourceWarehouse = (warehouse: any) => {
         return
     }
 
-    console.log('SOURCE selected:', warehouse)
+    
     moveStock.value.from = warehouse
     moveStock.value.to = null
     moveStock.value.quantity = 0
@@ -64,7 +67,7 @@ const selectSourceWarehouse = (warehouse: any) => {
 }
 
 const selectDestinationWarehouse = (warehouse: any) => {
-    console.log('DESTINATION selected:', warehouse)
+    
 
     moveStock.value.to = warehouse
     form.moveStock = {
@@ -85,14 +88,14 @@ const closeMoveStock = () => {
 }
 
 const updateMoveQuantity = (value: number) => {
-    console.log('Input quantity:', value)
+    
     // Ensure value is valid and within bounds
     const validValue = Number(value || 0)
     const maxQuantity = getMaxQuantity()
     
     // Reset to 0 if value is invalid or exceeds maximum
     if (validValue < 0 || validValue > maxQuantity) {
-         console.log('Input quantity:', value)
+         
         moveStock.value.quantity = 0
     } else {
         moveStock.value.quantity = validValue
@@ -117,13 +120,13 @@ const getCalculatedStock = (warehouse: { stock: number; id: any }) => {
     // If this is the source warehouse, subtract the quantity
     if (moveStock.value.from?.id === warehouse.id) {
         const result = warehouse.stock - moveStock.value.quantity
-        console.log('FROM calc:', warehouse.stock, '-', moveStock.value.quantity, '=', result)
+        
         return result
     }
 
     if (moveStock.value.to?.id === warehouse.id) {
         const result = warehouse.stock + moveStock.value.quantity
-        console.log('TO calc:', warehouse.stock, '+', moveStock.value.quantity, '=', result)
+        
         return result
     }
     
@@ -241,6 +244,37 @@ const resetForm = (scope: string = 'all') => {
     moveStock.value.quantity = 0;
 }
 
+const applyReplenishment = (form) => {
+    const replenishment = props.replenishment_data?.[form.id]?.replenishment_stock ?? 0
+    const maxQty = getMaxQuantity()
+
+    const nextValue = moveStock.value.quantity + replenishment
+
+    moveStock.value.quantity = Math.min(nextValue, maxQty)
+}
+
+onMounted(() => {
+    const locations = form.stockCheck
+
+    if (locations.length === 2) {
+        const [loc1, loc2] = locations
+
+        // tentukan source = yang punya stock > 0
+        if (loc1.stock > 0) {
+            moveStock.value.from = loc1
+            moveStock.value.to = loc2
+        } else if (loc2.stock > 0) {
+            moveStock.value.from = loc2
+            moveStock.value.to = loc1
+        }
+
+        // aktifkan mode
+        if (moveStock.value.from && moveStock.value.to) {
+            moveStock.value.isActive = true
+        }
+    }
+})
+
 </script>
 
 <template>
@@ -256,7 +290,10 @@ const resetForm = (scope: string = 'all') => {
                 </button>
             </div>
             <div class="flex items-center lg:text-xl text-lg justify-self-center grid grid-cols-8 w-full pt-4 pb-5">
-                <div class="grid col-span-3">
+                <div class="grid col-span-3" :class="[
+                    moveStock.from?.id !== form.id ? 'bg-red-50 border border-red-100 p-2' :
+                    'border border-[rgba(255,255,255,0)] hover:bg-gray-50'
+                ]">
                     <span class="font-bold h-[30px]">
                         {{ trans('Source Location') }}
                     </span>
@@ -276,11 +313,11 @@ const resetForm = (scope: string = 'all') => {
                 </div>
                 <div class="grid px-2 py-auto col-span-2">
                     <span class="justify-self-center h-[30px]">
-                        <FontAwesomeIcon icon="fas fa-forklift" class="text-gray-600 mr-2" />
+                        <FontAwesomeIcon icon="fas fa-forklift" class="text-gray-600 mr-2 text-lg" />
                         <FontAwesomeIcon :icon="faArrowRight" class="text-gray-600 text-sm" />
                     </span>
                     <div class="flex items-center gap-2 justify-self-center h-[30px] w-fit">
-                        <label class="text-sm text-gray-600">Quantity:</label>
+                        <label class="text-lg text-gray-600">Quantity:</label>
                         <div class="w-full max-w-20">
                             <InputNumber
                                     v-if="moveStock.to" 
@@ -288,16 +325,15 @@ const resetForm = (scope: string = 'all') => {
                                 @input="(event: { value: any }) => updateMoveQuantity(event.value)"
                                 :min="0"
                                 :max="getMaxQuantity()"
-                                :step="1"
-                                size="small"
+                                :step="1"                                
                                 fluid
                                 inputClass="!py-0"
                             />
-                            <div v-else class="text-sm text-gray-500 text-nowrap">
+                            <div v-else class="text-lg text-gray-500 text-nowrap">
                                 ?
                             </div>
                         </div>
-                        <span class="text-sm text-gray-500 text-nowrap" >
+                        <span class="text-lg text-gray-500 text-nowrap" >
                             / {{ getMaxQuantity() }}
                         </span>
                     </div>
@@ -307,7 +343,10 @@ const resetForm = (scope: string = 'all') => {
                         </span>
                     </div>
                 </div>
-                <div class="grid col-span-3 text-end">
+                <div class="grid col-span-3 text-end" :class="[
+                    moveStock.to?.id !== form.id ? 'bg-green-50 border border-green-100 p-2' :
+                    'border border-[rgba(255,255,255,0)] hover:bg-gray-50'
+                ]">
                     <div class="font-bold h-[30px]">
                         {{ trans('Destination Location') }}
                     </div>
@@ -326,9 +365,6 @@ const resetForm = (scope: string = 'all') => {
                     </div>
                 </div>
             </div>
-            <!-- <div v-else class="text-sm text-gray-500">
-                Select destination warehouse by clicking forklift icon
-            </div> -->
         </div>
         <div class="text-sm text-yellow-600 mb-2 text-end">
         </div>
@@ -343,12 +379,18 @@ const resetForm = (scope: string = 'all') => {
                 <div class="col-span-3 flex items-center gap-x-2">
                     {{ form.name }}
                 </div>
-                <div v-tooltip="trans('Last audit :date', { date: useFormatTime(form.audited_at) })" class="text-right flex col-span-2 grid">
+                <div v-tooltip="trans('Last audit :date', { date: useFormatTime(form.audited_at) })" class="text-right col-span-1 flex grid">
                     <span class="justify-self-end">
                         {{ formatDistanceStrict(new Date(form.audited_at), new Date()) }}
                         <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400" fixed-width aria-hidden="true" />
                     </span>
                 </div>
+                <span 
+                    class="text-md text-blue-500 justify-self-end cursor-pointer hover:underline col-span-1"
+                    @click="applyReplenishment(form)"
+                >
+                    ({{ replenishment_data[form.id]?.replenishment_stock ?? '0' }})
+                </span>
                 <div class="col-span-2 text-right flex items-center justify-end gap-x-1">
                     <!-- Stock change indicator for move stock -->
                     <div v-if="getStockChangeIndicator(form) !== null" class="mr-2">
@@ -363,7 +405,6 @@ const resetForm = (scope: string = 'all') => {
                     <div v-else-if="form.stock != part_locations[idx].quantity" class="mr-2">
                         {{ part_locations[idx].quantity }}
                         <span v-if="form.stock > part_locations[idx].quantity" class="text-green-600">
-                            asd
                             +{{ form.stock - part_locations[idx].quantity }}
                         </span>
                         <span v-else class="text-red-500">

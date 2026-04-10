@@ -433,6 +433,7 @@ const setInputRef = (el: any, id: number) => {
                     }">
                     <MoveStock
                         :part_locations="props.stocks_management.locations"
+                        :replenishment_data="tempMinMaxStock"
                         @close="isMoveStockModalOpen = false"
                     />
                  </Dialog>
