@@ -36,7 +36,12 @@ class ProcessLowStockInBasketPerOutbox
         $currentDateTime = Carbon::now()->utc();
         $intervalInHours = Carbon::now()->utc()->subHours($outbox->interval);
 
-        $lastOutBoxSent = $outbox->last_sent_at;
+        $lastOutBoxSent = $outbox->last_sent_at ??  null;
+
+        // Check if enough time has passed since last outbox was sent
+        if ($lastOutBoxSent && Carbon::parse($lastOutBoxSent)->diffInHours($currentDateTime) < $outbox->interval) {
+            return;
+        }
 
         $outboxThreshold = $outbox->threshold;
 

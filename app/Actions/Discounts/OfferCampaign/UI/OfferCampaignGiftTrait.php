@@ -26,13 +26,13 @@ trait OfferCampaignGiftTrait
         return Inertia::render(
             'Org/Discounts/GiftCampaign',
             [
-                'title'       => __('Offer Campaign'),
-                'breadcrumbs' => $this->getBreadcrumbs($offerCampaign, $request->route()->getName(), $request->route()->originalParameters()),
-                'navigation'  => [
+                'title'                                => __('Offer Campaign'),
+                'breadcrumbs'                          => $this->getBreadcrumbs($offerCampaign, $request->route()->getName(), $request->route()->originalParameters()),
+                'navigation'                           => [
                     'previous' => $this->getPreviousModel($offerCampaign, $request),
                     'next'     => $this->getNextModel($offerCampaign, $request),
                 ],
-                'pageHead'    => [
+                'pageHead'                             => [
                     'icon'      => [
                         'icon'  => ['fal', 'comment-dollar'],
                         'title' => __('Offer campaign')
@@ -40,10 +40,10 @@ trait OfferCampaignGiftTrait
                     'title'     => $offerCampaign->name,
                     'model'     => __('Offer Campaign'),
                     'iconRight' => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],
-                    'actions' => app()->environment('local') ? [
+                    'actions'   => app()->environment('local') ? [
                         [
-                            'type'  => 'button',
-                            'key'   => 'gift_create_discount',
+                            'type' => 'button',
+                            'key'  => 'gift_create_discount',
                             // 'route' => [
                             //     'name'       => preg_replace('/show$/', 'create_family_offer', request()->route()->getName()),
                             //     'parameters' => array_values(request()->route()->originalParameters())
@@ -51,23 +51,24 @@ trait OfferCampaignGiftTrait
                         ]
                     ] : [],
                 ],
-                'tabs'        => [
+                'tabs'                                 => [
                     'current'    => $this->tab,
                     'navigation' => OfferCampaignTabsEnum::navigationExcept([
                         OfferCampaignTabsEnum::GR_AMNESTY
                     ])
                 ],
-                'shop_data' => [
+                'shop_data'                            => [
+                    'id'            => $offerCampaign->shop_id,
                     'slug'          => $offerCampaign->shop->slug,
                     'currency_code' => $offerCampaign->shop->currency->code,
                 ],
                 OfferCampaignTabsEnum::OVERVIEW->value => $this->tab == OfferCampaignTabsEnum::OVERVIEW->value ?
                     fn () => GetOfferCampaignOverview::run($offerCampaign)
                     : Inertia::lazy(fn () => GetOfferCampaignOverview::run($offerCampaign)),
-                OfferCampaignTabsEnum::OFFERS->value => $this->tab == OfferCampaignTabsEnum::OFFERS->value ?
+                OfferCampaignTabsEnum::OFFERS->value   => $this->tab == OfferCampaignTabsEnum::OFFERS->value ?
                     fn () => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value))
                     : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value))),
-                OfferCampaignTabsEnum::HISTORY->value => $this->tab == OfferCampaignTabsEnum::HISTORY->value ?
+                OfferCampaignTabsEnum::HISTORY->value  => $this->tab == OfferCampaignTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))),
             ]

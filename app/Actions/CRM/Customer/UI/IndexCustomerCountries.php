@@ -44,7 +44,9 @@ class IndexCustomerCountries extends OrgAction
                     JOIN tags t ON t.id = mht.tag_id AND t.slug = 'active' AND t.scope = 'system_customer'
                     WHERE mht.model_type = 'Customer'
                 ) AS rfm_active"),
-                'rfm_active.customer_id', '=', 'customers.id'
+                'rfm_active.customer_id',
+                '=',
+                'customers.id'
             )
             ->leftJoin(
                 DB::raw("(
@@ -53,7 +55,9 @@ class IndexCustomerCountries extends OrgAction
                     JOIN tags t ON t.id = mht.tag_id AND t.slug = 'at-risk' AND t.scope = 'system_customer'
                     WHERE mht.model_type = 'Customer'
                 ) AS rfm_at_risk"),
-                'rfm_at_risk.customer_id', '=', 'customers.id'
+                'rfm_at_risk.customer_id',
+                '=',
+                'customers.id'
             )
             ->leftJoin(
                 DB::raw("(
@@ -62,7 +66,9 @@ class IndexCustomerCountries extends OrgAction
                     JOIN tags t ON t.id = mht.tag_id AND t.slug = 'lost-customer' AND t.scope = 'system_customer'
                     WHERE mht.model_type = 'Customer'
                 ) AS rfm_lost"),
-                'rfm_lost.customer_id', '=', 'customers.id'
+                'rfm_lost.customer_id',
+                '=',
+                'customers.id'
             )
             ->selectRaw("
                 customers.location->>0 as country_code,

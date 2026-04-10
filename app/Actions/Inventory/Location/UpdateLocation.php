@@ -51,6 +51,8 @@ class UpdateLocation extends OrgAction
             $location = LocationHydrateSortCode::run($location);
         }
 
+        // TODO allow_dropshipping change -> disable all orgLocation that use this location as default dropshipping
+
         if (Arr::hasAny($changes, [
             'code',
             'barcode',

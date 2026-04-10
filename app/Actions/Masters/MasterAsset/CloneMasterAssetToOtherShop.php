@@ -35,7 +35,7 @@ class CloneMasterAssetToOtherShop extends OrgAction
     {
         $shopProducts = Arr::pull($modelData, 'shop_products', []);
 
-        foreach(array_keys($shopProducts) as $shop_id) {
+        foreach (array_keys($shopProducts) as $shop_id) {
             $haveChildFamily = $masterFamily->productCategories()->where('product_categories.shop_id', $shop_id)->exists();
 
             if (!$haveChildFamily) {

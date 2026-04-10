@@ -28,16 +28,22 @@ class GetOrgStockShowcase
             $dataTradeUnits = $this->getDataTradeUnit($orgStock->tradeUnits);
         }
 
+        $locations = LocationOrgStocksResource::collection($orgStock->locationOrgStocks()->with(['location', 'organisation', 'warehouse'])->get())->toArray(request());
+        usort($locations, function ($a, $b) {
+            return $a['code'] <=> $b['code'];
+        });
+
         return collect(
             [
                 'trade_units'               => $dataTradeUnits,
                 'stocks_management'         => [
                     'routes'         => [
                         'location_route'             => [
-                            'name'       => 'grp.org.warehouses.show.infrastructure.locations.index',
+                            'name'       => 'grp.org.warehouses.show.infrastructure.locations.index.excluded_in_org_stock',
                             'parameters' => [
                                 'organisation' => $warehouse->organisation->slug,
-                                'warehouse'    => $warehouse->slug
+                                'warehouse'    => $warehouse->slug,
+                                'orgStock'     => $orgStock->slug
                             ]
                         ],
                         'associate_location_route'    => [
@@ -102,7 +108,7 @@ class GetOrgStockShowcase
                             'value'      => $orgStock->quantity_available
                         ],
                     ],
-                    'locations'      => LocationOrgStocksResource::collection($orgStock->locationOrgStocks)->toArray(request()),
+                    'locations'      => $locations,
                 ]
             ]
         );
