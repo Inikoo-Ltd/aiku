@@ -21,7 +21,7 @@ import { routeType } from '@/types/route'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import { StockLocation, StocksManagementTS } from '@/types/Inventory/StocksManagement'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import { router } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -70,6 +70,8 @@ const setActivePickingLocation = (location: StockLocation, scope: string) => {
             set_as_priority_wholesale: true
         });
     }else {
+        if (!location.enabled_on_dropshipping) return;
+
         if (activePickingLocationDropshipping.value === location.id) return;
         activePickingLocationDropshipping.value = location.id;
     
@@ -497,10 +499,14 @@ const openModal = (type: string) => {
                             <!-- Shopping Basket Icon -->
                             <!-- TODO ENABLE ON PRODUCTION  -->
                             <div v-if="layout.app.environment === 'local'" @click="() => setActivePickingLocation(loc, 'dropshipping')"
-                                v-tooltip="trans('Set as active picking location [Dropshipping]')"
-                                class="cursor-pointer transition-colors duration-200" :class="{
-                                    'text-blue-700': activePickingLocationDropshipping === loc.id,
-                                    'text-gray-400 hover:text-blue-500': activePickingLocationDropshipping !== loc.id
+                                v-tooltip="loc.enabled_on_dropshipping ? trans('Set as active picking location [Dropshipping]') : trans('Location is disabled for Dropshipping')"
+                                class="transition-colors duration-200" :class="{
+                                    'cursor-not-allowed': !loc.enabled_on_dropshipping,
+                                    'cursor-pointer': loc.enabled_on_dropshipping,
+                                    'text-gray-400': activePickingLocationDropshipping !== loc.id  && !loc.enabled_on_dropshipping,
+                                    'text-gray-600': activePickingLocationDropshipping !== loc.id  && loc.enabled_on_dropshipping,
+                                    'text-blue-700': activePickingLocationDropshipping === loc.id && loc.enabled_on_dropshipping,
+                                    'hover:text-blue-500': activePickingLocationDropshipping !== loc.id && loc.enabled_on_dropshipping
                                 }">
                                 <LoadingIcon v-if="isLoadingActiveLocationDropshipping === loc.id" />
                                 <FontAwesomeIcon v-else :icon="activePickingLocationDropshipping === loc.id ? 'fas fa-shopping-basket' : 'fal fa-shopping-basket'"
@@ -515,7 +521,7 @@ const openModal = (type: string) => {
                                 v-tooltip="trans('Set as active picking location [Wholesale]')"
                                 class="cursor-pointer transition-colors duration-200" :class="{
                                     'text-orange-500': activePickingLocationWholesale === loc.id,
-                                    'text-gray-400 hover:text-orange-400': activePickingLocationWholesale !== loc.id
+                                    'text-gray-600 hover:text-orange-400': activePickingLocationWholesale !== loc.id
                                 }">
                                 <LoadingIcon v-if="isLoadingActiveLocationWholesale === loc.id" />
                                 <FontAwesomeIcon v-else :icon="activePickingLocationWholesale === loc.id ? 'fas fa-shopping-basket' : 'fal fa-shopping-basket'"
@@ -524,8 +530,15 @@ const openModal = (type: string) => {
                             <div v-else>
                                 <FontAwesomeIcon :icon="faBan" class="text-red-500" v-tooltip="'Work in Progress. Remember to disable this on Production when done'"/>
                             </div>
-
-                            <span class="font-medium">{{ loc.code }}</span>
+                            <span class="font-medium">
+                                <Link :href="route('grp.org.warehouses.show.infrastructure.locations.show', {
+                                    organisation: loc.location.organisation_slug,
+                                    warehouse: loc.location.warehouse_slug,
+                                    location: loc.location.slug,
+                                })" :class="'primaryLink'">
+                                    {{ loc.code }}
+                                </Link>
+                            </span>
 
                             <!-- Question Icon(s) -->
                             <div @click="(event) => toggleQuestionPopover(loc.id, event)"

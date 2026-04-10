@@ -11,7 +11,6 @@ import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
-import integer from "../../../../vendor/swagger-api/swagger-ui/src/core/plugins/json-schema-2020-12-samples/fn/types/integer"
 
 const props = defineProps<{
     shop_data: {
@@ -19,6 +18,7 @@ const props = defineProps<{
         slug: string
         currency_code: string
     }
+    product_id?: number
 }>()
 
 const isOpenModal = ref(false)
@@ -52,9 +52,9 @@ const submitCategoryOffer = () => {
         }),
         {
             name: offerLabel.value,
-            productId: productId.value,
-            offer_amount: offerAmount.value,
+            productId: productId.value || props.product_id,
             quantity: quantity.value,
+            offer_amount: offerAmount.value,
             date_type: dateType.value,
             start_date: formatDate(startDate.value),
             end_date: formatDate(endDate.value)
@@ -97,7 +97,7 @@ const productFetchRoute = {
 const resetForm = () => {
     offerLabel.value = ''
     offerAmount.value = 0
-    productId.value = null
+    productId.value = props.product_id || null
     quantity.value = 1
     dateType.value = 'permanent'
     startDate.value = null
@@ -106,7 +106,7 @@ const resetForm = () => {
 
 const isFormInvalid = computed(() => {
     if (!offerLabel.value) return true
-    if (!productId.value) return true
+    if (!productId.value && !props.product_id) return true
     if (!quantity.value) return true
     if (!dateType.value) return true
     if (!startDate.value) return true
@@ -133,7 +133,7 @@ resetForm()
                     <PureInput v-model="offerLabel" :placeholder="trans('Enter offer name')" />
                 </div>
 
-                <div class="space-y-2">
+                <div class="space-y-2" v-if="!props.product_id">
                     <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
 
@@ -197,7 +197,7 @@ resetForm()
                                     :information="trans('If start date is empty, will start immediately')" />:
                             </label>
 
-                            <DatePicker v-model="startDate" showIcon dateFormat="yy-mm-dd" class="w-full"
+                            <DatePicker v-model="startDate" :minDate="today" showIcon dateFormat="yy-mm-dd" class="w-full"
                                 :placeholder="trans('Select start date')" />
                         </div>
 
@@ -210,7 +210,7 @@ resetForm()
                             </label>
 
                             <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"
-                                :minDate="startDate" :placeholder="trans('Select end date')" />
+                                :minDate="startDate || undefined" :placeholder="trans('Select end date')" />
                         </div>
                     </div>
 

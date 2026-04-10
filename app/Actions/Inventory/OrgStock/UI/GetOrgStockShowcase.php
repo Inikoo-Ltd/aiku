@@ -28,7 +28,7 @@ class GetOrgStockShowcase
             $dataTradeUnits = $this->getDataTradeUnit($orgStock->tradeUnits);
         }
 
-        $locations = LocationOrgStocksResource::collection($orgStock->locationOrgStocks)->toArray(request());
+        $locations = LocationOrgStocksResource::collection($orgStock->locationOrgStocks()->with(['location', 'organisation', 'warehouse'])->get())->toArray(request());
         usort($locations, function ($a, $b) {
             return $a['code'] <=> $b['code'];
         });

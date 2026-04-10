@@ -20,9 +20,9 @@ export interface Location {
     has_stock_slots: boolean
     has_fulfilment: boolean
     has_dropshipping_slots: boolean
-    organisation_slug: null
-    organisation_name: null
-    warehouse_slug: null
+    organisation_slug: string
+    organisation_name: string
+    warehouse_slug: string
     max_weight: number
     max_volume: number
 }
@@ -48,6 +48,7 @@ export interface StockLocation {
     location: Location
     default_wholesale_picking_location: boolean
     default_dropshipping_picking_location: boolean
+    enabled_on_dropshipping: boolean
 }
 
 export interface StockManagementRoutes {

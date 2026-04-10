@@ -10,10 +10,8 @@
 namespace App\Actions\Inventory\OrgStockMovement;
 
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
-use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
-use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class CalculateRunningQuantityOrgStockMovement implements ShouldBeUniqueUntilProcessing
@@ -37,7 +35,7 @@ class CalculateRunningQuantityOrgStockMovement implements ShouldBeUniqueUntilPro
         $runningQuantity = $this->getStockQuantity($orgStock, $orgStockMovement->location, $orgStockMovement->date);
         $runningQuantityOrg = 0;
 
-        foreach($orgStock->locations as $location) {
+        foreach ($orgStock->locations as $location) {
             $runningQuantityOrg += $this->getStockQuantity($orgStock, $location, $orgStockMovement->date);
         }
 

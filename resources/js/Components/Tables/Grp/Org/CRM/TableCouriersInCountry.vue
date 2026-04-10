@@ -10,11 +10,14 @@ defineProps<{
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-        <template #cell(total_sold)="{ item }">
-            <div>{{ Number(item.total_sold).toLocaleString(undefined, { maximumFractionDigits: 2 }) }}</div>
-        </template>
         <template #cell(total_amount)="{ item }">
             <div class="text-gray-500">{{ useLocaleStore().currencyFormat(item.currency_code, item.total_amount) }}</div>
+        </template>
+        <template #cell(total_net_amount)="{ item }">
+            <div class="text-gray-500">{{ useLocaleStore().currencyFormat(item.currency_code, item.total_net_amount) }}</div>
+        </template>
+        <template #cell(avg_order_amount)="{ item }">
+            <div class="text-gray-500">{{ useLocaleStore().currencyFormat(item.currency_code, item.avg_order_amount) }}</div>
         </template>
     </Table>
 </template>

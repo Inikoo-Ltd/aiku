@@ -32,7 +32,7 @@ class MoveOrgStockToOtherLocation extends OrgAction
 
     public function handle(LocationOrgStock $currentLocationStock, LocationOrgStock $targetLocation, array $modelData): LocationOrgStock
     {
-        DB::transaction(function () use ($currentLocationStock, $targetLocation, $modelData) {    
+        DB::transaction(function () use ($currentLocationStock, $targetLocation, $modelData) {
             $quantity = Arr::pull($modelData, 'quantity');
             // Source
             $this->processStockMovement($currentLocationStock, [
@@ -50,7 +50,7 @@ class MoveOrgStockToOtherLocation extends OrgAction
         return $currentLocationStock;
     }
 
-    public function processStockMovement(LocationOrgStock $locationOrgStock, array $modelData) 
+    public function processStockMovement(LocationOrgStock $locationOrgStock, array $modelData)
     {
         $currentStock = $locationOrgStock->quantity;
         $newQuantity  = Arr::pull($modelData, 'quantity');
@@ -97,7 +97,7 @@ class MoveOrgStockToOtherLocation extends OrgAction
     {
         $this->user = request()->user();
         $this->initialisation($locationOrgStock->organisation, $request);
-        
+
         $this->handle($locationOrgStock, $targetLocationOrgStock, $this->validatedData);
     }
 }
