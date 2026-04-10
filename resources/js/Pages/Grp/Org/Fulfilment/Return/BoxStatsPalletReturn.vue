@@ -675,8 +675,8 @@ const base64HtmlToPdf = async (base64: string, index) => {
 							{{ trans("Collection") }}
 						</SwitchLabel>
 					</SwitchGroup>
-					<div v-else >
-						{{ trans("Collection") }}: {{ dataPalletReturn.is_collection ? trans("Yes") : trans("No") }}
+					<div v-else class="border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">
+						{{ trans("For Collection") }}: {{ dataPalletReturn.is_collection ? trans("Yes") : trans("No") }}
 					</div>
 				</div>
 
