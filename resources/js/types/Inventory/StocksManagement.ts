@@ -74,4 +74,5 @@ export interface StocksManagementTS {
         cost_current_price_outer : number
     }
     locations: StockLocation[]
+    qty_in_location: number
 }
