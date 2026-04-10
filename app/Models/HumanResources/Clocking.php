@@ -71,7 +71,7 @@ class Clocking extends Model implements HasMedia
     use HasImage;
 
     protected $casts = [
-        'clocked_at'      => 'datetime:Y-m-d H:i:s',
+        'clocked_at'      => 'datetime',
         'type'            => ClockingTypeEnum::class,
         'is_late'         => 'boolean',
         'fetched_at'      => 'datetime',

@@ -48,7 +48,7 @@ class ValidateClockingMachineQrCode
 
             $config = $clockingMachine->config['qr'] ?? [];
 
-            $expiryDuration = (int) ($config['expiry_duration'] ?? 60);
+            $expiryDuration = (int)($config['expiry_duration'] ?? 60);
             $generatedAt = Carbon::createFromTimestamp($payload['ts']);
 
             if ($generatedAt->addSeconds($expiryDuration)->isPast()) {
@@ -117,7 +117,7 @@ class ValidateClockingMachineQrCode
             ->latest('clocked_at')
             ->first();
 
-        if ($lastClocking && $lastClocking->clocked_at->diffInSeconds(now()) < 60) {
+        if ($lastClocking && $lastClocking->clocked_at->diffInMilliseconds(now()) < 500) {
             throw new Exception(__('Scan too frequent. Please wait a moment.'));
         }
 
@@ -222,13 +222,13 @@ class ValidateClockingMachineQrCode
     private function validateCoordinates(array $config, float $userLat, float $userLng): void
     {
         $targetCoords = $config['coordinates'] ?? null;
-        $radius = (float) ($config['radius'] ?? 100);
+        $radius = (float)($config['radius'] ?? 100);
 
         if (!$targetCoords) {
             return;
         }
 
-        $parts = array_map('trim', explode(',', (string) $targetCoords));
+        $parts = array_map('trim', explode(',', (string)$targetCoords));
         if (count($parts) !== 2 || !is_numeric($parts[0]) || !is_numeric($parts[1])) {
             throw new Exception(__('Clocking machine coordinate configuration is invalid.'));
         }
@@ -283,7 +283,7 @@ class ValidateClockingMachineQrCode
             return ClockingPolicyModeEnum::ONSITE->value;
         }
 
-        $policyMode = (string) $policy->mode->value;
+        $policyMode = (string)$policy->mode->value;
         if ($policyMode !== ClockingPolicyModeEnum::HYBRID->value) {
             return $policyMode;
         }
@@ -308,7 +308,7 @@ class ValidateClockingMachineQrCode
                     return false;
                 }
 
-                if ($rule->day_of_week !== null && (int) $rule->day_of_week !== $todayIso) {
+                if ($rule->day_of_week !== null && (int)$rule->day_of_week !== $todayIso) {
                     return false;
                 }
 
@@ -332,7 +332,7 @@ class ValidateClockingMachineQrCode
             return null;
         }
 
-        return (string) $rules->first()->mode_override->value;
+        return (string)$rules->first()->mode_override->value;
     }
 
     private function calculateDistance($lat1, $lon1, $lat2, $lon2)
@@ -356,8 +356,8 @@ class ValidateClockingMachineQrCode
         $data = $request->validated();
 
         $token = $data['qr_code'];
-        $lat   = $data['latitude'] ?? null;
-        $lng   = $data['longitude'] ?? null;
+        $lat = $data['latitude'] ?? null;
+        $lng = $data['longitude'] ?? null;
         $workScheduleId = $data['work_schedule_id'] ?? null;
 
         try {
@@ -394,9 +394,9 @@ class ValidateClockingMachineQrCode
     public function rules(): array
     {
         return [
-            'qr_code'          => ['required', 'string'],
-            'latitude'         => ['nullable', 'numeric'],
-            'longitude'        => ['nullable', 'numeric'],
+            'qr_code' => ['required', 'string'],
+            'latitude' => ['nullable', 'numeric'],
+            'longitude' => ['nullable', 'numeric'],
             'work_schedule_id' => ['nullable', 'integer', 'exists:work_schedules,id'],
         ];
     }

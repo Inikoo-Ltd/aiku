@@ -28,7 +28,6 @@ class UpdateClockingMachine extends OrgAction
     use WithActionUpdate;
     use WithHumanResourcesEditAuthorisation;
 
-
     private ClockingMachine $clockingMachine;
 
     public function handle(ClockingMachine $clockingMachine, array $modelData): ClockingMachine
@@ -42,13 +41,10 @@ class UpdateClockingMachine extends OrgAction
             WorkplaceHydrateClockingMachines::dispatch($clockingMachine->workplace)->delay($this->hydratorsDelay);
         }
 
-
         ClockingMachineRecordSearch::dispatch($clockingMachine);
-
 
         return $clockingMachine;
     }
-
 
     public function rules(): array
     {
@@ -62,32 +58,32 @@ class UpdateClockingMachine extends OrgAction
                     extraConditions: [
                         [
                             'column' => 'organisation_id',
-                            'value'  => $this->organisation->id,
+                            'value' => $this->organisation->id,
 
                         ],
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $this->clockingMachine->id
+                            'value' => $this->clockingMachine->id,
                         ],
                     ]
                 ),
 
             ],
             'type' => ['sometimes', Rule::enum(ClockingMachineTypeEnum::class)],
-            'config'                         => ['nullable', 'array'],
-            'config.qr.enable'               => ['nullable', 'boolean'],
-            'config.qr.refresh_interval'     => ['nullable', 'integer', 'min:1'],
-            'config.qr.expiry_duration'      => ['nullable', 'integer', 'min:1'],
+            'config' => ['nullable', 'array'],
+            'config.qr.enable' => ['nullable', 'boolean'],
+            'config.qr.refresh_interval' => ['nullable', 'integer', 'min:1'],
+            'config.qr.expiry_duration' => ['nullable', 'integer', 'min:1'],
             'config.qr.allow_multiple_scans' => ['nullable', 'boolean'],
-            'config.qr.allow_coordinates'    => ['nullable', 'boolean'],
-            'config.qr.coordinates'          => ['nullable', 'string'],
-            'config.qr.radius'               => ['nullable', 'numeric', 'min:0'],
+            'config.qr.allow_coordinates' => ['nullable', 'boolean'],
+            'config.qr.coordinates' => ['nullable', 'string'],
+            'config.qr.radius' => ['nullable', 'numeric', 'min:0'],
 
         ];
 
-        if (!$this->strict) {
-            $rules['source_id']       = ['sometimes', 'string', 'max:255'];
+        if (! $this->strict) {
+            $rules['source_id'] = ['sometimes', 'string', 'max:255'];
             $rules['last_fetched_at'] = ['sometimes', 'date'];
         }
 
@@ -105,12 +101,12 @@ class UpdateClockingMachine extends OrgAction
     public function action(ClockingMachine $clockingMachine, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): ClockingMachine
     {
         $this->strict = $strict;
-        if (!$audit) {
+        if (! $audit) {
             ClockingMachine::disableAuditing();
         }
-        $this->asAction        = true;
+        $this->asAction = true;
         $this->clockingMachine = $clockingMachine;
-        $this->hydratorsDelay  = $hydratorsDelay;
+        $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($clockingMachine->organisation, $modelData);
 
         return $this->handle($clockingMachine, $this->validatedData);

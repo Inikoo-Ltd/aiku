@@ -46,8 +46,8 @@ class TimeTracker extends Model
 
     protected $casts = [
         'status'    => TimeTrackerStatusEnum::class,
-        'starts_at' => 'datetime:Y-m-d H:i:s',
-        'ends_at'   => 'datetime:Y-m-d H:i:s'
+        'starts_at' => 'datetime',
+        'ends_at'   => 'datetime'
 
     ];
 
