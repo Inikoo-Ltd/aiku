@@ -56,6 +56,31 @@ class TransactionsResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $quantityOrderedFractional = riseDivisor(
+            divideWithRemainder(
+                findSmallestFactors(
+                    $this->quantity_ordered ?? 0
+                )
+            ),
+            $this->product_units
+        );
+        $quantityPickedFractional = riseDivisor(
+            divideWithRemainder(
+                findSmallestFactors(
+                    $this->quantity_picked ?? 0
+                )
+            ),
+            $this->product_units
+        );
+        $quantityDispatchedFractional = riseDivisor(
+            divideWithRemainder(
+                findSmallestFactors(
+                    $this->quantity_dispatched ?? 0
+                )
+            ),
+            $this->product_units
+        );
+
         $media = null;
         if ($this->product_image_id) {
             $media = Media::find($this->product_image_id);
@@ -75,9 +100,12 @@ class TransactionsResource extends JsonResource
             'state'                     => $this->state,
             'status'                    => $this->status,
             'quantity_ordered'          => trimDecimalZeros($this->quantity_ordered),
+            'quantity_ordered_fractional'       => $quantityOrderedFractional,
             'quantity_bonus'            => trimDecimalZeros($this->quantity_bonus),
             'quantity_picked'           => trimDecimalZeros($this->quantity_picked),
+            'quantity_picked_fractional'        => $quantityPickedFractional,
             'quantity_dispatched'       => trimDecimalZeros($this->quantity_dispatched),
+            'quantity_dispatched_fractional'    => $quantityDispatchedFractional,
             'quantity_fail'             => $this->quantity_fail,
             'quantity_cancelled'        => $this->quantity_cancelled,
             'gross_amount'              => $this->gross_amount,
