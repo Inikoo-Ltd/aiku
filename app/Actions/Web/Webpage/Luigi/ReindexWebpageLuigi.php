@@ -9,6 +9,8 @@
 namespace App\Actions\Web\Webpage\Luigi;
 
 use App\Actions\OrgAction;
+use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\ActionRequest;
@@ -29,7 +31,16 @@ class ReindexWebpageLuigi extends OrgAction implements ShouldBeUnique
      */
     public function handle(Webpage $webpage): array
     {
-        return ReindexWebpageLuigiData::run($webpage->id);
+        ReindexWebpageLuigiData::dispatch($webpage->id);
+        if($webpage->sub_type=='family' && $webpage->model instanceof ProductCategory){
+            /** @var ProductCategory $family */
+            $family = $webpage->model;
+            foreach($family->getActiveProducts() as $product){
+                ReindexWebpageLuigiData::dispatch($product->webpage->id)->delay(5);
+            }
+        }
+
+        return [];
     }
 
 
