@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Thu, 09 Apr 2026 10:04:34 Malaysia Time, Kuala Lumpur, Malaysia
@@ -8,6 +9,7 @@
 namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
+use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -15,17 +17,13 @@ use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class SetAsWaitingWarehouse extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
 
     private DeliveryNoteItem $deliveryNoteItem;
-    protected User $user;
+    protected ?User $user = null;
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): DeliveryNoteItem
     {
@@ -42,7 +40,7 @@ class SetAsWaitingWarehouse extends OrgAction
             $dataToUpdate
         );
         DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
-
+        CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
 
         return $deliveryNoteItem;
     }
@@ -65,7 +63,7 @@ class SetAsWaitingWarehouse extends OrgAction
         return $this->handle($deliveryNoteItem, $this->validatedData);
     }
 
-    public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): DeliveryNoteItem
+    public function action(DeliveryNoteItem $deliveryNoteItem, ?User $user, array $modelData): DeliveryNoteItem
     {
         $this->asAction         = true;
         $this->user             = $user;
