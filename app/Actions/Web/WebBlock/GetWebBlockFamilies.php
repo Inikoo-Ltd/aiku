@@ -25,7 +25,16 @@ class GetWebBlockFamilies
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
+        $hasOverviewPage = false;
+
         if ($webpage->model instanceof ProductCategory) {
+            
+            if ($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT && $webpage->layout_style == 'main_page') {
+                $model = $webpage->model;
+                
+                $hasOverviewPage = $model->webpages()->where('layout_style', 'families-overview')->exists();
+            }
+
             $families = DB::table('product_categories')
                 ->leftJoin('webpages', function ($join) {
                     $join->on('product_categories.id', '=', 'webpages.model_id')
@@ -57,7 +66,7 @@ class GetWebBlockFamilies
                 ->where('webpages.state', WebpageStateEnum::LIVE->value)
                 ->whereNull('product_categories.deleted_at')
                 ->whereNull('webpages.deleted_at')
-                ->when(($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT && $webpage->layout_style == 'main_page'),
+                ->when(($hasOverviewPage),
                     function ($query) {
                         $query->limit(3);
                     })
@@ -111,6 +120,7 @@ class GetWebBlockFamilies
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['family']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.show_overview_button', $hasOverviewPage);
         data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamiliesResource::collection($families)->toArray(request()));
         data_set($webBlock, 'web_block.layout.data.fieldValue.webpage_data.webpage_type', $model->type);
         data_set($webBlock, 'web_block.layout.data.fieldValue.webpage_data.overview_url', $overview_url);

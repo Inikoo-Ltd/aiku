@@ -208,7 +208,7 @@ console.log('families',props)
             }">
 
 
-            <SwiperSlide class="flex !w-[220px]" v-if="fieldValue?.webpage_data?.webpage_type == 'department'" >
+            <SwiperSlide class="flex !w-[220px]" v-if="fieldValue?.show_overview_button" >
               <LinkIris :href="fieldValue?.webpage_data?.overview_url" type="internal" class="w-full h-full flex">
                 <div
                   class="family-item w-full h-full cursor-pointer flex flex-col rounded-xl overflow-hidden border bg-white hover:bg-gray-50 transition-all"

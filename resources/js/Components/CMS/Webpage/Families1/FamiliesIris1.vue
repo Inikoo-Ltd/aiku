@@ -76,7 +76,7 @@ const idxSlideLoading = ref<string | null>(null)
                         </div>
                     </LinkIris>
                 </div> -->
-                <template v-if="fieldValue?.webpage_data?.webpage_type == 'department'">
+                <template v-if="fieldValue?.show_overview_button">
                     <LinkIris :href="fieldValue?.webpage_data?.overview_url" type="internal" class="block">
                         
                         <div class="relative w-full bg-white rounded-md shadow-md overflow-hidden"
