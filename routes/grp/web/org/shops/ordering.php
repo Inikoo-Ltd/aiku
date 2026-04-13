@@ -21,6 +21,7 @@ use App\Actions\Ordering\Purge\UI\CreatePurge;
 use App\Actions\Ordering\Purge\UI\EditPurge;
 use App\Actions\Ordering\Purge\UI\IndexPurges;
 use App\Actions\Ordering\Purge\UI\ShowPurge;
+use App\Actions\Ordering\UI\IndexWaitingCrmItems;
 use App\Actions\Ordering\UI\ShowOrderingDashboard;
 use App\Actions\Ordering\UI\ShowOrdersBacklog;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,7 @@ Route::get('', ShowOrderingDashboard::class)->name('dashboard');
 
 
 Route::get('/backlog', ShowOrdersBacklog::class)->name('backlog');
+Route::get('/backlog/waiting_items', IndexWaitingCrmItems::class)->name('backlog.waiting_items');
 
 Route::get('/orders/', IndexOrders::class)->name('orders.index');
 

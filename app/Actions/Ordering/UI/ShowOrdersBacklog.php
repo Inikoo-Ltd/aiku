@@ -17,6 +17,7 @@ use App\Actions\Traits\WithTabsBox;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Http\Resources\Ordering\OrdersResource;
 use App\Models\Catalogue\Shop;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -56,14 +57,17 @@ class ShowOrdersBacklog extends OrgAction
         return Inertia::render(
             'Ordering/OrdersBacklog',
             [
-                'breadcrumbs' => $this->getBreadcrumbs($parent, $request->route()->originalParameters()),
-                'title'       => __('Orders backlog'),
-                'pageHead'    => [
+                'breadcrumbs'  => $this->getBreadcrumbs($parent, $request->route()->originalParameters()),
+                'title'        => __('Orders backlog'),
+                'pageHead'     => [
                     'title' => __('Orders backlog'),
                 ],
-                'tabs'        => [
+                'tabs'         => [
                     'current'    => $this->tab,
                     'navigation' => $tabsBox
+                ],
+                'waiting_items' => [
+                    'count' => $this->getWaitingCrmCount($parent),
                 ],
 
                 OrdersBacklogTabsEnum::IN_BASKET->value => $this->tab == OrdersBacklogTabsEnum::IN_BASKET->value ?
@@ -178,5 +182,20 @@ class ShowOrdersBacklog extends OrgAction
                 ]
             )
         };
+    }
+
+    private function getWaitingCrmCount(Group|Organisation|Shop $parent): int
+    {
+        $query = DeliveryNoteItem::query()->where('quantity_waiting_crm', '>', 0);
+
+        if ($parent instanceof Shop) {
+            $query->where('shop_id', $parent->id);
+        } elseif ($parent instanceof Organisation) {
+            $query->where('organisation_id', $parent->id);
+        } else {
+            $query->where('group_id', $parent->id);
+        }
+
+        return $query->count();
     }
 }
