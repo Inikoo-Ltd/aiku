@@ -19,7 +19,8 @@ import { faImage } from "@far"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import ReviewsProduct from "@/Components/CMS/Reviews/ReviewsProduct.vue"
-
+import { useBundle } from "@/Composables/useBundle"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
@@ -78,6 +79,11 @@ const toggleExpanded = () => {
     expanded.value = !expanded.value
 }
 
+const bundle = useBundle()
+
+const openBundlePanel = (product:any) => {
+    bundle.addProduct(product)
+}
 </script>
 
 <template>
@@ -198,6 +204,19 @@ const toggleExpanded = () => {
                         :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
                         :productHasPortfolio="productExistenceInChannels"
                         :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)" />
+                    
+                    <Button
+                        @click.prevent="openBundlePanel(product)"
+                        class="rounded-full flex items-center justify-center transition"
+                        type="primary"
+                        v-tooltip="trans('Add to bundle')"
+                    >
+                        <FontAwesomeIcon
+                            icon="fas fa-layer-group"
+                            class="text-white text-md"
+                            fixed-width
+                        />
+                    </Button>
                     <!-- <div v-if="isLoadingFetchExistenceChannels" class="absolute h-full w-full z-10">
                         <div class="h-full w-full skeleton rounded" />
                     </div> -->
