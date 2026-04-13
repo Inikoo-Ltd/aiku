@@ -41,7 +41,7 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
             ->leftJoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id')
             ->leftJoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id')
             ->where('delivery_notes.warehouse_id', $warehouse->id)
-            ->where('delivery_note_items.state', DeliveryNoteItemStateEnum::HANDLING_BLOCKED);
+            ->where('delivery_note_items.has_waiting_warehouse', true);
 
         return $query->defaultSort('locations.sort_code', 'org_stocks.code')
             ->select([
