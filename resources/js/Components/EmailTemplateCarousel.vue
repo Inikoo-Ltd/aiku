@@ -61,11 +61,8 @@ const hasOtherTemplates = computed(() => props.otherShopTemplates?.templates?.le
 const hasAnyTemplates = computed(() => hasOwnTemplates.value || hasOtherTemplates.value);
 
 const getTemplatePreview = (template: Template): string => {
-    // Create a mini preview by extracting text content from HTML
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = template.compiled_layout;
-    const textContent = tempDiv.textContent || tempDiv.innerText || '';
-    return textContent.substring(0, 100) + (textContent.length > 100 ? '...' : '');
+    // Return the full HTML content
+    return template.compiled_layout;
 };
 
 const formatDate = (dateString?: string): string => {
@@ -103,9 +100,10 @@ const formatDate = (dateString?: string): string => {
                                 </div>
 
                                 <div class="mb-4">
-                                    <p class="text-sm text-gray-600 line-clamp-3">
-                                        {{ getTemplatePreview(slotProps.data) }}
-                                    </p>
+                                    <div
+                                        class="w-full aspect-[2/5] bg-gray-50 border border-gray-200 rounded overflow-auto">
+                                        <div class="p-2" v-html="getTemplatePreview(slotProps.data)"></div>
+                                    </div>
                                 </div>
 
                                 <Link :href="route('grp.helpers.redirect_mailshot_template_workshop', {
@@ -144,16 +142,17 @@ const formatDate = (dateString?: string): string => {
                                             slotProps.data.subject }}</h4>
                                         <p class="text-sm text-gray-500">
                                             {{ slotProps.data.shop_name }}{{ slotProps.data.created_at ? ' • ' +
-                                            formatDate(slotProps.data.created_at) : '' }}
+                                                formatDate(slotProps.data.created_at) : '' }}
                                         </p>
                                     </div>
                                     <FontAwesomeIcon :icon="faEnvelope" class="text-gray-400 ml-2" />
                                 </div>
 
                                 <div class="mb-4">
-                                    <p class="text-sm text-gray-600 line-clamp-3">
-                                        {{ getTemplatePreview(slotProps.data) }}
-                                    </p>
+                                    <div
+                                        class="w-full aspect-[2/5] bg-gray-50 border border-gray-200 rounded overflow-auto">
+                                        <div class="p-2" v-html="getTemplatePreview(slotProps.data)"></div>
+                                    </div>
                                 </div>
 
                                 <Link :href="route('grp.helpers.redirect_mailshot_template_workshop', {
