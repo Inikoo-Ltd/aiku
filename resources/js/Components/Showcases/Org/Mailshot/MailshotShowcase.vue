@@ -25,6 +25,7 @@ import { trans } from 'laravel-vue-i18n';
 import { Link } from "@inertiajs/vue3";
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
+import EmailTemplateCarousel from "@/Components/EmailTemplateCarousel.vue"
 
 library.add(
     faUser, faEnvelope, faSeedling, faShare, faInboxOut, faCheck,
@@ -49,6 +50,10 @@ const props = defineProps<{
         compiled_layout: any
     }
     liveStats?: any[]
+    ownShopTemplates?: { templates: any[], shop_name: string }
+    otherShopTemplates?: { templates: any[] }
+    organisationSlug?: string
+    shopSlug?: string
 }>()
 
 const previewOpen = ref(false)
@@ -153,6 +158,62 @@ const mailshotState = computed(() => props.data.mailshot.data.state)
 const isInProcess = computed(() => mailshotState.value === "in_process")
 const isReady = computed(() => mailshotState.value === "ready")
 const isLoadingVisit = ref(false)
+
+// Dummy template data for fallback when real data is not available
+const dummyOwnShopTemplates = computed(() => ({
+    templates: [
+        {
+            id: 1,
+            name: "Welcome Email Template",
+            compiled_layout: "<p>Welcome to our shop! Thank you for joining us.</p>"
+        },
+        {
+            id: 2,
+            name: "Special Promotion Template",
+            compiled_layout: "<p>Check out our latest special offers and discounts!</p>"
+        },
+        {
+            id: 3,
+            name: "Newsletter Template",
+            compiled_layout: "<p>Stay updated with our latest news and updates.</p>"
+        }
+    ],
+    shop_name: "Demo Shop"
+}))
+
+const dummyOtherShopTemplates = computed(() => ({
+    templates: [
+        {
+            id: 4,
+            name: "Product Launch Template",
+            shop_name: "Example Store",
+            compiled_layout: "<p>Introducing our new product line with amazing features!</p>"
+        },
+        {
+            id: 5,
+            name: "Holiday Special Template",
+            shop_name: "Seasonal Shop",
+            compiled_layout: "<p>Celebrate the holidays with our special collection.</p>"
+        }
+    ]
+}))
+
+// Computed properties to use real data when available, otherwise use dummy data
+const effectiveOwnShopTemplates = computed(() =>
+    props.ownShopTemplates || dummyOwnShopTemplates.value
+)
+
+const effectiveOtherShopTemplates = computed(() =>
+    props.otherShopTemplates || dummyOtherShopTemplates.value
+)
+
+const effectiveOrganisationSlug = computed(() =>
+    props.organisationSlug || 'demo-org'
+)
+
+const effectiveShopSlug = computed(() =>
+    props.shopSlug || 'demo-shop'
+)
 </script>
 
 <template>
@@ -206,19 +267,33 @@ const isLoadingVisit = ref(false)
             </Modal>
         </template>
         <div v-if="isInProcess">
-            <EmptyState :data="{
-                title: trans(`:mailshotSubject is still in process`, { mailshotSubject: props.data.mailshot.data.subject ?? '' }),
-            }">
-                <template #button-empty-state>
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-2">
+                    {{ trans(`:mailshotSubject is still in process`, {
+                        mailshotSubject: props.data.mailshot.data.subject
+                            ?? ''
+                    }) }}
+                </h2>
+                <p class="text-gray-600 mb-4">
+                    {{ trans('Choose an email template to get started with your mailshot.') }}
+                </p>
+
+                <!-- Workshop button for manual creation -->
+                <div class="flex justify-center mb-6">
                     <Link :href="route('grp.helpers.redirect_mailshot_workshop', {
                         mailshot: props.data.mailshot.data.id,
-                    })
-                        " @start="() => (isLoadingVisit = true)" class="mt-4 block w-fit mx-auto">
-                        <Button :label="trans('Workshop')" type="secondary" icon="fal fa-drafting-compass"
+                    })" @start="() => (isLoadingVisit = true)">
+                        <Button :label="trans('Create from Scratch')" type="secondary" icon="fal fa-drafting-compass"
                             :loading="isLoadingVisit" />
                     </Link>
-                </template>
-            </EmptyState>
+                </div>
+            </div>
+
+            <!-- Template Carousel -->
+            <EmailTemplateCarousel :mailshot-id="props.data.mailshot.data.id"
+                :shop-id="props.data.mailshot.data.shop_id || ''" :organisation-slug="effectiveOrganisationSlug"
+                :shop-slug="effectiveShopSlug" :own-shop-templates="effectiveOwnShopTemplates"
+                :other-shop-templates="effectiveOtherShopTemplates" />
         </div>
     </div>
 </template>

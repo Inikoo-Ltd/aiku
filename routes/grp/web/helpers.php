@@ -15,6 +15,7 @@ use App\Actions\Helpers\Redirects\RedirectInvoicesInCustomerLink;
 use App\Actions\Helpers\Redirects\RedirectInvoicesInShopFromDashboard;
 use App\Actions\Helpers\Redirects\RedirectInvoicesInShopLink;
 use App\Actions\Helpers\Redirects\RedirectMailshotWorkshopLink;
+use App\Actions\Helpers\Redirects\RedirectMailshotTemplateWorkshopLink;
 use App\Actions\Helpers\Redirects\RedirectMasterCollectionLink;
 use App\Actions\Helpers\Redirects\RedirectMasterProductCategoryLink;
 use App\Actions\Helpers\Redirects\RedirectMasterProductLink;
@@ -68,3 +69,4 @@ Route::prefix('uploads/{upload}')->as('uploads.')->group(function () {
 });
 
 Route::get('redirect-mailshot-workshop/{mailshot:id}', RedirectMailshotWorkshopLink::class)->name('redirect_mailshot_workshop');
+Route::get('redirect-mailshot-template-workshop/{organisation}/{shop}/{mailshot}/{template}', RedirectMailshotTemplateWorkshopLink::class)->name('redirect_mailshot_template_workshop');

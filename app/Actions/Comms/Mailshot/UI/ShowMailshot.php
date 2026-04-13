@@ -9,6 +9,8 @@
 namespace App\Actions\Comms\Mailshot\UI;
 
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
+use App\Actions\Comms\EmailTemplate\GetOtherShopEmailTemplates;
+use App\Actions\Comms\EmailTemplate\GetOwnShopEmailTemplates;
 use App\Actions\Comms\Mailshot\GetMailshotRecipientsQueryBuilder;
 use App\Actions\Comms\MailshotRecipient\UI\IndexMailshotRecipients;
 use App\Actions\OrgAction;
@@ -287,6 +289,10 @@ class ShowMailshot extends OrgAction
                 'numberSecondWaveRecipients' => $mailshotSecondWave?->recipients?->count() ?? 0,
                 'mailshotId' => $mailshot->id,
                 'groupId' => $mailshot->group_id,
+                'ownShopTemplates' => GetOwnShopEmailTemplates::run($this->shop),
+                'otherShopTemplates' => GetOtherShopEmailTemplates::run($this->organisation, $this->shop),
+                'organisationSlug' => $this->organisation->slug,
+                'shopSlug' => $this->shop->slug,
             ]
         )->table(
             IndexDispatchedEmails::make()->tableStructure(
