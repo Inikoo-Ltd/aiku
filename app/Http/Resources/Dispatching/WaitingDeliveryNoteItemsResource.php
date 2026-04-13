@@ -45,6 +45,8 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $picking_position
  * @property mixed $warehouse_area_code
  * @property mixed $warehouse_area_picking_position
+ * @property mixed $shop_name
+ * @property mixed $shop_code
  */
 class WaitingDeliveryNoteItemsResource extends JsonResource
 {
@@ -124,6 +126,9 @@ class WaitingDeliveryNoteItemsResource extends JsonResource
             'delivery_note_is_premium_dispatch' => $this->delivery_note_is_premium_dispatch,
             'delivery_note_has_extra_packing'   => $this->delivery_note_has_extra_packing,
             'delivery_note_shop_type'           => $this->shop_type,
+
+            'shop_name'                         => $this->shop_name,
+            'shop_code'                         => $this->shop_code,
 
             'org_stock_id'                      => $this->org_stock_id,
             'org_stock_code'                    => $this->org_stock_code,

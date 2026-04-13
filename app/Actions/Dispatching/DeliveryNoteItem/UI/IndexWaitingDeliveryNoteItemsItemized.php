@@ -40,6 +40,7 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
             ->leftJoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id')
             ->leftJoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id')
             ->leftJoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id')
+            ->leftJoin('shops', 'shops.id', '=', 'delivery_notes.shop_id')
             ->where('delivery_notes.warehouse_id', $warehouse->id)
             ->where('delivery_note_items.has_waiting_warehouse', true);
 
@@ -76,6 +77,8 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
                 'locations.sort_code as picking_position',
                 'warehouse_areas.code as warehouse_area_code',
                 'warehouse_areas.picking_position as warehouse_area_picking_position',
+                'shops.name as shop_name',
+                'shops.code as shop_code',
             ])
             ->allowedSorts(['org_stock_name', 'org_stock_code', 'picking_position'])
             ->allowedFilters([$globalSearch])

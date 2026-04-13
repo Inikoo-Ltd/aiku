@@ -20,6 +20,8 @@ const props = defineProps<{
         org_stock_code: string
         notes: string
         org_stock_image_thumbnail: ImageTS
+        shop_name?: string
+        shop_code?: string
     }
 }>()
 
@@ -101,7 +103,7 @@ onMounted(() => {
         </div>
 
         <!-- Section: Quantity badge -->
-        <div class="flex items-center gap-2 mb-6 p-3 rounded-lg bg-amber-50 border border-amber-200">
+        <div class="flex items-center gap-2 mb-2 p-3 rounded-md bg-amber-50 border border-amber-200">
             <FontAwesomeIcon icon="fal fa-hourglass-half" class="text-amber-500" fixed-width aria-hidden="true" />
             <span class="text-sm text-amber-700">
                 {{ ctrans('Quantity to pass to CS') }}:
@@ -115,6 +117,16 @@ onMounted(() => {
                 {{ Number(transaction.quantity_waiting_warehouse || 0) + Number(transaction.quantity_waiting_crm || 0)  }}
                 
             </span>
+        </div>
+
+        <!-- Section: Shop info -->
+        <div v-if="transaction?.shop_name || transaction?.shop_code" class="flex items-center gap-2 mb-4 p-3 rounded-md bg-blue-50 border border-blue-200">
+            <FontAwesomeIcon icon="fal fa-store-alt" class="text-blue-500 shrink-0" fixed-width aria-hidden="true" />
+            <div class="text-sm text-blue-800">
+                {{ ctrans("Shops") }}:
+                <span class="font-semibold">{{ transaction.shop_name }}</span>
+                <span v-if="transaction.shop_code" class="ml-1 opacity-70">({{ transaction.shop_code }})</span>
+            </div>
         </div>
 
         <!-- Note textarea -->
