@@ -557,25 +557,30 @@ defineExpose({
 
 const bundle = useBundle()
 
-const waitForElement = (id: string, cb: (el: HTMLElement) => void) => {
-    const el = document.getElementById(id)
-    if (el) return cb(el)
+const waitForElement = (selector: string, cb: (el: HTMLElement) => void) => {
+    const run = () => {
+        const el = document.querySelector<HTMLElement>(selector)
+        if (el) {
+            cb(el)
+            return true
+        }
+        return false
+    }
+
+    if (run()) return
 
     let tries = 0
     const interval = setInterval(() => {
-        const el = document.getElementById(id)
-        if (el || tries > 10) {
+        if (run() || ++tries > 50) {
             clearInterval(interval)
-            if (el) cb(el)
         }
-        tries++
-    }, 100)
+    }, 200)
 }
 
 watch(
     [() => bundle.open.value, () => layout?.rightbasket?.show],
     () => {
-        waitForElement('jsd-widget', (widget) => {
+        waitForElement('#jsd-widget', (widget) => {
             widget.style.setProperty(
                 'right',
                 (bundle.open.value || layout?.rightbasket?.show)

@@ -206,9 +206,11 @@ const openBundlePanel = (product:any) => {
                         :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)" />
                     
                     <Button
+                        v-if="layout?.iris?.is_logged_in"
                         @click.prevent="openBundlePanel(product)"
-                        class="rounded-full flex items-center justify-center transition"
+                        class="flex items-center justify-center transition"
                         type="primary"
+                        size="sm"
                         v-tooltip="trans('Add to bundle')"
                     >
                         <FontAwesomeIcon
