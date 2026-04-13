@@ -93,6 +93,7 @@ const props = withDefaults(defineProps<{
     editable?: boolean
     placeholder?: any | String
     uploadImageRoute?: routeType
+    routeGetInternalLink?: routeType
 }>(), {
     editable: true,
     type: 'Bubble',
@@ -984,6 +985,7 @@ onMounted(async () => {
             v-if="showLinkDialogCustom"
             :show="showLinkDialogCustom"
             :attribut="currentLinkInDialog"
+            :route-get-internal-link="routeGetInternalLink"
             :key="keyLinkCustomDialog"
             @close="() => { showLinkDialogCustom = false; showDialog = false; }"
             @update="updateLinkCustom"

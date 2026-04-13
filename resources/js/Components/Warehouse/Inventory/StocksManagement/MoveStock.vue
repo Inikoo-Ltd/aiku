@@ -379,11 +379,15 @@ onMounted(() => {
                 <div class="col-span-3 flex items-center gap-x-2">
                     {{ form.name }}
                 </div>
-                <div v-tooltip="trans('Last audit :date', { date: useFormatTime(form.audited_at) })" class="text-right col-span-1 flex grid">
+                <div v-if="form.audited_at" v-tooltip="trans('Last audit :date', { date: useFormatTime(form.audited_at) })" class="text-right col-span-1 flex grid">
                     <span class="justify-self-end">
                         {{ formatDistanceStrict(new Date(form.audited_at), new Date()) }}
                         <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400" fixed-width aria-hidden="true" />
                     </span>
+                </div>
+                <div v-else
+                    class="text-right col-span-1 flex grid text-sm italic opacity-60 whitespace-nowrap">
+                    {{ trans("Never audited") }}
                 </div>
                 <span 
                     class="text-md text-blue-500 justify-self-end cursor-pointer hover:underline col-span-1"
