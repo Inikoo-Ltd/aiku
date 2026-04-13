@@ -77,6 +77,7 @@ const isLoading = ref(false)
 </script>
 
 <template>
+  asd
   <!-- Internal Inertia link (same app) -->
   <Link
     v-if="type === 'internal' && computedHref && linkLocation === location"
