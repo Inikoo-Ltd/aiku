@@ -11,6 +11,7 @@ namespace App\Actions\Web\Website;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
+use App\Http\Resources\Catalogue\WorkshopFamiliesResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Website;
@@ -31,7 +32,7 @@ class GetWebsiteWorkshopFamilyDescriptionWebBlock
 
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
-            'family'    => $website->shop->getFamilies()->where('state', ProductCategoryStateEnum::ACTIVE)->toArray(),
+            'family'    => WorkshopFamiliesResource::collection($website->shop->getFamilies()->where('state', ProductCategoryStateEnum::ACTIVE)),
             'layout'    => Arr::get($website->unpublishedFamiliesOverviewSnapshot, 'layout.families_description', []),
             'autosaveRoute' => [
                 'name'       => 'grp.models.website.autosave.families_description',
