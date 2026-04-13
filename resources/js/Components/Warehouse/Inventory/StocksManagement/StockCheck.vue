@@ -7,7 +7,7 @@ import { faDotCircle, faSave } from "@fal"
 import { faDotCircle as fasDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { InputNumber } from 'primevue'
-import { inject, ref, watch, nextTick } from 'vue'
+import { inject, ref, watch, nextTick, onBeforeUnmount } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { router, useForm } from '@inertiajs/vue3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
@@ -28,9 +28,12 @@ const props = defineProps<{
 const emits = defineEmits(['close'])
 
 const layout = inject('layout', layoutStructure)
+const cloneLocations = ref(
+    cloneDeep(props.locations).sort((a, b) => a.code.localeCompare(b.code))
+)
 
-const cloneLocations = ref(cloneDeep(props.locations))
 const inputRefs = ref<Record<number, any>>({})
+const focusInterval = ref<number | null>(null)
 const listLoadingLocations = ref<number[]>([])
 const submitCheckStock = (locationOrgStock: StockLocation, value?: number) => {
 
@@ -69,24 +72,52 @@ const submitCheckStock = (locationOrgStock: StockLocation, value?: number) => {
     )
 }
 
-watch(() => props.locations, (newValue) => {
-    cloneLocations.value = cloneDeep(newValue)
-    cloneLocations.value.sort((a, b) => a.code.localeCompare(b.code));
+const setInputRef = (el: any, id: number) => {
+    if (el) {
+        inputRefs.value[id] = el
+    }
+}
+
+const clearFocusInterval = () => {
+    if (focusInterval.value !== null) {
+        clearInterval(focusInterval.value)
+        focusInterval.value = null
+    }
+}
+
+const focusToLocation = async (id: number) => {
+    if (!id) return
+
+    clearFocusInterval()
+    await nextTick()
+
+    let attempts = 0
+    focusInterval.value = window.setInterval(() => {
+        attempts++
+        const comp = inputRefs.value[id]
+        const input = comp?.$el?.querySelector('input') as HTMLInputElement | null
+
+        if (input && document.activeElement !== input) {
+            input.focus()
+            input.select?.()
+        }
+
+        if (!input || attempts >= 20) {
+            clearFocusInterval()
+        }
+    }, 80)
+}
+
+onBeforeUnmount(() => {
+    clearFocusInterval()
 })
+
 
 watch(
     () => props.selectedLocationId,
-    async (id) => {
+    (id) => {
         if (!id) return
-
-        await nextTick()
-
-        const input = inputRefs.value[id]
-
-        if (input?.$el) {
-            const el = input.$el.querySelector('input')
-            el?.focus()
-        }
+        focusToLocation(id)
     },
     { immediate: true }
 )
@@ -101,9 +132,13 @@ watch(
                     {{ location.code }}
                 </div>
 
-                <div v-tooltip="trans('Last audit  :date', { date: useFormatTime(new Date(location.audited_at)) })" class="col-span-2 md:col-span-2 text-right">
+                <div v-if="location.audited_at" v-tooltip="trans('Last audit  :date', { date: useFormatTime(new Date(location.audited_at)) })" class="col-span-2 md:col-span-2 text-right">
                     {{ formatDistanceStrict(new Date(location.audited_at), new Date()) }}
                     <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400" fixed-width aria-hidden="true" />
+                </div>
+
+                <div v-else class="col-span-2 md:col-span-2 text-right text-sm italic opacity-60 whitespace-nowrap">
+                    {{ trans("Never audited") }}
                 </div>
 
                 <div class="col-span-3 md:col-span-2 text-right flex items-center justify-end gap-x-1">
@@ -130,7 +165,7 @@ watch(
 
                     <div class="w-14">
                         <InputNumber
-                            :ref="el => inputRefs[location.id] = el"
+                            :ref="el => setInputRef(el, location.id)"
                             :modelValue="location.quantity"
                             @keydown.enter.prevent="submitCheckStock(location)"
                             @input="(event: { value: any }) => location.quantity = event.value"
