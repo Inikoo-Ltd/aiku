@@ -15,7 +15,6 @@ use App\Actions\Web\WebBlock\GetWebBlockDepartment;
 use App\Actions\Web\WebBlock\GetWebBlockFamilies;
 use App\Actions\Web\WebBlock\GetWebBlockFamiliesOverview;
 use App\Actions\Web\WebBlock\GetWebBlockFamilyDescription;
-use App\Actions\Web\WebBlock\GetWebBlockFamilyDescriptionBasic;
 use App\Actions\Web\WebBlock\GetWebBlockLuigiRecommendations;
 use App\Actions\Web\WebBlock\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\GetWebBlockProducts;
@@ -45,7 +44,7 @@ trait WithFillIrisWebBlocks
         } elseif (str_contains($webBlockType, 'products-')) {
             $parsedWebBlocks[$key] = GetWebBlockProducts::run($webpage, $webBlock, $isLoggedIn);
         } elseif ($webBlockType == 'family-1') {
-            $parsedWebBlocks[$key] = GetWebBlockFamilyDescriptionBasic::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetWebBlockFamilyDescription::run($webpage, $webBlock);
         } elseif ($webBlockType == 'family-2') {
             $parsedWebBlocks[$key] = GetWebBlockFamilyDescription::run($webpage, $webBlock);
         } elseif ($webBlockType == 'family-2-extra-description') {
