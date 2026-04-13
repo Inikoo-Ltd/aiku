@@ -15,6 +15,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import AddPortfoliosWithUpload from "@/Components/Dropshipping/AddPortfoliosWithUpload.vue"
 import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue"
+import AddBundles from "@/Components/Dropshipping/AddBundles.vue"
 import { ColorPickerStyle, InputNumber, InputText, Message, Popover } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSyncAlt, faHandPointer, faBan } from "@fas"
@@ -58,6 +59,7 @@ import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { EditorContent } from "@tiptap/vue-3"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import { UploadPallet } from "@/types/Pallet"
+import RetinaTablePortfoliosBundles from "@/Components/Tables/Retina/RetinaTablePortfoliosBundles.vue"
 
 interface UploadSection {
 	title: {
@@ -105,6 +107,7 @@ const props = defineProps<{
 	}
 	bulk_import_product: UploadSection
 	products: TableTS
+	bundles: TableTS
 	logs: {}
 	routes: {
 		batch_upload: routeType
@@ -144,11 +147,16 @@ const props = defineProps<{
 		show_msg: boolean
 		cust_country: string
 	}
+	bundle_routes: any
+	shop_data: {
+        currency_code: string
+    }
 }>()
 
 const step = ref(props.step)
 const isPlatformManual = computed(() => props.platform_data.type === "manual")
 const isOpenModalPortfolios = ref(false)
+const isOpenModalCreateBundle = ref(false)
 const isOpenModalCloneProgress = ref(false)
 const isOpenModalFetchProgress = ref(false)
 const isOpenModalUploadProgress = ref(false)
@@ -902,6 +910,7 @@ const onDownloadExtendedProperties = () => {
 	}, 400)
 }
 
+console.log("props parent porfot", props)
 const layout = inject("layout", layoutStructure)
 </script>
 
@@ -922,7 +931,7 @@ const layout = inject("layout", layoutStructure)
 				" />
 		</template>
 
-		<template v-if="!props.is_closed" #other>
+		<template v-if="!props.is_closed && currentTab !== 'bundles'" #other>
 			<div
 				class="inline-flex items-center rounded-md border overflow-hidden"
 				v-if="props.product_count">
@@ -1176,6 +1185,13 @@ const layout = inject("layout", layoutStructure)
 				</Popover>
 			</div>
 		</template>
+		<template v-if="currentTab === 'bundles'" #other>
+			<Button
+				@click="() => (isOpenModalCreateBundle = true)"
+				:label="trans('Create bundle')"
+				:icon="'fas fa-plus'"
+				 />
+		</template>
 	</PageHeading>
 	<Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
@@ -1374,7 +1390,6 @@ const layout = inject("layout", layoutStructure)
 			</div>
 		</div>
 	</Message>
-
 	<!-- retina.models.dropshipping.ebay.batch_upload -->
 	<div v-if="(is_platform_connected || isPlatformManual) && currentTab === 'products'">
 		<div
@@ -1463,6 +1478,61 @@ const layout = inject("layout", layoutStructure)
 	<div v-else-if="currentTab === 'logs'">
 		<TableRetinaPlatformPortfolioLogs :data="logs" :tab="currentTab" />
 	</div>
+	<div v-else-if="currentTab === 'bundles'">
+		<div
+			v-if="props.product_count < 1"
+			class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
+			<h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
+				{{ content?.portfolio_empty?.title || trans(`You don't have a single bundles`) }}
+			</h1>
+			<p class="mt-4 text-xl">
+				{{
+					content?.portfolio_empty?.description ||
+					trans(
+						"To get started, add bundles to your shop. You can sync from your inventory or create a new one."
+					)
+				}}
+			</p>
+			<div class="mt-6 space-y-4">
+				<ButtonWithLink
+					v-if="routes?.syncAllRoute"
+					:routeTarget="routes?.syncAllRoute"
+					isWithError
+					:label="content?.portfolio_empty?.sync_button"
+					icon="fas fa-sync-alt"
+					xtype="tertiary"
+					size="xl" />
+				<div v-if="routes?.syncAllRoute && routes?.addPortfolioRoute" class="text-gray-500">
+					{{ content?.portfolio_empty?.separation || trans("or") }}
+				</div>
+				<Button
+					v-if="routes?.addPortfolioRoute"
+					@click="isOpenModalPortfolios = true"
+					:label="content?.portfolio_empty?.add_button || trans('Add products')"
+					icon="fas fa-plus"
+					size="xl" />
+			</div>
+		</div>
+
+		<RetinaTablePortfoliosBundles
+		v-else
+				@showBulkButton="showBulkButton()"
+				@hideBulkButton="hideBulkButton()"
+				:data="props.bundles"
+				:bundle_routes="props.bundle_routes"
+				:tab="'bundles'"
+				:selectedData
+				:platform_data
+				:platform_user_id
+				:is_platform_connected
+				:progressToUploadToShopify
+				:customerSalesChannel="customer_sales_channel"
+				:progressToUploadToEcom="progessbar"
+				v-model:selectedProducts="selectedProducts"
+				:key="key + 'table-bundles'"
+				:routes="props.routes"
+				:count_product_not_synced="count_product_not_synced" />
+	</div>
 
 	<Modal
 		:isOpen="isOpenModalPortfolios"
@@ -1484,6 +1554,28 @@ const layout = inject("layout", layoutStructure)
 			@onDone="
 				() => {
 					;((isOpenModalPortfolios = false), (key = ulid()))
+				}
+			"
+			:platform_user_id
+			:is_platform_connected
+			:customerSalesChannel="customer_sales_channel"
+			:onClickReconnect />
+	</Modal>
+
+	<Modal
+		:isOpen="isOpenModalCreateBundle"
+		@onClose="isOpenModalCreateBundle = false"
+		width="w-full max-w-7xl max-h-[600px] md:max-h-[85vh] overflow-y-auto">
+		<AddBundles
+			:step="step"
+			:routes="props.routes"
+			:bundle_routes="props.bundle_routes"
+			:platform_data
+			:shop_data="props.shop_data"
+			@onClose="isOpenModalCreateBundle = false"
+			@onDone="
+				() => {
+					;((isOpenModalCreateBundle = false), (key = ulid()))
 				}
 			"
 			:platform_user_id

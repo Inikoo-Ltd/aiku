@@ -17,7 +17,7 @@ const props = defineProps<{
 <template>
     <div class="inline-flex items-center gap-1">
         <img
-            :src="`/assets/promo/gr-${layout.retina.organisation?.slug}.png`"
+            :src="`/assets/promo/gr-${layout.retina.organisation}.png`"
             alt="Gold Reward logo"
             v-tooltip="ctrans('Gold Reward logo')"
             class="pointer-events-none translate-y-[15%]

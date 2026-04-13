@@ -61,7 +61,7 @@ class ProcessBasketLowStockRecipients
                     'outbox_id'     => $outbox->id,
                     'email_address' => $customerModel->email,
                     'data->additional_data' => [
-                        'products' => $this->generateProductLinks($customer['product_ids'])
+                        'low_stock_items_in_basket' => $this->generateProductLinks($customer['product_ids'])
                     ]
                 ]
             );

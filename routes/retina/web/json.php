@@ -27,6 +27,7 @@ use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentPhysica
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentServices;
 use App\Actions\Retina\GetCheckoutComTokenToPayOrder;
 use Illuminate\Support\Facades\Route;
+use App\Actions\Retina\Ecom\Basket\GetRetinaBasketTransactionProductData;
 
 Route::get('fulfilment/{fulfilment}/delivery/{scope}/services', [GetRetinaFulfilmentServices::class, 'inPalletDelivery'])->name('fulfilment.delivery.services.index');
 Route::get('fulfilment/{fulfilment}/return/{scope}/services', [GetRetinaFulfilmentServices::class, 'inPalletReturn'])->name('fulfilment.return.services.index');
@@ -59,3 +60,4 @@ Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_c
 Route::get('log-web-user-request', RetinaLogWebUserRequest::class)->name('hit');
 
 Route::get('customer/{customer:id}/tags', [IndexTags::class, 'inRetina'])->name('customer.tags.index');
+Route::get('basket-transaction-product-data/{transaction:id}', GetRetinaBasketTransactionProductData::class)->name('basket_transaction_product_data');

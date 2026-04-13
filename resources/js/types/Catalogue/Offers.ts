@@ -6,7 +6,7 @@
 */
 
 export interface OfferResource {
-    type: 'Amount AND Order Number' | 'Category Ordered' | 'Category Quantity Ordered'
+    type: 'Amount AND Order Number' | 'Category Ordered' | 'Category Quantity Ordered' | 'GR Amnesty' | 'Category Quantity Ordered Order Interval'
     name: string
     label?: string
     state: string

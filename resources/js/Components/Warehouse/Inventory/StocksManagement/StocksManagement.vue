@@ -5,37 +5,45 @@ import { inject, onMounted } from 'vue'
 import formatDistanceStrict from 'date-fns/formatDistanceStrict'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle } from "@fal"
-import { faShoppingBasket, faStickyNote, faShoppingCart, faPlusCircle, faBox } from "@fas"
+import { faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faDollyFlatbedEmpty as faDollyFlatbedEmptyFal } from "@fal"
+import { faShoppingBasket, faStickyNote, faShoppingCart, faPlusCircle, faBox, faBan, faDollyFlatbedEmpty as faDollyFlatbedEmptyFas } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref } from 'vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { InputNumber, Popover } from 'primevue'
+import { InputNumber, Popover, Dialog } from 'primevue'
 import StockCheck from './StockCheck.vue'
 import MoveStock from './MoveStock.vue'
-import EditLocations from './EditLocations.vue'
 import { Icon as IconTS } from '@/types/Utils/Icon'
 import Icon from '@/Components/Icon.vue'
 import { routeType } from '@/types/route'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import { StockLocation, StocksManagementTS } from '@/types/Inventory/StocksManagement'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
+import { Link, router } from '@inertiajs/vue3'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
-library.add(faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faShoppingBasket, faStickyNote, faShoppingCart)
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import AddLocations from './AddLocations.vue'
+import EditLocationsModal from './EditLocationsModal.vue'
+import { WINDOW } from '@sentry/vue'
+library.add(faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faDollyFlatbedEmptyFal, faShoppingBasket, faStickyNote, faShoppingCart, faDollyFlatbedEmptyFas)
 
 const props = defineProps<{
     stocks_management: StocksManagementTS
+    trade_units: any
 }>()
 
-console.log('stocks_management', props.stocks_management)
+console.log('stocks_management', props.stocks_management.summary)
 
 const layout = inject('layout', layoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
 
 // Active picking location state
-const activePickingLocation = ref<number | null>(null)
+const activePickingLocationWholesale = ref<number | null>(null)
+const isLoadingActiveLocationWholesale = ref<number | null>(null)
+const activePickingLocationDropshipping = ref<number | null>(null)
+const isLoadingActiveLocationDropshipping = ref<number | null>(null)
 
 // Notes state - dummy data structure
 const locationNotes = ref<Record<number, string>>({
@@ -51,15 +59,25 @@ const isMoveStock = ref(false)
 const isEditLocations = ref(false)
 
 // Functions
-const setActivePickingLocation = (location: StockLocation) => {
+const setActivePickingLocation = (location: StockLocation, scope: string) => {
     // Leave it disabled for now. Always have active location. Checked through DB & Logic across actions. Need to ask Raul next
-    // activePickingLocation.value = activePickingLocation.value === location.id ? null : location.id;
-    if(activePickingLocation.value === location.id) return;
-    activePickingLocation.value = location.id;
+    // activePickingLocationWholesale.value = activePickingLocationWholesale.value === location.id ? null : location.id;
+    if (scope == 'wholesale') {
+        if (activePickingLocationWholesale.value === location.id) return;
+        activePickingLocationWholesale.value = location.id;
+    
+        updateStockLocation(location, {
+            set_as_priority_wholesale: true
+        });
+    }else {
 
-    updateStockLocation(location, {
-        set_as_priority: true
-    })
+        if (activePickingLocationDropshipping.value === location.id) return;
+        activePickingLocationDropshipping.value = location.id;
+    
+        updateStockLocation(location, {
+            set_as_priority_dropshipping: true
+        });
+    }
 }
 
 const questionPopoverRefs = ref<Record<number, any>>({})
@@ -149,8 +167,16 @@ const saveMinMaxStock = (location: StockLocation) => {
 const cancelMinMaxStock = (locationId: number) => {
     questionPopovers.value[locationId] = false
     if (tempMinMaxStock.value[locationId]) {
-        tempMinMaxStock.value[locationId] = { min_stock: null, max_stock: null, replenishment_stock: null }
+
+        let currLocSetting = props.stocks_management.locations.find((data) => data.id == locationId)?.settings ?? null;
+
+        tempMinMaxStock.value[locationId] = { 
+            min_stock: currLocSetting?.min_stock ?? null, 
+            max_stock: currLocSetting?.max_stock ?? null, 
+            replenishment_stock: currLocSetting?.replenishment_stock ?? null 
+        }
     }
+
     if (questionPopoverRefs.value[locationId]) {
         questionPopoverRefs.value[locationId].hide()
     }
@@ -160,6 +186,8 @@ const cancelMinMaxStock = (locationId: number) => {
 const _popoverNotes = ref<Record<number, any>>({})
 const tempLocToEdit = ref<StockLocation | null>(null)
 const toggleNotePopover = (event: Event, loc: StockLocation) => {
+    if(isLoadingNoteUpdate.value === loc.id) return;
+
     event.stopPropagation()
 
     tempLocToEdit.value = {...loc}
@@ -215,7 +243,7 @@ const onSaveNote = (editedLoc: StockLocation) => {
 // }
 
 const getQuestionTooltip = (locationId: number) => {
-    if (activePickingLocation.value === locationId) {
+    if (isActivePickingLocation(locationId)) {
         return trans('Recommended min/max stock')
     } else {
         return trans('Recommended replenishment quantity')
@@ -223,11 +251,11 @@ const getQuestionTooltip = (locationId: number) => {
 }
 
 onMounted(() => {
-    // Initialize activePickingLocation
-    let lowestPickingPriority = props.stocks_management.locations.find((data) => data.picking_priority == 1)?.id;
-    if(lowestPickingPriority) {
-        activePickingLocation.value = lowestPickingPriority;
-    }
+    // Initialize activePickingLocationWholesale
+    console.log(props.stocks_management.locations);
+    
+    activePickingLocationWholesale.value = props.stocks_management.locations.find((data) => data.default_wholesale_picking_location == true)?.id ?? null;
+    activePickingLocationDropshipping.value = props.stocks_management.locations.find((data) => data.default_dropshipping_picking_location == true)?.id ?? null;
 
     // Initialize Min/Max or Replenishment values
     tempMinMaxStock.value = Object.fromEntries(
@@ -250,29 +278,97 @@ onMounted(() => {
     )
 })
 
-// TODO Refactor Update Location
+const isLoadingNoteUpdate = ref<Number|null>(null)
+const isLoadingQtyUpdate = ref<Number|null>(null)
+
 const updateStockLocation = async (stockLoc: StockLocation, body: {}) => {
-    await axios.patch(route('grp.models.location_org_stock.update', {
+    console.info(Object.keys(body));
+    let successMsg = `Successfully modified ${stockLoc.code} data`
+    let failMsg = `Failed to modify ${stockLoc.code} data`
+
+    if (Object.keys(body).includes('notes')) {
+        successMsg = `Successfully updated '${stockLoc.code}' Note`
+        failMsg = `There was an error updating ${stockLoc.code} Note`
+        isLoadingNoteUpdate.value = stockLoc.id;
+    } else if (Object.keys(body).find(key =>
+        ['min_stock', 'max_stock', 'replenishment_stock'].includes(key)
+    )) {
+        isLoadingQtyUpdate.value = stockLoc.id;
+    } else if (Object.keys(body).includes('set_as_priority_wholesale')) {
+        isLoadingActiveLocationWholesale.value = stockLoc.id;
+    } else if (Object.keys(body).includes('set_as_priority_dropshipping')) {
+        isLoadingActiveLocationDropshipping.value = stockLoc.id;
+    }
+
+
+    router.patch(route('grp.models.location_org_stock.update', {
         locationOrgStock: stockLoc.id
-    }), body)
-    .then((res) => {
-        // TODO hydrate back to notePopovers
-        notify({
-            title: "Success",
-            text: "Successfully updated location org stocks data",
-            type: "success"
-        })
+    }), body, 
+    {
+        preserveScroll: true,
+        onSuccess: () => {
+            notify({
+                title: "Success",
+                text: successMsg,
+                type: "success"
+            })
+        },
+        onError: (err) => {
+            notify({
+                title: "Failed",
+                text: failMsg,
+                type: "error"
+            })
+        },
+        onFinish: () => {
+            isLoadingNoteUpdate.value = null;
+            isLoadingQtyUpdate.value = null;
+            isLoadingActiveLocationWholesale.value = null;
+            isLoadingActiveLocationDropshipping.value = null;
+        }
     })
-    .catch((err) => {
-        notify({
-            title: "Failed",
-            text: "Unable to modify location org stocks data",
-            type: "error"
-        })
-    })
-    .finally(() => {
-        // isLoading.value = false
-    });
+}
+
+const isActivePickingLocation = (stockLocId: number) => {
+    return activePickingLocationDropshipping.value === stockLocId || activePickingLocationWholesale.value === stockLocId;
+}
+
+const activeModal = ref<string | null>(null)
+
+const MODALS = {
+    STOCK_CHECK: 'stock_check',
+    MOVE_STOCK: 'move_stock',
+    EDIT_LOCATION: 'edit_location',
+    ADD_LOCATION: 'add_location'
+}
+
+const isStockCheckModalOpen = ref(false)
+const isMoveStockModalOpen = ref(false)
+const isEditLocationModalOpen = ref(false)
+const isAddLocationModalOpen = ref(false)
+const selectedLocationId = ref<number | null>(null)
+const openModal = (type: string, payload: number | null = null) => {
+    activeModal.value = type
+     selectedLocationId.value = payload
+    switch(type) {
+        case MODALS.STOCK_CHECK:
+            isStockCheckModalOpen.value = true
+            break
+        case MODALS.MOVE_STOCK:
+            isMoveStockModalOpen.value = true
+            break
+        case MODALS.EDIT_LOCATION:
+            isEditLocationModalOpen.value = true
+            break
+        case MODALS.ADD_LOCATION:
+            isAddLocationModalOpen.value = true
+            break
+    }
+}
+const inputRefs = ref<Record<number, any>>({})
+
+const setInputRef = (el: any, id: number) => {
+    if (el) inputRefs.value[id] = el
 }
 </script>
 
@@ -289,80 +385,89 @@ const updateStockLocation = async (stockLoc: StockLocation, body: {}) => {
             </button>
         </div>
         <!-- Section: Summary Stats -->
-        <div class="grid grid-cols-4 gap-2 text-center">
-            <div v-for="(item, key) in stocks_management.summary" class="bg-gray-100 p-2 rounded" v-tooltip="item.icon_state.tooltip">
-                <span>
-                    <Icon :data="{...item.icon_state, tooltip : null}" />
-                </span>
-                <span class="ml-2 text-lg font-bold">
-                    {{ locale.number(item.value ?? 0) }}
-                </span>
-            </div>
-        </div>
-
-        <!-- Out of Stock -->
-        <div class="border-t pt-2">
-            <p class="font-semibold text-gray-600">Out of stock</p>
-        </div>
-
-        <!-- Stock Value Section -->
-        <div class="border-t pt-2">
-            <div class="grid grid-cols-7 gap-x-3">
-                <div class="col-span-2 font-semibold text-gray-600">Stock value:</div>
-                <div class="col-span-3 text-right">
-                    <!-- 4720000 -->
-                        {{ locale.currencyFormat(currency_code, stocks_management.stock_cost.cost_stock_price_outer || 0) }} <span>total</span>
-                </div>
-                <div class="col-span-2 text-right">
-                    <!-- 8000 /SKO -->
-                     {{ locale.currencyFormat(currency_code, stocks_management.stock_cost.cost_stock_price_per_unit || 0) }} / SKO
+        <div class="grid grid-cols-7 gap-x-3 gap-2 p-2">
+            <div class="grid grid-cols-3 gap-2 text-center col-span-6">
+                <div v-for="(item, key) in stocks_management.summary" class="bg-gray-100 p-2 rounded" v-tooltip="item.icon_state.tooltip">
+                    <span>
+                        <Icon :data="{...item.icon_state, tooltip : null}" />
+                    </span>
+                    <span class="ml-2 text-lg font-bold">
+                        {{ locale.number(item.value ?? 0) }}
+                    </span>
                 </div>
             </div>
-            <div class="grid grid-cols-7 gap-x-3">
-                <div class="col-span-2 font-semibold text-gray-600">Current cost:</div>
-                <div class="col-span-3 text-right">
-                    <!-- 4720000 -->
-                      {{ locale.currencyFormat(currency_code, stocks_management.stock_cost.cost_current_price_outer || 0) }} <span>total</span>
-                </div>
-                <div class="col-span-2 text-right">
-                    <!-- 8000 /Unit -->
-                      {{ locale.currencyFormat(currency_code, stocks_management.stock_cost.cost_current_price_per_unit || 0) }} / Unit
-                </div>
+            <div class="grid align-item-middle border-l">
+                <span class="my-auto text-right font-semibold" v-tooltip="trans('Stock in Location')">
+                    {{ locale.number(stocks_management.qty_in_location ?? 0) }}
+                </span>
             </div>
         </div>
 
         <!-- Section: Location Grid -->
         <div class="border-t pt-2 gap-2 items-center text-gray-700">
-            <KeepAlive>
-                <template v-if="isStockCheck">
+            
+                <Dialog v-model:visible="isStockCheckModalOpen" :header="`${trans('Audit Stock')} - ${props.trade_units[0]?.code}`" modal 
+                    :style="{ width: '50vw' }"
+                    :breakpoints="{
+                        '1200px': '75vw',
+                        '992px': '80vw',
+                        '768px': '90vw',
+                        '576px': '95vw'
+                    }"
+                    :contentStyle="{ maxHeight: '70vh', overflow: 'auto' }">
                     <StockCheck
+                        :selectedLocationId="selectedLocationId"
                         :locations="props.stocks_management.locations"
-                        @onClickBackground="isStockCheck = false"
+                        @close="isStockCheckModalOpen = false"
                         :auditRoute="props.stocks_management?.routes?.audit_route"
                     />
-                </template>
+                </Dialog>
                 
-                <template v-else-if="isMoveStock">
+                 <Dialog v-model:visible="isMoveStockModalOpen" modal :header="trans('Move Stock')"
+                    :style="{ width: '50vw' }"
+                    :breakpoints="{
+                        '1200px': '75vw',
+                        '992px': '80vw',
+                        '768px': '90vw',
+                        '576px': '95vw'
+                    }">
                     <MoveStock
                         :part_locations="props.stocks_management.locations"
-                        @onClickBackground="isMoveStock = false"
+                        :replenishment_data="tempMinMaxStock"
+                        @close="isMoveStockModalOpen = false"
                     />
-                </template>
+                 </Dialog>
 
-                <template v-else-if="isEditLocations">
-                    <EditLocations
+                <EditLocationsModal
+                    v-model="isEditLocationModalOpen"
+                    :locations="props.stocks_management.locations"
+                    :routes="props.stocks_management.routes"
+                />
+
+                <Dialog v-model:visible="isAddLocationModalOpen" modal :header="trans('Add Location')"
+                    :style="{ width: '50vw' }"
+                    :breakpoints="{
+                        '1200px': '75vw',
+                        '992px': '80vw',
+                        '768px': '90vw',
+                        '576px': '95vw'
+                    }"
+                    :contentStyle="{ overflow: 'visible' }">
+                     <AddLocations
                         :locations="props.stocks_management.locations"
-                        @onClickBackground="isEditLocations = false"
+                        @close="isAddLocationModalOpen = false"
                         :routes="props.stocks_management?.routes"
                     />
-                </template>
+                </Dialog>
 
-                <div v-else>
-                    <div v-for="(loc, idx) in props.stocks_management.locations" :key="loc.id"
-                        class="grid grid-cols-7 gap-x-3 items-center gap-2 p-2 rounded transition-colors duration-200"
+                <div v-for="(loc, idx) in props.stocks_management.locations" :key="loc.id"
+                        class="grid grid-cols-7 gap-x-3 items-center gap-2 p-2 rounded transition-colors duration-200 mb-1"
                         :class="{
-                            'bg-blue-50 border border-blue-200': activePickingLocation === loc.id,
-                            'hover:bg-gray-50': activePickingLocation !== loc.id
+                            'bg-blue-50 border border-blue-200': activePickingLocationDropshipping === loc.id && activePickingLocationWholesale !== loc.id,
+                            'bg-orange-50 border border-orange-200': activePickingLocationDropshipping !== loc.id && activePickingLocationWholesale === loc.id,
+                            'bg-purple-50 border border-purple-200': activePickingLocationDropshipping === loc.id && activePickingLocationWholesale === loc.id,
+                            'hover:bg-gray-50': activePickingLocationDropshipping !== loc.id && activePickingLocationWholesale !== loc.id,
+
                         }">
                         <div class="col-span-4 flex items-center gap-x-2">
                             <!-- Note Icon with Popover -->
@@ -372,35 +477,67 @@ const updateStockLocation = async (stockLoc: StockLocation, body: {}) => {
                                     class="cursor-pointer transition-colors duration-200"
                                     :class="loc.notes ? 'text-orange-600' : 'text-gray-400 hover:text-gray-700'"
                                 >
-                                    <FontAwesomeIcon :icon="loc.notes ? 'fas fa-sticky-note' : 'fal fa-sticky-note'" class="" fixed-width aria-hidden="true" />
+                                    <LoadingIcon v-if="isLoadingNoteUpdate === loc.id"/>
+                                    <FontAwesomeIcon v-else :icon="loc.notes ? 'fas fa-sticky-note' : 'fal fa-sticky-note'" class="" fixed-width aria-hidden="true" />
                                 </div>
                             </div>
 
-                            <!-- Shopping Basket Icon -->
-                            <div @click="() => setActivePickingLocation(loc)"
-                                v-tooltip="trans('Set as active picking location')"
+                            <!-- TODO ENABLE ON PRODUCTION  -->
+                            <!-- Wholesale Icon -->
+                            <div v-if="layout.app.environment === 'local'" @click="() => setActivePickingLocation(loc, 'wholesale')"
+                                v-tooltip="trans('Set as active picking location [Wholesale]')"
                                 class="cursor-pointer transition-colors duration-200" :class="{
-                                    'text-blue-700': activePickingLocation === loc.id,
-                                    'text-gray-400 hover:text-gray-700': activePickingLocation !== loc.id
+                                    'text-orange-500': activePickingLocationWholesale === loc.id,
+                                    'text-gray-600 hover:text-orange-400 opacity-30 hover:opacity-60': activePickingLocationWholesale !== loc.id
                                 }">
-                                <FontAwesomeIcon :icon="activePickingLocation === loc.id ? 'fas fa-shopping-basket' : 'fal fa-shopping-basket'"
+                                <LoadingIcon v-if="isLoadingActiveLocationWholesale === loc.id" />
+                                <FontAwesomeIcon v-else :icon="activePickingLocationWholesale === loc.id ? 'fas fa-dolly-flatbed-empty' : 'fal fa-dolly-flatbed-empty'"
                                     class="" fixed-width aria-hidden="true" />
                             </div>
+                            <div v-else>
+                                <FontAwesomeIcon :icon="faBan" class="text-red-500" v-tooltip="'Work in Progress. Remember to disable this on Production when done'"/>
+                            </div>
 
-                            <span class="font-medium">{{ loc.code }}</span>
+                            <!-- TODO ENABLE ON PRODUCTION  -->
+                            <div v-if="layout.app.environment === 'local'" @click="() => setActivePickingLocation(loc, 'dropshipping')"
+                                v-tooltip="trans('Set as active picking location [Dropshipping]')"
+                                class="transition-colors duration-200 cursor-pointer" :class="{
+                                    'text-gray-400': activePickingLocationDropshipping !== loc.id,
+                                    'text-gray-600  opacity-30 hover:opacity-60': activePickingLocationDropshipping !== loc.id,
+                                    'text-blue-700': activePickingLocationDropshipping === loc.id,
+                                    'hover:text-blue-500': activePickingLocationDropshipping !== loc.id
+                                }">
+                                <LoadingIcon v-if="isLoadingActiveLocationDropshipping === loc.id" />
+                                <FontAwesomeIcon v-else :icon="activePickingLocationDropshipping === loc.id ? 'fas fa-shopping-basket' : 'fal fa-shopping-basket'"
+                                    class="" fixed-width aria-hidden="true" />
+                            </div>
+                            <div v-else>
+                                <FontAwesomeIcon :icon="faBan" class="text-red-500" v-tooltip="'Work in Progress. Remember to disable this on Production when done'"/>
+                            </div>
+
+                            <span class="font-medium">
+                                <Link :href="route('grp.org.warehouses.show.infrastructure.locations.show', {
+                                    organisation: loc.location.organisation_slug,
+                                    warehouse: loc.location.warehouse_slug,
+                                    location: loc.location.slug,
+                                })" :class="'primaryLink'">
+                                    {{ loc.code }}
+                                </Link>
+                            </span>
 
                             <!-- Question Icon(s) -->
                             <div @click="(event) => toggleQuestionPopover(loc.id, event)"
                                 v-tooltip="getQuestionTooltip(loc.id)"
                                 class="cursor-pointer text-gray-400 hover:text-gray-700 flex gap-1">
-                                <span v-if="(tempMinMaxStock[loc?.id]?.min_stock || tempMinMaxStock[loc?.id]?.max_stock) && activePickingLocation === loc.id">( {{ tempMinMaxStock[loc?.id]?.min_stock }}, {{ tempMinMaxStock[loc?.id]?.max_stock }}
+                                <LoadingIcon v-if="isLoadingQtyUpdate === loc.id"/>
+                                <span v-else-if="(tempMinMaxStock[loc?.id]?.min_stock || tempMinMaxStock[loc?.id]?.max_stock) && isActivePickingLocation(loc.id)">( {{ tempMinMaxStock[loc?.id]?.min_stock }}, {{ tempMinMaxStock[loc?.id]?.max_stock }}
                                     )</span>
-                                <span v-else-if="tempMinMaxStock[loc?.id]?.replenishment_stock && activePickingLocation !== loc.id">( {{ tempMinMaxStock[loc?.id]?.replenishment_stock }} )</span>
+                                <span v-else-if="tempMinMaxStock[loc?.id]?.replenishment_stock && !isActivePickingLocation(loc.id)">( {{ tempMinMaxStock[loc?.id]?.replenishment_stock }} )</span>
                                 <div v-else>
                                     <FontAwesomeIcon icon="fal fa-question-square" class="" fixed-width
                                         aria-hidden="true" />
                                     <!-- Show second question icon only when location is active -->
-                                    <FontAwesomeIcon v-if="activePickingLocation === loc.id"
+                                    <FontAwesomeIcon v-if="isActivePickingLocation(loc.id)"
                                         icon="fal fa-question-square" class="" fixed-width aria-hidden="true" />
                                 </div>
 
@@ -411,12 +548,12 @@ const updateStockLocation = async (stockLoc: StockLocation, body: {}) => {
                                 <div class="w-80 p-2">
                                     <div class="mb-3">
                                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            {{ activePickingLocation === loc.id ? trans('Min/Max Stock') :
+                                            {{ isActivePickingLocation(loc.id) ? trans('Min/Max Stock') :
                                             trans('Replenishment Quantity') }} - {{ loc.code }}
                                         </label>
 
                                         <!-- Show Min/Max inputs when location is active -->
-                                        <div v-if="activePickingLocation === loc.id" class="space-y-3">
+                                        <div v-if="isActivePickingLocation(loc.id)" class="space-y-3">
                                             <div>
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">
                                                     {{ trans('Min') }}
@@ -426,7 +563,7 @@ const updateStockLocation = async (stockLoc: StockLocation, body: {}) => {
                                                         if (!tempMinMaxStock[loc.id]) tempMinMaxStock[loc.id] = { min_stock: null, max_stock: null }
                                                         tempMinMaxStock[loc.id].min_stock = val
                                                     }" class="w-full" :placeholder="trans('Enter minimum stock')"
-                                                    :min="0" />
+                                                    :min="0" autofocus/>
                                             </div>
                                             <div>
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">
@@ -443,7 +580,7 @@ const updateStockLocation = async (stockLoc: StockLocation, body: {}) => {
 
                                         <!-- Show Replenishment input when location is not active -->
                                         <div v-else>
-                                            <InputNumber :modelValue="tempMinMaxStock[loc.id]?.replenishment_stock || null"
+                                            <InputNumber autofocus :modelValue="tempMinMaxStock[loc.id]?.replenishment_stock || null"
                                                 @update:modelValue="(val) => {
                                                 if (!tempMinMaxStock[loc.id]) tempMinMaxStock[loc.id] = { min_stock: null, max_stock: null, replenishment_stock: null }
                                                 tempMinMaxStock[loc.id].replenishment_stock = val
@@ -476,27 +613,32 @@ const updateStockLocation = async (stockLoc: StockLocation, body: {}) => {
                             {{ trans("Never audited") }}
                         </div>
                         
-                        <div class="text-right font-semibold">
-                            <span v-tooltip="trans('Stock quantity')">{{ Number(loc.quantity) }} qty</span>
+                        <div class="text-right font-semibold border-l">
+                            <span
+                                v-tooltip="trans('Stock quantity')"
+                                class="cursor-pointer hover:text-blue-500 transition"
+                                @dblclick="openModal(MODALS.STOCK_CHECK, loc.id)"
+                            >
+                                {{ Number(loc.quantity) }}
+                            </span>
                         </div>
-                    </div>
-                </div>
-            </KeepAlive>
+                </div>            
         </div>
 
         <!-- Action Buttons -->
-        <div class="flex justify-between border-t pt-3">
-            <Button @click="() => isStockCheck = !isStockCheck" iconRight="fal fa-clipboard-check"
-                :label="trans('Audit Stock')" size="sm" type="tertiary" />
-
-            <Button v-if="layout.app.environment === 'local'" @click="() => isMoveStock = !isMoveStock" iconRight="fal fa-forklift" :label="trans('Move stock')"
-                size="sm" type="tertiary" />
-
-            <Button @click="() => isEditLocations = !isEditLocations" iconRight="fal fa-edit"
-                :label="trans('Edit locations')" size="sm" type="tertiary" />
+        <!-- TODO ENABLE ON PRODUCTION  -->
+        <div class="flex justify-between border-t pt-3 gap-2" v-if="layout.app.environment === 'local'">
+            <Button @click="openModal(MODALS.STOCK_CHECK)" iconRight="fal fa-clipboard-check" :label="trans('Audit Stock')" size="sm" type="tertiary" />
+            <Button @click="openModal(MODALS.MOVE_STOCK)" iconRight="fal fa-forklift" :label="trans('Move Stock')" size="sm" type="tertiary" />
+            <Button @click="openModal(MODALS.EDIT_LOCATION)" iconRight="fal fa-edit" :label="trans('Edit Locations')" size="sm" type="tertiary" />
+            <Button @click="openModal(MODALS.ADD_LOCATION)" iconRight="fal fa-plus" :label="trans('Add Location')" size="sm" type="tertiary" />
         </div>
-
-        
+        <div class="flex justify-between border-t pt-3 gap-2" v-else>
+            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-clipboard-check" :label="trans('Audit Stock')" size="sm" type="tertiary" />
+            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-forklift" :label="trans('Move Stock')" size="sm" type="tertiary" v-if="layout.app.environment === 'local'"/>
+            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-edit" :label="trans('Edit Locations')" size="sm" type="tertiary" />
+            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-plus" :label="trans('Add Location')" size="sm" type="tertiary" v-if="layout.app.environment === 'local'"/>
+        </div>
 
         <!-- Popover: Notes -->
         <Popover ref="_popoverNotes">

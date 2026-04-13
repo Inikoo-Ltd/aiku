@@ -179,6 +179,33 @@ class AutosaveWebsiteMarginal extends OrgAction
                     'family' => $layout
                 ]
             ]);
+        } elseif ($marginal == 'families_overview') {
+            if (!$website->unpublishedFamiliesOverviewSnapshot) {
+                $familiesOverview = StoreWebsiteSnapshot::run(
+                    $website,
+                    [
+                        'scope'  => SnapshotScopeEnum::FAMILIES_OVERVIEW,
+                        'publisher_id'   => Arr::get($modelData, 'publisher_id'),
+                        'publisher_type' => Arr::get($modelData, 'publisher_type'),
+                        'layout' => []
+                    ]
+                );
+
+                $website->update(
+                    [
+                        'unpublished_families_overview_snapshot_id' => $familiesOverview->id
+                    ]
+                );
+                $website->refresh();
+            }
+
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedFamiliesOverviewSnapshot->layout;
+
+            $this->update($website->unpublishedFamiliesOverviewSnapshot, [
+                'layout' => [
+                    'families_overview' => $layout
+                ]
+            ]);
         } elseif ($marginal == 'product') {
             if (!$website->unpublishedProductSnapshot) {
                 $productSnapshot = StoreWebsiteSnapshot::run(
@@ -327,6 +354,12 @@ class AutosaveWebsiteMarginal extends OrgAction
     {
         $this->initialisationFromShop($website->shop, $request);
         $this->handle($website, 'family', $this->validatedData);
+    }
+
+    public function familiesOverview(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'families_overview', $this->validatedData);
     }
 
     public function product(Website $website, ActionRequest $request): void

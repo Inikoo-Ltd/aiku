@@ -150,8 +150,8 @@ class CalculateOrderDiscounts
                 if ($passAmount && $passOrderNumber) {
                     $enabledOffers[$offerData->allowance_signature] = [
                         'offer_id'    => $offerData->id,
-                        'offer_label' => $offerData->name
-
+                        'offer_label' => $offerData->name,
+                        'sub_trigger' => 'fob',
                     ];
                 }
                 if ($passOrderNumber) {

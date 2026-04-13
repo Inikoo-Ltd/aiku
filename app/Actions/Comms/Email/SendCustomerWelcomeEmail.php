@@ -23,7 +23,7 @@ class SendCustomerWelcomeEmail extends OrgAction
     use WithSendCustomerOutboxEmail;
 
 
-    public function handle(Customer $customer): DispatchedEmail
+    public function handle(Customer $customer): DispatchedEmail|null
     {
         $additionalData = [
             "customer_name" => $customer->name

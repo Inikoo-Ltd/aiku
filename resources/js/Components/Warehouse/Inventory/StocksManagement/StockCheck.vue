@@ -7,7 +7,7 @@ import { faDotCircle, faSave } from "@fal"
 import { faDotCircle as fasDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { InputNumber } from 'primevue'
-import { inject, ref, watch } from 'vue'
+import { inject, ref, watch, nextTick } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { router, useForm } from '@inertiajs/vue3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
@@ -21,17 +21,16 @@ library.add(faDotCircle, fasDotCircle, faSave)
 
 const props = defineProps<{
     locations: StockLocation[]
+    selectedLocationId: Number
     auditRoute?: routeType
 }>()
 
-const emits = defineEmits<{
-    (e: "onClickBackground"): void
-}>()
+const emits = defineEmits(['close'])
 
 const layout = inject('layout', layoutStructure)
 
 const cloneLocations = ref(cloneDeep(props.locations))
-
+const inputRefs = ref<Record<number, any>>({})
 const listLoadingLocations = ref<number[]>([])
 const submitCheckStock = (locationOrgStock: StockLocation, value?: number) => {
 
@@ -72,25 +71,42 @@ const submitCheckStock = (locationOrgStock: StockLocation, value?: number) => {
 
 watch(() => props.locations, (newValue) => {
     cloneLocations.value = cloneDeep(newValue)
+    cloneLocations.value.sort((a, b) => a.code.localeCompare(b.code));
 })
+
+watch(
+    () => props.selectedLocationId,
+    async (id) => {
+        if (!id) return
+
+        await nextTick()
+
+        const input = inputRefs.value[id]
+
+        if (input?.$el) {
+            const el = input.$el.querySelector('input')
+            el?.focus()
+        }
+    },
+    { immediate: true }
+)
 </script>
 
 <template>
-    <div>
-        <div @click="() => emits('onClickBackground')" class="cursor-pointer fixed inset-0 bg-black/40 z-30" />
-        <div class="relative bg-white z-40 py-2 px-3 space-y-1">
-            <div class="text-center">Stock check</div>
-            <div v-for="(location, idx) in cloneLocations" class="grid grid-cols-7 gap-x-3 items-center gap-2">
-                <div class="col-span-3 flex items-center gap-x-2">
+    <div class="space-y-2">
+        <!-- list -->
+        <template v-if="cloneLocations.length > 0">
+            <div v-for="(location, idx) in cloneLocations" :key="location.id" class="grid grid-cols-7 gap-2 border-b pb-2">
+                <div class="col-span-2 md:col-span-3  flex items-center gap-x-2">
                     {{ location.code }}
                 </div>
 
-                <div v-tooltip="trans('Last audit  :date', { date: useFormatTime(new Date(location.audited_at)) })" class="col-span-2 text-right">
+                <div v-tooltip="trans('Last audit  :date', { date: useFormatTime(new Date(location.audited_at)) })" class="col-span-2 md:col-span-2 text-right">
                     {{ formatDistanceStrict(new Date(location.audited_at), new Date()) }}
                     <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400" fixed-width aria-hidden="true" />
                 </div>
 
-                <div class="col-span-2 text-right flex items-center justify-end gap-x-1">
+                <div class="col-span-3 md:col-span-2 text-right flex items-center justify-end gap-x-1">
                     <div v-if="location.quantity != props.locations.find(l => l.id === location.id)?.quantity">
                         <span v-if="location.quantity > props.locations.find(l => l.id === location.id)?.quantity" class="text-green-600">
                             +{{ location.quantity - (props.locations.find(l => l.id === location.id)?.quantity ?? 0) }}
@@ -114,7 +130,9 @@ watch(() => props.locations, (newValue) => {
 
                     <div class="w-14">
                         <InputNumber
+                            :ref="el => inputRefs[location.id] = el"
                             :modelValue="location.quantity"
+                            @keydown.enter.prevent="submitCheckStock(location)"
                             @input="(event: { value: any }) => location.quantity = event.value"
                             :min="0"
                             :step="1"
@@ -134,22 +152,22 @@ watch(() => props.locations, (newValue) => {
                     </div>
                 </div>
             </div>
-        </div>
+        </template>
+        <div
+            v-else
+            class="flex flex-col items-center justify-center text-center py-10 border border-dashed border-gray-300 rounded-lg"
+        >
+            <div class="text-gray-600 font-medium">
+                {{ trans("No locations available") }}
+            </div>
 
+            <div class="text-sm text-gray-400 mt-1">
+                {{ trans("You haven't added any locations yet") }}
+            </div>
+        </div>
         <!-- Section: buttons -->
-        <div class="relative flex gap-x-2 z-40 mt-4">
-            <Button
-                label="Cancel"
-                type="cancel"
-                key="2"
-                class="bg-red-100"
-                @click="() => emits('onClickBackground')"
-            />
-
-
-        </div>
-        <div v-if="layout.app.environment === 'local'">
-            <pre>{{ props.locations }}</pre>
+         <div class="flex justify-end gap-2 pt-3">
+            <Button label="Close" type="cancel" @click="emits('close')" />
         </div>
     </div>
 </template>

@@ -23,6 +23,7 @@ import Discount from "@/Components/Utils/Label/Discount.vue"
 import { InputNumber, InputText } from "primevue"
 import axios from "axios"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 
 library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt)
 
@@ -415,6 +416,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                             :denominator="proxyItem.is_cut_view ? (Number(item.product_units) > 1 ? Number(item.product_units) : undefined) : undefined"
                         />
 
+                        <!-- Toggle: is_cut_view -->
                         <span
                             v-if="layout.app.environment == 'local'"
                             @click="() => proxyItem.is_transaction_loading ? '' : onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)"
@@ -429,9 +431,23 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
 
                     <!-- Read-only display -->
                     <div v-else-if="!editingIds.has(item.id)">
-                        <span :class="(state === 'dispatched' &&  item.quantity_dispatched!=item.quantity_ordered)||(state === 'packed' &&  item.quantity_picked!=item.quantity_ordered)?'line-through':''">{{ formatQuantity(item.quantity_ordered) }}</span>
-                        <span class="pl-3" v-if="state === 'packed' &&  item.quantity_picked!=item.quantity_ordered">{{ formatQuantity(item.quantity_picked) }}</span>
-                        <span class="pl-3" v-if="state === 'dispatched'&&  item.quantity_dispatched!=item.quantity_ordered">{{ formatQuantity(item.quantity_dispatched) }}</span>
+                        <span :class="
+                            (state === 'dispatched' && item.quantity_dispatched != item.quantity_ordered)
+                            || ((state === 'packing' || state === 'packed') && item.quantity_picked != item.quantity_ordered)
+                                ? 'line-through'
+                                : ''
+                        ">
+                            {{ formatQuantity(item.quantity_ordered) }}
+                            <!-- <FractionDisplay :fractionData="item.quantity_ordered_fractional" /> -->
+                        </span>
+                        <span class="pl-3" v-if="(state === 'packing' || state === 'packed')&&  item.quantity_picked!=item.quantity_ordered">
+                            {{ formatQuantity(item.quantity_picked) }}
+                            <!-- <FractionDisplay :fractionData="item.quantity_picked_fractional" /> -->
+                        </span>
+                        <span class="pl-3" v-if="state === 'dispatched'&&  item.quantity_dispatched!=item.quantity_ordered">
+                            {{ formatQuantity(item.quantity_dispatched) }}
+                            <!-- <FractionDisplay :fractionData="item.quantity_dispatched_fractional" /> -->
+                        </span>
 
                     </div>
 

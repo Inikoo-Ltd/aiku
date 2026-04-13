@@ -20,6 +20,7 @@ import ConfirmDialog from "primevue/confirmdialog"
 import { trans } from "laravel-vue-i18n"
 import RenderProduct from "@/Components/CMS/Webpage/Products/Ecommerce/RenderProduct.vue"
 import Image from "@/Components/Image.vue"
+import ReviewFamily from "@/Components/CMS/Reviews/ReviewFamily.vue"
 
 
 const props = defineProps<{
@@ -561,7 +562,7 @@ watch(
                       <div
                             v-for="(product, index) in products"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
-                            class="border relative rounded flex md:flex-1 justify-center"
+                            class=" relative rounded flex md:flex-1 justify-center"
                         >
                             <RenderProduct 
                                 :code="code" 
@@ -627,6 +628,9 @@ watch(
             </Drawer>
         </div>
     </div>
+    
+    <!-- <ReviewFamily v-if="layout?.iris?.website?.reviews_settings" :products="products" code="family" /> -->
+     
 </template>
 
 

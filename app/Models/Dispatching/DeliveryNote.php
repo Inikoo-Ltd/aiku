@@ -152,6 +152,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $sort_packer Used only for UI tables sorting
  * @property string|null $sort_trolleys Used only for UI tables sorting
  * @property string|null $sort_picked_bays Used only for UI tables sorting
+ * @property int $number_items_waiting_warehouse
+ * @property int $number_items_waiting_crm
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits

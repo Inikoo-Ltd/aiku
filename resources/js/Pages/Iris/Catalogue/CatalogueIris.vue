@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch } from 'vue'
-import { router, usePage  } from '@inertiajs/vue3'
+import { router, usePage } from '@inertiajs/vue3'
 import type { Component } from 'vue'
 
 import TableIrisDepartment from '@/Components/Tables/Iris/TableIrisDepartment.vue'
@@ -177,17 +177,33 @@ const safeTheme = computed(() => {
 
             <!-- Top Bar -->
             <div class="flex items-center justify-between px-4 py-4 h-fit border-b border-gray-100">
+
+                <!-- LEFT SIDE -->
                 <div class="flex items-center gap-2">
-                    <Button v-for="tab in tabs.navigation" :key="tab.key + tabs.current"
-                        :type="tab.key === tabs.current ? 'primary' : 'secondary'" :label="tab.label"
-                        @click="changeTab(tab.key)" />
+
+                    <!-- Desktop: Buttons -->
+                    <div class="hidden md:flex items-center gap-2">
+                        <Button v-for="tab in tabs.navigation" :key="tab.key + tabs.current"
+                            :type="tab.key === tabs.current ? 'primary' : 'secondary'" :label="tab.label"
+                            @click="changeTab(tab.key)" />
+                    </div>
+
+                    <!-- Mobile: Select Dropdown -->
+                    <div class="block md:hidden w-full">
+                        <select class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" :value="tabs.current"
+                            @change="changeTab($event.target.value)">
+                            <option v-for="tab in tabs.navigation" :key="tab.key" :value="tab.key">
+                                {{ tab.label }}
+                            </option>
+                        </select>
+                    </div>
+
                 </div>
 
+                <!-- RIGHT SIDE -->
                 <div class="flex items-center gap-2">
                     <Button type="transparent" :disabled="!canBack" :icon="faArrowLeft" @click="goBack" />
-
                     <Button type="transparent" :disabled="!canNext" :icon="faArrowRight" @click="goNext" />
-
                     <Button type="transparent" :disabled="!canClear" :icon="faWindowClose" @click="clearScope" />
                 </div>
             </div>
@@ -198,8 +214,7 @@ const safeTheme = computed(() => {
                     @select-department="id => onSelectParent('department', id)"
                     @select-sub-department="id => onSelectParent('sub_department', id)"
                     @select-family="id => onSelectParent('family', id)"
-                    @select-collection="id => onSelectParent('collection', id)"
-                 />
+                    @select-collection="id => onSelectParent('collection', id)" />
             </div>
 
         </div>
@@ -272,6 +287,7 @@ const safeTheme = computed(() => {
 :deep(.iris-catalouge .primaryLink) {
     background: v-bind('`linear-gradient(to top, #fcd34d, #fcd34d)`');
     cursor: pointer;
+
     &:hover,
     &:focus {
         color: #374151;

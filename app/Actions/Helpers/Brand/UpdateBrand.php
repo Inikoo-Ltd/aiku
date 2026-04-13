@@ -14,7 +14,9 @@ use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\OrgAction;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -51,6 +53,18 @@ class UpdateBrand extends OrgAction
                     ->max(12 * 1024)
             ],
         ];
+    }
+
+    public function htmlResponse(Brand $brand): RedirectResponse
+    {
+        return Redirect::route('grp.trade_units.brands.index');
+    }
+
+    public function asController(Brand $brand, ActionRequest $request): Brand
+    {
+        $this->initialisationFromGroup(group(), $request);
+
+        return $this->handle($brand, $this->validatedData);
     }
 
     public function inTradeUnit(TradeUnit $tradeUnit, Brand $brand, ActionRequest $request)

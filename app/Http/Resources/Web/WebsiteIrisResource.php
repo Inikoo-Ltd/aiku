@@ -31,7 +31,7 @@ class WebsiteIrisResource extends JsonResource
             'url'              => app()->environment('local') ? 'http://'.$website->domain : 'https://'.$website->domain,
             'logo'             => $website->imageSources(350, 350),
             'type'             => $website->shop->type,
-            'reviews_settings' => Arr::get($website->shop->settings, 'reviews_settings'),
+            'reviews_settings' => Arr::get($website->shop->settings, 'reviews'),
         ];
     }
 }

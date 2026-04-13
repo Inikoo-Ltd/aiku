@@ -64,7 +64,7 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
         }
 
         if ($orgStock->wasChanged('quantity_in_locations')) {
-            OrgStockHydrateHasBeenInWarehouse::dispatch($orgStock);
+            OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock);
         }
 
 

@@ -226,7 +226,7 @@ class UpdateFaireOrder extends OrgAction
         ]);
 
 
-        $taxCategory=$this->getCategoryTaxCategory($order, $orderFaireData);
+        $taxCategory = $this->getCategoryTaxCategory($order, $orderFaireData);
 
         $order = UpdateOrder::run($order, [
             'tax_category_id' => $taxCategory->id,
@@ -275,10 +275,10 @@ class UpdateFaireOrder extends OrgAction
     public function getCategoryTaxCategory(Order $order, array $orderFaireData): TaxCategory
     {
         $tax = 0;
-        $isRe=false;
+        $isRe = false;
         foreach (Arr::get($orderFaireData, 'payout_costs.taxes', []) as $taxData) {
-            if(Arr::get($taxData, 'tax_type')=='RECARGO' && Arr::get($taxData, 'value.amount_minor', 0) > 0 ){
-                $isRe=true;
+            if (Arr::get($taxData, 'tax_type') == 'RECARGO' && Arr::get($taxData, 'value.amount_minor', 0) > 0) {
+                $isRe = true;
             }
 
             $tax += Arr::get($taxData, 'value.amount_minor', 0) / 100;

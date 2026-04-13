@@ -5,13 +5,20 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { ref, computed, watch } from 'vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
 import { InputNumber, RadioButton, DatePicker } from 'primevue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { trans } from 'laravel-vue-i18n'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
 import axios from 'axios'
+import {
+    faSpinner
+} from "@fas";
+library.add(
+    faSpinner
+);
 
 const props = defineProps<{
     shop_data: {
@@ -39,6 +46,7 @@ const endDate = ref<Date | null>(null)
 const submitCategoryOffer = () => {
     // Section: Submit
     isLoadingSubmit.value = true
+
     axios.post(
         route('grp.models.category_offer.store', {
             shop: props.shop_data.id,
@@ -51,8 +59,8 @@ const submitCategoryOffer = () => {
             trigger_data_item_amount: offerAmount.value,
             percentage_off: discountPercentage.value != null ? discountPercentage.value / 100 : null,
             duration: dateType.value,
-            start_at: startDate.value,
-            end_at: endDate.value
+            start_at: formatDate(startDate.value),
+            end_at: formatDate(endDate.value)
         }
     )
     .then((response) => {
@@ -86,6 +94,17 @@ const submitCategoryOffer = () => {
     .finally(() => {
         isLoadingSubmit.value = false
     })
+}
+const today = new Date(new Date().setHours(0, 0, 0, 0))
+
+function formatDate(date: Date | null) {
+    if (!date) return null
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
 }
 
 const resetForm = () => {
@@ -261,7 +280,7 @@ resetForm();
                                     :information="trans('If start date is empty, will start immediately')" />:
                             </label>
 
-                            <DatePicker v-model="startDate" showIcon dateFormat="yy-mm-dd" class="w-full"
+                            <DatePicker v-model="startDate" :minDate="today" showIcon dateFormat="yy-mm-dd" class="w-full"
                                 :placeholder="trans('Select start date')" />
                         </div>
 
@@ -283,9 +302,15 @@ resetForm();
 
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />
-                    <Button full icon="fad fa-save" :label="trans('Save')" @click="submitCategoryOffer"
-                        :isLoading="isLoadingSubmit" :disabled="isFormInvalid || isLoadingSubmit">
-                    </Button>
+
+                   <Button
+                        full
+                        icon="fad fa-save"
+                        :label="isLoadingSubmit ? trans('Loading') : trans('Save')"
+                        @click="submitCategoryOffer"
+                        :disabled="isFormInvalid || isLoadingSubmit"
+                        :loading="isLoadingSubmit"
+                    />
                 </div>
 
 

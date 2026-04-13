@@ -12,6 +12,7 @@ use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\InvoiceCategory\UpdateInvoiceCategory;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
+use App\Actions\Accounting\Payment\CancelPayment;
 use App\Actions\Accounting\Payment\RefundPayment;
 use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
 use App\Actions\Accounting\PaymentAccount\UpdatePaymentAccount;
@@ -618,6 +619,8 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post('/payment-service-provider/{paymentServiceProvider:id}/account', StoreOrgPaymentServiceProviderAccount::class)->name('payment-service-provider-account.store')->withoutScopedBindings();
 
     Route::post('/payment/{payment:id}/refund', RefundPayment::class)->name('payment_refund.store')->withoutScopedBindings(); // todo to be deleted
+
+    Route::patch('/payment/{payment:id}/cancel', CancelPayment::class)->name('payment.cancel')->withoutScopedBindings();
 });
 
 Route::name('fulfilment-transaction.')->prefix('fulfilment_transaction/{fulfilmentTransaction:id}')->group(function () {
@@ -903,6 +906,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::patch('autosave/department', [AutosaveWebsiteMarginal::class, 'department'])->name('autosave.department');
     Route::patch('autosave/sub_department', [AutosaveWebsiteMarginal::class, 'subDepartment'])->name('autosave.sub_department');
     Route::patch('autosave/family', [AutosaveWebsiteMarginal::class, 'family'])->name('autosave.family');
+    Route::patch('autosave/families_overview', [AutosaveWebsiteMarginal::class, 'familiesOverview'])->name('autosave.families_overview');
     Route::patch('autosave/product', [AutosaveWebsiteMarginal::class, 'product'])->name('autosave.product');
     Route::patch('autosave/products', [AutosaveWebsiteMarginal::class, 'products'])->name('autosave.products');
     Route::patch('autosave/collection', [AutosaveWebsiteMarginal::class, 'collection'])->name('autosave.collection');
@@ -912,6 +916,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('publish/department', [PublishWebsiteMarginal::class, 'department'])->name('publish.department');
     Route::post('publish/sub_department', [PublishWebsiteMarginal::class, 'subDepartment'])->name('publish.sub_department');
     Route::post('publish/family', [PublishWebsiteMarginal::class, 'family'])->name('publish.family');
+    Route::post('publish/families_overview', [PublishWebsiteMarginal::class, 'familiesOverview'])->name('publish.families_overview');
     Route::post('publish/product', [PublishWebsiteMarginal::class, 'product'])->name('publish.product');
     Route::post('publish/products', [PublishWebsiteMarginal::class, 'products'])->name('publish.products');
     Route::post('publish/collection', [PublishWebsiteMarginal::class, 'collection'])->name('publish.collection');
@@ -1156,6 +1161,12 @@ Route::any('translate/{languageFrom}/{languageTo}', Translate::class)->name('tra
 
 Route::prefix('charge/{charge:id}')->name('charge.')->group(function () {
     Route::patch('update', UpdateCharge::class)->name('update');
+});
+
+Route::name('brand.')->prefix('brand')->group(function () {
+    Route::post('store', StoreBrand::class)->name('store')->withoutScopedBindings();
+    Route::patch('{brand:id}/update', UpdateBrand::class)->name('update')->withoutScopedBindings();
+    Route::delete('{brand:id}/delete', DeleteBrand::class)->name('delete')->withoutScopedBindings();
 });
 
 Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function () {

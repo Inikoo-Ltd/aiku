@@ -95,6 +95,17 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                     ];
                 }
 
+                if ($caseKey === 'handling' && ($widget['queued'] ?? 0) > 0) {
+                    $queuedCaseData              = $widget['cases']['queued'] ?? null;
+                    $entry['queued_prefix']       = ['value' => $widget['queued']];
+                    if ($queuedCaseData && isset($queuedCaseData['route'])) {
+                        $entry['queued_prefix']['route_target'] = [
+                            'name'       => $queuedCaseData['route']['name'],
+                            'parameters' => $queuedCaseData['route']['parameters'] ?? [],
+                        ];
+                    }
+                }
+
                 $data[$rowKey][$caseKey] = $entry;
             }
         }
@@ -129,6 +140,18 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                     'parameters' => array_slice($caseRoute['parameters'], 0, -1),
                 ];
             }
+        }
+
+        $totalQueued = $widgets->sum('queued');
+        if ($totalQueued > 0 && $deliveryNotesWidget && isset($deliveryNotesWidget['cases']['queued']['route'])) {
+            $queuedRoute                            = $deliveryNotesWidget['cases']['queued']['route'];
+            $totals['handling']['queued_prefix']    = [
+                'value'        => $totalQueued,
+                'route_target' => [
+                    'name'       => str_replace('.shop', '', $queuedRoute['name']),
+                    'parameters' => array_slice($queuedRoute['parameters'], 0, -1),
+                ],
+            ];
         }
 
         $grandTotal = $widgets->sum('total');

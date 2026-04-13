@@ -34,8 +34,6 @@ class ProcessWebsiteVisitorTracking implements ShouldBeUnique
         string $currentUrl,
         ?string $referrer
     ): void {
-
-
         if (IsBot::run($userAgent)) {
             return;
         }
