@@ -308,6 +308,7 @@ export function useFilterRecipients(props: any) {
                         currency: config.options.amount_range.currency || 'GBP'
                     }
                 }
+
             }
 
             else if (config.type === 'select') {
@@ -404,7 +405,6 @@ export function useFilterRecipients(props: any) {
                 }
             }
         }
-        
         axios
             .patch(
                 route(props.recipientFilterRoute.name, props.recipientFilterRoute.parameters) as unknown as string,
@@ -464,7 +464,6 @@ export function useFilterRecipients(props: any) {
             if (data.city || data.formatted_address) {
                 v.location = data.city || data.formatted_address
             }
-            
             v.resolved = true
         } finally {
             v.loadingMap = false
