@@ -10,6 +10,7 @@
 
 namespace App\Models\Helpers;
 
+use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Traits\HasImage;
 use Illuminate\Database\Eloquent\Model;
@@ -28,6 +29,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $image_id
  * @property int $group_id
  * @property int $number_trade_units
+ * @property int $number_products
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
@@ -62,6 +64,11 @@ class Brand extends Model implements HasMedia
     public function tradeUnits(): MorphToMany
     {
         return $this->morphedByMany(TradeUnit::class, 'model', 'model_has_brands');
+    }
+
+    public function products(): MorphToMany
+    {
+        return $this->morphedByMany(Product::class, 'model', 'model_has_brands');
     }
 
     public function timeSeries(): HasMany

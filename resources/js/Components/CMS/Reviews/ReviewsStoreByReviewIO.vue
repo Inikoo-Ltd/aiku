@@ -73,7 +73,6 @@ const initWidget = async () => {
                 enable_pause_button: false,
             },
         },
-
          styles: {
         '--common-star-color': '#facc15',          // ⭐ yellow
         '--common-star-disabled-color': 'rgba(0,0,0,0.25)',

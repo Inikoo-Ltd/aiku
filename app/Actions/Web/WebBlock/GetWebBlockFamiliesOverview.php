@@ -58,6 +58,7 @@ class GetWebBlockFamiliesOverview
                 ->where('webpages.state', WebpageStateEnum::LIVE->value)
                 ->whereNull('product_categories.deleted_at')
                 ->whereNull('webpages.deleted_at')
+                ->limit(3)
                 ->get();
         } elseif ($webpage->model instanceof Collection) {
             $families = DB::table('product_categories')
@@ -77,6 +78,7 @@ class GetWebBlockFamiliesOverview
                 ->where('show_in_website', true)
                 ->whereNull('product_categories.deleted_at')
                 ->whereNull('webpages.deleted_at')
+                ->limit(3)
                 ->get();
         } else {
             return $webBlock;

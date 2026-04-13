@@ -40,7 +40,7 @@ class IndexLocations extends OrgAction
     use WithWarehouseAuthorisation;
 
     private Group|Warehouse|WarehouseArea|Organisation $parent;
-    private OrgStock $orgStock;
+    private OrgStock|null $orgStock = null;
     private $mode = 'exclude';
 
     public function maya(Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator

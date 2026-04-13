@@ -154,14 +154,6 @@
                 </div>
             @endif
 
-            {{$invoice->order->submitted_date}}
-            @if($invoice->order && $invoice->order->submitted_at )
-                <div style="text-align: right">
-                    {{ __('Order date') }}: <b>{{ $invoice->order->submitted_at->copy()->setTimezone($shop->timezone->name)->format('j F Y') }}</b>
-                </div>
-            @endif
-
-
         </td>
     </tr>
 </table>
@@ -179,19 +171,15 @@
                     ({{ $invoice->customer['reference'] }})
                 </div>
 
-                    @if($invoice->customer['email'])
                 <div>
                     <span class="address_label">{{ __('Email') }}:</span> <span
                             class="address_value">{{ $invoice->customer['email'] }}</span>
                 </div>
-                    @endif
-                    @if($invoice->customer['phone'])
-                <div>
 
+                <div>
                     <span class="address_label">{{ __('Phone') }}:</span> <span
                             class="address_value">{{ $invoice->customer['phone'] }}</span>
                 </div>
-                    @endif
                 @if($invoice->tax_number  && $invoice->tax_number_valid)
                     <div>
                         <span class="address_label">{{ __('Tax Number') }}:</span> <span

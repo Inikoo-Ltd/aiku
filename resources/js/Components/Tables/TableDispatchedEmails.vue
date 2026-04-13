@@ -55,21 +55,29 @@ defineProps<{
 function dispatchedEmailRoute(dispatchedEmail: DispatchedEmailResource) {
     switch (route().current()) {
         case "grp.org.fulfilments.show.operations.comms.outboxes.show":
+            const fulfilmentParams = (route().params as RouteParams);
+            if (!fulfilmentParams.organisation || !fulfilmentParams.fulfilment || !fulfilmentParams.outbox || !dispatchedEmail.id) {
+                return null;
+            }
             return route(
                 "grp.org.fulfilments.show.operations.comms.outboxes.dispatched-email.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).fulfilment,
-                    (route().params as RouteParams).outbox,
+                    fulfilmentParams.organisation,
+                    fulfilmentParams.fulfilment,
+                    fulfilmentParams.outbox,
 
                     dispatchedEmail.id]);
         case "grp.org.shops.show.dashboard.comms.outboxes.show":
+            const outboxParam = (route().params as RouteParams);
+            if (!outboxParam.organisation || !dispatchedEmail.shop_slug || !dispatchedEmail.id || !outboxParam.outbox) {
+                return null;
+            }
             return route(
                 "grp.org.shops.show.dashboard.comms.outboxes.dispatched-email.show",
                 [
-                    (route().params as RouteParams).organisation,
+                    outboxParam.organisation,
                     dispatchedEmail.shop_slug,
-                    (route().params as RouteParams).outbox,
+                    outboxParam.outbox,
                     dispatchedEmail.id]);
         default:
             return null;
@@ -138,7 +146,8 @@ const locale = inject("locale", aikuLocaleStructure);
             <Icon v-if="dispatchedEmail.state_icon" :data="dispatchedEmail.state_icon" />
         </template>
         <template #cell(email_address)="{ item: dispatchedEmail }">
-            <Link v-if="dispatchedEmailRoute(dispatchedEmail)" :href="dispatchedEmailRoute(dispatchedEmail) as string" class="primaryLink">
+            <Link v-if="dispatchedEmailRoute(dispatchedEmail)" :href="dispatchedEmailRoute(dispatchedEmail) as string"
+                class="primaryLink">
                 {{ dispatchedEmail["email_address"] }}
             </Link>
             <span v-else>
@@ -147,17 +156,19 @@ const locale = inject("locale", aikuLocaleStructure);
             <Icon :data="dispatchedEmail.mask_as_spam" class="pl-1" />
         </template>
 
-         <template #cell(customer_name)="{ item: dispatchedEmail }">
-            <Link v-if="dispatchedEmailCustomerRoute(dispatchedEmail)" :href="dispatchedEmailCustomerRoute(dispatchedEmail) as string" class="primaryLink">
+        <template #cell(customer_name)="{ item: dispatchedEmail }">
+            <Link v-if="dispatchedEmailCustomerRoute(dispatchedEmail)"
+                :href="dispatchedEmailCustomerRoute(dispatchedEmail) as string" class="primaryLink">
                 {{ dispatchedEmail["customer_name"] }}
             </Link>
             <span v-else>
                 {{ dispatchedEmail["customer_name"] }}
             </span>
         </template>
-        
+
         <template #cell(order_slug)="{ item: dispatchedEmail }">
-            <Link v-if="dispatchedEmailOrderRoute(dispatchedEmail)" :href="dispatchedEmailOrderRoute(dispatchedEmail) as string" class="primaryLink">
+            <Link v-if="dispatchedEmailOrderRoute(dispatchedEmail)"
+                :href="dispatchedEmailOrderRoute(dispatchedEmail) as string" class="primaryLink">
                 {{ dispatchedEmail["order_slug"] }}
             </Link>
             <span v-else>
@@ -171,5 +182,3 @@ const locale = inject("locale", aikuLocaleStructure);
 
     </Table>
 </template>
-
-

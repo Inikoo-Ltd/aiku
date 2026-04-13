@@ -13,6 +13,7 @@ enum CustomerCountryTabsEnum: string
     case SHOWCASE          = 'showcase';
     case TOP_PRODUCTS      = 'top_products';
     case SEASONAL_PRODUCTS = 'seasonal_products';
+    case COURIERS          = 'couriers';
 
     public function blueprint(): array
     {
@@ -28,6 +29,10 @@ enum CustomerCountryTabsEnum: string
             CustomerCountryTabsEnum::SEASONAL_PRODUCTS => [
                 'title' => __('Seasonal'),
                 'icon'  => 'fal fa-calendar-alt',
+            ],
+            CustomerCountryTabsEnum::COURIERS => [
+                'title' => __('Couriers'),
+                'icon'  => 'fal fa-shipping-fast',
             ],
         };
     }

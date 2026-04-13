@@ -17,6 +17,7 @@ import { inject, ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faGift } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
 library.add(faGift)
 
 const props = defineProps<{
@@ -137,6 +138,7 @@ const debounceUpdateQuantity = debounce(
                             ? parseInt(item.quantity_ordered)
                             : parseFloat(item.quantity_ordered)
                     }}
+                    <!-- <FractionDisplay :fractionData="item.quantity_ordered_fractional" /> -->
                 </div>
                 
                 <!-- <Transition name="spin-to-down">
