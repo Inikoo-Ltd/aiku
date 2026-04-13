@@ -17,6 +17,7 @@ library.add(faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, f
 import { router } from '@inertiajs/vue3';
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import Image from '../Image.vue';
+import { useConfirm, ConfirmDialog } from "primevue"
 
 const props = defineProps<{
     layout: string
@@ -391,6 +392,50 @@ const submitBundle = async () => {
    
 }
 
+const confirm = useConfirm()
+
+const handleBack = () => {
+    confirm.require({
+        message: 'Going back will discard this bundle. You’ll need to start again.',
+        header: 'Discard bundle?',
+        acceptLabel: 'Discard',
+        rejectLabel: 'Stay',        
+        accept: () => {
+            handleDelete()
+            bundle.step.value = 1
+        },
+    })
+}
+
+const handleDelete = () => {
+    const routeConfig = bundleRoutes.delete
+    const routeParams = {
+        ...resolveParams(routeConfig),
+        bundle: bundle.bundle_id.value
+    }
+
+    router.delete(route(routeConfig.name, routeParams), {
+        preserveScroll: true,
+
+        onSuccess: () => {
+            bundle.resetBundle()
+            bundle.products.value = []
+            selectedMedia.value = []
+            selectedMediaIds.value = []
+            selectedMediaForAI.value = []
+            customerChannelsId.value = null
+        },
+
+        onError: () => {
+            notify({
+                title: trans('Error'),
+                text: trans('Failed to delete bundle'),
+                type: 'error'
+            })
+        }
+    })
+}
+
 const bundle = useBundle({
     calculate: {
         name: 'iris.models.dropshipping.bundles.products.calculate',
@@ -420,6 +465,12 @@ const bundle = useBundle({
     },
     update: {
         name: 'iris.models.dropshipping.bundles.update',
+        getParameters: () => ({
+            customerSalesChannel: customerChannelsId.value
+        })
+    },
+    delete: {
+        name: 'iris.models.dropshipping.bundles.delete',
         getParameters: () => ({
             customerSalesChannel: customerChannelsId.value
         })
@@ -571,18 +622,41 @@ watch(customerChannelsId, (val) => {
             <template v-if="bundle.step.value === 2">
                 <div class="w-full p-3 h-full overflow-auto">
                     <!-- HEADER -->
-                    <div class="mb-5">
-                        <div class="text-xl font-semibold flex items-center justify-between gap-2">
-                            <div>Create Your Bundle
-                                <FontAwesomeIcon v-tooltip="trans('Bundle generator')" icon="fal fa-layer-group"
-                                    class="text-gray-500" fixed-width />
+                    <div class="mb-5 flex justify-between items-start">
+
+                        <div class="flex flex-col gap-2">
+
+                            <button
+                                @click="handleBack"
+                                class="flex items-center gap-2 text-gray-600 hover:text-black"
+                            >
+                                <FontAwesomeIcon icon="fas fa-arrow-left" />
+                                <span class="text-sm">Back</span>
+                            </button>
+
+                            <div class="text-xl font-semibold flex items-center gap-2">
+                                Create Your Bundle
+                                <FontAwesomeIcon
+                                    v-tooltip="trans('Bundle generator')"
+                                    icon="fal fa-layer-group"
+                                    class="text-gray-500"
+                                    fixed-width
+                                />
                             </div>
-                            <button @click="bundle.close()">✕</button>
+
+                            <div class="text-sm text-gray-400">
+                                STEP 2 / 2
+                            </div>
+
                         </div>
 
-                        <div class="text-sm text-gray-400">
-                            STEP 2 / 2
-                        </div>
+                        <button
+                            @click="bundle.close()"
+                            class="text-gray-500 hover:text-red-500"
+                        >
+                            <FontAwesomeIcon icon="fal fa-times" />
+                        </button>
+
                     </div>
 
                     <!-- DESCRIPTION -->
@@ -767,6 +841,56 @@ watch(customerChannelsId, (val) => {
                     </template>
 
                 </Dialog>
+                <ConfirmDialog>
+                    <template #container="{ message, acceptCallback, rejectCallback }">
+                        <div class="p-5 w-[360px]">
+
+                            <!-- ICON -->
+                            <div class="flex justify-center mb-3">
+                               <FontAwesomeIcon
+                                    :icon="message.data?.type === 'danger'
+                                        ? 'fas fa-exclamation-triangle'
+                                        : 'fas fa-question-circle'"
+                                    class="text-3xl text-red-500"
+                                />
+                            </div>
+
+                            <!-- TITLE -->
+                            <div class="text-center font-semibold text-lg mb-2">
+                                {{ message.header }}
+                            </div>
+
+                            <!-- MESSAGE -->
+                            <div class="text-center text-sm text-gray-500 mb-5 leading-relaxed">
+                                {{ message.message }}
+                            </div>
+
+                            <!-- ACTIONS -->
+                            <div class="flex justify-center gap-3">
+
+                                <!-- CANCEL -->
+                                <button
+                                    @click="rejectCallback"
+                                    class="px-4 py-2 text-sm border rounded-md hover:bg-gray-100"
+                                >
+                                    {{ message.rejectLabel || 'Cancel' }}
+                                </button>
+
+                                <!-- ACCEPT -->
+                                <button
+                                    @click="acceptCallback"
+                                    :class="[
+                                        'px-4 py-2 text-sm text-white rounded-md bg-red-500 hover:bg-red-600'
+                                    ]"
+                                >
+                                    {{ message.acceptLabel || 'Yes' }}
+                                </button>
+
+                            </div>
+
+                        </div>
+                    </template>
+                </ConfirmDialog>
             </template>
         </div>
     </Transition>

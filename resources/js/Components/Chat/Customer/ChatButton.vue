@@ -557,16 +557,36 @@ defineExpose({
 
 const bundle = useBundle()
 
-watch([() => bundle.open.value, () => layout?.rightbasket?.show], ([bundleOpen, basketOpen]) => {
-    const widget = document.getElementById('jsd-widget')
-    if (!widget) return
+const waitForElement = (id: string, cb: (el: HTMLElement) => void) => {
+    const el = document.getElementById(id)
+    if (el) return cb(el)
 
-    widget.style.setProperty(
-        'right',
-        (bundleOpen || basketOpen) ? '420px' : '16px',
-        'important'
-    )
-})
+    let tries = 0
+    const interval = setInterval(() => {
+        const el = document.getElementById(id)
+        if (el || tries > 10) {
+            clearInterval(interval)
+            if (el) cb(el)
+        }
+        tries++
+    }, 100)
+}
+
+watch(
+    [() => bundle.open.value, () => layout?.rightbasket?.show],
+    () => {
+        waitForElement('jsd-widget', (widget) => {
+            widget.style.setProperty(
+                'right',
+                (bundle.open.value || layout?.rightbasket?.show)
+                    ? '420px'
+                    : '16px',
+                'important'
+            )
+        })
+    },
+    { immediate: true }
+)
 </script>
 
 <template>
