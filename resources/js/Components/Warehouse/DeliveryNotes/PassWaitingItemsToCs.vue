@@ -9,7 +9,7 @@ import Image from '@/Components/Image.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Image as ImageTS } from '@/types/Image'
 
-const model = defineModel('')
+const model = defineModel<boolean>()
 
 const props = defineProps<{
     transaction: {
