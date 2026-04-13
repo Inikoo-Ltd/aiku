@@ -99,7 +99,7 @@ const focusToLocation = async (id: number) => {
 
         if (input && document.activeElement !== input) {
             input.focus()
-            input.select?.()
+            // input.select?.()
         }
 
         if (!input || attempts >= 20) {

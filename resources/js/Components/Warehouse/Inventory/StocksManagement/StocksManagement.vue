@@ -188,6 +188,9 @@ const cancelMinMaxStock = (locationId: number) => {
 // Section: Notes
 const _popoverNotes = ref<Record<number, any>>({})
 const tempLocToEdit = ref<StockLocation | null>(null)
+const onNotePopoverShow = () => {
+    focusWithRetry('note')
+}
 const toggleNotePopover = async(event: Event, loc: StockLocation) => {
     if(isLoadingNoteUpdate.value === loc.id) return;
 
@@ -197,7 +200,6 @@ const toggleNotePopover = async(event: Event, loc: StockLocation) => {
 
     _popoverNotes.value?.toggle(event)
 
-    focusWithRetry('note')
 }
 const onSaveNote = (editedLoc: StockLocation) => {
     // locationNotes.value[locationId] = tempNotes.value[locationId] || ''
@@ -397,7 +399,7 @@ const onAddLocationShow = () => {
 </script>
 
 <template>
-    <div class="max-w-xl mx-auto bg-white shadow-md rounded-lg p-4 space-y-4">
+    <div class="mx-auto bg-white shadow-md rounded-lg p-4 space-y-4">
         
         <!-- Header Section -->
         <div class="flex items-center justify-between">
@@ -506,7 +508,7 @@ const onAddLocationShow = () => {
                             'hover:bg-gray-50': activePickingLocationDropshipping !== loc.id && activePickingLocationWholesale !== loc.id,
 
                         }">
-                        <div class="col-span-4 flex items-center gap-x-2">
+                        <div class="col-span-4 flex items-center gap-x-3">
                             <!-- Note Icon with Popover -->
                             <div class="relative">
                                 <div @click="(event) => toggleNotePopover(event, loc)"
@@ -642,12 +644,12 @@ const onAddLocationShow = () => {
 
                         <div v-if="loc.audited_at"
                             v-tooltip="trans('Last audit :xdate', { xdate: useFormatTime(new Date(loc.audited_at)) })"
-                            class="col-span-2 text-right text-sm whitespace-nowrap">
+                            class="col-span-2 text-center text-sm whitespace-nowrap">
                             {{ formatDistanceStrict(new Date(loc.audited_at), new Date()) }}
                             <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400 ml-1" fixed-width aria-hidden="true" />
                         </div>
                         <div v-else
-                            class="col-span-2 text-right text-sm italic opacity-60 whitespace-nowrap">
+                            class="col-span-2 text-center text-sm italic opacity-60 whitespace-nowrap">
                             {{ trans("Never audited") }}
                         </div>
                         
@@ -679,7 +681,7 @@ const onAddLocationShow = () => {
         </div>
 
         <!-- Popover: Notes -->
-        <Popover ref="_popoverNotes">
+        <Popover ref="_popoverNotes" @show="onNotePopoverShow">
             <div class="w-80 p-2">
                 <div class="mb-3">
                     <label class="block text-sm mb-2">
@@ -694,6 +696,7 @@ const onAddLocationShow = () => {
                                 tempLocToEdit.notes = val
                             }
                         }"
+                        autofocus
                         :placeholder="trans('Enter note for this location...')"
                         class="resize-none"
                         rows="4"

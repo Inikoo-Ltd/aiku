@@ -392,6 +392,7 @@ onMounted(() => {
                 <span 
                     class="text-md text-blue-500 justify-self-end cursor-pointer hover:underline col-span-1"
                     @click="applyReplenishment(form)"
+                    v-tooltip="trans('Apply suggested replenishment')"
                 >
                     ({{ replenishment_data[form.id]?.replenishment_stock ?? '0' }})
                 </span>
