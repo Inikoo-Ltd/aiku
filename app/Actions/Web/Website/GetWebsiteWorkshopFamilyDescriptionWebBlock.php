@@ -32,7 +32,7 @@ class GetWebsiteWorkshopFamilyDescriptionWebBlock
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
             'family'    => $website->shop->getFamilies()->where('state', ProductCategoryStateEnum::ACTIVE)->toArray(),
-            'layout'    => Arr::get($website->unpublishedFamiliesOverviewSnapshot, 'layout.families_overview', []),
+            'layout'    => Arr::get($website->unpublishedFamiliesOverviewSnapshot, 'layout.families_description', []),
             'autosaveRoute' => [
                 'name'       => 'grp.models.website.autosave.families_description',
                 'parameters' => [
