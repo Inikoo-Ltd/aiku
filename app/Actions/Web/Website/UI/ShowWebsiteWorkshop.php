@@ -108,7 +108,7 @@ class ShowWebsiteWorkshop extends OrgAction
             : Inertia::lazy(
                 fn () => GetWebsiteWorkshopFamiliesOverviewWebBlock::run($website)
             );
-        $tabs[WebsiteWorkshopTabsEnum::FAMILIES_DESCRIPTION->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILIES_OVERVIEW->value
+        $tabs[WebsiteWorkshopTabsEnum::FAMILIES_DESCRIPTION->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILIES_DESCRIPTION->value
             ?
             fn () => GetWebsiteWorkshopFamilyDescriptionWebBlock::run($website)
             : Inertia::lazy(
