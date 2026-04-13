@@ -9,9 +9,10 @@ import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import type { Table as TableTS } from "@/types/Table"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faStickyNote } from "@fal"
+import { faStickyNote, faExchangeAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faStickyNote)
+import Button from "@/Components/Elements/Buttons/Button.vue"
+library.add(faStickyNote, faExchangeAlt)
 
 defineProps<{
     data: TableTS
@@ -27,6 +28,38 @@ const orderRoute = (item: Record<string, any>): string | null => {
             item['organisation_slug'],
             item['shop_slug'],
             item['order_slug'],
+        ])
+    } catch {
+        return null
+    }
+}
+
+const setAsNotPickRoute = (item: Record<string, any>): string | null => {
+    if (!item['id'] || !item['shop_slug'] || !item['organisation_slug']) {
+        return null
+    }
+
+    try {
+        return route('grp.org.shops.show.ordering.backlog.waiting_items.set_as_not_pick', [
+            item['organisation_slug'],
+            item['shop_slug'],
+            item['id'],
+        ])
+    } catch {
+        return null
+    }
+}
+
+const replaceProductRoute = (item: Record<string, any>): string | null => {
+    if (!item['id'] || !item['shop_slug'] || !item['organisation_slug']) {
+        return null
+    }
+
+    try {
+        return route('grp.org.shops.show.ordering.backlog.waiting_items.replace_product', [
+            item['organisation_slug'],
+            item['shop_slug'],
+            item['id'],
         ])
     } catch {
         return null
@@ -64,6 +97,41 @@ const orderRoute = (item: Record<string, any>): string | null => {
                     </div>
                     <div class="opacity-70 italic text-xs ">{{ item['notes'] }}</div>
                 </span>
+            </div>
+        </template>
+
+        <template #cell(actions)="{ item }">
+            <div class="flex justify-end gap-2">
+                <Link
+                    v-if="setAsNotPickRoute(item)"
+                    :href="setAsNotPickRoute(item)!"
+                    method="post"
+                    preserve-scroll
+                    xclass="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 transition hover:bg-amber-100"
+                >
+                    <Button
+                        :label="ctrans(`Don't pick`)"
+                        type="negative"
+                        icon="fas fa-skull"
+                        size="xs"
+                    />
+                </Link>
+
+                <Link
+                    v-if="replaceProductRoute(item)"
+                    :href="replaceProductRoute(item)!"
+                    method="post"
+                    preserve-scroll
+                    xclass="rounded border border-blue-300 bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 transition hover:bg-blue-100"
+                >
+                    <Button
+                        :label="ctrans('Replace product')"
+                        key="3"
+                        size="xs"
+                        type="positive"
+                        icon="fal fa-exchange-alt"
+                    />
+                </Link>
             </div>
         </template>
     </Table>
