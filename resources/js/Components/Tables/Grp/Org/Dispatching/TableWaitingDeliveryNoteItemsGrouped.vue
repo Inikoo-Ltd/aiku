@@ -10,8 +10,8 @@ import Table from "@/Components/Table/Table.vue"
 import type { Table as TableTS } from "@/types/Table"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTruck, faInventory, faListOl, faHandHoldingBox, faClipboardListCheck, faUndoAlt, faDebug } from "@fal"
-import { faSkull, faHeadset } from "@fas"
+import { faTruck, faInventory, faListOl, faHandHoldingBox, faClipboardListCheck, faUndoAlt, faDebug, faHourglassStart } from "@fal"
+import { faSkull, faHeadset, faCircle } from "@fas"
 import { inject, reactive, ref } from "vue"
 import { get, set } from "lodash-es"
 import { trans } from "laravel-vue-i18n"
@@ -27,8 +27,11 @@ import NotesDisplay from "@/Components/NotesDisplay.vue"
 import axios from "axios"
 import { twBreakPoint } from "@/Composables/useWindowSize"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import PassWaitingItemsToCs from "@/Components/Warehouse/DeliveryNotes/PassWaitingItemsToCs.vue"
+import LabelItemsWaitingForWarehouse from "@/Components/Warehouse/DeliveryNotes/LabelItemsWaitingForWarehouse.vue"
+import LabelItemsWaitingForCrm from "@/Components/Warehouse/DeliveryNotes/LabelItemsWaitingForCrm.vue"
 
-library.add(faTruck, faInventory, faListOl, faHandHoldingBox, faClipboardListCheck, faUndoAlt, faDebug, faSkull, faHeadset)
+library.add(faTruck, faInventory, faListOl, faHandHoldingBox, faClipboardListCheck, faUndoAlt, faDebug, faHourglassStart, faSkull, faHeadset, faCircle)
 
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -81,6 +84,11 @@ const onUndoPick = async (routeTarget: routeType, item: any, loadingKey: string)
         set(isLoadingUndoPick, loadingKey, false)
     }
 }
+
+
+// Section: method Pass to CS
+const isOpenModalPassToCs = ref(false)
+const selectedTransactionToSetAsWaiting = ref(null)
 </script>
 
 <template>
@@ -128,7 +136,7 @@ const onUndoPick = async (routeTarget: routeType, item: any, loadingKey: string)
                                         <!-- Section: number of locations available to pick -->
                                         <span v-if="deliveryItem.locations?.length > 1" @click="() => {
                                                 isModalLocation = true;
-                                                selectedItemValue = deliveryNoteRow;
+                                                selectedItemValue = deliveryItem;
                                                 selectedItemProxy = proxyItem;
                                             }" v-tooltip="`Other ${deliveryItem.locations?.length - 1} locations`"
                                             class="mr-1 cursor-pointer hover:bg-orange-50 whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded px-1">
@@ -153,7 +161,6 @@ const onUndoPick = async (routeTarget: routeType, item: any, loadingKey: string)
                                             v-tooltip="trans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(findLocation(deliveryItem.locations, proxyItem.org_stock_id)?.quantity || 0), stockLocation: findLocation(deliveryItem.locations, proxyItem.org_stock_id)?.location_code || '' })"
                                             class="align-middle whitespace-nowrap text-base py-0.5 xopacity-70 tabular-nums xborder border-gray-300 rounded xpx-1"
                                         >
-                                            <!-- <FontAwesomeIcon icon="fal fa-inventory" class="mr-1 text-base" fixed-width aria-hidden="true" /> -->
                                             (<span class="text-lg font-bold">
                                                 <FractionDisplay
                                                     v-if="findLocation(deliveryItem.locations, proxyItem.org_stock_id)?.quantity_fractional"
@@ -184,8 +191,7 @@ const onUndoPick = async (routeTarget: routeType, item: any, loadingKey: string)
                                     step: 1, min: 0,
                                     max: Math.min(
                                         findLocation(deliveryItem.locations, proxyItem.org_stock_id).quantity,
-                                        deliveryItem.quantity_required,
-                                        deliveryItem.quantity_to_pick + findLocation(deliveryItem.locations, proxyItem.org_stock_id).quantity_picked
+                                        Number(deliveryItem.quantity_waiting_warehouse) + findLocation(deliveryItem.locations, proxyItem.org_stock_id).quantity_picked
                                     )
                                 }"
                                 :additionalData="{
@@ -197,7 +203,7 @@ const onUndoPick = async (routeTarget: routeType, item: any, loadingKey: string)
                             >
                                 <template #save="{ isProcessing }">
                                     <ButtonWithLink
-                                        v-tooltip="trans('Pick all required quantity in this location')"
+                                        v-tooltip="ctrans('Pick all waiting quantities in location :locationCode', { locationCode: findLocation(deliveryItem.locations, proxyItem.org_stock_id).location_code })"
                                         icon="fal fa-clipboard-list-check"
                                         :disabled="deliveryItem.is_handled || deliveryItem.quantity_required === deliveryItem.quantity_picked"
                                         size="xs" type="secondary" :loading="isProcessing"
@@ -207,8 +213,7 @@ const onUndoPick = async (routeTarget: routeType, item: any, loadingKey: string)
                                         isWithError
                                     >
                                         <template #label>
-                                            <FractionDisplay v-if="deliveryItem.quantity_to_pick_fractional" :fractionData="deliveryItem.quantity_to_pick_fractional" />
-                                            <span v-else>{{ deliveryItem.quantity_to_pick }}</span>
+                                            <span>{{ Number(deliveryItem.quantity_waiting_warehouse) }}</span>
                                         </template>
                                     </ButtonWithLink>
                                 </template>
@@ -224,7 +229,33 @@ const onUndoPick = async (routeTarget: routeType, item: any, loadingKey: string)
                         </div>
 
                         <!-- Call Customer Service -->
-                        <Button icon="fas fa-headset" :label="trans('Call CS')" size="xs" type="tertiary" />
+                    </div>
+
+                    <!-- Section: Waiting for warehouse -->
+                    <div class="flex gap-x-4 justify-end mt-2 items-center xqwezxc">
+                        <LabelItemsWaitingForWarehouse v-if="Number(deliveryItem.quantity_waiting_warehouse) > 0" :qty_waiting_warehouse="Number(deliveryItem.quantity_waiting_warehouse)" />
+                            
+                        <div v-if="Number(deliveryItem.quantity_waiting_warehouse) > 0" class="flex items-center gap-x-3">
+                            <span class="mr-4">--></span>
+                            <Button
+                                :label="ctrans('Pick :quantityInWarehouse from :locationCode', { quantityInWarehouse: String(Number(deliveryItem.quantity_waiting_warehouse)), locationCode: findLocation(deliveryItem.locations, proxyItem.org_stock_id)?.location_code })"
+                                type="tertiary"
+                                size="xs"
+                            />
+                            <span>or</span>
+                            <Button
+                                @click="() => (isOpenModalPassToCs = true, selectedTransactionToSetAsWaiting = deliveryItem)"
+                                icon="fal fa-user-headset"
+                                :label="trans('Pass :qtyInWarehouse to CS', { qtyInWarehouse: String(Number(deliveryItem.quantity_waiting_warehouse)) })"
+                                size="xs"
+                                type="tertiary"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Section: Waiting for CRM -->
+                    <div class="flex gap-x-4">
+                        <LabelItemsWaitingForCrm v-if="Number(deliveryItem.quantity_waiting_crm) > 0" :qty_waiting_crm="Number(deliveryItem.quantity_waiting_crm)" />
                     </div>
 
                     <!-- Existing pickings -->
@@ -280,9 +311,9 @@ const onUndoPick = async (routeTarget: routeType, item: any, loadingKey: string)
                     </span>
                 </label>
                 <RadioButton
-                    v-if="selectedItemProxy"
-                    v-model="selectedItemProxy.org_stock_id"
-                    @update:modelValue="onCloseModal"
+                    v-if="selectedItemProxy && selectedItemValue"
+                    :modelValue="get(selectedItemProxy, 'org_stock_id')"
+                    @update:modelValue="(e: string) => { set(selectedItemProxy, 'org_stock_id', e); onCloseModal() }"
                     :size="twBreakPoint().includes('lg') ? undefined : 'large'"
                     :inputId="location.location_code"
                     :disabled="location.quantity <= 0"
@@ -290,6 +321,19 @@ const onUndoPick = async (routeTarget: routeType, item: any, loadingKey: string)
                     :value="location.location_code"
                 />
             </div>
+        </div>
+    </Modal>
+
+    
+    <!-- Modal: Set Transaction as Waiting -->
+    <Modal :isOpen="isOpenModalPassToCs" width="w-full max-w-lg" @close="isOpenModalPassToCs = false">
+        <!-- Product info header -->
+        <div>
+            <PassWaitingItemsToCs
+                v-if="selectedTransactionToSetAsWaiting"
+                v-model="isOpenModalPassToCs"
+                :transaction="selectedTransactionToSetAsWaiting"
+            />
         </div>
     </Modal>
 </template>
