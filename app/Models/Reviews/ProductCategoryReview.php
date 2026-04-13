@@ -28,12 +28,19 @@ use Spatie\MediaLibrary\HasMedia;
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
- * @property int|null $shop_id
  * @property int|null $customer_id
- * @property string $reviewable_type
- * @property int $reviewable_id
+ * @property int|null $order_id
+ * @property int|null $master_product_category_id
+ * @property int|null $product_category_id
+ * @property int $rating_main
+ * @property int $rating_a
+ * @property int $rating_b
+ * @property int $rating_c
+ * @property int $rating_d
+ * @property int $rating_e
+ * @property \Illuminate\Support\Carbon|null $show_after
  * @property ReviewStatusEnum $status
- * @property int $rating
+ * @property string|null $title
  * @property string|null $message
  * @property int $like_count
  * @property array<array-key, mixed> $meta
@@ -43,17 +50,21 @@ use Spatie\MediaLibrary\HasMedia;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer|null $customer
  * @property-read \App\Models\SysAdmin\Group $group
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ReviewMedia> $media
+ * @property-read \App\Models\Helpers\Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read MasterProductCategory|null $masterProductCategory
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Order|null $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read Model|\Eloquent $reviewable
+ * @property-read ProductCategory|null $productCategory
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Review newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Review newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Review onlyTrashed()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Review query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Review withTrashed(bool $withTrashed = true)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Review withoutTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategoryReview newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategoryReview newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategoryReview onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategoryReview query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategoryReview withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategoryReview withoutTrashed()
  * @mixin \Eloquent
  */
 class ProductCategoryReview extends Model implements Auditable, HasMedia
