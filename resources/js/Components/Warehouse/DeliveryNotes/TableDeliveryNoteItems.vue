@@ -32,6 +32,8 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import axios from "axios";
 import Image from "@/Components/Image.vue"
+import LabelItemsWaitingForWarehouse from "./LabelItemsWaitingForWarehouse.vue"
+import LabelItemsWaitingForCrm from "./LabelItemsWaitingForCrm.vue"
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox);
 
 
@@ -369,9 +371,32 @@ const modalResource = computed(() => {
     }
 })
 
-watch(modalResource, (val) => {
-    // console.log("modalResource", val)
-}, { deep: true })
+
+const routeItemsWaitingWarehouse = (item) => {
+    if (!route().params.warehouse || !route().params.organisation) {
+        return '#'
+    }
+
+    return route('grp.org.warehouses.show.dispatching.waiting_items', {
+        organisation: route().params.organisation,
+        warehouse: route().params.warehouse,
+    })
+}
+
+const routeItemsWaitingCrm = (item) => {
+    if (!item.shop_slug || !route().params.organisation) {
+        return '#'
+    }
+
+    return route('grp.org.shops.show.ordering.backlog.waiting_items', {
+        organisation: route().params.organisation,
+        shop: item.shop_slug
+    })
+}
+
+// watch(modalResource, (val) => {
+//     // console.log("modalResource", val)
+// }, { deep: true })
 
 </script>
 
@@ -800,33 +825,19 @@ watch(modalResource, (val) => {
             </div>
 
             <!-- Section: items are waiting for warehouse -->
+            
             <div v-if="Number(itemValue.quantity_waiting_warehouse) > 0" class="mt-2 mx-auto w-fit">
-                <div v-tooltip="trans('Quantity of items waiting for warehouse')" class="border-l-2 border-yellow-400 relative bg-yellow-500/20 py-1 pr-2 pl-1 text-yellow-700 whitespace-nowrap w-fit">
-                    <FontAwesomeIcon icon="fal fa-hourglass-start" class="mr opacity-70" fixed-width aria-hidden="true" />
-                    <!-- <FractionDisplay v-if="item.quantity_picked_fractional"
-                        :fractionData="item.quantity_picked_fractional" /> -->
-                    <span>
-                        {{ trans(":quantityWaitingWarehouse items are waiting for warehouse", { quantityWaitingWarehouse: Number(itemValue.quantity_waiting_warehouse) }) }}
-                    </span>
-
-                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
-                </div>
+                <Link :href="routeItemsWaitingWarehouse(itemValue)" class="hover:underline">
+                    <LabelItemsWaitingForWarehouse v-if="Number(itemValue.quantity_waiting_warehouse) > 0" :qty_waiting_warehouse="Number(itemValue.quantity_waiting_warehouse)" />
+                </Link>
             </div>
 
             <!-- Section: items are waiting for CRM -->
-            <div v-if="Number(itemValue.quantity_waiting_crm) > 0" class="mt-2 mx-auto w-fit">
-                <div v-tooltip="trans('Quantity of items waiting for CRM')" class="border-l-2 border-yellow-400 relative bg-yellow-500/20 py-1 pr-2 pl-1 text-yellow-700 whitespace-nowrap w-fit">
-                    <FontAwesomeIcon icon="fal fa-hourglass-start" class="mr opacity-70" fixed-width aria-hidden="true" />
-                    <!-- <FractionDisplay v-if="item.quantity_picked_fractional"
-                        :fractionData="item.quantity_picked_fractional" /> -->
-                    <span>
-                        {{ trans(":quantityWaitingCRM items are waiting for CRM", { quantityWaitingCRM: Number(itemValue.quantity_waiting_crm) }) }}
-                    </span>
-
-                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
-                </div>
+            
+            <div v-if="Number(itemValue.quantity_waiting_crm) > 0" class="mx-auto w-fit">
+                <Link :href="routeItemsWaitingCrm(itemValue)" class="hover:underline">
+                    <LabelItemsWaitingForCrm v-if="Number(itemValue.quantity_waiting_crm) > 0" :qty_waiting_crm="Number(itemValue.quantity_waiting_crm)" />
+                </Link>
             </div>
 
         </template>

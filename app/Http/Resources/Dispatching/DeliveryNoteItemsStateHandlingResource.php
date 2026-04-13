@@ -35,6 +35,7 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $quantity_waiting_warehouse
  * @property mixed $quantity_waiting_crm
  * @property mixed $notes
+ * @property mixed $shop_slug
  */
 class DeliveryNoteItemsStateHandlingResource extends JsonResource
 {
@@ -158,6 +159,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'expiry_date'                  => $this->expiry_date,
             'packed_in_message'            => $packedInMessage,
             'notes'                        => $this->notes,
+            'shop_slug'                    => $this->shop_slug,
 
 
             'upsert_picking_route' => [

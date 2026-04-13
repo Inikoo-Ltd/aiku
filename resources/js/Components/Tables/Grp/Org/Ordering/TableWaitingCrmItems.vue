@@ -37,6 +37,7 @@ const orderRoute = (item: Record<string, any>): string | null => {
 <template>
     <Table :resource="data" :name="tab">
         <template #cell(order_reference)="{ item }">
+            <FontAwesomeIcon icon="fal fa-shopping-cart" class="opacity-75" fixed-width aria-hidden="true" />
             <Link v-if="orderRoute(item)" :href="orderRoute(item)!" class="primaryLink">
                 {{ item['order_reference'] }}
             </Link>
@@ -44,7 +45,7 @@ const orderRoute = (item: Record<string, any>): string | null => {
         </template>
 
         <template #cell(org_stock_code)="{ item }">
-            <span class="font-mono font-semibold">{{ item['org_stock_code'] }}</span>
+            <span class="font-semibold">{{ item['org_stock_code'] }}</span>
         </template>
 
         <template #cell(org_stock_name)="{ item }">
