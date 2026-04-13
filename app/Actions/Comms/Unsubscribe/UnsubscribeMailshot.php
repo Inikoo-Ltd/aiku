@@ -64,18 +64,21 @@ class UnsubscribeMailshot
 
             if ($hasMailshot) {
                 $mailshot = Mailshot::find($hasMailshot->mailshot_id);
-                $modelData = match ($mailshot->type) {
-                    MailshotTypeEnum::NEWSLETTER => [
-                        'is_subscribed_to_newsletter' => false,
-                    ],
-                    MailshotTypeEnum::MARKETING => [
-                        'is_subscribed_to_marketing' => false,
-                    ],
-                    default => []
-                };
 
-                $customerComms = $recipient->comms;
-                UpdateCustomerComms::run($customerComms, $modelData, false);
+                if ($mailshot->shop_id == $recipient->shop_id) {
+                    $modelData = match ($mailshot->type) {
+                        MailshotTypeEnum::NEWSLETTER => [
+                            'is_subscribed_to_newsletter' => false,
+                        ],
+                        MailshotTypeEnum::MARKETING => [
+                            'is_subscribed_to_marketing' => false,
+                        ],
+                        default => []
+                    };
+
+                    $customerComms = $recipient->comms;
+                    UpdateCustomerComms::run($customerComms, $modelData, false);
+                }
             }
 
 
@@ -83,21 +86,24 @@ class UnsubscribeMailshot
 
             if ($hasEmailBulkRun) {
                 $emailBulkRun = EmailBulkRun::find($hasEmailBulkRun->email_bulk_run_id);
-                $modelData = match ($emailBulkRun->outbox->code) {
-                    OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => [
-                        'is_subscribed_to_price_change_notification' => false,
-                    ],
-                    OutboxCodeEnum::BASKET_LOW_STOCK => [
-                        'is_subscribed_to_basket_low_stock' => false,
-                    ],
-                    OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD => [
-                        'is_subscribed_to_reorder_reminder' => false,
-                    ],
-                    default => []
-                };
 
-                $customerComms = $recipient->comms;
-                UpdateCustomerComms::run($customerComms, $modelData, false);
+                if ($emailBulkRun->shop_id == $recipient->shop_id) {
+                    $modelData = match ($emailBulkRun->outbox->code) {
+                        OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => [
+                            'is_subscribed_to_price_change_notification' => false,
+                        ],
+                        OutboxCodeEnum::BASKET_LOW_STOCK => [
+                            'is_subscribed_to_basket_low_stock' => false,
+                        ],
+                        OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD => [
+                            'is_subscribed_to_reorder_reminder' => false,
+                        ],
+                        default => []
+                    };
+
+                    $customerComms = $recipient->comms;
+                    UpdateCustomerComms::run($customerComms, $modelData, false);
+                }
             }
         }
 
