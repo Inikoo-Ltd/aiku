@@ -69,8 +69,8 @@ const onPassItemToCs = () => {
 }
 
 onMounted(() => {
-    // console.log('qqqqqq', props.transaction.notes)
-    dataToSendAsWaiting.value.note = props.transaction.notes
+    // console.log('qqqqqq', props.transaction)
+    dataToSendAsWaiting.value.note = props.transaction.notes ?? ''
 })
 </script>
 
