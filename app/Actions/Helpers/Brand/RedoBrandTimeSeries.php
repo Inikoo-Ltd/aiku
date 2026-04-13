@@ -9,6 +9,7 @@ use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Laravel\Telescope\Telescope;
 use Throwable;
 
 class RedoBrandTimeSeries implements ShouldBeUnique
@@ -30,6 +31,18 @@ class RedoBrandTimeSeries implements ShouldBeUnique
 
     public function handle(Brand $brand, bool $async = false, ?string $from = null, ?string $to = null): void
     {
+        $shopIds = DB::table('invoice_transactions')
+            ->where('brand_id', $brand->id)
+            ->whereNull('deleted_at')
+            ->distinct()
+            ->pluck('shop_id')
+            ->filter()
+            ->all();
+
+        if (empty($shopIds)) {
+            return;
+        }
+
         if (!$from || !$to) {
             $dateRange = DB::table('invoice_transactions')
                 ->where('brand_id', $brand->id)
@@ -45,11 +58,13 @@ class RedoBrandTimeSeries implements ShouldBeUnique
             $to   = $to ?? Carbon::parse($dateRange->last_date ?? now())->toDateString();
         }
 
-        foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-            if ($async) {
-                ProcessBrandTimeSeriesRecords::dispatch($brand->id, $frequency, $from, $to)->onQueue('low-priority');
-            } else {
-                ProcessBrandTimeSeriesRecords::run($brand->id, $frequency, $from, $to);
+        foreach ($shopIds as $shopId) {
+            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                if ($async) {
+                    ProcessBrandTimeSeriesRecords::dispatch($brand->id, $shopId, $frequency, $from, $to)->onQueue('low-priority');
+                } else {
+                    ProcessBrandTimeSeriesRecords::run($brand->id, $shopId, $frequency, $from, $to);
+                }
             }
         }
     }
@@ -83,6 +98,10 @@ class RedoBrandTimeSeries implements ShouldBeUnique
 
     public function asCommand(Command $command): int
     {
+        if (class_exists(Telescope::class)) {
+            Telescope::stopRecording();
+        }
+
         $command->info($command->getName());
         $tableName = (new $this->model())->getTable();
         $query     = $this->prepareQuery($tableName, $command);
