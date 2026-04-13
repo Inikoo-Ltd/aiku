@@ -301,7 +301,7 @@ class IndexProspects extends OrgAction
                 'event'           => 'action-progress',
                 'channel'         => 'grp.personal.'.$this->group->id,
                 'required_fields' => [
-                    "id:prospect_key",
+                    "id_prospect_key",
                     "company",
                     "contact_name",
                     "email",
