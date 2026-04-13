@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\Picking;
 
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingEngineEnum;
@@ -33,6 +34,35 @@ class PickAllItemFromWaitingWarehouse extends OrgAction
     {
         // ###### File is copyed from PickAllItem.php
         dd($modelData);
+
+        // if ($deliveryNoteItem->locked_at && (Carbon::parse($deliveryNoteItem->locked_at)->diffInSeconds(now()) < 3)) {
+        //     return null;
+        // }
+
+        // $deliveryNoteItem->update(['locked_at' => now()]);
+
+        // try {
+        //     $toPickQuantity   = $deliveryNoteItem->quantity_waiting_warehouse;
+        //     $locationOrgStock = LocationOrgStock::find($modelData['location_org_stock_id']);
+
+        //     data_set($modelData, 'quantity', min($toPickQuantity, $locationOrgStock->quantity));
+
+        //     $picking = StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
+
+        //     $deliveryNoteItem->refresh();
+        //     $deliveryNoteItem->update([
+        //         'locked_at'                  => null,
+        //         'quantity_waiting_warehouse' => max(0, $deliveryNoteItem->quantity_waiting_warehouse - $picking->quantity),
+        //     ]);
+
+        //     DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
+
+        //     return $picking;
+        // } catch (Exception $e) {
+        //     $deliveryNoteItem->update(['locked_at' => null]);
+
+        //     return null;
+        // }
     }
 
     public function rules(): array

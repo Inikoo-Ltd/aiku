@@ -21,6 +21,7 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
 
 class UpsertPickingFromWaitingWarehouse extends OrgAction
 {
@@ -34,7 +35,47 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
     {
         // ###### File is copyed from UpsertPicking.php
         dd($modelData);
+        
+        // if ($deliveryNoteItem->locked_at && (Carbon::parse($deliveryNoteItem->locked_at)->diffInSeconds(now()) < 3)) {
+        //     return null;
+        // }
 
+        // $deliveryNoteItem->update(['locked_at' => now()]);
+
+        // try {
+        //     $pickingID = Arr::pull($modelData, 'picking_id');
+        //     $picking   = null;
+        //     if ($pickingID) {
+        //         $picking = Picking::find($pickingID);
+        //     }
+
+        //     $previousQuantity = $picking ? $picking->quantity : 0;
+
+        //     if ($picking) {
+        //         $modelData = ['quantity' => Arr::get($modelData, 'quantity', 0)];
+        //         $picking   = UpdatePicking::run($picking, $modelData);
+        //     } else {
+        //         $picking = StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
+        //     }
+
+        //     $delta = ($picking->quantity ?? 0) - $previousQuantity;
+        //     if ($delta > 0) {
+        //         $deliveryNoteItem->refresh();
+        //         $deliveryNoteItem->update([
+        //             'quantity_waiting_warehouse' => max(0, $deliveryNoteItem->quantity_waiting_warehouse - $delta),
+        //         ]);
+        //     }
+
+        //     DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
+
+        //     $deliveryNoteItem->update(['locked_at' => null]);
+
+        //     return true;
+        // } catch (Exception $e) {
+        //     $deliveryNoteItem->update(['locked_at' => null]);
+
+        //     return false;
+        // }
     }
 
     public function rules(): array
