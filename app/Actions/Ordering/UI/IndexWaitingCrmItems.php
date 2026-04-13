@@ -65,6 +65,7 @@ class IndexWaitingCrmItems extends OrgAction
             ->select([
                 'delivery_note_items.id',
                 'delivery_note_items.quantity_waiting_crm',
+                'delivery_note_items.notes',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
                 'org_stocks.slug as org_stock_slug',

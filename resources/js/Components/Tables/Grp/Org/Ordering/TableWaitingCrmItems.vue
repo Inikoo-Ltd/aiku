@@ -8,6 +8,10 @@
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import type { Table as TableTS } from "@/types/Table"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faStickyNote } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faStickyNote)
 
 defineProps<{
     data: TableTS
@@ -48,7 +52,18 @@ const orderRoute = (item: Record<string, any>): string | null => {
         </template>
 
         <template #cell(quantity_waiting_crm)="{ item }">
-            <span class="tabular-nums">{{ item['quantity_waiting_crm'] }}</span>
+            <div class="flex flex-col gap-0.5">
+                <span class="tabular-nums">
+                    {{ item['quantity_waiting_crm'] }} {{ ctrans("items") }}
+                </span>
+                <span v-if="item['notes']" class="text-left border border-gray-300 bg-gray-100 px-2 py-1 rounded">
+                    <div class="font-medium">
+                        <FontAwesomeIcon icon="fal fa-sticky-note" class="" fixed-width aria-hidden="true" />
+                        {{ ctrans("Notes") }} ({{ ctrans("may from Picker or other staff") }})
+                    </div>
+                    <div class="opacity-70 italic text-xs ">{{ item['notes'] }}</div>
+                </span>
+            </div>
         </template>
     </Table>
 </template>

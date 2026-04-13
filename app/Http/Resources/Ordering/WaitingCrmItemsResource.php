@@ -16,6 +16,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $org_stock_name
  * @property mixed $org_stock_slug
  * @property mixed $quantity_waiting_crm
+ * @property mixed $notes
  * @property mixed $order_slug
  * @property mixed $order_reference
  * @property mixed $shop_slug
@@ -30,7 +31,8 @@ class WaitingCrmItemsResource extends JsonResource
             'org_stock_code'       => $this->org_stock_code,
             'org_stock_name'       => $this->org_stock_name,
             'org_stock_slug'       => $this->org_stock_slug,
-            'quantity_waiting_crm' => $this->quantity_waiting_crm,
+            'quantity_waiting_crm' => (float) $this->quantity_waiting_crm,
+            'notes'                => $this->notes,
             'order_slug'           => $this->order_slug,
             'order_reference'      => $this->order_reference,
             'shop_slug'            => $this->shop_slug,
