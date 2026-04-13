@@ -9,6 +9,9 @@
 namespace App\Actions\Web\Webpage\Luigi;
 
 use App\Actions\OrgAction;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
+use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\ActionRequest;
@@ -29,7 +32,26 @@ class ReindexWebpageLuigi extends OrgAction implements ShouldBeUnique
      */
     public function handle(Webpage $webpage): array
     {
-        return ReindexWebpageLuigiData::run($webpage->id);
+        $msg = __('Reindexing running in the background');
+        ReindexWebpageLuigiData::dispatch($webpage->id);
+
+        if ($webpage->sub_type == WebpageSubTypeEnum::FAMILY && $webpage->model instanceof ProductCategory) {
+            /** @var ProductCategory $family */
+            $family = $webpage->model;
+            $count  = 0;
+            foreach ($family->getActiveProducts() as $product) {
+                ReindexWebpageLuigiData::dispatch($product->webpage->id)->delay(5);
+                $count++;
+            }
+            $msg = __('Family reindexing including product pages running in the background.').' ('.$count.' '.__('products').')';
+        } elseif ($webpage->sub_type == WebpageSubTypeEnum::PRODUCT && $webpage->model instanceof Product) {
+            $msg = __('Product reindexing running in the background');
+        }
+
+        return [
+            'status'  => 'success',
+            'message' => $msg,
+        ];
     }
 
 

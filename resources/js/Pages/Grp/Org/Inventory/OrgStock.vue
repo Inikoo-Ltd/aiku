@@ -41,6 +41,7 @@ import { Tabs as TSTabs } from "@/types/Tabs"
 import TableTradeUnits from "@/Components/Tables/Grp/Goods/TableTradeUnits.vue"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
 import { Message } from "primevue"
+import StockIssues from "@/Components/Warehouse/Inventory/StockIssues.vue"
 
 library.add(
     faInventory,
@@ -82,6 +83,7 @@ const component = computed(() => {
 
     const components = {
         showcase: StockShowcase,
+        feedbacks: StockIssues,
         locations: TableLocations,
         supplier_products: TableSupplierProducts,
         products: TableProducts,

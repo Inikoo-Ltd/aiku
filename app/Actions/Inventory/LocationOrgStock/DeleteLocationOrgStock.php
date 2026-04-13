@@ -29,7 +29,7 @@ class DeleteLocationOrgStock extends OrgAction
     use WithLocationOrgStockActionAuthorisation;
     use CalculatesOrgStockHistories;
 
-    private User|null $user;
+    private User|null $user = null;
 
     /**
      * @throws \Throwable

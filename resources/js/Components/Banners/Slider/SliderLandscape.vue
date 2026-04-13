@@ -53,7 +53,7 @@ const filteredNulls = (corners: CornersData) => {
 
 // const componentEdited = toRef(() => props.data.components.filter(component => component.ulid == props.jumpToIndex))  // make jumpToIndex to reactive to watch() it
 const compIndexCurrentComponent = computed(() => {
-    return props.data.components.findIndex(component => component.ulid == props.jumpToIndex)
+    return visibleComponents.value.findIndex(component => component.ulid == props.jumpToIndex)
 })
 
 // Jump view to slide (banner) on click slide (SlidesWorkshop)
@@ -187,6 +187,14 @@ const wrapperStyle = computed(() => {
     return style
 })
 
+const visibleComponents = computed(() => {
+  return props.data.components.filter(
+    (item) =>
+      item?.ulid &&
+      (item?.layout?.visibility?.[props.view] ?? 'visible') === 'visible'
+  )
+})
+
 const isMounted = ref(false)
 onMounted(() => {
     isMounted.value = true
@@ -202,14 +210,14 @@ onMounted(() => {
                 <Swiper class="w-full h-full" ref="swiperRef" :key="'banner' + intSwiperKey" :slideToClickedSlide="true"
                     :spaceBetween="get(data, ['common', 'spaceBetween']) ? data.common.spaceBetween : 0"
                     :slidesPerView="1" :centeredSlides="true"
-                    :loop="data.components.filter((item) => item.ulid).length > 1" :autoplay="true" :pagination="get(data, ['navigation', 'bottomNav', 'value'], false) && get(data, ['navigation', 'bottomNav', 'type', 'value'], false) == 'bullets' ? {  // Render Navigation (bullet)
+                    :loop="visibleComponents.length > 1" :autoplay="true" :pagination="get(data, ['navigation', 'bottomNav', 'value'], false) && get(data, ['navigation', 'bottomNav', 'type', 'value'], false) == 'bullets' ? {  // Render Navigation (bullet)
                         clickable: true,
                         renderBullet: (index, className) => {
                             return `<span class='${className}'></span>`
                         },
                     } : false" :navigation="!data.navigation || data.navigation?.sideNav?.value"
                     :modules="[Autoplay, Pagination, Navigation]">
-                    <SwiperSlide v-for="component in data.components.filter((item) => item.ulid)" :key="component.id"
+                    <SwiperSlide v-for="component in visibleComponents" :key="component.id"
                         class="w-full h-full">
                         <!-- Slide: Image -->
                         <div v-if="get(component, ['layout', 'backgroundType', props.view], get(component, ['layout', 'backgroundType', 'desktop'], 'image')) == 'image'"

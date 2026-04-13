@@ -243,7 +243,7 @@ class ShowWebsiteWorkshop extends OrgAction
                     ],
                     'families_overview' =>  [
                         'method'     => 'post',
-                        'name'       => 'grp.models.website.publish.family',
+                        'name'       => 'grp.models.website.publish.families_overview',
                         'parameters' => [
                             'website' => $website->id
                         ]
