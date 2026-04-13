@@ -161,7 +161,7 @@ class IndexClockingEmployees extends OrgAction
             $this->applyStatusFilter($query, $this->employee, $timezone);
 
             $timesheets = $query
-                ->defaultSort('date')
+                ->defaultSort('-date')
                 ->allowedSorts(['date', 'working_duration', 'breaks_duration'])
                 ->paginate(request()->input('per_page', 15))
                 ->withQueryString();

@@ -131,7 +131,7 @@ class IndexTimesheets extends OrgAction
         ]);
 
         return $query
-            ->defaultSort('date')
+            ->defaultSort('-date')
             ->allowedSorts(['date', 'subject_name', 'working_duration', 'breaks_duration'])
             ->allowedFilters([$globalSearch, 'subject_name'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -328,7 +328,7 @@ class IndexTimesheets extends OrgAction
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('Organisation'), searchable: true);
             }
-            $table->defaultSort('date');
+            $table->defaultSort('-date');
         };
     }
 
