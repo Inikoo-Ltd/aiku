@@ -256,7 +256,7 @@ class StoreLeave extends OrgAction
             ->whereNotNull('start_at')
             ->exists();
 
-        if ($hasTimesheet) {
+        if ($hasTimesheet && !$isHalfDay) {
             $validator->errors()->add('start_date', __('You have existing attendance records in this period. Please request an adjustment instead.'));
         }
 

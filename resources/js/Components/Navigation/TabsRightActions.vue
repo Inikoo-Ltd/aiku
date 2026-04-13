@@ -1,7 +1,7 @@
 <!--
   - Author: Oggie Sutrisna <oggiesutrisna@proton.me>
   - Desc : A Button for overriding clock-out just for admins only.
-  - Created: Sat, 18 Mar 2023 04:01:00 Bali, Indonesia
+  - Created: Mon, 9 Mar 2026 08:00:00 Bali, Indonesia
   - Copyright (c) 2026
   -->
 
