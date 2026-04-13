@@ -4,6 +4,19 @@
 - DO not write code comments you must write clear, self-explanatory code instead
 - DO not run vendor/bin/pint --dirty
 
+When performing file operations:
+- Group all related code changes (create, modify, edit) into a single operation.
+- Do NOT split related code changes into multiple steps.
+- Treat database migrations, schema changes, or destructive actions as a separate operation.
+- Never combine migrations with regular code changes.
+- Present operations in clearly separated groups:
+    1. Application code changes (create/edit/modify files)
+    2. Migration or schema changes (separate step)
+- Minimize the number of approval steps by batching related changes.
+
+When generating code:
+- DO not create test files unless explicitly requested
+- DO not include unit tests unless explicitly requested
 
 === foundation rules ===
 
