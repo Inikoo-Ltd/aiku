@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Models\Dispatching\Picking;
 use App\Models\Inventory\LocationOrgStock;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -19,14 +20,23 @@ use Lorisleiva\Actions\ActionRequest;
 class UpsertPickingFromWaitingWarehouse extends OrgAction
 {
     /**
+     * @var \App\Models\Dispatching\DeliveryNoteItem
+     */
+    private DeliveryNoteItem $deliveryNoteItem;
+
+    /**
      * @throws \Throwable
      */
     public function handle(DeliveryNoteItem $deliveryNoteItem, $user, array $modelData): ?bool
     {
         DB::transaction(function () use ($deliveryNoteItem, $user, $modelData) {
-            $waitingWarehouseQuantity = $deliveryNoteItem->quantity_waiting_warehouse - Arr::get($modelData, 'quantity', 0);
+            $waitingWarehouseQuantity = $deliveryNoteItem->quantity_required
+                - Arr::get($modelData, 'quantity', 0)
+                - $deliveryNoteItem->quantity_waiting_crm
+                - $deliveryNoteItem->quantity_not_picked;
+
             if ($waitingWarehouseQuantity < 0) {
-                abort(400, 'Quantity waiting warehouse cannot be less than 0');
+                $waitingWarehouseQuantity = 0;
             }
 
             $deliveryNoteItem->update([
@@ -37,7 +47,23 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
 
             data_set($modelData, 'picker_user_id', $user->id);
             $locationOrgStock = LocationOrgStock::find(Arr::pull($modelData, 'location_org_stock_id'));
-            StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
+
+
+            $pickingID = Arr::pull($modelData, 'picking_id');
+            $picking   = null;
+            if ($pickingID) {
+                $picking = Picking::find($pickingID);
+            }
+
+            if ($picking) {
+                $modelData = [
+                    'quantity' => Arr::get($modelData, 'quantity', 0),
+                ];
+                UpdatePicking::run($picking, $modelData);
+            } else {
+                StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
+            }
+
         });
 
         return true;
@@ -46,6 +72,10 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
     public function rules(): array
     {
         return [
+            'picking_id'            => [
+                'nullable',
+                Rule::Exists('pickings', 'id')->where('delivery_note_item_id', $this->deliveryNoteItem->id)
+            ],
             'location_org_stock_id' => [
                 'required',
                 Rule::Exists('location_org_stocks', 'id')->where('warehouse_id', $this->warehouse->id)
@@ -60,6 +90,7 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
      */
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): void
     {
+        $this->deliveryNoteItem= $deliveryNoteItem;
         $this->initialisationFromWarehouse($deliveryNoteItem->deliveryNote->warehouse, $request);
         $this->handle($deliveryNoteItem, $request->user(), $this->validatedData);
     }
