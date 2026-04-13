@@ -1,77 +1,67 @@
 <?php
 
 /*
- * Author: Vika Aqordi
- * Created on 09-04-2026-16h-55m
- * Github: https://github.com/aqordeon
- * Copyright: 2026
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 13 Apr 2026 11:04:11 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNoteItem;
-use App\Models\Dispatching\Picking;
 use App\Models\Inventory\LocationOrgStock;
-use App\Models\SysAdmin\User;
-use Exception;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class UpsertPickingFromWaitingWarehouse extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
-
-    protected DeliveryNoteItem $deliveryNoteItem;
-    protected User $user;
-
-    public function handle(DeliveryNoteItem $deliveryNoteItem, LocationOrgStock $locationOrgStock, array $modelData): ?bool
+    /**
+     * @throws \Throwable
+     */
+    public function handle(DeliveryNoteItem $deliveryNoteItem, $user, array $modelData): ?bool
     {
-        // ###### File is copyed from UpsertPicking.php
-        dd($modelData);
+        DB::transaction(function () use ($deliveryNoteItem, $user, $modelData) {
+            $waitingWarehouseQuantity = $deliveryNoteItem->quantity_waiting_warehouse - Arr::get($modelData, 'quantity', 0);
+            if ($waitingWarehouseQuantity < 0) {
+                abort(400, 'Quantity waiting warehouse cannot be less than 0');
+            }
 
+            $deliveryNoteItem->update([
+                'quantity_waiting_warehouse' => $waitingWarehouseQuantity,
+                'has_waiting_warehouse'      => $waitingWarehouseQuantity > 0,
+            ]);
+
+
+            data_set($modelData, 'picker_user_id', $user->id);
+            $locationOrgStock = LocationOrgStock::find(Arr::pull($modelData, 'location_org_stock_id'));
+            StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
+        });
+
+        return true;
     }
 
     public function rules(): array
     {
         return [
-
-            'picking_id'            => [
-                'nullable',
-                Rule::Exists('pickings', 'id')->where('delivery_note_item_id', $this->deliveryNoteItem->id)
-            ],
             'location_org_stock_id' => [
                 'required',
-                Rule::Exists('location_org_stocks', 'id')->where('warehouse_id', $this->deliveryNoteItem->deliveryNote->warehouse_id)
+                Rule::Exists('location_org_stocks', 'id')->where('warehouse_id', $this->warehouse->id)
             ],
             'quantity'              => ['required', 'numeric', 'min:0'],
-            'picker_user_id' => [
-                'required',
-                Rule::Exists('users', 'id')->where('group_id', $this->shop->group_id)
-            ],
         ];
     }
 
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        if (!$this->asAction && !$request->has('picker_user_id')) {
-            $this->set('picker_user_id', $this->user->id);
-        }
-    }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): void
     {
-        $this->user             = $request->user();
-        $this->deliveryNoteItem = $deliveryNoteItem;
-        $this->initialisationFromShop($deliveryNoteItem->shop, $request);
-        $locationOrgStock = LocationOrgStock::find($this->validatedData['location_org_stock_id']);
-
-        $this->handle($deliveryNoteItem, $locationOrgStock, $this->validatedData);
+        $this->initialisationFromWarehouse($deliveryNoteItem->deliveryNote->warehouse, $request);
+        $this->handle($deliveryNoteItem, $request->user(), $this->validatedData);
     }
 
 

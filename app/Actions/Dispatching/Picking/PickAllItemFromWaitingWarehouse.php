@@ -1,77 +1,64 @@
 <?php
 
 /*
- * Author: Vika Aqordi
- * Created on 09-04-2026-16h-49m
- * Github: https://github.com/aqordeon
- * Copyright: 2026
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 13 Apr 2026 10:27:44 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\OrgAction;
-use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
-use App\Enums\Dispatching\Picking\PickingEngineEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
-use App\Models\Inventory\LocationOrgStock;
-use Carbon\Carbon;
-use Exception;
+use App\Models\SysAdmin\User;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class PickAllItemFromWaitingWarehouse extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
-
-    protected DeliveryNoteItem $deliveryNoteItem;
-
-    public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): ?Picking
+    /**
+     * @throws \Throwable
+     */
+    public function handle(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): ?Picking
     {
-        // ###### File is copyed from PickAllItem.php
-        dd($modelData);
+        return DB::transaction(function () use ($deliveryNoteItem, $user, $modelData) {
+            $deliveryNoteItem->update([
+                'quantity_waiting_warehouse' => 0,
+                'has_waiting_warehouse'      => false,
+            ]);
+
+            return PickAllItem::make()->action(
+                $deliveryNoteItem,
+                [
+                    'location_org_stock_id' => Arr::get($modelData, 'location_org_stock_id'),
+                    'picker_user_id'        => $user->id,
+                ]
+            );
+        });
     }
 
     public function rules(): array
     {
         return [
-            'not_picked_reason'     => ['sometimes', Rule::enum(PickingNotPickedReasonEnum::class)],
-            'engine'                => ['sometimes', Rule::enum(PickingEngineEnum::class)],
             'location_org_stock_id' => [
                 'required',
-                Rule::Exists('location_org_stocks', 'id')->where('warehouse_id', $this->deliveryNoteItem->deliveryNote->warehouse_id)
-            ],
-            'picker_user_id'        => [
-                'required',
-                Rule::Exists('users', 'id')->where('group_id', $this->shop->group_id)
-            ],
+                Rule::Exists('location_org_stocks', 'id')->where('warehouse_id', $this->warehouse->id)
+            ]
         ];
     }
 
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        if (!$request->has('picker_user_id')) {
-            $this->set('picker_user_id', $request->user()->id);
-        }
-    }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): void
     {
-        $this->deliveryNoteItem = $deliveryNoteItem;
-        $this->initialisationFromShop($deliveryNoteItem->shop, $request);
+        $this->initialisationFromWarehouse($deliveryNoteItem->deliveryNote->warehouse, $request);
 
-        $this->handle($deliveryNoteItem, $this->validatedData);
-    }
-
-    public function action(DeliveryNoteItem $deliveryNoteItem, array $modelData): ?Picking
-    {
-        $this->deliveryNoteItem = $deliveryNoteItem;
-        $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
-
-        return $this->handle($deliveryNoteItem, $this->validatedData);
+        $this->handle($deliveryNoteItem, $request->user(), $this->validatedData);
     }
 
 
