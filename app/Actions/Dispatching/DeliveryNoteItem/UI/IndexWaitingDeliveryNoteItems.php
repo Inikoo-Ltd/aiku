@@ -36,7 +36,7 @@ class IndexWaitingDeliveryNoteItems extends OrgAction
 
         $props = [
             'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-            'title'       => __('Waiting Items'),
+            'title'       => __('Waiting Items') . ' (' . $itemized->total() . ')',
             'pageHead'    => [
                 'title' => __('Waiting Items'),
                 'model' => __('Delivery Note'),
