@@ -12,12 +12,16 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faStickyNote, faExchangeAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { inject } from "vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 library.add(faStickyNote, faExchangeAlt)
 
 defineProps<{
     data: TableTS
     tab?: string
 }>()
+
+const layout = inject('layout', layoutStructure)
 
 const orderRoute = (item: Record<string, any>): string | null => {
     if (!item['order_slug'] || !item['shop_slug'] || !item['organisation_slug']) {
@@ -118,7 +122,7 @@ const replaceProductRoute = (item: Record<string, any>): string | null => {
                 </Link>
 
                 <Link
-                    v-if="replaceProductRoute(item)"
+                    v-if="layout.app.environment === 'local' && replaceProductRoute(item)"
                     :href="replaceProductRoute(item)!"
                     method="post"
                     preserve-scroll
