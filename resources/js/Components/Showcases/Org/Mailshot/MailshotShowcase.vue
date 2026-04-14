@@ -39,6 +39,7 @@ const props = defineProps<{
         mailshot: {
             data: {
                 id: any,
+                slug: any,
                 subject: any,
                 state: any,
                 state_label: any,
@@ -254,7 +255,7 @@ const loadOtherShopTemplates = (page: number) => {
             </div>
 
             <!-- Template Carousel -->
-            <EmailTemplateCarousel :mailshot-id="props.data.mailshot.data.id"
+            <EmailTemplateCarousel :mailshot-id="props.data.mailshot.data.slug"
                 :shop-id="props.data.mailshot.data.shop_id || ''" :organisation-slug="effectiveOrganisationSlug"
                 :shop-slug="effectiveShopSlug" :own-shop-templates="effectiveOwnShopTemplates"
                 :other-shop-templates="effectiveOtherShopTemplates" @loadOtherShopTemplates="loadOtherShopTemplates" />
