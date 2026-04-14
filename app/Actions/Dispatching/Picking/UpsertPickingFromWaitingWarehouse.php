@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\Picking;
 
+use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
@@ -63,7 +64,7 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
             } else {
                 StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
             }
-
+            AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote);
         });
 
         return true;
@@ -90,7 +91,7 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
      */
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): void
     {
-        $this->deliveryNoteItem= $deliveryNoteItem;
+        $this->deliveryNoteItem = $deliveryNoteItem;
         $this->initialisationFromWarehouse($deliveryNoteItem->deliveryNote->warehouse, $request);
         $this->handle($deliveryNoteItem, $request->user(), $this->validatedData);
     }

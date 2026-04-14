@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\Picking;
 
+use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
@@ -30,13 +31,15 @@ class PickAllItemFromWaitingWarehouse extends OrgAction
                 'has_waiting_warehouse'      => false,
             ]);
 
-            return PickAllItem::make()->action(
+            $picking= PickAllItem::make()->action(
                 $deliveryNoteItem,
                 [
                     'location_org_stock_id' => Arr::get($modelData, 'location_org_stock_id'),
                     'picker_user_id'        => $user->id,
                 ]
             );
+            AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote);
+            return $picking;
         });
     }
 
