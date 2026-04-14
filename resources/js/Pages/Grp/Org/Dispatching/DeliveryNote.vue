@@ -461,7 +461,7 @@ onMounted(() => {
 		</template>
 
 		<!-- Button: Select picked bays (only for Ecom) -->
-		<template v-if="props.shop.type !== 'dropshipping'"  #button-set-as-packed="{ action }">
+		<template v-if="props.shop.type !== 'dropshipping'"  #button-trigger-set-as-picked-or-packed="{ action }">
 			<ButtonSelectBays
 				:warehouse="warehouse"
 				:deliveryNote="delivery_note"

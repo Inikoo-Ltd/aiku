@@ -159,17 +159,8 @@ class ShowDeliveryNote extends OrgAction
         if (!$hasUnHandledItems) {
             $actions[] = [
                 'type'    => 'button',
-                'style'   => 'save',
-                'tooltip' => __('Set as packed'),
-                'label'   => __('Set as packed'),
-                'key'     => 'set-as-packed',
-                'route'   => [
-                    'method'     => 'patch',
-                    'name'       => 'grp.models.delivery_note.state.packed',
-                    'parameters' => [
-                        'deliveryNote' => $deliveryNote->id
-                    ]
-                ]
+                'key'     => 'trigger-set-as-picked-or-packed',
+
             ];
         }
 
@@ -700,7 +691,7 @@ class ShowDeliveryNote extends OrgAction
         $showChangePickerPacker = $deliveryNote->shop->type !== ShopTypeEnum::DROPSHIPPING;
 
         $props = [
-            'title'         => __('delivery note'),
+            'title'         => __('Delivery note').' '.$deliveryNote->reference,
             'breadcrumbs'   => $this->getBreadcrumbs(
                 $deliveryNote,
                 $request->route()->getName(),
