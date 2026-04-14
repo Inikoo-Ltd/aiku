@@ -138,6 +138,7 @@ class UpdateBundle extends OrgAction
     public function rules(): array
     {
         $rules = [
+            'id' => ['nullable'],
             'name' => ['sometimes', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string', 'max:65535'],
             'rrp' => ['sometimes', 'nullable', 'numeric', 'min:0'],

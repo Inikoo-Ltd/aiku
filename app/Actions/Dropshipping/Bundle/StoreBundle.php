@@ -144,6 +144,7 @@ class StoreBundle extends OrgAction
     public function rules(): array
     {
         $rules = [
+            'id' => ['nullable'],
             'name'        => ['sometimes', 'nullable', 'string', 'max:255'],
             'code'        => ['nullable', 'string', 'max:64'],
             'description' => ['sometimes', 'nullable', 'string', 'max:65535'],
