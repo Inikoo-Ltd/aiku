@@ -22,6 +22,7 @@ const emits = defineEmits<{
   (e: "setUpTemplate", value: string | number): void
   (e: "autoSave"): void
   (e: "update:selectedBlock", value: any): void
+  (e: "update:data", value: any): void
 }>()
 
 /* const selectedBlock = ref<any>(null) */
@@ -102,15 +103,22 @@ function onUpdateFieldValue(e: any) {
   if (!props.selectedBlock?.code) return
 
   const code = props.selectedBlock.code
+  const safeValue = e
 
+  // update selectedBlock
   emits("update:selectedBlock", {
     ...props.selectedBlock,
-    fieldValue: e
+    fieldValue: safeValue
   })
 
-  if (props.data?.[code]) {
-    props.data[code].fieldValue = e
-  }
+  // ✅ emit update data (immutable)
+  emits("update:data", {
+    ...props.data,
+    [code]: {
+      ...props.data[code],
+      fieldValue: { ...props.data[code].fieldValue, ...safeValue }
+    }
+  })
 
   emits("autoSave")
 }

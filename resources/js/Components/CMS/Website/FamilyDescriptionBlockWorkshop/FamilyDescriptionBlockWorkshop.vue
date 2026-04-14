@@ -31,6 +31,7 @@ import ScreenView from "@/Components/ScreenView.vue"
 import FamilyList from "@/Components/CMS/Website/FamilyDescriptionBlockWorkshop/FamilyList.vue"
 
 import type { routeType } from "@/types/route"
+import { cloneDeep } from "lodash-es"
 
 library.add(
   faCube,
@@ -123,12 +124,9 @@ const onChangeFamily = (payload: any) => {
 }
 // AUTOSAVE
 const autosave = () => {
-  const payload = toRaw(layoutState.value)
+  const payload = cloneDeep(layoutState.value)
 
-  if (payload?.data?.fieldValue) {
-    delete payload.data.fieldValue.families
-    delete payload.data.fieldValue.sub_department
-  }
+  console.log("SENT", payload)
 
   router.patch(
     route(
@@ -183,6 +181,7 @@ onMounted(() => {
           :data="layoutState"
           :webBlockTypes="props.data.web_block_types"
           :selectedBlock="selectedBlock"
+          @update:data="layoutState = $event"
           @update:selectedBlock="selectedBlock = $event"
           @set-up-template="onPickTemplate"
           @auto-save="debouncedAutosave"
