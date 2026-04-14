@@ -42,6 +42,8 @@ class UpdateBundle extends OrgAction
     public function handle(Bundle $bundle, array $modelData): Bundle
     {
         return DB::transaction(function () use ($bundle, $modelData) {
+            Arr::forget($modelData, 'id');
+
             /** @var Product $product */
             $product = $bundle->bundleable;
             $shopBundleDiscount = Arr::get($product->shop->settings, 'discount.bundle_discount_percentage', 10);

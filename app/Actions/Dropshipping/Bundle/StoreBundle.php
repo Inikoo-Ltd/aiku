@@ -36,6 +36,8 @@ class StoreBundle extends OrgAction
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): Bundle
     {
         return DB::transaction(function () use ($customerSalesChannel, $modelData) {
+            Arr::forget($modelData, 'id');
+
             $productData = [];
             $selectedProducts = Arr::pull($modelData, 'products');
             $shopBundleDiscount = Arr::get($customerSalesChannel->shop->settings, 'discount.bundle_discount_percentage', 10);
