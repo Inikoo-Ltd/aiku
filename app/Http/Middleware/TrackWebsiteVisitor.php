@@ -18,13 +18,13 @@ class TrackWebsiteVisitor
 
         if ($this->shouldTrack($request)) {
             ProcessWebsiteVisitorTracking::dispatch(
-                sessionId: $request->session()->getId(),
-                website: $request->input('website'),
-                webUser: $request->user('retina'),
-                userAgent: $request->userAgent(),
-                ips: $request->ips(),
-                currentUrl: $request->fullUrl(),
-                referrer: $request->header('referer'),
+                $request->session()->getId(),
+                $request->input('website'),
+                $request->user('retina'),
+                $request->userAgent(),
+                $request->ips(),
+                $request->fullUrl(),
+                $request->header('referer'),
             );
         }
 
