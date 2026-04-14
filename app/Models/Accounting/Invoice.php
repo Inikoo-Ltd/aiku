@@ -235,7 +235,7 @@ class Invoice extends Model implements Auditable
     }
 
     /**
-     * Relation to main order, usually the only one, used no avoid looping over orders
+     * Relation to the main order, usually the only one, used no avoid looping over orders
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
