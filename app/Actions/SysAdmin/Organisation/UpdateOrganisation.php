@@ -58,12 +58,12 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, 'settings.orders.allow_waiting', Arr::pull($modelData, 'allow_waiting'));
         }
 
-        if (Arr::has($modelData, 'allow_picker_on_waiting')) {
-            data_set($modelData, 'settings.orders.allow_picker_on_waiting', Arr::pull($modelData, 'allow_picker_on_waiting'));
+        if (Arr::has($modelData, 'allow_picker_set_not_picked')) {
+            data_set($modelData, 'settings.orders.allow_picker_set_not_picked', Arr::pull($modelData, 'allow_picker_set_not_picked'));
         }
 
-        if (Arr::has($modelData, 'allow_waiter_on_waiting')) {
-            data_set($modelData, 'settings.orders.allow_waiter_on_waiting', Arr::pull($modelData, 'allow_waiter_on_waiting'));
+        if (Arr::has($modelData, 'allow_stock_controller_set_not_picked')) {
+            data_set($modelData, 'settings.orders.allow_stock_controller_set_not_picked', Arr::pull($modelData, 'allow_stock_controller_set_not_picked'));
         }
 
 
@@ -137,33 +137,36 @@ class UpdateOrganisation extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'name'                         => ['sometimes', 'required', 'string', 'max:255'],
-            'ui_name'                      => ['sometimes', 'required', 'string', 'max:32'],
-            'contact_name'                 => ['sometimes', 'string', 'max:255'],
-            'google_client_id'             => ['sometimes', 'string'],
-            'google_client_secret'         => ['sometimes', 'string'],
-            'show_omega'                   => ['sometimes', 'boolean'],
-            'attach_isdoc_to_pdf'          => ['sometimes', 'boolean'],
-            'show_tax_liability_date'      => ['sometimes', 'boolean'],
-            'google_drive_folder_key'      => ['sometimes', 'string'],
-            'address'                      => ['sometimes', 'required', new ValidAddress()],
-            'language_id'                  => ['sometimes', 'exists:languages,id'],
-            'timezone_id'                  => ['sometimes', 'exists:timezones,id'],
-            'currency_id'                  => ['sometimes', 'exists:currencies,id'],
-            'email'                        => ['sometimes', 'nullable', 'email'],
-            'phone'                        => ['sometimes', 'nullable', new Phone()],
-            'forbidden_dispatch_countries' => ['sometimes', 'array', 'nullable'],
-            'logo'                         => [
+            'name'                                  => ['sometimes', 'required', 'string', 'max:255'],
+            'ui_name'                               => ['sometimes', 'required', 'string', 'max:32'],
+            'contact_name'                          => ['sometimes', 'string', 'max:255'],
+            'google_client_id'                      => ['sometimes', 'string'],
+            'google_client_secret'                  => ['sometimes', 'string'],
+            'show_omega'                            => ['sometimes', 'boolean'],
+            'attach_isdoc_to_pdf'                   => ['sometimes', 'boolean'],
+            'show_tax_liability_date'               => ['sometimes', 'boolean'],
+            'google_drive_folder_key'               => ['sometimes', 'string'],
+            'address'                               => ['sometimes', 'required', new ValidAddress()],
+            'language_id'                           => ['sometimes', 'exists:languages,id'],
+            'timezone_id'                           => ['sometimes', 'exists:timezones,id'],
+            'currency_id'                           => ['sometimes', 'exists:currencies,id'],
+            'email'                                 => ['sometimes', 'nullable', 'email'],
+            'phone'                                 => ['sometimes', 'nullable', new Phone()],
+            'forbidden_dispatch_countries'          => ['sometimes', 'array', 'nullable'],
+            'logo'                                  => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
-            'colour'                       => ['sometimes', 'string'],
-            'working_hours'                => ['sometimes', 'array'],
-            'hr_annual_leave_days'         => ['sometimes', 'required', 'integer', 'min:0', 'max:365'],
-            'hr_probation_period_days'     => ['sometimes', 'required', 'integer', 'min:0', 'max:365'],
-            'allow_waiting'                => ['sometimes', 'boolean'],
+            'colour'                                => ['sometimes', 'string'],
+            'working_hours'                         => ['sometimes', 'array'],
+            'hr_annual_leave_days'                  => ['sometimes', 'required', 'integer', 'min:0', 'max:365'],
+            'hr_probation_period_days'              => ['sometimes', 'required', 'integer', 'min:0', 'max:365'],
+            'allow_waiting'                         => ['sometimes', 'boolean'],
+            'allow_picker_set_not_picked'           => ['sometimes', 'boolean'],
+            'allow_stock_controller_set_not_picked' => ['sometimes', 'boolean'],
+
 
         ];
 
