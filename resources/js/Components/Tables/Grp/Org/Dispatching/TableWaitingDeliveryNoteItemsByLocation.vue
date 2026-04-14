@@ -174,7 +174,7 @@ const selectedTransactionToSetAsWaiting = ref(null)
 
         <!-- Column: Actions (location picker + quantity + not-picked + button pass to CS) -->
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
-            <div v-if="Number(itemValue.quantity_waiting_warehouse) > 0">
+            <div>
                 <div v-if="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)" class="rounded p-1 flex flex-col gap-2">
                     <div class="flex justify-between items-center gap-x-4">
                         <!-- Section: location -->
@@ -226,10 +226,11 @@ const selectedTransactionToSetAsWaiting = ref(null)
                             </Transition>
                         </div>
 
-                        <!-- Quantity + pick all + not picked + call CS -->
                         <div class="flex items-center gap-x-2">
+                            <!-- Section: input Quantity-->
                             <NumberWithButtonSave
-                                v-if="!itemValue.is_handled && findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).quantity > 0"
+                                vxif="!itemValue.is_handled && findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).quantity > 0"
+                                v-if="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).quantity > 0"
                                 :key="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).location_code"
                                 noUndoButton
                                 @onError="(error: any) => { proxyItem.errors = Object.values(error || {}) }"
@@ -254,13 +255,13 @@ const selectedTransactionToSetAsWaiting = ref(null)
                                     picking_id: itemValue.pickings?.find((p: any) => p.location_id === findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).location_id)?.id,
                                 }"
                                 autoSave
-                                :readonly="itemValue.is_handled || itemValue.quantity_required === itemValue.quantity_picked"
+                                :readonly="itemValue.is_handled"
                             >
                                 <template #save="{ isProcessing }">
                                     <ButtonWithLink
                                         v-tooltip="trans('Pick all required quantity in this location')"
                                         icon="fal fa-clipboard-list-check"
-                                        :disabled="itemValue.is_handled || itemValue.quantity_required === itemValue.quantity_picked"
+                                        :disabled="itemValue.is_handled"
                                         size="xs" type="secondary" :loading="isProcessing"
                                         :routeTarget="itemValue.picking_all_route"
                                         :bind-to-link="{ preserveScroll: true, preserveState: true }"
@@ -291,13 +292,6 @@ const selectedTransactionToSetAsWaiting = ref(null)
                     <div v-if="proxyItem.errors?.length">
                         <p v-for="error in proxyItem.errors" class="text-xs text-red-500 italic">*{{ error }}</p>
                     </div>
-                </div>
-            </div>
-            <div v-else class="flex gap-x-2 items-center justify-between">
-                <div></div>
-                <div>
-                    <Button v-if="Number(itemValue.quantity_waiting_warehouse) > 0" @click="() => (isOpenModalPassToCs = true, selectedTransactionToSetAsWaiting = itemValue)" icon="fal fa-user-headset" :label="trans('Pass :qtyInWarehouse to CS', { qtyInWarehouse: Number(itemValue.quantity_waiting_warehouse) })" size="xs" type="tertiary" />
-
                 </div>
             </div>
         </template>
