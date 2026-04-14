@@ -32,6 +32,7 @@ const props = defineProps<{
     label_result?: string
     valueToRefetch?: string
     idxSubmitSuccess?: number
+    preselected?: any[]
 }>()
 
 
@@ -85,12 +86,19 @@ const getPortfoliosList = async (url?: string) => {
 }
 const debounceGetPortfoliosList = debounce(() => (getPortfoliosList()), 500)
 
-
 // Section: On select product
 const selectedProduct = ref<Portfolio[]>([])
+
+watch(() => props.preselected, (val) => {
+    if (Array.isArray(val)) {
+        selectedProduct.value = [...val]
+    }
+}, { immediate: true, deep: true })
+
 const compSelectedProduct = computed(() => {
     return selectedProduct.value?.map((item: Portfolio) => item.id)
 })
+
 const selectProduct = (item: any) => {
     const index = selectedProduct.value?.indexOf(item);
     if (index === -1) {

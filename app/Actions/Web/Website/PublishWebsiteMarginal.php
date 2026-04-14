@@ -14,6 +14,7 @@ use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Web\UpdateWebBlockToWebsiteAndChild;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\UpdateDescriptionBlockToWebsiteAndChild;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use Illuminate\Support\Facades\Event;
 use App\Models\Helpers\Snapshot;
@@ -131,6 +132,8 @@ class PublishWebsiteMarginal extends OrgAction
         if (in_array($marginal, ['department', 'sub_department', 'family', 'product', 'products', 'families_overview'])) {
             // Update webpage, web_blocks & their snapshots (unpublished/published)
             UpdateWebBlockToWebsiteAndChild::dispatch($website, WebBlockType::find(data_get($layout, "id")), $marginal, data_get($layout, 'data.fieldValue'))->onQueue('low-priority');
+        } else if (in_array($marginal, ['family_description'])) {
+            UpdateDescriptionBlockToWebsiteAndChild::dispatch($website, $layout, $marginal)->onQueue('low-priority');
         }
 
         BreakWebsiteCache::run($website);
