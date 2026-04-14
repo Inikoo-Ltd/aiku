@@ -118,6 +118,8 @@ class IndexOrgStockMovements extends OrgAction
                 'org_stock_movements.grp_amount',
                 'org_stock_movements.operation_type',
                 'org_stock_movements.operation_id',
+                'org_stock_movements.running_quantity',
+                'org_stock_movements.running_quantity_org_stock',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
                 'warehouses.slug as warehouse_slug',
@@ -177,6 +179,8 @@ class IndexOrgStockMovements extends OrgAction
                 ->column(key: 'class', label: __('Class'), sortable: true)
                 ->column(key: 'location_code', label: __('Location'))
                 ->column(key: 'quantity', label: __('Quantity'), sortable: true, align: 'right')
+                ->column(key: 'running_quantity', label: __('Running Quantity'), sortable: true, align: 'right')
+                ->column(key: 'running_quantity_org_stock', label: __('Running Quantity (All)'), sortable: true, align: 'right')
                 ->column(key: 'org_amount', label: __('Amount'), sortable: true, type: 'currency');
         };
     }

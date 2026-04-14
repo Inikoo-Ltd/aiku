@@ -29,13 +29,30 @@ class UnsubscribeMailshot
 {
     use WithActionUpdate;
 
-    public function handle(DispatchedEmail $dispatchedEmail, ActionRequest $request): DispatchedEmail
+    public function handle(DispatchedEmail $dispatchedEmail, ActionRequest $request, ?string $tag = null): array
     {
-        //  TODO: update later for prospect
-        /** @var Customer|Prospect $recipient */
-        $customerDispatchedEmail =  DB::table('customer_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
 
-        $recipient = Customer::find($customerDispatchedEmail->customer_id);
+        /** @var Customer|Prospect $recipient */
+        $recipient = null;
+
+        if ($tag === 'prospect') {
+            $prospectDispatchedEmail = DB::table('prospect_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
+
+            if ($prospectDispatchedEmail) {
+                $recipient = Prospect::find($prospectDispatchedEmail->prospect_id);
+            } else {
+                abort(404, 'Prospect recipient not found');
+            }
+        } else {
+            // Default to customer lookup
+            $customerDispatchedEmail = DB::table('customer_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
+
+            if ($customerDispatchedEmail) {
+                $recipient = Customer::find($customerDispatchedEmail->customer_id);
+            } else {
+                abort(404, 'Customer recipient not found');
+            }
+        }
 
         if ($recipient instanceof Prospect) {
             UpdateProspectEmailUnsubscribed::run($recipient, now());
@@ -47,18 +64,21 @@ class UnsubscribeMailshot
 
             if ($hasMailshot) {
                 $mailshot = Mailshot::find($hasMailshot->mailshot_id);
-                $modelData = match ($mailshot->type) {
-                    MailshotTypeEnum::NEWSLETTER => [
-                        'is_subscribed_to_newsletter' => false,
-                    ],
-                    MailshotTypeEnum::MARKETING => [
-                        'is_subscribed_to_marketing' => false,
-                    ],
-                    default => []
-                };
 
-                $customerComms = $recipient->comms;
-                UpdateCustomerComms::run($customerComms, $modelData, false);
+                if ($mailshot->shop_id == $recipient->shop_id) {
+                    $modelData = match ($mailshot->type) {
+                        MailshotTypeEnum::NEWSLETTER => [
+                            'is_subscribed_to_newsletter' => false,
+                        ],
+                        MailshotTypeEnum::MARKETING => [
+                            'is_subscribed_to_marketing' => false,
+                        ],
+                        default => []
+                    };
+
+                    $customerComms = $recipient->comms;
+                    UpdateCustomerComms::run($customerComms, $modelData, false);
+                }
             }
 
 
@@ -66,21 +86,24 @@ class UnsubscribeMailshot
 
             if ($hasEmailBulkRun) {
                 $emailBulkRun = EmailBulkRun::find($hasEmailBulkRun->email_bulk_run_id);
-                $modelData = match ($emailBulkRun->outbox->code) {
-                    OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => [
-                        'is_subscribed_to_price_change_notification' => false,
-                    ],
-                    OutboxCodeEnum::BASKET_LOW_STOCK => [
-                        'is_subscribed_to_basket_low_stock' => false,
-                    ],
-                    OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD => [
-                        'is_subscribed_to_reorder_reminder' => false,
-                    ],
-                    default => []
-                };
 
-                $customerComms = $recipient->comms;
-                UpdateCustomerComms::run($customerComms, $modelData, false);
+                if ($emailBulkRun->shop_id == $recipient->shop_id) {
+                    $modelData = match ($emailBulkRun->outbox->code) {
+                        OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => [
+                            'is_subscribed_to_price_change_notification' => false,
+                        ],
+                        OutboxCodeEnum::BASKET_LOW_STOCK => [
+                            'is_subscribed_to_basket_low_stock' => false,
+                        ],
+                        OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD => [
+                            'is_subscribed_to_reorder_reminder' => false,
+                        ],
+                        default => []
+                    };
+
+                    $customerComms = $recipient->comms;
+                    UpdateCustomerComms::run($customerComms, $modelData, false);
+                }
             }
         }
 
@@ -106,25 +129,45 @@ class UnsubscribeMailshot
 
         $dispatchedEmail->refresh();
 
-        return $dispatchedEmail;
+        return [
+            'id' => $dispatchedEmail->id,
+            'tag' => $tag,
+        ];
     }
 
-    public function asController(string $encryptedDispatchedEmailID, ActionRequest $request): DispatchedEmail
+    public function asController(string $encryptedDispatchedEmailID, ActionRequest $request): array
     {
         $dispatchedEmailID = Crypt::decryptString($encryptedDispatchedEmailID);
         $dispatchedEmail   = DispatchedEmail::findOrFail($dispatchedEmailID);
 
-        return $this->handle($dispatchedEmail, $request);
+        $tag = $request->get('tag');
+
+        return $this->handle($dispatchedEmail, $request, $tag);
     }
 
-    public function jsonResponse(DispatchedEmail $dispatchedEmail): array
+    public function jsonResponse(array $data): array
     {
-        $customerDispatchedEmail =  DB::table('customer_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
+        $dispatchedEmailId = $data['id'];
+        $tag = $data['tag'];
+
+        $dispatchedEmail = DispatchedEmail::findOrFail($dispatchedEmailId);
         $recipientName = '';
-        if ($customerDispatchedEmail) {
-            $customer = Customer::find($customerDispatchedEmail->customer_id);
-            $recipientName = $customer->contact_name;
+
+        if ($tag === 'prospect') {
+            $prospectDispatchedEmail = DB::table('prospect_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
+            if ($prospectDispatchedEmail) {
+                $prospect = Prospect::find($prospectDispatchedEmail->prospect_id);
+                $recipientName = $prospect->name;
+            }
+        } else {
+            // Default to customer lookup
+            $customerDispatchedEmail = DB::table('customer_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
+            if ($customerDispatchedEmail) {
+                $customer = Customer::find($customerDispatchedEmail->customer_id);
+                $recipientName = $customer->contact_name;
+            }
         }
+
         return [
             'api_response_status' => 200,
             'api_response_data'   => [

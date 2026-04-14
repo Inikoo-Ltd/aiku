@@ -462,6 +462,24 @@ const routeItemsWaitingCrm = (item) => {
             </div>
         </template>
 
+        <!-- Section: Pickings -->
+        <template #cell(picking_locations)="{ item }">
+            <div v-if="item.picking_locations && item.picking_locations.length > 0" class="flex flex-col gap-1">
+                <div v-for="picking in item.picking_locations" :key="picking.id" class="text-sm flex items-center gap-2">
+                    <Link v-if="picking.location_code" 
+                          :href="route('grp.org.warehouses.show.infrastructure.locations.show', [route().params.organisation, picking.warehouse_slug, picking.location_slug])"
+                          :class="['primaryLink font-medium', picking.location_code ? '' : 'text-gray-400 italic']">
+                        {{ picking.location_code }}
+                    </Link>
+                    <span v-else class="text-gray-400 italic">No Location</span>
+                    <div class="px-2 py-0.5 bg-gray-100 rounded-full text-xs font-medium">
+                        {{ picking.quantity }}
+                    </div>
+                </div>
+            </div>
+            <div v-else class="text-gray-400 italic text-sm">No items picked yet</div>
+        </template>
+
         <!-- Column: Quantity Required -->
         <template #cell(quantity_required)="{ item }">
 
@@ -843,7 +861,7 @@ const routeItemsWaitingCrm = (item) => {
         </template>
 
         <template #cell(action)="{ item: item }">
-                <template v-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && item.quantity_not_picked == 0" >
+                <template v-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && item.quantity_picked > 0" >
                     
                     <div class="flex justify-start items-center">
                     <ButtonWithLink

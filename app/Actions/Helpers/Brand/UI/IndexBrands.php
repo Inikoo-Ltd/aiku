@@ -54,8 +54,9 @@ class IndexBrands extends GrpAction
                 'brands.name',
                 'brands.id',
                 'brands.number_trade_units',
+                'brands.number_products',
             ])
-            ->allowedSorts(['name', 'number_trade_units'])
+            ->allowedSorts(['name', 'number_trade_units', 'number_products'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -79,6 +80,7 @@ class IndexBrands extends GrpAction
                 ])
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_trade_units', label: __('Trade Units'), canBeHidden: false, sortable: true, searchable: false)
+                ->column(key: 'number_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: false)
                 ->column(key: 'actions', label: '', canBeHidden: false, align: 'right');
         };
     }

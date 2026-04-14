@@ -58,6 +58,8 @@ type LocalChatMessage = ChatMessage & {
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
 
+const isClient = typeof window !== "undefined"
+
 const open = ref(false)
 const buttonRef = ref<HTMLElement | null>(null)
 const panelRef = ref<HTMLElement | null>(null)
@@ -97,11 +99,13 @@ const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
 const { width } = useWindowSize()
 const isMobile = computed(() => width.value < 640)
 
-watch(open, (val) => {
-    if (isMobile.value) {
-        document.body.style.overflow = val ? "hidden" : ""
-    }
-})
+if (isClient) {
+    watch(open, (val) => {
+        if (isMobile.value) {
+            document.body.style.overflow = val ? "hidden" : ""
+        }
+    })
+}
 
 const syncLoginState = () => {
     const iris = JSON.parse(localStorage.getItem("iris") || "{}")
@@ -557,16 +561,45 @@ defineExpose({
 
 const bundle = useBundle()
 
-watch([() => bundle.open.value, () => layout?.rightbasket?.show], ([bundleOpen, basketOpen]) => {
-    const widget = document.getElementById('jsd-widget')
-    if (!widget) return
+const waitForElement = (selector: string, cb: (el: HTMLElement) => void) => {
+    if (!isClient) return
 
-    widget.style.setProperty(
-        'right',
-        (bundleOpen || basketOpen) ? '420px' : '16px',
-        'important'
+    const run = () => {
+        const el = document.querySelector<HTMLElement>(selector)
+        if (el) {
+            cb(el)
+            return true
+        }
+        return false
+    }
+
+    if (run()) return
+
+    let tries = 0
+    const interval = setInterval(() => {
+        if (run() || ++tries > 50) {
+            clearInterval(interval)
+        }
+    }, 200)
+}
+
+if (isClient) {
+    watch(
+        [() => bundle.open.value, () => layout?.rightbasket?.show],
+        () => {
+            waitForElement('#jsd-widget', (widget) => {
+                widget.style.setProperty(
+                    'right',
+                    (bundle.open.value || layout?.rightbasket?.show)
+                        ? '420px'
+                        : '16px',
+                    'important'
+                )
+            })
+        },
+        { immediate: true }
     )
-})
+}
 </script>
 
 <template>

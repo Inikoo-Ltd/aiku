@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\Website\GetWebsiteWorkshopSubDepartmentWebBlock;
 use App\Actions\Web\Website\GetWebsiteWorkshopFamiliesOverviewWebBlock;
+use App\Actions\Web\Website\GetWebsiteWorkshopFamilyDescriptionWebBlock;
 use App\Actions\Web\Website\GetWebsiteWorkshopProductListWebBlock;
 use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
 use App\Actions\Web\Website\GetWebsiteWorkshopProduct;
@@ -106,6 +107,12 @@ class ShowWebsiteWorkshop extends OrgAction
             fn () => GetWebsiteWorkshopFamiliesOverviewWebBlock::run($website)
             : Inertia::lazy(
                 fn () => GetWebsiteWorkshopFamiliesOverviewWebBlock::run($website)
+            );
+        $tabs[WebsiteWorkshopTabsEnum::FAMILIES_DESCRIPTION->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILIES_DESCRIPTION->value
+            ?
+            fn () => GetWebsiteWorkshopFamilyDescriptionWebBlock::run($website)
+            : Inertia::lazy(
+                fn () => GetWebsiteWorkshopFamilyDescriptionWebBlock::run($website)
             );
         $tabs[WebsiteWorkshopTabsEnum::PRODUCTS->value] = $this->tab == WebsiteWorkshopTabsEnum::PRODUCTS->value
             ?
@@ -241,9 +248,16 @@ class ShowWebsiteWorkshop extends OrgAction
                             'website' => $website->id
                         ]
                     ],
+                    'families_description' =>  [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.website.publish.family_description',
+                        'parameters' => [
+                            'website' => $website->id
+                        ]
+                    ],
                     'families_overview' =>  [
                         'method'     => 'post',
-                        'name'       => 'grp.models.website.publish.family',
+                        'name'       => 'grp.models.website.publish.families_overview',
                         'parameters' => [
                             'website' => $website->id
                         ]

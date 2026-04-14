@@ -12,6 +12,7 @@ use App\Actions\Dispatching\DeliveryNote\SetTempPickerToDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\CreateReplacementDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInOrdering;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
+use App\Actions\Dispatching\Shipper\UI\IndexCouriersInShop;
 use App\Actions\Ordering\Order\DownloadOrderTransactionsTemplate;
 use App\Actions\Ordering\Order\PdfProformaInvoice;
 use App\Actions\Ordering\Order\UI\EditOrder;
@@ -43,6 +44,7 @@ Route::get('/orders/', IndexOrders::class)->name('orders.index');
 
 
 Route::get('/orders/delivery_notes', IndexDeliveryNotesInOrdering::class)->name('delivery-notes.index');
+Route::get('/orders/couriers', IndexCouriersInShop::class)->name('couriers.index');
 Route::get('/orders/delivery_notes/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderingInShop'])->name('delivery-notes.show');
 Route::patch('delivery-note/{deliveryNote}/set-temp-picker', SetTempPickerToDeliveryNote::class)->name('orders.show.delivery-note.temp-picker');
 

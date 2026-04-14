@@ -34,6 +34,7 @@ const props = defineProps<{
         stats: {}
     }
     shop_data: {
+        id:number
         slug: string
         currency_code: string
     }

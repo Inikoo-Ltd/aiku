@@ -196,7 +196,7 @@ const autoSave = async (value: any) => {
             <ConditionIcon v-if="statusSave" :state="statusSave" class="text-xl" />
             <Button
                 v-else
-                @click="() => autoSave(data?.menu)"
+                @click="() => autoSave(Navigation)"
                 type="tertiary"
                 :label="trans('Save')"
                 icon="fas fa-save"

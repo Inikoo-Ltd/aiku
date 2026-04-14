@@ -92,6 +92,7 @@ import UserSubscribeIris from "@/Components/CMS/Webpage/UserSubscribe/UserSubscr
 import Cta4Iris from "@/Components/CMS/Webpage/Cta4/Cta4Iris.vue"
 import BlogIris from "@/Components/CMS/Webpage/Blog/BlogIris.vue"
 import Step2Iris from "@/Components/CMS/Webpage/Step2/Step2Iris.vue"
+import Step1Iris from "@/Components/CMS/Webpage/Step1/Step1Iris.vue"
 import Slider1Iris from "@/Components/CMS/Webpage/Slider-1/Slider1Iris.vue"
 import CollectionDescriptionIris from "@/Components/CMS/Webpage/CollectionDescription/CollectionDescriptionIris.vue"
 import DepartmentDescriptionIris from "@/Components/CMS/Webpage/DepartmentDescription/DepartmentDescriptionIris.vue"
@@ -196,7 +197,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		"carousel-1": Carousel1Iris,
 		"carousel-cta": CarouselCtaIris,
 		"carousel-image-background": CarouselImageBackgroundIris,
-		"step-1": Step2Iris,
+		"step-1": Step1Iris,
 		"cta-video-1": CtaVideo1Iris,
 		video_1: Video1Iris,
 		"user-subscribe": UserSubscribeIris,

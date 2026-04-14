@@ -4,6 +4,7 @@ import { isNull, get } from 'lodash-es'
 import { faTimes, faCheck } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import PureInput from '@/Components/Pure/PureInput.vue'
+import InputSwitch from 'primevue/inputswitch'
 
 library.add(faTimes, faCheck)
 
@@ -98,6 +99,16 @@ const updateDataField = (key: string, value: any) => {
     }
 }
 
+const enabled = ref(initialValue?.enabled ?? false)
+
+watch(enabled, (val) => {
+    updateFormValue({
+        provider: provider.value,
+        data: data.value,
+        enabled: val
+    })
+})
+
 const currentSchema = computed(() => {
     return providerSchemas[provider.value] || []
 })
@@ -106,13 +117,15 @@ const currentSchema = computed(() => {
 <template>
     <div class="flex flex-col gap-4">
 
-        <!-- PROVIDER SELECT -->
         <div class="flex flex-col gap-1">
+            <label class="text-sm">Enable</label>
+            <InputSwitch v-model="enabled" />
+        </div>
+
+        <!-- PROVIDER SELECT -->
+        <div  class="flex flex-col gap-1" :class="{ 'opacity-50 pointer-events-none': !enabled }">
             <label class="text-sm">Provider</label>
-            <select
-                v-model="provider"
-                class="border rounded px-3 py-2"
-            >
+            <select v-model="provider" class="border rounded px-3 py-2">
                 <option disabled value="">Select Provider</option>
                 <option value="reviews.io">reviews.io</option>
                 <option value="trust_pilot">trust_pilot</option>
@@ -120,26 +133,19 @@ const currentSchema = computed(() => {
         </div>
 
         <!-- DYNAMIC FIELDS -->
-        <div v-if="provider" class="flex flex-col gap-3">
-            <div
-                v-for="field in currentSchema"
-                :key="field.key"
-                class="flex flex-col gap-1"
-            >
+        <div v-if="provider" class="flex flex-col gap-3"  :class="{ 'opacity-50 pointer-events-none': !enabled }">
+            <div v-for="field in currentSchema" :key="field.key" class="flex flex-col gap-1">
                 <label class="text-xs">
                     {{ field.label }}
                 </label>
 
-                <PureInput
-                    :type="field.type"
-                    :modelValue="data[field.key] || ''"
-                    @update:modelValue="updateDataField(field.key, $event)"
-                />
+                <PureInput :type="field.type" :modelValue="data[field.key] || ''"
+                    @update:modelValue="updateDataField(field.key, $event)" />
             </div>
         </div>
 
     </div>
-     <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
+    <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
         {{ form.errors[fieldName] }}
     </p>
 </template>
