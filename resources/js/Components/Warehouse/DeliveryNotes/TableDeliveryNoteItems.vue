@@ -34,6 +34,8 @@ import axios from "axios";
 import Image from "@/Components/Image.vue"
 import LabelItemsWaitingForWarehouse from "./LabelItemsWaitingForWarehouse.vue"
 import LabelItemsWaitingForCrm from "./LabelItemsWaitingForCrm.vue"
+import LoadingOverlay2 from "@/Components/Utils/LoadingOverlay2.vue"
+import { ctrans } from "@/Composables/useTrans"
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox);
 
 
@@ -399,17 +401,31 @@ const routeItemsWaitingCrm = (item) => {
 // }, { deep: true })
 
 
+// Section: Undo Quantity Waiting Warehouse
 const isOpenModalUndoWaitingWarehouse = ref(false)
 const selectedItemToUndoWaitingWarehouse = ref(null)
 const isLoadingUndoWaitingWarehouse = ref(false)
 const onSetItemToUndoWaitingWarehouse = () => {
     router.post(route('grp.models.delivery_note_item.undo_set_as_waiting_warehouse', {
-        deliveryNoteItem: selectedItemToUndoWaitingWarehouse.value.id
-    }), {
-        onStart: () => isLoadingUndoWaitingWarehouse.value = true,
+        deliveryNoteItem: selectedItemToUndoWaitingWarehouse.value?.id
+    }),
+    { },
+    {
+        preserveScroll: true,
+        onStart: () => {
+            isLoadingUndoWaitingWarehouse.value = true
+        },
+        onSuccess: () => {
+            isOpenModalUndoWaitingWarehouse.value = false
+            notify({
+                title: trans("Success") + '!',
+                text: ctrans('Item :itemName undo the quantity waiting warehouse', { itemName: selectedItemToUndoWaitingWarehouse.value?.org_stock_name}),
+                type: "success",
+            })
+        },
         onFinish: () => isLoadingUndoWaitingWarehouse.value = false,
-    })
-}
+    }
+)}
 </script>
 
 <template>
@@ -859,9 +875,6 @@ const onSetItemToUndoWaitingWarehouse = () => {
             <div v-if="Number(itemValue.quantity_waiting_warehouse) > 0" class="mt-2 mx-auto w-fit flex gap-x-2">
                 <Link :href="routeItemsWaitingWarehouse(itemValue)" class="hover:underline">
                     <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(itemValue.quantity_waiting_warehouse)">
-                        <template #default>
-                            
-                        </template>
                     </LabelItemsWaitingForWarehouse>
                 </Link>
                 <Button
@@ -1201,7 +1214,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
     </Modal>
 
     <!-- Modal: Set Transaction to undo waiting warehouse -->
-    <Modal :isOpen="isOpenModalUndoWaitingWarehouse" width="w-full max-w-xl" @close="isOpenModalUndoWaitingWarehouse = false">
+    <Modal :isOpen="isOpenModalUndoWaitingWarehouse" width="w-full max-w-xl relative" @close="isOpenModalUndoWaitingWarehouse = false">
         <div class="flex min-h-full xitems-end justify-center p-4 text-center items-center sm:py-4">
             <!-- Button: Close -->
             <div class="absolute top-0 right-0 pt-4 pr-4 hidden sm:block">
@@ -1281,6 +1294,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     </div>
                 </div>
             </div>
+            <LoadingOverlay2 v-if="isLoadingUndoWaitingWarehouse" class="rounded-2xl" />
         </div>
     </Modal>
 </template>
