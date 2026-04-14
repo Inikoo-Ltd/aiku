@@ -17,7 +17,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class SetPackedWithPickingBaysDeliveryNote extends OrgAction
+class SetAsPickedWithPickingBaysDeliveryNote extends OrgAction
 {
     public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
     {
