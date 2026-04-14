@@ -17,7 +17,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Retina\Fulfilment\StoredItems\UI\IndexRetinaStoredItems;
 use App\Actions\RetinaAction;
 use App\Enums\UI\Fulfilment\StoredItemTabsEnum;
-use App\Http\Resources\Fulfilment\PalletsResource;
+use App\Http\Resources\Fulfilment\PalletsInStoredItemResource;
 use App\Http\Resources\Fulfilment\StoredItemAuditDeltasResource;
 use App\Http\Resources\Fulfilment\StoredItemMovementsResource;
 use App\Http\Resources\Fulfilment\StoredItemResource;
@@ -79,8 +79,8 @@ class ShowRetinaStoredItem extends RetinaAction
                     : Inertia::lazy(fn () => GetStoredItemShowcase::run($storedItem)),
 
                 StoredItemTabsEnum::PALLETS->value => $this->tab == StoredItemTabsEnum::PALLETS->value ?
-                    fn () => PalletsResource::collection(IndexStoredItemPallets::run($storedItem, StoredItemTabsEnum::PALLETS->value))
-                    : Inertia::lazy(fn () => PalletsResource::collection(IndexStoredItemPallets::run($storedItem, StoredItemTabsEnum::PALLETS->value))),
+                    fn () => PalletsInStoredItemResource::collection(IndexStoredItemPallets::run($storedItem, StoredItemTabsEnum::PALLETS->value))
+                    : Inertia::lazy(fn () => PalletsInStoredItemResource::collection(IndexStoredItemPallets::run($storedItem, StoredItemTabsEnum::PALLETS->value))),
 
                 StoredItemTabsEnum::AUDITS->value => $this->tab == StoredItemTabsEnum::AUDITS->value ?
                 fn () => StoredItemAuditDeltasResource::collection(IndexStoredItemAuditDeltas::run($storedItem, prefix: StoredItemTabsEnum::AUDITS->value))

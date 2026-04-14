@@ -189,7 +189,7 @@ class IndexRetinaPalletsInReturnPalletWholePallets extends OrgAction
                 ->withModelOperations($modelOperations);
 
 
-            $table->column(key: 'state_icon', label: ['fal', 'fa-yin-yang'], type: 'icon');
+            $table->column(key: 'type_icon', label: ['fal', 'fa-yin-yang'], type: 'icon');
 
 
             /* $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon'); */

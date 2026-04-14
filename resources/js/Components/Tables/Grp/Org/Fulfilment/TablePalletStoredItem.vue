@@ -129,8 +129,8 @@ const generateLinkStoredItems = (storedItem: {}) => {
             <Icon :data="pallet['stored_item_state_icon']" class="px-1" />
         </template>
 
-        <template #cell(state)="{ item: pallet }">
-            <Icon :data="pallet['state_icon']" class="px-1" />
+        <template #cell(type_icon)="{ item: pallet }">
+            <Icon :data="pallet['type_icon']" class="px-1" />
         </template>
 
         <template #cell(reference)="{ item: pallet }">
