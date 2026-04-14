@@ -21,6 +21,7 @@ use App\Models\BundleItem;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Portfolio;
+use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -42,6 +43,7 @@ class UpdateBundle extends OrgAction
     public function handle(Bundle $bundle, array $modelData): Bundle
     {
         return DB::transaction(function () use ($bundle, $modelData) {
+            $tradeUnits = [];
             Arr::forget($modelData, 'id');
 
             /** @var Product $product */
@@ -75,7 +77,6 @@ class UpdateBundle extends OrgAction
             }
 
             if (Arr::get($modelData, 'payloadItems')) {
-                $tradeUnits = [];
                 $selectedBundleItems = Arr::get($modelData, 'payloadItems');
 
                 foreach ($selectedBundleItems as $selectedBundleItem) {
@@ -122,6 +123,50 @@ class UpdateBundle extends OrgAction
                 ]);
             }
 
+            $selectedProducts = Arr::get($modelData, 'products');
+            if(! blank($selectedProducts)) {
+                $productSelected = Product::where('shop_id', $bundle->customer->shop_id)
+                    ->whereIn('id', Arr::pluck($selectedProducts, 'product_id'))
+                    ->get();
+
+                $tradeUnits = array_merge($tradeUnits, $productSelected->map(function ($product) use ($selectedProducts) {
+                    return $product->tradeUnits->map(function (TradeUnit $tradeUnit) use ($product, $selectedProducts) {
+                        /** @var array $productQty */
+                        $productQty = collect($selectedProducts)->where('product_id', $product->id)->first();
+
+                        return [
+                            'id' => $tradeUnit->id,
+                            'quantity' => Arr::get($productQty, 'quantity')
+                        ];
+                    });
+                })->collapse()->toArray());
+
+                foreach ($selectedProducts as $selectedProduct) {
+                    $bundleItem = BundleItem::where('bundle_id', $bundle->id)
+                        ->where('item_type', class_basename(Product::class))
+                        ->where('item_id', $selectedProduct['product_id'])
+                        ->first();
+
+                    if($bundleItem) {
+                        continue;
+                    }
+
+                    $bundle->items()->create([
+                        'item_id' => Arr::get($selectedProduct, 'product_id'),
+                        'item_type' => class_basename(Product::class),
+                        'quantity' => Arr::get($selectedProduct, 'quantity')
+                    ]);
+                }
+
+                $calculatedPrice = CalculateBundleItemPriceDetails::run($bundle->customerSalesChannel, $modelData);
+
+                UpdateProduct::run($product, [
+                    'trade_units' => $tradeUnits,
+                    'price' => Arr::get($calculatedPrice, 'total_price'),
+                    'rrp' => Arr::get($calculatedPrice, 'total_rrp')
+                ]);
+            }
+
             $bundle->refresh();
 
             return $bundle;
@@ -150,6 +195,9 @@ class UpdateBundle extends OrgAction
             'payloadItems' => ['sometimes', 'array'],
             'payloadItems.*.bundle_item_id' => ['required', 'integer', 'exists:bundle_items,id'],
             'payloadItems.*.quantity' => ['required', 'integer', 'min:1'],
+            'products' => ['sometimes', 'array'],
+            'products.*.product_id' => ['sometimes', 'integer', 'exists:products,id'],
+            'products.*.quantity' => ['sometimes', 'integer', 'min:1'],
         ];
 
         if (!$this->strict) {
