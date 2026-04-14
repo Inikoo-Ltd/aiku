@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Link } from "@inertiajs/vue3"
-import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from 'laravel-vue-i18n'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faEnvelope, faStore } from '@fal'
+import { faStore } from '@fal'
 import Carousel from 'primevue/carousel'
+import TemplateCarouselItem from './TemplateCarouselItem.vue'
 
-library.add(faEnvelope, faStore);
+library.add(faStore);
 
 interface Template {
     id: number;
@@ -60,11 +59,6 @@ const hasOwnTemplates = computed(() => props.ownShopTemplates?.templates?.length
 const hasOtherTemplates = computed(() => props.otherShopTemplates?.templates?.length > 0);
 const hasAnyTemplates = computed(() => hasOwnTemplates.value || hasOtherTemplates.value);
 
-const getTemplatePreview = (template: Template): string => {
-    // Return the full HTML content
-    return template.compiled_layout;
-};
-
 const formatDate = (dateString?: string): string => {
     if (!dateString) return '';
     return new Date(dateString).toLocaleDateString();
@@ -83,40 +77,11 @@ const formatDate = (dateString?: string): string => {
                 </h3>
             </div>
 
-            <Carousel :value="props.ownShopTemplates.templates" :options="carouselOptions" class="mb-8">
+            <Carousel :value="props.ownShopTemplates.templates" :numVisible="4" :options="carouselOptions" class="mb-8">
                 <template #item="slotProps">
-                    <div class="mx-2">
-                        <div
-                            class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow h-full">
-                            <div class="p-4">
-                                <div class="flex items-start justify-between mb-3">
-                                    <div class="flex-1">
-                                        <h4 class="font-medium text-gray-900 truncate">{{ slotProps.data.name ||
-                                            slotProps.data.subject }}</h4>
-                                        <p v-if="slotProps.data.created_at" class="text-sm text-gray-500">{{
-                                            formatDate(slotProps.data.created_at) }}</p>
-                                    </div>
-                                    <FontAwesomeIcon :icon="faEnvelope" class="text-gray-400 ml-2" />
-                                </div>
-
-                                <div class="mb-4">
-                                    <div
-                                        class="w-full aspect-[2/5] bg-gray-50 border border-gray-200 rounded overflow-auto">
-                                        <div class="p-2" v-html="getTemplatePreview(slotProps.data)"></div>
-                                    </div>
-                                </div>
-
-                                <Link :href="route('grp.helpers.redirect_mailshot_template_workshop', {
-                                    organisation: props.organisationSlug,
-                                    shop: props.shopSlug,
-                                    mailshot: props.mailshotId,
-                                    template: slotProps.data.id
-                                })" class="block w-full">
-                                    <Button :label="trans('Use Template')" type="primary" size="sm" class="w-full" />
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
+                    <TemplateCarouselItem :template="slotProps.data" :organisation-slug="props.organisationSlug"
+                        :shop-slug="props.shopSlug" :mailshot-id="props.mailshotId" button-type="primary"
+                        :show-shop-name="false" :show-envelope-icon="true" />
                 </template>
             </Carousel>
         </div>
@@ -130,42 +95,12 @@ const formatDate = (dateString?: string): string => {
                 </h3>
             </div>
 
-            <Carousel :value="props.otherShopTemplates.templates" :options="carouselOptions" class="mb-8">
+            <Carousel :value="props.otherShopTemplates.templates" :numVisible="4" :options="carouselOptions"
+                class="mb-8">
                 <template #item="slotProps">
-                    <div class="mx-2">
-                        <div
-                            class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow h-full">
-                            <div class="p-4">
-                                <div class="flex items-start justify-between mb-3">
-                                    <div class="flex-1">
-                                        <h4 class="font-medium text-gray-900 truncate">{{ slotProps.data.name ||
-                                            slotProps.data.subject }}</h4>
-                                        <p class="text-sm text-gray-500">
-                                            {{ slotProps.data.shop_name }}{{ slotProps.data.created_at ? ' • ' +
-                                                formatDate(slotProps.data.created_at) : '' }}
-                                        </p>
-                                    </div>
-                                    <FontAwesomeIcon :icon="faEnvelope" class="text-gray-400 ml-2" />
-                                </div>
-
-                                <div class="mb-4">
-                                    <div
-                                        class="w-full aspect-[2/5] bg-gray-50 border border-gray-200 rounded overflow-auto">
-                                        <div class="p-2" v-html="getTemplatePreview(slotProps.data)"></div>
-                                    </div>
-                                </div>
-
-                                <Link :href="route('grp.helpers.redirect_mailshot_template_workshop', {
-                                    organisation: props.organisationSlug,
-                                    shop: props.shopSlug,
-                                    mailshot: props.mailshotId,
-                                    template: slotProps.data.id
-                                })" class="block w-full">
-                                    <Button :label="trans('Use Template')" type="secondary" size="sm" class="w-full" />
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
+                    <TemplateCarouselItem :template="slotProps.data" :organisation-slug="props.organisationSlug"
+                        :shop-slug="props.shopSlug" :mailshot-id="props.mailshotId" button-type="secondary"
+                        :show-shop-name="true" :show-envelope-icon="false" />
                 </template>
             </Carousel>
         </div>

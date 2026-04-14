@@ -277,16 +277,6 @@ const effectiveShopSlug = computed(() =>
                 <p class="text-gray-600 mb-4">
                     {{ trans('Choose an email template to get started with your mailshot.') }}
                 </p>
-
-                <!-- Workshop button for manual creation -->
-                <div class="flex justify-center mb-6">
-                    <Link :href="route('grp.helpers.redirect_mailshot_workshop', {
-                        mailshot: props.data.mailshot.data.id,
-                    })" @start="() => (isLoadingVisit = true)">
-                        <Button :label="trans('Create from Scratch')" type="secondary" icon="fal fa-drafting-compass"
-                            :loading="isLoadingVisit" />
-                    </Link>
-                </div>
             </div>
 
             <!-- Template Carousel -->
