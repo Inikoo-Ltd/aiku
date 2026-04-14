@@ -102,6 +102,7 @@ const props = defineProps<{
         [key: string]: TSTimeline
     }
 	allowActions: boolean
+	allowWaiting: boolean
     box_stats: {}
     quick_pickers: {}
     routes: {
@@ -580,6 +581,7 @@ onMounted(() => {
 			:routes
 			:state="delivery_note.state"
 			:shop_type="shop_type"
+			:allowWaiting="allowWaiting"
 			@update:quantity-to-resend="handleQuantityToResendUpdate"
 			@validation-error="handleValidationError" />
 	</div>

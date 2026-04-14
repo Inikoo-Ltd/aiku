@@ -54,6 +54,18 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, "settings.invoicing.show_tax_liability_date", Arr::pull($modelData, 'show_tax_liability_date'));
         }
 
+        if (Arr::has($modelData, 'allow_waiting')) {
+            data_set($modelData, 'settings.orders.allow_waiting', Arr::pull($modelData, 'allow_waiting'));
+        }
+
+        if (Arr::has($modelData, 'allow_picker_on_waiting')) {
+            data_set($modelData, 'settings.orders.allow_picker_on_waiting', Arr::pull($modelData, 'allow_picker_on_waiting'));
+        }
+
+        if (Arr::has($modelData, 'allow_waiter_on_waiting')) {
+            data_set($modelData, 'settings.orders.allow_waiter_on_waiting', Arr::pull($modelData, 'allow_waiter_on_waiting'));
+        }
+
 
         if (Arr::has($modelData, 'address')) {
             $addressData = Arr::get($modelData, 'address');
@@ -151,6 +163,7 @@ class UpdateOrganisation extends OrgAction
             'working_hours'                => ['sometimes', 'array'],
             'hr_annual_leave_days'         => ['sometimes', 'required', 'integer', 'min:0', 'max:365'],
             'hr_probation_period_days'     => ['sometimes', 'required', 'integer', 'min:0', 'max:365'],
+            'allow_waiting'                => ['sometimes', 'boolean'],
 
         ];
 

@@ -44,6 +44,7 @@ const props = defineProps<{
     tab?: string
     state: string
     shop_type : string
+    allowWaiting: boolean
 }>();
 
 const emit = defineEmits<{
@@ -791,7 +792,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
 
                             <!-- Button: Set Transaction as Waiting -->
                             <Button
-                                v-if="layout.app.environment === 'local'"
+                                v-if="layout.app.environment === 'local' && allowWaiting"
                                 @click="() => (isOpenModalSetAsWaiting = true, dataToSendAsWaiting.note = itemValue.notes, selectedTransactionToSetAsWaiting = itemValue)"
                                 type="tertiary"
                                 iconRight="fal fa-hourglass-half"

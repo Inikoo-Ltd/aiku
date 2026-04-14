@@ -80,6 +80,8 @@ class EditOrganisationSettings extends OrgAction
             }
         }
 
+        $allowWaiting = Arr::get($organisation->settings, 'orders.allow_waiting', false);
+
         return Inertia::render(
             'EditModel',
             [
@@ -198,6 +200,33 @@ class EditOrganisationSettings extends OrgAction
                                     "value" => url('/'),
                                     "readonly" => true,
                                     "copyButton" => true,
+                                ]
+                            ],
+                        ],
+                        [
+                            'label' => __('Orders'),
+                            'icon' => 'fa-light fa-shopping-cart',
+                            'fields' => $allowWaiting ? [
+                                'allow_waiting' => [
+                                    'type' => 'toggle',
+                                    'label' => __('Allow Waiting on Delivery Note'),
+                                    'value' => $allowWaiting,
+                                ],
+                                'allow_picker_on_waiting' => [
+                                    'type' => 'toggle',
+                                    'label' => __('Allow Picker on Waiting'),
+                                    'value' => Arr::get($organisation->settings, 'orders.allow_picker_on_waiting', false),
+                                ],
+                                'allow_waiter_on_waiting' => [
+                                    'type' => 'toggle',
+                                    'label' => __('Allow Waiter on Waiting'),
+                                    'value' => Arr::get($organisation->settings, 'orders.allow_waiter_on_waiting', false),
+                                ]
+                            ] : [
+                                'allow_waiting' => [
+                                    'type' => 'toggle',
+                                    'label' => __('Allow Waiting on Delivery Note'),
+                                    'value' => $allowWaiting,
                                 ]
                             ],
                         ],

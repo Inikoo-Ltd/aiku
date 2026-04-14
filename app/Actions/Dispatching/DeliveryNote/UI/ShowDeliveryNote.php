@@ -731,7 +731,7 @@ class ShowDeliveryNote extends OrgAction
                     'countriesAddressData' => GetAddressData::run()
                 ]
             ],
-
+            'allowWaiting'        => data_get($this->organisation->settings, 'orders.allow_waiting', false),
             'allowActions'        => $allowAction,
             'timelines'           => $this->getTimeline($deliveryNote),
             'box_stats'           => $this->getBoxStats($deliveryNote),
