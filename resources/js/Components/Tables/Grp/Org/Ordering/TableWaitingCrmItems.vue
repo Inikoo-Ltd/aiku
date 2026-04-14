@@ -45,11 +45,15 @@ const setAsNotPickRoute = (item: Record<string, any>): string | null => {
     }
 
     try {
-        return route('grp.org.shops.show.ordering.backlog.waiting_items.set_as_not_pick', [
-            item['organisation_slug'],
-            item['shop_slug'],
-            item['id'],
-        ])
+        // return route('grp.org.shops.show.ordering.backlog.waiting_items.set_as_not_pick', [
+        //     item['organisation_slug'],
+        //     item['shop_slug'],
+        //     item['id'],
+        // ])
+        return route('grp.models.delivery_note_item.not_picking_from_waiting_crm.store', {
+            deliveryNoteItem: item['id']
+        }
+        )
     } catch {
         return null
     }
@@ -107,20 +111,22 @@ const replaceProductRoute = (item: Record<string, any>): string | null => {
 
         <template #cell(actions)="{ item }">
             <div class="flex justify-end gap-2">
-                <Link
+                <!-- <Link
                     v-if="setAsNotPickRoute(item)"
                     :href="setAsNotPickRoute(item)!"
                     method="post"
                     preserve-scroll
                     xclass="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 transition hover:bg-amber-100"
                 >
-                    <Button
-                        :label="ctrans(`Don't pick`)"
-                        type="negative"
-                        icon="fas fa-skull"
-                        size="xs"
-                    />
-                </Link>
+            </Link> -->
+            
+            <ButtonWithLink
+                :url="setAsNotPickRoute(item)"
+                :label="ctrans(`Don't pick`)"
+                type="negative"
+                icon="fas fa-skull"
+                size="xs"
+            />
 
 
                 

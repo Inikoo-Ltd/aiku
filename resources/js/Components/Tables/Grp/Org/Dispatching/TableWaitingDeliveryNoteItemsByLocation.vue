@@ -38,6 +38,7 @@ const locale = inject('locale', aikuLocaleStructure)
 defineProps<{
     data: TableTS
     tab?: string
+    allowStockControllerSetNotPicked: boolean
 }>()
 
 const routeToDeliveryNote = (slug: string) => {
@@ -275,15 +276,31 @@ const selectedTransactionToSetAsWaiting = ref(null)
                                     </ButtonWithLink>
                                 </template>
                             </NumberWithButtonSave>
-
-                            <!-- <ButtonWithLink
-                                v-if="!itemValue.is_handled"
-                                type="negative" tooltip="Set as not picked" icon="fal fa-debug"
-                                :size="twBreakPoint().includes('lg') ? undefined : 'lg'"
-                                :routeTarget="itemValue.not_picking_route"
+                            
+                            <!-- Button: Not Picked -->
+                            <ButtonWithLink
+                                v-if="allowStockControllerSetNotPicked"
+                                type="negative"
+                                iconRight="fal fa-debug"
+                                :size="twBreakPoint().includes('lg') ? 'xs' : 'lg'"
+                                :routeTarget="{
+                                    name: 'grp.models.delivery_note_item.not_picking_from_waiting_warehouse.store',
+                                    parameters: {
+                                        deliveryNoteItem: itemValue.id
+                                    }
+                                }"
                                 :bindToLink="{ preserveScroll: true }"
-                            /> -->
+                                v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(itemValue.quantity_waiting_warehouse ) || '0'})"
+                            >
+                                <template #label>
+                                    <div>
+                                        <!-- <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)" :fractionData="GetQuantityToPickFractional(itemValue)" /> -->
+                                        <span vxelse>{{ locale.number(itemValue.quantity_waiting_warehouse ?? 0) }}</span>
+                                    </div>
+                                </template>
+                            </ButtonWithLink>
 
+                            <!-- Button: Pass to CS -->
                             <Button v-if="Number(itemValue.quantity_waiting_warehouse) > 0" @click="() => (isOpenModalPassToCs = true, selectedTransactionToSetAsWaiting = itemValue)" icon="fal fa-user-headset" :label="trans('Pass :qtyInWarehouse to CS', { qtyInWarehouse: Number(itemValue.quantity_waiting_warehouse) })" size="xs" type="tertiary" />
                         </div>
                     </div>

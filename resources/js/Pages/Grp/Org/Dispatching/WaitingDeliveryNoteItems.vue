@@ -24,6 +24,7 @@ const props = defineProps<{
     }
     grouped?: object
     itemized?: object
+    allow_stock_controller_set_not_picked: boolean
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -50,6 +51,11 @@ watch(() => props.tabs.current, (newTab) => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="tabData" :tab="currentTab" />
+    <component
+        :is="component"
+        :data="tabData"
+        :tab="currentTab"
+        :allowStockControllerSetNotPicked="allow_stock_controller_set_not_picked"
+    />
 </template>
 
