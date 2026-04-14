@@ -61,19 +61,21 @@ const rootRef = ref<HTMLElement | null>(null)
 const visibleDrawer = ref(false)
 const isLoadingSave = ref(false)
 const loadingTemplate = ref(false)
-
+const previewKey = ref<string | number>("")
 const currentView = ref<"desktop" | "tablet" | "mobile">("desktop")
 
 provide("visibleDrawer", visibleDrawer)
 provide("currentView", currentView)
 
-// PICKED DATA
+// ✅ FIXED: keep stable structure
 const dataPicked = ref<{
   sub_department: any | null
   families: any[]
+  family: any | null
 }>({
   sub_department: null,
-  families: []
+  families: [],
+  family: null
 })
 
 // VIEW SIZE
@@ -103,8 +105,6 @@ const onPickTemplate = async (template: any) => {
     if (response.data) {
       layoutState.value = response.data
     }
-
-   /*  debouncedAutosave() */
   } catch (error) {
     console.error("Failed to fetch template", error)
   } finally {
@@ -112,17 +112,17 @@ const onPickTemplate = async (template: any) => {
   }
 }
 
-// CHANGE FAMILY
+// ✅ FIXED: do NOT replace object
 const onChangeFamily = (payload: any) => {
-  dataPicked.value = {
-    sub_department: payload.sub_department,
-    families: payload.families || []
-  }
-}
+  dataPicked.value.family = payload
 
+  // 🔥 force re-render using family code (or id as fallback)
+  previewKey.value = payload?.code || payload?.id || Date.now()
+
+  visibleDrawer.value = false
+}
 // AUTOSAVE
 const autosave = () => {
-  console.log("Autosaving...", layoutState.value)
   const payload = toRaw(layoutState.value)
 
   if (payload?.data?.fieldValue) {
@@ -172,64 +172,56 @@ onMounted(() => {
     </div>
 
     <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
-      
+
       <!-- LEFT MENU -->
       <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-        <SideMenuFamilyDescriptionBlockWorkshop 
-          :data="layoutState" 
-          :webBlockTypes="props.data.web_block_types"
-          @set-up-template="onPickTemplate" 
-          @auto-save="debouncedAutosave"
-        />
+        <SideMenuFamilyDescriptionBlockWorkshop :data="layoutState" :webBlockTypes="props.data.web_block_types"
+          @set-up-template="onPickTemplate" @auto-save="debouncedAutosave" />
       </div>
 
       <!-- PREVIEW -->
       <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-auto border">
-        
+
         <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
           <div class="py-1 px-2 hidden lg:block">
             <ScreenView v-model="currentView" />
           </div>
 
           <div class="text-sm text-gray-600 italic cursor-pointer" @click="visibleDrawer = true">
-            <span v-if="dataPicked.sub_department?.name">
-              Preview: <strong>{{ dataPicked.sub_department.name }}</strong>
+            <span v-if="dataPicked.family?.name">
+              Preview: <strong>{{ dataPicked.family.name }}</strong>
             </span>
             <span v-else>Pick The Family</span>
           </div>
         </div>
 
-        <div v-if="layoutState?.code" ref="rootRef" :class="['border-2 border-t-0', iframeClass]">
-       <!--    <component
-            class="flex-1 overflow-auto active-block"
-            :is="getComponent(layoutState.code)"
-            :screenType="currentView"
-            :modelValue="{
-              ...layoutState?.data?.fieldValue,
-              department: dataPicked.sub_department,
-              families: dataPicked.families
-            }"
-            :routeEditFamiliesOverview="props.data.update_family_route"
-          /> -->
+        <!-- ✅ KEY HERE FOR FULL RE-RENDER -->
+        <div v-if="layoutState && dataPicked.family" :key="previewKey" ref="rootRef"
+          :class="['border-2 border-t-0', iframeClass]">
+          <div v-for="(block, key) in layoutState" :key="key + '-' + previewKey">
+            <component class="flex-1 overflow-auto active-block my-3" :is="getComponent(key)"
+              :routeEditFamiliesOverview="props.data.update_family_route" :screenType="currentView" :modelValue="{
+                ...block?.fieldValue,
+                ...dataPicked.family
+              }" />
+          </div>
         </div>
 
         <div v-else class="flex flex-col items-center justify-center text-gray-500 flex-1">
           <FontAwesomeIcon :icon="faInfoCircle" class="text-4xl mb-2" />
-          <h3 class="text-lg font-semibold">{{ trans("No department selected") }}</h3>
+          <h3 class="text-lg font-semibold">
+            {{ trans("No Family selected") }}
+          </h3>
         </div>
       </div>
     </div>
   </div>
 
   <!-- DRAWER -->
-  <Drawer
-    v-model:visible="visibleDrawer"
-    position="right"
-    :pt="{
-      root: { style: 'width: 30vw' },
-      content: { class: 'flex flex-col h-full' }
-    }"
-  >
+  <Drawer v-model:visible="visibleDrawer" position="right" :pt="{
+    root: { style: 'width: 30vw' },
+    content: { class: 'flex flex-col h-full' }
+  }">
     <template #header>
       <div>
         <h2 class="text-base font-semibold">
@@ -242,11 +234,7 @@ onMounted(() => {
     </template>
 
     <div class="flex-1 overflow-y-auto p-4">
-      <FamilyList 
-        :dataList="props.data.family" 
-        @ChangeFamily="onChangeFamily"
-        :active="layoutState?.data?.fieldValue?.family?.slug" 
-      />
+      <FamilyList :dataList="props.data.family" @ChangeFamily="onChangeFamily" :active="dataPicked.family?.slug" />
     </div>
   </Drawer>
 </template>
