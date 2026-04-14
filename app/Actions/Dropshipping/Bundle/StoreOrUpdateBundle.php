@@ -37,15 +37,6 @@ class StoreOrUpdateBundle extends OrgAction
         }
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
-    }
-
     public function rules(): array
     {
         return $this->isUpdate ? UpdateBundle::make()->rules() : StoreBundle::make()->rules();
