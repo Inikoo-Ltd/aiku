@@ -189,6 +189,7 @@ trait WithSendBulkEmails
             'invoice-date-change-blade' => Arr::get($additionalData, 'invoice_date_change_blade'),
             'delivery-note-link' => Arr::get($additionalData, 'delivery_note_link'),
             'delivery-note-reference' => Arr::get($additionalData, 'delivery_note_reference'),
+            'request-review-link' => Arr::get($additionalData, 'request_review_link'),
 
             default => $originalPlaceholder,
         };
