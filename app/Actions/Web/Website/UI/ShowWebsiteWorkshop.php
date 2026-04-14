@@ -108,7 +108,7 @@ class ShowWebsiteWorkshop extends OrgAction
             : Inertia::lazy(
                 fn () => GetWebsiteWorkshopFamiliesOverviewWebBlock::run($website)
             );
-        $tabs[WebsiteWorkshopTabsEnum::FAMILIES_DESCRIPTION->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILIES_OVERVIEW->value
+        $tabs[WebsiteWorkshopTabsEnum::FAMILIES_DESCRIPTION->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILIES_DESCRIPTION->value
             ?
             fn () => GetWebsiteWorkshopFamilyDescriptionWebBlock::run($website)
             : Inertia::lazy(
@@ -244,6 +244,13 @@ class ShowWebsiteWorkshop extends OrgAction
                     'families' =>  [
                         'method'     => 'post',
                         'name'       => 'grp.models.website.publish.family',
+                        'parameters' => [
+                            'website' => $website->id
+                        ]
+                    ],
+                    'families_description' =>  [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.website.publish.family_description',
                         'parameters' => [
                             'website' => $website->id
                         ]

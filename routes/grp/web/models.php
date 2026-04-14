@@ -103,6 +103,10 @@ use App\Actions\CRM\Poll\DeletePoll;
 use App\Actions\CRM\Poll\StorePoll;
 use App\Actions\CRM\Poll\UpdatePoll;
 use App\Actions\CRM\Prospect\ImportShopProspects;
+use App\Actions\CRM\Prospect\Mailshots\SendProspectMailShot;
+use App\Actions\CRM\Prospect\Mailshots\StoreProspectMailshot;
+use App\Actions\CRM\Prospect\Mailshots\UpdateProspectMailshot;
+use App\Actions\CRM\Prospect\Mailshots\UpdateProspectMailshotRecipientFilter;
 use App\Actions\CRM\Prospect\UpdateProspect;
 use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\CRM\WebUser\StoreWebUser;
@@ -783,6 +787,8 @@ Route::name('banner.')->prefix('banner/{banner:id}')->group(function () {
 
 Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     Route::post('prospect/upload', [ImportShopProspects::class, 'inShop'])->name('prospects.upload');
+    Route::post('prospect/mailshot', StoreProspectMailshot::class)->name('prospect.mailshot.store');
+    Route::post('prospect/mailshot/{mailshot:id}/send', SendProspectMailShot::class)->name('prospect.mailshot.send')->withoutScopedBindings();
     Route::post('website', StoreWebsite::class)->name('website.store');
 
     Route::name('sender_email.')->prefix('sender-email')->group(function () {
@@ -819,7 +825,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
 
     Route::name('outboxes.')->prefix('outboxes/{outbox:id}')->group(function () {
         Route::post('publish', PublishOutbox::class)->name('publish')->withoutScopedBindings();
-        Route::patch('update', [UpdateOutbox::class,'inShop'])->name('update')->withoutScopedBindings();
+        Route::patch('update', [UpdateOutbox::class, 'inShop'])->name('update')->withoutScopedBindings();
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
         Route::post('send/test', [SendTestEmail::class, 'asControllerOutbox'])->name('send.test')->withoutScopedBindings();
         Route::post('workshop/template', StoreWorkshopOutboxTemplate::class)->name('workshop.store.template')->withoutScopedBindings();
@@ -830,7 +836,6 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::post('mailshot/{mailshot:id}/send', SendMailShot::class)->name('mailshot.send')->withoutScopedBindings();
         Route::post('mailshot/{mailshot:id}/schedule', SetMailshotAsScheduled::class)->name('mailshot.schedule')->withoutScopedBindings();
         Route::post('mailshot/{mailshot:id}/cancel-schedule', CancelMailshotSchedule::class)->name('mailshot.cancel-schedule')->withoutScopedBindings();
-
     });
 
     Route::name('mailshot.')->prefix('mailshot/{mailshot:id}')->group(function () {
@@ -909,6 +914,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('publish/sub_department', [PublishWebsiteMarginal::class, 'subDepartment'])->name('publish.sub_department');
     Route::post('publish/family', [PublishWebsiteMarginal::class, 'family'])->name('publish.family');
     Route::post('publish/families_overview', [PublishWebsiteMarginal::class, 'familiesOverview'])->name('publish.families_overview');
+    Route::post('publish/family_description', [PublishWebsiteMarginal::class, 'familyDescription'])->name('publish.family_description');
     Route::post('publish/product', [PublishWebsiteMarginal::class, 'product'])->name('publish.product');
     Route::post('publish/products', [PublishWebsiteMarginal::class, 'products'])->name('publish.products');
     Route::post('publish/collection', [PublishWebsiteMarginal::class, 'collection'])->name('publish.collection');
@@ -1176,6 +1182,9 @@ Route::prefix('customer-comms/{customerComms:id}')->name('customer_comms.')->gro
 Route::prefix('prospect/{prospect:id}')->name('prospect.')->group(function () {
     Route::patch('update', UpdateProspect::class)->name('update');
 });
+
+Route::patch('prospect-mailshot/{mailshot:id}/recipient-filter', UpdateProspectMailshotRecipientFilter::class)->name('shop.prospect.mailshot.recipient-filter.update')->withoutScopedBindings();
+Route::patch('prospect-mailshot/{mailshot:id}', UpdateProspectMailshot::class)->name('shop.prospect.mailshot.update');
 
 Route::post('/shop/{shop:id}/shipping-country/', StoreShippingCountry::class)->name('shipping_country.store');
 Route::prefix('shipping-country/{shippingCountry:id}')->name('shipping_country.')->group(function () {

@@ -1,0 +1,36 @@
+<?php
+
+namespace App\Actions\Web\Website\UI\Json;
+
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Models\Catalogue\Shop;
+use App\Models\Fulfilment\Fulfilment;
+use App\Models\Web\WebBlockType;
+use App\Models\Web\Website;
+use Illuminate\Support\Collection;
+use Lorisleiva\Actions\ActionRequest;
+
+class FetchFamilyDescriptionBlockLayout extends OrgAction
+{
+    public function asController(Website $website, WebBlockType $webBlockType, ActionRequest $request): Collection
+    {
+        $this->initialisationFromShop($website->shop, $request);
+
+        return $this->handle($webBlockType, $this->validatedData);
+    }
+
+    public function handle(WebBlockType $webBlockType, array $modelData): Collection
+    {   
+        return WebBlockType::where('slug', $webBlockType->slug)
+                ->orWhere('slug', $webBlockType->slug . '-extra-description')
+                ->orderBy('slug')
+                ->get()
+                ->pluck('data', 'slug');
+    }
+
+    public function jsonResponse(Collection $webBlockData): array
+    {
+        return $webBlockData->toArray();
+    }
+}

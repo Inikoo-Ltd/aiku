@@ -230,9 +230,7 @@ class AutosaveWebsiteMarginal extends OrgAction
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedFamilyDescriptionSnapshot->layout;
 
             $this->update($website->unpublishedFamilyDescriptionSnapshot, [
-                'layout' => [
-                    'family_description' => $layout
-                ]
+                'layout' => $layout
             ]);
         } elseif ($marginal == 'product') {
             if (!$website->unpublishedProductSnapshot) {
