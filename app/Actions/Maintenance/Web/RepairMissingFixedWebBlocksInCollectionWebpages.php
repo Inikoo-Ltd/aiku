@@ -35,10 +35,12 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
         $collection = $webpage->model;
 
         // FIX FOR DUPLICATED FAMILIES WEBBLOCK UNDER COLLECTION
-        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES->value);
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES);
 
         // FIX FOR DUPLICATED PRODUCTS WEBBLOCK UNDER COLLECTION
-        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS->value);
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
+
+        $this->deleteWebBlocksByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS);
 
         $countCollectionDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'collection-description-1');
         if (count($countCollectionDescriptionBlock) == 0) {
@@ -46,7 +48,13 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
         }
 
         $webpage->refresh();
-        $this->setDescriptionWebBlockOnTop($webpage);
+        if ($command->option('set-description-top')) {
+            $this->setDescriptionWebBlockOnTop($webpage);
+        }
+
+        if ($command->option('hide-description')) {
+            $this->setDescriptionWebBlockHidden($webpage);
+        }
         $webpage->refresh();
 
         UpdateWebpageContent::run($webpage);
@@ -71,7 +79,6 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
         }
     }
 
-
     public function setDescriptionWebBlockOnTop(Webpage $webpage): void
     {
         $collectionDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'collection-description-1')->first()->model_has_web_blocks_id;
@@ -95,15 +102,32 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
         UpdateWebpageContent::run($webpage);
     }
 
+    public function setDescriptionWebBlockHidden(Webpage $webpage): void
+    {
+        $collectionDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'collection-description-1')->first();
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_collections_webpages';
+        if ($collectionDescriptionWebBlock) {
+            DB::table('model_has_web_blocks')
+                ->where('id', $collectionDescriptionWebBlock->model_has_web_blocks_id)
+                ->update(['show' => false]);
+        }
+
+        UpdateWebpageContent::run($webpage);
+    }
+
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_collections_webpages {--website_id=} {--set-description-top} {--hide-description}';
 
     public function asCommand(Command $command): void
     {
-        $webpagesID = DB::table('webpages')
-        ->select('id')
-        ->where('model_type', 'Collection')
-        ->get();
+        $websiteId      = $command->option('website_id');
+        $webpagesID     = DB::table('webpages')
+            ->when(
+                !empty($websiteId),
+                fn ($q) => $q->where('website_id', $websiteId)
+            )
+            ->select('id')
+            ->where('model_type', 'Collection')
+            ->get();
 
         foreach ($webpagesID as $webpageID) {
             $webpage = Webpage::find($webpageID->id);

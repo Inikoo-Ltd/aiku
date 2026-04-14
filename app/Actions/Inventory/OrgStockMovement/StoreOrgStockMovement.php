@@ -102,6 +102,7 @@ class StoreOrgStockMovement extends OrgAction
         }
         OrgStockHydrateMovements::dispatch($orgStock)->delay($this->hydratorsDelay);
         OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock)->delay($this->hydratorsDelay);
+        CalculateRunningQuantityOrgStockMovement::dispatch($orgStockMovement, $locationOrgStock)->delay($this->hydratorsDelay);
 
 
         return $orgStockMovement;

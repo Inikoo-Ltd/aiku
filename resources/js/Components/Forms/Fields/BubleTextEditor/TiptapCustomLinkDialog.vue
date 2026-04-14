@@ -12,6 +12,7 @@ import { trans } from "laravel-vue-i18n"
 
 const props = defineProps<{
   show: boolean
+  routeGetInternalLink?: routeType
   attribut?: {
     href: string
     type: "internal" | "external"
@@ -64,6 +65,12 @@ watch(
   },
   { immediate: true, deep: true }
 )
+
+function resolveRoute() {
+  return props.routeGetInternalLink?.name
+    ? route(props.routeGetInternalLink.name, props.routeGetInternalLink.parameters ?? {})
+    : getRoute()
+}
 
 function getRoute() {
   const params = {
@@ -187,7 +194,7 @@ const cleanCanonicalPath = (url) => {
 
         <!-- Internal -->
         <div v-if="form.type === 'internal'">
-          <SelectQuery :key="selectKey" :urlRoute="getRoute()" :object="true" fieldName="href" :value="selectedOption"
+          <SelectQuery :key="selectKey" :urlRoute="resolveRoute()" :object="true" fieldName="href" :value="selectedOption"
             :closeOnSelect="true" :searchable="true" label="href" :canClear="true" :clearOnSearch="true"
             :onChange="handleSelect">
             <template #placeholder>

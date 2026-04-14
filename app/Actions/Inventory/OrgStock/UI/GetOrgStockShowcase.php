@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
+use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Http\Resources\Inventory\LocationOrgStocksResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\OrgStock;
@@ -19,6 +20,7 @@ class GetOrgStockShowcase
 {
     use AsObject;
     use HasBucketImages;
+    use CalculatesOrgStockHistories;
 
     public function handle(Warehouse $warehouse, OrgStock $orgStock): \Illuminate\Support\Collection
     {
@@ -28,7 +30,7 @@ class GetOrgStockShowcase
             $dataTradeUnits = $this->getDataTradeUnit($orgStock->tradeUnits);
         }
 
-        $locations = LocationOrgStocksResource::collection($orgStock->locationOrgStocks)->toArray(request());
+        $locations = LocationOrgStocksResource::collection($orgStock->locationOrgStocks()->with(['location', 'organisation', 'warehouse'])->get())->toArray(request());
         usort($locations, function ($a, $b) {
             return $a['code'] <=> $b['code'];
         });
@@ -72,19 +74,12 @@ class GetOrgStockShowcase
                         'add_parts_location_note'      => [],  // TODO
                     ],
                     'stock_cost'     => [
-                            'cost_stock_price_per_unit' => $orgStock->cost_price,
-                            'cost_stock_price_outer' => $orgStock->cost_price * $orgStock->quantity_available,
-                            'cost_current_price_per_unit' => $orgStock->cost_price,
-                            'cost_current_price_outer' => $orgStock->cost_price * $orgStock->quantity_available,
+                            'cost_stock_price_per_unit' => $orgStock->unit_cost * ($orgStock->tradeUnits()->first()?->pivot?->quantity ?? 1),
+                            'cost_stock_price_outer' => $orgStock->unit_cost * $orgStock->quantity_available,
+                            'cost_current_price_per_unit' => $orgStock->unit_cost,
+                            'cost_current_price_outer' => $orgStock->unit_cost * $orgStock->quantity_available,
                         ],
                     'summary'        => [
-                        'quantity_in_locations'        => [
-                            'icon_state' => [
-                                'icon'    => 'fal fa-inventory',
-                                'tooltip' => __("Stock in locations"),
-                            ],
-                            'value'      => $orgStock->quantity_in_locations,
-                        ],
                         'quantity_in_submitted_orders' => [
                             'icon_state' => [
                                 'icon'    => 'fas fa-shopping-cart',
@@ -108,7 +103,8 @@ class GetOrgStockShowcase
                             'value'      => $orgStock->quantity_available
                         ],
                     ],
-                    'locations'      => $locations,
+                    'locations'         => $locations,
+                    'qty_in_location'   => $orgStock->quantity_in_locations
                 ]
             ]
         );

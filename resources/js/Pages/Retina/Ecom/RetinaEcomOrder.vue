@@ -90,7 +90,7 @@ const props = defineProps<{
         }
     }
 
-    transactions: {}
+    transactions: {} // TransactionsResource
     invoices?: {}
     delivery_notes: {
         data: Array<any>

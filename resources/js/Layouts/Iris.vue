@@ -7,7 +7,7 @@ import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
-import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, onUnmounted } from 'vue'
+import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, onUnmounted, computed } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { trans } from 'laravel-vue-i18n'
@@ -16,7 +16,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
 import { faHome, faImage, faSparkles, faSignIn, faPlusCircle, faMedal } from '@fal'
-import { faMedal as fasMedal, faCandleHolder, faCircle } from '@fas'
+import { faMedal as fasMedal, faCandleHolder, faCircle, faBoxFull } from '@fas'
 import { faMedal as fadMedal } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -43,7 +43,7 @@ interface ChatConfig {
 }
 
 const bundle = useBundle()
-library.add(faHome, faImage, faSparkles, faSignIn, faPlusCircle, faCandleHolder, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp)
+library.add(faBoxFull, faHome, faImage, faSparkles, faSignIn, faPlusCircle, faCandleHolder, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp)
 
 initialiseIrisApp()
 
@@ -51,6 +51,17 @@ const layout = useIrisLayoutStore()
 const isOpenMenuMobile = ref(false)
 provide('layout', layout)
 provide('isOpenMenuMobile', isOpenMenuMobile)
+const BUNDLE_PANEL_WIDTH = 320
+const bundleToggleStyle = computed(() => {
+    const gap = 16
+    const openOffset = BUNDLE_PANEL_WIDTH + gap
+    const right = bundle.open.value ? openOffset : gap
+    return {
+        top: '60%',
+        right: `${right}px`,
+        color: layout.app.theme[1]
+    }
+})
 
 const propsAnnouncementsTopbar = ref([])
 const propsAnnouncementsBottomMenu =  ref([])
@@ -300,16 +311,29 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
                     <IrisRightsideBasket
                         v-if="layout.iris_variables?.cart_count > 0"
                         :isOpen="layout.rightbasket?.show"
-                    />
+                    />  
                 </div>
 
                 <div
                     v-if="bundle.open.value"
                     :class="bundle.open.value
-                        ? 'w-[400px] border-l-gray-300 sticky z-[52] border-l top-0 pointer-events-auto h-screen transition-all'
+                        ? 'w-[350px] border-l-gray-300 sticky z-[52] border-l top-0 pointer-events-auto h-screen transition-all'
                         : 'w-0 border-transparent'"
                     >
                     <BundleSidebar :layout="layout.iris.currency?.symbol"/>
+                </div>
+
+                <div
+                    v-if="layout?.iris?.is_logged_in && screenType !== 'mobile' && layout.app.name === 'iris' && layout.retina.type === 'dropshipping'"
+                    @click="bundle.open.value = !bundle.open.value"
+                    class="fixed z-[60] w-8 aspect-square rounded-full flex items-center justify-center cursor-pointer
+                        bg-[var(--theme-color-0)]
+                        hover:bg-[color-mix(in_srgb,var(--theme-color-0)75%,black)]"
+                    :style="bundleToggleStyle"
+                    v-tooltip="'Toggle Bundle'"
+                >
+                <FontAwesomeIcon :icon="faBoxFull" class='text-md' fixed-width
+                            aria-hidden='true' />
                 </div>
             </main>
             <template v-if="propsAnnouncementsTopFooter?.length">

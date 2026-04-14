@@ -18,6 +18,7 @@ use App\Actions\Iris\Portfolio\DeleteIrisPortfolioFromMultiChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToAllChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToMultiChannels;
 use App\Actions\Retina\Dropshipping\Bundle\CalculateRetinaBundleItemPriceDetails;
+use App\Actions\Retina\Dropshipping\Bundle\DeleteRetinaBundle;
 use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductBundleDescription;
 use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductBundleTitle;
 use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductImages;
@@ -67,5 +68,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
         Route::post('products/{product:id}/images-generator', GenerateRetinaProductImages::class)->name('products.images.generate')->withoutScopedBindings();
         Route::post('products/{product:id}/images', UploadRetinaBundleProductImages::class)->name('products.images.store')->withoutScopedBindings();
         Route::post('calculate-bundle-product', CalculateRetinaBundleItemPriceDetails::class)->name('products.calculate');
+
+        Route::delete('{bundle:id}', DeleteRetinaBundle::class)->name('delete')->withoutScopedBindings();
     });
 });

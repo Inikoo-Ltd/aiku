@@ -24,8 +24,8 @@ class SyncCustomerWebActivities implements ShouldBeUnique
     use AsAction;
     use WithHydrateCommand;
 
-    public string $jobQueue = 'low-priority';
-    public int $jobTimeout = 300;
+    public string $jobQueue = 'analytics';
+    public int $jobTimeout = 120;
     public int $jobTries = 1;
 
     public string $commandSignature = 'sync:customer-web-activities {organisations?*} {--S|shop= shop slug} {--s|slug=} {--date= : Specific date to sync (Y-m-d), defaults to full 12-month resync}';

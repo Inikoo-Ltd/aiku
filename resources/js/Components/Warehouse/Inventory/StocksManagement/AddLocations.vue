@@ -7,7 +7,7 @@ import { faDotCircle, faUnlink, faExclamationTriangle, faUndo, faPlus, faSeedlin
 import { faBan, faDotCircle as fasDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { InputNumber, AutoComplete } from 'primevue'
-import { ref, computed, inject } from 'vue'
+import { ref, computed, inject, nextTick } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { router, useForm } from '@inertiajs/vue3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
@@ -61,6 +61,7 @@ const onAddNewLocation = () => {
                 })
             },
             onFinish: () => {
+                emits('close')
                 isLoadingAddNewLocation.value = false
             },
         }
@@ -68,21 +69,53 @@ const onAddNewLocation = () => {
 }
 
 const newLocation = ref<stockLocation | null>(null)
+
+const locationSelectRef = ref()
+
+const focusLocationSelect = async () => {
+    await nextTick()
+
+    const multiselect = locationSelectRef.value?.multiselectRef
+
+    if (!multiselect?.$el) return
+
+    const input = multiselect.$el.querySelector('.multiselect-search')
+
+    input?.focus()
+}
+
+defineExpose({
+    focusLocationSelect
+})
 </script>
 
 <template>
     <div class="space-y-4 ">
-            <!-- V-FOR 1: Existing locations -->
+        <!-- V-FOR 1: Existing locations -->
         <div class="flex flex-col gap-y-3">
-            <div v-for="(loc, idx) in props.locations" :key="'existing-' + loc.id"
-                class="grid grid-cols-7 gap-x-3 items-center gap-2 border-b pb-2">
-                <div class="col-span-2 flex items-center gap-x-2">
-                    {{ loc.code }}
+            <template v-if="props.locations.length > 0">
+                <div v-for="(loc, idx) in props.locations" :key="'existing-' + loc.id"
+                    class="grid grid-cols-7 gap-x-3 items-center gap-2 border-b pb-2">
+                    <div class="col-span-2 flex items-center gap-x-2">
+                        {{ loc.code }}
+                    </div>
+                    <div class="col-span-5 text-end">
+                        <span class="text-sm italic text-gray-400">
+                            {{ trans("Current Stock") }} {{ Number(loc.quantity) }}
+                        </span>
+                    </div>
                 </div>
-                <div class="col-span-5 text-end">
-                    <span class="text-sm italic text-gray-400">
-                        {{ trans("Current Stock") }} {{ Number(loc.quantity) }}
-                    </span>
+            </template>
+            <div
+                v-else
+                class="flex flex-col items-center justify-center text-center py-10 border border-dashed border-gray-300 rounded-lg"
+            >
+                <div class="text-gray-600 font-medium">
+                    {{ trans("No locations available") }}
+                </div>
+
+                <div class="text-sm text-gray-400 mt-1">
+                    {{ trans("You haven't added any locations yet") }}
                 </div>
             </div>
         </div>
@@ -93,10 +126,12 @@ const newLocation = ref<stockLocation | null>(null)
             <div class="flex gap-x-2 items-center">
                 <div class="flex-1">
                     <PureMultiselectInfiniteScroll
+                        ref="locationSelectRef"
                         v-model="newLocation"
                         :fetchRoute="routes.location_route"
                         object
                         labelProp="code"
+                        autofocus
                     />
                 </div>
 

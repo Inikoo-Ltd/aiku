@@ -177,6 +177,8 @@ const messageDelete = ref("")
 											</p>
 										</div>
 
+										<slot name="warning" />
+
 										<div v-if="props.isWithMessage" class="mt-4">
 											<label
 												for=""

@@ -3,7 +3,7 @@
 	"scope": "webpage",
 	"code": "family-1",
 	"name": "family",
-	"category": "",
+	"category": "family_description",
 	"fixed": true,
 	"icon": ["fal", "folder"],
 	"website_type" : ["b2b","b2c","dropshipping"],
