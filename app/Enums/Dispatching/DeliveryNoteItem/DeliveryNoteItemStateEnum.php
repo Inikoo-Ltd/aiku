@@ -34,7 +34,7 @@ enum DeliveryNoteItemStateEnum: string
             'unassigned'       => __('Unassigned'),
             'queued'           => __('In Queue'),
             'handling'         => __('Handling'),
-            'handling_blocked' => __('Handling Blocked'),
+            'handling_blocked' => __('Waiting'),
             'picked'           => __('Picked'),
             'packing'          => __('Packing'),
             'packed'           => __('Packed'),
@@ -80,7 +80,7 @@ enum DeliveryNoteItemStateEnum: string
                 ]
             ],
             'handling_blocked' => [
-                'tooltip' => __('Handling Blocked'),
+                'tooltip' => __('Waiting'),
                 'icon'    => 'fal fa-hand-paper',
                 'class'   => 'text-gray-500',
                 'color'   => 'gray',

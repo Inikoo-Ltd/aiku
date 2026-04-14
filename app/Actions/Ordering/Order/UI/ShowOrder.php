@@ -302,7 +302,7 @@ class ShowOrder extends OrgAction
         return Inertia::render(
             'Org/Ordering/Order',
             [
-                'title'       => __('order'),
+                'title'       => __('Order').' '.$order->reference,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $order,
                     $request->route()->getName(),

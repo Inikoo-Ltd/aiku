@@ -17,6 +17,7 @@ use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\UI\Dispatch\DispatchHubTabsEnum;
 use App\Http\Resources\Dispatching\DashboardDispatchHubDashboardResource;
@@ -77,10 +78,18 @@ class ShowDispatchHub extends OrgAction
                 ],
                 'delivery_note'   => DashboardDispatchHubDashboardResource::make(GetDispatchHubShowcase::make()->handle($warehouse)),
                 'picking_session' => $this->getPickingSessionStats($warehouse),
+                'waiting_items_still_picking' => [
+                    'count' => $warehouse->deliveryNotes()
+                        ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                        ->where('delivery_note_items.has_waiting_warehouse',true)
+                        ->where('delivery_notes.state',DeliveryNoteItemStateEnum::PICKED)
+                        ->count(),
+                ],
                 'waiting_items' => [
                     'count' => $warehouse->deliveryNotes()
                         ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
                         ->where('delivery_note_items.has_waiting_warehouse',true)
+                        ->where('delivery_notes.state','!=',DeliveryNoteItemStateEnum::PICKED)
                         ->count(),
                 ]
             ]
