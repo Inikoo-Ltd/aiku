@@ -228,7 +228,7 @@ const isWeakValue = (value: number | null | undefined) => {
 
                                 <Link v-if="data.data[row.key]?.[item.key]?.warning"
                                     :href="data.data[row.key]?.[item.key]?.warning?.route_target?.name ? route(data.data[row.key]?.[item.key]?.warning?.route_target?.name, data.data[row.key]?.[item.key]?.warning?.route_target.parameters) : '#'"
-                                    class="relative bg-amber-300 text-amber-700 rounded px-1 opacity-70 hover:opacity-100"
+                                    class="relative bg-amber-300 text-amber-700 rounded px-2.5  ml-2 opacity-70 hover:opacity-100"
                                     v-tooltip="data.data[row.key]?.[item.key]?.warning?.tooltip"
                                 >
                                     {{ data.data[row.key]?.[item.key]?.warning?.value }}

@@ -109,15 +109,15 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                 if ($caseKey === 'handling' && $widget['waiting_items_still_picking']['count'] > 0) {
                     $entry['warning'] = [
                         'route_target' => $widget['waiting_items_still_picking']['route'],
-                        'tooltip' => 'abcc',
+                        'tooltip' => __('Waiting items in delivery notes still picking'),
                         'value' => $widget['waiting_items_still_picking']['count'],
                     ];
                 }
 
                 if ($caseKey === 'handling_blocked' && $widget['waiting_items']['count'] > 0) {
                     $entry['warning'] = [
-                        'route_target' => $widget['waiting_items_still']['route'],
-                        'tooltip' => 'abcc',
+                        'route_target' => $widget['waiting_items']['route'],
+                        'tooltip' =>__('Waiting items'),
                         'value' => $widget['waiting_items']['count'],
                     ];
                 }

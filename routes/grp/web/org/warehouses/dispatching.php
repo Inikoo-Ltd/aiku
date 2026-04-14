@@ -36,6 +36,7 @@ Route::get('/', ShowDispatchHub::class)->name('backlog');
 Route::get('/waiting_items', IndexWaitingDeliveryNoteItems::class)->name('waiting_items');
 Route::get('/waiting_items_still_picking', IndexWaitingDeliveryNoteItems::class)->name('waiting_items_still_picking');
 
+
 Route::get('/delivery-notes', IndexDeliveryNotes::class)->name('delivery-notes');
 Route::get('/delivery-notes/shop/{shopType}', [IndexDeliveryNotes::class, 'inShopTypes'])->name('delivery-notes.shop');
 
