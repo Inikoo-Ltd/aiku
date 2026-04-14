@@ -205,7 +205,7 @@ class EditOrganisationSettings extends OrgAction
                         ],
                         [
                             'label' => __('Picking'),
-                            'icon' => 'fa-light fa-dolly-flaebed-alt',
+                            'icon' => 'fa-light fa-dolly-flatbed-alt',
                             'fields' => $allowWaiting ? [
                                 'allow_waiting' => [
                                     'type' => 'toggle',
