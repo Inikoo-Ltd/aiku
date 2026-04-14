@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Http\Resources\Catalogue\ChargesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Billables\Charge;
@@ -81,14 +82,22 @@ class IndexCharges extends OrgAction
             $queryBuilder->where('charges.group_id', $parent->id);
         } elseif (class_basename($parent) == 'Organisation') {
             $queryBuilder->where('charges.organisation_id', $parent->id);
-            $queryBuilder->leftJoin('shops', 'charges.shop_id', 'shops.id');
-            $queryBuilder->addSelect(
-                'shops.slug as shop_slug',
-                'shops.code as shop_code',
-                'shops.name as shop_name',
-            );
         }
 
+        $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+            timeSeriesTable: 'asset_time_series',
+            timeSeriesRecordsTable: 'asset_time_series_records',
+            foreignKey: 'asset_id',
+            aggregateColumns: [
+                'sales_grp_currency_external' => 'sales_grp_currency_external',
+                'invoices'                    => 'invoices',
+                'customers_invoiced'          => 'customers_invoiced',
+            ],
+            frequency: TimeSeriesFrequencyEnum::DAILY->value,
+            prefix: $prefix,
+            includeLY: true,
+            localKey: 'asset_id',
+        );
 
         return $queryBuilder
             ->defaultSort('charges.code')
@@ -101,18 +110,16 @@ class IndexCharges extends OrgAction
                 'charges.created_at',
                 'charges.updated_at',
                 'currencies.code as currency_code',
-                'invoices_all',
-                'sales_all',
-                'customers_invoiced_all',
                 'shops.name as shop_name',
                 'shops.slug as shop_slug',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
+                $timeSeriesData['selectRaw']['sales_grp_currency_external'],
+                $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'],
+                $timeSeriesData['selectRaw']['invoices'],
+                $timeSeriesData['selectRaw']['customers_invoiced'],
             ])
-            ->leftJoin('charge_stats', 'charges.id', 'charge_stats.charge_id')
-            ->leftJoin('asset_sales_intervals', 'charges.asset_id', 'asset_sales_intervals.asset_id')
-            ->leftJoin('asset_ordering_intervals', 'charges.asset_id', 'asset_ordering_intervals.asset_id')
-            ->allowedSorts(['code', 'name', 'shop_code', 'sales_all', 'customers_invoiced_all', 'invoices_all'])
+            ->allowedSorts(['code', 'name', 'shop_code', 'sales_grp_currency_external', 'customers_invoiced', 'invoices'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -127,6 +134,8 @@ class IndexCharges extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
+
+            $table->betweenDates(['date']);
 
             $table
                 ->defaultSort('code')
@@ -157,9 +166,10 @@ class IndexCharges extends OrgAction
             }
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'customers_invoiced_all', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'invoices_all', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'sales_all', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right', type: 'currency');
+                ->column(key: 'customers_invoiced', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right', type: 'currency')
+                ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right');
 
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, sortable: true, searchable: true)
