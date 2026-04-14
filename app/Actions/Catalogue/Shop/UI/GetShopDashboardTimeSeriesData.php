@@ -8,6 +8,7 @@
 namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
+use App\Actions\Helpers\Brand\GetBrandTimeSeriesStats;
 use App\Models\Catalogue\Shop;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -44,7 +45,8 @@ class GetShopDashboardTimeSeriesData
     protected function fetchData(Shop $shop, $fromDate, $toDate): array
     {
         $data = [
-            'shops' => GetFormatedShopTimeSeriesStats::run($shop, $fromDate, $toDate),
+            'shops'  => GetFormatedShopTimeSeriesStats::run($shop, $fromDate, $toDate),
+            'brands' => GetBrandTimeSeriesStats::run($shop, $fromDate, $toDate),
         ];
 
         if ($shop->type->value === 'dropshipping') {

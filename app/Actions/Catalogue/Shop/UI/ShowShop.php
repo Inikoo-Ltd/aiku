@@ -42,10 +42,11 @@ class ShowShop extends OrgAction
     {
         $userSettings = $request->user()->settings;
 
-        $currentTab = Arr::get($userSettings, 'shop_dashboard_tab', Arr::first(ShopDashboardSalesTableTabsEnum::values()));
+        $validTabs  = array_keys(ShopDashboardSalesTableTabsEnum::navigation($shop));
+        $currentTab = Arr::get($userSettings, 'shop_dashboard_tab', Arr::first($validTabs));
 
-        if (!in_array($currentTab, ShopDashboardSalesTableTabsEnum::values())) {
-            $currentTab = Arr::first(ShopDashboardSalesTableTabsEnum::values());
+        if (!in_array($currentTab, $validTabs)) {
+            $currentTab = Arr::first($validTabs);
         }
 
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
@@ -95,18 +96,16 @@ class ShowShop extends OrgAction
             ],
         ];
 
-        if ($shop->type->value === 'dropshipping' && isset($timeSeriesData['platforms'])) {
-            $dashboard['super_blocks'][0]['blocks'] = [
-                [
-                    'id'          => 'sales_table',
-                    'type'        => 'table',
-                    'current_tab' => $currentTab,
-                    'tabs'        => ShopDashboardSalesTableTabsEnum::navigation($shop),
-                    'tables'      => ShopDashboardSalesTableTabsEnum::tables($shop, $timeSeriesData),
-                    'charts'      => [],
-                ],
-            ];
-        }
+        $dashboard['super_blocks'][0]['blocks'] = [
+            [
+                'id'          => 'sales_table',
+                'type'        => 'table',
+                'current_tab' => $currentTab,
+                'tabs'        => ShopDashboardSalesTableTabsEnum::navigation($shop),
+                'tables'      => ShopDashboardSalesTableTabsEnum::tables($shop, $timeSeriesData),
+                'charts'      => [],
+            ],
+        ];
 
         return Inertia::render('Org/Catalogue/Shop', [
             'title'            => __('Shop').' '.$shop->code,

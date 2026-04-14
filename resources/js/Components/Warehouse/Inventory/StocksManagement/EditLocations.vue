@@ -97,16 +97,16 @@ const handleUnlink = (loc: { id: any }) => {
         <div class="flex flex-col gap-y-6">
             <template v-if="props.locations.length > 0">
                 <div v-for="(loc, idx) in props.locations" :key="'existing-' + loc.id"
-                    class="grid grid-cols-7 border-b pb-2 items-center gap-2">
-                    <div class="col-span-2 md:col-span-3 flex items-center gap-x-2">
+                    class="grid grid-cols-7 border-b pb-2 items-center gap-1">
+                    <div class="col-span-2 md:col-span-5 flex items-center gap-x-2">
                         {{ loc.code }}
                     </div>
-                    <div class="col-span-3 md:col-span-2">
+                    <div class="col-span-3 md:col-span-1">
                         <span class="text-sm italic text-gray-400">
                             {{ trans("Current Stock") }} {{ Number(loc.quantity) }}
                         </span>
                     </div>
-                    <div class="col-span-2 md:col-span-2 flex justify-end items-center gap-x-2">
+                    <div class="col-span-2 md:col-span-1 flex justify-end items-center gap-x-2">
                         <ModalConfirmationDelete
                             v-if="Number(loc.quantity) > 0"
                             :routeDelete="{

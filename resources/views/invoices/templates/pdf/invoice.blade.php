@@ -154,7 +154,6 @@
                 </div>
             @endif
 
-            {{$invoice->order->submitted_date}}
             @if($invoice->order && $invoice->order->submitted_at )
                 <div style="text-align: right">
                     {{ __('Order date') }}: <b>{{ $invoice->order->submitted_at->copy()->setTimezone($shop->timezone->name)->format('j F Y') }}</b>

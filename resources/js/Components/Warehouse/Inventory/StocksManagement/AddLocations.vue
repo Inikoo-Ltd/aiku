@@ -7,7 +7,7 @@ import { faDotCircle, faUnlink, faExclamationTriangle, faUndo, faPlus, faSeedlin
 import { faBan, faDotCircle as fasDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { InputNumber, AutoComplete } from 'primevue'
-import { ref, computed, inject } from 'vue'
+import { ref, computed, inject, nextTick } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { router, useForm } from '@inertiajs/vue3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
@@ -69,6 +69,24 @@ const onAddNewLocation = () => {
 }
 
 const newLocation = ref<stockLocation | null>(null)
+
+const locationSelectRef = ref()
+
+const focusLocationSelect = async () => {
+    await nextTick()
+
+    const multiselect = locationSelectRef.value?.multiselectRef
+
+    if (!multiselect?.$el) return
+
+    const input = multiselect.$el.querySelector('.multiselect-search')
+
+    input?.focus()
+}
+
+defineExpose({
+    focusLocationSelect
+})
 </script>
 
 <template>
@@ -108,6 +126,7 @@ const newLocation = ref<stockLocation | null>(null)
             <div class="flex gap-x-2 items-center">
                 <div class="flex-1">
                     <PureMultiselectInfiniteScroll
+                        ref="locationSelectRef"
                         v-model="newLocation"
                         :fetchRoute="routes.location_route"
                         object

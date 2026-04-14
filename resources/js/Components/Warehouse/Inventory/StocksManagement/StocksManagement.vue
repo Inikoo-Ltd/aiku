@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { trans } from 'laravel-vue-i18n'
-import { inject, onMounted } from 'vue'
+import { inject, onMounted, nextTick } from 'vue'
 import formatDistanceStrict from 'date-fns/formatDistanceStrict'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -33,8 +33,6 @@ const props = defineProps<{
     stocks_management: StocksManagementTS
     trade_units: any
 }>()
-
-console.log('stocks_management', props.stocks_management.summary)
 
 const layout = inject('layout', layoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
@@ -99,7 +97,7 @@ const setQuestionPopoverRef = (el: any, locationId: number) => {
 }
 
 
-const toggleQuestionPopover = (locationId: number, event: Event) => {
+const toggleQuestionPopover = async (locationId: number, event: Event) => {
     event.stopPropagation()
 
     // Initialize tempMinMaxStock for this location if not exists
@@ -128,6 +126,12 @@ const toggleQuestionPopover = (locationId: number, event: Event) => {
     if (questionPopoverRefs.value[locationId]) {
         questionPopoverRefs.value[locationId].toggle(event)
         questionPopovers.value[locationId] = !questionPopovers.value[locationId]
+
+        const key = isActivePickingLocation(locationId)
+            ? `min-${locationId}`
+            : `replenish-${locationId}`
+
+        focusWithRetry(key)
     }
 }
 
@@ -158,7 +162,6 @@ const saveMinMaxStock = (location: StockLocation) => {
         questionPopoverRefs.value[locationId].hide()
     }
 
-    console.log(locationMinMaxStock.value)
     updateStockLocation(location, {
         ...locationMinMaxStock.value[locationId]
     })
@@ -185,7 +188,10 @@ const cancelMinMaxStock = (locationId: number) => {
 // Section: Notes
 const _popoverNotes = ref<Record<number, any>>({})
 const tempLocToEdit = ref<StockLocation | null>(null)
-const toggleNotePopover = (event: Event, loc: StockLocation) => {
+const onNotePopoverShow = () => {
+    focusWithRetry('note')
+}
+const toggleNotePopover = async(event: Event, loc: StockLocation) => {
     if(isLoadingNoteUpdate.value === loc.id) return;
 
     event.stopPropagation()
@@ -194,24 +200,6 @@ const toggleNotePopover = (event: Event, loc: StockLocation) => {
 
     _popoverNotes.value?.toggle(event)
 
-    // Close all other popovers first
-    // Object.keys(popoverRefs.value).forEach(key => {
-    //     const keyNum = parseInt(key)
-    //     if (keyNum !== locationId && popoverRefs.value[keyNum]) {
-    //         popoverRefs.value[keyNum].hide()
-    //     }
-    // })
-
-    // Initialize temp note
-    // if (!notePopovers.value[locationId]) {
-    //     tempNotes.value[locationId] = locationNotes.value[locationId] || ''
-    // }
-
-    // // Toggle current popover
-    // if (popoverRefs.value[locationId]) {
-    //     popoverRefs.value[locationId].toggle(event)
-    //     notePopovers.value[locationId] = !notePopovers.value[locationId]
-    // }
 }
 const onSaveNote = (editedLoc: StockLocation) => {
     // locationNotes.value[locationId] = tempNotes.value[locationId] || ''
@@ -252,8 +240,6 @@ const getQuestionTooltip = (locationId: number) => {
 
 onMounted(() => {
     // Initialize activePickingLocationWholesale
-    console.log(props.stocks_management.locations);
-    
     activePickingLocationWholesale.value = props.stocks_management.locations.find((data) => data.default_wholesale_picking_location == true)?.id ?? null;
     activePickingLocationDropshipping.value = props.stocks_management.locations.find((data) => data.default_dropshipping_picking_location == true)?.id ?? null;
 
@@ -349,11 +335,20 @@ const isAddLocationModalOpen = ref(false)
 const selectedLocationId = ref<number | null>(null)
 const openModal = (type: string, payload: number | null = null) => {
     activeModal.value = type
-     selectedLocationId.value = payload
+
+    // For stock check modal we want to re-trigger focus even when the same location is selected again.
+    if (type === MODALS.STOCK_CHECK) {
+        selectedLocationId.value = null
+        nextTick(() => {
+            selectedLocationId.value = payload
+        })
+        isStockCheckModalOpen.value = true
+        return
+    }
+
+    selectedLocationId.value = payload
+
     switch(type) {
-        case MODALS.STOCK_CHECK:
-            isStockCheckModalOpen.value = true
-            break
         case MODALS.MOVE_STOCK:
             isMoveStockModalOpen.value = true
             break
@@ -365,15 +360,46 @@ const openModal = (type: string, payload: number | null = null) => {
             break
     }
 }
-const inputRefs = ref<Record<number, any>>({})
+const inputRefs = ref<Record<string | number, any>>({})
 
-const setInputRef = (el: any, id: number) => {
+const setInputRef = (el: any, id: string | number) => {
     if (el) inputRefs.value[id] = el
+}
+
+const focusWithRetry = async (key: string, attempt = 0) => {
+    await nextTick()
+
+    requestAnimationFrame(() => {
+        const comp = inputRefs.value[key]
+        const el =
+            comp?.$el?.querySelector?.('input, textarea') ??
+            comp?.$el ??
+            comp
+
+        if (el?.focus) {
+            el.focus()
+            el.select?.()
+
+            if (document.activeElement === el || attempt >= 10) return
+        }
+
+        if (attempt < 10) {
+            setTimeout(() => focusWithRetry(key, attempt + 1), 80)
+        }
+    })
+}
+
+const addLocationRef = ref()
+
+const onAddLocationShow = () => {
+    nextTick(() => {
+        addLocationRef.value?.focusLocationSelect()
+    })
 }
 </script>
 
 <template>
-    <div class="max-w-xl mx-auto bg-white shadow-md rounded-lg p-4 space-y-4">
+    <div class="mx-auto bg-white shadow-md rounded-lg p-4 space-y-4">
         
         <!-- Header Section -->
         <div class="flex items-center justify-between">
@@ -397,7 +423,7 @@ const setInputRef = (el: any, id: number) => {
                 </div>
             </div>
             <div class="grid align-item-middle border-l">
-                <span class="my-auto text-right font-semibold" v-tooltip="trans('Stock in Location')">
+                <span class="my-auto text-center font-semibold" v-tooltip="trans('Stock in Location')">
                     {{ locale.number(stocks_management.qty_in_location ?? 0) }}
                 </span>
             </div>
@@ -406,7 +432,13 @@ const setInputRef = (el: any, id: number) => {
         <!-- Section: Location Grid -->
         <div class="border-t pt-2 gap-2 items-center text-gray-700">
             
-                <Dialog v-model:visible="isStockCheckModalOpen" :header="`${trans('Audit Stock')} - ${props.trade_units[0]?.code}`" modal 
+                <Dialog
+                    v-model:visible="isStockCheckModalOpen"
+                    :header="`${trans('Audit Stock')} - ${props.trade_units[0]?.code}`"
+                    modal
+                    :dismissableMask="true"
+                    :closeOnEscape="true"
+                    :focusOnShow="false"
                     :style="{ width: '50vw' }"
                     :breakpoints="{
                         '1200px': '75vw',
@@ -414,8 +446,9 @@ const setInputRef = (el: any, id: number) => {
                         '768px': '90vw',
                         '576px': '95vw'
                     }"
-                    :contentStyle="{ maxHeight: '70vh', overflow: 'auto' }">
-                    <StockCheck
+                    :contentStyle="{ maxHeight: '70vh', overflow: 'auto' }"
+                >
+                    <StockCheck                        
                         :selectedLocationId="selectedLocationId"
                         :locations="props.stocks_management.locations"
                         @close="isStockCheckModalOpen = false"
@@ -425,6 +458,8 @@ const setInputRef = (el: any, id: number) => {
                 
                  <Dialog v-model:visible="isMoveStockModalOpen" modal :header="trans('Move Stock')"
                     :style="{ width: '50vw' }"
+                    :dismissableMask="true"
+                    :closeOnEscape="true"
                     :breakpoints="{
                         '1200px': '75vw',
                         '992px': '80vw',
@@ -445,7 +480,10 @@ const setInputRef = (el: any, id: number) => {
                 />
 
                 <Dialog v-model:visible="isAddLocationModalOpen" modal :header="trans('Add Location')"
+                    @show="onAddLocationShow"
                     :style="{ width: '50vw' }"
+                    :dismissableMask="true"
+                    :closeOnEscape="true"
                     :breakpoints="{
                         '1200px': '75vw',
                         '992px': '80vw',
@@ -454,6 +492,7 @@ const setInputRef = (el: any, id: number) => {
                     }"
                     :contentStyle="{ overflow: 'visible' }">
                      <AddLocations
+                        ref="addLocationRef"
                         :locations="props.stocks_management.locations"
                         @close="isAddLocationModalOpen = false"
                         :routes="props.stocks_management?.routes"
@@ -469,7 +508,7 @@ const setInputRef = (el: any, id: number) => {
                             'hover:bg-gray-50': activePickingLocationDropshipping !== loc.id && activePickingLocationWholesale !== loc.id,
 
                         }">
-                        <div class="col-span-4 flex items-center gap-x-2">
+                        <div class="col-span-4 flex items-center gap-x-3">
                             <!-- Note Icon with Popover -->
                             <div class="relative">
                                 <div @click="(event) => toggleNotePopover(event, loc)"
@@ -559,6 +598,7 @@ const setInputRef = (el: any, id: number) => {
                                                     {{ trans('Min') }}
                                                 </label>
                                                 <InputNumber :modelValue="tempMinMaxStock[loc.id]?.min_stock || null"
+                                                    :ref="(el) => setInputRef(el, `min-${loc.id}`)"
                                                     @update:modelValue="(val) => {
                                                         if (!tempMinMaxStock[loc.id]) tempMinMaxStock[loc.id] = { min_stock: null, max_stock: null }
                                                         tempMinMaxStock[loc.id].min_stock = val
@@ -580,7 +620,7 @@ const setInputRef = (el: any, id: number) => {
 
                                         <!-- Show Replenishment input when location is not active -->
                                         <div v-else>
-                                            <InputNumber autofocus :modelValue="tempMinMaxStock[loc.id]?.replenishment_stock || null"
+                                            <InputNumber :ref="(el) => setInputRef(el, `replenish-${loc.id}`)" autofocus :modelValue="tempMinMaxStock[loc.id]?.replenishment_stock || null"
                                                 @update:modelValue="(val) => {
                                                 if (!tempMinMaxStock[loc.id]) tempMinMaxStock[loc.id] = { min_stock: null, max_stock: null, replenishment_stock: null }
                                                 tempMinMaxStock[loc.id].replenishment_stock = val
@@ -604,16 +644,16 @@ const setInputRef = (el: any, id: number) => {
 
                         <div v-if="loc.audited_at"
                             v-tooltip="trans('Last audit :xdate', { xdate: useFormatTime(new Date(loc.audited_at)) })"
-                            class="col-span-2 text-right text-sm whitespace-nowrap">
+                            class="col-span-2 text-center text-sm whitespace-nowrap">
                             {{ formatDistanceStrict(new Date(loc.audited_at), new Date()) }}
                             <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400 ml-1" fixed-width aria-hidden="true" />
                         </div>
                         <div v-else
-                            class="col-span-2 text-right text-sm italic opacity-60 whitespace-nowrap">
+                            class="col-span-2 text-center text-sm italic opacity-60 whitespace-nowrap">
                             {{ trans("Never audited") }}
                         </div>
                         
-                        <div class="text-right font-semibold border-l">
+                        <div class="text-center font-semibold border-l">
                             <span
                                 v-tooltip="trans('Stock quantity')"
                                 class="cursor-pointer hover:text-blue-500 transition"
@@ -641,7 +681,7 @@ const setInputRef = (el: any, id: number) => {
         </div>
 
         <!-- Popover: Notes -->
-        <Popover ref="_popoverNotes">
+        <Popover ref="_popoverNotes" @show="onNotePopoverShow">
             <div class="w-80 p-2">
                 <div class="mb-3">
                     <label class="block text-sm mb-2">
@@ -649,12 +689,14 @@ const setInputRef = (el: any, id: number) => {
                     </label>
 
                     <PureTextarea
+                        :ref="(el) => setInputRef(el, 'note')"
                         :modelValue="tempLocToEdit?.notes || ''"
                         @update:modelValue="(val) => {
                             if (tempLocToEdit) {
                                 tempLocToEdit.notes = val
                             }
                         }"
+                        autofocus
                         :placeholder="trans('Enter note for this location...')"
                         class="resize-none"
                         rows="4"

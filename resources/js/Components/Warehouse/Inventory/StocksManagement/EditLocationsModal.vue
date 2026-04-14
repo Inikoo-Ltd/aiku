@@ -46,7 +46,7 @@ const close = () => emits('update:modelValue', false)
                     sm:w-[90vw]
                     md:w-[80vw]
                     lg:w-[76vw]
-                    xl:w-[70vw]
+                    xl:w-[50vw]
                     max-h-[80vh] overflow-auto
                 ">
                     <!-- HEADER -->
