@@ -176,7 +176,12 @@ const dataServiceList = ref([])
 
 const formAddService = useForm({ service_id: "", quantity: 1, historic_asset_id: null })
 const formAddPhysicalGood = useForm({ outer_id: "", quantity: 1, historic_asset_id: null })
-
+const isFulfilmentOperationsPalletReturnPage = computed(() => {
+    return route().current('grp.org.fulfilments.show.operations.pallet-returns.show')
+        || route().current('grp.org.fulfilments.show.operations.pallet-return-with-stored-items.show')
+        || route().current('grp.org.fulfilments.show.crm.customers.show.pallet_returns.show')
+        || route().current('grp.org.fulfilments.show.crm.customers.show.pallet_returns.with_stored_items.show')
+})
 const component = computed(() => {
 	const components: Component = {
 		pallets: TablePalletReturnPallets,
@@ -358,7 +363,7 @@ provide("listError", listError.value)
 	<PageHeading :data="pageHead">
 		<template v-if="timeline.state === 'picked' && (box_stats?.shipments?.length < 1)" #otherBefore>
 			<Button
-				v-if="!data.data?.is_collection"
+				v-if="!data.data?.is_collection && !isFulfilmentOperationsPalletReturnPage"
 				@click="() => box_stats.parcels?.length ? (isModalShipment = true, onOpenModalTrackingNumber()) : set(listError, 'box_stats_parcel', true)"
 				v-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
 				:label="trans('Shipment')"
