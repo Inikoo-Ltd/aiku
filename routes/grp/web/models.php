@@ -914,6 +914,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('publish/sub_department', [PublishWebsiteMarginal::class, 'subDepartment'])->name('publish.sub_department');
     Route::post('publish/family', [PublishWebsiteMarginal::class, 'family'])->name('publish.family');
     Route::post('publish/families_overview', [PublishWebsiteMarginal::class, 'familiesOverview'])->name('publish.families_overview');
+    Route::post('publish/family_description', [PublishWebsiteMarginal::class, 'familyDescription'])->name('publish.family_description');
     Route::post('publish/product', [PublishWebsiteMarginal::class, 'product'])->name('publish.product');
     Route::post('publish/products', [PublishWebsiteMarginal::class, 'products'])->name('publish.products');
     Route::post('publish/collection', [PublishWebsiteMarginal::class, 'collection'])->name('publish.collection');

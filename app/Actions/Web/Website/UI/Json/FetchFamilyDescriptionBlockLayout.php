@@ -13,8 +13,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class FetchFamilyDescriptionBlockLayout extends OrgAction
 {
-    use WithWebAuthorisation;
-    
     public function asController(Website $website, WebBlockType $webBlockType, ActionRequest $request): Collection
     {
         $this->initialisationFromShop($website->shop, $request);
@@ -23,10 +21,10 @@ class FetchFamilyDescriptionBlockLayout extends OrgAction
     }
 
     public function handle(WebBlockType $webBlockType, array $modelData): Collection
-    {
-        // Later add selection, choose from Unpublished/Live 
+    {   
         return WebBlockType::where('slug', $webBlockType->slug)
                 ->orWhere('slug', $webBlockType->slug . '-extra-description')
+                ->orderBy('slug')
                 ->get()
                 ->pluck('data', 'slug');
     }

@@ -58,6 +58,8 @@ type LocalChatMessage = ChatMessage & {
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
 
+const isClient = typeof window !== "undefined"
+
 const open = ref(false)
 const buttonRef = ref<HTMLElement | null>(null)
 const panelRef = ref<HTMLElement | null>(null)
@@ -97,11 +99,13 @@ const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
 const { width } = useWindowSize()
 const isMobile = computed(() => width.value < 640)
 
-watch(open, (val) => {
-    if (isMobile.value) {
-        document.body.style.overflow = val ? "hidden" : ""
-    }
-})
+if (isClient) {
+    watch(open, (val) => {
+        if (isMobile.value) {
+            document.body.style.overflow = val ? "hidden" : ""
+        }
+    })
+}
 
 const syncLoginState = () => {
     const iris = JSON.parse(localStorage.getItem("iris") || "{}")
@@ -558,6 +562,8 @@ defineExpose({
 const bundle = useBundle()
 
 const waitForElement = (selector: string, cb: (el: HTMLElement) => void) => {
+    if (!isClient) return
+
     const run = () => {
         const el = document.querySelector<HTMLElement>(selector)
         if (el) {
@@ -577,21 +583,23 @@ const waitForElement = (selector: string, cb: (el: HTMLElement) => void) => {
     }, 200)
 }
 
-watch(
-    [() => bundle.open.value, () => layout?.rightbasket?.show],
-    () => {
-        waitForElement('#jsd-widget', (widget) => {
-            widget.style.setProperty(
-                'right',
-                (bundle.open.value || layout?.rightbasket?.show)
-                    ? '420px'
-                    : '16px',
-                'important'
-            )
-        })
-    },
-    { immediate: true }
-)
+if (isClient) {
+    watch(
+        [() => bundle.open.value, () => layout?.rightbasket?.show],
+        () => {
+            waitForElement('#jsd-widget', (widget) => {
+                widget.style.setProperty(
+                    'right',
+                    (bundle.open.value || layout?.rightbasket?.show)
+                        ? '420px'
+                        : '16px',
+                    'important'
+                )
+            })
+        },
+        { immediate: true }
+    )
+}
 </script>
 
 <template>

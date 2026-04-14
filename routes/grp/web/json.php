@@ -199,7 +199,7 @@ Route::get('workshop/product-category/{productCategory}/collections', GetCollect
 Route::get('workshop/collection/{collection:id}/products', GetProductsInCollection::class)->name('collection.products.index');
 Route::get('workshop/collection/{collection}/families', GetFamiliesInCollection::class)->name('collection.families.index');
 
-Route::get('workshop/{website}/{webBlockType:slug', FetchFamilyDescriptionBlockLayout::class)->name('workshop.fetch_descriptions_layout');
+Route::get('workshop/{website}/{webBlockType:slug}', FetchFamilyDescriptionBlockLayout::class)->name('workshop.fetch_descriptions_layout')->withoutScopedBindings();
 
 Route::get('parent/collection/{collection}/departments', GetDepartmentsInCollection::class)->name('collection.parent.departments.index');
 Route::get('parent/collection/{collection}/sub-departments', GetSubDepartmentsInCollection::class)->name('collection.parent.sub_departments.index');

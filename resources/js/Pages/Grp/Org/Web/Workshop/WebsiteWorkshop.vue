@@ -18,6 +18,7 @@ import SubDepartmentWorkshop from '@/Components/CMS/Website/SubDepartmentBlockWo
 import FamiliesBlockWorkshop from '@/Components/CMS/Website/FamiliesBlockWorkshop/FamiliesBlockWorkshop.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import FamiliesOverviewBlockWorkshop from '@/Components/CMS/Website/FamiliesOverviewBlockWorkshop/FamiliesOverviewWorkshop.vue'
+import FamiliesDescriptionBlockWorkshop from '@/Components/CMS/Website/FamilyDescriptionBlockWorkshop/FamilyDescriptionBlockWorkshop.vue'
 
 import Dialog from 'primevue/dialog'
 import ProgressSpinner from 'primevue/progressspinner'
@@ -44,6 +45,7 @@ const props = defineProps<{
   settings: Record<string, any>
   department: Record<string, any>
   sub_department: Record<string, any>
+  families_description: Record<string, any>
   collection: Record<string, any>
   publishRoute: Record<string, routeType>
   website_slug: string
@@ -65,6 +67,7 @@ const component = computed(() => {
     sub_department: SubDepartmentWorkshop,
     families: FamiliesBlockWorkshop,
     families_overview: FamiliesOverviewBlockWorkshop,
+    families_description: FamiliesDescriptionBlockWorkshop,
     products: ProductsBlockWorkshop,
     product: ProductBlockWorkshop,
     history: TableHistories
