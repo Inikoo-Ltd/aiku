@@ -60,12 +60,8 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
             'estimated_picked_weight' => $pickedWeight
         ];
 
-        print_r($dataToUpdate);
-
         $deliveryNoteItem = $this->update($deliveryNoteItem, $dataToUpdate);
-
         $deliveryNoteItem->refresh();
-
 
         CalculateDeliveryNotePercentage::make()->action($deliveryNoteItem->deliveryNote);
 
