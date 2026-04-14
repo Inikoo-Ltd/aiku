@@ -137,11 +137,6 @@ const images = computed(() => {
                 <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="bestOffer.type === 'Category Quantity Ordered Order Interval'
                   ? 'active-inactive-gr'
                   : 'max_discount'" class="discount-item" />
-
-
-
-
-
               </div>
 
             </div>
