@@ -29,6 +29,11 @@ class SetAsWaitingCrm extends OrgAction
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): DeliveryNoteItem
     {
+        // Disable waiting if setting is off
+        if (!data_get($this->organisation->settings, 'orders.allow_waiting', false)) {
+            abort(403, 'Waiting is not enabled for this organisation');
+        }
+
         $quantityToMove              = $modelData['quantity'];
         $newQuantityWaitingWarehouse = $deliveryNoteItem->quantity_waiting_warehouse - $quantityToMove;
 
