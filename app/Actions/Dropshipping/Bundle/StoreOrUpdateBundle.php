@@ -56,7 +56,7 @@ class StoreOrUpdateBundle extends OrgAction
         $id = Arr::get($modelData, 'id');
         $this->isUpdate = (bool) $id;
 
-        $this->initialisationFromShop($this->customer->shop, $modelData);
+        $this->initialisationFromShop($customerSalesChannel->customer->shop, $modelData);
 
         return $this->handle($customerSalesChannel, $this->validatedData);
     }
