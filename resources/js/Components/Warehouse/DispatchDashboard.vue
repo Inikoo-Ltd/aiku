@@ -20,9 +20,10 @@ import {
     faAllergies,
     faChartLine,
 } from "@fal"
+import { faExclamationSquare} from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faClock, faList, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine)
+library.add(faClock, faList, faExclamationSquare, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine)
 
 interface RouteTarget {
     name: string
@@ -249,6 +250,18 @@ const waitingItemsUrl = computed((): string | null => {
                                         getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
                                     ]"
                                 >{{ data.data[row.key]?.[item.key]?.value ?? '-' }}</component>
+
+
+                                <Link v-if="data.data[row.key]?.[item.key]?.warning"
+                                    :href="data.data[row.key]?.[item.key]?.warning?.route_target?.name ? route(data.data[row.key]?.[item.key]?.warning?.route_target?.name, data.data[row.key]?.[item.key]?.warning?.route_target.parameters) : '#'"
+                                    class="relative bg-amber-300 text-amber-700 rounded px-1 opacity-70 hover:opacity-100"
+                                    v-tooltip="data.data[row.key]?.[item.key]?.warning?.tooltip"
+                                >
+                                    {{ data.data[row.key]?.[item.key]?.warning?.value }}
+
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
+                                </Link>
                             </div>
                         </template>
 
