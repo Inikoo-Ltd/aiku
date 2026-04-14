@@ -77,11 +77,9 @@ class IndexAgent extends OrgAction
                 'chat_agents.specialization',
                 'chat_agents.created_at',
 
-                DB::raw("'{$organisation->name}' as organisation_name"),
-
                 DB::raw("
                 COALESCE(
-                    STRING_AGG(DISTINCT shops.name, ', '),
+                    STRING_AGG(DISTINCT shops.code, ', '),
                     '—'
                 ) as shops
             "),
@@ -123,7 +121,6 @@ class IndexAgent extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false)
                 ->column(key: 'shops', label: __('Shops'), canBeHidden: false)
                 ->column(key: 'is_online', label: __('Status'), canBeHidden: false, sortable: true)
                 ->column(key: 'is_available', label: __('Available'), canBeHidden: false, sortable: true)
