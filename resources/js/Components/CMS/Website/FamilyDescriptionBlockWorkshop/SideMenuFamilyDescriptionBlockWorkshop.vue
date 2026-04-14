@@ -71,14 +71,20 @@ function changeTab(i: number) {
   selectedTab.value = i
 }
 
-function onPickBlock(value: object) {
+async function onPickBlock(value: object) {
   emits("setUpTemplate", value)
+
+  await nextTick() 
+
+  selectedTab.value = tabsWithPanels.value.findIndex(
+    (t) => t.type === "settings"
+  )
 }
 
 async function onSelectBlock(block: any, key: string) {
   selectedBlock.value = { ...block, code: key }
 
-  await nextTick() // tunggu tabsWithPanels update & DOM render
+  await nextTick() 
 
   selectedTab.value = tabsWithPanels.value.findIndex(
     (t) => t.type === "editor"
