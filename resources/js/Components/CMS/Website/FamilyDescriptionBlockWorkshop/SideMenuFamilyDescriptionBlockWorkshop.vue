@@ -15,14 +15,16 @@ library.add(faThLarge, faPaintBrushAlt)
 const props = defineProps<{
   data: any
   webBlockTypes: { data: any[] }
+  selectedBlock: any
 }>()
 
 const emits = defineEmits<{
   (e: "setUpTemplate", value: string | number): void
   (e: "autoSave"): void
+  (e: "update:selectedBlock", value: any): void
 }>()
 
-const selectedBlock = ref<any>(null)
+/* const selectedBlock = ref<any>(null) */
 const selectedTab = ref(0)
 
 
@@ -46,7 +48,7 @@ const tabsWithPanels = computed(() => {
   }
 
   // 3. Editor
-  if (selectedBlock.value) {
+  if (props.selectedBlock) {
     items.push({
       label: "Editor",
       icon: faPaintBrushAlt,
@@ -56,7 +58,6 @@ const tabsWithPanels = computed(() => {
 
   return items
 })
-
 
 
 watch(tabsWithPanels, (tabs) => {
@@ -74,7 +75,7 @@ function changeTab(i: number) {
 async function onPickBlock(value: object) {
   emits("setUpTemplate", value)
 
-  await nextTick() 
+  await nextTick()
 
   selectedTab.value = tabsWithPanels.value.findIndex(
     (t) => t.type === "settings"
@@ -82,9 +83,9 @@ async function onPickBlock(value: object) {
 }
 
 async function onSelectBlock(block: any, key: string) {
-  selectedBlock.value = { ...block, code: key }
+  emits("update:selectedBlock", { ...block, code: key })
 
-  await nextTick() 
+  await nextTick()
 
   selectedTab.value = tabsWithPanels.value.findIndex(
     (t) => t.type === "editor"
@@ -96,13 +97,30 @@ function getFirstEntry(data: any) {
   if (!entries.length) return { key: null }
   return { key: entries[0][0] }
 }
+
+function onUpdateFieldValue(e: any) {
+  if (!props.selectedBlock?.code) return
+
+  const code = props.selectedBlock.code
+
+  emits("update:selectedBlock", {
+    ...props.selectedBlock,
+    fieldValue: e
+  })
+
+  if (props.data?.[code]) {
+    props.data[code].fieldValue = e
+  }
+
+  emits("autoSave")
+}
 </script>
 
 <template>
   <div class="h-full flex flex-col">
     <TabGroup as="div" :selectedIndex="selectedTab" @change="changeTab" class="flex flex-col h-full">
 
-      <div class="flex">
+      <div class="flex border-b bg-gray-50">
         <Tab v-for="(tab, index) in tabsWithPanels" :key="index"
           class="flex w-fit items-center gap-2 px-4 py-2 font-medium text-gray-600 hover:bg-gray-100 focus:outline-none"
           :class="{
@@ -111,7 +129,6 @@ function getFirstEntry(data: any) {
           }">
           <FontAwesomeIcon :icon="tab.icon" fixed-width v-tooltip="tab.tooltip" />
         </Tab>
-
       </div>
 
 
@@ -126,22 +143,20 @@ function getFirstEntry(data: any) {
 
           <!-- SETTINGS -->
           <template v-else-if="tab.type === 'settings'">
-            <div v-for="(block, key) in data" :key="key" class="p-2 text-xs border mb-2 cursor-pointer mt-3"
-              @click="onSelectBlock(block, key)">
+            <div v-for="(block, key) in data" :key="key" @click="onSelectBlock(block, key)"
+              class="p-2 text-xs mb-2 mt-1 cursor-pointer rounded transition-all duration-150" :class="[
+                key === selectedBlock?.code
+                  ? 'card-active '
+                  : 'border border-gray-200 bg-white hover:border-gray-400'
+              ]">
               {{ key }}
             </div>
           </template>
 
           <!-- EDITOR -->
           <template v-else-if="tab.type === 'editor'">
-            <SideEditor v-model="selectedBlock.fieldValue" :blueprint="getBlueprint(selectedBlock.code)"
-              @update:modelValue="
-                (e) => {
-                  selectedBlock.fieldValue = e
-                  data[selectedBlock.code].fieldValue = e
-                  emits('autoSave')
-                }
-              " :uploadImageRoute="null" />
+            <SideEditor :modelValue="selectedBlock?.fieldValue" :blueprint="getBlueprint(selectedBlock?.code)"
+              @update:modelValue="onUpdateFieldValue" :uploadImageRoute="null" />
           </template>
         </TabPanel>
       </TabPanels>
@@ -152,5 +167,10 @@ function getFirstEntry(data: any) {
 <style scoped>
 .h-full {
   height: 100%;
+}
+
+.card-active {
+  color: var(--theme-color-4) !important;
+  border: 1px solid color-mix(in srgb, var(--theme-color-4) 80%, black);
 }
 </style>
