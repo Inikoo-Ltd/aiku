@@ -816,7 +816,6 @@ class ShowDeliveryNote extends OrgAction
 
             'allow_waiting'                         => $allowWaiting,
             'allow_picker_set_not_picked'           => !$allowWaiting || (data_get($this->organisation->settings, 'orders.allow_picker_set_not_picked', false)),
-            'allow_stock_controller_set_not_picked' => (data_get($this->organisation->settings, 'orders.allow_stock_controller_set_not_picked', false)),
             'showChangePickerPacker'                => $showChangePickerPacker,
 
             DeliveryNoteTabsEnum::HISTORY->value => $this->tab == DeliveryNoteTabsEnum::HISTORY->value ?
