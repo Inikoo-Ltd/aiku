@@ -24,7 +24,7 @@ interface Props {
     organisationSlug: string;
     shopSlug: string;
     ownShopTemplates: { templates: Template[], shop_name: string };
-    otherShopTemplates: { templates: Template[] };
+    otherShopTemplates: { templates: Template[] } | { data: Template[], current_page: number, last_page: number, per_page: number, total: number };
 }
 
 const props = defineProps<Props>();
@@ -56,12 +56,43 @@ const carouselOptions = computed(() => ({
 }));
 
 const hasOwnTemplates = computed(() => props.ownShopTemplates?.templates?.length > 0);
-const hasOtherTemplates = computed(() => props.otherShopTemplates?.templates?.length > 0);
+
+const otherShopTemplatesData = computed(() => {
+    if (!props.otherShopTemplates) return [];
+    // Handle both old format (templates array) and new paginated format (data array)
+    return Array.isArray(props.otherShopTemplates)
+        ? props.otherShopTemplates
+        : (props.otherShopTemplates.data || []);
+});
+
+const hasOtherTemplates = computed(() => otherShopTemplatesData.value.length > 0);
 const hasAnyTemplates = computed(() => hasOwnTemplates.value || hasOtherTemplates.value);
+
+const pagination = computed(() => {
+    if (!props.otherShopTemplates || Array.isArray(props.otherShopTemplates)) {
+        return null;
+    }
+    return {
+        currentPage: props.otherShopTemplates.current_page,
+        lastPage: props.otherShopTemplates.last_page,
+        perPage: props.otherShopTemplates.per_page,
+        total: props.otherShopTemplates.total
+    };
+});
 
 const formatDate = (dateString?: string): string => {
     if (!dateString) return '';
     return new Date(dateString).toLocaleDateString();
+};
+
+const emit = defineEmits<{
+    loadOtherShopTemplates: [page: number];
+}>();
+
+const loadPage = (page: number) => {
+    if (page >= 1 && pagination.value && page <= pagination.value.lastPage) {
+        emit('loadOtherShopTemplates', page);
+    }
 };
 </script>
 
@@ -92,15 +123,39 @@ const formatDate = (dateString?: string): string => {
                 <h3 class="text-lg font-semibold text-gray-900 flex items-center">
                     <FontAwesomeIcon :icon="faStore" class="mr-2 text-green-600" />
                     {{ trans('Templates from Other Shops') }}
+                    <span v-if="pagination" class="ml-2 text-sm text-gray-500">
+                        ({{ pagination.total }} total)
+                    </span>
                 </h3>
             </div>
 
-            <Carousel :value="props.otherShopTemplates.templates" :numVisible="4" :options="carouselOptions"
-                class="mb-8">
+            <Carousel :value="otherShopTemplatesData" :numVisible="4" :options="carouselOptions" class="mb-8">
                 <template #item="slotProps">
                     <TemplateCarouselItem :template="slotProps.data" :organisation-slug="props.organisationSlug"
                         :shop-slug="props.shopSlug" :mailshot-id="props.mailshotId" button-type="secondary"
                         :show-shop-name="true" :show-envelope-icon="false" />
+                </template>
+
+                <template #footer v-if="pagination">
+                    <div class="flex justify-center items-center space-x-4 py-3 border-t border-gray-200">
+                        <button @click="loadPage(pagination.currentPage - 1)" :disabled="pagination.currentPage <= 1"
+                            class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                            {{ trans('Previous') }}
+                        </button>
+
+                        <span class="text-sm text-gray-600">
+                            {{ trans('Page :currentPage of :lastPage', {
+                                currentPage: pagination.currentPage,
+                                lastPage: pagination.lastPage
+                            }) }}
+                        </span>
+
+                        <button @click="loadPage(pagination.currentPage + 1)"
+                            :disabled="pagination.currentPage >= pagination.lastPage"
+                            class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                            {{ trans('Next') }}
+                        </button>
+                    </div>
                 </template>
             </Carousel>
         </div>

@@ -8,31 +8,40 @@
 
 namespace App\Actions\Comms\EmailTemplate;
 
-use App\Actions\InertiaAction;
+use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\EmailTemplate;
 use App\Models\SysAdmin\Organisation;
+use App\Services\QueryBuilder;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetOtherShopEmailTemplates extends InertiaAction
+class GetOtherShopEmailTemplates extends OrgAction
 {
     use AsObject;
 
-    public function handle(Organisation $organisation, Shop $currentShop): array
+    public function handle(Organisation $organisation, Shop $currentShop, $prefix = null): LengthAwarePaginator
     {
-        $templates = EmailTemplate::where('email_templates.organisation_id', $organisation->id)
-            ->leftJoin('shops', 'email_templates.shop_id', '=', 'shops.id')
-            ->where('email_templates.shop_id', '!=', $currentShop->id)
-            ->whereNotNull('email_templates.compiled_layout')
-            ->where('email_templates.compiled_layout', '!=', '')
-            ->select('email_templates.id', 'email_templates.name', 'email_templates.compiled_layout', 'shops.name as shop_name')
-            ->orderBy('email_templates.created_at', 'desc')
-            ->get();
+        $queryBuilder = QueryBuilder::for(EmailTemplate::class);
 
-        return [
-            'templates' => $templates->toArray(),
-        ];
+        $queryBuilder->where('email_templates.organisation_id', $organisation->id);
+        $queryBuilder->where('email_templates.shop_id', '!=', $currentShop->id);
+        $queryBuilder->whereNotNull('email_templates.compiled_layout');
+        $queryBuilder->where('email_templates.compiled_layout', '!=', '');
+
+        return $queryBuilder
+            ->leftJoin('shops', 'email_templates.shop_id', '=', 'shops.id')
+            ->select([
+                'email_templates.id',
+                'email_templates.name',
+                'email_templates.compiled_layout',
+                'email_templates.created_at',
+                'shops.name as shop_name'
+            ])
+            ->orderBy('email_templates.created_at', 'desc')
+            ->withPaginator($prefix)
+            ->withQueryString();
     }
 
     public function authorize(ActionRequest $request): bool
@@ -40,8 +49,9 @@ class GetOtherShopEmailTemplates extends InertiaAction
         return true;
     }
 
-    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): array
+    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
+        $this->initialisationFromShop($shop, $request);
         return $this->handle($organisation, $shop);
     }
 }

@@ -22,7 +22,7 @@ import {
     faSkull, faDungeon
 } from '@fal';
 import { trans } from 'laravel-vue-i18n';
-import { Link } from "@inertiajs/vue3";
+import { Link, router } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
 import EmailTemplateCarousel from "@/Components/EmailTemplateCarousel.vue"
@@ -175,6 +175,19 @@ const effectiveOrganisationSlug = computed(() =>
 const effectiveShopSlug = computed(() =>
     props.shopSlug || 'demo-shop'
 )
+
+// Pagination handling for other shop templates
+const loadOtherShopTemplates = (page: number) => {
+    // Use Inertia visit to reload the page with new page parameter
+    const url = new URL(window.location.href)
+    url.searchParams.set('other_shop_templates_page', page.toString())
+
+    router.visit(url.toString(), {
+        preserveScroll: true,
+        preserveState: true,
+        only: ['otherShopTemplates']
+    })
+}
 </script>
 
 <template>
@@ -244,7 +257,7 @@ const effectiveShopSlug = computed(() =>
             <EmailTemplateCarousel :mailshot-id="props.data.mailshot.data.id"
                 :shop-id="props.data.mailshot.data.shop_id || ''" :organisation-slug="effectiveOrganisationSlug"
                 :shop-slug="effectiveShopSlug" :own-shop-templates="effectiveOwnShopTemplates"
-                :other-shop-templates="effectiveOtherShopTemplates" />
+                :other-shop-templates="effectiveOtherShopTemplates" @loadOtherShopTemplates="loadOtherShopTemplates" />
         </div>
     </div>
 </template>
