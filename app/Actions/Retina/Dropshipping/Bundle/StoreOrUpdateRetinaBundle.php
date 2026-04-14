@@ -16,6 +16,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Bundle;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Traits\SanitizeInputs;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreOrUpdateRetinaBundle extends RetinaAction
@@ -24,6 +25,7 @@ class StoreOrUpdateRetinaBundle extends RetinaAction
     use SanitizeInputs;
 
     private CustomerSalesChannel $customerSalesChannel;
+    private bool $isUpdate;
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): Bundle
     {
@@ -37,6 +39,9 @@ class StoreOrUpdateRetinaBundle extends RetinaAction
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Bundle
     {
+        $id = $request->input('id');
+        $this->isUpdate = (bool) $id;
+
         $this->enableSanitize();
         $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisation($request);

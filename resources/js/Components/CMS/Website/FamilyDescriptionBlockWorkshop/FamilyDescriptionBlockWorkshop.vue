@@ -56,7 +56,7 @@ const props = defineProps<{
 // STATE
 const layoutState = ref(toRaw(props.data.layout))
 const layoutTheme = inject("layout", layoutStructure)
-
+const selectedBlock = ref<any>(null)
 const rootRef = ref<HTMLElement | null>(null)
 const visibleDrawer = ref(false)
 const isLoadingSave = ref(false)
@@ -157,6 +157,7 @@ const debouncedAutosave = () => {
   autosaveTimer = window.setTimeout(autosave, 800)
 }
 
+
 // MOUNT
 onMounted(() => {
   if (rootRef.value && props.layout_theme?.color) {
@@ -175,14 +176,21 @@ onMounted(() => {
 
       <!-- LEFT MENU -->
       <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-        <SideMenuFamilyDescriptionBlockWorkshop :data="layoutState" :webBlockTypes="props.data.web_block_types"
-          @set-up-template="onPickTemplate" @auto-save="debouncedAutosave" />
+        <SideMenuFamilyDescriptionBlockWorkshop 
+          :data="layoutState" 
+          :webBlockTypes="props.data.web_block_types"
+          :selectedBlock="selectedBlock"
+          @update:selectedBlock="selectedBlock = $event"
+          @set-up-template="onPickTemplate" 
+          @auto-save="debouncedAutosave" 
+        />
       </div>
 
       <!-- PREVIEW -->
-      <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-auto border">
+      <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col border overflow-hidden">
 
-        <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
+        <!-- HEADER -->
+        <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b shrink-0">
           <div class="py-1 px-2 hidden lg:block">
             <ScreenView v-model="currentView" />
           </div>
@@ -195,23 +203,40 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- ✅ KEY HERE FOR FULL RE-RENDER -->
-        <div v-if="layoutState && dataPicked.family" :key="previewKey" ref="rootRef"
-          :class="['border-2 border-t-0', iframeClass]">
-          <div v-for="(block, key) in layoutState" :key="key + '-' + previewKey">
-            <component class="flex-1 overflow-auto active-block my-3" :is="getComponent(key)"
-              :routeEditFamiliesOverview="props.data.update_family_route" :screenType="currentView" :modelValue="{
-                ...block?.fieldValue,
-                ...dataPicked.family
-              }" />
+        <!-- CONTENT -->
+        <div class="flex-1 min-h-0">
+          <div v-if="layoutState && dataPicked.family" :key="previewKey" ref="rootRef"
+            :class="['border-2 border-t-0 h-full', iframeClass]" class="overflow-auto">
+           <div
+              v-for="(block, key) in layoutState"
+              :key="key + '-' + previewKey"
+              class="my-3 transition-all duration-200"
+              :class="{
+                'border-2 block-active': key === selectedBlock?.code,
+                'border border-transparent': key !== selectedBlock?.code
+              }"
+            >
+              <component
+                :is="getComponent(key)"
+                :routeEditFamiliesOverview="props.data.update_family_route"
+                :screenType="currentView"
+                :modelValue="{
+                  ...block?.fieldValue,
+                  ...dataPicked.family
+                }"
+              />
+            </div>
           </div>
-        </div>
 
-        <div v-else class="flex flex-col items-center justify-center text-gray-500 flex-1">
-          <FontAwesomeIcon :icon="faInfoCircle" class="text-4xl mb-2" />
-          <h3 class="text-lg font-semibold">
-            {{ trans("No Family selected") }}
-          </h3>
+          <!-- EMPTY STATE -->
+          <div v-else class="flex items-center justify-center text-gray-500 h-full">
+            <div class="flex flex-col items-center">
+              <FontAwesomeIcon :icon="faInfoCircle" class="text-4xl mb-2" />
+              <h3 class="text-lg font-semibold">
+                {{ trans("No Family selected") }}
+              </h3>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -238,3 +263,9 @@ onMounted(() => {
     </div>
   </Drawer>
 </template>
+
+<style scoped>
+.block-active {
+  border: 2px solid color-mix(in srgb, var(--theme-color-4) 80%, black);
+}
+</style>
