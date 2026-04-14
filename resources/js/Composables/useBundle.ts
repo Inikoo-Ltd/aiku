@@ -9,6 +9,8 @@ const step = ref(1)
 const title = ref('')
 const description = ref('')
 
+const STORAGE_KEY = 'iris_bundle_products'
+
 const products = ref<any[]>([])
 const summary = ref({
     total_price: 0,
@@ -31,6 +33,29 @@ export function useBundle(routes?: any) {
 
     const isSummaryLoading = ref(false)
 
+    const saveProductsToStorage = () => {
+        if (typeof localStorage === 'undefined') return
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(products.value))
+        } catch (e) {
+            console.warn('[useBundle] failed saving products to storage', e)
+        }
+    }
+
+    const loadProductsFromStorage = () => {
+        if (typeof localStorage === 'undefined') return
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY)
+            if (!raw) return
+            const parsed = JSON.parse(raw)
+            if (Array.isArray(parsed)) {
+                products.value = parsed
+            }
+        } catch (e) {
+            console.warn('[useBundle] failed loading products from storage', e)
+        }
+    }
+
     const addProduct = (product: any) => {
         const exist = products.value.find(p => p.id === product.id)
 
@@ -39,12 +64,14 @@ export function useBundle(routes?: any) {
                 ...product,
                 quantity: 1
             })
+            saveProductsToStorage()
         }
         open.value = true
     }
 
     const removeProduct = (id: number) => {
         products.value = products.value.filter(p => p.id !== id)
+        saveProductsToStorage()
         calculateBundle()
     }
 
@@ -52,6 +79,7 @@ export function useBundle(routes?: any) {
         const item = products.value.find(p => p.id === id)
         if (item) {
             item.quantity++
+            saveProductsToStorage()
             calculateBundle()
         }
     }
@@ -60,6 +88,7 @@ export function useBundle(routes?: any) {
         const item = products.value.find(p => p.id === id)
         if (item && item.quantity > 1) {
             item.quantity--
+            saveProductsToStorage()
             calculateBundle()
         }
     }
@@ -125,6 +154,7 @@ export function useBundle(routes?: any) {
 
     watch(products, () => {
         debouncedCalculate()
+        saveProductsToStorage()
     }, { deep: true })
 
     const generateAITitle = async () => {
@@ -261,6 +291,7 @@ export function useBundle(routes?: any) {
         description.value = ''
 
         products.value = []
+        saveProductsToStorage()
         summary.value = {
             total_price: 0,
             total_bundle_price: 0,
@@ -269,6 +300,9 @@ export function useBundle(routes?: any) {
             profit_percentage: 0
         }
     }
+
+    loadProductsFromStorage()
+
     return {
         products,
         title,

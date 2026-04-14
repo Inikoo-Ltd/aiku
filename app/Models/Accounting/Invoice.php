@@ -208,6 +208,7 @@ class Invoice extends Model implements Auditable
         'email',
         'phone',
         'commission_amount',
+        'date',
     ];
 
     public function getRouteKeyName(): string

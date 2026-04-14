@@ -395,6 +395,16 @@ class Website extends Model implements Auditable, HasMedia
         return $this->belongsTo(Snapshot::class, 'live_families_overview_snapshot_id');
     }
 
+    public function unpublishedFamilyDescriptionSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'unpublished_family_description_snapshot_id');
+    }
+
+    public function liveFamilyDescriptionSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'live_family_description_snapshot_id');
+    }
+
     public function liveSnapshot(): BelongsTo
     {
         return $this->belongsTo(Snapshot::class, 'live_snapshot_id');

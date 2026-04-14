@@ -3,7 +3,8 @@ import { router } from '@inertiajs/vue3'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {
   faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube,
-  faPalette, faCheeseburger, faDraftingCompass, faWindow
+  faPalette, faCheeseburger, faDraftingCompass, faWindow,
+  faPageBreak
 } from '@fal'
 import { computed, ref, provide, inject, nextTick, onMounted, onUnmounted } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
@@ -17,6 +18,7 @@ import SubDepartmentWorkshop from '@/Components/CMS/Website/SubDepartmentBlockWo
 import FamiliesBlockWorkshop from '@/Components/CMS/Website/FamiliesBlockWorkshop/FamiliesBlockWorkshop.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import FamiliesOverviewBlockWorkshop from '@/Components/CMS/Website/FamiliesOverviewBlockWorkshop/FamiliesOverviewWorkshop.vue'
+import FamiliesDescriptionBlockWorkshop from '@/Components/CMS/Website/FamilyDescriptionBlockWorkshop/FamilyDescriptionBlockWorkshop.vue'
 
 import Dialog from 'primevue/dialog'
 import ProgressSpinner from 'primevue/progressspinner'
@@ -27,7 +29,7 @@ import { faSpinnerThird } from '@far'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 
-library.add(faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
+library.add(faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPageBreak)
 
 const props = defineProps<{
   title: string
@@ -43,6 +45,7 @@ const props = defineProps<{
   settings: Record<string, any>
   department: Record<string, any>
   sub_department: Record<string, any>
+  families_description: Record<string, any>
   collection: Record<string, any>
   publishRoute: Record<string, routeType>
   website_slug: string
@@ -64,6 +67,7 @@ const component = computed(() => {
     sub_department: SubDepartmentWorkshop,
     families: FamiliesBlockWorkshop,
     families_overview: FamiliesOverviewBlockWorkshop,
+    families_description: FamiliesDescriptionBlockWorkshop,
     products: ProductsBlockWorkshop,
     product: ProductBlockWorkshop,
     history: TableHistories

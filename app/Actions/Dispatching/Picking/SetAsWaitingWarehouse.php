@@ -35,12 +35,11 @@ class SetAsWaitingWarehouse extends OrgAction
         if (Arr::has($modelData, 'note')) {
             $dataToUpdate['notes'] = $modelData['note'];
         }
-
         $deliveryNoteItem->update(
             $dataToUpdate
         );
         DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
-        CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
+        CalculateDeliveryNoteItemTotalPicked::run($deliveryNoteItem);
 
         return $deliveryNoteItem;
     }

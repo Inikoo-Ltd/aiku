@@ -159,17 +159,8 @@ class ShowDeliveryNote extends OrgAction
         if (!$hasUnHandledItems) {
             $actions[] = [
                 'type'    => 'button',
-                'style'   => 'save',
-                'tooltip' => __('Set as packed'),
-                'label'   => __('Set as packed'),
-                'key'     => 'set-as-packed',
-                'route'   => [
-                    'method'     => 'patch',
-                    'name'       => 'grp.models.delivery_note.state.packed',
-                    'parameters' => [
-                        'deliveryNote' => $deliveryNote->id
-                    ]
-                ]
+                'key'     => 'trigger-set-as-picked-or-packed',
+
             ];
         }
 
@@ -521,9 +512,9 @@ class ShowDeliveryNote extends OrgAction
             'customer_client'              => $deliveryNote->customerClient,
             'currency_code'                => $deliveryNote->shop->currency->code,
             'external_shop'                => $deliveryNote->shop->type == ShopTypeEnum::EXTERNAL ? [  // TODO: Artha
-                                                                                                       'engine_value'            => $deliveryNote->shop->engine->value,
-                                                                                                       'engine_label'            => ShopEngineEnum::from($deliveryNote->shop->engine->value)->label(),
-                                                                                                       'external_shipping_label' => $deliveryNote->shop->engine == ShopEngineEnum::FAIRE ? __('Ship with Faire') : __('External shipping')
+                'engine_value'            => $deliveryNote->shop->engine->value,
+                'engine_label'            => ShopEngineEnum::from($deliveryNote->shop->engine->value)->label(),
+                'external_shipping_label' => $deliveryNote->shop->engine == ShopEngineEnum::FAIRE ? __('Ship with Faire') : __('External shipping')
             ] : null,
             'platform'                     => [
                 'name' => $deliveryNote->platform?->name,
@@ -700,7 +691,7 @@ class ShowDeliveryNote extends OrgAction
         $showChangePickerPacker = $deliveryNote->shop->type !== ShopTypeEnum::DROPSHIPPING;
 
         $props = [
-            'title'         => __('delivery note'),
+            'title'         => __('Delivery note').' '.$deliveryNote->reference,
             'breadcrumbs'   => $this->getBreadcrumbs(
                 $deliveryNote,
                 $request->route()->getName(),

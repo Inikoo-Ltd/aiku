@@ -63,20 +63,52 @@ const initWidget = async () => {
     el.innerHTML = ""
     if (typeof window.carouselInlineWidget !== "function") return
     new window.carouselInlineWidget(getId(), {
-        store: props.review.data.store,
-        sku: props.product.code,
-        carousel_type: "default",
-        styles_carousel: "CarouselWidget--sideHeader",
-        options: {
-            general: {
-                review_type: "product",
-                min_reviews: "1",
-                max_reviews: "20",
-                enable_auto_scroll: 10000,
-                enable_pause_button: false,
-            },
+    store: props.review.data.store,
+    sku: props.product.code || "",
+    lang: "en",
+    carousel_type: "default",
+    styles_carousel: "CarouselWidget--sideHeader",
+
+    options: {
+        general: {
+            review_type: "product", // ✅ FIX
+            min_reviews: "1",
+            max_reviews: "20",
+            enable_auto_scroll: 10000,
+            enable_pause_button: false,
         },
-    })
+        header: {
+            enable_overall_stars: true,
+        },
+        reviews: {
+            enable_customer_name: true,
+            enable_customer_location: true,
+            enable_verified_badge: true,
+            enable_subscriber_badge: true,
+            enable_recommends_badge: true,
+            enable_photos: true,
+            enable_videos: true,
+            enable_review_date: true,
+            disable_same_customer: true, 
+            min_review_percent: 4,
+            third_party_source: true,
+            hide_empty_reviews: false,
+            enable_product_name: true,
+        },
+        popups: {
+            enable_review_popups: true,
+        },
+    },
+
+    styles: {
+        "--common-star-color": "#facc15",
+        "--common-star-disabled-color": "rgba(0,0,0,0.25)",
+        "--header-star-color": "#facc15",
+        "--popup-star-color": "#facc15",
+        "--badge-icon-color": "#22c55e",
+        "--badge-text-color": "#22c55e",
+    },
+})
 }
 
 onMounted(async () => {
