@@ -18,7 +18,7 @@ const props = defineProps<{
 
 
 const isLoadingReindexing = ref(false)
-const aaa = async () => {
+const onClickReindex = async () => {
     try {
         isLoadingReindexing.value = true
         const response = await axios.post(
@@ -59,7 +59,7 @@ const aaa = async () => {
 <template>
     <div
         v-if="webpage?.luigi_data?.luigisbox_tracker_id"
-        @click="aaa"
+        @click="onClickReindex"
         class="w-full"
     >
         <slot :isLoadingReindexing>

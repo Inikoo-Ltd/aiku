@@ -22,6 +22,7 @@ class DeleteBrand extends OrgAction
     public function handle(Brand $brand): bool
     {
         $brand->tradeUnits()->detach();
+        $brand->products()->detach();
         $brand->delete();
         return true;
     }

@@ -34,9 +34,13 @@ class ProcessLowStockInBasketPerOutbox
         }
 
         $currentDateTime = Carbon::now()->utc();
-        $intervalInHours = Carbon::now()->utc()->subHours($outbox->interval);
 
-        $lastOutBoxSent = $outbox->last_sent_at;
+        $lastOutBoxSent = $outbox->last_sent_at ??  null;
+
+        // Check if enough time has passed since last outbox was sent
+        if ($lastOutBoxSent && Carbon::parse($lastOutBoxSent)->diffInHours($currentDateTime) < $outbox->interval) {
+            return;
+        }
 
         $outboxThreshold = $outbox->threshold;
 
@@ -62,16 +66,19 @@ class ProcessLowStockInBasketPerOutbox
         });
 
         // check Order Item
-        $baseQuery->join('transactions', function ($join) {
+        $baseQuery->join('transactions', function ($join) use ($lastOutBoxSent) {
             $join->on('orders.id', '=', 'transactions.order_id');
+            if ($lastOutBoxSent) {
+                $join->where('transactions.created_at', '>', $lastOutBoxSent);
+            }
+            $join->whereNull('transactions.deleted_at');
         });
 
         // check product
-        $baseQuery->join('products', function ($join) use ($intervalInHours, $lastOutBoxSent, $productClass, $outboxThreshold) {
+        $baseQuery->join('products', function ($join) use ($lastOutBoxSent, $productClass, $outboxThreshold) {
             $join->on('transactions.model_id', '=', 'products.id');
             $join->where('transactions.model_type', $productClass);
             $join->where('products.is_for_sale', true);
-            $join->where('products.available_quantity_updated_at', '>', $intervalInHours);
             $join->whereIn('products.state', [
                 ProductStateEnum::ACTIVE->value,
                 ProductStateEnum::DISCONTINUING->value,

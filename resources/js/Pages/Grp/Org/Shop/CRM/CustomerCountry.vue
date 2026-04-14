@@ -6,13 +6,14 @@ import { useTabChange } from "@/Composables/tab-change"
 import { computed, ref } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableTopSoldProducts from "@/Components/Tables/Grp/Org/CRM/TableTopSoldProducts.vue"
+import TableCouriersInCountry from "@/Components/Tables/Grp/Org/CRM/TableCouriersInCountry.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faUsers, faFileInvoice, faShoppingCart, faStar } from "@fal"
+import { faUsers, faFileInvoice, faShoppingCart, faStar, faTachometerAltFast, faCalendarAlt, faShippingFast } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { PageHeadingTypes } from '@/types/PageHeading'
 
-library.add(faUsers, faFileInvoice, faShoppingCart, faStar)
+library.add(faUsers, faFileInvoice, faShoppingCart, faStar, faTachometerAltFast, faCalendarAlt, faShippingFast)
 
 const props = defineProps<{
     title: string
@@ -32,6 +33,7 @@ const props = defineProps<{
     }
     top_products?: {}
     seasonal_products?: {}
+    couriers?: {}
 }>()
 
 const locale = useLocaleStore()
@@ -69,7 +71,7 @@ const kpiCards = computed(() => [
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <Tabs :tabs="tabs.navigation" @tabChanged="handleTabUpdate" />
+    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
     <div v-if="currentTab === 'showcase'" class="mt-5 grid grid-cols-2 lg:grid-cols-4 gap-4 px-4">
         <div
@@ -91,4 +93,5 @@ const kpiCards = computed(() => [
 
     <TableTopSoldProducts v-else-if="currentTab === 'top_products'" :data="top_products" :tab="currentTab" />
     <TableTopSoldProducts v-else-if="currentTab === 'seasonal_products'" :data="seasonal_products" :tab="currentTab" />
+    <TableCouriersInCountry v-else-if="currentTab === 'couriers'" :data="couriers" :tab="currentTab" />
 </template>

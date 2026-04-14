@@ -752,25 +752,6 @@ test('show dropshipping dashboard', function () {
     });
 });
 
-test('index pricing', function () {
-    // $this->withoutExceptionHandling();
-    actingAs($this->webUser, 'retina');
-    $response = $this->get(route('retina.fulfilment.pricing.index'));
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('Storage/RetinaStoragePricing')
-            ->has('title')
-            ->has(
-                'pageHead',
-                fn (AssertableInertia $page) => $page
-                    ->where('title', 'Prices')
-                    ->etc()
-            )
-            ->has('currency')
-            ->has('assets');
-    });
-})->todo();
-
 test('index pricing (goods)', function () {
     // $this->withoutExceptionHandling();
     actingAs($this->webUser, 'retina');

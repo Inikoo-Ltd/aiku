@@ -11,6 +11,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPencil, faTrashAlt } from "@far";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
+import { trans } from "laravel-vue-i18n";
 
 library.add(faPencil, faTrashAlt);
 
@@ -34,6 +35,10 @@ defineProps<{
             </Link>
         </template>
 
+        <template #cell(number_products)="{ item: brand }">
+            {{ brand.number_products }}
+        </template>
+
         <template #cell(actions)="{ item: brand }">
             <div class="flex gap-2 justify-end">
                 <Link
@@ -51,6 +56,12 @@ defineProps<{
                     :title="`Delete brand &quot;${brand.name}&quot;?`"
                     @success="router.reload()"
                 >
+                    <template #warning>
+                        <div class="mt-2 rounded bg-yellow-50 border border-yellow-300 px-3 py-2 text-sm text-yellow-800">
+                            {{ trans('This will detach :tradeUnits trade unit(s) and :products product(s).', { tradeUnits: brand.number_trade_units, products: brand.number_products }) }}
+                        </div>
+                    </template>
+
                     <template #default="{ changeModel }">
                         <button
                             class="text-red-400 hover:text-red-600"

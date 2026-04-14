@@ -105,10 +105,15 @@ class ShowCustomerCountry extends OrgAction
                 CustomerCountryTabsEnum::SEASONAL_PRODUCTS->value => $this->tab == CustomerCountryTabsEnum::SEASONAL_PRODUCTS->value
                     ? fn () => IndexTopSoldProductsInCountry::run($this->shop, $data['country_code'], CustomerCountryTabsEnum::SEASONAL_PRODUCTS->value)
                     : Inertia::lazy(fn () => IndexTopSoldProductsInCountry::run($this->shop, $data['country_code'], CustomerCountryTabsEnum::SEASONAL_PRODUCTS->value)),
+
+                CustomerCountryTabsEnum::COURIERS->value => $this->tab == CustomerCountryTabsEnum::COURIERS->value
+                    ? fn () => IndexCouriersInCountry::run($this->shop, $data['country_code'], CustomerCountryTabsEnum::COURIERS->value)
+                    : Inertia::lazy(fn () => IndexCouriersInCountry::run($this->shop, $data['country_code'], CustomerCountryTabsEnum::COURIERS->value)),
             ]
         )
         ->table(IndexTopSoldProductsInCountry::make()->tableStructure(prefix: CustomerCountryTabsEnum::TOP_PRODUCTS->value))
-        ->table(IndexTopSoldProductsInCountry::make()->tableStructure(prefix: CustomerCountryTabsEnum::SEASONAL_PRODUCTS->value));
+        ->table(IndexTopSoldProductsInCountry::make()->tableStructure(prefix: CustomerCountryTabsEnum::SEASONAL_PRODUCTS->value))
+        ->table(IndexCouriersInCountry::make()->tableStructure(prefix: CustomerCountryTabsEnum::COURIERS->value));
     }
 
     public function getBreadcrumbs(array $routeParameters, string $countryName): array

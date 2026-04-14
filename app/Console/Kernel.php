@@ -18,6 +18,8 @@ use App\Actions\Comms\Outbox\LowStockInBasket\RunBasketLowStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReorderRemainder\RunReorderRemainderEmailBulkRuns;
 use App\Actions\CRM\Customer\PruneCustomerWebActivities;
+use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
+use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Discounts\OfferCampaign\HydrateOfferCampaigns;
 use App\Actions\Web\Website\PruneWebsiteConversionEvents;
@@ -69,6 +71,24 @@ class Kernel extends ConsoleKernel
                 monitorSlug: 'RunMailshotSecondWave',
             ),
             name: 'RunMailshotSecondWave',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(RunProspectMailshotScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'RunProspectMailshotScheduled',
+            ),
+            name: 'RunProspectMailshotScheduled',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(RunProspectMailshotSecondWave::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'RunProspectMailshotSecondWave',
+            ),
+            name: 'RunProspectMailshotSecondWave',
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
@@ -497,7 +517,6 @@ class Kernel extends ConsoleKernel
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
-
         $this->logSchedule(
             $schedule->command('dispatched-email:clean-provider-dispatch-id')->dailyAt('3:30')->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'CleanProviderDispatchID',

@@ -209,7 +209,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
             <Swiper @swiper="(s) => (swiperInstance = s)" :modules="[Autoplay, Thumbs, FreeMode, Navigation]"
               :loop="true" slides-per-view="auto" :space-between="spaceBetween" :freeMode="true" navigation
               class="w-full swiper-inner">
-              <SwiperSlide class="!w-auto flex" v-if="fieldValue?.webpage_data?.webpage_type == 'department'">
+              <SwiperSlide class="!w-auto flex" v-if="fieldValue?.show_overview_button">
                 <LinkIris :href="fieldValue?.webpage_data?.overview_url" type="internal" class="h-full flex">
                   <div :style="{
                     ...getStyles(

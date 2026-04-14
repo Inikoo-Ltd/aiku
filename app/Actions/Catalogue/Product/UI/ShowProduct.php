@@ -143,7 +143,7 @@ class ShowProduct extends OrgAction
         $shop           = $product->shop;
         $isExternalShop = $shop->type == ShopTypeEnum::EXTERNAL;
         $hasMaster      = (bool)$product->masterProduct;
-
+        
         $miniBreadcrumbs = [];
         if ($product->department) {
             $miniBreadcrumbs[] = [
@@ -391,6 +391,12 @@ class ShowProduct extends OrgAction
                 'tabs'                  => [
                     'current'    => $this->tab,
                     'navigation' => $isExternalShop ? ProductInExternalTabsEnum::navigation() : ProductTabsEnum::navigation()
+                ],
+                'product_id'           => $product->id,
+                'shop_data'            => [
+                    'id'            => $product->shop_id,
+                    'slug'          => $product->shop->slug,
+                    'currency_code' => $product->shop->currency->code,
                 ],
                 'is_external_shop'      => $isExternalShop,
                 'family_slug'           => $product->family->slug ?? null,
