@@ -159,52 +159,13 @@ const isInProcess = computed(() => mailshotState.value === "in_process")
 const isReady = computed(() => mailshotState.value === "ready")
 const isLoadingVisit = ref(false)
 
-// Dummy template data for fallback when real data is not available
-const dummyOwnShopTemplates = computed(() => ({
-    templates: [
-        {
-            id: 1,
-            name: "Welcome Email Template",
-            compiled_layout: "<p>Welcome to our shop! Thank you for joining us.</p>"
-        },
-        {
-            id: 2,
-            name: "Special Promotion Template",
-            compiled_layout: "<p>Check out our latest special offers and discounts!</p>"
-        },
-        {
-            id: 3,
-            name: "Newsletter Template",
-            compiled_layout: "<p>Stay updated with our latest news and updates.</p>"
-        }
-    ],
-    shop_name: "Demo Shop"
-}))
-
-const dummyOtherShopTemplates = computed(() => ({
-    templates: [
-        {
-            id: 4,
-            name: "Product Launch Template",
-            shop_name: "Example Store",
-            compiled_layout: "<p>Introducing our new product line with amazing features!</p>"
-        },
-        {
-            id: 5,
-            name: "Holiday Special Template",
-            shop_name: "Seasonal Shop",
-            compiled_layout: "<p>Celebrate the holidays with our special collection.</p>"
-        }
-    ]
-}))
-
 // Computed properties to use real data when available, otherwise use dummy data
 const effectiveOwnShopTemplates = computed(() =>
-    props.ownShopTemplates || dummyOwnShopTemplates.value
+    props.ownShopTemplates
 )
 
 const effectiveOtherShopTemplates = computed(() =>
-    props.otherShopTemplates || dummyOtherShopTemplates.value
+    props.otherShopTemplates
 )
 
 const effectiveOrganisationSlug = computed(() =>

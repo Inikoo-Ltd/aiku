@@ -21,12 +21,14 @@ class GetOtherShopEmailTemplates extends InertiaAction
 
     public function handle(Organisation $organisation, Shop $currentShop): array
     {
-        $templates = EmailTemplate::where('organisation_id', $organisation->id)
-            ->where('shop_id', '!=', $currentShop->id)
-            ->whereNotNull('compiled_layout')
-            ->where('compiled_layout', '!=', '')
-            ->orderBy('created_at', 'desc')
-            ->get(['id', 'name', 'compiled_layout']);
+        $templates = EmailTemplate::where('email_templates.organisation_id', $organisation->id)
+            ->leftJoin('shops', 'email_templates.shop_id', '=', 'shops.id')
+            ->where('email_templates.shop_id', '!=', $currentShop->id)
+            ->whereNotNull('email_templates.compiled_layout')
+            ->where('email_templates.compiled_layout', '!=', '')
+            ->select('email_templates.id', 'email_templates.name', 'email_templates.compiled_layout', 'shops.name as shop_name')
+            ->orderBy('email_templates.created_at', 'desc')
+            ->get();
 
         return [
             'templates' => $templates->toArray(),

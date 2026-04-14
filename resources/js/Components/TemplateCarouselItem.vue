@@ -31,7 +31,7 @@ const props = defineProps<Props>();
 
 const getTemplatePreview = (template: Template): string => {
     // Return the full HTML content with 50% zoom and disabled links
-    return `<div style="transform: scale(0.45); transform-origin: top left; width: 100%; height: 100%;">
+    return `<div style="transform: scale(0.45); transform-origin: top left; width: 222%; height: 100%; overflow: hidden;">
         ${template.compiled_layout}
     </div>`;
 };
