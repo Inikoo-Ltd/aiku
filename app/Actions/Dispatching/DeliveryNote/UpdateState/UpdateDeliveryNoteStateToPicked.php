@@ -56,7 +56,7 @@ class UpdateDeliveryNoteStateToPicked extends OrgAction
         });
 
         $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
-        $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::PICKED);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, $deliveryNote->state);
 
         return $deliveryNote;
     }
