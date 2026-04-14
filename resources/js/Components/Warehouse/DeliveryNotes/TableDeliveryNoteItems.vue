@@ -771,44 +771,46 @@ const onSetItemToUndoWaitingWarehouse = () => {
                                 </template>
                             </Button>
 
-                            <!-- Button: Set Transaction as not picked -->
-                            <!-- Button: Not picked -->
-                            <!-- <ButtonWithLink
-                                v-if="!itemValue.is_handled"
-                                type="negative"
-                                iconRight="fal fa-debug"
-                                :size="screenType == 'desktop' ? 'sm' : 'lg'"
-                                :routeTarget="itemValue.not_picking_route"
-                                :bindToLink="{preserveScroll: true}"
-                                v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
-                            >
-                                <template #label>
-                                    <div>
-                                        <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)" :fractionData="GetQuantityToPickFractional(itemValue)" />
-                                        <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
-                                    </div>
-                                </template>
-                            </ButtonWithLink> -->
+                            <!-- Button: Not Picked || Set as Waiting -->
+                            <template v-if="!itemValue.is_handled">
+                                <!-- Button: Set Transaction as Waiting -->
+                                <Button
+                                    v-if="allowWaiting"
+                                    @click="() => (isOpenModalSetAsWaiting = true, dataToSendAsWaiting.note = itemValue.notes, selectedTransactionToSetAsWaiting = itemValue)"
+                                    type="tertiary"
+                                    iconRight="fal fa-hourglass-half"
+                                    :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                                    v-tooltip="trans('Set :numberNotPicked as waiting', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
+                                >
+                                    <template #label>
+                                        <div>
+                                            <FractionDisplay v-if="GetQuantityToPickFractional ? GetQuantityToPickFractional(itemValue) : null" :fractionData="GetQuantityToPickFractional(itemValue)" />
+                                            <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
+                                        </div>
+                                    </template>
+                                </Button>
+                                
+                                <!-- Button: Not picked -->
+                                <ButtonWithLink
+                                    v-else 
+                                    type="negative"
+                                    iconRight="fal fa-debug"
+                                    :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                                    :routeTarget="itemValue.not_picking_route"
+                                    :bindToLink="{preserveScroll: true}"
+                                    v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
+                                >
+                                    <template #label>
+                                        <div>
+                                            <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)" :fractionData="GetQuantityToPickFractional(itemValue)" />
+                                            <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
+                                        </div>
+                                    </template>
+                                </ButtonWithLink>
+                            </template>
 
-                            <!-- Button: Set Transaction as Waiting -->
-                            <Button
-                                v-if="layout.app.environment === 'local' && allowWaiting"
-                                @click="() => (isOpenModalSetAsWaiting = true, dataToSendAsWaiting.note = itemValue.notes, selectedTransactionToSetAsWaiting = itemValue)"
-                                type="tertiary"
-                                iconRight="fal fa-hourglass-half"
-                                :size="screenType == 'desktop' ? 'sm' : 'lg'"
-                                v-tooltip="trans('Set :numberNotPicked as waiting', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
-                            >
-                                <template #label>
-                                    <div>
-                                        <FractionDisplay v-if="GetQuantityToPickFractional ? GetQuantityToPickFractional(itemValue) : null" :fractionData="GetQuantityToPickFractional(itemValue)" />
-                                        <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
-                                    </div>
-                                </template>
-                            </Button>
 
-
-                            </div>
+                        </div>
                         </div>
                         
                         <!-- Section: Errors list -->

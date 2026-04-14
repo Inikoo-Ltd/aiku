@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Dispatch;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -28,6 +29,32 @@ class GetDispatchHubExternalWidget
                 // 'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.shop',
                  'name'       => 'grp.org.warehouses.show.dispatching.in_warehouse.delivery-notes.shop',
                 'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::EXTERNAL->value]
+            ],
+            'waiting_items_still_picking' => [
+                'count' => $warehouse->deliveryNotes()
+                    ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                    ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
+                    ->where('shops.type', ShopTypeEnum::EXTERNAL->value)
+                    ->where('delivery_note_items.has_waiting_warehouse', true)
+                    ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING)
+                    ->count(),
+                'route' => [
+                    'name' => 'grp.org.warehouses.show.dispatching.waiting_items_still_picking',
+                    'parameters' => request()->route()->originalParameters()
+                ],
+            ],
+            'waiting_items' => [
+                'count' => $warehouse->deliveryNotes()
+                    ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                    ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
+                    ->where('shops.type', ShopTypeEnum::EXTERNAL->value)
+                    ->where('delivery_note_items.has_waiting_warehouse', true)
+                    ->where('delivery_notes.state','!=', DeliveryNoteStateEnum::HANDLING)
+                    ->count(),
+                'route' => [
+                    'name' => 'grp.org.warehouses.show.dispatching.waiting_items',
+                    'parameters' => request()->route()->originalParameters()
+                ],
             ],
             'cases'            => [
                 'todo'             => [

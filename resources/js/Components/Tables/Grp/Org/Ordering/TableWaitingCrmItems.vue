@@ -14,6 +14,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { inject } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 library.add(faStickyNote, faExchangeAlt)
 
 defineProps<{
@@ -121,8 +122,26 @@ const replaceProductRoute = (item: Record<string, any>): string | null => {
                     />
                 </Link>
 
+
+                
+                <div v-if="item.shop_type == 'external' && item.shop_engine === 'faire'">
+                    <ButtonWithLink
+                        :label="ctrans('Refresh Faire data')"
+                        size="xs"
+                        type="tertiary"
+                        key="2"
+                        icon="fal fa-sync-alt"
+                        :routeTarget="{
+                            name: 'grp.models.order.update_faire',
+                            parameters: {
+                                order: item.order_id
+                            },
+                            method: 'post'
+                        }"
+                    />
+                </div>
                 <Link
-                    v-if="layout.app.environment === 'local' && replaceProductRoute(item)"
+                    v-else-if="layout.app.environment === 'local' && replaceProductRoute(item)"
                     :href="replaceProductRoute(item)!"
                     method="post"
                     preserve-scroll

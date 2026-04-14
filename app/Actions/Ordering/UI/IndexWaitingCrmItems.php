@@ -69,9 +69,12 @@ class IndexWaitingCrmItems extends OrgAction
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
                 'org_stocks.slug as org_stock_slug',
+                'orders.id as order_id',
                 'orders.slug as order_slug',
                 'orders.reference as order_reference',
                 'shops.slug as shop_slug',
+                'shops.type as shop_type',
+                'shops.engine as shop_engine',
                 'organisations.slug as organisation_slug',
             ])
             ->allowedSorts(['org_stock_code', 'org_stock_name', 'quantity_waiting_crm', 'order_reference'])
