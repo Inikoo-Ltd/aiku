@@ -449,14 +449,6 @@ class GetShopNavigation
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
-                        [
-                            "label"   => __("Countries"),
-                            "icon"    => ["fal", "fa-globe"],
-                            "route"   => [
-                                "name"       => "grp.org.shops.show.crm.countries.index",
-                                "parameters" => [$shop->organisation->slug, $shop->slug],
-                            ],
-                        ],
                     ],
                 ],
             ];
