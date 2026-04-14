@@ -9,7 +9,7 @@ import { Head } from '@inertiajs/vue3';
 import PageHeading from '@/Components/Headings/PageHeading.vue';
 import {library} from '@fortawesome/fontawesome-svg-core';
 import { capitalize } from "@/Composables/capitalize"
-import { faShoppingCart, faStoreAlt, faGlobeEurope } from '@fal';
+import { faShoppingCart, faStoreAlt, faGlobeEurope, faComments } from '@fal';
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { computed, ref } from "vue";
 import CustomersDashboard from "@/Pages/Grp/Org/Shop/CRM/CustomerDashboard.vue";
@@ -17,11 +17,13 @@ import Tabs from "@/Components/Navigation/Tabs.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import ProspectsDashboard from "@/Pages/Grp/Org/Shop/CRM/ProspectsDashboard.vue";
 import TableCustomerCountries from '@/Components/Tables/Grp/Org/CRM/TableCustomerCountries.vue';
+import TableChatSessions from '@/Components/Tables/Grp/Org/CRM/TableChatSessions.vue';
 
 library.add(
     faShoppingCart,
     faStoreAlt,
     faGlobeEurope,
+    faComments
 );
 
 const props = defineProps<{
@@ -34,6 +36,7 @@ const props = defineProps<{
     customers?: {};
     prospects?: {};
     countries?: {};
+    chats?: {};
 }>();
 
 const currentTab = ref<string>(props.tabs.current);
@@ -44,6 +47,7 @@ const component = computed(() => {
         customers: CustomersDashboard,
         prospects: ProspectsDashboard,
         countries: TableCustomerCountries,
+        chats: TableChatSessions,
     }
 
     return components[currentTab.value];
