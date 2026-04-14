@@ -20,7 +20,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
 {
-    public function handle(Warehouse $warehouse, string $waitingType, string $stateType, string $shopType = 'all', ?string $prefix = null): LengthAwarePaginator
+    public function handle(Warehouse $warehouse, string $waitingType, DeliveryNoteStateEnum $state, string $shopType = 'all', ?string $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -48,11 +48,8 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
             $query->where('delivery_note_items.has_waiting_crm', true);
         }
 
-        if ($stateType == 'picking') {
-            $query->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING);
-        } else {
-            $query->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED);
-        }
+        $query->where('delivery_notes.state', $state);
+
 
         if ($shopType != 'all') {
             // Get directly from shop.type because some deliveryNote has no shop_type somehow (null), probably old order_data
