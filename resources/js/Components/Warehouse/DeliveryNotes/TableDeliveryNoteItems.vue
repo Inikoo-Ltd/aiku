@@ -398,6 +398,18 @@ const routeItemsWaitingCrm = (item) => {
 //     // console.log("modalResource", val)
 // }, { deep: true })
 
+
+const isOpenModalUndoWaitingWarehouse = ref(false)
+const selectedItemToUndoWaitingWarehouse = ref(null)
+const isLoadingUndoWaitingWarehouse = ref(false)
+const onSetItemToUndoWaitingWarehouse = () => {
+    router.post(route('grp.models.delivery_note_item.undo_set_as_waiting_warehouse', {
+        deliveryNoteItem: selectedItemToUndoWaitingWarehouse.value.id
+    }), {
+        onStart: () => isLoadingUndoWaitingWarehouse.value = true,
+        onFinish: () => isLoadingUndoWaitingWarehouse.value = false,
+    })
+}
 </script>
 
 <template>
@@ -826,10 +838,21 @@ const routeItemsWaitingCrm = (item) => {
 
             <!-- Section: items are waiting for warehouse -->
             
-            <div v-if="Number(itemValue.quantity_waiting_warehouse) > 0" class="mt-2 mx-auto w-fit">
+            <div v-if="Number(itemValue.quantity_waiting_warehouse) > 0" class="mt-2 mx-auto w-fit flex gap-x-2">
                 <Link :href="routeItemsWaitingWarehouse(itemValue)" class="hover:underline">
-                    <LabelItemsWaitingForWarehouse v-if="Number(itemValue.quantity_waiting_warehouse) > 0" :qty_waiting_warehouse="Number(itemValue.quantity_waiting_warehouse)" />
+                    <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(itemValue.quantity_waiting_warehouse)">
+                        <template #default>
+                            
+                        </template>
+                    </LabelItemsWaitingForWarehouse>
                 </Link>
+                <Button
+                    @click="isOpenModalUndoWaitingWarehouse = true, selectedItemToUndoWaitingWarehouse = itemValue"
+                    v-tooltip="ctrans('Reset :qtyWaiting waiting items for warehouse', { qtyWaiting: Number(itemValue.quantity_waiting_warehouse).toString()})"
+                    type="negative"
+                    :size="screenType != 'mobile' ? 'xxs' : 'md'"
+                    icon="fal fa-undo-alt"
+                />
             </div>
 
             <!-- Section: items are waiting for CRM -->
@@ -1156,6 +1179,90 @@ const routeItemsWaitingCrm = (item) => {
                 iconRight="far fa-arrow-right"
                 :loading="isLoadingSetAsWaiting"
             />
+        </div>
+    </Modal>
+
+    <!-- Modal: Set Transaction to undo waiting warehouse -->
+    <Modal :isOpen="isOpenModalUndoWaitingWarehouse" width="w-full max-w-xl" @close="isOpenModalUndoWaitingWarehouse = false">
+        <div class="flex min-h-full xitems-end justify-center p-4 text-center items-center sm:py-4">
+            <!-- Button: Close -->
+            <div class="absolute top-0 right-0 pt-4 pr-4 hidden sm:block">
+                <button
+                    type="button"
+                    class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-hidden"
+                    @click="isOpenModalUndoWaitingWarehouse = false">
+                    <span class="sr-only">Close</span>
+                    <FontAwesomeIcon
+                        :icon="'fal fa-times'"
+                        class=""
+                        fixed-width
+                        aria-hidden="true" />
+                </button>
+            </div>
+
+            <div class="sm:flex sm:items-start">
+                <div class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:size-10">
+                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-red-600" fixed-width aria-hidden="true" />
+                </div>
+
+                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <div as="h3" class="text-base font-semibold">
+                        {{ ctrans("Are you sure want to undo quantity waiting for warehouse?") }}
+                    </div>
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-500">
+                            {{ ctrans( "Other people may on the progress to picking this item, you need to tell the others about this action" ) }}
+                        </p>
+                    </div>
+
+                    <div class="mt-4 bg-amber-50 border border-amber-200 rounded flex items-center gap-4 mb-2 py-2 px-3">
+                        <div class="shrink-0 size-16 rounded-lg overflow-hidden xbg-gray-100 border border-black/10 flex items-center justify-center">
+                            <Image
+                                v-if="selectedItemToUndoWaitingWarehouse?.org_stock_image_thumbnail"
+                                :src="selectedItemToUndoWaitingWarehouse.org_stock_image_thumbnail"
+                                :alt="selectedItemToUndoWaitingWarehouse.org_stock_name"
+                            />
+                            <FontAwesomeIcon v-else icon="fal fa-image" class="text-2xl text-gray-400" fixed-width aria-hidden="true" />
+                        </div>
+
+                        <div class="min-w-0">
+                            <div class="text-xl leading-tight font-bold">
+                                {{ selectedItemToUndoWaitingWarehouse?.org_stock_code }}
+                            </div>
+                            <div class="text- opacity-75">
+                                {{ selectedItemToUndoWaitingWarehouse?.org_stock_name ?? '-' }}
+                            </div>
+                            <div class="text-sm text-red-500 opacity-75 italic">
+                                {{ ctrans("Quantity waiting for warehouse") }}: {{ Number(selectedItemToUndoWaitingWarehouse?.quantity_waiting_warehouse) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 flex flex-row-reverse gap-2">
+                        <div class="xw-full sm:w-fit">
+                            <Button
+                                :loading="isLoadingUndoWaitingWarehouse"
+                                @click="() => (onSetItemToUndoWaitingWarehouse())"
+                                type="red"
+                                xlabel="props.noLabel ?? trans('Delete')"
+                                :icon="'far fa-trash-alt'"
+                                full
+                                :label="ctrans('Yes, undo waiting')"
+                            />
+                        </div>
+
+                        <Button
+                            type="tertiary"
+                            icccon="far fa-arrow-left"
+                            :label="ctrans('Cancel')"
+                            full
+                            @click="
+                                () => ((isOpenModalUndoWaitingWarehouse = false))
+                            "
+                        />
+                    </div>
+                </div>
+            </div>
         </div>
     </Modal>
 </template>
