@@ -69,6 +69,8 @@ const toggleInterest = (interestValue: string) => {
     }
     props.form.clearErrors('interest');
 };
+
+console.log('form', props.form)
 </script>
 
 <template>
@@ -222,7 +224,7 @@ const toggleInterest = (interestValue: string) => {
         
         <div class="mt-2" :class="form.errors?.[`poll_replies.${idx}`] ? 'errorShake' : ''">
             <Select
-                v-if="pollReply.type === 'option'"
+                v-if="pollReply.type === 'option' || pollReply.type === 'Multiple Choice' "
                 v-model="form.poll_replies[idx].answer"
                 @update:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
                 :options="props.polls[idx].options"
