@@ -26,6 +26,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $period
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int|null $organisation_id
+ * @property int|null $shop_id
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BrandTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BrandTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BrandTimeSeriesRecord query()

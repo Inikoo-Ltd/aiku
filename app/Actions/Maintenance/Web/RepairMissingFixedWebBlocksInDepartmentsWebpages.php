@@ -179,7 +179,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         $webpage->refresh();
 
         UpdateWebpageContent::run($webpage);
-        
+
         foreach ($webpage->webBlocks as $webBlock) {
             print $webBlock->webBlockType->code."\n";
         }

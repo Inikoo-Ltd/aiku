@@ -4,11 +4,9 @@ namespace App\Actions\Web;
 
 use App\Actions\Maintenance\Web\WithRepairWebpages;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
-use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Events\BroadcastUpdateWeblocks;
-use App\Models\Web\WebBlockType;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +29,9 @@ class UpdateDescriptionBlockToWebsiteAndChild
             default                 => null
         };
 
-        if (!$marginalData) return;
+        if (!$marginalData) {
+            return;
+        }
 
         $webpages = $website->webpages()
             ->where('sub_type', data_get($marginalData, 'subType'))
@@ -48,14 +48,14 @@ class UpdateDescriptionBlockToWebsiteAndChild
             foreach (data_get($marginalData, 'codes') as $code) {
                 $this->deleteWebBlocksByCode($webpage, $code);
             }
-            
+
             foreach ($layouts as $code => $layout) {
                 Log::info("Code: [$code]", $layout);
                 $this->createWebBlock($webpage, $code, $layout);
             }
-            
+
             $webpage->refresh();
-            if($webpage->sub_type == 'family') {
+            if ($webpage->sub_type == 'family') {
                 $this->setFamilyDescriptionIndex($webpage, collect(array_keys($layouts))->first(fn ($key) => !str_ends_with($key, '-extra-description')));
             }
 
@@ -74,7 +74,7 @@ class UpdateDescriptionBlockToWebsiteAndChild
                     ]
                 );
             }
-            
+
             $percent = intval(($progress / $total) * 100);
             if ($percent >= $lastPercent + 10) {
                 $lastPercent = $percent;

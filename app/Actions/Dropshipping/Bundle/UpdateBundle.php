@@ -124,7 +124,7 @@ class UpdateBundle extends OrgAction
             }
 
             $selectedProducts = Arr::get($modelData, 'products');
-            if(! blank($selectedProducts)) {
+            if (! blank($selectedProducts)) {
                 $productSelected = Product::where('shop_id', $bundle->customer->shop_id)
                     ->whereIn('id', Arr::pluck($selectedProducts, 'product_id'))
                     ->get();
@@ -147,7 +147,7 @@ class UpdateBundle extends OrgAction
                         ->where('item_id', $selectedProduct['product_id'])
                         ->first();
 
-                    if($bundleItem) {
+                    if ($bundleItem) {
                         continue;
                     }
 

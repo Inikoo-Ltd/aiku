@@ -86,7 +86,7 @@ beforeEach(function () {
         $this->organisation,
         $this->user,
         $this->shop
-        ) = createShop();
+    ) = createShop();
 
     $this->group      = $this->organisation->group;
     $this->adminGuest = createAdminGuest($this->group);
@@ -96,7 +96,7 @@ beforeEach(function () {
     list(
         $this->tradeUnit,
         $this->product
-        ) = createProduct($this->shop);
+    ) = createProduct($this->shop);
 
     $product2 = $this->shop->products()->skip(1)->first();
 
@@ -526,7 +526,7 @@ test("UI Index dispatching delivery-notes", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where("title", "Delivery notes")
                     ->etc()
             )
@@ -550,7 +550,7 @@ test("UI Index dispatching show delivery-notes", function (DeliveryNote $deliver
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where("title", $deliveryNote->reference)
                     ->where("model", 'Delivery Note')
                     ->etc()
@@ -752,7 +752,7 @@ test("UI Index dispatching picking sessions", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where("title", "Picking Sessions")
                     ->etc()
             )
@@ -776,7 +776,7 @@ test("UI Index dispatching show picking session", function (PickingSession $pick
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where("title", $pickingSession->reference)
                     ->where("model", 'Picking Session')
                     ->etc()
@@ -794,7 +794,7 @@ it('can render the shippers index page', function () {
     ]))
         ->assertOk()
         ->assertInertia(
-            fn(Assert $page) => $page
+            fn (Assert $page) => $page
                 ->component('Org/Dispatching/Shippers')
                 ->has('data.data', 1)
         );
@@ -823,7 +823,7 @@ it('can render the inactive shippers index page', function () {
     ]))
         ->assertOk()
         ->assertInertia(
-            fn(Assert $page) => $page
+            fn (Assert $page) => $page
                 ->component('Org/Dispatching/Shippers')
                 ->has('data.data', 1)
                 ->where('data.data.0.name', $inactiveShipper->name)
@@ -837,7 +837,7 @@ it('can render the create shipper page', function () {
     ]))
         ->assertOk()
         ->assertInertia(
-            fn(Assert $page) => $page
+            fn (Assert $page) => $page
                 ->component('CreateModel')
                 ->has('formData.blueprint')
         );
@@ -853,7 +853,7 @@ it('can render the show shipper page', function () {
     ]))
         ->assertOk()
         ->assertInertia(
-            fn(Assert $page) => $page
+            fn (Assert $page) => $page
                 ->component('Org/Dispatching/Shipper')
                 ->where('pageHead.title', $shipper->name)
         );
@@ -868,7 +868,7 @@ it('can render the edit shipper page', function () {
     ]))
         ->assertOk()
         ->assertInertia(
-            fn(Assert $page) => $page
+            fn (Assert $page) => $page
                 ->component('EditModel')
                 ->where('formData.blueprint.0.fields.name.value', $shipper->name)
         );

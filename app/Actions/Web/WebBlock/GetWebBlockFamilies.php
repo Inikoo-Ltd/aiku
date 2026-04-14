@@ -28,10 +28,10 @@ class GetWebBlockFamilies
         $hasOverviewPage = false;
 
         if ($webpage->model instanceof ProductCategory) {
-            
+
             if ($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT && $webpage->layout_style == 'main_page') {
                 $model = $webpage->model;
-                
+
                 $hasOverviewPage = $model->webpages()->where('layout_style', 'families-overview')->exists();
             }
 
@@ -66,10 +66,12 @@ class GetWebBlockFamilies
                 ->where('webpages.state', WebpageStateEnum::LIVE->value)
                 ->whereNull('product_categories.deleted_at')
                 ->whereNull('webpages.deleted_at')
-                ->when(($hasOverviewPage),
+                ->when(
+                    ($hasOverviewPage),
                     function ($query) {
                         $query->limit(3);
-                    })
+                    }
+                )
                 ->get();
         } elseif ($webpage->model instanceof Collection) {
             $families = DB::table('product_categories')
