@@ -107,9 +107,9 @@ class IndexWaitingCrmItems extends OrgAction
             'Ordering/WaitingCrmItems',
             [
                 'breadcrumbs'       => $this->getBreadcrumbs($parent, $request->route()->originalParameters()),
-                'title'             => __('Waiting for CRM'),
+                'title'             => __('Waiting Items') . ' (' . $items->total() . ')',
                 'pageHead'          => [
-                    'title' => __('Waiting for CRM'),
+                    'title' => __('Waiting Items'),
                     'model' => __('Pending Orders'),
                     'icon'  => [
                         'icon'  => ['fal', 'fa-hourglass-start'],
