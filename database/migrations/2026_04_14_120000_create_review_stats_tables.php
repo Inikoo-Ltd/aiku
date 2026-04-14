@@ -31,8 +31,9 @@ return new class () extends Migration {
     {
         Schema::create('group_review_stats', function (Blueprint $table) {
             $table->smallIncrements('id');
-            $table->unsignedSmallInteger('group_id')->unique();
-            $table->foreign('group_id')->references('id')->on('groups')->onUpdate('cascade')->onDelete('cascade');
+            $table->unsignedSmallInteger('group_id');
+            $table->unique('group_id', 'grs_group_id_uq');
+            $table->foreign('group_id', 'grs_group_id_fk')->references('id')->on('groups')->onUpdate('cascade')->onDelete('cascade');
             $this->addReviewStatsFields($table);
         });
     }
@@ -41,8 +42,9 @@ return new class () extends Migration {
     {
         Schema::create('organisation_review_stats', function (Blueprint $table) {
             $table->smallIncrements('id');
-            $table->unsignedSmallInteger('organisation_id')->unique();
-            $table->foreign('organisation_id')->references('id')->on('organisations')->onUpdate('cascade')->onDelete('cascade');
+            $table->unsignedSmallInteger('organisation_id');
+            $table->unique('organisation_id', 'ors_organisation_id_uq');
+            $table->foreign('organisation_id', 'ors_organisation_id_fk')->references('id')->on('organisations')->onUpdate('cascade')->onDelete('cascade');
             $this->addReviewStatsFields($table);
         });
     }
@@ -51,8 +53,9 @@ return new class () extends Migration {
     {
         Schema::create('shop_review_stats', function (Blueprint $table) {
             $table->smallIncrements('id');
-            $table->unsignedSmallInteger('shop_id')->unique();
-            $table->foreign('shop_id')->references('id')->on('shops')->onUpdate('cascade')->onDelete('cascade');
+            $table->unsignedSmallInteger('shop_id');
+            $table->unique('shop_id', 'srs_shop_id_uq');
+            $table->foreign('shop_id', 'srs_shop_id_fk')->references('id')->on('shops')->onUpdate('cascade')->onDelete('cascade');
             $this->addReviewStatsFields($table);
         });
     }
@@ -61,8 +64,9 @@ return new class () extends Migration {
     {
         Schema::create('master_product_category_review_stats', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('master_product_category_id')->unique();
-            $table->foreign('master_product_category_id')->references('id')->on('master_product_categories')->onUpdate('cascade')->onDelete('cascade');
+            $table->unsignedInteger('master_product_category_id');
+            $table->unique('master_product_category_id', 'mprs_mpc_id_uq');
+            $table->foreign('master_product_category_id', 'mprs_mpc_id_fk')->references('id')->on('master_product_categories')->onUpdate('cascade')->onDelete('cascade');
             $this->addReviewStatsFields($table);
         });
     }
@@ -71,8 +75,9 @@ return new class () extends Migration {
     {
         Schema::create('product_category_review_stats', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('product_category_id')->unique();
-            $table->foreign('product_category_id')->references('id')->on('product_categories')->onUpdate('cascade')->onDelete('cascade');
+            $table->unsignedInteger('product_category_id');
+            $table->unique('product_category_id', 'pcrs_pc_id_uq');
+            $table->foreign('product_category_id', 'pcrs_pc_id_fk')->references('id')->on('product_categories')->onUpdate('cascade')->onDelete('cascade');
             $this->addReviewStatsFields($table);
         });
     }
@@ -81,8 +86,9 @@ return new class () extends Migration {
     {
         Schema::create('master_asset_review_stats', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('master_asset_id')->unique();
-            $table->foreign('master_asset_id')->references('id')->on('master_assets')->onUpdate('cascade')->onDelete('cascade');
+            $table->unsignedInteger('master_asset_id');
+            $table->unique('master_asset_id', 'mars_ma_id_uq');
+            $table->foreign('master_asset_id', 'mars_ma_id_fk')->references('id')->on('master_assets')->onUpdate('cascade')->onDelete('cascade');
             $this->addReviewStatsFields($table);
         });
     }
@@ -91,31 +97,32 @@ return new class () extends Migration {
     {
         Schema::create('product_review_stats', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('product_id')->unique();
-            $table->foreign('product_id')->references('id')->on('products')->onUpdate('cascade')->onDelete('cascade');
+            $table->unsignedInteger('product_id');
+            $table->unique('product_id', 'prs_product_id_uq');
+            $table->foreign('product_id', 'prs_product_id_fk')->references('id')->on('products')->onUpdate('cascade')->onDelete('cascade');
             $this->addReviewStatsFields($table);
         });
     }
 
     private function addReviewStatsFields(Blueprint $table): void
     {
-        $table->unsignedInteger('number_reviews')->default(0);
-        $table->unsignedInteger('number_reviews_pending')->default(0);
-        $table->unsignedInteger('number_reviews_approved')->default(0);
-        $table->unsignedInteger('number_reviews_rejected')->default(0);
+        $table->unsignedInteger('number_reviews')->default(0)->index();
+        $table->unsignedInteger('number_reviews_pending')->default(0)->index();
+        $table->unsignedInteger('number_reviews_approved')->default(0)->index();
+        $table->unsignedInteger('number_reviews_rejected')->default(0)->index();
 
-        $table->unsignedInteger('number_rating_1')->default(0);
-        $table->unsignedInteger('number_rating_2')->default(0);
-        $table->unsignedInteger('number_rating_3')->default(0);
-        $table->unsignedInteger('number_rating_4')->default(0);
-        $table->unsignedInteger('number_rating_5')->default(0);
+        $table->unsignedInteger('number_rating_1')->default(0)->index();
+        $table->unsignedInteger('number_rating_2')->default(0)->index();
+        $table->unsignedInteger('number_rating_3')->default(0)->index();
+        $table->unsignedInteger('number_rating_4')->default(0)->index();
+        $table->unsignedInteger('number_rating_5')->default(0)->index();
 
-        $table->decimal('average_rating_main', 5, 2)->default(0);
-        $table->decimal('average_rating_a', 5, 2)->default(0);
-        $table->decimal('average_rating_b', 5, 2)->default(0);
-        $table->decimal('average_rating_c', 5, 2)->default(0);
-        $table->decimal('average_rating_d', 5, 2)->default(0);
-        $table->decimal('average_rating_e', 5, 2)->default(0);
+        $table->decimal('average_rating_main', 5, 2)->default(0)->index();
+        $table->decimal('average_rating_a', 5, 2)->default(0)->index();
+        $table->decimal('average_rating_b', 5, 2)->default(0)->index();
+        $table->decimal('average_rating_c', 5, 2)->default(0)->index();
+        $table->decimal('average_rating_d', 5, 2)->default(0)->index();
+        $table->decimal('average_rating_e', 5, 2)->default(0)->index();
 
         $table->timestampsTz();
     }
