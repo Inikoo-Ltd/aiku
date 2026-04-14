@@ -39,6 +39,7 @@ const props = defineProps<{
     imagesUploadRoute: routeType
     updateRoute: routeType
     snapshot: routeType
+    unpublished_layout: any
     mergeTags: Array<any>
     mergeContents: Array<any> | null
     status: string
@@ -323,9 +324,10 @@ watch(
 
     <!-- beefree -->
     <Beetree v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
-        :snapshot="activeSnapshot" :mergeTags="mergeTags" :mergeContents="mergeContents"
-        :organisationSlug="organisationSlug" @onSave="onSendPublish" @sendTest="openSendTest" @auto-save="autoSave"
-        @saveTemplate="onSaveTemplate" ref="_beefree" @ready="isBeefreeReady = $event" />
+        :snapshot="activeSnapshot" :unpublished_layout="unpublished_layout" :mergeTags="mergeTags"
+        :mergeContents="mergeContents" :organisationSlug="organisationSlug" @onSave="onSendPublish"
+        @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree"
+        @ready="isBeefreeReady = $event" />
 
     <!-- unlayer -->
     <Unlayer v-else-if="builder == 'unlayer'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"

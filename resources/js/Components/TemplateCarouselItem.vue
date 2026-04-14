@@ -25,6 +25,7 @@ interface Props {
     buttonType: 'primary' | 'secondary';
     showShopName: boolean;
     showEnvelopeIcon: boolean;
+    mailshotType?: 'mailshots' | 'newsletters';
 }
 
 const props = defineProps<Props>();
@@ -64,11 +65,11 @@ const formatDate = (dateString?: string): string => {
                     </div>
                 </div>
 
-                <Link :href="route('grp.helpers.redirect_mailshot_template_workshop', {
+                <Link :href="route(`grp.org.shops.show.marketing.${mailshotType || 'mailshots'}.workshop`, {
                     organisation: organisationSlug,
                     shop: shopSlug,
                     mailshot: mailshotId,
-                    template: template.id
+                    template_id: template.id
                 })" class="block w-full">
                     <Button :label="trans('Use Template')" :type="buttonType" size="sm" class="w-full" />
                 </Link>

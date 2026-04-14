@@ -41,6 +41,8 @@ class RedirectMailshotTemplateWorkshopLink extends InertiaAction
             'organisation' => $organisation->slug,
             'shop' => $shop->slug,
             'mailshot' => $mailshot->slug
+        ], [
+            'template_id' => $template->id
         ]);
     }
 
