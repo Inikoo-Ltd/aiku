@@ -45,6 +45,7 @@ class IndexWaitingDeliveryNoteItems extends OrgAction
                     'title' => __('Waiting Items'),
                 ],
             ],
+            'allow_stock_controller_set_not_picked' => (data_get($this->organisation->settings, 'orders.allow_stock_controller_set_not_picked', false)),
             'tabs' => [
                 'current'    => $this->tab,
                 'navigation' => WaitingItemsTabsEnum::navigation(),
