@@ -2,15 +2,14 @@
 
 /*
  * Author: Vika Aqordi
- * Created on 09-04-2026-10h-51m
- * Github: https://github.com/aqordeon
- * Copyright: 2026
-*/
+ * Created: Thu, 09 Apr 2026 10:51 Malaysia Time, Bali, Indonesia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
 use App\Actions\OrgAction;
-use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\Warehouse;
@@ -21,7 +20,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexWaitingDeliveryNoteItemsGrouped extends OrgAction
 {
-    public function handle(Warehouse $warehouse, ?string $prefix = null): LengthAwarePaginator
+    public function handle(Warehouse $warehouse, string $waitingType, string $stateType, string $shopType = 'all', ?string $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -34,11 +33,27 @@ class IndexWaitingDeliveryNoteItemsGrouped extends OrgAction
         }
 
         $query = QueryBuilder::for(DeliveryNote::class);
+        $query->leftjoin('shops', 'delivery_notes.shop_id', '=', 'shops.id');
 
         $query->where('delivery_notes.warehouse_id', $warehouse->id)
-            ->whereHas('deliveryNoteItems', function ($q) {
-                $q->where('state', DeliveryNoteItemStateEnum::HANDLING_BLOCKED);
+            ->whereHas('deliveryNoteItems', function ($q) use ($waitingType) {
+                if ($waitingType == 'warehouse') {
+                    $q->where('delivery_note_items.has_waiting_warehouse', true);
+                } else {
+                    $q->where('delivery_note_items.has_waiting_crm', true);
+                }
             });
+
+        if ($stateType == 'picking') {
+            $query->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING);
+        } else {
+            $query->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED);
+        }
+
+        if ($shopType != 'all') {
+            // Get directly from shop.type because some deliveryNote has no shop_type somehow (null), probably old order_data
+            $query->where('shops.type', $shopType);
+        }
 
         return $query->defaultSort('delivery_notes.id')
             ->select([

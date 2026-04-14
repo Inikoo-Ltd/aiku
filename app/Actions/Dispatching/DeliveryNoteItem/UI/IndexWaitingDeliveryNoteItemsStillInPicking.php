@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 08 Apr 2026 00:00:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Tue, 14 Apr 2026 19:52:25 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
@@ -21,9 +21,10 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class IndexWaitingDeliveryNoteItems extends OrgAction
+class IndexWaitingDeliveryNoteItemsStillInPicking extends OrgAction
 {
     use WithDispatchingAuthorisation;
+
     private string $shopType;
 
     public function handle(Warehouse $warehouse): Warehouse
@@ -36,14 +37,14 @@ class IndexWaitingDeliveryNoteItems extends OrgAction
         $grouped  = IndexWaitingDeliveryNoteItemsGrouped::make()->handle(
             warehouse: $warehouse,
             waitingType: 'warehouse',
-            stateType: DeliveryNoteStateEnum::HANDLING_BLOCKED->value,
+            stateType: DeliveryNoteStateEnum::PACKING->value,
             shopType: $this->shopType,
             prefix: WaitingItemsTabsEnum::GROUPED->value
         );
         $itemized = IndexWaitingDeliveryNoteItemsItemized::make()->handle(
             warehouse: $warehouse,
             waitingType: 'warehouse',
-            stateType: DeliveryNoteStateEnum::HANDLING_BLOCKED->value,
+            stateType: DeliveryNoteStateEnum::PACKING->value,
             shopType: $this->shopType,
             prefix: WaitingItemsTabsEnum::ITEMIZED->value
         );
@@ -52,7 +53,7 @@ class IndexWaitingDeliveryNoteItems extends OrgAction
             'breadcrumbs'                           => $this->getBreadcrumbs($request->route()->originalParameters()),
             'title'                                 => __('Waiting Items').' '.$this->organisation->code,
             'pageHead'                              => [
-                'title' => __('Waiting items'),
+                'title' => __('Waiting Items').' ('.__('Still picking').')',
                 'icon'  => [
                     'icon'  => ['fal', 'fa-hourglass-start'],
                     'title' => __('Waiting Items'),
@@ -78,6 +79,7 @@ class IndexWaitingDeliveryNoteItems extends OrgAction
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Warehouse
     {
+        $this->shopType = 'all';
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(WaitingItemsTabsEnum::values());
 
         return $this->handle($warehouse);
@@ -101,10 +103,10 @@ class IndexWaitingDeliveryNoteItems extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.warehouses.show.dispatching.waiting_items',
+                            'name'       => 'grp.org.warehouses.show.dispatching.waiting_items_still_picking',
                             'parameters' => $routeParameters,
                         ],
-                        'label' => __('Waiting Items'),
+                        'label' => __('Waiting Items').' ('.__('Still picking').')',
                         'icon'  => 'fal fa-bars',
                     ],
                 ],

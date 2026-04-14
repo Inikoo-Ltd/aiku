@@ -24,11 +24,11 @@ enum WaitingItemsTabsEnum: string
     {
         return match ($this) {
             WaitingItemsTabsEnum::ITEMIZED => [
-                'title' => __('Pick by location'),
+                'title' => __('Waiting items'),
                 'icon'  => 'fal fa-inventory',
             ],
             WaitingItemsTabsEnum::GROUPED => [
-                'title' => __('Group by delivery'),
+                'title' => __('Group by delivery note'),
                 'icon'  => 'fal fa-truck',
             ],
         };

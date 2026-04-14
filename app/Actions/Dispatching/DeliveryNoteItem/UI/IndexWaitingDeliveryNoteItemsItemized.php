@@ -2,15 +2,14 @@
 
 /*
  * Author: Vika Aqordi
- * Created on 09-04-2026-10h-51m
- * Github: https://github.com/aqordeon
- * Copyright: 2026
-*/
+ * Created: Thu, 09 Apr 2026 10:51 Malaysia Time, Bali, Indonesia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
 use App\Actions\OrgAction;
-use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\Warehouse;
@@ -21,7 +20,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
 {
-    public function handle(Warehouse $warehouse, ?string $prefix = null): LengthAwarePaginator
+    public function handle(Warehouse $warehouse, string $waitingType, string $stateType, string $shopType = 'all', ?string $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -41,8 +40,24 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
             ->leftJoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id')
             ->leftJoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id')
             ->leftJoin('shops', 'shops.id', '=', 'delivery_notes.shop_id')
-            ->where('delivery_notes.warehouse_id', $warehouse->id)
-            ->where('delivery_note_items.has_waiting_warehouse', true);
+            ->where('delivery_notes.warehouse_id', $warehouse->id);
+
+        if ($waitingType == 'warehouse') {
+            $query->where('delivery_note_items.has_waiting_warehouse', true);
+        } else {
+            $query->where('delivery_note_items.has_waiting_crm', true);
+        }
+
+        if ($stateType == 'picking') {
+            $query->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING);
+        } else {
+            $query->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED);
+        }
+
+        if ($shopType != 'all') {
+            // Get directly from shop.type because some deliveryNote has no shop_type somehow (null), probably old order_data
+            $query->where('shops.type', $shopType);
+        }
 
         return $query->defaultSort('locations.sort_code', 'org_stocks.code')
             ->select([
@@ -97,7 +112,6 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
                 'title' => __('No waiting items found'),
             ])->defaultSort('picking_position');
 
-            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'delivery_note_reference', label: __('Delivery Note'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);

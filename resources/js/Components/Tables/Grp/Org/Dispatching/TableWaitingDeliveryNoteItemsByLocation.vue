@@ -301,7 +301,11 @@ const selectedTransactionToSetAsWaiting = ref(null)
                             </ButtonWithLink>
 
                             <!-- Button: Pass to CS -->
-                            <Button v-if="Number(itemValue.quantity_waiting_warehouse) > 0" @click="() => (isOpenModalPassToCs = true, selectedTransactionToSetAsWaiting = itemValue)" icon="fal fa-user-headset" :label="trans('Pass :qtyInWarehouse to CS', { qtyInWarehouse: Number(itemValue.quantity_waiting_warehouse) })" size="xs" type="tertiary" />
+                            <Button v-if="Number(itemValue.quantity_waiting_warehouse) > 0" @click="() => (isOpenModalPassToCs = true, selectedTransactionToSetAsWaiting = itemValue)" icon="fal fa-user-headset"
+                                    :label="Number(itemValue.quantity_waiting_warehouse)"
+                                    :tooltip="trans('Pass :qtyInWarehouse to customer services', { qtyInWarehouse: Number(itemValue.quantity_waiting_warehouse) })"
+
+                                    size="xs" type="tertiary" />
                         </div>
                     </div>
 
