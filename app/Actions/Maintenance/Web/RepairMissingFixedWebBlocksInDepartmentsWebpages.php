@@ -246,8 +246,6 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         if ($command->option('website_id')) {
             $website   = Website::where('id', $command->option('website_id'))->first();
             $shop = $website->shop;
-        } else {
-
         }
 
         $departmentIds = DB::table('product_categories')
