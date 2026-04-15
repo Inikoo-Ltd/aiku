@@ -17,7 +17,6 @@ import { faLayerGroup, faSparkles, faTrash, faImages } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { router } from '@inertiajs/vue3';
 import { useBundle } from '@/Composables/useBundle';
-import { useConfirm, ConfirmDialog } from "primevue"
 library.add(faLayerGroup, faSparkles, faTrash, faImages)
 
 const props = defineProps<{
@@ -117,6 +116,7 @@ watch(() => props.step.current, async (newStep, oldStep) => {
 const selectedPortfoliosToSync = ref([])
 
 const bundle = useBundle(props.bundle_routes)
+const preselectedProducts = ref<any[]>([])
 
 const isGeneratingAI = ref(false)
 const showMediaModal = ref(false)
@@ -282,14 +282,13 @@ const fetchMediaGallery = async () => {
     }
 }
 
+
 const onUpdateSelectedProducts = (products: any[]) => {
     bundle.products.value = products.map(p => ({
         ...p,
         quantity: p.quantity_selected ?? 1
     }))
 }
-
-const confirm = useConfirm()
 
 const isSubmitBundle = ref(false)
 
@@ -314,55 +313,53 @@ const handleStoreBundle = async () => {
 
 const submitBundle = async () => {
 
-        const payload = {
-            description: bundle.description.value,
-            images: selectedMedia.value.map(img => ({
-                id: img.image_id,
-                is_main: img.is_main
-            }))
+    const payload = {
+        description: bundle.description.value,
+        images: selectedMedia.value.map(img => ({
+            id: img.image_id,
+            is_main: img.is_main
+        }))
+    }
+
+    const routeParams = {
+        ...props.bundle_routes.update.parameters,
+        bundle: bundle.bundle_id.value
+    }
+
+    router.patch(
+        route(props.bundle_routes.update.name, routeParams),
+        payload,
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isSubmitBundle.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans('Success'),
+                    text: trans('Success submit bundle'),
+                    type: 'success'
+                })
+                bundle.resetBundle()
+                selectedMedia.value = []
+                selectedMediaIds.value = []
+                selectedMediaForAI.value = []
+                props.step.current = 0
+                emits('onDone')
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to submit the data, please try again"),
+                    type: "error"
+                })
+            },
+                onFinish: () => {
+                isSubmitBundle.value = false
+            },
         }
-
-        const routeParams = {
-            ...props.bundle_routes.update.parameters,
-            bundle: bundle.bundle_id.value
-        }
-
-        router.patch(
-            route(props.bundle_routes.update.name, routeParams),
-            payload,
-            {
-                preserveScroll: true,
-                preserveState: true,
-                 onStart: () => {
-					isSubmitBundle.value = true
-				},
-                onSuccess: () => {
-                    notify({
-                        title: trans('Success'),
-                        text: trans('Success submit bundle'),
-                        type: 'success'
-                    })
-                    bundle.resetBundle()
-                    selectedMedia.value = []
-                    selectedMediaIds.value = []
-                    selectedMediaForAI.value = []
-                    props.step.current = 0
-                    emits('onDone')
-                },
-                onError: errors => {
-                                                notify({
-                                                    title: trans("Something went wrong"),
-                                                    text: trans("Failed to submit the data, please try again"),
-                                                    type: "error"
-                                                })
-                                },
-                                 onFinish: () => {
-                                    isSubmitBundle.value = false
-                                },
-            }
-        )
-
-   
+    )
 }
 
 const selectedMediaAIIds = ref<any[]>([])
@@ -471,42 +468,33 @@ const handleClose = () => {
 }
 
 const handleBack = () => {
-    confirm.require({
-        message: 'Going back will discard this bundle. You’ll need to start again.',
-        header: 'Discard bundle?',
-        acceptLabel: 'Discard',
-        rejectLabel: 'Stay',        
-        accept: () => {
-            handleDelete()
-            props.step.current = 0
-        },
-    })
+    props.step.current = 0
+    fetchGetBundle()
 }
 
-const handleDelete = () => {
-    router.delete(route(props.bundle_routes.delete.name, {
-        ...props.bundle_routes.delete.parameters,
-        bundle: bundle.bundle_id.value
-    }), {
-        preserveScroll: true,
+const fetchGetBundle = async () => {
+    if (!bundle.bundle_id.value && !props.bundle_routes?.images) return
 
-        onSuccess: () => {
-            bundle.resetBundle()
-            bundle.products.value = []
-            selectedMedia.value = []
-            selectedMediaIds.value = []
-            selectedMediaForAI.value = []
-            idxSubmitSuccess.value++
-        },
-
-        onError: () => {
-            notify({
-                title: trans('Error'),
-                text: trans('Failed to delete bundle'),
-                type: 'error'
-            })
-        }
-    })
+    try {
+        await bundle.loadBundle({
+            routeConfig: props.bundle_routes.images.edit,
+            bundleId: bundle.bundle_id.value,
+            bundleParamOverride: {
+                ...props.bundle_routes.images.edit.parameters,
+                bundle: [bundle.bundle_id.value]
+            },
+            onProductsLoaded: (products) => {
+                preselectedProducts.value = products
+            }
+        })
+    } catch (e) {
+        console.error('[AddBundles] fetchGetBundle failed', e)
+        notify({
+            title: trans('Error'),
+            text: trans('Failed to load bundle'),
+            type: 'error'
+        })
+    }
 }
 
 watch(bundle.products.value, () => {
@@ -526,10 +514,17 @@ watch(bundle.products.value, () => {
 const debouncedCalculate = debounce(bundle.calculateBundle, 400)
 
 watch(bundle.products.value, () => {
-    debouncedCalculate()
+debouncedCalculate()
 }, { deep: true })
 
 onMounted(() => {
+    try {
+        localStorage.removeItem('iris_bundle_products')
+    } catch (e) {
+        console.warn('[AddBundles] unable to clear cached bundle products', e)
+    }
+    bundle.resetBundle()
+
     if (props.step.current > 0) {
         fetchIndexUnuploadedPortfolios()
     }
@@ -601,7 +596,7 @@ onMounted(() => {
                         'filter[type]': selectedList.value,
                     },
                 }" :valueToRefetch="selectedList.value" :label_result="selectedList.label" :isLoadingSubmit
-                :idxSubmitSuccess class="px-4" withQuantity>
+                :idxSubmitSuccess :preselected="preselectedProducts" class="px-4" withQuantity>
                 <template #header>
                     <div>
                         <div class="mb-4">
@@ -885,55 +880,5 @@ onMounted(() => {
             </div>
 
         </KeepAlive>
-        <ConfirmDialog>
-                    <template #container="{ message, acceptCallback, rejectCallback }">
-                        <div class="p-5 w-[360px]">
-
-                            <!-- ICON -->
-                            <div class="flex justify-center mb-3">
-                               <FontAwesomeIcon
-                                    :icon="message.data?.type === 'danger'
-                                        ? 'fas fa-exclamation-triangle'
-                                        : 'fas fa-question-circle'"
-                                    class="text-3xl text-red-500"
-                                />
-                            </div>
-
-                            <!-- TITLE -->
-                            <div class="text-center font-semibold text-lg mb-2">
-                                {{ message.header }}
-                            </div>
-
-                            <!-- MESSAGE -->
-                            <div class="text-center text-sm text-gray-500 mb-5 leading-relaxed">
-                                {{ message.message }}
-                            </div>
-
-                            <!-- ACTIONS -->
-                            <div class="flex justify-center gap-3">
-
-                                <!-- CANCEL -->
-                                <button
-                                    @click="rejectCallback"
-                                    class="px-4 py-2 text-sm border rounded-md hover:bg-gray-100"
-                                >
-                                    {{ message.rejectLabel || 'Cancel' }}
-                                </button>
-
-                                <!-- ACCEPT -->
-                                <button
-                                    @click="acceptCallback"
-                                    :class="[
-                                        'px-4 py-2 text-sm text-white rounded-md bg-red-500 hover:bg-red-600'
-                                    ]"
-                                >
-                                    {{ message.acceptLabel || 'Yes' }}
-                                </button>
-
-                            </div>
-
-                        </div>
-                    </template>
-                </ConfirmDialog>
     </div>
 </template>

@@ -223,7 +223,7 @@ const _popoverProfit = ref(null)
             <!-- GR PRICE -->
             <div v-if="product.discounted_price" class="grid grid-cols-[auto_1fr] items-center gap-x-2">
 
-                <div v-if="bestOffer.type == 'Category Quantity Ordered Order Interval'"  class="whitespace-nowrap
+                <div v-if="bestOffer?.type == 'Category Quantity Ordered Order Interval'"  class="whitespace-nowrap
             text-[9px]
             sm:text-[10px]
             md:text-[11px]
@@ -262,8 +262,8 @@ const _popoverProfit = ref(null)
 
                 </div>
 
-                <DiscountByType v-if="bestOffer.type == 'Category Ordered'" :offers_data="product?.product_offers_data" template="max_discount" />
-                <DiscountByType v-if="bestOffer.type == 'First Order Bonus'" :offers_data="product?.product_offers_data" template="first-order" />
+                <DiscountByType v-if="bestOffer?.type == 'Category Ordered'" :offers_data="product?.product_offers_data" template="max_discount" />
+                <DiscountByType v-if="bestOffer?.type == 'First Order Bonus'" :offers_data="product?.product_offers_data" template="first-order" />
 
 
                 <div class="font-bold text-right min-w-0" :class="bestOffer?.type === 'Category Ordered'

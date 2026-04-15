@@ -205,35 +205,35 @@ class GetOrganisationNavigation
             'label'   => __('Chat'),
             'tooltip' => __('Chat'),
             'icon'    => ['fal', 'comment-alt'],
-            'root'    => 'grp.org.crm.',
+            'root'    => 'grp.org.chat.',
             'route'   => [
-                'name'       => 'grp.org.crm.chat.dashboard',
+                'name'       => 'grp.org.chat.dashboard',
                 'parameters' => [$organisation->slug],
             ],
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label'   => __(key: 'Dashboard'),
+                        'label'   => __('Dashboard'),
                         'tooltip' => __('Dashboard'),
-                        'icon'  => ['fal', 'comment-alt'],
-                        'root'  => 'grp.org.crm.chat.dashboard',
-                        'route' => [
-                            'name'       => 'grp.org.crm.chat.dashboard',
-                            'parameters' => [$organisation->slug],
-                        ]
-                    ],
-                    [
-                        'label'   => __('CRM Agents'),
-                        'tooltip' => __('CRM Agents'),
-                        'icon'    => ['fal', 'fa-headset'],
-                        'root'    => 'grp.org.crm.agents.show',
+                        'icon'    => ['fal', 'comment-alt'],
+                        'root'    => 'grp.org.chat.dashboard',
                         'route'   => [
-                            'name'       => 'grp.org.crm.agents.show',
+                            'name'       => 'grp.org.chat.dashboard',
                             'parameters' => [$organisation->slug],
                         ],
-                    ]
-                ]
-            ]
+                    ],
+                    [
+                        'label'   => __('Agents'),
+                        'tooltip' => __('Agents'),
+                        'icon'    => ['fal', 'fa-headset'],
+                        'root'    => 'grp.org.chat.agents.show',
+                        'route'   => [
+                            'name'       => 'grp.org.chat.agents.show',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         $navigation['calendar_offers'] = [

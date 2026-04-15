@@ -95,7 +95,7 @@ class StoreFulfilmentOrderFromShopify extends OrgAction
                 ]
             );
 
-            SubmitPalletReturn::run($palletReturn);
+            SubmitPalletReturn::run($palletReturn, []);
 
             $palletReturn->refresh();
         }

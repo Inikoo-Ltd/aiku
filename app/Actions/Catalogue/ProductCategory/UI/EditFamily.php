@@ -217,7 +217,7 @@ class EditFamily extends OrgAction
                                                     'parameters' => [
                                                         'shop' => $family->shop->slug,
                                                         'organisation' => $family->organisation->slug,
-                                                        'website' => $family->shop->website->slug
+                                                        'website' => $family->shop->website?->slug
                                                     ]
                                             ],
                                             'toogle'  => [
@@ -238,7 +238,7 @@ class EditFamily extends OrgAction
                                                     'parameters' => [
                                                         'shop' => $family->shop->slug,
                                                         'organisation' => $family->organisation->slug,
-                                                        'website' => $family->shop->website->slug
+                                                        'website' => $family->shop->website?->slug
                                                     ]
                                             ],
                                             'toogle'  => [
@@ -263,7 +263,7 @@ class EditFamily extends OrgAction
                                                     'parameters' => [
                                                         'shop' => $family->shop->slug,
                                                         'organisation' => $family->organisation->slug,
-                                                        'website' => $family->shop->website->slug
+                                                        'website' => $family->shop->website?->slug
                                                     ]
                                             ],
                                             'toogle'  => [
@@ -284,7 +284,7 @@ class EditFamily extends OrgAction
                                                     'parameters' => [
                                                         'shop' => $family->shop->slug,
                                                         'organisation' => $family->organisation->slug,
-                                                        'website' => $family->shop->website->slug
+                                                        'website' => $family->shop->website?->slug
                                                     ]
                                             ],
                                             'toogle'  => [

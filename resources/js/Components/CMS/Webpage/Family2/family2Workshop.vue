@@ -134,6 +134,8 @@ onMounted(async () => {
     autoResize()
   })
 })
+
+console.log("Family2 Workshop Props:", props)
 </script>
 
 <template>

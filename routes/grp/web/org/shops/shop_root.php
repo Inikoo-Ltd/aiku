@@ -70,6 +70,9 @@ Route::prefix('{shop}')->name('show.')
                 Route::prefix("countries")
                     ->name("countries.")
                     ->group(__DIR__ . "/countries.php");
+                Route::prefix("chat-sessions")
+                    ->name("chat_sessions.")
+                    ->group(__DIR__ . "/chat_sessions.php");
             }
         );
 
@@ -95,4 +98,8 @@ Route::prefix('{shop}')->name('show.')
         Route::prefix("settings")
             ->name("settings.")
             ->group(__DIR__ . "/settings.php");
+
+        Route::prefix("chat")
+            ->name("crm.chat.")
+            ->group(__DIR__ . "/chat.php");
     });
