@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from "vue"
+import { onMounted, computed } from "vue"
 import { router } from "@inertiajs/vue3"
 import { Head } from "@inertiajs/vue3"
 import { Link } from "@inertiajs/vue3"
@@ -17,10 +17,13 @@ const props = defineProps<{
 	title: string
 	pageHeading: []
 	data: any
+	organisationSlug?: string
 }>()
 
+const orgSlug = computed(() => props.organisationSlug ?? route().params.organisation as string)
+
 function editRoute(id: number) {
-	return route("grp.org.crm.agents.edit", [route().params.organisation, id])
+	return route("grp.org.chat.agents.edit", [orgSlug.value, id])
 }
 
 const waitEchoReady = (callback: Function) => {
@@ -50,7 +53,7 @@ onMounted(() => {
 
 <template>
 	<Head :title="title" />
-	<PageHeading :data="pageHeading" />
+	<PageHeading v-if="pageHeading?.title" :data="pageHeading" />
 
 	<Table :resource="props.data" :name="'agents'">
 		<template #cell(specialization)="{ item }">
@@ -110,8 +113,8 @@ onMounted(() => {
 				</Link>
 				<ModalConfirmationDelete
 					:routeDelete="{
-						name: 'grp.org.crm.agents.delete',
-						parameters: [route().params.organisation, item.id],
+						name: 'grp.org.chat.agents.delete',
+						parameters: [orgSlug.value, item.id],
 					}"
 					:title="trans('Are you sure you want to delete this agent?')"
 					:noLabel="trans('Delete')"

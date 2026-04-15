@@ -188,7 +188,7 @@ const assignAgent = async (opt: any) => {
 			agent_id: opt.agent_id,
 		}
 
-		const response = await axios.patch(route("grp.org.crm.agents.assign", parameters), body, {
+		const response = await axios.patch(route("grp.org.chat.agents.assign", parameters), body, {
 			withCredentials: true,
 		})
 

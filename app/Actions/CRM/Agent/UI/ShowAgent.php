@@ -59,7 +59,7 @@ class ShowAgent extends OrgAction
                             'tooltip' => __('Create CRM Agent'),
                             'label'   => __('Create CRM Agent'),
                             'route'   => [
-                                'name'       => 'grp.org.crm.agents.create',
+                                'name'       => 'grp.org.chat.agents.create',
                                 'parameters' => [$this->organisation->slug],
                             ],
                         ],
@@ -87,7 +87,7 @@ class ShowAgent extends OrgAction
                         'simple' => [
                             'icon'  => 'fal fa-headset',
                             'route' => [
-                                'name'       => 'grp.org.crm.agents.show',
+                                'name'       => 'grp.org.chat.agents.show',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('CRM Agent')

@@ -98,4 +98,8 @@ Route::prefix('{shop}')->name('show.')
         Route::prefix("settings")
             ->name("settings.")
             ->group(__DIR__ . "/settings.php");
+
+        Route::prefix("chat")
+            ->name("crm.chat.")
+            ->group(__DIR__ . "/chat.php");
     });
