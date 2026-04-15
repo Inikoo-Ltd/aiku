@@ -17,7 +17,6 @@ use App\Actions\Traits\WithTabsBox;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Http\Resources\Ordering\OrdersResource;
 use App\Models\Catalogue\Shop;
-use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -183,28 +182,4 @@ class ShowOrdersBacklog extends OrgAction
         };
     }
 
-    private function buildWaitingItemsData(Group|Organisation|Shop $parent, ActionRequest $request): array
-    {
-        $query = DeliveryNoteItem::query()->where('quantity_waiting_crm', '>', 0);
-
-        if ($parent instanceof Shop) {
-            $query->where('shop_id', $parent->id);
-        } elseif ($parent instanceof Organisation) {
-            $query->where('organisation_id', $parent->id);
-        } else {
-            $query->where('group_id', $parent->id);
-        }
-
-        $count = $query->count();
-        $route = null;
-
-        if ($parent instanceof Shop) {
-            $route = [
-                'name'       => 'grp.org.shops.show.ordering.backlog.waiting_items',
-                'parameters' => $request->route()->originalParameters(),
-            ];
-        }
-
-        return compact('count', 'route');
-    }
 }
