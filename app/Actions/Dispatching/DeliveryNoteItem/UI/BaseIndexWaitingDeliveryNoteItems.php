@@ -26,6 +26,8 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
 
     protected string $shopType = 'all';
 
+    protected string $waitingType = 'warehouse';
+
     abstract protected function getDeliveryNoteState(): DeliveryNoteStateEnum;
 
     abstract protected function getPageTitle(): string;
@@ -41,14 +43,14 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
     {
         $grouped = IndexWaitingDeliveryNoteItemsGrouped::make()->handle(
             warehouse: $warehouse,
-            waitingType: 'warehouse',
+            waitingType: $this->waitingType,
             state: $this->getDeliveryNoteState(),
             shopType: $this->shopType,
             prefix: WaitingItemsTabsEnum::GROUPED->value
         );
         $itemized = IndexWaitingDeliveryNoteItemsItemized::make()->handle(
             warehouse: $warehouse,
-            waitingType: 'warehouse',
+            waitingType: $this->waitingType,
             state: $this->getDeliveryNoteState(),
             shopType: $this->shopType,
             prefix: WaitingItemsTabsEnum::ITEMIZED->value

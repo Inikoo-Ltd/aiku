@@ -14,8 +14,10 @@ class DashboardDispatchHubDashboardResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $waitingItemsStillPicking = $this->resource['waiting_items_still_picking'] ?? ['count' => 0, 'route' => null];
-        $waitingItems             = $this->resource['waiting_items'] ?? ['count' => 0, 'route' => null];
+        $waitingItemsStillPicking    = $this->resource['waiting_items_still_picking'] ?? ['count' => 0, 'route' => null];
+        $waitingItems                = $this->resource['waiting_items'] ?? ['count' => 0, 'route' => null];
+        $waitingCrmItemsStillPicking = $this->resource['waiting_crm_items_still_picking'] ?? ['count' => 0, 'route' => null];
+        $waitingCrmItems             = $this->resource['waiting_crm_items'] ?? ['count' => 0, 'route' => null];
 
         $widgets = collect($this->resource)->filter(fn ($widget, $key) => is_int($key))->values();
 
@@ -125,6 +127,22 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                     ];
                 }
 
+                if ($caseKey === 'handling' && ($widget['waiting_crm_items_still_picking']['count'] ?? 0) > 0) {
+                    $entry['crm_warning'] = [
+                        'route_target' => $widget['waiting_crm_items_still_picking']['route'],
+                        'tooltip' => __('CRM waiting items in delivery notes still picking'),
+                        'value' => $widget['waiting_crm_items_still_picking']['count'],
+                    ];
+                }
+
+                if ($caseKey === 'handling_blocked' && ($widget['waiting_crm_items']['count'] ?? 0) > 0) {
+                    $entry['crm_warning'] = [
+                        'route_target' => $widget['waiting_crm_items']['route'],
+                        'tooltip' => __('CRM waiting items'),
+                        'value' => $widget['waiting_crm_items']['count'],
+                    ];
+                }
+
                 $data[$rowKey][$caseKey] = $entry;
             }
         }
@@ -173,6 +191,22 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                     'route_target' => $waitingItems['route'],
                     'tooltip'      => __('Waiting items'),
                     'value'        => $waitingItems['count'],
+                ];
+            }
+
+            if ($caseKey === 'handling' && $waitingCrmItemsStillPicking['count'] > 0) {
+                $totals[$caseKey]['crm_warning'] = [
+                    'route_target' => $waitingCrmItemsStillPicking['route'],
+                    'tooltip'      => __('CRM waiting items in delivery notes still picking'),
+                    'value'        => $waitingCrmItemsStillPicking['count'],
+                ];
+            }
+
+            if ($caseKey === 'handling_blocked' && $waitingCrmItems['count'] > 0) {
+                $totals[$caseKey]['crm_warning'] = [
+                    'route_target' => $waitingCrmItems['route'],
+                    'tooltip'      => __('CRM waiting items'),
+                    'value'        => $waitingCrmItems['count'],
                 ];
             }
         }

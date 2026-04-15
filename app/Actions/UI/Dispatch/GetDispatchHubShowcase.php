@@ -47,6 +47,28 @@ class GetDispatchHubShowcase
                     'parameters' => request()->route()->originalParameters()
                 ],
             ],
+            'waiting_crm_items_still_picking' => [
+                'count' => $warehouse->deliveryNotes()
+                    ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                    ->where('delivery_note_items.has_waiting_crm', true)
+                    ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING)
+                    ->count(),
+                'route' => [
+                    'name' => 'grp.org.warehouses.show.dispatching.waiting_crm_items_still_picking',
+                    'parameters' => request()->route()->originalParameters()
+                ],
+            ],
+            'waiting_crm_items' => [
+                'count' => $warehouse->deliveryNotes()
+                    ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                    ->where('delivery_note_items.has_waiting_crm', true)
+                    ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED)
+                    ->count(),
+                'route' => [
+                    'name' => 'grp.org.warehouses.show.dispatching.waiting_crm_items',
+                    'parameters' => request()->route()->originalParameters()
+                ],
+            ],
         ];
     }
 }
