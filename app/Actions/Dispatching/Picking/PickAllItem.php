@@ -1,11 +1,10 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 26-05-2025-14h-07m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 26 May 2025 14:07 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Dispatching\Picking;
 
@@ -36,11 +35,13 @@ class PickAllItem extends OrgAction
             return null;
         }
 
-        $deliveryNoteItem->update(['locked_at'  => now()]);
+        $deliveryNoteItem->update(['locked_at' => now()]);
 
         try {
-
-            $toPickQuantity = $deliveryNoteItem->quantity_required - $deliveryNoteItem->quantity_picked;
+            $toPickQuantity = $deliveryNoteItem->quantity_required
+                - $deliveryNoteItem->quantity_picked
+                - $deliveryNoteItem->quantity_waiting_warehouse
+                - $deliveryNoteItem->quantity_waiting_crm;
 
 
             $locationOrgStock = LocationOrgStock::find($modelData['location_org_stock_id']);
@@ -50,16 +51,13 @@ class PickAllItem extends OrgAction
 
             $picking = StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
 
-            $deliveryNoteItem->update(['locked_at'  => null]);
+            $deliveryNoteItem->update(['locked_at' => null]);
 
             return $picking;
-
-        } catch (Exception $e) {
-
-            $deliveryNoteItem->update(['locked_at'  => null]);
+        } catch (Exception) {
+            $deliveryNoteItem->update(['locked_at' => null]);
 
             return null;
-
         }
     }
 

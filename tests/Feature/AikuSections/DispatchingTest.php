@@ -534,6 +534,30 @@ test("UI Index dispatching delivery-notes", function () {
     });
 });
 
+test("UI Index dispatching waiting items", function () {
+    $this->withoutExceptionHandling();
+
+    $response = get(
+        route("grp.org.warehouses.show.dispatching.waiting_items", [
+            $this->organisation->slug,
+            $this->warehouse->slug,
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component("Org/Dispatching/WaitingDeliveryNoteItems")
+            ->where("title", 'Waiting Items')
+            ->has("breadcrumbs", 3)
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page
+                    ->where("title", "Waiting Items")
+                    ->etc()
+            )
+            ->has("tabs");
+    });
+});
+
 test("UI Index dispatching show delivery-notes", function (DeliveryNote $deliveryNote) {
     $this->withoutExceptionHandling();
     $response = get(

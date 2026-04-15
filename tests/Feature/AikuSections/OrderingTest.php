@@ -781,10 +781,29 @@ test('UI show ordering backlog', function () {
             ->component('Ordering/OrdersBacklog')
             ->where('title', 'Orders backlog')
             ->has('breadcrumbs', 4)
+            ->has('tabs')
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
                     ->where('title', 'Orders backlog')
+                    ->etc()
+            );
+    });
+});
+
+test('UI show ordering backlog waiting crm items', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $this->shop]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Ordering/WaitingCrmItems')
+            ->where('title', 'Waiting for CRM')
+            ->has('breadcrumbs', 5)
+            ->has('waiting_crm_items')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Waiting for CRM')
                     ->etc()
             );
     });

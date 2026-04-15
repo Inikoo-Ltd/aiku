@@ -102,6 +102,8 @@ const props = defineProps<{
         [key: string]: TSTimeline
     }
 	allowActions: boolean
+	allow_waiting: boolean
+	allow_picker_set_not_picked: boolean
     box_stats: {}
     quick_pickers: {}
     routes: {
@@ -461,7 +463,7 @@ onMounted(() => {
 		</template>
 
 		<!-- Button: Select picked bays (only for Ecom) -->
-		<template v-if="props.shop.type !== 'dropshipping'"  #button-set-as-packed="{ action }">
+		<template v-if="props.shop.type !== 'dropshipping'"  #button-trigger-set-as-picked-or-packed="{ action }">
 			<ButtonSelectBays
 				:warehouse="warehouse"
 				:deliveryNote="delivery_note"
@@ -580,6 +582,8 @@ onMounted(() => {
 			:routes
 			:state="delivery_note.state"
 			:shop_type="shop_type"
+			:allowWaiting="allow_waiting"
+			:allowPickerSetNotPicked="allow_picker_set_not_picked"
 			@update:quantity-to-resend="handleQuantityToResendUpdate"
 			@validation-error="handleValidationError" />
 	</div>

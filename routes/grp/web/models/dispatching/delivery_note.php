@@ -16,7 +16,7 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseAndDispatchDelivery
 use App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\PickDeliveryNoteAsEmployee;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\SetAsWaitingForPickingDeliveryNote;
-use App\Actions\Dispatching\DeliveryNote\UpdateState\SetPackedWithPickingBaysDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\SetAsPickedWithPickingBaysDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingWithTrolleyDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote;
@@ -65,7 +65,7 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
         Route::patch('packing', StartPackingDeliveryNote::class)->name('packing');
         Route::patch('unpacked', UnpackDeliveryNote::class)->name('unpacked');
         Route::patch('packed', UpdateDeliveryNoteStatePacked::class)->name('packed');
-        Route::patch('packed-with-picked-bay', SetPackedWithPickingBaysDeliveryNote::class)->name('packed_with_picked_bay');
+        Route::patch('set-as-picked-with-picked-bay', SetAsPickedWithPickingBaysDeliveryNote::class)->name('set_as_picked_with_picked_bay');
         Route::patch('change-picked-bay', ChangePickingBaysDeliveryNote::class)->name('change_picked_bay');
         Route::patch('waiting-for-picking', SetAsWaitingForPickingDeliveryNote::class)->name('waiting_for_picking');
         Route::patch('finalised', FinaliseDeliveryNote::class)->name('finalised');

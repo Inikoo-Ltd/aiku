@@ -13,8 +13,6 @@ const props = defineProps<{
     data?: {}
 }>()
 
-console.log("PROP", props.data);
-
 // Init: Search result
 const LBInitSearchResult = async () => {
 

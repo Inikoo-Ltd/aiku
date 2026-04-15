@@ -1,11 +1,10 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 22-05-2025-13h-56m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Kirin
+ * Created: Thu, 22 May 2025 13:45 Malaysia Time, Bali, Indonesia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Dispatching\Picking;
 
@@ -22,29 +21,26 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class StoreNotPickPicking extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
 
     private DeliveryNoteItem $deliveryNoteItem;
     protected User $user;
 
-    public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): ?Picking
+    public function handle(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): ?Picking
     {
+        data_set($modelData, 'picker_user_id', $user->id);
+
         // If locked, will skip the process
         if ($deliveryNoteItem->locked_at && (Carbon::parse($deliveryNoteItem->locked_at)->diffInSeconds(now()) < 3)) {
             return null;
         }
 
-        $deliveryNoteItem->update(['locked_at'  => now()]);
+        $deliveryNoteItem->update(['locked_at' => now()]);
 
         try {
-
             data_set($modelData, 'group_id', $deliveryNoteItem->group_id);
             data_set($modelData, 'organisation_id', $deliveryNoteItem->organisation_id);
             data_set($modelData, 'shop_id', $deliveryNoteItem->shop_id);
@@ -60,10 +56,8 @@ class StoreNotPickPicking extends OrgAction
             CalculateDeliveryNoteItemTotalPicked::make()->action($picking->deliveryNoteItem);
 
             return $picking;
-
-        } catch (Exception $e) {
-
-            $deliveryNoteItem->update(['locked_at'  => null]);
+        } catch (Exception) {
+            $deliveryNoteItem->update(['locked_at' => null]);
 
             return null;
         }
@@ -75,21 +69,11 @@ class StoreNotPickPicking extends OrgAction
             'not_picked_reason' => ['sometimes', Rule::enum(PickingNotPickedReasonEnum::class)],
             'not_picked_note'   => ['sometimes', 'string'],
             'quantity'          => ['sometimes', 'numeric'],
-            'picker_user_id'    => [
-                'required',
-                Rule::Exists('users', 'id')->where('group_id', $this->shop->group_id)
-            ],
         ];
     }
 
-    /**
-     * @throws \Illuminate\Validation\ValidationException
-     */
     public function prepareForValidation(ActionRequest $request): void
     {
-        if (!$request->has('picker_user_id')) {
-            $this->set('picker_user_id', $this->user->id);
-        }
         if (!$request->has('quantity')) {
             $this->set('quantity', $this->deliveryNoteItem->quantity_required - $this->deliveryNoteItem->quantity_picked);
         }
@@ -97,11 +81,10 @@ class StoreNotPickPicking extends OrgAction
 
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): ?Picking
     {
-        $this->user             = $request->user();
         $this->deliveryNoteItem = $deliveryNoteItem;
         $this->initialisationFromShop($deliveryNoteItem->shop, $request);
 
-        return $this->handle($deliveryNoteItem, $this->validatedData);
+        return $this->handle($deliveryNoteItem, $request->user(), $this->validatedData);
     }
 
     public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): ?Picking
@@ -112,7 +95,7 @@ class StoreNotPickPicking extends OrgAction
 
         $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
 
-        return $this->handle($deliveryNoteItem, $this->validatedData);
+        return $this->handle($deliveryNoteItem, $user, $this->validatedData);
     }
 
 

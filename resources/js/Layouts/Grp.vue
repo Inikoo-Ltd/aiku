@@ -28,7 +28,7 @@ import {
 	faAllergies,
 	faSpellCheck,
 	faHandPaper,
-	faHourglassStart,
+	faHourglassStart, faHourglassHalf,
 	faSadTear,
 	faRainbow,
 	faParking,
@@ -71,7 +71,7 @@ import {
 	faEye,
 	faEyeSlash,
 	faCheckDouble,
-	faSmile,
+	faSmile, faUserHeadset,
 	faMailBulk, faEllipsisV,
 	faShare, faUndoAlt, faRobot, faDollyFlatbedAlt, faMonument as falMonument,faUnlink, faBoxOpen, faArrowRight as falArrowRight,
 	faStar as faStarLight,
@@ -80,7 +80,7 @@ import {
 	faTimesCircle as faTimesCircleLight,
 	faUserAlien,
 	faTombstone as faTombstoneLight,
-	faCopyright
+	faCopyright, faSyncAlt
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import { faViruses } from "@fad"
@@ -120,7 +120,7 @@ library.add(
 	faAllergies,
 	faSpellCheck,
 	faHandPaper,
-	faHourglassStart,
+	faHourglassStart, faHourglassHalf,
 	faSadTear,
 	faPauseCircle,
 	faBoxHeart,
@@ -180,11 +180,11 @@ library.add(
 	faMailBulk, faEllipsisV,
 	faShare, faUndoAlt,faRobot,faMonument, faCubes, fasExclamationTriangle, faCandleHolder, faMedal, faDollyFlatbedAlt, faViruses,
 	faShare, faUndoAlt, faRobot, faUnlink, faBoxOpen, falArrowRight,
-	faBadgePercent,
+	faBadgePercent, faUserHeadset,
 	faStarLight, faArrowUpLight, faMinusLight, faTimesCircleLight,
 	faUserAlien,
 	faTombstoneLight,
-	faCopyright
+	faCopyright, faSyncAlt
 )
 
 provide("layout", useLayoutStore())

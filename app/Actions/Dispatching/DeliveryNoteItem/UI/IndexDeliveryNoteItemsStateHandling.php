@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -19,7 +20,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDeliveryNoteItemsStateHandling extends OrgAction
 {
-    public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false): LengthAwarePaginator
+    public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false, ?DeliveryNoteItemStateEnum $stateFilter = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -36,10 +37,14 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
 
         $query->where('delivery_note_items.delivery_note_id', $parent->id);
 
+        if ($stateFilter) {
+            $query->where('delivery_note_items.state', $stateFilter);
+        }
+
         $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
         $query->leftjoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id');
         $query->leftjoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
-
+        $query->leftjoin('shops', 'shops.id', '=', 'delivery_note_items.shop_id');
         return $query
             ->defaultSort('locations.sort_code', 'org_stocks.code')
             ->select([
@@ -50,9 +55,12 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                 'delivery_note_items.quantity_not_picked',
                 'delivery_note_items.quantity_packed',
                 'delivery_note_items.quantity_dispatched',
+                'delivery_note_items.quantity_waiting_warehouse',
+                'delivery_note_items.quantity_waiting_crm',
                 'delivery_note_items.is_handled',
                 'delivery_note_items.batch_code',
                 'delivery_note_items.expiry_date',
+                'delivery_note_items.notes',
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
@@ -61,6 +69,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                 'locations.sort_code as picking_position',
                 'warehouse_areas.code as warehouse_area_code',
                 'warehouse_areas.picking_position as warehouse_area_picking_position',
+                'shops.slug as shop_slug',
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state', 'picking_position'])
             ->allowedFilters([$globalSearch])

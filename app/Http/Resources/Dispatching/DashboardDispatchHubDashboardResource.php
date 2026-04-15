@@ -14,7 +14,10 @@ class DashboardDispatchHubDashboardResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $widgets = collect($this->resource);
+        $waitingItemsStillPicking = $this->resource['waiting_items_still_picking'] ?? ['count' => 0, 'route' => null];
+        $waitingItems             = $this->resource['waiting_items'] ?? ['count' => 0, 'route' => null];
+
+        $widgets = collect($this->resource)->filter(fn ($widget, $key) => is_int($key))->values();
 
         $dimensionItems = $widgets->map(fn ($widget) => [
             'key'   => $widget['slug'] ?? str($widget['label'])->slug()->toString(),
@@ -106,6 +109,22 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                     }
                 }
 
+                if ($caseKey === 'handling' && $widget['waiting_items_still_picking']['count'] > 0) {
+                    $entry['warning'] = [
+                        'route_target' => $widget['waiting_items_still_picking']['route'],
+                        'tooltip' => __('Waiting items in delivery notes still picking'),
+                        'value' => $widget['waiting_items_still_picking']['count'],
+                    ];
+                }
+
+                if ($caseKey === 'handling_blocked' && $widget['waiting_items']['count'] > 0) {
+                    $entry['warning'] = [
+                        'route_target' => $widget['waiting_items']['route'],
+                        'tooltip' =>__('Waiting items'),
+                        'value' => $widget['waiting_items']['count'],
+                    ];
+                }
+
                 $data[$rowKey][$caseKey] = $entry;
             }
         }
@@ -138,6 +157,22 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                 $totals[$caseKey]['route_target'] = [
                     'name'       => str_replace('.shop', '', $caseRoute['name']),
                     'parameters' => array_slice($caseRoute['parameters'], 0, -1),
+                ];
+            }
+
+            if ($caseKey === 'handling' && $waitingItemsStillPicking['count'] > 0) {
+                $totals[$caseKey]['warning'] = [
+                    'route_target' => $waitingItemsStillPicking['route'],
+                    'tooltip'      => __('Waiting items in delivery notes still picking'),
+                    'value'        => $waitingItemsStillPicking['count'],
+                ];
+            }
+
+            if ($caseKey === 'handling_blocked' && $waitingItems['count'] > 0) {
+                $totals[$caseKey]['warning'] = [
+                    'route_target' => $waitingItems['route'],
+                    'tooltip'      => __('Waiting items'),
+                    'value'        => $waitingItems['count'],
                 ];
             }
         }
