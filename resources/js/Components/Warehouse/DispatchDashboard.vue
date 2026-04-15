@@ -225,7 +225,7 @@ const isWeakValue = (value: number | null | undefined) => {
                                     ]"
                                 >{{ data.data[row.key]?.[item.key]?.value ?? '-' }}</component>
 
-
+                                <!-- Section: Warning -->
                                 <Link v-if="data.data[row.key]?.[item.key]?.warning"
                                     :href="data.data[row.key]?.[item.key]?.warning?.route_target?.name ? route(data.data[row.key]?.[item.key]?.warning?.route_target?.name, data.data[row.key]?.[item.key]?.warning?.route_target.parameters) : '#'"
                                     class="relative bg-amber-300 text-amber-700 rounded px-2.5  ml-2 opacity-70 hover:opacity-100"
@@ -254,6 +254,18 @@ const isWeakValue = (value: number | null | undefined) => {
                                 :href="getSafeRoute(data.totals[item.key]?.route_target) ?? undefined"
                                 :class="getSafeRoute(data.totals[item.key]?.route_target) ? 'hover:underline cursor-pointer' : ''"
                             >{{ data.totals[item.key]?.value ?? '-' }}</component>
+                            
+                            <!-- Section: Warning -->
+                            <Link v-if="data.totals[item.key]?.warning"
+                                :href="data.totals[item.key]?.warning?.route_target?.name ? route(data.totals[item.key]?.warning?.route_target?.name, data.totals[item.key]?.warning?.route_target.parameters) : '#'"
+                                class="relative bg-amber-300 text-amber-700 rounded px-2.5  ml-2 opacity-70 hover:opacity-100"
+                                v-tooltip="data.totals[item.key]?.warning?.tooltip"
+                            >
+                                {{ data.totals[item.key]?.warning?.value }}
+
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
+                            </Link>
                         </div>
                     </div>
                 </div>
