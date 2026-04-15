@@ -57,8 +57,9 @@ class FetchFamilyListCustomSorted extends IrisAction
                 ->whereNull('webpages.deleted_at');
 
         return $families
-            ->allowedSorts(['amount', 'running_amount', 'type', 'created_at','payment_reference'])
+            ->allowedSorts([ 'code', 'product_categories.created_at', 'name'])
             ->allowedFilters([$globalSearch])
+            ->paginate(request('per_page', 100))
             ->withQueryString();
     }
 
