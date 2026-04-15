@@ -42,7 +42,7 @@ class UpdateBundle extends OrgAction
      */
     public function handle(Bundle $bundle, array $modelData): Bundle
     {
-        return DB::transaction(function () use ($bundle, $modelData) {
+         return DB::transaction(function () use ($bundle, $modelData) {
             $tradeUnits = [];
             Arr::forget($modelData, 'id');
 
@@ -55,6 +55,8 @@ class UpdateBundle extends OrgAction
             /** @var array $mainMedia */
             $mainMedia = collect(Arr::get($modelData, 'images'))->where('is_main', true)->first();
             $images = collect(Arr::get($modelData, 'images'))->pluck('id');
+
+            $selectedProducts = $this->processDelete($bundle, Arr::get($modelData, 'products'));
 
             foreach ($images as $imageId) {
                 $existingMedia = Media::find($imageId);
@@ -123,7 +125,6 @@ class UpdateBundle extends OrgAction
                 ]);
             }
 
-            $selectedProducts = Arr::get($modelData, 'products');
             if(! blank($selectedProducts)) {
                 $productSelected = Product::where('shop_id', $bundle->customer->shop_id)
                     ->whereIn('id', Arr::pluck($selectedProducts, 'product_id'))
@@ -160,7 +161,7 @@ class UpdateBundle extends OrgAction
 
                 $calculatedPrice = CalculateBundleItemPriceDetails::run($bundle->customerSalesChannel, $modelData);
 
-                UpdateProduct::run($product, [
+                UpdateProduct::make()->action($product, [
                     'trade_units' => $tradeUnits,
                     'price' => Arr::get($calculatedPrice, 'total_price'),
                     'rrp' => Arr::get($calculatedPrice, 'total_rrp')
@@ -170,7 +171,26 @@ class UpdateBundle extends OrgAction
             $bundle->refresh();
 
             return $bundle;
-        });
+         });
+    }
+
+    public function processDelete(Bundle $bundle, array $selectedProducts): array
+    {
+        $productIds = collect($selectedProducts)->pluck('product_id')->toArray();
+        $bundleItems = BundleItem::where('bundle_id', $bundle->id)->get();
+        $productDiff = array_diff($bundleItems->pluck('item_id')->toArray(), $productIds);
+
+        foreach ($selectedProducts as $key => $selectedProduct) {
+            if (in_array($selectedProduct['product_id'], $productDiff)) {
+                unset($selectedProducts[$key]);
+            }
+        }
+
+        BundleItem::where('bundle_id', $bundle->id)
+            ->whereIn('item_id', $productDiff)
+            ->delete();
+
+        return $selectedProducts;
     }
 
     public function authorize(ActionRequest $request): bool
