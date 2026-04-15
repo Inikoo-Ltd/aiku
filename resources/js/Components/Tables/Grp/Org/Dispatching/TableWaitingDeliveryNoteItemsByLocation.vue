@@ -39,6 +39,7 @@ defineProps<{
     data: TableTS
     tab?: string
     allowStockControllerSetNotPicked: boolean
+    isStillPicking: boolean
 }>()
 
 const routeToDeliveryNote = (slug: string) => {
@@ -192,7 +193,7 @@ const selectedTransactionToSetAsWaiting = ref(null)
                 <div v-if="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)" class="rounded p-1 flex flex-col gap-2">
                     <div class="flex justify-between items-center gap-x-4">
                         <!-- Section: location -->
-                        <div class="">
+                        <div v-if="!isStillPicking" class="">
                             <Transition name="spin-to-down">
                                 <div :key="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.location_code">
 
@@ -244,7 +245,7 @@ const selectedTransactionToSetAsWaiting = ref(null)
                             <!-- Section: input Quantity-->
                             <NumberWithButtonSave
                                 vxif="!itemValue.is_handled && findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).quantity > 0"
-                                v-if="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).quantity > 0"
+                                v-if="!isStillPicking && findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).quantity > 0"
                                 :key="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).location_code"
                                 noUndoButton
                                 @onError="(error: any) => { proxyItem.errors = Object.values(error || {}) }"
@@ -314,11 +315,15 @@ const selectedTransactionToSetAsWaiting = ref(null)
                             </ButtonWithLink>
 
                             <!-- Button: Pass to CS -->
-                            <Button v-if="Number(itemValue.quantity_waiting_warehouse) > 0" @click="() => (isOpenModalPassToCs = true, selectedTransactionToSetAsWaiting = itemValue)" icon="fal fa-user-headset"
-                                    :label="Number(itemValue.quantity_waiting_warehouse)"
-                                    :tooltip="trans('Pass :qtyInWarehouse to customer services', { qtyInWarehouse: Number(itemValue.quantity_waiting_warehouse) })"
-
-                                    size="xs" type="tertiary" />
+                            <Button
+                                v-if="Number(itemValue.quantity_waiting_warehouse) > 0"
+                                @click="() => (isOpenModalPassToCs = true, selectedTransactionToSetAsWaiting = itemValue)"
+                                icon="fal fa-user-headset"
+                                :label="Number(itemValue.quantity_waiting_warehouse)"
+                                :tooltip="trans('Pass :qtyInWarehouse to customer services', { qtyInWarehouse: Number(itemValue.quantity_waiting_warehouse) })"
+                                :size="twBreakPoint().includes('lg') ? 'xs' : 'lg'"
+                                type="tertiary"
+                            />
                         </div>
                     </div>
 
