@@ -233,6 +233,18 @@ const isWeakValue = (value: number | null | undefined) => {
                                     <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                                     <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
                                 </Link>
+
+                                <!-- Section: CRM Warning -->
+                                <Link v-if="data.data[row.key]?.[item.key]?.crm_warning"
+                                    :href="data.data[row.key]?.[item.key]?.crm_warning?.route_target?.name ? route(data.data[row.key]?.[item.key]?.crm_warning?.route_target?.name, data.data[row.key]?.[item.key]?.crm_warning?.route_target.parameters) : '#'"
+                                    class="relative bg-purple-300 text-purple-700 rounded px-2.5 ml-2 opacity-70 hover:opacity-100"
+                                    v-tooltip="data.data[row.key]?.[item.key]?.crm_warning?.tooltip"
+                                >
+                                    {{ data.data[row.key]?.[item.key]?.crm_warning?.value }}
+
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
+                                </Link>
                             </div>
                         </template>
 
@@ -262,6 +274,18 @@ const isWeakValue = (value: number | null | undefined) => {
 
                                 <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                                 <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
+                            </Link>
+
+                            <!-- Section: CRM Warning -->
+                            <Link v-if="data.totals[item.key]?.crm_warning"
+                                :href="data.totals[item.key]?.crm_warning?.route_target?.name ? route(data.totals[item.key]?.crm_warning?.route_target?.name, data.totals[item.key]?.crm_warning?.route_target.parameters) : '#'"
+                                class="relative bg-purple-300 text-purple-700 rounded px-2.5 ml-2 opacity-70 hover:opacity-100"
+                                v-tooltip="data.totals[item.key]?.crm_warning?.tooltip"
+                            >
+                                {{ data.totals[item.key]?.crm_warning?.value }}
+
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
                             </Link>
                         </div>
                     </div>
