@@ -16,6 +16,7 @@ import Select from 'primevue/select'
 import IftaLabel from 'primevue/iftalabel'
 import { trans } from "laravel-vue-i18n";
 import Icon from "../Icon.vue"
+import { Link } from "@inertiajs/vue3"
 
 library.add(faInfoCircle, faRoad, faClock, faDatabase, faPallet, faCircle, faNetworkWired, faSpinnerThird, faEye, faThLarge,faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream)
 
@@ -127,8 +128,19 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
                             </div>
                             
                             <div class="relative text-center">
-                                <span class="inline" :class="tabLoading == tab.tab_slug ? 'opacity-0' : 'opacity-80 group-hover:opacity-100'">
+                                <span class="whitespace-nowrap inline" :class="tabLoading == tab.tab_slug ? 'opacity-0' : 'opacity-80 group-hover:opacity-100'">
                                     {{ renderLabelBasedOnType(tab.value, tab.type, {currency_code: box.currency_code}) }}
+                                    
+                                    <!-- Section: Warning -->
+                                    <Link v-if="tab.warning"
+                                        :href="tab.warning?.route_target?.name ? route(tab.warning?.route_target?.name, tab.warning?.route_target.parameters) : '#'"
+                                        class="relative bg-black/10 border border-black/30 rounded px-1.5 ml-0 opacity-70 hover:opacity-100"
+                                        v-tooltip="tab.warning?.tooltip"
+                                    >
+                                        {{ tab.warning.value }}
+                                        <FontAwesomeIcon v-if="tab.warning?.indicator" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                        <FontAwesomeIcon v-if="tab.warning?.indicator" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
+                                    </Link>
                                 </span>
                                 <div v-if="!(tab.icon || tab.icon_data) && tabLoading == tab.tab_slug" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
                                     <LoadingIcon />
