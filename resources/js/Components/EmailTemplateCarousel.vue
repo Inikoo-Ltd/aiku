@@ -114,16 +114,18 @@ const loadPage = (page: number) => {
 };
 
 const handlePageUpdate = (event: number) => {
-    const pageNumber = event + 1;
-    const numVisible = carouselOptions.value.numVisible;
-    const neededItems = numVisible * pageNumber;
 
-    if (neededItems > 4 && !isLoading.value) {
-        const nextPage = Math.ceil(neededItems / 4);
-        if (nextPage > currentPage.value && nextPage <= lastPage.value) {
-            fetchOtherShopTemplates(nextPage);
-        }
-    }
+    console.log(event)
+    // const pageNumber = event + 1;
+    // const numVisible = carouselOptions.value.numVisible;
+    // const neededItems = numVisible * pageNumber;
+
+    // if (neededItems > 4 && !isLoading.value) {
+    //     const nextPage = Math.ceil(neededItems / 4);
+    //     if (nextPage > currentPage.value && nextPage <= lastPage.value) {
+    fetchOtherShopTemplates(event + 1);
+    //     }
+    // }
 };
 
 const fetchOtherShopTemplates = async (page: number) => {
@@ -189,8 +191,8 @@ const fetchOtherShopTemplates = async (page: number) => {
             </div>
 
             <div class="relative">
-                <Carousel :value="otherShopTemplatesData" :numVisible="4" :numScroll="4" :options="carouselOptions"
-                    @update:page="handlePageUpdate" class="mb-8"
+                <Carousel :value="otherShopTemplatesData" :numVisible="4" :numScroll="4" :circular="true"
+                    :options="carouselOptions" @update:page="handlePageUpdate" class="mb-8"
                     :class="{ 'opacity-50 pointer-events-none': isLoading }">
                     <template #item="slotProps">
                         <TemplateCarouselItem :template="slotProps.data" :organisation-slug="props.organisationSlug"
@@ -208,8 +210,8 @@ const fetchOtherShopTemplates = async (page: number) => {
 
                             <span class="text-sm text-gray-600">
                                 {{ trans('Page :currentPage of :lastPage', {
-                                    currentPage: pagination.currentPage,
-                                    lastPage: pagination.lastPage
+                                    currentPage: pagination?.currentPage ?? 1,
+                                    lastPage: pagination?.lastPage ?? 1
                                 }) }}
                             </span>
 
