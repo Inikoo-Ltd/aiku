@@ -83,9 +83,6 @@ interface DashboardData {
 const props = defineProps<{
     tab: string
     data: DashboardData
-    waiting_items: {
-        count: number
-    }
 }>()
 
 const rows = computed(() => {
@@ -254,7 +251,7 @@ const isWeakValue = (value: number | null | undefined) => {
                                 :href="getSafeRoute(data.totals[item.key]?.route_target) ?? undefined"
                                 :class="getSafeRoute(data.totals[item.key]?.route_target) ? 'hover:underline cursor-pointer' : ''"
                             >{{ data.totals[item.key]?.value ?? '-' }}</component>
-                            
+
                             <!-- Section: Warning -->
                             <Link v-if="data.totals[item.key]?.warning"
                                 :href="data.totals[item.key]?.warning?.route_target?.name ? route(data.totals[item.key]?.warning?.route_target?.name, data.totals[item.key]?.warning?.route_target.parameters) : '#'"

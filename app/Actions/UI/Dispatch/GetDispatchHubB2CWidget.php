@@ -39,8 +39,8 @@ class GetDispatchHubB2CWidget
                     ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING)
                     ->count(),
                 'route' => [
-                    'name' => 'grp.org.warehouses.show.dispatching.waiting_items_still_picking',
-                    'parameters' => request()->route()->originalParameters()
+                    'name'       => 'grp.org.warehouses.show.dispatching.waiting_items_still_picking.shop',
+                    'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::B2C->value],
                 ],
             ],
             'waiting_items' => [
@@ -49,11 +49,11 @@ class GetDispatchHubB2CWidget
                     ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
                     ->where('shops.type', ShopTypeEnum::B2C->value)
                     ->where('delivery_note_items.has_waiting_warehouse', true)
-                    ->where('delivery_notes.state','!=', DeliveryNoteStateEnum::HANDLING)
+                    ->where('delivery_notes.state', '!=', DeliveryNoteStateEnum::HANDLING)
                     ->count(),
                 'route' => [
-                    'name' => 'grp.org.warehouses.show.dispatching.waiting_items',
-                    'parameters' => request()->route()->originalParameters()
+                    'name'       => 'grp.org.warehouses.show.dispatching.waiting_items.shop',
+                    'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::B2C->value],
                 ],
             ],
             'cases'            => [

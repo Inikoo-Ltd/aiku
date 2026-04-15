@@ -39,8 +39,8 @@ class GetDispatchHubExternalWidget
                     ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING)
                     ->count(),
                 'route' => [
-                    'name' => 'grp.org.warehouses.show.dispatching.waiting_items_still_picking',
-                    'parameters' => request()->route()->originalParameters()
+                    'name'       => 'grp.org.warehouses.show.dispatching.waiting_items_still_picking.shop',
+                    'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::EXTERNAL->value],
                 ],
             ],
             'waiting_items' => [
@@ -49,11 +49,11 @@ class GetDispatchHubExternalWidget
                     ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
                     ->where('shops.type', ShopTypeEnum::EXTERNAL->value)
                     ->where('delivery_note_items.has_waiting_warehouse', true)
-                    ->where('delivery_notes.state','!=', DeliveryNoteStateEnum::HANDLING)
+                    ->where('delivery_notes.state', '!=', DeliveryNoteStateEnum::HANDLING)
                     ->count(),
                 'route' => [
-                    'name' => 'grp.org.warehouses.show.dispatching.waiting_items',
-                    'parameters' => request()->route()->originalParameters()
+                    'name'       => 'grp.org.warehouses.show.dispatching.waiting_items.shop',
+                    'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::EXTERNAL->value],
                 ],
             ],
             'cases'            => [
