@@ -690,7 +690,8 @@ class ShowDeliveryNote extends OrgAction
 
         $showChangePickerPacker = $deliveryNote->shop->type !== ShopTypeEnum::DROPSHIPPING;
 
-        $allowWaiting = data_get($this->organisation->settings, 'orders.allow_waiting', false);
+        // Disable waiting on DS no?
+        $allowWaiting = data_get($this->organisation->settings, 'orders.allow_waiting', false) && $deliveryNote->shop?->type !== ShopTypeEnum::DROPSHIPPING;
 
         $props = [
             'title'         => __('Delivery note').' '.$deliveryNote->reference,
@@ -733,7 +734,6 @@ class ShowDeliveryNote extends OrgAction
                     'countriesAddressData' => GetAddressData::run()
                 ]
             ],
-            'allowWaiting'        => data_get($this->organisation->settings, 'orders.allow_waiting', false),
             'allowActions'        => $allowAction,
             'timelines'           => $this->getTimeline($deliveryNote),
             'box_stats'           => $this->getBoxStats($deliveryNote),
