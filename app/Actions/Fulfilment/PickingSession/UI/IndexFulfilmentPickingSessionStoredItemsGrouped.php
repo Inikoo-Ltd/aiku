@@ -93,8 +93,8 @@ class IndexFulfilmentPickingSessionStoredItemsGrouped extends OrgAction
             $table->column(key: 'pallet_return_reference', label: __('Return'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
 
-            if ($pickingSession->state === PickingSessionStateEnum::PICKING_FINISHED) {
-                $table->column(key: 'actions', label: __('To do actions'), canBeHidden: false);
+            if (in_array($pickingSession->state, [PickingSessionStateEnum::PICKING_FINISHED, PickingSessionStateEnum::PACKING_FINISHED], true)) {
+                $table->column(key: 'actions', label: __('Actions'), canBeHidden: false);
             }
             $table->defaultSort('pallet_return_reference');
         };

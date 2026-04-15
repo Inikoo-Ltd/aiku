@@ -5,7 +5,11 @@ namespace App\Actions\Fulfilment\PickingSession\UI;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
+use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnBoxStats;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
+use App\Enums\Fulfilment\Pallet\PalletStateEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\UI\Dispatch\PickingSessionTabsEnum;
 use App\Http\Resources\Dispatching\PickingSessionResource;
@@ -155,7 +159,7 @@ class ShowFulfilmentPickingSession extends OrgAction
         $returnType = $this->getPalletReturnType($pickingSession);
 
         if ($returnType === PalletReturnTypeEnum::STORED_ITEM->value) {
-            if (in_array($pickingSession->state, [PickingSessionStateEnum::HANDLING, PickingSessionStateEnum::PICKING_FINISHED, PickingSessionStateEnum::PACKING_FINISHED], true)) {
+            if (in_array($pickingSession->state, [PickingSessionStateEnum::PICKING_FINISHED, PickingSessionStateEnum::PACKING_FINISHED], true)) {
                 $inertiaResponse->table(
                     IndexFulfilmentPickingSessionStoredItemsGrouped::make()
                         ->tableStructure(pickingSession: $pickingSession, prefix: PickingSessionTabsEnum::GROUPED->value)
@@ -169,7 +173,7 @@ class ShowFulfilmentPickingSession extends OrgAction
                 );
             }
         } else {
-            if (in_array($pickingSession->state, [PickingSessionStateEnum::HANDLING, PickingSessionStateEnum::PICKING_FINISHED, PickingSessionStateEnum::PACKING_FINISHED], true)) {
+            if (in_array($pickingSession->state, [PickingSessionStateEnum::PICKING_FINISHED, PickingSessionStateEnum::PACKING_FINISHED], true)) {
                 $inertiaResponse->table(
                     IndexFulfilmentPickingSessionPalletItemsGrouped::make()
                         ->tableStructure(pickingSession: $pickingSession, prefix: PickingSessionTabsEnum::GROUPED->value)
@@ -286,18 +290,79 @@ class ShowFulfilmentPickingSession extends OrgAction
                 'pallet_returns.state',
                 'pallet_returns.fulfilment_id',
                 'pallet_returns.fulfilment_customer_id',
+                'pallet_returns.is_collection',
+                'pallet_returns.picker_user_id',
+                'pallet_returns.packer_user_id',
+                'pallet_returns.platform_id',
+                'pallet_returns.customer_sales_channel_id',
+                'pallet_returns.delivery_address_id',
+                'pallet_returns.parcels',
             ])
+            ->with([
+                'pickerUser:id,contact_name',
+                'packerUser:id,contact_name',
+                'platform:id,name',
+                'customerSalesChannel:id,name',
+                'fulfilmentCustomer.customer:id,contact_name',
+                'deliveryAddress:id,address_line_1,address_line_2,locality,administrative_area,postal_code,country_id',
+                'deliveryAddress.country:id,name',
+                'shipments',
+            ])
+            ->withCount('items')
             ->get()
             ->map(function ($palletReturn) use ($pickingSession) {
+                $baseQuery = $palletReturn->pallets()->whereNot('pallets.state', [PalletStateEnum::DISPATCHED]);
+                $palletCount = (clone $baseQuery)->count();
+                $completedPickingCount = (clone $baseQuery)
+                    ->wherePivotIn('state', [
+                        PalletReturnItemStateEnum::PICKED->value,
+                        PalletReturnItemStateEnum::NOT_PICKED->value,
+                        PalletReturnItemStateEnum::CANCEL->value,
+                    ])
+                    ->count();
+                $canSetAsPicked = $palletCount > 0 && $palletCount === $completedPickingCount;
+
                 $showRouteName = $palletReturn->type?->value === PalletReturnTypeEnum::STORED_ITEM->value
                     ? 'grp.org.warehouses.show.dispatching.pallet-return-with-stored-items.show'
                     : 'grp.org.warehouses.show.dispatching.pallet-returns.show';
+                $boxStats = GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $palletReturn->fulfilmentCustomer);
 
                 return [
                     'id'        => $palletReturn->id,
                     'reference' => $palletReturn->reference,
                     'state'     => $palletReturn->state?->value,
                     'type'      => $palletReturn->type?->value,
+                    'stateIcon' => PalletReturnStateEnum::stateIcon()[$palletReturn->state->value] ?? null,
+                    'stateLabel' => PalletReturnStateEnum::labels()[$palletReturn->state->value] ?? $palletReturn->state?->value,
+                    'isCollection' => (bool) $palletReturn->is_collection,
+                    'itemsCount' => (int) $palletReturn->items_count,
+                    'picker' => $palletReturn->pickerUser ? [
+                        'id' => $palletReturn->pickerUser->id,
+                        'contact_name' => $palletReturn->pickerUser->contact_name,
+                    ] : null,
+                    'packer' => $palletReturn->packerUser ? [
+                        'id' => $palletReturn->packerUser->id,
+                        'contact_name' => $palletReturn->packerUser->contact_name,
+                    ] : null,
+                    'customer' => [
+                        'name' => $palletReturn->fulfilmentCustomer?->customer?->contact_name,
+                    ],
+                    'platform' => $palletReturn->platform ? [
+                        'name' => $palletReturn->platform->name,
+                    ] : null,
+                    'salesChannel' => $palletReturn->customerSalesChannel ? [
+                        'name' => $palletReturn->customerSalesChannel->name,
+                    ] : null,
+                    'shippingAddress' => $palletReturn->deliveryAddress ? [
+                        'address_line_1' => $palletReturn->deliveryAddress->address_line_1,
+                        'address_line_2' => $palletReturn->deliveryAddress->address_line_2,
+                        'locality' => $palletReturn->deliveryAddress->locality,
+                        'administrative_area' => $palletReturn->deliveryAddress->administrative_area,
+                        'postal_code' => $palletReturn->deliveryAddress->postal_code,
+                        'country' => $palletReturn->deliveryAddress->country?->name,
+                    ] : null,
+                    'parcels' => $boxStats['parcels'] ?? [],
+                    'shipments' => $boxStats['shipments'] ?? [],
                     'showRoute' => [
                         'name'       => $showRouteName,
                         'parameters' => [
@@ -331,6 +396,55 @@ class ShowFulfilmentPickingSession extends OrgAction
                         ],
                         'method' => 'patch',
                     ],
+                    'pickerPackerRoutes' => [
+                        'pickers_list' => [
+                            'name'       => 'grp.json.employees.picker_users',
+                            'parameters' => [
+                                'organisation' => $pickingSession->organisation->slug,
+                            ],
+                        ],
+                        'packers_list' => [
+                            'name'       => 'grp.json.employees.packers',
+                            'parameters' => [
+                                'organisation' => $pickingSession->organisation->slug,
+                            ],
+                        ],
+                        'update' => [
+                            'name'       => 'grp.models.pallet-return.update',
+                            'parameters' => [
+                                'palletReturn' => $palletReturn->id,
+                            ],
+                            'method' => 'patch',
+                        ],
+                    ],
+                    'updateRoute' => [
+                        'name'       => 'grp.models.pallet-return.update',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id,
+                        ],
+                        'method' => 'patch',
+                    ],
+                    'shipmentsRoutes' => [
+                        'submit_route' => [
+                            'name'       => 'grp.models.pallet-return.shipment_from_warehouse.store',
+                            'parameters' => [
+                                'palletReturn' => $palletReturn->id
+                            ]
+                        ],
+                        'fetch_route' => [
+                            'name'       => 'grp.json.shippers.index',
+                            'parameters' => [
+                                'organisation' => $pickingSession->organisation->slug,
+                            ]
+                        ],
+                        'delete_route' => [
+                            'name'       => 'grp.models.pallet-return.shipment.detach',
+                            'parameters' => [
+                                'palletReturn' => $palletReturn->id
+                            ]
+                        ],
+                    ],
+                    'canSetAsPicked' => $canSetAsPicked,
                     'canDispatch' => $palletReturn->state?->value === 'picked',
                 ];
             })

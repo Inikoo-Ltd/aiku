@@ -27,6 +27,7 @@ class AutoFinishPackingFulfilmentPickingSession extends OrgAction
 
         $allDone = collect($states)->every(function ($state) {
             return in_array($state, [
+                PalletReturnStateEnum::PICKED->value,
                 PalletReturnStateEnum::DISPATCHED->value,
                 PalletReturnStateEnum::CANCEL->value,
             ], true);

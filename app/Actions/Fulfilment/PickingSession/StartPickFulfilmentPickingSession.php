@@ -11,6 +11,7 @@ use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Inventory\PickingSession;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Inventory\Warehouse;
+use App\Models\SysAdmin\User;
 
 class StartPickFulfilmentPickingSession extends OrgAction
 {
@@ -19,9 +20,9 @@ class StartPickFulfilmentPickingSession extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(PickingSession $pickingSession, array $modelData): PickingSession
+    public function handle(PickingSession $pickingSession, array $modelData, ?User $user = null): PickingSession
     {
-        data_set($modelData, 'state', PickingSessionStateEnum::HANDLING);
+        data_set($modelData, 'state', PickingSessionStateEnum::PICKING_FINISHED);
         data_set($modelData, 'start_at', now());
 
         $palletReturns = $pickingSession->palletReturns;
@@ -32,7 +33,7 @@ class StartPickFulfilmentPickingSession extends OrgAction
                 PalletReturnStateEnum::CONFIRMED,
                 PalletReturnStateEnum::SUBMITTED
             ])) {
-                PickingPalletReturn::make()->action($palletReturn);
+                PickingPalletReturn::make()->action($palletReturn, $user);
             }
         }
 
@@ -50,6 +51,6 @@ class StartPickFulfilmentPickingSession extends OrgAction
     {
         $this->initialisationFromWarehouse($warehouse, $request);
 
-        return $this->handle($pickingSession, $this->validatedData);
+        return $this->handle($pickingSession, $this->validatedData, $request->user());
     }
 }
