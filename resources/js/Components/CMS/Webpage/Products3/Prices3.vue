@@ -266,7 +266,7 @@ const _popoverProfit = ref(null)
                 <DiscountByType v-if="bestOffer?.type == 'First Order Bonus'" :offers_data="product?.product_offers_data" template="first-order" />
 
 
-                <div class="font-bold text-right min-w-0" :class="bestOffer?.type === 'Category Ordered'
+                <div v-if="bestOffer" class="font-bold text-right min-w-0" :class="bestOffer?.type === 'Category Ordered'
                         ? 'text-red-700'
                         : bestOffer?.type === 'First Order'
                             ? 'text-[#2a919e]'
