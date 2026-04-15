@@ -22,9 +22,9 @@
   import InputNumber from "primevue/inputnumber"
   import LoadingIcon from "./Utils/LoadingIcon.vue"
   import PureInput from "@/Components/Pure/PureInput.vue"
-  
+
   library.add(faAsterisk, faPlus, faChevronDown, faTimes, faMinus, faTrashAlt, faSparkles, faExclamationTriangle)
-  
+
   const props = defineProps<{
       storedItemsRoute: {
           store: routeType
@@ -36,7 +36,7 @@
       title?: string
       prefixQuery?: string   // from filter[global] to stored_items_filter[global]
   }>()
-  
+
   const loadingAddStoredItem = ref(false)
   const newStoredItem = ref(null)
   const messageMode = ref(false)
@@ -45,12 +45,12 @@
       disabled: props.form.id ? true : false,
   })
   const _selectQuery = ref(null)
-  
+
   const emits = defineEmits<{
-      (e: 'onSave', event: any): void
+      (e: 'onSave', event: any, onSuccess?: () => void): void
       (e: 'closeModal'): void
   }>()
-  
+
   const createStoredItems = async (option, select) => {
       loadingAddStoredItem.value = true
       try {
@@ -77,7 +77,7 @@
           return false
       }
   }
-  
+
   // Section: Delete stored items
   const isDeleteStoredItem = ref(false)
   const deleteStoredItems = async (closeModal : boolean) => {
@@ -104,8 +104,8 @@
           return false
       }
   }
-  
-  
+
+
   const filterOptionsStoredItems = (e) => {
       if (!props.form.id) {
           return e.filter((item) =>
@@ -114,26 +114,26 @@
       }
       return e;
   };
-  
+
   const incrementQuantity = () => {
       props.form.quantity = Number(props.form.quantity) + 1;
   }
-  
+
   const decrementQuantity = () => {
       if (props.form.quantity > 1) {
           props.form.quantity = Number(props.form.quantity) - 1;
       }
   }
-  
+
   const onCancel = () =>{
       if(newStoredItem.value && !disabledSelect.value.edit) messageMode.value = true
       else emits('closeModal')
   }
-  
+
   const onSaved = async () => {
-      onSaveNameForNewStoredItem()
+      await onSaveNameForNewStoredItem()
       let newData = []
-  
+
       if (props.form.oldData) {
           const index = props.stored_items.findIndex((item) => item.id === props.form.oldData.id)
           if (index !== -1) {
@@ -144,15 +144,15 @@
       } else {
           newData = [...props.stored_items, { ...props.form.data() }]
       }
-  
+
       const finalData = {}
       newData.forEach((d) => {
           finalData[d.id] = { quantity: Math.floor(d.quantity) }
       })
-  
-      emits("onSave", finalData)
+
+      emits("onSave", finalData, () => emits("closeModal"))
   }
-  
+
   // Section: save name for new stored item
   const newStoredItemName = ref('')
   const errorNewStoredItemName = ref('')
@@ -160,7 +160,7 @@
       if (!newStoredItem.value?.id || !newStoredItemName.value) {
           return
       }
-  
+
       try {
           const response: any = await axios.patch(
               route('retina.models.stored-items.update', [newStoredItem.value?.id]),
@@ -169,7 +169,7 @@
       } catch (error: any) {
           console.log(error)
           errorNewStoredItemName.value = error?.response?.data?.message
-          
+
           notify({
               title: trans("Something went wrong."),
               text: error.message ? error.message : trans('Failed to set name for new stored item'),
@@ -178,7 +178,7 @@
       }
   }
   </script>
-  
+
   <template>
       <div v-if="!messageMode">
           <div class="text-center font-semibold text-2xl mb-4">
@@ -186,7 +186,7 @@
           </div>
           <div class="grid grid-cols-3 gap-x-4">
               <label class="mt-1 block text-sm font-medium text-gray-700">{{ trans("Reference") }}</label>
-              
+
               <div class="mt-1 col-span-2">
                   <SelectQuery ref="_selectQuery"
                       :filterOptions="filterOptionsStoredItems"
@@ -214,7 +214,7 @@
                               {{ search !== "" || search ? `${trans(`Create`)} : ${search}` : trans("No Result") }}
                           </div>
                       </template>
-              
+
                       <template #afterlist="{ search, options }: { search: string, options: any[] }">
                           <!-- {{ options }} -->
                           <div v-if="search && options?.length" class="border-t border-gray-300">
@@ -225,18 +225,18 @@
                               </div>
                           </div>
                       </template>
-              
+
                       <template #option="{option, isSelected, isPointed, search, label}">
                           <div v-html="option[label]?.replace(search, `<span style='background: #eded02'>${search}</span>`)"></div>
                       </template>
-              
+
                       <template #noresults="{ search }: { search: string }">
                           <div class="px-2 py-3" @click="() => createStoredItems({ id: search, reference: search }, [])">
                               <font-awesome-icon :icon="['fas', 'plus']" class="mr-3" />
                               {{ `${trans(`Create`)} : ${search}` }}
                           </div>
                       </template>
-                      
+
                       <template v-if="!disabledSelect.edit" #caret="{ handleCaretClick, isOpen }">
                           <div class="px-2">
                               <LoadingIcon v-if="isDeleteStoredItem" class="text-red-500 text-sm mr-1" />
@@ -246,7 +246,7 @@
                                   @click="deleteStoredItems(false)" />
                           </div>
                       </template>
-              
+
                       <template #singlelabel="{ value }">
                           <div v-if="!loadingAddStoredItem" class="flex justify-start w-full px-2 gap-3">
                               {{ value["reference"] }}
@@ -267,7 +267,7 @@
           <p v-if="get(form, ['errors', 'id'])" class="mt-2 text-sm text-red-500">
               {{ form.errors.id }}
           </p>
-  
+
           <!-- Section: input Name -->
           <div v-if="form.id && newStoredItem" class="mt-4 grid grid-cols-3 gap-x-4">
               <label class="mt-1 text-sm font-medium text-gray-700 inline-flex items-start py-0">
@@ -276,7 +276,7 @@
                           icon="fas fa-asterisk"
                           class="ml-1 font-light text-[8px] text-red-400 mr-1 opacity-75" />
               </label>
-              
+
               <PureInput
                   v-model="newStoredItemName"
                   @update:modelValue="() => errorNewStoredItemName = ''"
@@ -288,12 +288,12 @@
           <p v-if="errorNewStoredItemName" class="mt-2 text-sm text-red-500">
               {{ errorNewStoredItemName }}
           </p>
-  
-  
+
+
           <!-- Quantity: Input number -->
           <div class="mt-4 grid grid-cols-3 gap-x-4">
               <label class="mt-1 block text-sm font-medium text-gray-700">{{ trans("Quantity") }}</label>
-              <!-- 
+              <!--
               <div class=" mt-1 flex items-center gap-2">
                   <input v-model="form.quantity" id="quantity" name="quantity" :autofocus="true" type="number"
                       autocomplete="quantity" :required="true" :min="1" @update:modelValue="form.errors.quantity = ''"
@@ -301,7 +301,7 @@
                   <Button type="tertiary" :icon="faPlus" @click="incrementQuantity" />
                   <Button type="tertiary" :icon="faMinus" @click="decrementQuantity" />
               </div> -->
-  
+
               <div class="col-span-2 self-end w-full justify-end flex gap-x-2">
                   <div
                       @click="decrementQuantity"
@@ -336,20 +336,20 @@
                   </div>
               </div>
           </div>
-  
+
           <p v-if="get(form, ['errors', 'quantity'])" class="mt-2 text-sm text-red-600">
               {{ form.errors.quantity }}
           </p>
       </div>
-  
+
       <div v-else>
           <div class="flex justify-center mb-6"><font-awesome-icon :icon="['far', 'exclamation-triangle']" class="text-8xl text-yellow-500"/></div>
-          
+
           <div class="text-center font-semibold text-2xl mb-6">
               {{ trans('Do you want to delete') }} {{ newStoredItem?.reference }} ?
           </div>
       </div>
-  
+
       <div v-if="!messageMode" class="flex gap-3 mt-5">
           <Button type="tertiary" :label="trans('Cancel')" @click="onCancel" class="select-none" />
           <Button
@@ -361,7 +361,7 @@
               v-tooltip="(newStoredItem && !newStoredItemName ? 'Complete name to save' : '')"
           />
       </div>
-  
+
       <div v-else class="grid grid-cols-2 gap-3">
           <div class="col-span-1 relative">
               <Button full type="tertiary" label="No" @click="()=>emits('closeModal')"></Button>
@@ -370,9 +370,9 @@
               <Button full @click="deleteStoredItems(true)" label="Yes" :loading="props.form.processing"></Button>
           </div>
       </div>
-  
+
   </template>
-  
+
   <style scoped>
   :deep(.p-inputtext) {
       padding: 0.5rem;
@@ -384,12 +384,12 @@
       box-shadow: 0;
       text-align: center;
   }
-  
+
   :deep(.p-inputtext:enabled:hover) {
       border: 1px solid transparent;
       border-bottom: 1px solid rgb(192, 192, 192);
   }
-  
+
   :deep(.p-inputtext:enabled:focus) {
       border: 1px solid transparent;
       border-bottom: 1px solid rgb(192, 192, 192);
