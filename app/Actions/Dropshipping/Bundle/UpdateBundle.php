@@ -56,7 +56,10 @@ class UpdateBundle extends OrgAction
             $mainMedia = collect(Arr::get($modelData, 'images'))->where('is_main', true)->first();
             $images = collect(Arr::get($modelData, 'images'))->pluck('id');
 
-            $selectedProducts = $this->processDelete($bundle, Arr::get($modelData, 'products'));
+            $selectedProducts = [];
+            if(Arr::get($modelData, 'products')) {
+                $selectedProducts = $this->processDelete($bundle, Arr::get($modelData, 'products'));
+            }
 
             foreach ($images as $imageId) {
                 $existingMedia = Media::find($imageId);
@@ -149,6 +152,10 @@ class UpdateBundle extends OrgAction
                         ->first();
 
                     if($bundleItem) {
+                        $this->update($bundleItem, [
+                            'quantity' => Arr::get($selectedProduct, 'quantity')
+                        ]);
+
                         continue;
                     }
 
