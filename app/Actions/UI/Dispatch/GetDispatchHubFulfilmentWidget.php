@@ -56,6 +56,32 @@ class GetDispatchHubFulfilmentWidget
                     'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::FULFILMENT->value],
                 ],
             ],
+            'waiting_crm_items_still_picking' => [
+                'count' => $warehouse->deliveryNotes()
+                    ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                    ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
+                    ->where('shops.type', ShopTypeEnum::FULFILMENT->value)
+                    ->where('delivery_note_items.has_waiting_crm', true)
+                    ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING)
+                    ->count(),
+                'route' => [
+                    'name'       => 'grp.org.warehouses.show.dispatching.waiting_crm_items_still_picking.shop',
+                    'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::FULFILMENT->value],
+                ],
+            ],
+            'waiting_crm_items' => [
+                'count' => $warehouse->deliveryNotes()
+                    ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                    ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
+                    ->where('shops.type', ShopTypeEnum::FULFILMENT->value)
+                    ->where('delivery_note_items.has_waiting_crm', true)
+                    ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED)
+                    ->count(),
+                'route' => [
+                    'name'       => 'grp.org.warehouses.show.dispatching.waiting_crm_items.shop',
+                    'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::FULFILMENT->value],
+                ],
+            ],
             'cases'    => [
                 'todo'    => [
                     'route' => [
