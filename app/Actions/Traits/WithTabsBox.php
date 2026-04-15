@@ -17,7 +17,7 @@ use App\Models\SysAdmin\Organisation;
 
 trait WithTabsBox
 {
-    public function getTabsBox(Group|Organisation|Shop $parent): array
+    public function getTabsBox(Group|Organisation|Shop $parent, ?array $waitingItemsData = null): array
     {
         $currency = "";
         $currencyCode = $parent->currency->code;
@@ -183,7 +183,13 @@ trait WithTabsBox
                         'information' => [
                             'label' => $parent->orderHandlingStats?->{"orders_state_handling_blocked_amount$currency"} ?? 0,
                             'type'  => 'currency',
-                        ]
+                        ],
+                        'warning' => ($waitingItemsData && ($waitingItemsData['count'] ?? 0) > 0) ? [
+                            'route_target' => $waitingItemsData['route'] ?? null,
+                            'tooltip'      => __('Items waiting for CRM'),
+                            'value'        => $waitingItemsData['count'],
+                            'indicator'    => true,
+                        ] : null,
                     ],
                     [
                         'tab_slug'    => 'picked',
