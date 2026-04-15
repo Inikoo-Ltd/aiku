@@ -99,12 +99,18 @@ const compSelectedProduct = computed(() => {
     return selectedProduct.value?.map((item: Portfolio) => item.id)
 })
 
+const buildSelectedProduct = (item: any) => ({
+    ...item,
+    quantity_selected: 1
+})
+
 const selectProduct = (item: any) => {
     const index = selectedProduct.value.findIndex((selected) => selected.id === item.id)
     if (index === -1) {
-        selectedProduct.value.push(item)
+        selectedProduct.value.push(buildSelectedProduct(item))
     } else {
         selectedProduct.value.splice(index, 1)
+        item.quantity_selected = 1
     }
 }
 
@@ -128,8 +134,7 @@ const selectAllProducts = () => {
         const productsToAdd = portfoliosList.value.filter(item =>
             !currentSelectedIds.includes(item.id)
         )
-        selectedProduct.value = [...selectedProduct.value, ...productsToAdd]
-        console.log("selectedProduct", selectedProduct.value)
+        selectedProduct.value = [...selectedProduct.value, ...productsToAdd.map(buildSelectedProduct)]
     }
 }
 
@@ -148,7 +153,6 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
     getPortfoliosList()
 })
 
-// To refresh the selected if success submit
 watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
     if (newVal !== oldVal) {
         selectedProduct.value = []
@@ -287,13 +291,15 @@ watch(selectedProduct, (val) => {
                                                 <!-- Quantity Input -->
                                                 <QuantitySelector
                                                     v-if="withQuantity && compSelectedProduct.includes(item.id)"
-                                                    :modelValue="item.quantity_selected || 1" @update:modelValue="(val) => {
-                                                        item.quantity_selected = val
+                                                    :modelValue="selectedProduct.find((selected) => selected.id === item.id)?.quantity_selected || 1"
+                                                    @update:modelValue="(val) => {
+                                                        const selectedIndex = selectedProduct.findIndex((selected) => selected.id === item.id)
+                                                        if (selectedIndex === -1) return
 
-                                                        if (!selectedProduct.includes(item)) {
-                                                            selectedProduct.push(item)
+                                                        selectedProduct[selectedIndex] = {
+                                                            ...selectedProduct[selectedIndex],
+                                                            quantity_selected: val
                                                         }
-
                                                         selectedProduct = [...selectedProduct]
                                                     }" />
                                             </div>
