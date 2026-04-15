@@ -46,7 +46,7 @@ Route::prefix('pallets')->as('pallets.')->group(function () {
     });
 
     Route::prefix('returned')->as('returned.')->group(function () {
-        Route::get('', [IndexReturnedPallets::class, 'inFulfilment'])->name('index');
+        Route::get('', IndexReturnedPallets::class)->name('index');
         Route::get('{pallet}', [ShowPallet::class, 'inFulfilment'])->name('show');
     });
 
@@ -56,7 +56,7 @@ Route::prefix('pallets')->as('pallets.')->group(function () {
     });
 
     Route::prefix('lost')->as('lost.')->group(function () {
-        Route::get('', [IndexLostPallets::class, 'inFulfilment'])->name('index');
+        Route::get('', IndexLostPallets::class)->name('index');
         Route::get('{pallet}', [ShowPallet::class, 'inFulfilment'])->name('show');
     });
 });
@@ -97,7 +97,7 @@ Route::prefix('recurring_bills')->as('recurring_bills')->group(function () {
 Route::get('accounting-dashboard', [ShowAccountingShopDashboard::class, 'inFulfilment'])->name('accounting.dashboard');
 
 Route::get('accounting-dashboard/accounts', [IndexPaymentAccountShops::class, 'inFulfilment'])->name('accounting.accounts.index');
-Route::get('accounting-dashboard/accounts/{paymentAccountShop}', [ShowPaymentAccountShop::class,'inFulfilment'])->name('accounting.accounts.show');
+Route::get('accounting-dashboard/accounts/{paymentAccountShop}', [ShowPaymentAccountShop::class, 'inFulfilment'])->name('accounting.accounts.show');
 
 Route::get('accounting-dashboard/payments', [IndexPayments::class, 'inFulfilment'])->name('accounting.payments.index');
 Route::get('accounting-dashboard/customer-balances', [IndexCustomerBalances::class, 'inFulfilment'])->name('accounting.customer_balances.index');
