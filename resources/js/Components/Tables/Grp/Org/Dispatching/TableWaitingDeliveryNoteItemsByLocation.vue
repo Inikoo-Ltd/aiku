@@ -93,10 +93,11 @@ const selectedTransactionToSetAsWaiting = ref(null)
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" rowAlignTop>
-        <template #cell(state)="{ item }">
+        <!-- <template #cell(state)="{ item }">
             <Icon :data="item.state_icon" />
-        </template>
+        </template> -->
 
+        <!-- Column: Reference Delivery Note -->
         <template #cell(delivery_note_reference)="{ item }">
             <div class="flex gap-2 flex-wrap items-center">
                 <Link :href="routeToDeliveryNote(item.delivery_note_slug)" class="primaryLink">
@@ -110,6 +111,18 @@ const selectedTransactionToSetAsWaiting = ref(null)
                     internal: 'delivery_note_internal_notes',
                     public:   'delivery_note_public_notes',
                 }" />
+            </div>
+        </template>
+
+        <!-- Column: Code -->
+        <template #cell(org_stock_code)="{ item }">
+            <div class="min-w-40">
+                <div class="font-bold">
+                    {{ item.org_stock_code }}
+                </div>
+                <div class="opacity-75 text-justify">
+                    {{ item.org_stock_name }}
+                </div>
             </div>
         </template>
 

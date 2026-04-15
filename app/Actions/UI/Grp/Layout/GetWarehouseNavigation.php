@@ -227,7 +227,7 @@ class GetWarehouseNavigation
                         [
                             'label' => __('Delivery notes'),
                             'icon'  => ['fal', 'fa-truck'],
-                            'root'  => 'grp.org.warehouses.show.dispatching.delivery-notes',
+                            'root'  => 'grp.org.warehouses.show.dispatching.',
                             'route' => [
                                 "name"       => "grp.org.warehouses.show.dispatching.delivery-notes",
                                 "parameters" => [

@@ -774,7 +774,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
 
                             <!-- Button: Not Picked || Set as Waiting -->
                             <template v-if="!itemValue.is_handled">
-                                <!-- Button: Set Transaction as Waiting -->
+                                <!-- Button: Set Transaction as Waiting (only on Ecom) -->
                                 <template v-if="allowWaiting">                                   
                                     <!-- Button: Not picked -->
                                     <ButtonWithLink
