@@ -2,7 +2,7 @@
 import { trans } from 'laravel-vue-i18n'
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { notify } from '@kyvg/vue3-notification'
-import { onMounted, ref, watch, computed } from 'vue'
+import { onMounted, ref, watch, computed, inject } from 'vue'
 import { routeType } from '@/types/route'
 import { set } from 'lodash-es'
 import axios from 'axios'
@@ -53,8 +53,11 @@ const props = defineProps<{
     onClickReconnect: Function
     shop_data: {
         currency_code: string
+        currency_symbol: string
     }
 }>()
+
+const locale = inject('locale', null)
 
 const emits = defineEmits<{
   (e: "onDone"): void
@@ -567,27 +570,29 @@ onMounted(() => {
                     <template v-else>
                         <div class="flex justify-between border-b pb-1">
                             <span class="text-gray-500">Cost Price (Individual Purchase)</span>
-                            <span class="font-medium">{{ bundle.summary.value.total_price }} {{ props.shop_data.currency_code
-                                }}</span>
+                            <span class="font-medium">
+                                {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_price ?? 0) }}
+                            </span>
                         </div>
 
                         <div class="flex justify-between border-b pb-1">
                             <span class="text-gray-500">Bundle Price</span>
-                            <span class="font-medium text-green-600">{{ bundle.summary.value.total_bundle_price }} {{
-                                props.shop_data.currency_code }}</span>
+                            <span class="font-medium text-green-600">
+                                 {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_bundle_price ?? 0) }}
+                            </span>
                         </div>
 
                         <div class="flex justify-between border-b pb-1">
                             <span class="text-gray-500">RRP</span>
-                            <span class="font-medium">{{ bundle.summary.value.total_rrp }} {{ props.shop_data.currency_code
-                            }}</span>
+                            <span class="font-medium">
+                                {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_rrp ?? 0) }}
+                            </span>
                         </div>
 
                         <div class="flex justify-between pt-1">
                             <span class="text-gray-500">Profit</span>
-                            <span class="font-semibold text-green-600"> [{{ bundle.summary.value.profit_percentage }}%] {{
-                                bundle.summary.value.profit }}
-                                {{ props.shop_data.currency_code }}</span>
+                            <span class="font-semibold text-green-600"> [{{ bundle.summary.value.profit_percentage }}%] {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.profit ?? 0) }}
+                                </span>
                         </div>
                     </template>
                 </div>
