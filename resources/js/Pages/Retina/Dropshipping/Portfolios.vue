@@ -150,6 +150,7 @@ const props = defineProps<{
 	bundle_routes: any
 	shop_data: {
         currency_code: string
+		currency_symbol: string
     }
 }>()
 

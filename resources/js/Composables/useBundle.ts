@@ -33,6 +33,23 @@ export function useBundle(routes?: any) {
 
     const isSummaryLoading = ref(false)
 
+    const dedupeProducts = (items: any[] = []) => {
+        const map = new Map()
+
+        items.forEach((item) => {
+            if (!item?.id) return
+            const current = map.get(item.id)
+            map.set(item.id, {
+                ...(current || item),
+                ...item,
+                quantity: item.quantity ?? item.quantity_selected ?? current?.quantity ?? current?.quantity_selected ?? 1,
+                quantity_selected: item.quantity_selected ?? item.quantity ?? current?.quantity_selected ?? current?.quantity ?? 1
+            })
+        })
+
+        return Array.from(map.values())
+    }
+
     const saveProductsToStorage = () => {
         if (typeof localStorage === 'undefined') return
         try {
@@ -118,10 +135,10 @@ export function useBundle(routes?: any) {
             isSummaryLoading.value = true
 
             const payload = {
-                products: products.value.map(p => ({
+                products: dedupeProducts(products.value).map(p => ({
                     product_id: p.id,
                     quantity: p.quantity || 1
-                }))
+                })),
             }
 
             const params =
@@ -266,7 +283,7 @@ export function useBundle(routes?: any) {
 
         title.value = payload.name || ''
 
-        const mappedProducts = (payload.items || []).map((it: any) => ({
+        const mappedProducts = dedupeProducts((payload.items || []).map((it: any) => ({
             id: it.item?.id,
             name: it.item?.name,
             code: it.item?.code,
@@ -274,7 +291,7 @@ export function useBundle(routes?: any) {
             price_per_unit: Number(it.item?.price_per_unit || it.item?.price || 0),
             quantity: it.quantity || 1,
             quantity_selected: it.quantity || 1
-        }))
+        })))
 
         products.value = mappedProducts
         onProductsLoaded?.(mappedProducts)
@@ -302,7 +319,7 @@ export function useBundle(routes?: any) {
                 description: '',
                 price: summary.value.total_bundle_price || 0,
                 rrp: summary.value.total_rrp || 0,
-                products: products.value.map(p => ({
+                products: dedupeProducts(products.value).map(p => ({
                     product_id: p.id,
                     quantity: p.quantity || 1
                 })),

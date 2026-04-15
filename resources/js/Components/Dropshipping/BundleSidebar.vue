@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useBundle } from '@/Composables/useBundle';
-import { onMounted, ref, watch, computed, inject } from 'vue'
+import { onMounted, ref, watch, computed } from 'vue'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import axios from 'axios'
@@ -8,7 +8,7 @@ import { routeType } from '@/types/route'
 import { route } from 'ziggy-js'
 import { debounce } from 'lodash-es'
 import Button from '../Elements/Buttons/Button.vue';
-import { InputText, Select, Dialog, Textarea, Checkbox } from "primevue"
+import { InputText, Select, Dialog, Textarea, Checkbox, Skeleton } from "primevue"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import InformationIcon from '../Utils/InformationIcon.vue';
 import { faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, faMinus } from '@fas'
@@ -18,13 +18,13 @@ import { router } from '@inertiajs/vue3';
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import Image from '../Image.vue';
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-
+import { useLocaleStore } from "@/Stores/locale"
 const props = defineProps<{
-    layout: string
+    symbol: string
+    code: string
 }>()
 
 const layout = useIrisLayoutStore()
-
 const mediaGallery = ref<string[]>([])
 const selectedMedia = ref<any[]>([])
 const selectedMediaIds = ref<number[]>([])
@@ -548,8 +548,8 @@ watch(customerChannelsId, (val) => {
                             <div class="flex gap-2">
                                 <InformationIcon :information="trans('Individual purchased price')" />
                                 <div class="font-semibold text-sm line-through">{{ item.price_per_unit }} {{
-                                    props.layout }}</div>
-                                <div class="font-semibold text-green-600">{{ item.price }} {{ props.layout }}</div>
+                                    props.symbol }}</div>
+                                <div class="font-semibold text-green-600">{{ item.price }} {{ props.symbol }}</div>
                             </div>
                         </div>
 
@@ -571,13 +571,20 @@ watch(customerChannelsId, (val) => {
                 <div class="border-t p-4 space-y-2">
                     <small v-if="!customerChannelsId" class="text-red-500">Please Choose Customer Sales Channel For Calculate Bundle</small>
                     <template v-if="bundle.isSummaryLoading.value">
-                        <div class="text-center text-sm text-gray-400 py-2">Calculating...</div>
+                        <div class="space-y-2 py-1">
+                            <div v-for="idx in 4" :key="idx" class="flex items-center justify-between">
+                                <Skeleton width="8rem" height="0.85rem" />
+                                <Skeleton width="5rem" height="0.85rem" />
+                            </div>
+                        </div>
                     </template>
 
                     <template v-else>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-400">Cost Price (Individual Purchase)</span>
-                            <span>{{ bundle.summary.value.total_price }} {{ props.layout }}</span>
+                            <span class="font-medium">
+                                {{ useLocaleStore().currencyFormat(layout.iris.currency?.code ?? 'usd', bundle.summary.value.total_price ?? 0) }}
+                            </span>
                         </div>
 
                          <div class="flex justify-between text-sm">
@@ -585,17 +592,23 @@ watch(customerChannelsId, (val) => {
                                 <span>Bundle Price</span>
                                 <!-- <span class="text-green-600">({{bundle.summary.value.profit_percentage }}%)</span> -->
                             </div>
-                            <span>{{ bundle.summary.value.total_bundle_price }} {{ props.layout }}</span>
+                            <span>
+                                {{ useLocaleStore().currencyFormat(layout.iris.currency?.code ?? 'usd', bundle.summary.value.total_bundle_price ?? 0) }}
+                            </span>
                         </div>
 
                         <div class="flex justify-between text-sm">
                             <span>RRP</span>
-                            <span>{{ bundle.summary.value.total_rrp }} {{ props.layout }}</span>
+                            <span>
+                                {{ useLocaleStore().currencyFormat(layout.iris.currency?.code ?? 'usd', bundle.summary.value.total_rrp ?? 0) }}
+                            </span>
                         </div>
 
                         <div class="flex justify-between text-xs">
                             <span>Profit</span>
-                            <span>{{ bundle.summary.value.profit }} {{ props.layout }} ({{
+                            <span>
+                                {{ useLocaleStore().currencyFormat(layout.iris.currency?.code ?? 'usd', bundle.summary.value.profit ?? 0) }}
+                                ({{
                                 bundle.summary.value.profit_percentage }}%)</span>
                         </div>
                     </template>

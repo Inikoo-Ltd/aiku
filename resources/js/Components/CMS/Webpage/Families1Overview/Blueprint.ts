@@ -19,6 +19,12 @@ export default {
             ],
         },
         {
+            name: "Title",
+            key: ["title"],
+            type: "editorhtml",
+            defaultValue: "Browse By Product Lines:",
+        },
+        {
             name: "Layout",
             key: ["container", "properties"],
             replaceForm: [

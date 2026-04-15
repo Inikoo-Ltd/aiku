@@ -22,6 +22,7 @@ enum WebBlockTemplateEnum: string
     case FAMILIES  = 'Family';
 
     case FAMILY_DESCRIPTION = 'FamilyDescription';
+    case FAMILY_OVERVIEW = 'FamiliesOverview';
 
     // ONLY CHANGE ARRAY LIST UNDER TEMPLATE CODES PLEASE :)
     public function templateCodes(): array
@@ -52,7 +53,11 @@ enum WebBlockTemplateEnum: string
                 'family-1',
                 'family-2',
                 'family-2-extra-description'
-            ]
+            ],
+
+            self::FAMILY_OVERVIEW => [
+                'families-1-overview',
+            ],
         };
     }
 
