@@ -12,6 +12,7 @@ use App\Actions\HumanResources\JobPosition\StoreJobPosition;
 use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\HumanResources\JobPosition;
 use App\Models\SysAdmin\JobPositionCategory;
 use App\Models\SysAdmin\Organisation;
@@ -67,7 +68,7 @@ class SeedJobPositions extends Seeder
         } else {
             /** @var JobPositionCategory $jobPositionCategory */
             $jobPositionCategory = $organisation->group->jobPositionCategories()->where('code', $jobPositionData['code'])->first();
-            $jobPosition        = StoreJobPosition::make()->action(
+            $jobPosition         = StoreJobPosition::make()->action(
                 $organisation,
                 [
                     'group_job_position_id' => $jobPositionCategory->id,
@@ -85,20 +86,20 @@ class SeedJobPositions extends Seeder
         foreach ($jobPositionData['roles'] as $case) {
             switch ($case->scope()) {
                 case 'Group':
-                    if ($role = (new Role())->where('name', $case->value)->first()) {
+                    if ($role = new Role()->where('name', $case->value)->first()) {
                         $roles[] = $role->id;
                     }
                     break;
                 case 'Organisation':
                     $roleName = RolesEnum::getRoleName($case->value, $organisation);
-                    if ($role = (new Role())->where('name', $roleName)->first()) {
+                    if ($role = new Role()->where('name', $roleName)->first()) {
                         $roles[] = $role->id;
                     }
                     break;
                 case 'Warehouse':
                     foreach ($organisation->warehouses as $warehouse) {
                         $roleName = RolesEnum::getRoleName($case->value, $warehouse);
-                        if ($role = (new Role())->where('name', $roleName)->first()) {
+                        if ($role = new Role()->where('name', $roleName)->first()) {
                             $roles[] = $role->id;
                         }
                     }
@@ -108,15 +109,16 @@ class SeedJobPositions extends Seeder
                         $roleName = RolesEnum::getRoleName($case->value, $shop);
 
 
-                        if ($role = (new Role())->where('name', $roleName)->first()) {
+                        if ($role = new Role()->where('name', $roleName)->first()) {
                             $roles[] = $role->id;
                         }
                     }
                     break;
                 case 'Fulfilment':
+                    /** @var Shop $shop */
                     foreach ($organisation->shops()->where('type', ShopTypeEnum::FULFILMENT)->get() as $shop) {
                         $roleName = RolesEnum::getRoleName($case->value, $shop->fulfilment);
-                        if ($role = (new Role())->where('name', $roleName)->first()) {
+                        if ($role = new Role()->where('name', $roleName)->first()) {
                             $roles[] = $role->id;
                         }
                     }

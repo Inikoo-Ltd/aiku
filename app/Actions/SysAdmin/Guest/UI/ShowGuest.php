@@ -40,6 +40,7 @@ class ShowGuest extends GrpAction
     {
         $this->canEdit   = $request->user()->authTo('sysadmin.users.edit');
         $this->canDelete = $request->user()->authTo('sysadmin.users.edit');
+
         return $request->user()->authTo("sysadmin.view");
     }
 
@@ -48,24 +49,24 @@ class ShowGuest extends GrpAction
         return Inertia::render(
             'SysAdmin/Guest',
             [
-                'title'       => __('guest'),
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'title'                        => __('Guest').' '.$guest->contact_name,
+                'breadcrumbs'                  => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'                            => [
+                'navigation'                   => [
                     'previous' => $this->getPrevious($guest, $request),
                     'next'     => $this->getNext($guest, $request),
                 ],
-                'pageHead'    => [
+                'pageHead'                     => [
                     'subNavigation' => $this->getGuestNavigation($guest, $request),
-                    'title'     => $guest->contact_name,
-                    'model'     => __('guest'),
-                    'icon'    => [
+                    'title'         => $guest->contact_name,
+                    'model'         => __('Guest'),
+                    'icon'          => [
                         'icon'  => ['fal', 'fa-user-alien'],
                         'title' => __('Guest')
                     ],
-                    'actions'   => [
+                    'actions'       => [
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -76,23 +77,22 @@ class ShowGuest extends GrpAction
                         ] : false,
                     ]
                 ],
-                'tabs'        => [
+                'tabs'                         => [
                     'current'    => $this->tab,
                     'navigation' => GuestTabsEnum::navigation()
                 ],
                 GuestTabsEnum::SHOWCASE->value => $this->tab == GuestTabsEnum::SHOWCASE->value ?
-                    fn () => GetGuestShowcase::run($guest)
-                    : Inertia::lazy(fn () => GetGuestShowcase::run($guest)),
-                GuestTabsEnum::HISTORY->value => $this->tab == GuestTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($guest))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($guest)))
+                    fn() => GetGuestShowcase::run($guest)
+                    : Inertia::lazy(fn() => GetGuestShowcase::run($guest)),
+                GuestTabsEnum::HISTORY->value  => $this->tab == GuestTabsEnum::HISTORY->value ?
+                    fn() => HistoryResource::collection(IndexHistory::run($guest))
+                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($guest)))
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: GuestTabsEnum::HISTORY->value));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array
     {
-
         $guest = Guest::where('slug', $routeParameters['guest'])->firstOrFail();
 
         $headCrumb = function (Guest $guest, array $routeParameters, string $suffix) {
@@ -146,13 +146,14 @@ class ShowGuest extends GrpAction
     public function getPrevious(Guest $guest, ActionRequest $request): ?array
     {
         $previous = Guest::where('slug', '<', $guest->slug)->orderBy('slug', 'desc')->first();
-        return $this->getNavigation($previous, $request->route()->getName());
 
+        return $this->getNavigation($previous, $request->route()->getName());
     }
 
     public function getNext(Guest $guest, ActionRequest $request): ?array
     {
         $next = Guest::where('slug', '>', $guest->slug)->orderBy('slug')->first();
+
         return $this->getNavigation($next, $request->route()->getName());
     }
 
@@ -161,11 +162,12 @@ class ShowGuest extends GrpAction
         if (!$guest) {
             return null;
         }
+
         return match ($routeName) {
             'grp.sysadmin.guests.show' => [
                 'label' => $guest->contact_name,
                 'route' => [
-                    'name'      => $routeName,
+                    'name'       => $routeName,
                     'parameters' => [
                         'guest' => $guest->slug
                     ]

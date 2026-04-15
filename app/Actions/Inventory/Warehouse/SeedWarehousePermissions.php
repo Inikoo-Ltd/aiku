@@ -78,9 +78,9 @@ class SeedWarehousePermissions
         if ($case == RolesEnum::FULFILMENT_SHOP_SUPERVISOR) {
             foreach ($warehouse->fulfilments as $fulfilment) {
                 /** @var Role $role */
-                $role = (new Role())->where('name', RolesEnum::getRoleName($case->value, $warehouse))->first();
+                $role = new Role()->where('name', RolesEnum::getRoleName($case->value, $warehouse))->first();
                 foreach ($case->getPermissions() as $permissionName) {
-                    if (class_basename($permissionName) == 'FulfilmentPermissionsEnum' && $permission = (new Permission())->where('name', FulfilmentPermissionsEnum::getPermissionName($permissionName->value, $fulfilment))->first()) {
+                    if (class_basename($permissionName) == 'FulfilmentPermissionsEnum' && $permission = new Permission()->where('name', FulfilmentPermissionsEnum::getPermissionName($permissionName->value, $fulfilment))->first()) {
                         $role->givePermissionTo($permission);
                     }
                 }
@@ -90,7 +90,7 @@ class SeedWarehousePermissions
 
     public function processWarehouseScope(Warehouse $warehouse, RolesEnum $case): void
     {
-        if (!$role = (new Role())->where('name', RolesEnum::getRoleName($case->value, $warehouse))->first()) {
+        if (!$role = new Role()->where('name', RolesEnum::getRoleName($case->value, $warehouse))->first()) {
             $role = Role::create(
                 [
                     'name'       => RolesEnum::getRoleName($case->value, $warehouse),
@@ -104,12 +104,12 @@ class SeedWarehousePermissions
 
         foreach ($case->getPermissions() as $permissionName) {
             if (class_basename($permissionName) == 'WarehousePermissionsEnum') {
-                if ($permission = (new Permission())->where('name', WarehousePermissionsEnum::getPermissionName($permissionName->value, $warehouse))->first()) {
+                if ($permission = new Permission()->where('name', WarehousePermissionsEnum::getPermissionName($permissionName->value, $warehouse))->first()) {
                     $warehousePermissions[] = $permission;
                 }
             } else {
                 foreach ($warehouse->fulfilments as $fulfilment) {
-                    if ($permission = (new Permission())->where('name', FulfilmentPermissionsEnum::getPermissionName($permissionName->value, $fulfilment))->first()) {
+                    if ($permission = new Permission()->where('name', FulfilmentPermissionsEnum::getPermissionName($permissionName->value, $fulfilment))->first()) {
                         $warehousePermissions[] = $permission;
                     }
                 }

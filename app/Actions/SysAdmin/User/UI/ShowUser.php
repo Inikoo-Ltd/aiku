@@ -75,7 +75,7 @@ class ShowUser extends OrgAction
         return Inertia::render(
             'SysAdmin/User',
             [
-                'title'                       => __('user'),
+                'title'                       => __('User').' '. $user->username,
                 'breadcrumbs'                 => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
