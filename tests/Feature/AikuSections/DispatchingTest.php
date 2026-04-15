@@ -546,12 +546,12 @@ test("UI Index dispatching waiting items", function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component("Org/Dispatching/WaitingDeliveryNoteItems")
-            ->where("title", 'Waiting Items')
+            ->where("title", 'Waiting items acme')
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page
-                    ->where("title", "Waiting Items")
+                    ->where("title", "Waiting items")
                     ->etc()
             )
             ->has("tabs");
@@ -570,7 +570,7 @@ test("UI Index dispatching show delivery-notes", function (DeliveryNote $deliver
     $response->assertInertia(function (AssertableInertia $page) use ($deliveryNote) {
         $page
             ->component("Org/Dispatching/DeliveryNote")
-            ->where("title", 'delivery note')
+            ->where("title", 'Delivery note 123456')
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",

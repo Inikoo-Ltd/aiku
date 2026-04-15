@@ -229,8 +229,8 @@ test('create fulfilment shop', function () {
         ->and($shopPermissions->count())->toBe(0)
         ->and($fulfilmentRoles->count())->toBe(2)
         ->and($fulfilmentPermissions->count())->toBe(4)
-        ->and($warehouseRoles->count())->toBe(8)
-        ->and($warehousePermissions->count())->toBe(20);
+        ->and($warehouseRoles->count())->toBe(9)
+        ->and($warehousePermissions->count())->toBe(21);
 
     $user = $this->adminGuest->getUser();
     $user->refresh();

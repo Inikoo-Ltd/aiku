@@ -797,13 +797,13 @@ test('UI show ordering backlog waiting crm items', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Ordering/WaitingCrmItems')
-            ->where('title', 'Waiting for CRM')
+            ->where('title', 'Waiting Items (CRM)')
             ->has('breadcrumbs', 5)
             ->has('waiting_crm_items')
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'Waiting for CRM')
+                    ->where('title', 'Waiting Items')
                     ->etc()
             );
     });

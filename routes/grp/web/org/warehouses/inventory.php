@@ -8,7 +8,7 @@
 
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInOrgStock;
 use App\Actions\Fulfilment\Pallet\UI\EditPallet;
-use App\Actions\Fulfilment\Pallet\UI\IndexDamagedPallets;
+use App\Actions\Fulfilment\Pallet\UI\IndexDamagedPalletsInWarehouse;
 use App\Actions\Fulfilment\Pallet\UI\IndexLostPallets;
 use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInWarehouse;
 use App\Actions\Fulfilment\Pallet\UI\IndexReturnedPallets;
@@ -203,7 +203,7 @@ Route::prefix('pallets')->as('pallets.')->group(function () {
     });
 
     Route::prefix('damaged')->as('damaged.')->group(function () {
-        Route::get('', IndexDamagedPallets::class)->name('index');
+        Route::get('', IndexDamagedPalletsInWarehouse::class)->name('index');
         Route::get('{pallet}', [ShowPallet::class, 'inWarehouse'])->name('show');
     });
 

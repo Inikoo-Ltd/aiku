@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 14 Apr 2026 22:26:00 Malaysia Time, Kuala Lumpur, Malaysia
@@ -42,13 +43,13 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
 
     public function htmlResponse(Warehouse $warehouse, ActionRequest $request): Response
     {
-//        $grouped = IndexWaitingDeliveryNoteItemsGrouped::make()->handle(
-//            warehouse: $warehouse,
-//            waitingType: $this->waitingType,
-//            state: $this->getDeliveryNoteState(),
-//            shopType: $this->shopType,
-//            prefix: WaitingItemsTabsEnum::GROUPED->value
-//        );
+        //        $grouped = IndexWaitingDeliveryNoteItemsGrouped::make()->handle(
+        //            warehouse: $warehouse,
+        //            waitingType: $this->waitingType,
+        //            state: $this->getDeliveryNoteState(),
+        //            shopType: $this->shopType,
+        //            prefix: WaitingItemsTabsEnum::GROUPED->value
+        //        );
         $itemized = IndexWaitingDeliveryNoteItemsItemized::make()->handle(
             warehouse: $warehouse,
             waitingType: $this->waitingType,
@@ -59,19 +60,19 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
 
         $props = [
             'breadcrumbs'                           => $this->getBreadcrumbs($request->route()->originalParameters()),
-            'title'                                 => __('Waiting Items').' '.$this->organisation->code,
+            'title'                                 => __('Waiting items').' '.$this->organisation->code,
             'pageHead'                              => [
                 'title' => $this->getPageTitle(),
                 'icon'  => [
                     'icon'  => ['fal', 'fa-hourglass-start'],
-                    'title' => __('Waiting Items'),
+                    'title' => __('Waiting items'),
                 ],
             ],
             'allow_stock_controller_set_not_picked' => (data_get($this->organisation->settings, 'orders.allow_stock_controller_set_not_picked', false)),
             'is_still_picking'                      => $this->getDeliveryNoteState()->value === DeliveryNoteStateEnum::HANDLING->value,
             'tabs'                                  => [
                 'current'    => $this->tab,
-                'navigation' => Arr::only(WaitingItemsTabsEnum::navigation(),'itemized'),
+                'navigation' => Arr::only(WaitingItemsTabsEnum::navigation(), 'itemized'),
             ],
             WaitingItemsTabsEnum::ITEMIZED->value   => $this->tab == WaitingItemsTabsEnum::ITEMIZED->value
                 ? fn () => WaitingDeliveryNoteItemsResource::collection($itemized)
@@ -83,7 +84,7 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
 
         return Inertia::render('Org/Dispatching/WaitingDeliveryNoteItems', $props)
             ->table(IndexWaitingDeliveryNoteItemsItemized::make()->tableStructure(WaitingItemsTabsEnum::ITEMIZED->value));
-         //   ->table(IndexWaitingDeliveryNoteItemsGrouped::make()->tableStructure(WaitingItemsTabsEnum::GROUPED->value));
+        //   ->table(IndexWaitingDeliveryNoteItemsGrouped::make()->tableStructure(WaitingItemsTabsEnum::GROUPED->value));
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Warehouse

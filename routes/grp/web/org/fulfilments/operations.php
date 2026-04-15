@@ -51,7 +51,7 @@ Route::prefix('pallets')->as('pallets.')->group(function () {
     });
 
     Route::prefix('damaged')->as('damaged.')->group(function () {
-        Route::get('', [IndexDamagedPallets::class, 'inFulfilment'])->name('index');
+        Route::get('', IndexDamagedPallets::class)->name('index');
         Route::get('{pallet}', [ShowPallet::class, 'inFulfilment'])->name('show');
     });
 
