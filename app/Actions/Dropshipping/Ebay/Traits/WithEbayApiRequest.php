@@ -16,6 +16,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 trait WithEbayApiRequest
 {
@@ -673,8 +674,9 @@ trait WithEbayApiRequest
     {
         $config = $this->getEbayConfig();
 
+        $expiratedAt = Arr::get($this->settings, 'credentials.ebay_token_expires_at');
         // Check if a token exists and is not expired
-        if ($config['access_token'] && Arr::get($this->settings, 'credentials.ebay_token_expires_at')) {
+        if ($config['access_token'] && $expiratedAt && Carbon::parse($expiratedAt)->isFuture()) {
             return $config['access_token'];
         }
 
