@@ -51,9 +51,9 @@ class UpdatePicking extends OrgAction
     {
         return [
             'type'              => ['sometimes', Rule::enum(PickingTypeEnum::class)],
-            'not_picked_reason'  => ['sometimes', Rule::enum(PickingNotPickedReasonEnum::class)],
-            'not_picked_note'    => ['sometimes', 'string'],
-            'quantity' => ['sometimes', 'numeric'],
+            'not_picked_reason' => ['sometimes', Rule::enum(PickingNotPickedReasonEnum::class)],
+            'not_picked_note'   => ['sometimes', 'string'],
+            'quantity'          => ['sometimes', 'numeric'],
         ];
     }
 

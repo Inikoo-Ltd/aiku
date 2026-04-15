@@ -94,9 +94,6 @@ const selectedTransactionToSetAsWaiting = ref(null)
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" rowAlignTop>
-        <!-- <template #cell(state)="{ item }">
-            <Icon :data="item.state_icon" />
-        </template> -->
 
         <!-- Column: Reference Delivery Note -->
         <template #cell(delivery_note_reference)="{ item }">
@@ -225,7 +222,6 @@ const selectedTransactionToSetAsWaiting = ref(null)
                                         v-tooltip="trans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.quantity || 0), stockLocation: findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.location_code || '' })"
                                         class="align-middle whitespace-nowrap text-base py-0.5 xopacity-70 tabular-nums xborder border-gray-300 rounded xpx-1"
                                     >
-                                        <!-- <FontAwesomeIcon icon="fal fa-inventory" class="mr-1 text-base" fixed-width aria-hidden="true" /> -->
                                         (<span class="text-lg font-bold">
                                             <FractionDisplay
                                                 v-if="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.quantity_fractional"
@@ -248,7 +244,7 @@ const selectedTransactionToSetAsWaiting = ref(null)
                                 :key="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).location_code"
                                 noUndoButton
                                 @onError="(error: any) => { proxyItem.errors = Object.values(error || {}) }"
-                                :modelValue="get(itemValue, 'any_random_variable_to_refresh', 0)"
+                                :modelValue="get(itemValue, 'waiting_warehouse_quantity', 0)"
                                 @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
                                 saveOnForm
                                 :routeSubmit="{

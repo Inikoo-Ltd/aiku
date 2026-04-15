@@ -12,6 +12,7 @@ use App\Http\Resources\Inventory\LocationOrgStocksForPickingActionsResource;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -47,6 +48,7 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $warehouse_area_picking_position
  * @property mixed $shop_name
  * @property mixed $shop_code
+ * @property mixed $notes
  */
 class WaitingDeliveryNoteItemsResource extends JsonResource
 {
@@ -56,7 +58,6 @@ class WaitingDeliveryNoteItemsResource extends JsonResource
 
         $quantityToPick = max(0, $this->quantity_required - $this->quantity_picked - ($this->quantity_not_picked ?? 0) - ($this->quantity_waiting_warehouse ?? 0) - ($this->quantity_waiting_crm ?? 0));
 
-        // dump($this->quantity_required, $this->quantity_picked, $this->quantity_not_picked, $this->quantity_waiting_warehouse, $this->quantity_waiting_crm, 'xxxxxxxxxxxxxxxxxxxxxxx');
         $pickingLocations = DB::table('location_org_stocks')
             ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
             ->where('org_stock_id', $this->org_stock_id)
@@ -101,59 +102,61 @@ class WaitingDeliveryNoteItemsResource extends JsonResource
             $packedInMessage = '('.__('Pack of').": $packedIn".')';
         }
 
-        $quantityToPickFractional   = riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $packedIn);
-        // $quantityToPickFractionalDS = $quantityToPickFractional;
-        // if (floor($quantityToPick) == $quantityToPick && $packedIn > 1) {
-        //     $quantityToPickFractionalDS = [0, [$quantityToPick * $packedIn, $packedIn]];
-        // }
+        $quantityToPickFractional = riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $packedIn);
+
 
         $deliveryNoteItem = DeliveryNoteItem::find($this->id);
 
-        return [
-            'id'                                => $this->id,
-            'state'                             => $this->state,
-            'state_icon'                        => $this->state->stateIcon()[$this->state->value],
-            'delivery_note_slug'                => $this->delivery_note_slug,
-            'delivery_note_reference'           => $this->delivery_note_reference,
-            'delivery_note_state'               => $this->delivery_note_state,
+        $waitingWarehouseQuantity = $deliveryNoteItem->quantity_required
+            - $deliveryNoteItem->quantity_waiting_warehouse
+            - $deliveryNoteItem->quantity_waiting_crm
+            - $deliveryNoteItem->quantity_not_picked;
 
-            'delivery_note_customer_notes'      => $this->delivery_note_customer_notes,
-            'delivery_note_public_notes'        => $this->delivery_note_public_notes,
-            'delivery_note_internal_notes'      => $this->delivery_note_internal_notes,
-            'delivery_note_shipping_notes'      => $this->delivery_note_shipping_notes,
-            'notes'                             => $this->notes,
+        return [
+            'waiting_warehouse_quantity' => $waitingWarehouseQuantity,
+            'id'                         => $this->id,
+            'state'                      => $this->state,
+            'state_icon'                 => $this->state->stateIcon()[$this->state->value],
+            'delivery_note_slug'         => $this->delivery_note_slug,
+            'delivery_note_reference'    => $this->delivery_note_reference,
+            'delivery_note_state'        => $this->delivery_note_state,
+
+            'delivery_note_customer_notes' => $this->delivery_note_customer_notes,
+            'delivery_note_public_notes'   => $this->delivery_note_public_notes,
+            'delivery_note_internal_notes' => $this->delivery_note_internal_notes,
+            'delivery_note_shipping_notes' => $this->delivery_note_shipping_notes,
+            'notes'                        => $this->notes,
 
             'delivery_note_is_premium_dispatch' => $this->delivery_note_is_premium_dispatch,
             'delivery_note_has_extra_packing'   => $this->delivery_note_has_extra_packing,
             'delivery_note_shop_type'           => $this->shop_type,
 
-            'shop_name'                         => $this->shop_name,
-            'shop_code'                         => $this->shop_code,
+            'shop_name' => $this->shop_name,
+            'shop_code' => $this->shop_code,
 
-            'org_stock_id'                      => $this->org_stock_id,
-            'org_stock_code'                    => $this->org_stock_code,
-            'org_stock_name'                    => $this->org_stock_name,
-            'org_stock_slug'                    => $this->org_stock_slug,
-            'org_stock_image_thumbnail'         => $deliveryNoteItem->orgStock?->tradeUnits->first()?->imageSources(64, 64),
+            'org_stock_id'              => $this->org_stock_id,
+            'org_stock_code'            => $this->org_stock_code,
+            'org_stock_name'            => $this->org_stock_name,
+            'org_stock_slug'            => $this->org_stock_slug,
+            'org_stock_image_thumbnail' => $deliveryNoteItem->orgStock?->tradeUnits->first()?->imageSources(64, 64),
 
-            'packed_in'                         => $packedIn,
-            'packed_in_message'                 => $packedInMessage,
+            'packed_in'         => $packedIn,
+            'packed_in_message' => $packedInMessage,
 
-            'quantity_required'                 => $this->quantity_required,
-            'quantity_to_pick'                  => $quantityToPick,
-            'quantity_to_pick_fractional'       => $quantityToPickFractional,
-            // 'quantity_to_pick_fractional_ds'    => $quantityToPickFractionalDS,
-            'quantity_picked'                   => $this->quantity_picked,
-            'quantity_not_picked'               => $this->quantity_not_picked,
-            'quantity_waiting_warehouse'        => $this->quantity_waiting_warehouse,
-            'quantity_waiting_crm'              => $this->quantity_waiting_crm,
+            'quantity_required'           => $this->quantity_required,
+            'quantity_to_pick'            => $quantityToPick,
+            'quantity_to_pick_fractional' => $quantityToPickFractional,
+            'quantity_picked'             => $this->quantity_picked,
+            'quantity_not_picked'         => $this->quantity_not_picked,
+            'quantity_waiting_warehouse'  => $this->quantity_waiting_warehouse,
+            'quantity_waiting_crm'        => $this->quantity_waiting_crm,
 
-            'is_handled'                        => $this->is_handled,
-            'picking_position'                  => $this->picking_position,
-            'warehouse_area'                    => $warehouseArea,
-            'locations'                         => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
-            'pickings'                          => PickingResource::collection($pickings),
-            'packings'                          => $deliveryNoteItem?->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
+            'is_handled'       => $this->is_handled,
+            'picking_position' => $this->picking_position,
+            'warehouse_area'   => $warehouseArea,
+            'locations'        => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
+            'pickings'         => PickingResource::collection($pickings),
+            'packings'         => $deliveryNoteItem?->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
 
             'upsert_picking_route' => [
                 'name'       => 'grp.models.delivery_note_item.picking.upsert_from_waiting_warehouse',

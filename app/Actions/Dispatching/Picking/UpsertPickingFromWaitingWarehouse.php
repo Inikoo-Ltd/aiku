@@ -91,6 +91,7 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
      */
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): void
     {
+
         $this->deliveryNoteItem = $deliveryNoteItem;
         $this->initialisationFromWarehouse($deliveryNoteItem->deliveryNote->warehouse, $request);
         $this->handle($deliveryNoteItem, $request->user(), $this->validatedData);
