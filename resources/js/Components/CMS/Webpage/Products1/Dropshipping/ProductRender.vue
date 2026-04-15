@@ -174,7 +174,18 @@ const onScroll = () => {
 
 const bundle = useBundle()
 
+const canOpenBundlePanel = computed(() => {
+    return Boolean(
+        layout?.iris?.is_logged_in &&
+        layout?.app?.name === 'iris' &&
+        !(
+            !props.product?.stock
+        )
+    )
+})
+
 const openBundlePanel = (product:any) => {
+    if (!canOpenBundlePanel.value) return
     bundle.addProduct(product)
 }
 </script>
@@ -278,7 +289,7 @@ const openBundlePanel = (product:any) => {
                     </button>
                 </div>
 
-                <div class="absolute right-2 bottom-2 z-20 group" v-if="layout?.iris?.is_logged_in && layout.app.name === 'iris'">
+                <div class="absolute right-2 bottom-2 z-20 group" v-if="canOpenBundlePanel">
 
                     <Button
                         @click.prevent="openBundlePanel(product)"
