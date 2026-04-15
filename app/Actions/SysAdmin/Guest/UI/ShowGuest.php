@@ -14,7 +14,7 @@ use App\Actions\SysAdmin\Guest\WithGuestSubNavigations;
 use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
 use App\Enums\UI\SysAdmin\GuestTabsEnum;
 use App\Http\Resources\History\HistoryResource;
-use App\Http\Resources\SysAdmin\GuestResource;
+use App\Http\Resources\SysAdmin\Guest\GuestResource;
 use App\Models\SysAdmin\Guest;
 use Inertia\Inertia;
 use Inertia\Response;

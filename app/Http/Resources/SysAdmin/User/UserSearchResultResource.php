@@ -6,7 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Http\Resources\SysAdmin;
+namespace App\Http\Resources\SysAdmin\User;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -20,14 +20,9 @@ class UserSearchResultResource extends JsonResource
         $user = $this;
         return [
             'username'           => $user->username,
-            'image'              => $user->image_id,
             'email'              => $user->email,
             'contact_name'       => $user->contact_name,
-            'route'              => [
-                'name'       => 'grp.sysadmin.users.show',
-                'parameters' => $user->username
-            ],
-            'icon'   => ['fal', 'fa-terminal']
+            'status'             => $user->status,
         ];
     }
 }

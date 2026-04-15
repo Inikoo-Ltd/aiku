@@ -1,45 +1,30 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 30 May 2024 08:37:52 Central European Summer Time, Mijas Costa, Spain
- * Copyright (c) 2024, Raul A Perusquia Flores
- */
+ * author Arya Permana - Kirin
+ * created on 08-07-2025-12h-31m
+ * github: https://github.com/KirinZero0
+ * copyright 2025
+*/
 
-namespace App\Http\Resources\SysAdmin;
+namespace App\Http\Resources\SysAdmin\User;
 
+use App\Http\Resources\SysAdmin\Organisation\MayaOrganisationResource;
 use App\Models\SysAdmin\User;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 use JsonSerializable;
 
-/**
- * @property int $id
- * @property string $username
- * @property string $email
- * @property string|null $about
- * @property bool $status
- * @property string $parent_type
- * @property string|null $contact_name
- * @property mixed $parent
- * @property \App\Models\SysAdmin\Group $group
- * @property \Illuminate\Database\Eloquent\Collection $authorisedOrganisations
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
- * @property \Spatie\Permission\Contracts\Role[] $roles
- * @property \Spatie\Permission\Contracts\Permission[] $permissions
- * @property mixed $number_current_api_tokens
- * @property mixed $number_expired_api_tokens
- */
-class UsersResource extends JsonResource
+class MayaUserResource extends JsonResource
 {
     public function toArray($request): array|Arrayable|JsonSerializable
     {
         /** @var User $user */
         $user = $this;
+
         return [
             'id'                        => $this->id,
-            'slug'                      => $this->slug,
             'username'                  => $this->username,
             'image'                     => $user->imageSources(48, 48),
             'email'                     => $this->email,
@@ -60,8 +45,8 @@ class UsersResource extends JsonResource
             'number_expired_api_tokens' => $this->number_expired_api_tokens,
             'parent_type'               => $this->parent_type,
             'contact_name'              => $this->contact_name,
-            'has_2fa'                   => $this->has_2fa,
-            'is_two_factor_required'    => $this->is_two_factor_required,
+            'authorised_organisations'  => MayaOrganisationResource::collection($user->authorisedOrganisations)->resolve(),
+            'preferred_printer_id'      => Arr::get($user->settings, 'preferred_printer_id'),
         ];
     }
 }

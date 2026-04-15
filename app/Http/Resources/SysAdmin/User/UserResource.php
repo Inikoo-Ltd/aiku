@@ -6,10 +6,11 @@
  *  Copyright (c) 2022, Raul A Perusquia Flores
  */
 
-namespace App\Http\Resources\SysAdmin;
+namespace App\Http\Resources\SysAdmin\User;
 
 use App\Http\Resources\HumanResources\EmployeeResource;
 use App\Http\Resources\SysAdmin\Group\GroupResource;
+use App\Http\Resources\SysAdmin\Guest\GuestResource;
 use App\Http\Resources\SysAdmin\Organisation\UserOrganisationResource;
 use App\Models\SysAdmin\User;
 use Illuminate\Contracts\Support\Arrayable;

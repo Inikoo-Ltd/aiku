@@ -6,21 +6,21 @@
  *  Copyright (c) 2022, Raul A Perusquia Flores
  */
 
-namespace App\Http\Resources\SysAdmin;
+namespace App\Http\Resources\SysAdmin\User;
 
+use App\Actions\SysAdmin\User\GetUserGroupScopeJobPositionsData;
+use App\Actions\SysAdmin\User\GetUserOrganisationScopeJobPositionsData;
 use App\Actions\Utils\GetLocationFromIp;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Http\Resources\Api\Dropshipping\ShopResource;
+use App\Http\Resources\HumanResources\JobPositionResource;
+use App\Http\Resources\Inventory\WarehouseResource;
+use App\Http\Resources\SysAdmin\Organisation\OrganisationsResource;
+use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Resources\Json\JsonResource;
 use JsonSerializable;
-use App\Http\Resources\HumanResources\JobPositionResource;
-use App\Http\Resources\Api\Dropshipping\ShopResource;
-use App\Http\Resources\Inventory\WarehouseResource;
-use App\Actions\SysAdmin\User\GetUserGroupScopeJobPositionsData;
-use App\Actions\SysAdmin\User\GetUserOrganisationScopeJobPositionsData;
-use App\Http\Resources\SysAdmin\Organisation\OrganisationsResource;
-use App\Models\SysAdmin\Organisation;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 
 class UserShowcaseResource extends JsonResource
 {

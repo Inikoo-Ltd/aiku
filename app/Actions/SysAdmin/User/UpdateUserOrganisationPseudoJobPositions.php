@@ -9,10 +9,10 @@
 namespace App\Actions\SysAdmin\User;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithReorganisePositions;
-use App\Http\Resources\SysAdmin\UserResource;
+use App\Http\Resources\SysAdmin\User\UserResource;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
