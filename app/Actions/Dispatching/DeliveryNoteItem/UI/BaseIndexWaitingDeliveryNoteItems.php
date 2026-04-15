@@ -16,6 +16,7 @@ use App\Http\Resources\Dispatching\WaitingDeliveryNoteItemsGroupedResource;
 use App\Http\Resources\Dispatching\WaitingDeliveryNoteItemsResource;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -41,13 +42,13 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
 
     public function htmlResponse(Warehouse $warehouse, ActionRequest $request): Response
     {
-        $grouped = IndexWaitingDeliveryNoteItemsGrouped::make()->handle(
-            warehouse: $warehouse,
-            waitingType: $this->waitingType,
-            state: $this->getDeliveryNoteState(),
-            shopType: $this->shopType,
-            prefix: WaitingItemsTabsEnum::GROUPED->value
-        );
+//        $grouped = IndexWaitingDeliveryNoteItemsGrouped::make()->handle(
+//            warehouse: $warehouse,
+//            waitingType: $this->waitingType,
+//            state: $this->getDeliveryNoteState(),
+//            shopType: $this->shopType,
+//            prefix: WaitingItemsTabsEnum::GROUPED->value
+//        );
         $itemized = IndexWaitingDeliveryNoteItemsItemized::make()->handle(
             warehouse: $warehouse,
             waitingType: $this->waitingType,
@@ -70,19 +71,19 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
             'is_still_picking'                      => $this->getDeliveryNoteState()->value === DeliveryNoteStateEnum::HANDLING->value,
             'tabs'                                  => [
                 'current'    => $this->tab,
-                'navigation' => WaitingItemsTabsEnum::navigation(),
+                'navigation' => Arr::only(WaitingItemsTabsEnum::navigation(),'itemized'),
             ],
             WaitingItemsTabsEnum::ITEMIZED->value   => $this->tab == WaitingItemsTabsEnum::ITEMIZED->value
                 ? fn () => WaitingDeliveryNoteItemsResource::collection($itemized)
                 : Inertia::lazy(fn () => WaitingDeliveryNoteItemsResource::collection($itemized)),
-            WaitingItemsTabsEnum::GROUPED->value    => $this->tab == WaitingItemsTabsEnum::GROUPED->value
-                ? fn () => WaitingDeliveryNoteItemsGroupedResource::collection($grouped)
-                : Inertia::lazy(fn () => WaitingDeliveryNoteItemsGroupedResource::collection($grouped)),
+//            WaitingItemsTabsEnum::GROUPED->value    => $this->tab == WaitingItemsTabsEnum::GROUPED->value
+//                ? fn () => WaitingDeliveryNoteItemsGroupedResource::collection($grouped)
+//                : Inertia::lazy(fn () => WaitingDeliveryNoteItemsGroupedResource::collection($grouped)),
         ];
 
         return Inertia::render('Org/Dispatching/WaitingDeliveryNoteItems', $props)
-            ->table(IndexWaitingDeliveryNoteItemsItemized::make()->tableStructure(WaitingItemsTabsEnum::ITEMIZED->value))
-            ->table(IndexWaitingDeliveryNoteItemsGrouped::make()->tableStructure(WaitingItemsTabsEnum::GROUPED->value));
+            ->table(IndexWaitingDeliveryNoteItemsItemized::make()->tableStructure(WaitingItemsTabsEnum::ITEMIZED->value));
+         //   ->table(IndexWaitingDeliveryNoteItemsGrouped::make()->tableStructure(WaitingItemsTabsEnum::GROUPED->value));
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Warehouse
