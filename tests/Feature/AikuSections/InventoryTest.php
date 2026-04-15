@@ -309,7 +309,7 @@ test('create org stock from 2nd stock (within stock family)', function () {
     $stockFamily = $stock->stockFamily;
     expect($stockFamily)->toBeInstanceOf(StockFamily::class);
 
-
+    /** @var OrgStockFamily $orgStockFamily */
     $orgStockFamily = $stockFamily->orgStockFamilies()->where('organisation_id', $this->organisation->id)->first();
     expect($orgStockFamily)->toBeInstanceOf(OrgStockFamily::class);
     $orgStock = StoreOrgStock::make()->action(
