@@ -34,6 +34,7 @@ class GetOtherShopEmailTemplates extends OrgAction
             ->leftJoin('shops', 'email_templates.shop_id', '=', 'shops.id')
             ->select([
                 'email_templates.id',
+                'email_templates.slug',
                 'email_templates.name',
                 'email_templates.compiled_layout',
                 'email_templates.created_at',

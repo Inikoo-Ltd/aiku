@@ -57,14 +57,13 @@ class ShowMailshotWorkshop extends OrgAction
         $email = $mailshot->email;
 
         $templateLayout = null;
-        if ($request->has('template_id')) {
-            $templateId = $request->get('template_id');
-            $template = EmailTemplate::find($templateId);
+        if ($request->has('template')) {
+            $templateSlug = $request->get('template');
+            $template = EmailTemplate::findBySlug($templateSlug);
             if ($template) {
                 $templateLayout = $template->layout;
             }
         }
-        \Log::info($templateLayout);
 
         return Inertia::render(
             'Org/Web/Workshop/Mailshot/MailshotWorkshop',

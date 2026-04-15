@@ -10,6 +10,7 @@ library.add(faEnvelope);
 
 interface Template {
     id: number;
+    slug: string;
     name?: string;
     subject?: string;
     shop_name?: string;
@@ -69,7 +70,7 @@ const formatDate = (dateString?: string): string => {
                     organisation: organisationSlug,
                     shop: shopSlug,
                     mailshot: mailshotId,
-                    template_id: template.id
+                    template: template.slug
                 })" class="block w-full">
                     <Button :label="trans('Use Template')" :type="buttonType" size="sm" class="w-full" />
                 </Link>
