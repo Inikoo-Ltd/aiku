@@ -11,6 +11,7 @@ use App\Models\HumanResources\LeaveApprover;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -22,37 +23,50 @@ class RejectLeave extends OrgAction
     {
         $user = Auth::user();
 
-        if (!$leave->canBeApprovedBy($user)) {
-            $this->isAuthorized = false;
+        return DB::transaction(function () use ($leave, $user, $rejectionReason) {
+            $leave = Leave::query()->whereKey($leave->id)->lockForUpdate()->firstOrFail();
 
-            return $leave;
-        }
+            if ($leave->status !== LeaveStatusEnum::PENDING) {
+                abort(409, __('Only pending leave can be rejected.'));
+            }
 
-        $currentLevel = LeaveApprover::byOrganisation($leave->organisation)
-            ->active()
-            ->where('user_id', $user->id)
-            ->where('sequence_number', LeaveApprover::SEQUENCE_ALL_ACCEPTED)
-            ->exists()
-            ? LeaveApprover::SEQUENCE_ALL_ACCEPTED
-            : $leave->currentApprovalLevel();
+            if (!$leave->canBeApprovedBy($user)) {
+                $this->isAuthorized = false;
 
-        LeaveApprovalRecord::create([
-            'leave_id' => $leave->id,
-            'approver_id' => $user->id,
-            'sequence_number' => $currentLevel,
-            'status' => 'rejected',
-            'comments' => $rejectionReason,
-            'decided_at' => now(),
-        ]);
+                return $leave;
+            }
 
-        $leave->update([
-            'status' => LeaveStatusEnum::REJECTED,
-            'approved_by' => $user->id,
-            'approved_at' => now(),
-            'rejection_reason' => $rejectionReason,
-        ]);
+            $currentLevel = $leave->currentApprovalLevel();
 
-        return $leave;
+            $pendingRecord = LeaveApprovalRecord::query()
+                ->where('leave_id', $leave->id)
+                ->where('approver_id', $user->id)
+                ->where('sequence_number', $currentLevel)
+                ->where('status', 'pending')
+                ->lockForUpdate()
+                ->first();
+
+            if (!$pendingRecord) {
+                $this->isAuthorized = false;
+
+                return $leave;
+            }
+
+            $pendingRecord->update([
+                'status' => 'rejected',
+                'comments' => $rejectionReason,
+                'decided_at' => now(),
+            ]);
+
+            $leave->update([
+                'status' => LeaveStatusEnum::REJECTED,
+                'approved_by' => $user->id,
+                'approved_at' => now(),
+                'rejection_reason' => $rejectionReason,
+            ]);
+
+            return $leave->refresh();
+        }, 3);
     }
 
     public function rules(): array

@@ -18,8 +18,11 @@ use App\Services\HumanResources\RestrictedPeriodService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Contracts\Validation\Validator;
@@ -67,81 +70,122 @@ class StoreLeave extends OrgAction
 
     public function handle(Employee $employee, array $modelData): Leave
     {
-        $startDate = Carbon::parse($modelData['start_date']);
-        $endDate = Carbon::parse($modelData['end_date']);
-        $isHalfDay = (bool)($modelData['is_half_day'] ?? false);
-        $session = $modelData['session'] ?? 'Full';
-        $durationDays = $isHalfDay ? 1 : $this->calculateDurationDays($startDate, $endDate, $employee);
+        $attachments = $modelData['attachments'] ?? [];
+        unset($modelData['attachments']);
 
-        $leave = Leave::create([
-            'group_id' => $employee->group_id,
-            'organisation_id' => $employee->organisation_id,
-            'employee_id' => $employee->id,
-            'employee_name' => $employee->contact_name,
-            'type' => $modelData['type'],
-            'leave_type_id' => $this->selectedLeaveType?->id,
-            'start_date' => $startDate,
-            'end_date' => $endDate,
-            'duration_days' => $durationDays,
-            'is_half_day' => $isHalfDay,
-            'session' => $session,
-            'reason' => $modelData['reason'] ?? null,
-            'status' => LeaveStatusEnum::PENDING,
-        ]);
+        $leave = DB::transaction(function () use ($employee, $modelData) {
+            $startDate = Carbon::parse($modelData['start_date'])->startOfDay();
+            $endDate = Carbon::parse($modelData['end_date'])->startOfDay();
+            $isHalfDay = (bool)($modelData['is_half_day'] ?? false);
+            $session = $modelData['session'] ?? 'Full';
 
-        if (isset($modelData['attachments'])) {
-            foreach ($modelData['attachments'] as $file) {
-                $leave->addMedia($file)
-                    ->withProperties([
-                        'group_id' => $leave->group_id,
-                        'type' => 'attachment',
-                        'ulid' => (string)Str::ulid(),
-                    ])
-                    ->toMediaCollection('attachments');
-            }
-        }
+            $this->assertNoOverlappingLeave($employee, $startDate, $endDate, $isHalfDay, $session);
 
-        $level1Approvers = LeaveApprover::byOrganisation($leave->organisation)
-            ->bySequence(1)
-            ->active()
-            ->get();
+            $durationDays = $isHalfDay ? 1 : $this->calculateDurationDays($startDate, $endDate, $employee);
 
-        foreach ($level1Approvers as $approver) {
-            LeaveApprovalRecord::create([
-                'leave_id' => $leave->id,
-                'approver_id' => $approver->user_id,
-                'sequence_number' => 1,
-                'status' => 'pending',
+            $leave = Leave::create([
+                'group_id' => $employee->group_id,
+                'organisation_id' => $employee->organisation_id,
+                'employee_id' => $employee->id,
+                'employee_name' => $employee->contact_name,
+                'type' => $modelData['type'],
+                'leave_type_id' => $this->selectedLeaveType?->id,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'duration_days' => $durationDays,
+                'is_half_day' => $isHalfDay,
+                'session' => $session,
+                'reason' => $modelData['reason'] ?? null,
+                'status' => LeaveStatusEnum::PENDING,
             ]);
+
+            $level1Approvers = LeaveApprover::query()
+                ->where('organisation_id', $employee->organisation_id)
+                ->where('sequence_number', 1)
+                ->where('is_active', true)
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($level1Approvers as $approver) {
+                LeaveApprovalRecord::firstOrCreate([
+                    'leave_id' => $leave->id,
+                    'approver_id' => $approver->user_id,
+                    'sequence_number' => 1,
+                ], [
+                    'status' => 'pending',
+                ]);
+            }
+
+            return $leave;
+        }, 3);
+
+        foreach ($attachments as $file) {
+            $leave->addMedia($file)
+                ->withProperties([
+                    'group_id' => $leave->group_id,
+                    'type' => 'attachment',
+                    'ulid' => (string)Str::ulid(),
+                ])
+                ->toMediaCollection('attachments');
         }
 
-        return $leave;
+        return $leave->refresh();
     }
 
     private function calculateDurationDays(Carbon $startDate, Carbon $endDate, Employee $employee): int
     {
-        $days = 0;
-        $current = $startDate->copy();
-
-        $holidays = Holiday::query()
+        $holidayDates = [];
+        foreach (
+            Holiday::query()
             ->where('organisation_id', $employee->organisation_id)
             ->whereDate('from', '<=', $endDate->toDateString())
             ->whereDate('to', '>=', $startDate->toDateString())
-            ->get()
-            ->pluck('from', 'to')
-            ->flatMap(fn ($date, $to) => [
-                $date->toDateString() => true,
-                $to->toDateString() => true,
-            ]);
+            ->get(['from', 'to']) as $holiday
+        ) {
+            for ($day = $holiday->from->copy()->startOfDay(); $day->lte($holiday->to); $day->addDay()) {
+                $holidayDates[$day->toDateString()] = true;
+            }
+        }
 
-        while ($current->lte($endDate)) {
-            if ($current->isWeekday() && !isset($holidays[$current->toDateString()])) {
+        $days = 0;
+        for ($day = $startDate->copy(); $day->lte($endDate); $day->addDay()) {
+            if ($day->isWeekday() && !isset($holidayDates[$day->toDateString()])) {
                 $days++;
             }
-            $current->addDay();
         }
 
         return $days;
+    }
+
+    private function assertNoOverlappingLeave(
+        Employee $employee,
+        Carbon $startDate,
+        Carbon $endDate,
+        bool $isHalfDay,
+        string $session
+    ): void {
+        $query = Leave::query()
+            ->where('employee_id', $employee->id)
+            ->whereIn('status', [LeaveStatusEnum::PENDING->value, LeaveStatusEnum::APPROVED->value])
+            ->whereDate('start_date', '<=', $endDate->toDateString())
+            ->whereDate('end_date', '>=', $startDate->toDateString())
+            ->lockForUpdate();
+
+        if ($isHalfDay) {
+            $query->whereDate('start_date', $startDate->toDateString())
+                ->where(function ($q) use ($session) {
+                    $q->where('is_half_day', false)
+                        ->orWhere(function ($halfDay) use ($session) {
+                            $halfDay->where('is_half_day', true)->where('session', $session);
+                        });
+                });
+        }
+
+        if ($query->exists()) {
+            throw ValidationException::withMessages([
+                'start_date' => __('You already have a leave request overlapping this period.'),
+            ]);
+        }
     }
 
     public function rules(): array
