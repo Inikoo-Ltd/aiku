@@ -78,7 +78,7 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                     'type'    => 'button',
                     'style'   => 'save',
                     'tooltip' => __('Start picking'),
-                    'label'   => __('start picking'),
+                    'label'   => __('Start picking'),
                     'key'     => 'start picking',
                     'route'   => [
                         'method'     => 'post',
