@@ -8,7 +8,7 @@ import { routeType } from '@/types/route'
 import { route } from 'ziggy-js'
 import { debounce } from 'lodash-es'
 import Button from '../Elements/Buttons/Button.vue';
-import { InputText, Select, Dialog, Textarea, Checkbox } from "primevue"
+import { InputText, Select, Dialog, Textarea, Checkbox, Skeleton } from "primevue"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import InformationIcon from '../Utils/InformationIcon.vue';
 import { faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, faMinus } from '@fas'
@@ -571,7 +571,12 @@ watch(customerChannelsId, (val) => {
                 <div class="border-t p-4 space-y-2">
                     <small v-if="!customerChannelsId" class="text-red-500">Please Choose Customer Sales Channel For Calculate Bundle</small>
                     <template v-if="bundle.isSummaryLoading.value">
-                        <div class="text-center text-sm text-gray-400 py-2">Calculating...</div>
+                        <div class="space-y-2 py-1">
+                            <div v-for="idx in 4" :key="idx" class="flex items-center justify-between">
+                                <Skeleton width="8rem" height="0.85rem" />
+                                <Skeleton width="5rem" height="0.85rem" />
+                            </div>
+                        </div>
                     </template>
 
                     <template v-else>

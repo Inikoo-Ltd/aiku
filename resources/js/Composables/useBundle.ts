@@ -135,10 +135,10 @@ export function useBundle(routes?: any) {
             isSummaryLoading.value = true
 
             const payload = {
-                products: products.value.map(p => ({
+                products: dedupeProducts(products.value).map(p => ({
                     product_id: p.id,
                     quantity: p.quantity || 1
-                }))
+                })),
             }
 
             const params =

@@ -9,7 +9,7 @@ import axios from 'axios'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
 import BundlesSelector from './BundlesSelector.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { Textarea, Dialog, Checkbox, InputText } from "primevue"
+import { Textarea, Dialog, Checkbox, InputText, Skeleton } from "primevue"
 import { debounce } from 'lodash-es'
 import { route } from 'ziggy-js'
 import Image from '../Image.vue'
@@ -557,30 +557,39 @@ onMounted(() => {
                     <FontAwesomeIcon icon="fal fa-times" class="text-lg" />
                 </button> -->
                 <div class="w-[320px] text-sm space-y-2">
-                    <div class="flex justify-between border-b pb-1">
-                        <span class="text-gray-500">Cost Price (Individual Purchase)</span>
-                        <span class="font-medium">{{ bundle.summary.value.total_price }} {{ props.shop_data.currency_code
+                    <template v-if="bundle.isSummaryLoading.value">
+                        <div v-for="idx in 4" :key="idx" class="flex items-center justify-between border-b pb-1 last:border-b-0">
+                            <Skeleton width="9rem" height="0.9rem" />
+                            <Skeleton width="6rem" height="0.9rem" />
+                        </div>
+                    </template>
+
+                    <template v-else>
+                        <div class="flex justify-between border-b pb-1">
+                            <span class="text-gray-500">Cost Price (Individual Purchase)</span>
+                            <span class="font-medium">{{ bundle.summary.value.total_price }} {{ props.shop_data.currency_code
+                                }}</span>
+                        </div>
+
+                        <div class="flex justify-between border-b pb-1">
+                            <span class="text-gray-500">Bundle Price</span>
+                            <span class="font-medium text-green-600">{{ bundle.summary.value.total_bundle_price }} {{
+                                props.shop_data.currency_code }}</span>
+                        </div>
+
+                        <div class="flex justify-between border-b pb-1">
+                            <span class="text-gray-500">RRP</span>
+                            <span class="font-medium">{{ bundle.summary.value.total_rrp }} {{ props.shop_data.currency_code
                             }}</span>
-                    </div>
+                        </div>
 
-                    <div class="flex justify-between border-b pb-1">
-                        <span class="text-gray-500">Bundle Price</span>
-                        <span class="font-medium text-green-600">{{ bundle.summary.value.total_bundle_price }} {{
-                            props.shop_data.currency_code }}</span>
-                    </div>
-
-                    <div class="flex justify-between border-b pb-1">
-                        <span class="text-gray-500">RRP</span>
-                        <span class="font-medium">{{ bundle.summary.value.total_rrp }} {{ props.shop_data.currency_code
-                        }}</span>
-                    </div>
-
-                    <div class="flex justify-between pt-1">
-                        <span class="text-gray-500">Profit</span>
-                        <span class="font-semibold text-green-600"> [{{ bundle.summary.value.profit_percentage }}%] {{
-                            bundle.summary.value.profit }}
-                            {{ props.shop_data.currency_code }}</span>
-                    </div>
+                        <div class="flex justify-between pt-1">
+                            <span class="text-gray-500">Profit</span>
+                            <span class="font-semibold text-green-600"> [{{ bundle.summary.value.profit_percentage }}%] {{
+                                bundle.summary.value.profit }}
+                                {{ props.shop_data.currency_code }}</span>
+                        </div>
+                    </template>
                 </div>
                 
             </div>
