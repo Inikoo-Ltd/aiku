@@ -14,7 +14,6 @@ use App\Models\Bundle;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Arr;
-use Lorisleiva\Actions\ActionRequest;
 
 class StoreOrUpdateBundle extends OrgAction
 {
@@ -28,7 +27,7 @@ class StoreOrUpdateBundle extends OrgAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): Bundle
     {
-        if($this->isUpdate) {
+        if ($this->isUpdate) {
             $bundle = Bundle::find(Arr::get($modelData, 'id'));
 
             return UpdateBundle::make()->action($bundle, $modelData);

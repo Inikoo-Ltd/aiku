@@ -449,6 +449,17 @@ class GetShopNavigation
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
+                        app()->environment('local') ?
+                            [
+                                "label"   => __("Chat"),
+                                "icon"    => ["fal", "fa-comment-alt"],
+                                "root"    => "grp.org.shops.show.crm.chat.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.crm.chat.dashboard",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ]
+                        : [],
                     ],
                 ],
             ];

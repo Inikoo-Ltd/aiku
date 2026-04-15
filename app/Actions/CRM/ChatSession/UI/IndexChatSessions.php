@@ -5,7 +5,6 @@ namespace App\Actions\CRM\ChatSession\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
-use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;

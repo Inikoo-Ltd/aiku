@@ -17,7 +17,7 @@ use Illuminate\Support\Arr;
 
 trait WithStoreWebpage
 {
-    protected function createWebBlock(Webpage $webpage, string $webBlockCode): ?ModelHasWebBlocks
+    protected function createWebBlock(Webpage $webpage, string $webBlockCode, $paramLayout = []): ?ModelHasWebBlocks
     {
         $webBlockType = WebBlockType::where('code', $webBlockCode)->first();
 
@@ -27,7 +27,11 @@ trait WithStoreWebpage
 
         $newLayout = [];
 
-        data_set($newLayout, 'data.fieldValue', Arr::get($webBlockType->data, 'fieldValue', []));
+        if ($paramLayout) {
+            data_set($newLayout, 'data.fieldValue', Arr::get($paramLayout, 'fieldValue', []));
+        } else {
+            data_set($newLayout, 'data.fieldValue', Arr::get($webBlockType->data, 'fieldValue', []));
+        }
 
         $models = [];
 
@@ -66,6 +70,61 @@ trait WithStoreWebpage
     }
 
     protected function createWebBlockFromSavedTemplate(Webpage $webpage, WebBlockTemplateEnum $webBlockTemplate, string $webBlockCode): ?ModelHasWebBlocks
+    {
+        // Checks whether in WebBlockTemplateEnum or not. This function is only for web block that has templates from website
+        if (!in_array($webBlockCode, WebBlockTemplateEnum::allTemplateCodes())) {
+            return null;
+        }
+
+        $website = $webpage->website;
+
+        $baseWebBlockType = WebBlockType::where('code', $webBlockCode)->first();
+
+        $liveWebBlockSnapshot = $website->{"live{$webBlockTemplate->value}Snapshot"};
+        $unpublishedWebBlockSnapshot = $website->{"unpublished{$webBlockTemplate->value}Snapshot"};
+
+        // Live Snapshot -> Unpublished Snapshot -> Base Web Block Type (if not exists)
+        $fieldValue = data_get($liveWebBlockSnapshot?->layout, 'data.fieldValue', data_get($unpublishedWebBlockSnapshot?->layout, 'data.fieldValue', data_get($baseWebBlockType->data, 'fieldValue')));
+
+        $newLayout = [];
+
+        data_set($newLayout, 'data.fieldValue', $fieldValue);
+
+        $models = [];
+
+
+        $webBlock = StoreWebBlock::make()->action(
+            $baseWebBlockType,
+            [
+                "layout" => $newLayout,
+                "models" => $models,
+            ],
+            strict: false
+        );
+
+        $modelHasWebBlocksData = [
+            'show_logged_in'  => true,
+            'show_logged_out' => true,
+            "group_id"        => $webpage->group_id,
+            "organisation_id" => $webpage->organisation_id,
+            "shop_id"         => $webpage->shop_id,
+            "website_id"      => $webpage->website_id,
+            "webpage_id"      => $webpage->id,
+            "position"        => 1,
+            "model_id"        => $webpage->id,
+            "model_type"      => class_basename(Webpage::class),
+            "web_block_id"    => $webBlock->id,
+            'show'            => true
+        ];
+        $modelHasWebBlock      = $webpage->modelHasWebBlocks()->create($modelHasWebBlocksData);
+
+        $webpage->refresh();
+        UpdateWebpageContent::run($webpage);
+
+        return $modelHasWebBlock;
+    }
+
+    protected function createDescriptionBlockFromSavedTemplate(Webpage $webpage, WebBlockTemplateEnum $webBlockTemplate, string $webBlockCode): ?ModelHasWebBlocks
     {
         // Checks whether in WebBlockTemplateEnum or not. This function is only for web block that has templates from website
         if (!in_array($webBlockCode, WebBlockTemplateEnum::allTemplateCodes())) {

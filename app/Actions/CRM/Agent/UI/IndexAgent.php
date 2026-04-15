@@ -5,7 +5,6 @@ namespace App\Actions\CRM\Agent\UI;
 use Closure;
 use App\Actions\OrgAction;
 use App\Services\QueryBuilder;
-use App\Models\Goods\TradeUnit;
 use App\InertiaTable\InertiaTable;
 use Illuminate\Support\Facades\DB;
 use App\Models\SysAdmin\Organisation;
@@ -14,19 +13,14 @@ use App\Models\CRM\Livechat\ChatAgent;
 use Spatie\QueryBuilder\AllowedFilter;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Http\Resources\CRM\Livechat\ChatAgentResource;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class IndexAgent extends OrgAction
 {
     use AsAction;
-
-    public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->initialisationFromGroup($tradeUnit->group, $request);
-
-        return $this->handle($tradeUnit);
-    }
 
     /**
      * Controller entry-point
@@ -41,7 +35,7 @@ class IndexAgent extends OrgAction
     /**
      * Main handler
      */
-    public function handle(Organisation $organisation, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Organisation|Shop $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->whereHas('user', function ($q) use ($value) {
@@ -56,9 +50,14 @@ class IndexAgent extends OrgAction
         return QueryBuilder::for(ChatAgent::class)
             ->join('users', 'chat_agents.user_id', '=', 'users.id')
 
-            ->join('shop_has_chat_agents as shca', function ($join) use ($organisation) {
-                $join->on('shca.chat_agent_id', '=', 'chat_agents.id')
-                    ->where('shca.organisation_id', $organisation->id);
+            ->join('shop_has_chat_agents as shca', function ($join) use ($parent) {
+                if ($parent instanceof Organisation) {
+                    $join->on('shca.chat_agent_id', '=', 'chat_agents.id')->where('shca.organisation_id', $parent->id);
+                } else if ($parent instanceof Shop) {
+                    $join->on('shca.chat_agent_id', '=', 'chat_agents.id')->where('shca.shop_id', $parent->id);
+                } else {
+                    $join->on('shca.chat_agent_id', '=', 'chat_agents.id');
+                }
             })
 
             ->leftJoin('shops', 'shops.id', '=', 'shca.shop_id')

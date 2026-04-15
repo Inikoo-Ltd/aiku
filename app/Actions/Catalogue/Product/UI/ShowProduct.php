@@ -143,7 +143,7 @@ class ShowProduct extends OrgAction
         $shop           = $product->shop;
         $isExternalShop = $shop->type == ShopTypeEnum::EXTERNAL;
         $hasMaster      = (bool)$product->masterProduct;
-        
+
         $miniBreadcrumbs = [];
         if ($product->department) {
             $miniBreadcrumbs[] = [

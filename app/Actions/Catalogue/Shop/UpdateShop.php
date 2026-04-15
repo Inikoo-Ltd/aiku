@@ -107,6 +107,12 @@ class UpdateShop extends OrgAction
             $updateChildWebsite = true;
         }
 
+        if (Arr::exists($modelData, 'portal_link')) {
+            if (Arr::get($modelData, 'portal_link') === null) {
+                data_set($modelData, 'portal_link', '');
+            }
+        }
+
         foreach ($modelData as $key => $value) {
             data_set(
                 $modelData,
@@ -167,6 +173,9 @@ class UpdateShop extends OrgAction
 
         if (Arr::exists($modelData, 'widget_key')) {
             $widgetKey = Arr::pull($modelData, 'widget_key');
+            if ($widgetKey === null) {
+                $widgetKey = '';
+            }
             UpdateWebsite::make()->action(
                 website: $shop->website,
                 modelData: ['jira_help_desk_widget' => $widgetKey],
@@ -230,7 +239,7 @@ class UpdateShop extends OrgAction
         if (Arr::exists($modelData, 'download_pdf_columns')) {
             $columnsMap = [];
             foreach (Arr::pull($modelData, 'download_pdf_columns') as $col) {
-                $columnsMap[$col['key']] = (bool) $col['value'];
+                $columnsMap[$col['key']] = (bool)$col['value'];
             }
             data_set($modelData, "settings.invoicing.download_pdf_columns", $columnsMap);
         }
@@ -370,8 +379,8 @@ class UpdateShop extends OrgAction
             'wix_access_token'                                        => ['sometimes', 'string'],
             'enable_chat'                                             => ['sometimes', 'boolean'],
             'is_shipping_by_external'                                 => ['sometimes', 'boolean'],
-            'portal_link'                                             => ['sometimes', 'string'],
-            'widget_key'                                              => ['sometimes', 'string'],
+            'portal_link'                                             => ['sometimes', 'nullable', 'string'],
+            'widget_key'                                              => ['sometimes', 'nullable', 'string'],
             'required_approval'                                       => ['sometimes', 'boolean'],
             'required_phone_number'                                   => ['sometimes', 'boolean'],
             'marketing_opt_in_default'                                => ['sometimes', 'boolean'],

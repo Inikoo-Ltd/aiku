@@ -84,21 +84,6 @@ class EditWebsite extends OrgAction
 
         $blueprints = [];
 
-        $blueprints[] = [
-            'label' => __('Upload Your LLM'),
-            'icon' => 'fa-light fa-upload',
-            'fields' => [
-                'llms_txt' => [
-                    'type'        => 'file_upload',
-                    'label'       => __('LLMs.txt File'),
-                    'placeholder' => __('Upload a .txt file (max 50KB)'),
-                    'required'    => false,
-                    'value'       => Arr::get($website->settings, 'llms_txt.filename'),
-                    'accept'      => '.txt,text/plain',
-                    'information' => __('This file tells AI crawlers (ChatGPT, Gemini, etc.) how to interact with your website.'),
-                ],
-            ]
-        ];
 
         $blueprints[] = [
             'label'  => __('ID/Domain'),
@@ -161,7 +146,7 @@ class EditWebsite extends OrgAction
                 ],
                 "image"                 => [
                     "type"    => "image_crop_square",
-                    "label"   => __("logo"),
+                    "label"   => __("Logo"),
                     "value"   => $website->imageSources(320, 320),
                     'options' => [
                         "minAspectRatio" => 1,
@@ -171,7 +156,7 @@ class EditWebsite extends OrgAction
                 "favicon"               => [
                     "information" => __("Will show on browsers tab icon in size 18x18 pixels."),
                     "type"        => "image_crop_square",
-                    "label"       => __("favicon"),
+                    "label"       => __("Favicon"),
                     "value"       => $website->faviconSources(160, 160),
                     'options'     => [
                         'aspectRatio' => 1
@@ -327,6 +312,23 @@ class EditWebsite extends OrgAction
                 ]
             ];
         }
+
+        $blueprints[] = [
+            'label' => __('Upload Your LLM'),
+            'icon' => 'fa-light fa-upload',
+            'fields' => [
+                'llms_txt' => [
+                    'type'        => 'file_upload',
+                    'label'       => __('LLMs.txt File'),
+                    'placeholder' => __('Upload a .txt file (max 50KB)'),
+                    'required'    => false,
+                    'value'       => Arr::get($website->settings, 'llms_txt.filename'),
+                    'accept'      => '.txt,text/plain',
+                    'information' => __('This file tells AI crawlers (ChatGPT, Gemini, etc.) how to interact with your website.'),
+                ],
+            ]
+        ];
+
 
         // LLMs.txt section - for AI crawler configuration
         $blueprints[] = [
