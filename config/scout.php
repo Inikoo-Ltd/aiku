@@ -139,7 +139,6 @@ return [
         ],
     ],
 
-
     'typesense' => [
         'client-settings' => [
             'api_key' => env('TYPESENSE_API_KEY', 'xyz'),
