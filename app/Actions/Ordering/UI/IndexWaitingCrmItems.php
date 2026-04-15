@@ -98,7 +98,6 @@ class IndexWaitingCrmItems extends OrgAction
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_waiting_crm', label: __('Waiting Qty'), canBeHidden: false, sortable: true);
-            $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, sortable: false, searchable: false);
         };
     }
 
