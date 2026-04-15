@@ -122,6 +122,7 @@ const replaceProductRoute = (item: Record<string, any>): string | null => {
             
             <ButtonWithLink
                 :url="setAsNotPickRoute(item)"
+                method="post"
                 :label="ctrans(`Don't pick`)"
                 type="negative"
                 icon="fas fa-skull"
