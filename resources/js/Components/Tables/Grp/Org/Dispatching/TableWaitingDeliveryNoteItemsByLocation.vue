@@ -298,6 +298,7 @@ const selectedTransactionToSetAsWaiting = ref(null)
                                 iconRight="fal fa-debug"
                                 :size="twBreakPoint().includes('lg') ? 'xs' : 'lg'"
                                 :routeTarget="{
+                                    method: 'post',
                                     name: 'grp.models.delivery_note_item.not_picking_from_waiting_warehouse.store',
                                     parameters: {
                                         deliveryNoteItem: itemValue.id
