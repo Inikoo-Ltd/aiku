@@ -85,24 +85,24 @@ class DeliveryNoteItemsResource extends JsonResource
               ->where('quantity', '!=', 0)
               ->groupBy('location_id')
               ->map(function ($pickingGroup) {
-                $firstPicking = $pickingGroup->first();
-                $location = $firstPicking->location;
-                return [
-                    'id' => ('loc_' . ($location ? $location->id : 'none')),
-                    'quantity' => $pickingGroup->sum('quantity'),
-                    'location_slug' => $location ? $location->slug : null,
-                    'location_code' => $location ? $location->code : null,
-                    'warehouse_slug' => $location ? $location->warehouse->slug : null,
-                    'warehouse_code' => $location ? $location->warehouse->code : null,
-                ];
-            })->values()->toArray(),
+                  $firstPicking = $pickingGroup->first();
+                  $location = $firstPicking->location;
+                  return [
+                      'id' => ('loc_' . ($location ? $location->id : 'none')),
+                      'quantity' => $pickingGroup->sum('quantity'),
+                      'location_slug' => $location ? $location->slug : null,
+                      'location_code' => $location ? $location->code : null,
+                      'warehouse_slug' => $location ? $location->warehouse->slug : null,
+                      'warehouse_code' => $location ? $location->warehouse->code : null,
+                  ];
+              })->values()->toArray(),
             'not_picking_route'  => [
-                'name'       => 'grp.models.delivery_note_item.not_picking.store',
-                'parameters' => [
-                    'deliveryNoteItem' => $this->id
-                ],
-                'method'     => 'post'
-            ],
+                  'name'       => 'grp.models.delivery_note_item.not_picking.store',
+                  'parameters' => [
+                      'deliveryNoteItem' => $this->id
+                  ],
+                  'method'     => 'post'
+              ],
         ];
     }
 }

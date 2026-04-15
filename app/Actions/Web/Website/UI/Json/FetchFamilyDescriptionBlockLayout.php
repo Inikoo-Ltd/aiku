@@ -3,9 +3,6 @@
 namespace App\Actions\Web\Website\UI\Json;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithWebAuthorisation;
-use App\Models\Catalogue\Shop;
-use App\Models\Fulfilment\Fulfilment;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Website;
 use Illuminate\Support\Collection;
@@ -21,7 +18,7 @@ class FetchFamilyDescriptionBlockLayout extends OrgAction
     }
 
     public function handle(WebBlockType $webBlockType, array $modelData): Collection
-    {   
+    {
         return WebBlockType::where('slug', $webBlockType->slug)
                 ->orWhere('slug', $webBlockType->slug . '-extra-description')
                 ->orderBy('slug')

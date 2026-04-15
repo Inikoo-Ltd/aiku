@@ -318,7 +318,7 @@ class EditProduct extends OrgAction
                             'parameters' => [
                                 'shop' => $product->shop->slug,
                                 'organisation' => $product->organisation->slug,
-                                'website' => $product->shop->website->slug
+                                'website' => $product->shop->website?->slug
                             ]
                     ],
                     'toogle'        => [
@@ -356,7 +356,7 @@ class EditProduct extends OrgAction
                             'parameters' => [
                                 'shop' => $product->shop->slug,
                                 'organisation' => $product->organisation->slug,
-                                'website' => $product->shop->website->slug
+                                'website' => $product->shop->website?->slug
                             ]
                     ],
                     'toogle'      => [
@@ -400,7 +400,7 @@ class EditProduct extends OrgAction
                             'parameters' => [
                                 'shop' => $product->shop->slug,
                                 'organisation' => $product->organisation->slug,
-                                'website' => $product->shop->website->slug
+                                'website' => $product->shop->website?->slug
                             ]
                     ],
                     'toogle'        => [
@@ -440,7 +440,7 @@ class EditProduct extends OrgAction
                             'parameters' => [
                                 'shop' => $product->shop->slug,
                                 'organisation' => $product->organisation->slug,
-                                'website' => $product->shop->website->slug
+                                'website' => $product->shop->website?->slug
                             ]
                     ],
                     'toogle'      => [

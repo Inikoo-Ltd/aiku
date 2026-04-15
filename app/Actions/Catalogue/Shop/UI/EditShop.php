@@ -90,7 +90,7 @@ class EditShop extends OrgAction
         if ($shop->website) {
             $helpPortalFields['widget_key'] = [
                 'type'          => 'input',
-                'placeholder'   => 'keyExample',
+                'placeholder'   => 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
                 'label'         => __('Widget Key'),
                 'value'         => Arr::get($shop->website->settings, 'jira_help_desk_widget'),
             ];

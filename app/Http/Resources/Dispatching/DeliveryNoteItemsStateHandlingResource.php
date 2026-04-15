@@ -87,18 +87,20 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
     ) as pickings_data',
                 ['pick', $this->id]
             )
-            ->when($shopType, 
+            ->when(
+                $shopType,
                 function ($q) use ($shopType) {
                     if ($shopType->value == 'b2b') {
                         $q->orderBy('location_org_stocks.default_wholesale_picking_location', 'desc');
-                    } else if ($shopType->value == 'dropshipping') {
+                    } elseif ($shopType->value == 'dropshipping') {
                         $q->orderBy('location_org_stocks.default_dropshipping_picking_location', 'desc');
                     }
                     $q->orderBy('picking_priority');
                 },
                 function ($q) {
                     $q->orderBy('picking_priority');
-            })
+                }
+            )
             ->get();
 
         $quantityToPick = max(0, $this->quantity_required - $this->quantity_picked - $this->quantity_not_picked);
