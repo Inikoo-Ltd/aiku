@@ -67,13 +67,13 @@ class IndexStoredItemsInReturn extends OrgAction
                 'pallet_returns.id as pallet_return_id',
                 'pallet_returns.state as pallet_return_state',
                 DB::raw("(
-                    SELECT 
-                        COALESCE(SUM(quantity_ordered), 0) 
-                    FROM 
-                        pallet_return_items pri 
-                    WHERE 
-                        pri.stored_item_id = stored_items.id 
-                    AND 
+                    SELECT
+                        COALESCE(SUM(quantity_ordered), 0)
+                    FROM
+                        pallet_return_items pri
+                    WHERE
+                        pri.stored_item_id = stored_items.id
+                    AND
                         pri.pallet_return_id = {$parent->id}
                 ) AS total_quantity_ordered"),
             ])
@@ -113,9 +113,9 @@ class IndexStoredItemsInReturn extends OrgAction
             $table->column(key: 'total_quantity', label: __('Current stock'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'pallet_stored_items', label: __('Pallets [Location]'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'total_quantity_ordered', label: __('Requested quantity'), canBeHidden: false, sortable: true, searchable: true);
-            if ($palletReturn->state === PalletReturnStateEnum::PICKING) {
-                $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
-            }
+            // if ($palletReturn->state === PalletReturnStateEnum::PICKING) {
+            //     $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
+            // }
 
             $table->defaultSort('reference');
         };
