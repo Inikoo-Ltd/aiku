@@ -53,7 +53,9 @@ class ShowOrdersBacklog extends OrgAction
 
     public function htmlResponse(Group|Organisation|Shop $parent, ActionRequest $request): Response
     {
-        $tabsBox = $this->getTabsBox($parent);
+        $waitingItemsData = $this->buildWaitingItemsData($parent, $request);
+        $tabsBox          = $this->getTabsBox($parent, $waitingItemsData);
+
         return Inertia::render(
             'Ordering/OrdersBacklog',
             [
@@ -65,9 +67,6 @@ class ShowOrdersBacklog extends OrgAction
                 'tabs'         => [
                     'current'    => $this->tab,
                     'navigation' => $tabsBox
-                ],
-                'waiting_items' => [
-                    'count' => $this->getWaitingCrmCount($parent),
                 ],
 
                 OrdersBacklogTabsEnum::IN_BASKET->value => $this->tab == OrdersBacklogTabsEnum::IN_BASKET->value ?
@@ -184,7 +183,7 @@ class ShowOrdersBacklog extends OrgAction
         };
     }
 
-    private function getWaitingCrmCount(Group|Organisation|Shop $parent): int
+    private function buildWaitingItemsData(Group|Organisation|Shop $parent, ActionRequest $request): array
     {
         $query = DeliveryNoteItem::query()->where('quantity_waiting_crm', '>', 0);
 
@@ -196,6 +195,16 @@ class ShowOrdersBacklog extends OrgAction
             $query->where('group_id', $parent->id);
         }
 
-        return $query->count();
+        $count = $query->count();
+        $route = null;
+
+        if ($parent instanceof Shop) {
+            $route = [
+                'name'       => 'grp.org.shops.show.ordering.backlog.waiting_items',
+                'parameters' => $request->route()->originalParameters(),
+            ];
+        }
+
+        return compact('count', 'route');
     }
 }
