@@ -27,7 +27,7 @@ class FetchEbayUserOrders extends OrgAction
     public function handle(EbayUser $ebayUser): void
     {
 
-        $filter   = 'fulfillmentStatus:{NOT_STARTED,IN_PROGRESS},lastmodifieddate:['.now()->subDays(7)->toISOString().'..]';
+        $filter   = 'fulfillmentStatus:{NOT_STARTED,IN_PROGRESS},lastmodifieddate:['.now()->subDays(30)->toISOString().'..]';
         $response = $ebayUser->getOrders(limit: 150, filter: $filter);
 
         $ebayOrders = Arr::get($response, 'orders', []);
