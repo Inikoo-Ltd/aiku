@@ -13,6 +13,7 @@ use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories;
+use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
@@ -22,6 +23,7 @@ use App\Http\Resources\Inventory\LocationOrgStockResource;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStock;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -31,9 +33,11 @@ use Illuminate\Validation\Validator;
 class StoreLocationOrgStock extends OrgAction
 {
     use WithLocationOrgStockActionAuthorisation;
+    use CalculatesOrgStockHistories;
 
     private Location $location;
     private OrgStock $orgStock;
+    private User|null $user = null;
 
 
     /**
@@ -46,12 +50,13 @@ class StoreLocationOrgStock extends OrgAction
         data_set($modelData, 'warehouse_id', $location->warehouse_id);
         data_set($modelData, 'warehouse_area_id', $location->warehouse_area_id);
         data_set($modelData, 'org_stock_id', $orgStock->id);
+        $costPerSku = $this->getCostPerSku($orgStock, now());
 
         if (!Arr::has($modelData, 'quantity')) {
             data_set($modelData, 'quantity', 0);
         }
 
-        $locationStock = DB::transaction(function () use ($location, $orgStock, $modelData) {
+        $locationStock = DB::transaction(function () use ($location, $orgStock, $modelData, $costPerSku) {
             StoreOrgStockMovement::make()->action(
                 $orgStock,
                 $location,
@@ -62,6 +67,8 @@ class StoreLocationOrgStock extends OrgAction
                     'grp_amount'       => 0,
                     'date'             => now()->format('Y-m-d H:i:s.u'),
                     'type'             => OrgStockMovementTypeEnum::ASSOCIATE,
+                    'cost_per_sku'     => $costPerSku,
+                    'user_id'          => $this->user?->id,
                 ]
             );
 
@@ -131,6 +138,7 @@ class StoreLocationOrgStock extends OrgAction
     {
         $this->location = $location;
         $this->orgStock = $orgStock;
+        $this->user = request()->user();
         $this->initialisation($orgStock->organisation, $request);
 
         $this->handle($orgStock, $location, $this->validatedData);

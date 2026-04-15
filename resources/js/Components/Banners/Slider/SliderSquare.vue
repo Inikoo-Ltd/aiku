@@ -52,7 +52,7 @@ const filteredNulls = (corners: CornersData) => {
 
 // const componentEdited = toRef(() => props.data.components.filter(component => component.ulid == props.jumpToIndex))  // make jumpToIndex to reactive to watch() it
 const compIndexCurrentComponent = computed(() => {
-    return props.data.components.findIndex(component => component.ulid == props.jumpToIndex)
+    return visibleComponents.value.findIndex(component => component.ulid == props.jumpToIndex)
 })
 
 // Jump view to slide (banner) on click slide (SlidesWorkshop)
@@ -144,6 +144,16 @@ const getCardScale = computed(() => {
 })
 
 const isMounted = ref(false)
+
+
+const visibleComponents = computed(() => {
+  return props.data.components.filter(
+    (item) =>
+      item?.ulid &&
+      (item?.layout?.visibility?.[props.view] ?? 'visible') === 'visible'
+  )
+})
+
 onMounted(() => {
     isMounted.value = true
 })
@@ -167,7 +177,7 @@ onMounted(() => {
                 :spaceBetween="get(data,['common','spaceBetween']) ? data.common.spaceBetween : 0"
                 :slidesPerView="compSlidesPerView"
                 :centeredSlides="false"
-                :loop="compHandleBannerLessSlide.length > compSlidesPerView"
+                :loop="visibleComponents.length > compSlidesPerView"
                 :autoplay="{
                     delay: data.delay,
                     disableOnInteraction: false,
@@ -182,7 +192,7 @@ onMounted(() => {
                 :modules="[Autoplay, Pagination, Navigation]"
                 class="mySwiper h-full w-full"
             >
-                <SwiperSlide v-for="component in compHandleBannerLessSlide" :key="component.id"
+                <SwiperSlide v-for="component in visibleComponents" :key="component.id"
                     class="h-full overflow-hidden aspect-square">
                     <!-- Section: image or background -->
                     <div v-if="get(component, ['layout', 'backgroundType',props.view || 'desktop'], 'image') === 'image'"

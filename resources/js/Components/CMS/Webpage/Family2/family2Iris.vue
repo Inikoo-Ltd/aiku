@@ -85,8 +85,7 @@ const images = computed(() => {
       <div class="grid w-full min-h-[250px] md:min-h-[400px] grid-cols-1" :class="gridClass">
 
         <!-- IMAGE -->
-        <div v-if="showImage" class="relative w-full overflow-hidden"
-          :class="[imageOrder, images.length ? 'h-[250px] sm:h-[300px] md:h-[400px]' : '']"
+        <div v-if="showImage" class="relative w-full overflow-hidden aspect-[3/2]" :class="imageOrder"
           :style="getStyles(fieldValue?.image?.container?.properties, screenType)">
 
           <div v-if="images.length > 1" class="swiper-btn-prev nav-btn left-3">
@@ -101,17 +100,22 @@ const images = computed(() => {
             :navigation="{ prevEl: '.swiper-btn-prev', nextEl: '.swiper-btn-next' }" class="w-full h-full">
             <SwiperSlide v-for="(img, i) in images" :key="i">
               <div class="img-wrapper">
-                <Image :src="img.original" :alt="fieldValue?.image?.alt || 'Image preview'"
-                  :imgAttributes="fieldValue?.image?.attributes" :imageCover="false" class="img-fit" />
+                <Image 
+                  :src="img.original" :alt="fieldValue?.image?.alt || 'Image preview'"
+                  :imgAttributes="fieldValue?.image?.attributes" 
+                  :imageCover="false" 
+                  height="700px" width="95%" 
+                />
               </div>
             </SwiperSlide>
           </Swiper>
 
-          <div v-else class="absolute inset-0">
-            <Image :src="images[0]?.original" :alt="fieldValue?.image?.alt || 'Image preview'"
-              :imgAttributes="fieldValue?.image?.attributes" :imageCover="false" class="w-full h-full object-contain" />
+          <div v-else class="absolute inset-0 overflow-hidden">
+            <Image :src="images[0]?.original" :alt="fieldValue?.image?.alt || 'Image preview'" :imgAttributes="{
+              ...fieldValue?.image?.attributes,
+              class: 'w-full h-full object-cover'
+            }" />
           </div>
-
         </div>
 
         <!-- TEXT -->
@@ -133,11 +137,6 @@ const images = computed(() => {
                 <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="bestOffer.type === 'Category Quantity Ordered Order Interval'
                   ? 'active-inactive-gr'
                   : 'max_discount'" class="discount-item" />
-
-
-
-
-
               </div>
 
             </div>
@@ -179,12 +178,12 @@ const images = computed(() => {
 
 /* image */
 .img-wrapper {
-  @apply w-full h-full flex items-center justify-center;
+  @apply w-full h-full;
 }
 
-.img-fit {
-  @apply w-auto h-full object-contain;
-}
+/* .img-fit {
+  @apply w-full h-full object-cover;
+} */
 
 /* text layout */
 .text-container {

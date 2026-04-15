@@ -86,6 +86,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_opt_in
  * @property array<array-key, mixed>|null $contact_name_components
  * @property string|null $post_source_id
+ * @property int $number_dispatched_emails
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits

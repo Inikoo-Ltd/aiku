@@ -111,7 +111,6 @@ class IndexProductsInCatalogue extends OrgAction
                 );
             }
         }
-
         $queryBuilder
             ->defaultSort('products.code')
             ->select([
@@ -130,6 +129,7 @@ class IndexProductsInCatalogue extends OrgAction
                 'products.is_for_sale',
                 'products.units',
                 'products.unit',
+                'products.created_at',
                 'master_product_id',
             ])
             ->selectRaw("'{$shop->currency->code}'  as currency_code")
@@ -184,6 +184,7 @@ class IndexProductsInCatalogue extends OrgAction
             'units',
             'available_quantity',
             'variant_slug',
+            'created_at',
             'discontinued_at',
         ])
             ->allowedFilters([$globalSearch])
@@ -257,6 +258,7 @@ class IndexProductsInCatalogue extends OrgAction
                 $table->column(key: 'stock', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true);
             } elseif ($bucket !== 'discontinued') {
                 $table->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                $table->column(key: 'created_at', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             }
 
             if ($bucket == 'discontinued') {

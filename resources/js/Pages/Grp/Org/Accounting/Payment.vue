@@ -8,20 +8,22 @@
 import {Head} from '@inertiajs/vue3';
 import {library} from '@fortawesome/fontawesome-svg-core';
 import {
-    faCoins, faFilePdf, faUndo
+    faCoins, faFilePdf, faFileTimes, faUndo
 } from '@fal';
 import { trans } from "laravel-vue-i18n"
 import PageHeading from '@/Components/Headings/PageHeading.vue';
 import {computed, defineAsyncComponent, ref, inject} from "vue";
 import {useTabChange} from "@/Composables/tab-change";
 import ModelDetails from "@/Components/ModelDetails.vue";
+import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import {capitalize} from "@/Composables/capitalize"
 import PaymentShowcase from './PaymentShowcase.vue';
 import RefundModal from '@/Components/RefundModal.vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue";
-import TableHistoryNotes from "@/Components/Tables/Grp/Org/Fulfilment/TableHistoryNotes.vue";
+import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
 
 library.add(faCoins, faUndo);
@@ -172,6 +174,13 @@ interface Props {
             payment: number
         }
     }
+    cancel_route: {
+        name: string
+        parameters: {
+            organisation: number
+            payment: number
+        }
+    }
     topup_receipt_route?: {
         show: boolean
         name: string
@@ -179,6 +188,8 @@ interface Props {
             topUp: string
         }
     }
+    is_cancelled?: boolean
+    payment_account_type?: string
 }
 
 const props = defineProps<Props>()
@@ -198,7 +209,8 @@ const canRefund = computed(() => {
     return props.showcase.state === 'completed' &&
         !isRefund.value &&
         parseFloat(props.showcase.amount) > 0 &&
-        props.refund_route
+        props.refund_route &&
+        props.is_cancelled === false
 })
 
 const showRefundButton = computed(() => {
@@ -222,7 +234,7 @@ const component = computed(() => {
         history: ModelChangelog,
         showcase: PaymentShowcase,
         refunds: TablePayments,
-        history_notes: TableHistoryNotes
+        history_notes: TableHistories
     };
     return components[currentTab.value];
 
@@ -253,7 +265,43 @@ const openSingleTopUpReceipt = () => {
 <template>
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead">
+        <template #afterTitle>
+            <FontAwesomeIcon :icon="faFileTimes" class="text-red-500" v-tooltip="trans('This payment is cancelled')" v-if="is_cancelled"/>
+        </template>
         <template #other>
+            <ModalConfirmation
+				v-if="is_cancelled === false" 
+				:routeYes="{
+					name: cancel_route.name,
+					parameters: cancel_route?.parameters,
+					method: 'patch'
+				}"
+				:title="trans('Are you sure you want to cancel this payment?')"
+				:description="payment_account_type === 'account' ? trans('This payment will be cancelled. This action would also affect the customer balance.') : trans('This payment will be cancelled.')"
+				:noLabel="trans('Return')"
+				:iconClass="'text-red-500'"
+				:iconContainerClass="'bg-red-100 border-1 border-red-500'"
+			>
+				<template #default="{ changeModel }">
+					<Button 
+						v-tooltip="trans('Cancel Payment')"
+						class="text-sm" :type="'negative'"
+						@click="changeModel"
+					>
+                        <FontAwesomeIcon :icon="faFileTimes" class="text-red-500"/>
+                        {{ trans('Cancel Payment') }}
+					</Button>
+				</template>
+
+				<template #btn-yes="{ isLoadingdelete, clickYes}">
+					<Button
+						:style="'delete'"
+						:loading="isLoadingdelete"
+						@click="() => clickYes()"
+						:label="trans('Cancel Payment')"
+					/>
+				</template>
+			</ModalConfirmation>
             <Button v-if="showRefundButton && layout?.app?.environment !== 'production'" @click="openRefundModal" :icon="faUndo" label="Proceed Refund">
             </Button>
             <Button v-if="showReceiptButton" :type="'tertiary'" @click="openSingleTopUpReceipt" :icon="faFilePdf" :label="trans('Download Receipt')">

@@ -313,6 +313,14 @@ class EditProduct extends OrgAction
                     'value'         => $product->description,
                     'reviewed'      => $product->is_description_reviewed,
                     'information'   => __('This show in product webpage'),
+                    'routeGetInternalLink' => [
+                            'name' => 'grp.org.shops.show.web.webpages.index',
+                            'parameters' => [
+                                'shop' => $product->shop->slug,
+                                'organisation' => $product->organisation->slug,
+                                'website' => $product->shop->website?->slug
+                            ]
+                    ],
                     'toogle'        => [
                         'heading2',
                         'heading3',
@@ -342,6 +350,14 @@ class EditProduct extends OrgAction
                     'information' => __('This show in product webpage'),
                     'options'     => [
                         'counter' => true,
+                    ],
+                    'routeGetInternalLink' => [
+                            'name' => 'grp.org.shops.show.web.webpages.index',
+                            'parameters' => [
+                                'shop' => $product->shop->slug,
+                                'organisation' => $product->organisation->slug,
+                                'website' => $product->shop->website?->slug
+                            ]
                     ],
                     'toogle'      => [
                         'heading2',
@@ -379,6 +395,14 @@ class EditProduct extends OrgAction
                     'value'         => $product->description_extra,
                     'reviewed'      => $product->is_description_extra_reviewed,
                     'information'   => __('This above product specification in product webpage'),
+                    'routeGetInternalLink' => [
+                            'name' => 'grp.org.shops.show.web.webpages.index',
+                            'parameters' => [
+                                'shop' => $product->shop->slug,
+                                'organisation' => $product->organisation->slug,
+                                'website' => $product->shop->website?->slug
+                            ]
+                    ],
                     'toogle'        => [
                         'heading2',
                         'heading3',
@@ -411,6 +435,14 @@ class EditProduct extends OrgAction
                         'counter' => true,
                     ],
                     'value'       => $product->description_extra,
+                    'routeGetInternalLink' => [
+                            'name' => 'grp.org.shops.show.web.webpages.index',
+                            'parameters' => [
+                                'shop' => $product->shop->slug,
+                                'organisation' => $product->organisation->slug,
+                                'website' => $product->shop->website?->slug
+                            ]
+                    ],
                     'toogle'      => [
                         'heading2',
                         'heading3',

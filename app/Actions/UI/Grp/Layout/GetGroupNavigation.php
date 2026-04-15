@@ -72,11 +72,45 @@ class GetGroupNavigation
         }
 
         if (app()->environment('local')) {
-            $groupNavigation['sales-channels'] = $this->getSalesChannelsNavs(); // Todo: Raul please made permission for me: Aldo
+            $groupNavigation['sales-channels'] = $this->getSalesChannelsNavs();
         }
 
         if ($user->hasPermissionTo('group-overview')) {
             $groupNavigation['overview'] = $this->getOverviewNavs();
+        }
+
+        if (app()->environment('local')) {
+            $groupNavigation['chat'] = [
+                'label'   => __('Chat'),
+                'tooltip' => __('Chat'),
+                'icon'    => ['fal', 'fa-comment-alt'],
+                'root'    => 'grp.chat.',
+                'route'   => [
+                    'name' => 'grp.chat.dashboard',
+                ],
+                'topMenu' => [
+                    'subSections' => [
+                        [
+                            'label'   => __('Dashboard'),
+                            'tooltip' => __('Dashboard'),
+                            'icon'    => ['fal', 'fa-comment-alt'],
+                            'root'    => 'grp.chat.dashboard',
+                            'route'   => [
+                                'name' => 'grp.chat.dashboard',
+                            ],
+                        ],
+                        [
+                            'label'   => __('Agents'),
+                            'tooltip' => __('Agents'),
+                            'icon'    => ['fal', 'fa-headset'],
+                            'root'    => 'grp.chat.agents.',
+                            'route'   => [
+                                'name' => 'grp.chat.agents.show',
+                            ],
+                        ],
+                    ],
+                ],
+            ];
         }
 
         if ($user->hasPermissionTo('sysadmin.view')) {
@@ -112,6 +146,15 @@ class GetGroupNavigation
                         'root'  => 'grp.trade_units.families.',
                         'route' => [
                             'name'       => 'grp.trade_units.families.index',
+                            'parameters' => []
+                        ]
+                    ],
+                    [
+                        'label' => 'Brands',
+                        'icon'  => ['fal', 'fa-copyright'],
+                        'root'  => 'grp.trade_units.brands.',
+                        'route' => [
+                            'name'       => 'grp.trade_units.brands.index',
                             'parameters' => []
                         ]
                     ],

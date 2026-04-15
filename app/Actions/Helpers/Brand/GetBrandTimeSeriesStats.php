@@ -4,19 +4,27 @@ namespace App\Actions\Helpers\Brand;
 
 use App\Actions\Helpers\Dashboard\CalculateTimeSeriesStats;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Brand;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetBrandTimeSeriesStats
 {
     use AsObject;
 
-    public function handle(Group $group, $from_date = null, $to_date = null): array
+    public function handle(Group|Organisation|Shop $parent, $from_date = null, $to_date = null): array
     {
+        $groupId = match (true) {
+            $parent instanceof Group        => $parent->id,
+            $parent instanceof Organisation => $parent->group_id,
+            $parent instanceof Shop        => $parent->group_id,
+        };
+
         $brands = Brand::query()
             ->select(['id', 'slug', 'name', 'group_id'])
-            ->where('group_id', $group->id)
+            ->where('group_id', $groupId)
             ->whereHas('timeSeries', function ($query) {
                 $query->where('frequency', TimeSeriesFrequencyEnum::DAILY->value);
             })
@@ -41,6 +49,14 @@ class GetBrandTimeSeriesStats
 
         $allStats = [];
         if (!empty($timeSeriesIds)) {
+            $additionalWhere = [];
+
+            if ($parent instanceof Organisation) {
+                $additionalWhere['organisation_id'] = $parent->id;
+            } elseif ($parent instanceof Shop) {
+                $additionalWhere['shop_id'] = $parent->id;
+            }
+
             $allStats = CalculateTimeSeriesStats::run(
                 $timeSeriesIds,
                 [
@@ -53,10 +69,12 @@ class GetBrandTimeSeriesStats
                 'brand_time_series_id',
                 $from_date,
                 $to_date,
+                $additionalWhere
             );
         }
 
-        $groupCurrencyCode = $group->currency->code ?? 'GBP';
+        $group             = $parent instanceof Group ? $parent : $parent->group;
+        $groupCurrencyCode = $group?->currency?->code ?? 'GBP';
 
         $results = [];
         foreach ($brands as $brand) {

@@ -25,7 +25,7 @@ class CreateAgent extends OrgAction
     public function handle(Organisation $organisation, ActionRequest $request): Response
     {
         $route = [
-            'name'       => 'grp.org.crm.agents.store',
+            'name'       => 'grp.org.chat.agents.store',
             'parameters' => [
                 'organisation' => $organisation->slug,
             ]

@@ -1,20 +1,21 @@
 <script setup lang="ts">
 import { inject, ref, computed } from "vue"
+import { trans } from "laravel-vue-i18n"
 import Icon from "../Icon.vue"
 import { faSpinnerThird } from '@fad'
 import { router } from '@inertiajs/vue3'
-import { faInfoCircle, faPallet, faCircle } from '@fas'
+import { faInfoCircle, faPallet, faCircle, faTimesCircle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faAppleCrate,faRoad, faClock, faDatabase, faNetworkWired, faEye, faThLarge ,faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream, faBoxOpen, faChevronDown } from '@fal'
+import { faAppleCrate, faRoad, faClock, faDatabase, faNetworkWired, faEye, faThLarge, faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream, faBoxOpen, faChevronDown, faInventory, faSkullCow, faBan } from '@fal'
 
 library.add(
-    faInfoCircle, faRoad, faClock, faDatabase, faPallet, faCircle,
+    faInfoCircle, faRoad, faClock, faDatabase, faPallet, faCircle, faTimesCircle,
     faNetworkWired, faSpinnerThird, faEye, faThLarge, faTachometerAltFast,
     faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream, faAppleCrate,
-    faBoxOpen, faChevronDown
+    faBoxOpen, faChevronDown, faInventory, faSkullCow, faBan
 )
 
 const layoutStore = inject('layout', layoutStructure)
@@ -33,10 +34,16 @@ const props = defineProps<{
             type?: string // 'icon', 'date', 'number', 'currency'
             align?: string
             icon?: string | string[]
+            icon_data?: Record<string, any>
             iconClass?: string
+            tooltip?: string
             information?: {
                 label: string | number
                 type?: string // 'icon', 'date', 'number', 'currency'
+            }
+            visitRoute?: {
+                name: string
+                parameters: {}
             }
         }[]
         children?: {
@@ -59,7 +66,59 @@ const props = defineProps<{
 
 const isAllExpanded = ref(false)
 
-const hasChildren = computed(() => props.tabs_box.some(box => box.children && box.children.length > 0))
+const toggleExpanded = () => {
+    isAllExpanded.value = !isAllExpanded.value
+}
+
+const hasChildren = computed(() =>
+    props.tabs_box.some(box => (box.children ?? []).length > 0)
+)
+
+const tableColumns = computed(() =>
+    props.tabs_box.flatMap((box, boxIdx) =>
+        box.tabs.map((tab, tabIdx) => ({
+            label: tab.label,
+            icon: tab.icon ?? box.icon,
+            icon_data: tab.icon_data,
+            iconClass: tab.iconClass,
+            tabSlug: tab.tab_slug,
+            type: tab.type,
+            currencyCode: box.currency_code,
+            isSectionStart: tabIdx === 0 && boxIdx > 0,
+        }))
+    )
+)
+
+const tableRows = computed(() => {
+    const uniqueChildren = new Map<string, { label: string; slug: string }>()
+
+    props.tabs_box.forEach(box => {
+        ;(box.children ?? []).forEach(child => {
+            if (!uniqueChildren.has(child.slug)) {
+                uniqueChildren.set(child.slug, { label: child.label, slug: child.slug })
+            }
+        })
+    })
+
+    if (uniqueChildren.size === 0) return []
+
+    return [...uniqueChildren.values()].map(child => ({
+        label: child.label,
+        slug: child.slug,
+        cells: props.tabs_box.flatMap(box => {
+            const matchingChild = (box.children ?? []).find(c => c.slug === child.slug)
+            return box.tabs.map(tab => {
+                const childTab = matchingChild?.tabs.find(t => t.tab_slug === tab.tab_slug)
+                return {
+                    value: childTab?.value,
+                    information: childTab?.information,
+                    type: childTab?.type ?? tab.type,
+                    currencyCode: matchingChild?.currency_code ?? box.currency_code,
+                }
+            })
+        }),
+    }))
+})
 
 const currencyFormat = (currencyCode: string, amount: number | string): string | number => {
     if (!amount) return 0
@@ -90,6 +149,12 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
     }
 }
 
+const childrenLabel = computed(() => {
+    if (layoutStore.currentRoute === 'grp.dashboard.show') return trans('Organisation')
+    if (layoutStore.currentRoute === 'grp.org.dashboard.show') return trans('Shop')
+    return trans('Name')
+})
+
 const getRoute = (tabSlug) => {
     const currentRoute = layoutStore.currentRoute;
     const currentParams = layoutStore.currentParams;
@@ -114,12 +179,23 @@ const getRoute = (tabSlug) => {
             return route(currentRoute, currentParams);
     }
 }
+
+const clickVisitRoute = (visitRoute: {
+    name: string
+    parameters: {}
+}) => {
+
+    if (!visitRoute) return;
+
+    router.get(route(visitRoute.name, visitRoute.parameters))
+
+}
 </script>
 
 <template>
     <div>
         <!-- TabsBoxDisplay Desktop -->
-        <div class="hidden px-6 md:flex gap-x-6 my-2 items-start">
+        <div class="hidden px-6 md:flex flex-wrap xl:flex-nowrap gap-x-6 gap-y-4 mt-4 mb-1 items-stretch">
             <div
                 v-for="(box, idx) in tabs_box"
                 :key="box.label"
@@ -130,7 +206,7 @@ const getRoute = (tabSlug) => {
                   borderColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] : 'inherit'
                 }"
             >
-                <div class="text-center mb-2 text-xs">
+                <div class="text-center mb-2 text-xs font-semibold">
                     <FontAwesomeIcon v-if="box.icon" :icon="box.icon" class="" fixed-width aria-hidden="true" />
                     {{ box.label }}
                 </div>
@@ -139,17 +215,18 @@ const getRoute = (tabSlug) => {
                     <div
                         v-for="tab in box.tabs"
                         :key="tab.tab_slug"
-                        class="w-full flex flex-col items-center"
-                        @click="['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) ? router.get(getRoute(tab.tab_slug)) : null"
+                        class="w-fit flex flex-col items-center mx-auto"
+                        :class="!(['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) || tab.visitRoute) ? 'cursor-default' : 'hover:cursor-pointer'"
+                        @click="['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) ? router.get(getRoute(tab.tab_slug)) : clickVisitRoute(tab.visitRoute)"
+                        v-tooltip="tab.tooltip"
                     >
-                        <div class="group flex items-center gap-1 tabular-nums relative text-xl px-2 mb-1 cursor-default">
+                        <div class="group flex items-center gap-1 tabular-nums relative text-xl px-2 mb-1">
                             <div class="mx-auto text-center">
                                 <template v-if="tab.icon || tab.icon_data">
                                     <Icon
                                         v-if="tab.icon_data"
                                         :data="tab.icon_data"
                                         class="text-xl"
-                                        :class="!['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) ? 'cursor-not-allowed' : 'group-hover:cursor-pointer'"
                                     />
                                     <FontAwesomeIcon v-else :icon="tab.icon" class="text-xl" fixed-width aria-hidden="true" />
                                 </template>
@@ -158,7 +235,7 @@ const getRoute = (tabSlug) => {
                             <div class="relative text-center">
                                 <span
                                     class="inline opacity-80 group-hover:opacity-100 transition-all"
-                                    :class="!['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) ? 'cursor-not-allowed' : 'group-hover:cursor-pointer group-hover:underline'"
+                                    :class="!(['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) || tab.visitRoute) ? '' : 'group-hover:underline'"
                                 >
                                   {{ renderLabelBasedOnType(tab.value, tab.type, { currency_code: box.currency_code }) }}
                                 </span>
@@ -176,56 +253,15 @@ const getRoute = (tabSlug) => {
                     </div>
                 </div>
 
-                <!-- Children Rows -->
-                <div
-                    v-if="box.children && box.children.length > 0 && isAllExpanded"
-                    class="mt-2 border-t pt-2"
-                    :style="{ borderColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] + '44' : '#e5e7eb' }"
-                >
-                    <!-- Table Header -->
-                    <div class="flex items-center gap-x-2 text-[10px] text-gray-400 mb-1 pb-1 border-b border-gray-100">
-                        <span v-if="idx === 0" class="flex-1 min-w-0"></span>
-                        <div class="flex gap-x-3 shrink-0" :class="idx === 0 ? '' : 'w-full justify-around'">
-                            <div
-                                v-for="tab in box.tabs"
-                                :key="'col-header-' + tab.tab_slug"
-                                class="w-20 text-right"
-                            >
-                                <FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" fixed-width aria-hidden="true" />
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Table Rows -->
-                    <div
-                        v-for="child in box.children"
-                        :key="child.slug"
-                        class="flex items-center gap-x-2 text-xs py-1 border-b border-gray-50 last:border-0"
-                    >
-                        <span v-if="idx === 0" class="truncate text-gray-600 font-medium flex-1 min-w-0">{{ child.label }}</span>
-                        <div class="flex gap-x-3 shrink-0" :class="idx === 0 ? '' : 'w-full justify-around'">
-                            <div
-                                v-for="childTab in child.tabs"
-                                :key="childTab.tab_slug"
-                                class="w-20 text-right"
-                            >
-                                <div class="tabular-nums font-semibold text-gray-800">
-                                    {{ renderLabelBasedOnType(childTab.value, childTab.type, { currency_code: child.currency_code }) }}
-                                </div>
-                                <div class="text-gray-400 text-[10px]">
-                                    {{ renderLabelBasedOnType(childTab.information?.label, childTab.information?.type, { currency_code: child.currency_code }) }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <div class="flex-1"></div>
             </div>
         </div>
 
         <!-- Global Expand Button (Desktop) -->
-        <div v-if="hasChildren" class="hidden md:flex justify-center mt-1 mb-2">
+        <div v-if="hasChildren" class="hidden md:flex justify-center">
             <button
                 class="flex items-center gap-x-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors px-3 py-1 rounded hover:bg-gray-100"
-                @click="isAllExpanded = !isAllExpanded"
+                @click="toggleExpanded()"
             >
                 <FontAwesomeIcon
                     icon="fal fa-chevron-down"
@@ -235,6 +271,44 @@ const getRoute = (tabSlug) => {
                     aria-hidden="true"
                 />
             </button>
+        </div>
+
+        <!-- Children Table (Desktop, below expand button) -->
+        <div v-if="isAllExpanded && hasChildren" class="hidden md:block px-6 mt-1 mb-4">
+            <div class="bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-200">
+                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500">{{ childrenLabel }}</th>
+                            <th
+                                v-for="col in tableColumns"
+                                :key="col.tabSlug"
+                                class="px-4 py-2 text-right text-xs font-semibold text-gray-500"
+                                :class="col.isSectionStart ? 'border-l border-gray-200' : ''"
+                            >
+                                <Icon v-if="col.icon_data" :data="col.icon_data" :class="col.iconClass" :title="col.label" />
+                                <FontAwesomeIcon v-else-if="col.icon" :icon="col.icon" :class="col.iconClass" fixed-width aria-hidden="true" v-tooltip="col.label" />
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <tr v-for="row in tableRows" :key="row.slug" class="hover:bg-gray-50 transition-colors">
+                            <td class="px-4 py-2.5 font-medium text-gray-800">{{ row.label }}</td>
+                            <td
+                                v-for="(cell, i) in row.cells"
+                                :key="i"
+                                class="px-4 py-2.5 text-right tabular-nums text-gray-700"
+                                :class="tableColumns[i]?.isSectionStart ? 'border-l border-gray-200' : ''"
+                            >
+                                {{ renderLabelBasedOnType(cell.value, cell.type, { currency_code: cell.currencyCode }) }}
+                                <div v-if="cell.information?.label" class="text-[10px] text-gray-400">
+                                    {{ renderLabelBasedOnType(cell.information.label, cell.information.type, { currency_code: cell.currencyCode }) }}
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <!-- Mobile -->
@@ -258,7 +332,7 @@ const getRoute = (tabSlug) => {
 
                 <!-- Tabs Grid -->
                 <div class="p-3">
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div
                             v-for="tab in box.tabs"
                             :key="tab.tab_slug"
@@ -313,45 +387,6 @@ const getRoute = (tabSlug) => {
                     </div>
                 </div>
 
-                <!-- Mobile Children -->
-                <div
-                    v-if="box.children && box.children.length > 0 && isAllExpanded"
-                    class="border-t border-gray-200"
-                >
-                    <div class="flex items-center gap-x-2 px-4 py-1.5 bg-gray-50 text-[10px] text-gray-400 border-b border-gray-200">
-                        <span class="flex-1 min-w-0"></span>
-                        <div class="flex gap-x-4 shrink-0">
-                            <div
-                                v-for="tab in box.tabs"
-                                :key="'mobile-col-header-' + tab.tab_slug"
-                                class="w-16 text-right"
-                            >
-                                <FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" fixed-width aria-hidden="true" />
-                            </div>
-                        </div>
-                    </div>
-                    <div
-                        v-for="child in box.children"
-                        :key="'mobile-child-' + child.slug"
-                        class="px-4 py-2 flex items-center justify-between text-xs border-b border-gray-100 last:border-0"
-                    >
-                        <span class="text-gray-600 font-medium truncate mr-2 flex-1 min-w-0">{{ child.label }}</span>
-                        <div class="flex gap-x-4 shrink-0">
-                            <div
-                                v-for="childTab in child.tabs"
-                                :key="childTab.tab_slug"
-                                class="w-16 text-right"
-                            >
-                                <div class="tabular-nums font-semibold text-gray-800">
-                                    {{ renderLabelBasedOnType(childTab.value, childTab.type, { currency_code: child.currency_code }) }}
-                                </div>
-                                <div class="text-gray-400 text-[10px]">
-                                    {{ renderLabelBasedOnType(childTab.information?.label, childTab.information?.type, { currency_code: child.currency_code }) }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -359,7 +394,7 @@ const getRoute = (tabSlug) => {
         <div v-if="hasChildren" class="md:hidden flex justify-center mt-2 mb-1 px-3">
             <button
                 class="w-full flex items-center justify-center gap-x-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors py-1.5 rounded border border-gray-200 hover:bg-gray-50"
-                @click="isAllExpanded = !isAllExpanded"
+                @click="toggleExpanded()"
             >
                 <FontAwesomeIcon
                     icon="fal fa-chevron-down"
@@ -369,6 +404,44 @@ const getRoute = (tabSlug) => {
                     aria-hidden="true"
                 />
             </button>
+        </div>
+
+        <!-- Children Table (Mobile, below expand button) -->
+        <div v-if="isAllExpanded && hasChildren" class="md:hidden px-3 mb-2">
+            <div class="bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-200">
+                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500">{{ childrenLabel }}</th>
+                            <th
+                                v-for="col in tableColumns"
+                                :key="col.tabSlug"
+                                class="px-4 py-2 text-right text-xs font-semibold text-gray-500"
+                                :class="col.isSectionStart ? 'border-l border-gray-200' : ''"
+                            >
+                                <Icon v-if="col.icon_data" :data="col.icon_data" :class="col.iconClass" :title="col.label" />
+                                <FontAwesomeIcon v-else-if="col.icon" :icon="col.icon" :class="col.iconClass" fixed-width aria-hidden="true" v-tooltip="col.label" />
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <tr v-for="row in tableRows" :key="row.slug" class="hover:bg-gray-50 transition-colors">
+                            <td class="px-4 py-2.5 font-medium text-gray-800 whitespace-nowrap">{{ row.label }}</td>
+                            <td
+                                v-for="(cell, i) in row.cells"
+                                :key="i"
+                                class="px-4 py-2.5 text-right tabular-nums text-gray-700 whitespace-nowrap"
+                                :class="tableColumns[i]?.isSectionStart ? 'border-l border-gray-200' : ''"
+                            >
+                                {{ renderLabelBasedOnType(cell.value, cell.type, { currency_code: cell.currencyCode }) }}
+                                <div v-if="cell.information?.label" class="text-[10px] text-gray-400">
+                                    {{ renderLabelBasedOnType(cell.information.label, cell.information.type, { currency_code: cell.currencyCode }) }}
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </template>

@@ -523,7 +523,7 @@ onMounted(() => {
 	<!-- Section: Box Note -->
 	<div
 		v-if="
-			(pickingView && !box_stats.is_replacement) ||
+			pickingView ||
 			delivery_note_state.value === 'dispatched' ||
 			delivery_note_state.value === 'cancelled'
 		"

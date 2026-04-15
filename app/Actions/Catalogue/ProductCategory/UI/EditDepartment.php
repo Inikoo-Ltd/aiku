@@ -81,7 +81,7 @@ class EditDepartment extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('department'),
+                'title'       => __('Department'),
                 ...$warning,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
@@ -180,6 +180,14 @@ class EditDepartment extends OrgAction
                                                 'mode'          => 'single',
                                                 'value'         => $department->description,
                                                 'reviewed'      => $department->is_description_reviewed,
+                                                'routeGetInternalLink' => [
+                                                    'name' => 'grp.org.shops.show.web.webpages.index',
+                                                    'parameters' => [
+                                                        'shop' => $department->shop->slug,
+                                                        'organisation' => $department->organisation->slug,
+                                                        'website' => $department->shop->website?->slug
+                                                    ]
+                                                ],
                                                 'toogle'        => [
                                                     'heading2',
                                                     'heading3',
@@ -209,6 +217,14 @@ class EditDepartment extends OrgAction
                                                 'value'   => $department->description,
                                                 'options' => [
                                                     'counter' => true,
+                                                ],
+                                               'routeGetInternalLink' => [
+                                                    'name' => 'grp.org.shops.show.web.webpages.index',
+                                                    'parameters' => [
+                                                        'shop' => $department->shop->slug,
+                                                        'organisation' => $department->organisation->slug,
+                                                        'website' => $department->shop->website?->slug
+                                                    ]
                                                 ],
                                                 'toogle'  => [
                                                     'heading2',
@@ -244,6 +260,14 @@ class EditDepartment extends OrgAction
                                                 'mode'          => 'single',
                                                 'value'         => $department->description_extra,
                                                 'reviewed'      => $department->is_description_extra_reviewed,
+                                                'routeGetInternalLink' => [
+                                                    'name' => 'grp.org.shops.show.web.webpages.index',
+                                                    'parameters' => [
+                                                        'shop' => $department->shop->slug,
+                                                        'organisation' => $department->organisation->slug,
+                                                        'website' => $department->shop->website->slug
+                                                    ]
+                                                ],
                                                 'toogle'        => [
                                                     'heading2',
                                                     'heading3',
@@ -273,6 +297,14 @@ class EditDepartment extends OrgAction
                                                 'value'   => $department->description_extra,
                                                 'options' => [
                                                     'counter' => true,
+                                                ],
+                                                'routeGetInternalLink' => [
+                                                    'name' => 'grp.org.shops.show.web.webpages.index',
+                                                    'parameters' => [
+                                                        'shop' => $department->shop->slug,
+                                                        'organisation' => $department->organisation->slug,
+                                                        'website' => $department->shop->website?->slug
+                                                    ]
                                                 ],
                                                 'toogle'  => [
                                                     'heading2',

@@ -16,6 +16,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Helpers\Upload;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
@@ -48,8 +49,14 @@ class CustomerSalesChannelPortfoliosImport implements ToCollection, WithHeadingR
 
         $rowData = $row->only($fields)->all();
 
+        $sku = Arr::get($rowData, 'sku');
+
+        if (! $sku) {
+            throw ValidationException::withMessages(['sku' => 'The row is not contains valid sku.']);
+        }
+
         $modelData = [
-            'sku' => $rowData['sku']
+            'sku' => $sku
         ];
 
         try {
@@ -83,7 +90,7 @@ class CustomerSalesChannelPortfoliosImport implements ToCollection, WithHeadingR
         return [
             'sku' => [
                 'sometimes',
-                'nullable',
+                'required',
                 'max:64',
                 'string',
                 Rule::notIn(['export', 'create', 'upload']),

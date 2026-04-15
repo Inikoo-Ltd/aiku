@@ -61,6 +61,9 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
                 'message'  => __('The required quantity has already been fully picked.')
             ];
         }
+
+        $shopType = $request->shop?->type;
+
         $pickingLocations = DB::table('location_org_stocks')
             ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
             ->where('org_stock_id', $this->org_stock_id)
@@ -71,6 +74,8 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
                 'locations.id as location_id',
                 'locations.code as location_code',
                 'locations.slug as location_slug',
+                'location_org_stocks.default_wholesale_picking_location',
+                'location_org_stocks.default_dropshipping_picking_location',
             ])
             ->selectRaw('\''.$this->packed_in.'\' as org_stock_packed_in')
             ->selectRaw(
@@ -82,8 +87,21 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
     ) as pickings_data',
                 ['pick', $this->id]
             )
-            ->orderBy('picking_priority')->get();
-
+            ->when(
+                $shopType,
+                function ($q) use ($shopType) {
+                    if ($shopType->value == 'b2b') {
+                        $q->orderBy('location_org_stocks.default_wholesale_picking_location', 'desc');
+                    } elseif ($shopType->value == 'dropshipping') {
+                        $q->orderBy('location_org_stocks.default_dropshipping_picking_location', 'desc');
+                    }
+                    $q->orderBy('picking_priority');
+                },
+                function ($q) {
+                    $q->orderBy('picking_priority');
+                }
+            )
+            ->get();
 
         $quantityToPick = max(0, $this->quantity_required - $this->quantity_picked - $this->quantity_not_picked);
 

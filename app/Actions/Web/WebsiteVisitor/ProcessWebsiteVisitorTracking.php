@@ -25,6 +25,11 @@ class ProcessWebsiteVisitorTracking implements ShouldBeUnique
     public int $jobTimeout = 120;
     public int $jobTries = 1;
 
+    public function getJobUniqueId(string $sessionId, Website $website): string
+    {
+        return "$sessionId:$website->id";
+    }
+
     public function handle(
         string $sessionId,
         Website $website,
@@ -34,8 +39,6 @@ class ProcessWebsiteVisitorTracking implements ShouldBeUnique
         string $currentUrl,
         ?string $referrer
     ): void {
-
-
         if (IsBot::run($userAgent)) {
             return;
         }
@@ -73,7 +76,7 @@ class ProcessWebsiteVisitorTracking implements ShouldBeUnique
             $customer = $visitor->webUser?->customer;
 
             if ($customer) {
-                SyncCustomerWebActivities::dispatch($customer, now()->startOfDay());
+                SyncCustomerWebActivities::dispatch($customer, now()->startOfDay())->delay(10);
             }
         }
     }

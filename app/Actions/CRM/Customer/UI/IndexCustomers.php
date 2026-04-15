@@ -118,6 +118,21 @@ class IndexCustomers extends OrgAction
             });
         });
 
+        $countryFilter = AllowedFilter::callback('country', function ($query, $value) {
+            $query->whereRaw("customers.location->>0 = ?", [$value]);
+        });
+
+        $hasOrdersFilter = AllowedFilter::callback('has_orders', function ($query, $value) {
+            if ($value) {
+                $query->where('customer_stats.number_orders', '>', 0);
+            } else {
+                $query->where(function ($q) {
+                    $q->where('customer_stats.number_orders', 0)
+                        ->orWhereNull('customer_stats.number_orders');
+                });
+            }
+        });
+
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -219,7 +234,7 @@ class IndexCustomers extends OrgAction
             ->leftJoin('shops', 'customers.shop_id', 'shops.id')
             ->leftJoin('currencies', 'shops.currency_id', 'currencies.id')
             ->allowedSorts($allowedSort)
-            ->allowedFilters([$globalSearch, $tagFilter])
+            ->allowedFilters([$globalSearch, $tagFilter, $countryFilter, $hasOrdersFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }

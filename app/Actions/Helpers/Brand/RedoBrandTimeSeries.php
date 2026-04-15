@@ -9,6 +9,7 @@ use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Laravel\Telescope\Telescope;
 use Throwable;
 
 class RedoBrandTimeSeries implements ShouldBeUnique
@@ -30,16 +31,23 @@ class RedoBrandTimeSeries implements ShouldBeUnique
 
     public function handle(Brand $brand, bool $async = false, ?string $from = null, ?string $to = null): void
     {
+        $shopIds = DB::table('invoice_transactions')
+            ->where('brand_id', $brand->id)
+            ->whereNull('deleted_at')
+            ->distinct()
+            ->pluck('shop_id')
+            ->filter()
+            ->all();
+
+        if (empty($shopIds)) {
+            return;
+        }
+
         if (!$from || !$to) {
             $dateRange = DB::table('invoice_transactions')
-                ->join('invoice_transaction_has_trade_units', 'invoice_transaction_has_trade_units.invoice_transaction_id', '=', 'invoice_transactions.id')
-                ->join('model_has_brands', function ($join) use ($brand) {
-                    $join->on('model_has_brands.model_id', '=', 'invoice_transaction_has_trade_units.trade_unit_id')
-                         ->where('model_has_brands.model_type', '=', 'TradeUnit')
-                         ->where('model_has_brands.brand_id', '=', $brand->id);
-                })
-                ->whereNull('invoice_transactions.deleted_at')
-                ->selectRaw('MIN(invoice_transactions.date) as first_date, MAX(invoice_transactions.date) as last_date')
+                ->where('brand_id', $brand->id)
+                ->whereNull('deleted_at')
+                ->selectRaw('MIN(date) as first_date, MAX(date) as last_date')
                 ->first();
 
             if (!$dateRange?->first_date) {
@@ -50,11 +58,13 @@ class RedoBrandTimeSeries implements ShouldBeUnique
             $to   = $to ?? Carbon::parse($dateRange->last_date ?? now())->toDateString();
         }
 
-        foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-            if ($async) {
-                ProcessBrandTimeSeriesRecords::dispatch($brand->id, $frequency, $from, $to)->onQueue('low-priority');
-            } else {
-                ProcessBrandTimeSeriesRecords::run($brand->id, $frequency, $from, $to);
+        foreach ($shopIds as $shopId) {
+            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                if ($async) {
+                    ProcessBrandTimeSeriesRecords::dispatch($brand->id, $shopId, $frequency, $from, $to)->onQueue('low-priority');
+                } else {
+                    ProcessBrandTimeSeriesRecords::run($brand->id, $shopId, $frequency, $from, $to);
+                }
             }
         }
     }
@@ -88,6 +98,10 @@ class RedoBrandTimeSeries implements ShouldBeUnique
 
     public function asCommand(Command $command): int
     {
+        if (class_exists(Telescope::class)) {
+            Telescope::stopRecording();
+        }
+
         $command->info($command->getName());
         $tableName = (new $this->model())->getTable();
         $query     = $this->prepareQuery($tableName, $command);

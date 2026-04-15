@@ -281,7 +281,7 @@ const onCreateReplacement = (action: any) => {
                     <div class="flex flex-wrap items-center gap-2 font-bold underline">
                         <template v-for="(item, idx) in warning?.picking_sessions" :key="idx">
                             <Link :href="route(item.route.name, item.route.parameters)" class="text-sm hover:underline">
-                            {{ item.reference }}
+                                {{ item.reference }}
                             </Link>
                         </template>
                     </div>

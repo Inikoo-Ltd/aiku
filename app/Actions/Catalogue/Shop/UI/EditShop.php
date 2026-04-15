@@ -90,7 +90,7 @@ class EditShop extends OrgAction
         if ($shop->website) {
             $helpPortalFields['widget_key'] = [
                 'type'          => 'input',
-                'placeholder'   => 'keyExample',
+                'placeholder'   => 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
                 'label'         => __('Widget Key'),
                 'value'         => Arr::get($shop->website->settings, 'jira_help_desk_widget'),
             ];
@@ -417,15 +417,22 @@ class EditShop extends OrgAction
                     'icon'   => 'fal fa-columns',
                     'fields' => [
                         'download_pdf_columns' => [
-                            'type'  => 'checkbox',
-                            'label' => __('Data to display in PDF'),
+                            'type'        => 'checkbox',
+                            'label'       => __('Data to display in PDF'),
                             'information' => __('Default data to include in invoice PDF'),
-                            'value' => (function () use ($shop): array {
+                            'value'       => (function () use ($shop): array {
                                 $savedColumns = Arr::get($shop->settings, 'invoicing.download_pdf_columns', []);
                                 $columns      = [
-                                    ['label' => __('Country of Origin'), 'key' => 'country_of_origin'],
-                                    ['label' => __('Weight'), 'key' => 'weight'],
+                                    ['label' => __('Pro mode'), 'key' => 'pro_mode'],
+                                    ['label' => __('Recommended retail prices'), 'key' => 'rrp'],
+                                    ['label' => __('Parts'), 'key' => 'parts'],
                                     ['label' => __('Commodity Codes'), 'key' => 'commodity_codes'],
+                                    ['label' => __('Barcode'), 'key' => 'barcode'],
+                                    ['label' => __('Weight'), 'key' => 'weight'],
+                                    ['label' => __('Country of Origin'), 'key' => 'country_of_origin'],
+                                    ['label' => __('Hide Payment Status'), 'key' => 'hide_payment_status'],
+                                    ['label' => __('CPNP'), 'key' => 'cpnp'],
+                                    ['label' => __('Group by Tariff Code'), 'key' => 'group_by_tariff_code'],
                                 ];
 
                                 return array_map(fn ($col) => [
@@ -593,6 +600,32 @@ class EditShop extends OrgAction
                     'label'  => __('Sales Channels'),
                     'icon'   => 'fal fa-shopping-cart',
                     'fields' => $salesChannelFields,
+                ],
+                [
+                    'label'  => __('Bundle Discount'),
+                    'icon'   => 'fal fa-shopping-cart',
+                    'fields' => [
+                        'bundle_discount_percentage' => [
+                            'type'  => 'input',
+                            'label' => __('Bundle Discount Percentage'),
+                            'value' => Arr::get($shop->settings, 'discount.bundle_discount_percentage', ''),
+                        ],
+                    ],
+                ],
+                [
+                    'label'  => __('Reviews'),
+                    'icon'   => 'fal fa-star',
+                    'fields' => [
+                        'reviews' => [
+                            'type'  => 'website_reviews',
+                            'label' => __('review'),
+                            'value' => [
+                                'provider' => $shop->settings['reviews']['provider'] ?? null,
+                                'data' =>  $shop->settings['reviews']['data'] ?? null,
+                                'enabled' => $shop->settings['reviews']['enabled'] ?? true,
+                            ],
+                        ],
+                    ],
                 ]
             ],
             'args' => [

@@ -11,11 +11,13 @@ namespace App\Actions\Web\Website\UI;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
-use App\Actions\Web\Website\GetWebsiteWorkshopDepartment;
-use App\Actions\Web\Website\GetWebsiteWorkshopFamily;
+use App\Actions\Web\Website\GetWebsiteWorkshopSubDepartmentWebBlock;
+use App\Actions\Web\Website\GetWebsiteWorkshopFamiliesOverviewWebBlock;
+use App\Actions\Web\Website\GetWebsiteWorkshopFamilyDescriptionWebBlock;
+use App\Actions\Web\Website\GetWebsiteWorkshopProductListWebBlock;
 use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
 use App\Actions\Web\Website\GetWebsiteWorkshopProduct;
-use App\Actions\Web\Website\GetWebsiteWorkshopSubDepartment;
+use App\Actions\Web\Website\GetWebsiteWorkshopFamilyWebBlock;
 use App\Enums\UI\Web\WebsiteWorkshopTabsEnum;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\History\HistoryResource;
@@ -96,28 +98,34 @@ class ShowWebsiteWorkshop extends OrgAction
         }
         $tabs[WebsiteWorkshopTabsEnum::FAMILY->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILY->value
             ?
-            fn () => GetWebsiteWorkshopSubDepartment::run($website)
+            fn () => GetWebsiteWorkshopFamilyWebBlock::run($website)
             : Inertia::lazy(
-                fn () => GetWebsiteWorkshopSubDepartment::run($website)
+                fn () => GetWebsiteWorkshopFamilyWebBlock::run($website)
             );
         $tabs[WebsiteWorkshopTabsEnum::FAMILIES_OVERVIEW->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILIES_OVERVIEW->value
             ?
-            fn () => GetWebsiteWorkshopDepartment::run($website, 'families_overview')
+            fn () => GetWebsiteWorkshopFamiliesOverviewWebBlock::run($website)
             : Inertia::lazy(
-                fn () => GetWebsiteWorkshopDepartment::run($website, 'families_overview')
+                fn () => GetWebsiteWorkshopFamiliesOverviewWebBlock::run($website)
+            );
+        $tabs[WebsiteWorkshopTabsEnum::FAMILIES_DESCRIPTION->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILIES_DESCRIPTION->value
+            ?
+            fn () => GetWebsiteWorkshopFamilyDescriptionWebBlock::run($website)
+            : Inertia::lazy(
+                fn () => GetWebsiteWorkshopFamilyDescriptionWebBlock::run($website)
             );
         $tabs[WebsiteWorkshopTabsEnum::PRODUCTS->value] = $this->tab == WebsiteWorkshopTabsEnum::PRODUCTS->value
             ?
-            fn () => GetWebsiteWorkshopFamily::run($website)
+            fn () => GetWebsiteWorkshopProductListWebBlock::run($website)
             : Inertia::lazy(
-                fn () => GetWebsiteWorkshopFamily::run($website)
+                fn () => GetWebsiteWorkshopProductListWebBlock::run($website)
             );
 
         $tabs[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value] = $this->tab == WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value
             ?
-            fn () => GetWebsiteWorkshopDepartment::run($website)
+            fn () => GetWebsiteWorkshopSubDepartmentWebBlock::run($website)
             : Inertia::lazy(
-                fn () => GetWebsiteWorkshopDepartment::run($website)
+                fn () => GetWebsiteWorkshopSubDepartmentWebBlock::run($website)
             );
 
         $tabs[WebsiteWorkshopTabsEnum::HISTORY->value] = $this->tab == WebsiteWorkshopTabsEnum::HISTORY->value
@@ -240,9 +248,16 @@ class ShowWebsiteWorkshop extends OrgAction
                             'website' => $website->id
                         ]
                     ],
+                    'families_description' =>  [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.website.publish.family_description',
+                        'parameters' => [
+                            'website' => $website->id
+                        ]
+                    ],
                     'families_overview' =>  [
                         'method'     => 'post',
-                        'name'       => 'grp.models.website.publish.family',
+                        'name'       => 'grp.models.website.publish.families_overview',
                         'parameters' => [
                             'website' => $website->id
                         ]
