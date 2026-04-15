@@ -8,7 +8,7 @@ import { routeType } from '@/types/route'
 import { route } from 'ziggy-js'
 import { debounce } from 'lodash-es'
 import Button from '../Elements/Buttons/Button.vue';
-import { InputText, Select, Dialog, Textarea, Checkbox } from "primevue"
+import { InputText, Select, Dialog, Textarea, Checkbox, Skeleton } from "primevue"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import InformationIcon from '../Utils/InformationIcon.vue';
 import { faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, faMinus } from '@fas'
@@ -17,7 +17,7 @@ library.add(faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, f
 import { router } from '@inertiajs/vue3';
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import Image from '../Image.vue';
-import { useConfirm, ConfirmDialog } from "primevue"
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 const props = defineProps<{
     layout: string
@@ -339,101 +339,86 @@ const handleStoreBundle = async () => {
 
 const submitBundle = async () => {
 
-        const payload = {
-            description: bundle.description.value,
-            images: selectedMedia.value.map(img => ({
-                id: img.image_id,
-                is_main: img.is_main
-            }))
-        }
+    const payload = {
+        description: bundle.description.value,
+        images: selectedMedia.value.map(img => ({
+            id: img.image_id,
+            is_main: img.is_main
+        }))
+    }
 
-        const routeConfig = bundleRoutes.update
+    const routeConfig = bundleRoutes.update
 
-        const routeParams = {
-            ...resolveParams(routeConfig),
-            bundle: bundle.bundle_id.value
-        }
-
-        router.patch(
-            route(
-                routeConfig.name,
-                routeParams
-            ),
-            payload,
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onStart: () => {
-					isStoringBundle.value = true
-				},
-                onSuccess: () => {
-                    notify({
-                        title: trans('Success'),
-                        text: trans('Success submit bundle'),
-                        type: 'success'
-                    })
-
-                    bundle.step.value = 1
-                    bundle.close()
-                    bundle.resetBundle()
-                },
-                onError: errors => {
-                                                notify({
-                                                    title: trans("Something went wrong"),
-                                                    text: trans("Failed to submit the data, please try again"),
-                                                    type: "error"
-                                                })
-                                },
-                                 onFinish: () => {
-                                    isStoringBundle.value = false
-                                },
-            }
-        )
-   
-}
-
-const confirm = useConfirm()
-
-const handleBack = () => {
-    confirm.require({
-        message: 'Going back will discard this bundle. You’ll need to start again.',
-        header: 'Discard bundle?',
-        acceptLabel: 'Discard',
-        rejectLabel: 'Stay',        
-        accept: () => {
-            handleDelete()
-            bundle.step.value = 1
-        },
-    })
-}
-
-const handleDelete = () => {
-    const routeConfig = bundleRoutes.delete
     const routeParams = {
         ...resolveParams(routeConfig),
         bundle: bundle.bundle_id.value
     }
 
-    router.delete(route(routeConfig.name, routeParams), {
-        preserveScroll: true,
+    router.patch(
+        route(
+            routeConfig.name,
+            routeParams
+        ),
+        payload,
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isStoringBundle.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans('Success'),
+                    text: trans('Success submit bundle'),
+                    type: 'success'
+                })
 
-        onSuccess: () => {
-            bundle.resetBundle()
-            bundle.products.value = []
-            selectedMedia.value = []
-            selectedMediaIds.value = []
-            selectedMediaForAI.value = []
-            customerChannelsId.value = null
-        },
-
-        onError: () => {
-            notify({
-                title: trans('Error'),
-                text: trans('Failed to delete bundle'),
-                type: 'error'
-            })
+                bundle.step.value = 1
+                selectedMedia.value = []
+                selectedMediaIds.value = []
+                selectedMediaForAI.value = []
+                bundle.close()
+                bundle.resetBundle()
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to submit the data, please try again"),
+                    type: "error"
+                })
+            },
+                onFinish: () => {
+                isStoringBundle.value = false
+            },
         }
-    })
+    )
+}
+
+const handleBack = () => {
+    bundle.step.value = 1
+    fetchGetBundle()
+}
+
+const fetchGetBundle = async () => {
+    if (!bundle.bundle_id.value) return
+
+    try {
+        await bundle.loadBundle({
+            routeConfig: bundleRoutes.images.edit,
+            bundleId: bundle.bundle_id.value,
+            bundleParamOverride: {
+                ...resolveParams(bundleRoutes.images.edit),
+                bundle: [bundle.bundle_id.value]
+            }
+        })
+    } catch (e) {
+        console.error('[AddBundles] fetchGetBundle failed', e)
+        notify({
+            title: trans('Error'),
+            text: trans('Failed to load bundle'),
+            type: 'error'
+        })
+    }
 }
 
 const bundle = useBundle({
@@ -458,7 +443,7 @@ const bundle = useBundle({
         }
     },
     store: {
-        name: 'iris.models.dropshipping.bundles.store',
+        name: 'iris.models.dropshipping.bundles.store_or_update',
         getParameters: () => ({
             customerSalesChannel: customerChannelsId.value
         })
@@ -481,6 +466,12 @@ const bundle = useBundle({
         },
         store: {
             name: 'iris.models.dropshipping.bundles.products.images.store',
+            getParameters: () => ({
+                customerSalesChannel: customerChannelsId.value
+            })
+        },
+        edit: {
+            name: 'iris.dropshipping.customer_sales_channels.bundles.show',
             getParameters: () => ({
                 customerSalesChannel: customerChannelsId.value
             })
@@ -566,9 +557,7 @@ watch(customerChannelsId, (val) => {
                             <button @click="bundle.decreaseQty(item.id)"><FontAwesomeIcon icon='fas fa-minus' class="text-xs" fixed-width aria-hidden='true' /></button>
                             <div>{{ item.quantity }}</div>
                             <button @click="bundle.increaseQty(item.id) "><FontAwesomeIcon icon='fas fa-plus' class="text-xs"fixed-width aria-hidden='true' /></button>
-
                             <button @click="bundle.removeProduct(item.id)" v-tooltip="trans('Delete product')"><FontAwesomeIcon icon='fas fa-trash-alt' class="text-sm text-red-500" fixed-width aria-hidden='true' />
-                                <FontAwesomeIcon icon="fal fa-layer-group" class="text-xs" fixed-width />
                             </button>
                         </div>
                     </div>
@@ -582,7 +571,12 @@ watch(customerChannelsId, (val) => {
                 <div class="border-t p-4 space-y-2">
                     <small v-if="!customerChannelsId" class="text-red-500">Please Choose Customer Sales Channel For Calculate Bundle</small>
                     <template v-if="bundle.isSummaryLoading.value">
-                        <div class="text-center text-sm text-gray-400 py-2">Calculating...</div>
+                        <div class="space-y-2 py-1">
+                            <div v-for="idx in 4" :key="idx" class="flex items-center justify-between">
+                                <Skeleton width="8rem" height="0.85rem" />
+                                <Skeleton width="5rem" height="0.85rem" />
+                            </div>
+                        </div>
                     </template>
 
                     <template v-else>
@@ -638,7 +632,7 @@ watch(customerChannelsId, (val) => {
                                 Create Your Bundle
                                 <FontAwesomeIcon
                                     v-tooltip="trans('Bundle generator')"
-                                    icon="fal fa-layer-group"
+                                    icon="fas fa-layer-group"
                                     class="text-gray-500"
                                     fixed-width
                                 />
@@ -841,56 +835,6 @@ watch(customerChannelsId, (val) => {
                     </template>
 
                 </Dialog>
-                <ConfirmDialog>
-                    <template #container="{ message, acceptCallback, rejectCallback }">
-                        <div class="p-5 w-[360px]">
-
-                            <!-- ICON -->
-                            <div class="flex justify-center mb-3">
-                               <FontAwesomeIcon
-                                    :icon="message.data?.type === 'danger'
-                                        ? 'fas fa-exclamation-triangle'
-                                        : 'fas fa-question-circle'"
-                                    class="text-3xl text-red-500"
-                                />
-                            </div>
-
-                            <!-- TITLE -->
-                            <div class="text-center font-semibold text-lg mb-2">
-                                {{ message.header }}
-                            </div>
-
-                            <!-- MESSAGE -->
-                            <div class="text-center text-sm text-gray-500 mb-5 leading-relaxed">
-                                {{ message.message }}
-                            </div>
-
-                            <!-- ACTIONS -->
-                            <div class="flex justify-center gap-3">
-
-                                <!-- CANCEL -->
-                                <button
-                                    @click="rejectCallback"
-                                    class="px-4 py-2 text-sm border rounded-md hover:bg-gray-100"
-                                >
-                                    {{ message.rejectLabel || 'Cancel' }}
-                                </button>
-
-                                <!-- ACCEPT -->
-                                <button
-                                    @click="acceptCallback"
-                                    :class="[
-                                        'px-4 py-2 text-sm text-white rounded-md bg-red-500 hover:bg-red-600'
-                                    ]"
-                                >
-                                    {{ message.acceptLabel || 'Yes' }}
-                                </button>
-
-                            </div>
-
-                        </div>
-                    </template>
-                </ConfirmDialog>
             </template>
         </div>
     </Transition>

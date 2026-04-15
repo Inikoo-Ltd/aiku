@@ -69,10 +69,6 @@ class StoreNotPickPicking extends OrgAction
             'not_picked_reason' => ['sometimes', Rule::enum(PickingNotPickedReasonEnum::class)],
             'not_picked_note'   => ['sometimes', 'string'],
             'quantity'          => ['sometimes', 'numeric'],
-            'picker_user_id'    => [
-                'required',
-                Rule::Exists('users', 'id')->where('group_id', $this->shop->group_id)
-            ],
         ];
     }
 

@@ -9,11 +9,15 @@
 namespace App\Actions\CRM\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\CRM\ChatSession\UI\IndexChatSessions;
 use App\Actions\CRM\Customer\UI\GetCustomersDashboard;
+use App\Actions\CRM\Customer\UI\IndexCustomerCountries;
 use App\Actions\CRM\Prospect\UI\GetProspectsDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Enums\UI\CRM\CrmDashboardTabsEnum;
+use App\Http\Resources\CRM\CustomerCountriesResource;
+use App\Http\Resources\CRM\Livechat\ChatSessionResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -35,7 +39,7 @@ class ShowCrmDashboard extends OrgAction
     {
         $title = __('CRM Dashboard');
 
-        return Inertia::render(
+        $inertiaResponse = Inertia::render(
             'Org/Shop/CRM/CRMDashboard',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
@@ -59,8 +63,21 @@ class ShowCrmDashboard extends OrgAction
                 CrmDashboardTabsEnum::PROSPECTS->value => $this->tab == CrmDashboardTabsEnum::PROSPECTS->value ?
                     fn () => GetProspectsDashboard::run($this->shop, $request)
                     : Inertia::lazy(fn () => GetProspectsDashboard::run($this->shop, $request)),
+
+                CrmDashboardTabsEnum::COUNTRIES->value => $this->tab == CrmDashboardTabsEnum::COUNTRIES->value ?
+                    fn () => CustomerCountriesResource::collection(IndexCustomerCountries::run($this->shop, CrmDashboardTabsEnum::COUNTRIES->value))
+                    : Inertia::lazy(fn () => CustomerCountriesResource::collection(IndexCustomerCountries::run($this->shop, CrmDashboardTabsEnum::COUNTRIES->value))),
+
+                CrmDashboardTabsEnum::CHATS->value => $this->tab == CrmDashboardTabsEnum::CHATS->value ?
+                    fn () => ChatSessionResource::collection(IndexChatSessions::run($this->shop, CrmDashboardTabsEnum::CHATS->value))
+                    : Inertia::lazy(fn () => ChatSessionResource::collection(IndexChatSessions::run($this->shop, CrmDashboardTabsEnum::CHATS->value))),
             ]
         );
+
+        $inertiaResponse->table(IndexCustomerCountries::make()->tableStructure($this->shop, null, CrmDashboardTabsEnum::COUNTRIES->value));
+        $inertiaResponse->table(IndexChatSessions::make()->tableStructure($this->shop, null, CrmDashboardTabsEnum::CHATS->value));
+
+        return $inertiaResponse;
     }
 
     public function getBreadcrumbs(array $routeParameters): array

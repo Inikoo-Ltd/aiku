@@ -59,6 +59,12 @@ class UpdateWebsite extends OrgAction
             $shop = $website->shop;
             UpdateShop::run($shop, $shopUpdateData);
         }
+        
+        $hydrateDescriptionOverview = false;
+        if (Arr::has($modelData, 'description_has_overview')) {
+            data_set($modelData, 'settings.catalogue_pages.description_has_overview', Arr::pull($modelData, 'description_has_overview'));
+            $hydrateDescriptionOverview = true;
+        }
 
         if (Arr::has($modelData, "jira_help_desk_widget")) {
             data_set($modelData, "settings.jira_help_desk_widget", Arr::pull($modelData, "jira_help_desk_widget"));
@@ -125,9 +131,13 @@ class UpdateWebsite extends OrgAction
             WebsiteRecordSearch::run($website);
         }
 
-        if (Arr::hasAny($changes, ['domain', 'settings'])) {
-            BreakWebsiteCache::run($website);
+        if ($hydrateDescriptionOverview) {
+            WebsiteGenerateFamiliesOverviewPages::dispatch($website);
         }
+
+        // if (Arr::hasAny($changes, ['domain', 'settings'])) {
+        //     BreakWebsiteCache::run($website);
+        // }
 
         return $website;
     }
@@ -241,6 +251,7 @@ class UpdateWebsite extends OrgAction
                     ->max(50) // 50KB max
             ],
             'enable_chat'              => ['sometimes', 'boolean'],
+            'description_has_overview' => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {

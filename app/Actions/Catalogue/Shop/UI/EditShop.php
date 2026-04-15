@@ -90,7 +90,7 @@ class EditShop extends OrgAction
         if ($shop->website) {
             $helpPortalFields['widget_key'] = [
                 'type'          => 'input',
-                'placeholder'   => 'keyExample',
+                'placeholder'   => 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
                 'label'         => __('Widget Key'),
                 'value'         => Arr::get($shop->website->settings, 'jira_help_desk_widget'),
             ];
@@ -249,19 +249,6 @@ class EditShop extends OrgAction
                             'value'         => data_get($shop->settings, 'catalog.product_follow_master', false),
                             'information'   => __('This would force all Products under this shop to follow any updates done on master'),
                             'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
-                        ],
-                    ]
-                ] : [],
-                $shop->website ? [
-                    'label'  => __('Website'),
-                    'icon'   => 'fal fa-browser',
-                    'fields' => [
-                        'family_webpage_split_description' => [
-                            'label'         => 'Split Family Page Description Web Block',
-                            'type'          => 'toggle',
-                            'value'         => data_get($shop->settings, 'website.family_webpage_split_description', false),
-                            'information'   => __('Description Web Block would be split into 2 parts that is editable'),
-                            'warningText'   => __('Changing this would change the current layout of families webpage (using second webpage styles). Some unsaved changes on the workshop might be discarded. Are you sure you want to change it?')
                         ],
                     ]
                 ] : [],
