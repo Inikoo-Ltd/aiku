@@ -64,12 +64,12 @@ Route::prefix("settings")
 //     ->name("tags.")
 //     ->group(__DIR__ . "/tags.php");
 
-Route::prefix("crm")
-    ->name("crm.")
+Route::prefix("chat")
+    ->name("chat.")
     ->group(__DIR__ . "/agents.php");
 
-Route::prefix("crm")
-    ->name("crm.")
+Route::prefix("chat")
+    ->name("chat.")
     ->group(__DIR__ . "/chat.php");
 
 Route::prefix("offer")

@@ -41,6 +41,7 @@ use App\Actions\Catalogue\Shop\Json\FetchProductReviewThirdParty;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerCollectionSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductCategorySalesChannelIds;
+use App\Actions\Iris\Catalogue\FetchFamilyListCustomSorted;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
 use App\Actions\Web\Luigi\LuigiBoxGetProductDetail;
 use App\Actions\Web\Luigi\LuigiBoxRecommendation;
@@ -103,4 +104,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     // Reviews
     Route::get('product/{product:slug}/reviews-third-party', FetchProductReviewThirdParty::class)->name('reviews.third_party.product_review');
+
+    // Families Custom Sort
+    Route::get('{website:slug}/{productCategory}/families', FetchFamilyListCustomSorted::class)->name('website.category.family_list_sorted');
 });

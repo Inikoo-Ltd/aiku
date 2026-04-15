@@ -35,7 +35,7 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetBlockSubDepartment::run($webpage, $webBlock);
         } elseif ($webBlockType == 'collection-description-1') {
             $parsedWebBlocks[$key] = GetWebBlockCollection::run($webpage, $webBlock);
-        } elseif ($webBlockType == 'families-overview') {
+        } elseif (str_starts_with($webBlockType, 'families-') &&  str_ends_with($webBlockType, '-overview')) {
             $parsedWebBlocks[$key] = GetWebBlockFamiliesOverview::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'sub-departments-')) {
             $parsedWebBlocks[$key] = GetWebBlockSubDepartments::run($webpage, $webBlock);
