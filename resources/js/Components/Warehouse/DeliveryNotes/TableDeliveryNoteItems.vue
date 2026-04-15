@@ -549,6 +549,28 @@ const onSetItemToUndoWaitingWarehouse = () => {
             <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
             <span v-else>{{ item.quantity_picked }}</span>
 
+            <span v-tooltip="ctrans('Not picked')"  v-if="item.quantity_not_picked!=0" class="text-red-500 rounded-sm border-red-400 bg-red-100  border px-1.5 ml-2">
+            {{ Number(item.quantity_not_picked) }}
+            </span>
+
+            <span v-tooltip="ctrans('Waiting for warehouse')"  v-if="item.quantity_waiting_warehouse!=0" class="text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
+            {{ Number(item.quantity_waiting_warehouse) }}
+            </span>
+
+
+            <Link
+                v-if="Number(item.quantity_waiting_crm) > 0"
+                :href="route('grp.org.shops.show.ordering.backlog.waiting_items', {
+                    organisation: route().params.organisation,
+                    shop: route().params.shop,
+                })"
+            >
+                <span v-tooltip="ctrans('Waiting for customer services')"  class="text-purple-500 rounded-sm border-purple-400 bg-purple-100  border px-1.5 ml-2">
+                    {{ Number(item.quantity_waiting_crm) }}
+                </span>
+            </Link>
+
+
         </template>
 
         <template #cell(quantity_packed)="{ item: item, proxyItem }">
