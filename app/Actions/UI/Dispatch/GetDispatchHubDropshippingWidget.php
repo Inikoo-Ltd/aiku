@@ -34,12 +34,12 @@ class GetDispatchHubDropshippingWidget
                     ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
                     ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
                     ->where('shops.type', ShopTypeEnum::DROPSHIPPING->value)
-                    ->where('delivery_note_items.has_waiting_warehouse',true)
+                    ->where('delivery_note_items.has_waiting_warehouse', true)
                     ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING)
                     ->count(),
                 'route' => [
-                    'name' => 'grp.org.warehouses.show.dispatching.waiting_items_still_picking',
-                    'parameters' => request()->route()->originalParameters()
+                    'name'       => 'grp.org.warehouses.show.dispatching.waiting_items_still_picking.shop',
+                    'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::DROPSHIPPING->value],
                 ],
             ],
             'waiting_items' => [
@@ -47,12 +47,12 @@ class GetDispatchHubDropshippingWidget
                     ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
                     ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
                     ->where('shops.type', ShopTypeEnum::DROPSHIPPING->value)
-                    ->where('delivery_note_items.has_waiting_warehouse',true)
+                    ->where('delivery_note_items.has_waiting_warehouse', true)
                     ->where('delivery_notes.state', '!=', DeliveryNoteStateEnum::HANDLING)
                     ->count(),
                 'route' => [
-                    'name' => 'grp.org.warehouses.show.dispatching.waiting_items',
-                    'parameters' => request()->route()->originalParameters()
+                    'name'       => 'grp.org.warehouses.show.dispatching.waiting_items.shop',
+                    'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::DROPSHIPPING->value],
                 ],
             ],
             'cases'            => [
