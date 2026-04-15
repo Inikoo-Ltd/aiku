@@ -93,18 +93,18 @@ watch(() => props.preselected, (val) => {
     if (Array.isArray(val)) {
         selectedProduct.value = [...val]
     }
-}, { immediate: true, deep: true })
+}, { immediate: true })
 
 const compSelectedProduct = computed(() => {
     return selectedProduct.value?.map((item: Portfolio) => item.id)
 })
 
 const selectProduct = (item: any) => {
-    const index = selectedProduct.value?.indexOf(item);
+    const index = selectedProduct.value.findIndex((selected) => selected.id === item.id)
     if (index === -1) {
-        selectedProduct.value?.push(item);
+        selectedProduct.value.push(item)
     } else {
-        selectedProduct.value?.splice(index, 1);
+        selectedProduct.value.splice(index, 1)
     }
 }
 
