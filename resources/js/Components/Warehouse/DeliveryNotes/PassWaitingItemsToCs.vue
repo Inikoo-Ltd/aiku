@@ -8,6 +8,7 @@ import { trans } from 'laravel-vue-i18n'
 import Image from '@/Components/Image.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Image as ImageTS } from '@/types/Image'
+import { ctrans } from '@/Composables/useTrans'
 
 const model = defineModel<boolean>()
 
@@ -50,7 +51,7 @@ const onPassItemToCs = () => {
             onSuccess: () => {
                 notify({
                     title: trans("Success"),
-                    text: trans("Successfully set item as waiting"),
+                    text: ctrans("Successfully pass :itemCode as waiting to CS", { itemCode: props.transaction?.org_stock_code ?? '' }),
                     type: "success"
                 })
                 dataToSendAsWaiting.value.note = ''

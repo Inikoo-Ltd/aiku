@@ -25,6 +25,7 @@ const props = defineProps<{
     grouped?: object
     itemized?: object
     allow_stock_controller_set_not_picked: boolean
+    is_still_picking: boolean
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -56,6 +57,7 @@ watch(() => props.tabs.current, (newTab) => {
         :data="tabData"
         :tab="currentTab"
         :allowStockControllerSetNotPicked="allow_stock_controller_set_not_picked"
+        :isStillPicking="is_still_picking"
     />
 </template>
 
