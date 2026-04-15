@@ -108,6 +108,7 @@
     "tightenco/ziggy": "^2.5",
     "treblle/treblle-laravel": "^5.0",
     "tuupola/base32": "^2.0",
+    "typesense/typesense-php": "^6.0",
     "vemcogroup/laravel-translation": "^3.0",
     "vildanbina/laravel-auto-translation": "^1.5",
     "vlucas/phpdotenv": "^5.4",
