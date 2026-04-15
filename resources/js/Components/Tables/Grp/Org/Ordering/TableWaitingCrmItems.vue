@@ -120,14 +120,15 @@ const replaceProductRoute = (item: Record<string, any>): string | null => {
                 >
             </Link> -->
             
-            <ButtonWithLink
-                :url="setAsNotPickRoute(item)"
-                method="post"
-                :label="ctrans(`Don't pick`)"
-                type="negative"
-                icon="fas fa-skull"
-                size="xs"
-            />
+                <ButtonWithLink
+                    v-tooltip="ctrans(':itemNotPick items will not picked, and will not billed to customer', { itemNotPick: Number(item.quantity_waiting_crm) })"
+                    :url="setAsNotPickRoute(item)"
+                    method="post"
+                    :label="ctrans(`Don't pick :itemNotPick items`, { itemNotPick: Number(item.quantity_waiting_crm) })"
+                    type="negative"
+                    icon="fas fa-skull"
+                    size="xs"
+                />
 
 
                 
