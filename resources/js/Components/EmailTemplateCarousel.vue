@@ -5,6 +5,8 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faStore } from '@fal'
 import Carousel from 'primevue/carousel'
+import ProgressSpinner from 'primevue/progressspinner'
+import axios from 'axios'
 import TemplateCarouselItem from './TemplateCarouselItem.vue'
 
 library.add(faStore);
@@ -28,6 +30,11 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+const isLoading = ref(false);
+const localOtherShopTemplates = ref<Template[]>([]);
+const currentPage = ref(1);
+const lastPage = ref(1);
 
 const carouselOptions = computed(() => ({
     responsive: [
@@ -58,6 +65,9 @@ const carouselOptions = computed(() => ({
 const hasOwnTemplates = computed(() => props.ownShopTemplates?.templates?.length > 0);
 
 const otherShopTemplatesData = computed(() => {
+    if (localOtherShopTemplates.value.length > 0) {
+        return localOtherShopTemplates.value;
+    }
     if (!props.otherShopTemplates) return [];
     // Handle both old format (templates array) and new paginated format (data array)
     return Array.isArray(props.otherShopTemplates)
@@ -69,6 +79,14 @@ const hasOtherTemplates = computed(() => otherShopTemplatesData.value.length > 0
 const hasAnyTemplates = computed(() => hasOwnTemplates.value || hasOtherTemplates.value);
 
 const pagination = computed(() => {
+    if (localOtherShopTemplates.value.length > 0) {
+        return {
+            currentPage: currentPage.value,
+            lastPage: lastPage.value,
+            perPage: 4,
+            total: lastPage.value * 4
+        };
+    }
     if (!props.otherShopTemplates || Array.isArray(props.otherShopTemplates)) {
         return null;
     }
@@ -94,7 +112,48 @@ const loadPage = (page: number) => {
         emit('loadOtherShopTemplates', page);
     }
 };
+
+const handlePageUpdate = (event: number) => {
+    const pageNumber = event + 1;
+    const numVisible = carouselOptions.value.numVisible;
+    const neededItems = numVisible * pageNumber;
+
+    if (neededItems > 4 && !isLoading.value) {
+        const nextPage = Math.ceil(neededItems / 4);
+        if (nextPage > currentPage.value && nextPage <= lastPage.value) {
+            fetchOtherShopTemplates(nextPage);
+        }
+    }
+};
+
+const fetchOtherShopTemplates = async (page: number) => {
+    if (isLoading.value) return;
+
+    isLoading.value = true;
+
+    try {
+        const response = await axios.get(`/json/organisation/${props.organisationSlug}/shop/${props.shopSlug}/email-templates/other-shops`, {
+            params: {
+                page: page,
+                perPage: 4
+            }
+        });
+
+        const data = response.data;
+        currentPage.value = data.current_page;
+        lastPage.value = data.last_page;
+
+        // Append new templates to local data
+        localOtherShopTemplates.value = [...localOtherShopTemplates.value, ...data.data];
+    } catch (error) {
+        console.error('Error fetching other shop templates:', error);
+    } finally {
+        isLoading.value = false;
+    }
+};
 </script>
+
+
 
 <template>
     <div class="space-y-8">
@@ -129,35 +188,46 @@ const loadPage = (page: number) => {
                 </h3>
             </div>
 
-            <Carousel :value="otherShopTemplatesData" :numVisible="4" :options="carouselOptions" class="mb-8">
-                <template #item="slotProps">
-                    <TemplateCarouselItem :template="slotProps.data" :organisation-slug="props.organisationSlug"
-                        :shop-slug="props.shopSlug" :mailshot-id="props.mailshotId" button-type="secondary"
-                        :show-shop-name="true" :show-envelope-icon="false" />
-                </template>
+            <div class="relative">
+                <Carousel :value="otherShopTemplatesData" :numVisible="4" :numScroll="4" :options="carouselOptions"
+                    @update:page="handlePageUpdate" class="mb-8"
+                    :class="{ 'opacity-50 pointer-events-none': isLoading }">
+                    <template #item="slotProps">
+                        <TemplateCarouselItem :template="slotProps.data" :organisation-slug="props.organisationSlug"
+                            :shop-slug="props.shopSlug" :mailshot-id="props.mailshotId" button-type="secondary"
+                            :show-shop-name="true" :show-envelope-icon="false" />
+                    </template>
 
-                <template #footer v-if="pagination">
-                    <div class="flex justify-center items-center space-x-4 py-3 border-t border-gray-200">
-                        <button @click="loadPage(pagination.currentPage - 1)" :disabled="pagination.currentPage <= 1"
-                            class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
-                            {{ trans('Previous') }}
-                        </button>
+                    <template #footer v-if="pagination">
+                        <div class="flex justify-center items-center space-x-4 py-3 border-t border-gray-200">
+                            <button @click="loadPage(pagination.currentPage - 1)"
+                                :disabled="pagination.currentPage <= 1"
+                                class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                                {{ trans('Previous') }}
+                            </button>
 
-                        <span class="text-sm text-gray-600">
-                            {{ trans('Page :currentPage of :lastPage', {
-                                currentPage: pagination.currentPage,
-                                lastPage: pagination.lastPage
-                            }) }}
-                        </span>
+                            <span class="text-sm text-gray-600">
+                                {{ trans('Page :currentPage of :lastPage', {
+                                    currentPage: pagination.currentPage,
+                                    lastPage: pagination.lastPage
+                                }) }}
+                            </span>
 
-                        <button @click="loadPage(pagination.currentPage + 1)"
-                            :disabled="pagination.currentPage >= pagination.lastPage"
-                            class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
-                            {{ trans('Next') }}
-                        </button>
-                    </div>
-                </template>
-            </Carousel>
+                            <button @click="loadPage(pagination.currentPage + 1)"
+                                :disabled="pagination.currentPage >= pagination.lastPage"
+                                class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                                {{ trans('Next') }}
+                            </button>
+                        </div>
+                    </template>
+                </Carousel>
+
+                <!-- Loading Overlay -->
+                <div v-if="isLoading"
+                    class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
+                    <ProgressSpinner style="width: 50px; height: 50px" strokeWidth="4" />
+                </div>
+            </div>
         </div>
 
         <!-- No Templates Message -->

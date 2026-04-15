@@ -9,11 +9,13 @@
 namespace App\Actions\Comms\EmailTemplate;
 
 use App\Actions\OrgAction;
+use App\Http\Resources\Mail\EmailTemplateResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\EmailTemplate;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -21,7 +23,7 @@ class GetOtherShopEmailTemplates extends OrgAction
 {
     use AsObject;
 
-    public function handle(Organisation $organisation, Shop $currentShop, $prefix = null): LengthAwarePaginator
+    public function handle(Organisation $organisation, Shop $currentShop, $prefix = null, ?int $numberOfRecords = 4): LengthAwarePaginator
     {
         $queryBuilder = QueryBuilder::for(EmailTemplate::class);
 
@@ -41,7 +43,7 @@ class GetOtherShopEmailTemplates extends OrgAction
                 'shops.name as shop_name'
             ])
             ->orderBy('email_templates.created_at', 'desc')
-            ->withPaginator($prefix)
+            ->withPaginator($prefix, $numberOfRecords)
             ->withQueryString();
     }
 
@@ -54,5 +56,10 @@ class GetOtherShopEmailTemplates extends OrgAction
     {
         $this->initialisationFromShop($shop, $request);
         return $this->handle($organisation, $shop);
+    }
+
+    public function jsonResponse(LengthAwarePaginator $emailTemplates): AnonymousResourceCollection
+    {
+        return EmailTemplateResource::collection($emailTemplates);
     }
 }
