@@ -6,7 +6,6 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-use App\Providers\ElasticSearchServiceProvider;
 use App\Providers\GDriveServiceProvider;
 use App\Providers\NumberMacroServiceProvider;
 use Illuminate\Support\Facades\Facade;
@@ -171,7 +170,6 @@ return [
         App\Providers\HorizonServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         App\Providers\MacroServiceProvider::class,
-        // ElasticSearchServiceProvider::class,
         GDriveServiceProvider::class,
         NumberMacroServiceProvider::class,
 
@@ -213,7 +211,7 @@ return [
         App\Providers\HorizonServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         App\Providers\MacroServiceProvider::class,
-        ElasticSearchServiceProvider::class,
+
 
     ],
 */
