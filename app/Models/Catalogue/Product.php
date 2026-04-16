@@ -28,7 +28,6 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
 use App\Models\Web\WebpageHasProduct;
@@ -43,6 +42,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -248,13 +248,13 @@ class Product extends Model implements Auditable, HasMedia
 {
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use InAssetModel;
     use HasHistory;
     use HasFactory;
     use HasImage;
     use HasTranslations;
     use HasAttachments;
+    use Searchable;
 
     protected $guarded = [];
 
@@ -297,6 +297,21 @@ class Product extends Model implements Auditable, HasMedia
         'marketing_dimensions' => '{}',
         'offers_data'          => '{}',
     ];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'                => (string)$this->id,
+            'shop_id'           => $this->shop_id,
+            'code'              => $this->code,
+            'name'              => (string)$this->name,
+            'description'       => (string)$this->description,
+            'description_extra' => (string)$this->description_extra,
+            'state'             => $this->state->value,
+            'is_for_sale'       => $this->is_for_sale,
+            'created_at'        => $this->created_at->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {
