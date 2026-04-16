@@ -10,7 +10,7 @@ import { Collapse } from "vue-collapsed"
 import { get, set } from "lodash-es"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faArrowDown, faExchange } from "@fal"
+import { faArrowDown, faExchange, faArrowAltLeft } from "@fal"
 import { ref, computed, watch } from "vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
@@ -22,7 +22,7 @@ import Fieldset from "primevue/fieldset"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import "@/Composables/Icon/PalletReturnStateEnum"
 
-library.add(faArrowDown, faExchange)
+library.add(faArrowDown, faExchange, faArrowAltLeft)
 
 const props = defineProps<{
     data: TableTS
@@ -1040,7 +1040,7 @@ const onDispatchPalletReturn = async () => {
                         </div>
                     </div>
 
-                    <div v-if="isStoredItemReturn" class="flex items-center gap-x-2 border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">
+                    <div v-if="isStoredItemReturn && isPickedState" class="flex items-center gap-x-2 border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">
                         <div class="text-gray-500">{{ trans("Packer") }}:</div>
                         <div class="font-medium text-gray-800">
                             {{ selectedDispatchableReturn?.packer?.contact_name || "-" }}
@@ -1094,7 +1094,7 @@ const onDispatchPalletReturn = async () => {
             </div>
         </div>
 
-        <div v-if="!selectedDispatchableReturn?.isCollection" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div v-if="!selectedDispatchableReturn?.isCollection && isPickedState" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="rounded-lg border border-gray-200 bg-white p-4">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-x-2">

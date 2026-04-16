@@ -9,7 +9,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faStickyNote, faUndo, faCheck, faDebug } from "@fal"
+import { faStickyNote, faUndo, faCheck, faDebug, faSave, faArrowAltLeft } from "@fal"
 import { ref, reactive, computed, watch } from "vue"
 import Popover from "@/Components/Popover.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
@@ -24,7 +24,7 @@ import { trans } from "laravel-vue-i18n"
 import type { routeType } from "@/types/route"
 import "@/Composables/Icon/PalletStateEnum"
 
-library.add(faStickyNote, faUndo, faCheck, faDebug)
+library.add(faStickyNote, faUndo, faCheck, faDebug, faSave, faArrowAltLeft)
 
 const props = defineProps<{
     data: TableTS
@@ -108,6 +108,7 @@ watch(
 )
 
 const canShowModalPrimaryButton = computed(() => selectedDispatchableReturn.value?.state !== "dispatched")
+const isPickedState = computed(() => selectedDispatchableReturn.value?.state === "picked")
 const modalPrimaryLabel = computed(() => {
     if (selectedDispatchableReturn.value?.state === "picking") {
         return trans("Set as Picked")
@@ -1008,7 +1009,7 @@ const palletRoute = (item: any) => {
             </div>
         </div>
 
-        <div v-if="!selectedDispatchableReturn?.isCollection" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div v-if="!selectedDispatchableReturn?.isCollection && isPickedState" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="rounded-lg border border-gray-200 bg-white p-4">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-x-2">

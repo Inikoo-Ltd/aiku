@@ -14,6 +14,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 
 class IndexFulfilmentPickingSessionStoredItemsGrouped extends OrgAction
 {
@@ -93,7 +94,14 @@ class IndexFulfilmentPickingSessionStoredItemsGrouped extends OrgAction
             $table->column(key: 'pallet_return_reference', label: __('Return'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
 
-            if (in_array($pickingSession->state, [PickingSessionStateEnum::PICKING_FINISHED, PickingSessionStateEnum::PACKING_FINISHED], true)) {
+            $hasUndispatchedPalletReturns = $pickingSession->palletReturns()
+                ->where('pallet_returns.state', '!=', PalletReturnStateEnum::DISPATCHED->value)
+                ->exists();
+
+            if (
+                in_array($pickingSession->state, [PickingSessionStateEnum::PICKING_FINISHED, PickingSessionStateEnum::PACKING_FINISHED], true)
+                && $hasUndispatchedPalletReturns
+            ) {
                 $table->column(key: 'actions', label: __('Actions'), canBeHidden: false);
             }
             $table->defaultSort('pallet_return_reference');

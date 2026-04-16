@@ -4,6 +4,7 @@ namespace App\Actions\Fulfilment\PickingSession\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Fulfilment\PalletReturnItem;
 use App\Models\Inventory\PickingSession;
@@ -73,7 +74,14 @@ class IndexFulfilmentPickingSessionPalletItemsGrouped extends OrgAction
             $table->column(key: 'pallet_return_reference', label: __('Return'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'pallets', label: __('Pallets'), canBeHidden: false);
 
-            if (in_array($pickingSession->state, [PickingSessionStateEnum::PICKING_FINISHED, PickingSessionStateEnum::PACKING_FINISHED], true)) {
+            $hasUndispatchedPalletReturns = $pickingSession->palletReturns()
+                ->where('pallet_returns.state', '!=', PalletReturnStateEnum::DISPATCHED->value)
+                ->exists();
+
+            if (
+                in_array($pickingSession->state, [PickingSessionStateEnum::PICKING_FINISHED, PickingSessionStateEnum::PACKING_FINISHED], true)
+                && $hasUndispatchedPalletReturns
+            ) {
                 $table->column(key: 'actions', label: __('Actions'), canBeHidden: false);
             }
 
