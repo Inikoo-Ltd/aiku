@@ -243,7 +243,7 @@ const submitReplaceProduct = () => {
 
                         <!-- Replace Product -->
                         <Button
-                            v-else-if="layout.app.environment === 'local' && replaceProductRoute(subItem)"
+                            v-else-if="replaceProductRoute(subItem)"
                             :label="ctrans('Replace :itemNotPick items', { itemNotPick: Number(subItem.quantity_waiting_crm) })"
                             size="xs"
                             type="positive"
