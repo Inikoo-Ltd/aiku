@@ -80,8 +80,8 @@ class GetProductsForPortfolioSelect extends OrgAction
         $queryBuilder->where('products.is_for_sale', true);
         $queryBuilder->whereNot('products.state', ProductStateEnum::DISCONTINUED->value);
 
-        $origin = Arr::get(request()->input('filter'), 'origin', CustomerSalesChannelPortfolioTabsEnum::PRODUCTS->value);
-        if($origin === CustomerSalesChannelPortfolioTabsEnum::PRODUCTS->value) {
+        $origin = CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value;
+        if(request()->input('origin') !== $origin) {
             $queryBuilder->where('products.shop_id', $customerSalesChannel->shop->id)
                 ->whereNotIn('products.id', function ($subQuery) use ($customerSalesChannel) {
                     $subQuery->select('item_id')
@@ -115,7 +115,7 @@ class GetProductsForPortfolioSelect extends OrgAction
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 
         return $queryBuilder->allowedSorts(['code', 'name', 'shop_slug', 'department_slug', 'family_slug'])
-            ->allowedFilters([$globalSearch, $typeFilter, 'origin'])
+            ->allowedFilters([$globalSearch, $typeFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
