@@ -375,78 +375,88 @@ const hasRoute = (item: any) => {
                             </div>
 
                             <!-- MIDDLE (PREVIEW) -->
-                            <component
-                                :is="highlightItem && hasRoute(highlightItem) ? Link : 'div'"
-                                :href="highlightItem && hasRoute(highlightItem)
-                                    ? route(highlightItem.result.route.name, highlightItem.result.route.parameters)
-                                    : undefined"
-                                class="col-span-4 border-r flex flex-col items-center justify-center text-center transition"
-                                :class="highlightItem && hasRoute(highlightItem)
-                                    ? 'cursor-pointer hover:bg-slate-100 hover:border-slate-200 hover:shadow-sm active:scale-[0.99]'
-                                    : ''"
-                                @click="highlightItem && hasRoute(highlightItem) ? closeModal() : undefined"
-                            >
+                             <div class="col-span-4 border-r flex flex-col">
 
-                                <!-- TITLE -->
-                                <p class="text-sm text-gray-400 mb-3">Preview</p>
-
-                                <div v-if="isLoadingSearch" class="w-full flex flex-col items-center gap-4">
-                                    <Skeleton width="60%" height="1.5rem" />
-                                    <Skeleton width="40%" height="1rem" />
-                                    <Skeleton width="30%" height="0.75rem" />
+                                <!-- HEADER -->
+                                <div class="px-4 py-3 border-b">
+                                    <p class="text-xs text-gray-400 uppercase tracking-wide">Preview</p>
                                 </div>
-                                <!-- CONTENT -->
-                                <template v-else-if="highlightItem">
-                                    <p class="text-lg font-semibold text-slate-900">
-                                        {{ highlightItem.result?.description?.label || highlightItem.result?.code?.label }}
-                                    </p>
-
-                                    <p class="mt-1 text-sm text-gray-500">
-                                        {{ highlightItem.result?.code?.label }}
-                                    </p>
-
-                                    <p
-                                        v-if="hasRoute(highlightItem)"
-                                        class="mt-4 text-xs font-medium uppercase tracking-wide text-slate-500"
-                                    >
-                                        {{ trans('Click') }}
-                                    </p>
-                                </template>
-
-                                <!-- EMPTY -->
-                                <template v-else>
-                                    <div class="text-gray-400">
-                                        No preview
+    
+                                <component
+                                    :is="highlightItem && hasRoute(highlightItem) ? Link : 'div'"
+                                    :href="highlightItem && hasRoute(highlightItem)
+                                        ? route(highlightItem.result.route.name, highlightItem.result.route.parameters)
+                                        : undefined"
+                                    class="flex-1 flex flex-col items-center justify-center text-center transition p-6"
+                                    :class="highlightItem && hasRoute(highlightItem)
+                                        ? 'cursor-pointer hover:bg-slate-100 hover:border-slate-200 hover:shadow-sm active:scale-[0.99]'
+                                        : ''"
+                                    @click="highlightItem && hasRoute(highlightItem) ? closeModal() : undefined"
+                                >
+                                    <div v-if="isLoadingSearch" class="w-full flex flex-col items-center gap-4">
+                                        <Skeleton width="60%" height="1.5rem" />
+                                        <Skeleton width="40%" height="1rem" />
+                                        <Skeleton width="30%" height="0.75rem" />
                                     </div>
-                                </template>
+                                    <!-- CONTENT -->
+                                    <template v-else-if="highlightItem">
+                                        <p class="text-lg font-semibold text-slate-900">
+                                            {{ highlightItem.result?.description?.label || highlightItem.result?.code?.label }}
+                                        </p>
 
-                            </component>
+                                        <p class="mt-1 text-sm text-gray-500">
+                                            {{ highlightItem.result?.code?.label }}
+                                        </p>
+
+                                        <p
+                                            v-if="hasRoute(highlightItem)"
+                                            class="mt-4 text-xs font-medium uppercase tracking-wide text-slate-500"
+                                        >
+                                            {{ trans('Click') }}
+                                        </p>
+                                    </template>
+
+                                    <!-- EMPTY -->
+                                    <template v-else>
+                                        <div class="text-gray-400">
+                                            No preview
+                                        </div>
+                                    </template>
+
+                                </component>
+                            </div>
                             <!-- RIGHT -->
-                            <div class="col-span-5 overflow-y-auto p-4 space-y-2">
+                            <div class="col-span-5 flex flex-col min-h-0">
 
-                                 <div v-if="isLoadingSearch" class="space-y-3">
-                                    <div v-for="i in 6" :key="i" class="flex gap-3 items-center">
-                                        <Skeleton shape="circle" size="2.5rem" />
-                                        <div class="flex flex-col gap-2 w-full">
-                                            <Skeleton width="50%" height="1rem" />
-                                            <Skeleton width="30%" height="0.75rem" />
+                                 <div class="px-4 py-3 border-b">
+                                    <p class="text-xs text-gray-400 uppercase tracking-wide">
+                                        Results
+                                    </p>
+                                </div>
+                                <div class="flex-1 p-4 space-y-2 overflow-y-auto">
+                                    <div v-if="isLoadingSearch" class="space-y-3">
+                                        <div v-for="i in 6" :key="i" class="flex gap-3 items-center">
+                                            <Skeleton shape="circle" size="2.5rem" />
+                                            <div class="flex flex-col gap-2 w-full">
+                                                <Skeleton width="50%" height="1rem" />
+                                                <Skeleton width="30%" height="0.75rem" />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                 <template v-else>
-                                    <div v-for="item in filteredResults" :key="item.model_id"
-                                        class="rounded-xl border border-transparent p-3 transition"
-                                        :class="hasRoute(item) ? 'cursor-pointer hover:border-slate-200 hover:bg-gray-100' : 'hover:bg-gray-100'"
-                                        @mouseenter="hoverItem = item">
-                                        <SearchResultDefault :data="item.result" :modelType="item.model_type"
-                                            @finishVisit="closeModal" />
+                                    <template v-else>
+                                        <div v-for="item in filteredResults" :key="item.model_id"
+                                            class="rounded-xl border border-transparent p-3 transition"
+                                            :class="hasRoute(item) ? 'cursor-pointer hover:border-slate-200 hover:bg-gray-100' : 'hover:bg-gray-100'"
+                                            @mouseenter="hoverItem = item">
+                                            <SearchResultDefault :data="item.result" :modelType="item.model_type"
+                                                @finishVisit="closeModal" />
+                                        </div>
+                                    </template>
+
+                                    <div v-if="!filteredResults.length && !isLoadingSearch" class="text-gray-400">
+                                        No results
                                     </div>
-                                </template>
-
-                                <div v-if="!filteredResults.length && !isLoadingSearch" class="text-gray-400">
-                                    No results
                                 </div>
-
                             </div>
 
                         </div>
