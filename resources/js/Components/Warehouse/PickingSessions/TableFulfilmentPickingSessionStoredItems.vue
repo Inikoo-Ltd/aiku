@@ -999,7 +999,7 @@ const onDispatchPalletReturn = async () => {
 
         <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="rounded-lg border border-gray-200 bg-white p-4">
-                <div class="text-base font-semibold text-gray-800 mb-3">{{ trans("Shipping") }}</div>
+                <div v-if="!selectedDispatchableReturn?.isCollection" class="text-base font-semibold text-gray-800 mb-3">{{ trans("Shipping") }}</div>
 
                 <div v-if="selectedDispatchableReturn?.isCollection" class="border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">
                     {{ trans("For Collection: Yes") }}
