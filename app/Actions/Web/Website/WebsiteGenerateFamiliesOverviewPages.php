@@ -54,7 +54,7 @@ class WebsiteGenerateFamiliesOverviewPages
                 }
             }
 
-            if ($mainPage = $department->webpages()->where('layout_style', 'main_page')->where('status', 'live')->first()) {
+            if ($mainPage = $department->webpages()->where('layout_style', 'main_page')->where('state', 'live')->first()) {
                 $department->updateQuietly([
                     'webpage_id'    => $mainPage->id,
                     'url'           => $mainPage->url,
