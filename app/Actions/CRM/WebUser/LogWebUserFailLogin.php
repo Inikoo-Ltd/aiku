@@ -25,7 +25,7 @@ class LogWebUserFailLogin
 
         $webUser = WebUser::withTrashed()->where('username', Arr::get($credentials, 'username'))->where('website_id', $website->id)->first();
 
-        $this->logFail('web_users_requests', $datetime, $ip, $userAgent, Arr::get($credentials, 'username'), $webUser?->id);
+        $this->logFail($datetime, $ip, $userAgent, Arr::get($credentials, 'username'), $webUser);
 
 
         if ($webUser) {

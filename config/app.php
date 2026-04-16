@@ -171,7 +171,7 @@ return [
         App\Providers\HorizonServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         App\Providers\MacroServiceProvider::class,
-        ElasticSearchServiceProvider::class,
+        // ElasticSearchServiceProvider::class,
         GDriveServiceProvider::class,
         NumberMacroServiceProvider::class,
 

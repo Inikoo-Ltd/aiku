@@ -14,6 +14,8 @@ use App\Models\Traits\HasEmail;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasRoles;
 use App\Models\Traits\IsUserable;
+use App\Models\UserFailedLogIn;
+use App\Models\UserLogin;
 use Laravel\Sanctum\HasApiTokens;
 use Laravel\Scout\Searchable;
 use Spatie\MediaLibrary\HasMedia;
@@ -237,6 +239,15 @@ class User extends Authenticatable implements HasMedia, Auditable
         return $this->hasMany(UserRequest::class);
     }
 
+    public function userLogins(): HasMany
+    {
+        return $this->hasMany(UserLogin::class);
+    }
+
+    public function userFailedLogins(): HasMany
+    {
+        return $this->hasMany(UserFailedLogIn::class);
+    }
 
     public function userAuthorisedModels(): HasMany
     {

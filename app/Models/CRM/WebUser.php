@@ -22,6 +22,8 @@ use App\Models\Traits\HasRoles;
 use App\Models\Traits\InCustomer;
 use App\Models\Traits\IsUserable;
 use App\Models\Web\Website;
+use App\Models\WebUserFailedLogin;
+use App\Models\WebUserLogin;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -182,6 +184,16 @@ class WebUser extends Authenticatable implements HasMedia, Auditable
     public function webUserRequests(): HasMany
     {
         return $this->hasMany(WebUserRequest::class);
+    }
+
+    public function webUserLogins(): HasMany
+    {
+        return $this->hasMany(WebUserLogin::class);
+    }
+
+    public function webUserFailedLogins(): HasMany
+    {
+        return $this->hasMany(WebUserFailedLogin::class);
     }
 
     public function passwordResets(): HasMany

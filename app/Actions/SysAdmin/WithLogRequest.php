@@ -8,9 +8,13 @@
 
 namespace App\Actions\SysAdmin;
 
+use App\Actions\Analytics\WebUserRequest\StoreWebUserFailedLogin;
 use App\Actions\Elasticsearch\IndexElasticsearchDocument;
+use App\Actions\SysAdmin\User\StoreUserFailedLogin;
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Enums\Elasticsearch\ElasticsearchUserRequestTypeEnum;
+use App\Models\CRM\WebUser;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Carbon;
 use Stevebauman\Location\Facades\Location;
 
@@ -67,37 +71,40 @@ trait WithLogRequest
     }
 
 
-    public function logFail(string $index, Carbon $datetime, string $ip, string $userAgent, string $username, ?int $userID): void
+    public function logFail(Carbon $datetime, string $ip, string $userAgent, string $username, WebUser|User|null $userable): void
     {
-        $index = config('elasticsearch.index_prefix').$index;
-
-
         $browserData = GetBrowserInfo::run($userAgent);
-
 
         $body = [
             'type'                 => ElasticsearchUserRequestTypeEnum::FAIL_LOGIN->value,
             'datetime'             => $datetime,
             'username'             => $username,
-            'organisation_user_id' => $userID,
             'ip_address'           => $ip,
-            'location'             => json_encode($this->getLocation($ip)), // reference: https://github.com/stevebauman/location
+            'location'             => $this->getLocation($ip), // reference: https://github.com/stevebauman/location
             'user_agent'           => $userAgent,
-            'device_type'          => json_encode([
+            'device_type'          => [
                 'title' => $browserData['device'],
                 'icon'  => $this->getDeviceIcon($browserData['device'])
-            ]),
-            'platform'             => json_encode([
+            ],
+            'platform'             => [
                 'title' => $browserData['os'],
                 'icon'  => $this->getPlatformIcon($browserData['os'])
-            ]),
-            'browser'              => json_encode([
+            ],
+            'browser'              => [
                 'title' => $browserData['browser'],
                 'icon'  => $this->getBrowserIcon(strtolower($browserData['browser']))
-            ])
+            ]
         ];
 
-        IndexElasticsearchDocument::run(index: $index, body: $body);
+        if($userable instanceof WebUser) {
+            $body['web_user_id'] = $userable->id;
+
+            StoreWebUserFailedLogin::run($userable, $body);
+        } else {
+            $body['user_id'] = $userable->id;
+
+            StoreUserFailedLogin::run($userable, $body);
+        }
     }
 
 }

@@ -23,7 +23,7 @@ class LogUserFailLogin
     {
         $user = User::withTrashed()->where('username', Arr::get($credentials, 'username'))->first();
 
-        $this->logFail('users_requests', $datetime, $ip, $userAgent, Arr::get($credentials, 'username'), $user?->id);
+        $this->logFail($datetime, $ip, $userAgent, Arr::get($credentials, 'username'), $user);
 
 
         if ($user) {
