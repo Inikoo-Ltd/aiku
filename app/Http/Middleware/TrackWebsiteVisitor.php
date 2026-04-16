@@ -34,7 +34,7 @@ class TrackWebsiteVisitor
 
     protected function shouldTrack(Request $request): bool
     {
-        if (app()->environment('local')) {
+        if (app()->isLocal()) {
             return false;
         }
 
