@@ -219,23 +219,6 @@ const confirmSchedule = async () => {
         })
 };
 
-// Function to get dynamic min time based on selected date
-const getMinTime = () => {
-    const now = new Date();
-    const selectedDate = scheduleDateTime.value;
-
-    // If selected date is today, set min time to current time
-    if (selectedDate && selectedDate.toDateString() === now.toDateString()) {
-        return {
-            hours: now.getHours(),
-            minutes: now.getMinutes(),
-            seconds: now.getSeconds()
-        };
-    }
-
-    // Otherwise, allow any time from start of day
-    return { hours: 0, minutes: 0, seconds: 0 };
-};
 
 // Function to cancel schedule
 const cancelSchedule = () => {
@@ -649,10 +632,10 @@ watch(
             <h3 class="text-lg font-semibold mb-4 text-gray-900"> {{ trans('Timezone') }}: <span
                     class="text-red-600">(Europe/London)</span> </h3>
             <div class="mb-4 flex justify-center">
-                <VueDatePicker v-model="scheduleDateTime" :min-date="minDateTime" :min-time="getMinTime()"
-                    :text-input="true" :inline="true" :enable-time-picker="true" :is-24="true" :minutes-increment="1"
-                    :seconds-increment="1" :auto-apply="true" :open-on-focus="true" :time-picker-inline="true"
-                    class="w-full" placeholder="" :teleport="true" />
+                <VueDatePicker v-model="scheduleDateTime" :min-date="minDateTime" :text-input="true" :inline="true"
+                    :enable-time-picker="true" :is-24="true" :minutes-increment="1" :seconds-increment="1"
+                    :auto-apply="true" :open-on-focus="true" :time-picker-inline="true" class="w-full" placeholder=""
+                    :teleport="true" />
             </div>
             <div class="flex gap-2 justify-end w-full">
                 <Button :label="trans('Cancel')" @click="cancelSchedule"

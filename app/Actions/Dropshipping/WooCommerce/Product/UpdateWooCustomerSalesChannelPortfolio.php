@@ -55,7 +55,7 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
             }
         }
 
-        foreach (collect($portfoliosID)->chunk(100) as $portfolioIdChunk) {
+        foreach (collect($portfoliosID)->chunk(20) as $portfolioIdChunk) {
             $productData = [];
             foreach ($portfolioIdChunk as $portfolio) {
                 $portfolio = Portfolio::find($portfolio);

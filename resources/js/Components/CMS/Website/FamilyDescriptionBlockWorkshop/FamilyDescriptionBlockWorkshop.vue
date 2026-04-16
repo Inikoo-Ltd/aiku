@@ -31,6 +31,7 @@ import ScreenView from "@/Components/ScreenView.vue"
 import FamilyList from "@/Components/CMS/Website/FamilyDescriptionBlockWorkshop/FamilyList.vue"
 
 import type { routeType } from "@/types/route"
+import { cloneDeep } from "lodash-es"
 
 library.add(
   faCube,
@@ -56,24 +57,26 @@ const props = defineProps<{
 // STATE
 const layoutState = ref(toRaw(props.data.layout))
 const layoutTheme = inject("layout", layoutStructure)
-
+const selectedBlock = ref<any>(null)
 const rootRef = ref<HTMLElement | null>(null)
 const visibleDrawer = ref(false)
 const isLoadingSave = ref(false)
 const loadingTemplate = ref(false)
-
+const previewKey = ref<string | number>("")
 const currentView = ref<"desktop" | "tablet" | "mobile">("desktop")
 
 provide("visibleDrawer", visibleDrawer)
 provide("currentView", currentView)
 
-// PICKED DATA
+// ✅ FIXED: keep stable structure
 const dataPicked = ref<{
   sub_department: any | null
   families: any[]
+  family: any | null
 }>({
   sub_department: null,
-  families: []
+  families: [],
+  family: null
 })
 
 // VIEW SIZE
@@ -103,8 +106,6 @@ const onPickTemplate = async (template: any) => {
     if (response.data) {
       layoutState.value = response.data
     }
-
-   /*  debouncedAutosave() */
   } catch (error) {
     console.error("Failed to fetch template", error)
   } finally {
@@ -112,23 +113,20 @@ const onPickTemplate = async (template: any) => {
   }
 }
 
-// CHANGE FAMILY
+// ✅ FIXED: do NOT replace object
 const onChangeFamily = (payload: any) => {
-  dataPicked.value = {
-    sub_department: payload.sub_department,
-    families: payload.families || []
-  }
-}
+  dataPicked.value.family = payload
 
+  // 🔥 force re-render using family code (or id as fallback)
+  previewKey.value = payload?.code || payload?.id || Date.now()
+
+  visibleDrawer.value = false
+}
 // AUTOSAVE
 const autosave = () => {
-  console.log("Autosaving...", layoutState.value)
-  const payload = toRaw(layoutState.value)
+  const payload = cloneDeep(layoutState.value)
 
-  if (payload?.data?.fieldValue) {
-    delete payload.data.fieldValue.families
-    delete payload.data.fieldValue.sub_department
-  }
+  console.log("SENT", payload)
 
   router.patch(
     route(
@@ -157,6 +155,7 @@ const debouncedAutosave = () => {
   autosaveTimer = window.setTimeout(autosave, 800)
 }
 
+
 // MOUNT
 onMounted(() => {
   if (rootRef.value && props.layout_theme?.color) {
@@ -167,55 +166,98 @@ onMounted(() => {
 
 <template>
   <div class="pt-4">
-    <div class="mx-6 italic text-amber-700 bg-amber-200 py-1 px-2 border-l-4 border-amber-400 w-fit">
+    <!-- INFO -->
+    <div class="mx-4 lg:mx-6 italic text-amber-700 bg-amber-200 py-1 px-2 border-l-4 border-amber-400 w-fit">
       {{ trans("*This block usually showed in Family page") }}
     </div>
 
-    <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
-      
+    <!-- LAYOUT -->
+    <div class="h-[85vh] grid grid-cols-1 lg:grid-cols-12 gap-4 p-3">
+
       <!-- LEFT MENU -->
-      <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-        <SideMenuFamilyDescriptionBlockWorkshop 
-          :data="layoutState" 
+      <div
+        class="col-span-1 lg:col-span-3 bg-white rounded-xl shadow-md p-3 lg:p-4 overflow-y-auto border max-h-[40vh] lg:max-h-full">
+        <SideMenuFamilyDescriptionBlockWorkshop
+          :data="layoutState"
           :webBlockTypes="props.data.web_block_types"
-          @set-up-template="onPickTemplate" 
+          :selectedBlock="selectedBlock"
+          @update:data="layoutState = $event"
+          @update:selectedBlock="selectedBlock = $event"
+          @set-up-template="onPickTemplate"
           @auto-save="debouncedAutosave"
         />
       </div>
 
       <!-- PREVIEW -->
-      <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-auto border">
-        
-        <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
+      <div
+        class="col-span-1 lg:col-span-9 bg-white rounded-xl shadow-md flex flex-col border overflow-hidden">
+
+        <!-- HEADER -->
+        <div class="flex justify-between items-center px-3 lg:px-4 py-2 bg-gray-100 border-b shrink-0">
           <div class="py-1 px-2 hidden lg:block">
             <ScreenView v-model="currentView" />
           </div>
 
-          <div class="text-sm text-gray-600 italic cursor-pointer" @click="visibleDrawer = true">
-            <span v-if="dataPicked.sub_department?.name">
-              Preview: <strong>{{ dataPicked.sub_department.name }}</strong>
+          <div
+            class="text-xs lg:text-sm text-gray-600 italic cursor-pointer truncate"
+            @click="visibleDrawer = true"
+          >
+            <span v-if="dataPicked.family?.name">
+              Preview: <strong>{{ dataPicked.family.name }}</strong>
             </span>
             <span v-else>Pick The Family</span>
           </div>
         </div>
 
-        <div v-if="layoutState?.code" ref="rootRef" :class="['border-2 border-t-0', iframeClass]">
-       <!--    <component
-            class="flex-1 overflow-auto active-block"
-            :is="getComponent(layoutState.code)"
-            :screenType="currentView"
-            :modelValue="{
-              ...layoutState?.data?.fieldValue,
-              department: dataPicked.sub_department,
-              families: dataPicked.families
-            }"
-            :routeEditFamiliesOverview="props.data.update_family_route"
-          /> -->
-        </div>
+        <!-- CONTENT -->
+        <div class="flex-1 min-h-0 p-2 lg:p-4">
+          <div
+            v-if="layoutState && dataPicked.family"
+            :key="previewKey"
+            ref="rootRef"
+            :class="[
+              'border-2 border-t-0 h-full overflow-auto',
+              iframeClass
+            ]"
+          >
+            <div
+              v-for="(block, key) in layoutState"
+              :key="key + '-' + previewKey"
+              class="my-2 lg:my-3 transition-all duration-200"
+              :class="{
+                'border-2 block-active': key === selectedBlock?.code,
+                'border border-transparent': key !== selectedBlock?.code
+              }"
+            >
+              <component
+                :is="getComponent(key)"
+                :routeEditFamiliesOverview="props.data.update_family_route"
+                :screenType="currentView"
+                :modelValue="{
+                  ...block?.fieldValue,
+                  ...dataPicked.family
+                }"
+              />
 
-        <div v-else class="flex flex-col items-center justify-center text-gray-500 flex-1">
-          <FontAwesomeIcon :icon="faInfoCircle" class="text-4xl mb-2" />
-          <h3 class="text-lg font-semibold">{{ trans("No department selected") }}</h3>
+              <!-- SPECIAL BLOCK -->
+              <div
+                v-if="key === 'family-2'"
+                class="mx-2 h-28 lg:h-32 my-3 flex items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 lg:px-4 py-2 text-[10px] lg:text-xs font-medium text-gray-600"
+              >
+                Products Block
+              </div>
+            </div>
+          </div>
+
+          <!-- EMPTY STATE -->
+          <div v-else class="flex items-center justify-center text-gray-500 h-full">
+            <div class="flex flex-col items-center">
+              <FontAwesomeIcon :icon="faInfoCircle" class="text-3xl lg:text-4xl mb-2" />
+              <h3 class="text-sm lg:text-lg font-semibold">
+                {{ trans("No Family selected") }}
+              </h3>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -226,7 +268,7 @@ onMounted(() => {
     v-model:visible="visibleDrawer"
     position="right"
     :pt="{
-      root: { style: 'width: 30vw' },
+      root: { style: 'width: 100vw; max-width: 400px;' },
       content: { class: 'flex flex-col h-full' }
     }"
   >
@@ -242,11 +284,17 @@ onMounted(() => {
     </template>
 
     <div class="flex-1 overflow-y-auto p-4">
-      <FamilyList 
-        :dataList="props.data.family" 
+      <FamilyList
+        :dataList="props.data.family"
         @ChangeFamily="onChangeFamily"
-        :active="layoutState?.data?.fieldValue?.family?.slug" 
+        :active="dataPicked.family?.slug"
       />
     </div>
   </Drawer>
 </template>
+
+<style scoped>
+.block-active {
+  border: 2px solid color-mix(in srgb, var(--theme-color-4) 80%, black);
+}
+</style>

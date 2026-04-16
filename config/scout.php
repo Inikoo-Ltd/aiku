@@ -1,5 +1,16 @@
 <?php
 
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 16 Apr 2026 02:14:50 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+use App\Actions\SysAdmin\Guest\GetGuestSearchSchema;
+use App\Actions\SysAdmin\User\GetUserSearchSchema;
+use App\Models\SysAdmin\Guest;
+use App\Models\SysAdmin\User;
+
 return [
 
     /*
@@ -11,11 +22,12 @@ return [
     | using Laravel Scout. This connection is used when syncing all models
     | to the search service. You should adjust this based on your needs.
     |
-    | Supported: "algolia", "meilisearch", "database", "collection", "null"
+    | Supported: "algolia", "meilisearch", "typesense",
+    |            "database", "collection", "null"
     |
     */
 
-    'driver' => env('SCOUT_DRIVER', 'null'),
+    'driver' => env('SCOUT_DRIVER', 'collection'),
 
     /*
     |--------------------------------------------------------------------------
@@ -62,7 +74,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | These options allow you to control the maximum chunk size when you are
-    | mass importing data into the search engine. This allows you to fine
+    | mass-importing data into the search engine. This allows you to fine
     | tune each of these chunk sizes based on the power of the servers.
     |
     */
@@ -77,7 +89,7 @@ return [
     | Soft Deletes
     |--------------------------------------------------------------------------
     |
-    | This option allows to control whether to keep soft deleted records in
+    | This option allows to control whether to keep soft-deleted records in
     | the search indexes. Maintaining soft deleted records can be useful
     | if your application still needs to search for the records later.
     |
@@ -100,42 +112,45 @@ return [
 
     'identify' => env('SCOUT_IDENTIFY', false),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Algolia Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Here you may configure your Algolia settings. Algolia is a cloud hosted
-    | search engine which works great with Scout out of the box. Just plug
-    | in your application ID and admin API key to get started searching.
-    |
-    */
-
-    'algolia' => [
-        'id'     => env('ALGOLIA_APP_ID', ''),
-        'secret' => env('ALGOLIA_SECRET', ''),
-    ],
 
     /*
     |--------------------------------------------------------------------------
-    | Meilisearch Configuration
+    | Typesense Configuration
     |--------------------------------------------------------------------------
     |
-    | Here you may configure your Meilisearch settings. Meilisearch is an open
-    | source search engine with minimal configuration. Below, you can state
-    | the host and key information for your own Meilisearch installation.
-    |
-    | See: https://docs.meilisearch.com/guides/advanced_guides/configuration.html
+    | Here you may configure your Typesense settings. Typesense is an open
+    | source search engine using minimal configuration. Below, you will
+    | state the host, key, and schema configuration for the instance.
     |
     */
 
-    'meilisearch' => [
-        'host'           => env('MEILISEARCH_HOST', 'http://localhost:7700'),
-        'key'            => env('MEILISEARCH_KEY', null),
-        'index-settings' => [
-            // 'users' => [
-            //     'filterableAttributes'=> ['id', 'name', 'email'],
-            // ],
+    'typesense' => [
+        'client-settings'   => [
+            'api_key'                      => env('TYPESENSE_API_KEY', 'xyz'),
+            'nodes'                        => [
+                [
+                    'host'     => env('TYPESENSE_HOST', 'localhost'),
+                    'port'     => env('TYPESENSE_PORT', '8108'),
+                    'path'     => env('TYPESENSE_PATH', ''),
+                    'protocol' => env('TYPESENSE_PROTOCOL', 'http'),
+                ],
+            ],
+            'nearest_node'                 => [
+                'host'     => env('TYPESENSE_HOST', 'localhost'),
+                'port'     => env('TYPESENSE_PORT', '8108'),
+                'path'     => env('TYPESENSE_PATH', ''),
+                'protocol' => env('TYPESENSE_PROTOCOL', 'http'),
+            ],
+            'connection_timeout_seconds'   => env('TYPESENSE_CONNECTION_TIMEOUT_SECONDS', 2),
+            'healthcheck_interval_seconds' => env('TYPESENSE_HEALTHCHECK_INTERVAL_SECONDS', 30),
+            'num_retries'                  => env('TYPESENSE_NUM_RETRIES', 3),
+            'retry_interval_seconds'       => env('TYPESENSE_RETRY_INTERVAL_SECONDS', 1),
+        ],
+        'max_total_results' => env('TYPESENSE_MAX_TOTAL_RESULTS', 100),
+        'model-settings'    => [
+            User::class  => GetUserSearchSchema::run(),
+            Guest::class => GetGuestSearchSchema::run(),
+
         ],
     ],
 

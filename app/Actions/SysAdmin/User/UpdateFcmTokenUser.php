@@ -10,7 +10,7 @@ namespace App\Actions\SysAdmin\User;
 
 use App\Actions\GrpAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Http\Resources\SysAdmin\UsersResource;
+use App\Http\Resources\SysAdmin\User\UsersResource;
 use App\Models\Notifications\FcmToken;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
@@ -44,14 +44,6 @@ class UpdateFcmTokenUser extends GrpAction
         return  $request->user()->authTo('sysadmin.edit');
 
     }
-
-    /*  public function rules(): array
-     {
-         return [
-             'firebase_token' => ['required', 'string']
-         ];
-     }
- */
 
     public function asController(ActionRequest $request): User
     {

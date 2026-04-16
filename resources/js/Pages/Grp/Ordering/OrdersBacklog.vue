@@ -16,6 +16,7 @@ import { ref } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
 import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
 
+library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faBoxOpen)
 
 const props = defineProps<{
     title: string
@@ -42,13 +43,8 @@ const props = defineProps<{
     packing: {}
 }>()
 
-
-
-library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faBoxOpen)
-
-
 const currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 </script>
 
@@ -56,6 +52,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
+
     <KeepAlive>
       <TabsBox :tabs_box="tabs.navigation" :current="currentTab" @update:tab="handleTabUpdate" />
     </KeepAlive>

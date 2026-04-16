@@ -247,7 +247,7 @@ test('get dropshipping access token', function () {
     $token = CreateAccessToken::make()->action($this->group, ['name' => 'test_token', 'abilities' => ['bk-api']]);
     expect($token)->toBeString();
     $this->token = $token;
-})->skip();
+});
 
 test('UI Index customer clients', function (CustomerClient $customerClient) {
     $this->withoutExceptionHandling();
@@ -359,6 +359,7 @@ test('UI edit customer client', function (CustomerClient $customerClient) {
 
 test('UI Index customer portfolios', function (CustomerClient $customerClient) {
     $customer             = Customer::first();
+    /** @var CustomerSalesChannel $customerSalesChannel */
     $customerSalesChannel = $customer->customerSalesChannels()->where('platform_id', $customerClient->platform_id)->first();
 
     $response = $this->get(

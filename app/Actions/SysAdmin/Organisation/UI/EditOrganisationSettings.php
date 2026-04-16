@@ -80,6 +80,8 @@ class EditOrganisationSettings extends OrgAction
             }
         }
 
+        $allowWaiting = Arr::get($organisation->settings, 'orders.allow_waiting', false);
+
         return Inertia::render(
             'EditModel',
             [
@@ -198,6 +200,33 @@ class EditOrganisationSettings extends OrgAction
                                     "value" => url('/'),
                                     "readonly" => true,
                                     "copyButton" => true,
+                                ]
+                            ],
+                        ],
+                        [
+                            'label' => __('Picking'),
+                            'icon' => 'fa-light fa-dolly-flatbed-alt',
+                            'fields' => $allowWaiting ? [
+                                'allow_waiting' => [
+                                    'type' => 'toggle',
+                                    'label' => __('Waiting delivery notes'),
+                                    'value' => $allowWaiting,
+                                ],
+                                'allow_picker_set_not_picked' => [
+                                    'type' => 'toggle',
+                                    'label' => __('Allow picker set out of stocks'),
+                                    'value' => Arr::get($organisation->settings, 'orders.allow_picker_set_not_picked', false),
+                                ],
+                                'allow_stock_controller_set_not_picked' => [
+                                    'type' => 'toggle',
+                                    'label' => __('Allow stock controller to set out of stocks'),
+                                    'value' => Arr::get($organisation->settings, 'orders.allow_stock_controller_set_not_picked', false),
+                                ]
+                            ] : [
+                                'allow_waiting' => [
+                                    'type' => 'toggle',
+                                    'label' => __('Waiting delivery notes'),
+                                    'value' => $allowWaiting,
                                 ]
                             ],
                         ],

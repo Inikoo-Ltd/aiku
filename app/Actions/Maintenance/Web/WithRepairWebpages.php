@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 trait WithRepairWebpages
 {
     use WithStoreWebpage;
+    use WithReorderWebpages;
 
     protected function getWebpageBlocksByType(Webpage $webpage, string $type): \Illuminate\Support\Collection
     {
@@ -28,7 +29,17 @@ trait WithRepairWebpages
             ->where('model_has_web_blocks.model_id', $webpage->id)->get();
     }
 
-    //
+    protected function fetchUsedTemplate(Webpage $webpage, WebBlockTemplateEnum $webBlockTemplateType): string
+    {
+        $website = $webpage->website;
+        $scope = $webBlockTemplateType->value;
+
+        $liveWebBlockSnapshot = $website->{"live{$scope}Snapshot"};
+        $unpublishedWebBlockSnapshot = $website->{"unpublished{$scope}Snapshot"};
+
+        return data_get($liveWebBlockSnapshot?->layout, 'code', data_get($unpublishedWebBlockSnapshot?->layout, 'code', array_key_first($webBlockTemplateType->templateCodes()))); // Get published WebBlock layout code
+    }
+
     protected function normalizeWebBlockByType(Webpage $webpage, array $webBlockTemplateCodes, WebBlockTemplateEnum $webBlockTemplateType): void
     {
         $website = $webpage->website;
@@ -42,7 +53,7 @@ trait WithRepairWebpages
         $liveWebBlockSnapshot = $website->{"live{$scope}Snapshot"};
         $unpublishedWebBlockSnapshot = $website->{"unpublished{$scope}Snapshot"};
 
-        $usedWebBlockTemplateCodes = data_get($liveWebBlockSnapshot?->layout, 'code', data_get($unpublishedWebBlockSnapshot?->layout, 'code', null)); // Get published WebBlock layout code
+        $usedWebBlockTemplateCodes = data_get($liveWebBlockSnapshot?->layout, 'code', data_get($unpublishedWebBlockSnapshot?->layout, 'code', array_key_first($webBlockTemplateType->templateCodes()))); // Get published WebBlock layout code
 
         if ($usedWebBlockTemplateCodes) {
             $unusedWebBlockTemplateCodes = array_filter(

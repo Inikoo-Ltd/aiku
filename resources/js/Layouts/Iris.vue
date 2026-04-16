@@ -320,7 +320,7 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
                         ? 'w-[350px] border-l-gray-300 sticky z-[52] border-l top-0 pointer-events-auto h-screen transition-all'
                         : 'w-0 border-transparent'"
                     >
-                    <BundleSidebar :layout="layout.iris.currency?.symbol"/>
+                    <BundleSidebar :symbol="layout.iris.currency?.symbol" :code="layout.iris.currency?.code"/>
                 </div>
 
                 <div

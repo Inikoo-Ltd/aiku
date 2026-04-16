@@ -23,6 +23,7 @@ const props = defineProps<{
     isError?: boolean
     rows?: number|string
     inputName?: string
+    maxlength: number|string
 }>()
 
 const emits = defineEmits<{
@@ -36,6 +37,7 @@ const emits = defineEmits<{
             :value="modelValue"
             @input="(event: any) => emits('update:modelValue', event.target.value)"
             v-bind="$attrs"
+            :maxlength
             :disabled="disabled" 
             :name="inputName"
             :id="inputName"

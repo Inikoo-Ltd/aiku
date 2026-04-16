@@ -33,6 +33,23 @@ export function useBundle(routes?: any) {
 
     const isSummaryLoading = ref(false)
 
+    const dedupeProducts = (items: any[] = []) => {
+        const map = new Map()
+
+        items.forEach((item) => {
+            if (!item?.id) return
+            const current = map.get(item.id)
+            map.set(item.id, {
+                ...(current || item),
+                ...item,
+                quantity: item.quantity ?? item.quantity_selected ?? current?.quantity ?? current?.quantity_selected ?? 1,
+                quantity_selected: item.quantity_selected ?? item.quantity ?? current?.quantity_selected ?? current?.quantity ?? 1
+            })
+        })
+
+        return Array.from(map.values())
+    }
+
     const saveProductsToStorage = () => {
         if (typeof localStorage === 'undefined') return
         try {
@@ -118,10 +135,10 @@ export function useBundle(routes?: any) {
             isSummaryLoading.value = true
 
             const payload = {
-                products: products.value.map(p => ({
+                products: dedupeProducts(products.value).map(p => ({
                     product_id: p.id,
                     quantity: p.quantity || 1
-                }))
+                })),
             }
 
             const params =
@@ -234,6 +251,63 @@ export function useBundle(routes?: any) {
     const isStoringBundle = ref(false)
     const bundle_id = ref('')
     const product_id = ref('')
+    const loadBundle = async ({
+        routeConfig,
+        bundleId,
+        bundleParamOverride,
+        onProductsLoaded
+    }: {
+        routeConfig: any,
+        bundleId: any,
+        bundleParamOverride?: Record<string, any>,
+        onProductsLoaded?: (products: any[]) => void
+    }) => {
+        if (!routeConfig?.name || !bundleId) {
+            console.warn('[useBundle] loadBundle missing route or bundleId')
+            return
+        }
+
+        const baseParams =
+            typeof routeConfig.getParameters === 'function'
+                ? routeConfig.getParameters()
+                : routeConfig.parameters || {}
+
+        const routeParams = {
+            ...baseParams,
+            ...(bundleParamOverride ?? { bundle: bundleId })
+        }
+
+        const { data } = await axios.get(route(routeConfig.name, routeParams))
+        const payload = data?.data || data
+        if (!payload) return
+
+        title.value = payload.name || ''
+
+        const mappedProducts = dedupeProducts((payload.items || []).map((it: any) => ({
+            id: it.item?.id,
+            name: it.item?.name,
+            code: it.item?.code,
+            image: it.item?.image_thumbnail?.original || it.item?.images?.[0]?.thumbnail?.original,
+            price_per_unit: Number(it.item?.price_per_unit || it.item?.price || 0),
+            quantity: it.quantity || 1,
+            quantity_selected: it.quantity || 1
+        })))
+
+        products.value = mappedProducts
+        onProductsLoaded?.(mappedProducts)
+
+        await calculateBundle()
+
+        if (!summary.value.total_bundle_price && payload.price) {
+            summary.value.total_bundle_price = Number(payload.price) || 0
+        }
+        if (!summary.value.total_rrp && payload.rrp) {
+            summary.value.total_rrp = Number(payload.rrp) || 0
+        }
+
+        bundle_id.value = payload.id
+        product_id.value = payload.bundleable_id
+    }
 
     const storeBundle = async () => {
         try {
@@ -245,10 +319,11 @@ export function useBundle(routes?: any) {
                 description: '',
                 price: summary.value.total_bundle_price || 0,
                 rrp: summary.value.total_rrp || 0,
-                products: products.value.map(p => ({
+                products: dedupeProducts(products.value).map(p => ({
                     product_id: p.id,
                     quantity: p.quantity || 1
-                }))
+                })),
+                id: bundle_id.value || null,
             }
 
             const routeName = bundleRoutes.store.name
@@ -258,19 +333,20 @@ export function useBundle(routes?: any) {
                 return
             }
 
-            const params =
+            const baseParams =
                 typeof bundleRoutes.store.getParameters === 'function'
                     ? bundleRoutes.store.getParameters()
                     : bundleRoutes.store.parameters || {}
 
-            if (!params?.customerSalesChannel) {
+            if (!baseParams?.customerSalesChannel) {
                 console.warn('[useBundle] customerSalesChannel belum dipilih')
                 return
             }
+        
             const { data } = await axios.post(
                 route(
                     routeName,
-                    params
+                    baseParams
                 ),
                 payload
             )
@@ -328,6 +404,7 @@ export function useBundle(routes?: any) {
         generateAITitle,
         generateAIDescription,
 
-        storeBundle
+        storeBundle,
+        loadBundle
     }
 }

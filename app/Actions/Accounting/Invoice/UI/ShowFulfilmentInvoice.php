@@ -75,7 +75,6 @@ class ShowFulfilmentInvoice extends OrgAction
         return $invoice;
     }
 
-
     public function asController(Organisation $organisation, Fulfilment $fulfilment, Invoice $invoice, ActionRequest $request): Invoice
     {
         $this->parent = $fulfilment;
@@ -98,7 +97,9 @@ class ShowFulfilmentInvoice extends OrgAction
         if ($invoice->shop->type !== ShopTypeEnum::FULFILMENT) {
             return null;
         }
+
         $recurringBillRoute = null;
+
         if ($invoice->recurringBill()->exists()) {
             if ($this->parent instanceof Fulfilment) {
                 $recurringBillRoute = [
@@ -142,7 +143,6 @@ class ShowFulfilmentInvoice extends OrgAction
                 'route'     => $this->getRecurringBillRoute($invoice)
             ]
         );
-
 
         return Inertia::render(
             'Org/Accounting/Invoice',
@@ -204,13 +204,13 @@ class ShowFulfilmentInvoice extends OrgAction
                     fn () => PaymentsResource::collection(IndexPayments::run($invoice))
                     : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($invoice))),
 
-
             ]
-        )->table(IndexPayments::make()->tableStructure($invoice, [], FulfilmentInvoiceTabsEnum::PAYMENTS->value))
-            ->table(IndexRefunds::make()->tableStructure(parent: $invoice, prefix: FulfilmentInvoiceTabsEnum::REFUNDS->value))
-            ->table(IndexDispatchedEmails::make()->tableStructure($invoice->customer, prefix: FulfilmentInvoiceTabsEnum::EMAIL->value))
-            ->table(IndexInvoiceTransactionsGroupedByAsset::make()->tableStructure($invoice, FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))
-            ->table(IndexInvoiceTransactions::make()->tableStructure(FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value));
+        )
+        ->table(IndexRefunds::make()->tableStructure(parent: $invoice, prefix: FulfilmentInvoiceTabsEnum::REFUNDS->value))
+        ->table(IndexInvoiceTransactionsGroupedByAsset::make()->tableStructure(invoice: $invoice, prefix: FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))
+        ->table(IndexInvoiceTransactions::make()->tableStructure(prefix: FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))
+        ->table(IndexDispatchedEmails::make()->tableStructure(parent: $invoice->customer, prefix: FulfilmentInvoiceTabsEnum::EMAIL->value))
+        ->table(IndexPayments::make()->tableStructure(parent: $invoice, modelOperations: [], prefix: FulfilmentInvoiceTabsEnum::PAYMENTS->value));
     }
 
 

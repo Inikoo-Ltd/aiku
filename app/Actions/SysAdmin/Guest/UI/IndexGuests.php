@@ -12,7 +12,7 @@ use App\Actions\GrpAction;
 use App\Actions\SysAdmin\Guest\WithGuestsSubNavigations;
 use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
 use App\Actions\SysAdmin\WithSysAdminAuthorization;
-use App\Http\Resources\SysAdmin\GuestsResource;
+use App\Http\Resources\SysAdmin\Guest\GuestsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Guest;

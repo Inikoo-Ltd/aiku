@@ -22,7 +22,7 @@ trait HasOrderStateUpdates
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    protected function updateOrderState(Order $order, DeliveryNote $deliveryNote, OrderStateEnum $newState, TransactionStateEnum $newTransactionState, string $timestampField): Order
+    protected function updateOrderState(Order $order, DeliveryNote $deliveryNote, OrderStateEnum $newState, ?TransactionStateEnum $newTransactionState, string $timestampField): Order
     {
         $oldState = $order->state;
         $data     = [
@@ -37,17 +37,20 @@ trait HasOrderStateUpdates
         ])) {
             foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
                 $packedData = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction, $deliveryNote);
-                $transaction->update(
-                    [
-                        'state'           => $newTransactionState,
-                        'status'          => TransactionStatusEnum::PROCESSING,
-                        'quantity_picked' => $packedData['quantity'],
-                        'gross_amount'    => $packedData['gross_amount'],
-                        'net_amount'      => $packedData['net_amount'],
-                        'org_net_amount'  => $packedData['org_net_amount'],
-                        'grp_net_amount'  => $packedData['grp_net_amount'],
-                    ]
-                );
+
+                $transactionData=[
+                    'status'          => TransactionStatusEnum::PROCESSING,
+                    'quantity_picked' => $packedData['quantity'],
+                    'gross_amount'    => $packedData['gross_amount'],
+                    'net_amount'      => $packedData['net_amount'],
+                    'org_net_amount'  => $packedData['org_net_amount'],
+                    'grp_net_amount'  => $packedData['grp_net_amount'],
+                ];
+                if($newTransactionState!==null){
+                    $transactionData['state']=$newTransactionState;
+                }
+
+                $transaction->update($transactionData);
             }
 
             $data[$timestampField] = now();

@@ -219,7 +219,7 @@ const handleSendMessage = async ({ text, image, message_type, tempId, is_email_n
         }
 
         const assignRoute: routeType = {
-            name: "grp.org.crm.agents.messages.send",
+            name: "grp.org.chat.agents.messages.send",
             parameters: [organisation, selectedSession.value.ulid],
             method: "post",
         }
@@ -242,7 +242,7 @@ const assignToSelf = async (ulid: string) => {
         const organisation = route().params?.organisation ?? "aw"
 
         const assignRoute: routeType = {
-            name: "grp.org.crm.agents.assign.self",
+            name: "grp.org.chat.agents.assign.self",
             parameters: [organisation, ulid],
             method: "post",
         }

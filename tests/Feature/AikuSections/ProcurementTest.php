@@ -411,9 +411,9 @@ test('update purchase order', function ($purchaseOrder) {
 })->depends('create purchase order independent supplier');
 
 test('create purchase order by agent', function () {
-    $purchaseOrder = StorePurchaseOrder::make()->action($this->agent, PurchaseOrder::factory()->definition());
+    $purchaseOrder = StorePurchaseOrder::make()->action($this->orgAgent, PurchaseOrder::factory()->definition());
     $this->assertModelExists($purchaseOrder);
-})->todo();
+});
 
 test('change state to submitted purchase order', function ($purchaseOrder) {
     $purchaseOrder->refresh();

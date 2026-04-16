@@ -33,7 +33,7 @@ class StoreBulkNewProductToCurrentWooCommerce extends OrgAction
             ->get();
 
         foreach ($portfolios->chunk(100) as $portfolioChunk) {
-            StoreBulkDispatchProductToCurrentWooCommerce::dispatch($customerSalesChannel->user, $portfolioChunk, count($portfolios));
+            StoreBulkDispatchProductToCurrentWooCommerce::dispatch($customerSalesChannel, $portfolioChunk, count($portfolios));
         }
     }
 }

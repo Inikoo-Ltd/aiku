@@ -32,6 +32,7 @@ const props = defineProps<{
     label_result?: string
     valueToRefetch?: string
     idxSubmitSuccess?: number
+    preselected?: any[]
 }>()
 
 
@@ -61,12 +62,13 @@ const portfoliosList = ref<Portfolio[]>([])
 const portfoliosMeta = ref()
 const portfoliosLinks = ref()
 const getPortfoliosList = async (url?: string) => {
-    console.log('getPortfoliosList', url)
+    
     isLoadingFetch.value = true
     try {
         const urlToFetch = url || route(props.routeFetch.name, {
             ...props.routeFetch.parameters,
-            'filter[global]': queryPortfolio.value
+            'filter[global]': queryPortfolio.value,
+            'origin': 'bundles'
         })
         const response = await axios.get(urlToFetch)
         portfoliosList.value = response.data.data
@@ -85,18 +87,31 @@ const getPortfoliosList = async (url?: string) => {
 }
 const debounceGetPortfoliosList = debounce(() => (getPortfoliosList()), 500)
 
-
 // Section: On select product
 const selectedProduct = ref<Portfolio[]>([])
+
+watch(() => props.preselected, (val) => {
+    if (Array.isArray(val)) {
+        selectedProduct.value = [...val]
+    }
+}, { immediate: true })
+
 const compSelectedProduct = computed(() => {
     return selectedProduct.value?.map((item: Portfolio) => item.id)
 })
+
+const buildSelectedProduct = (item: any) => ({
+    ...item,
+    quantity_selected: 1
+})
+
 const selectProduct = (item: any) => {
-    const index = selectedProduct.value?.indexOf(item);
+    const index = selectedProduct.value.findIndex((selected) => selected.id === item.id)
     if (index === -1) {
-        selectedProduct.value?.push(item);
+        selectedProduct.value.push(buildSelectedProduct(item))
     } else {
-        selectedProduct.value?.splice(index, 1);
+        selectedProduct.value.splice(index, 1)
+        item.quantity_selected = 1
     }
 }
 
@@ -120,8 +135,7 @@ const selectAllProducts = () => {
         const productsToAdd = portfoliosList.value.filter(item =>
             !currentSelectedIds.includes(item.id)
         )
-        selectedProduct.value = [...selectedProduct.value, ...productsToAdd]
-        console.log("selectedProduct", selectedProduct.value)
+        selectedProduct.value = [...selectedProduct.value, ...productsToAdd.map(buildSelectedProduct)]
     }
 }
 
@@ -140,7 +154,6 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
     getPortfoliosList()
 })
 
-// To refresh the selected if success submit
 watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
     if (newVal !== oldVal) {
         selectedProduct.value = []
@@ -279,13 +292,15 @@ watch(selectedProduct, (val) => {
                                                 <!-- Quantity Input -->
                                                 <QuantitySelector
                                                     v-if="withQuantity && compSelectedProduct.includes(item.id)"
-                                                    :modelValue="item.quantity_selected || 1" @update:modelValue="(val) => {
-                                                        item.quantity_selected = val
+                                                    :modelValue="selectedProduct.find((selected) => selected.id === item.id)?.quantity_selected || 1"
+                                                    @update:modelValue="(val) => {
+                                                        const selectedIndex = selectedProduct.findIndex((selected) => selected.id === item.id)
+                                                        if (selectedIndex === -1) return
 
-                                                        if (!selectedProduct.includes(item)) {
-                                                            selectedProduct.push(item)
+                                                        selectedProduct[selectedIndex] = {
+                                                            ...selectedProduct[selectedIndex],
+                                                            quantity_selected: val
                                                         }
-
                                                         selectedProduct = [...selectedProduct]
                                                     }" />
                                             </div>

@@ -212,13 +212,13 @@ console.log('families',props)
               <LinkIris :href="fieldValue?.webpage_data?.overview_url" type="internal" class="w-full h-full flex">
                 <div
                   class="family-item w-full h-full cursor-pointer flex flex-col rounded-xl overflow-hidden border bg-white hover:bg-gray-50 transition-all"
-                  :style="{
-                    ...getStyles(props.fieldValue?.chip?.container?.properties, props.screenType),
-                    fontWeight: 600,
-                    minHeight: maxHeight ? maxHeight + 'px' : undefined
-                  }">
+                 >
                   <!-- TOP AREA (fill space like image) -->
-                  <div class="flex-1 flex items-center justify-center bg-gray-100">
+                  <div :style="{
+                    fontWeight: 600,
+                    minHeight: maxHeight ? maxHeight + 'px' : undefined,
+                    ...getStyles(props.fieldValue?.button?.view_more?.properties, props.screenType),
+                  }"  class="flex-1 flex items-center justify-center bg-gray-100">
                     <span class="text-sm font-semibold">
                       {{trans("View All")}}
                     </span>

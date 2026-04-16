@@ -96,8 +96,14 @@ class GetWebBlockFamiliesOverview
         $permissions = [];
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
-        data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['family']['data']['fieldValue'] ?? []);
+        data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['families_overview']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.webpage_slug', $webpage->slug);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.parent', [
+            'id'   => $webpage->model->id,
+            'slug' => $webpage->model->slug,
+            'type' => $webpage->sub_type,
+        ]);
         data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamiliesResource::collection($families)->toArray(request()));
 
         return $webBlock;

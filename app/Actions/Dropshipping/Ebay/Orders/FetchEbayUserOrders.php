@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Ebay\Orders;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\EbayUser;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -56,6 +57,14 @@ class FetchEbayUserOrders extends OrgAction
                 StoreOrderFromEbay::run($ebayUser, $ebayOrder);
             }
         }
+    }
+
+    public string $commandSignature = 'ebay-user-orders-fetch {ebayUserId}';
+
+    public function asCommand(Command $command)
+    {
+        $ebayUser = EbayUser::find($command->argument('ebayUserId'));
+        $this->handle($ebayUser);
     }
 
     /**
