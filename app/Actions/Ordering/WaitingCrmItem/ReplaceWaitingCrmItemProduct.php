@@ -8,10 +8,13 @@
 namespace App\Actions\Ordering\WaitingCrmItem;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
+use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
+use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
-use App\Models\Catalogue\Shop;
+use App\Enums\Ordering\Transaction\TransactionStateEnum;
+use App\Enums\Ordering\Transaction\TransactionStatusEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Dispatching\DeliveryNoteItem;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -22,15 +25,54 @@ class ReplaceWaitingCrmItemProduct extends OrgAction
      */
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): void
     {
-        DB::transaction(function () use ($deliveryNoteItem, $modelData) {
+        /** @var \App\Models\Ordering\Order $order */
+        $order = $deliveryNoteItem->deliveryNote->orders()->first();
+        if (!$order) {
+            abort(404);
+        }
 
+
+        DB::transaction(function () use ($deliveryNoteItem, $modelData, $order) {
             $deliveryNoteItem->update([
                 'quantity_waiting_crm' => 0,
                 'has_waiting_crm'      => false,
             ]);
             DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 
+            foreach ($modelData['products'] as $productData) {
+                $product = Product::find($productData['id']);
+                if ($product) {
+                    $transaction = StoreTransaction::make()->action(
+                        order: $order,
+                        historicAsset: $product->currentHistoricProduct,
+                        modelData: [
+                            'quantity_ordered' => $productData['quantity'],
+                            'state'            => TransactionStateEnum::HANDLING_BLOCKED,
+                            'status'           => TransactionStatusEnum::PROCESSING,
+                            'submitted_at'     => now()
+                        ]
+                    );
 
+                    foreach ($product->orgStocks as $orgStock) {
+                        $quantity = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
+                        if ($quantity > 0) {
+                            $deliveryNoteItemData = [
+                                'org_stock_id'               => $orgStock->id,
+                                'transaction_id'             => $transaction->id,
+                                'quantity_required'          => $quantity,
+                                'original_quantity_required' => $quantity,
+                            ];
+
+                            $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNoteItem->deliveryNote, $deliveryNoteItemData);
+                            $deliveryNoteItem->update([
+                                'quantity_waiting_warehouse' => $quantity,
+                                'has_waiting_warehouse'      => true,
+                            ]);
+                            DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
+                        }
+                    }
+                }
+            }
         });
     }
 
