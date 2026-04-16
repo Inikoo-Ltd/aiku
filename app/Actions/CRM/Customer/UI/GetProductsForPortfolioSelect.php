@@ -5,6 +5,7 @@ namespace App\Actions\CRM\Customer\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\UI\Portfolio\CustomerSalesChannelPortfolioTabsEnum;
 use App\Http\Resources\CRM\ProductsForPortfolioSelectResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
@@ -79,13 +80,16 @@ class GetProductsForPortfolioSelect extends OrgAction
         $queryBuilder->where('products.is_for_sale', true);
         $queryBuilder->whereNot('products.state', ProductStateEnum::DISCONTINUED->value);
 
-        $queryBuilder->where('products.shop_id', $customerSalesChannel->shop->id)
-            ->whereNotIn('products.id', function ($subQuery) use ($customerSalesChannel) {
-                $subQuery->select('item_id')
-                    ->from('portfolios')
-                    ->where('status', true)
-                    ->where('customer_sales_channel_id', $customerSalesChannel->id);
-            });
+        $origin = Arr::get(request()->input('filter'), 'origin', CustomerSalesChannelPortfolioTabsEnum::PRODUCTS->value);
+        if($origin === CustomerSalesChannelPortfolioTabsEnum::PRODUCTS->value) {
+            $queryBuilder->where('products.shop_id', $customerSalesChannel->shop->id)
+                ->whereNotIn('products.id', function ($subQuery) use ($customerSalesChannel) {
+                    $subQuery->select('item_id')
+                        ->from('portfolios')
+                        ->where('status', true)
+                        ->where('customer_sales_channel_id', $customerSalesChannel->id);
+                });
+        }
 
         $queryBuilder->leftJoin('currencies', 'currencies.id', 'products.currency_id');
 
