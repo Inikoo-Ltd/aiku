@@ -80,8 +80,8 @@ class GetProductsForPortfolioSelect extends OrgAction
         $queryBuilder->where('products.is_for_sale', true);
         $queryBuilder->whereNot('products.state', ProductStateEnum::DISCONTINUED->value);
 
-        $origin = Arr::get(request()->input('filter'), 'origin', CustomerSalesChannelPortfolioTabsEnum::PRODUCTS->value);
-        if($origin === CustomerSalesChannelPortfolioTabsEnum::PRODUCTS->value) {
+        $origin = CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value;
+        if(request()->input('origin') !== $origin) {
             $queryBuilder->where('products.shop_id', $customerSalesChannel->shop->id)
                 ->whereNotIn('products.id', function ($subQuery) use ($customerSalesChannel) {
                     $subQuery->select('item_id')
@@ -89,6 +89,8 @@ class GetProductsForPortfolioSelect extends OrgAction
                         ->where('status', true)
                         ->where('customer_sales_channel_id', $customerSalesChannel->id);
                 });
+        } else {
+            $queryBuilder->where('products.shop_id', $customerSalesChannel->shop->id);
         }
 
         $queryBuilder->leftJoin('currencies', 'currencies.id', 'products.currency_id');
