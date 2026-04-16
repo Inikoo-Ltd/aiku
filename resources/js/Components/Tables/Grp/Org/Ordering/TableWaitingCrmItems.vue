@@ -5,17 +5,22 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import type { Table as TableTS } from "@/types/Table"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faStickyNote, faExchangeAlt } from "@fal"
+import { faStickyNote, faExchangeAlt, faSearch, faSave } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { inject } from "vue"
+import { inject, reactive, ref, watch } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-library.add(faStickyNote, faExchangeAlt)
+import Modal from "@/Components/Utils/Modal.vue"
+import axios from "axios"
+import { debounce } from "lodash-es"
+import { InputNumber } from "primevue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+library.add(faStickyNote, faExchangeAlt, faSearch, faSave)
 
 defineProps<{
     data: TableTS
@@ -73,6 +78,90 @@ const replaceProductRoute = (item: Record<string, any>): string | null => {
     } catch {
         return null
     }
+}
+
+// Section: Modal Replace Product
+const isOpenModalReplaceProduct = ref(false)
+const selectedItem = ref<Record<string, any> | null>(null)
+const modalProducts = ref<any[]>([])
+const modalSearchQuery = ref('')
+const isModalProductsLoading = ref(false)
+const productQuantities = reactive<Record<number, { quantity: number; code: string; name: string; stock: number }>>({})
+const isSubmittingReplaceProduct = ref(false)
+
+const openReplaceProductModal = (item: Record<string, any>) => {
+    selectedItem.value = item
+    modalSearchQuery.value = ''
+    Object.keys(productQuantities).forEach(key => delete productQuantities[Number(key)])
+    isOpenModalReplaceProduct.value = true
+    fetchModalProducts()
+}
+
+const closeReplaceProductModal = () => {
+    isOpenModalReplaceProduct.value = false
+    // selectedItem.value = null
+}
+
+const fetchModalProducts = debounce(async () => {
+    if (!selectedItem.value) return
+    isModalProductsLoading.value = true
+    try {
+        const params: Record<string, any> = { shop: selectedItem.value.shop_slug }
+        if (modalSearchQuery.value.trim()) {
+            params['filter[global]'] = modalSearchQuery.value.trim()
+        }
+        const url = route('grp.json.shop.products', params)
+        const response = await axios.get(url)
+        const products = response.data.data ?? []
+        products.forEach((product: any) => {
+            if (!(product.id in productQuantities)) {
+                productQuantities[product.id] = { quantity: 0, code: product.code, name: product.name, stock: product.stock ?? 0 }
+            }
+        })
+        modalProducts.value = products
+    } catch (error) {
+        console.error('Error fetching products:', error)
+    } finally {
+        isModalProductsLoading.value = false
+    }
+}, 300)
+
+watch(modalSearchQuery, () => {
+    fetchModalProducts()
+})
+
+const selectedProductCount = () => Object.values(productQuantities).filter(p => p.quantity > 0).length
+
+interface SuccessContext {
+    replacedItem: Record<string, any>
+    newProducts: { id: number; code: string; name: string; quantity: number }[]
+}
+
+const isModalConfirmationSuccess = ref(false)
+const successContext = ref<SuccessContext | null>(null)
+
+const submitReplaceProduct = () => {
+    if (!selectedItem.value) return
+    const selectedProducts = Object.entries(productQuantities)
+        .filter(([, p]) => p.quantity > 0)
+        .map(([id, p]) => ({ id: Number(id), code: p.code, name: p.name, quantity: p.quantity }))
+    if (selectedProducts.length === 0) return
+    const submitRoute = replaceProductRoute(selectedItem.value)
+    if (!submitRoute) return
+    isSubmittingReplaceProduct.value = true
+
+    router.post(submitRoute, { products: selectedProducts.map(({ id, quantity }) => ({ id, quantity })) }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            isOpenModalReplaceProduct.value = false
+            successContext.value = {
+                replacedItem: { ...selectedItem.value },
+                newProducts: selectedProducts,
+            }
+            isModalConfirmationSuccess.value = true
+        },
+        onFinish: () => { isSubmittingReplaceProduct.value = false },
+    })
 }
 </script>
 
@@ -150,22 +239,183 @@ const replaceProductRoute = (item: Record<string, any>): string | null => {
                 </div>
                 
                 <!-- Button: Replace Product -->
-                <Link
+                <Button
                     v-else-if="layout.app.environment === 'local' && replaceProductRoute(item)"
-                    :href="replaceProductRoute(item)!"
-                    method="post"
-                    preserve-scroll
-                    xclass="rounded border border-blue-300 bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 transition hover:bg-blue-100"
-                >
-                    <Button
-                        :label="ctrans('Replace product')"
-                        key="3"
-                        size="xs"
-                        type="positive"
-                        icon="fal fa-exchange-alt"
-                    />
-                </Link>
+                    :label="ctrans('Replace :itemNotPick items', { itemNotPick: Number(item.quantity_waiting_crm) })"
+                    key="3"
+                    size="xs"
+                    type="positive"
+                    icon="fal fa-exchange-alt"
+                    @click="openReplaceProductModal(item)"
+                />
             </div>
         </template>
     </Table>
+
+    <Modal :isOpen="isOpenModalReplaceProduct" width="w-full max-w-3xl" @onClose="closeReplaceProductModal" :closeButton="true">
+        <div class="flex flex-col gap-4">
+            <h2 class="text-xl font-semibold text-gray-800 text-center">{{ ctrans('Replace Product') }}</h2>
+
+            <div>
+                <div>
+                    Product to replace:
+                </div>
+                <div class="bg-amber-50 rounded px-4 py-2 text-sm text-amber-600 border border-amber-400 flex justify-between">
+                    <div>
+                        <span class="font-semibold">{{ selectedItem?.org_stock_code }}</span> — {{ selectedItem?.org_stock_name }}
+                    </div>
+                    <div>
+                        {{ selectedItem?.quantity_waiting_crm }} {{ ctrans("items") }}
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div>
+                    Select product:
+                </div>
+                <div class="relative">
+                    <FontAwesomeIcon icon="fal fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" fixed-width />
+                    <input
+                        v-model="modalSearchQuery"
+                        type="text"
+                        :placeholder="ctrans('Search products...')"
+                        class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+            </div>
+
+            <div v-if="isModalProductsLoading" class="h-96 flex justify-center py-10 text-gray-400 text-3xl">
+                <LoadingIcon />
+            </div>
+
+            <div v-else class="overflow-y-auto h-96 border border-gray-200 rounded-lg isolate">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-100 border-b border-gray-200 sticky top-0 z-10">
+                        <tr>
+                            <th class="text-left px-4 py-2 font-medium">{{ ctrans('Name') }}</th>
+                            <th class="text-right px-4 py-2 font-medium">{{ ctrans('Available') }}</th>
+                            <th class="text-right px-4 py-2 font-medium">{{ ctrans('Quantity') }}</th>
+                        </tr>
+                    </thead>
+                    
+                    <tbody class="divide-y divide-gray-100">
+                        <tr v-if="modalProducts.length === 0">
+                            <td colspan="4" class="text-center py-10 text-gray-400">{{ ctrans('No products found') }}</td>
+                        </tr>
+                        <tr
+                            v-for="product in modalProducts"
+                            :key="product.id"
+                            :class="productQuantities[product.id]?.quantity > 0 ? 'bg-green-100'
+                            : product.stock > 0
+                                ? ''
+                                : 'bg-gray-100 opacity-60'
+                            "
+                            class="transition-colors"
+                        >
+                            <td class="px-4 py-3 text-gray-700">
+                                <div class="font-bold">{{ product.code }}</div>
+                                <div class="italic opacity-75">{{ product.name }}</div>
+                            </td>
+                            <td class="px-4 py-3 text-right tabular-nums" :class="!product.stock ? 'text-red-500' : 'text-gray-600'">
+                                {{ product.stock ?? 0 }}
+                            </td>
+                            <td class="px-4 py-3 flex justify-end">
+                                <InputNumber
+                                    :modelValue="productQuantities[product.id]?.quantity ?? 0"
+                                    @update:model-value="(e) => { if (productQuantities[product.id]) productQuantities[product.id].quantity = e ?? 0 }"
+                                    @input="(e) => { if (productQuantities[product.id]) productQuantities[product.id].quantity = Number(e.value) || 0 }"
+                                    :min="0"
+                                    :max="product.stock ?? 0"
+                                    :disabled="!product.stock"
+                                    inputClass="w-28"
+                                    showButtons
+                                />
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex justify-between items-center pt-2 border-t border-gray-200">
+                <span class="text-sm text-gray-500">
+                    {{ selectedProductCount() }} {{ ctrans('product(s) selected') }}
+                </span>
+                <div class="flex gap-2">
+                    <Button :label="ctrans('Cancel')" type="negative" @click="closeReplaceProductModal" />
+                    <Button
+                        :label="ctrans('Save')"
+                        icon="fad fa-save"
+                        :loading="isSubmittingReplaceProduct"
+                        :disabled="selectedProductCount() === 0"
+                        @click="submitReplaceProduct"
+                    />
+                </div>
+            </div>
+        </div>
+    </Modal>
+
+    <Modal
+        :isOpen="isModalConfirmationSuccess"
+        @onClose="isModalConfirmationSuccess = false"
+        width="w-full max-w-xl"
+        :closeButton="true">
+        <div v-if="successContext" class="flex flex-col gap-3 py-2">
+            <div class="flex flex-col items-center gap-2 text-center mb-8">
+                <FontAwesomeIcon icon="fas fa-check-circle" class="text-green-500 text-4xl" fixed-width aria-hidden="true" />
+                <h3 class="font-semibold text-xl xtext-gray-800">{{ ctrans('Product replaced successfully') }}</h3>
+            </div>
+
+            <div class="flex flex-col gap-1 border-b border-gray-300 pb-3">
+                <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ ctrans('Order') }}</div>
+                <Link
+                    v-if="orderRoute(successContext.replacedItem)"
+                    :href="orderRoute(successContext.replacedItem)!"
+                    class="primaryLink font-semibold text-base flex justify-between items-center"
+                    xclick="isModalConfirmationSuccess = false"
+                >
+                    <div>
+                        <FontAwesomeIcon icon="fal fa-shopping-cart" class="opacity-75 mr-1" fixed-width aria-hidden="true" />
+                        #{{ successContext.replacedItem.order_reference }}
+                    </div>
+                    <div class="underline font-normal opacity-70 italic text-xs hover:opacity-100">
+                        Click to open ->
+                    </div>
+                </Link>
+                <span v-else class="font-semibold text-base">{{ successContext.replacedItem.order_reference ?? '-' }}</span>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <div class="text-xs xfont-semibold xuppercase tracking-wide text-gray-400">{{ ctrans('Replaced items') }}</div>
+                <div class="flex justify-between items-center bg-red-100 border border-red-200 rounded-lg px-4 py-3 text-sm">
+                    <div>
+                        <span class="font-bold text-gray-700">{{ successContext.replacedItem.org_stock_code }}</span>
+                        <span class="block text-gray-500 italic">{{ successContext.replacedItem.org_stock_name }}</span>
+                    </div>
+                    <div class="tabular-nums text-gray-500">
+                        {{ successContext.replacedItem.quantity_waiting_crm }} {{ ctrans('items') }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <div class="text-xs x tracking-wide text-gray-400">{{ ctrans('New products') }}</div>
+                <div class="flex flex-col gap-1.5">
+                    <div
+                        v-for="product in successContext.newProducts"
+                        :key="product.id"
+                        class="flex justify-between items-center bg-green-100 border border-green-200 rounded-lg px-4 py-3 text-sm gap-x-4"
+                    >
+                        <div>
+                            <span class="font-bold text-gray-700">{{ product.code }}</span>
+                            <span class="block xml-2 text-gray-500 italic">{{ product.name }}</span>
+                        </div>
+                        <div class="tabular-nums text-gray-500 text-right">{{ product.quantity }} {{ ctrans('items') }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <Button :label="ctrans('Done')" type="tertiary" full @click="isModalConfirmationSuccess = false" />
+        </div>
+    </Modal>
 </template>

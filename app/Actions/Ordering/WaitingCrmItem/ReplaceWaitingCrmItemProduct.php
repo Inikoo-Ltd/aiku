@@ -17,10 +17,24 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ReplaceWaitingCrmItemProduct extends OrgAction
 {
+    public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): void
+    {
+        // dd($modelData);
+    }
+
+    public function rules(): array
+    {
+        return [
+            'products'            => ['required', 'array', 'min:1'],
+            'products.*.id'       => ['required', 'integer', 'exists:products,id'],
+            'products.*.quantity' => ['required', 'numeric', 'min:0'],
+        ];
+    }
+
     public function asController(Organisation $organisation, Shop $shop, DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): void
     {
         $this->initialisationFromShop($shop, $request);
 
-        dd('yyyyy');
+        $this->handle($deliveryNoteItem, $this->validatedData);
     }
 }
