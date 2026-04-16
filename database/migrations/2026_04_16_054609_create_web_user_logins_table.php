@@ -24,7 +24,7 @@ return new class extends Migration
             $table->jsonb('platform')->nullable();
             $table->jsonb('browser')->nullable();
 
-            $table->index(['type', 'datetime', 'user_id']);
+            $table->index(['type', 'datetime', 'web_user_id']);
 
             $table->timestampsTz();
         });
