@@ -199,29 +199,6 @@ const fetchOtherShopTemplates = async (page: number) => {
                             :shop-slug="props.shopSlug" :mailshot-id="props.mailshotId" button-type="secondary"
                             :show-shop-name="true" :show-envelope-icon="false" />
                     </template>
-
-                    <template #footer v-if="pagination">
-                        <div class="flex justify-center items-center space-x-4 py-3 border-t border-gray-200">
-                            <button @click="loadPage(pagination.currentPage - 1)"
-                                :disabled="pagination.currentPage <= 1"
-                                class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
-                                {{ trans('Previous') }}
-                            </button>
-
-                            <span class="text-sm text-gray-600">
-                                {{ trans('Page :currentPage of :lastPage', {
-                                    currentPage: pagination?.currentPage ?? 1,
-                                    lastPage: pagination?.lastPage ?? 1
-                                }) }}
-                            </span>
-
-                            <button @click="loadPage(pagination.currentPage + 1)"
-                                :disabled="pagination.currentPage >= pagination.lastPage"
-                                class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
-                                {{ trans('Next') }}
-                            </button>
-                        </div>
-                    </template>
                 </Carousel>
 
                 <!-- Loading Overlay -->

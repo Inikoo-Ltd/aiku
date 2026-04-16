@@ -27,7 +27,6 @@ class GetOtherShopEmailTemplates extends OrgAction
     {
         $queryBuilder = QueryBuilder::for(EmailTemplate::class);
 
-        $queryBuilder->where('email_templates.organisation_id', $organisation->id);
         $queryBuilder->where('email_templates.shop_id', '!=', $currentShop->id);
         $queryBuilder->whereNotNull('email_templates.compiled_layout');
         $queryBuilder->where('email_templates.compiled_layout', '!=', '');
