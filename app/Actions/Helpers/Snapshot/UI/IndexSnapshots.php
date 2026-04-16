@@ -169,7 +169,7 @@ class IndexSnapshots extends OrgAction
 
     public function tableStructure(Website|Webpage|EmailTemplate|Banner|Announcement $parent, $withLabel = false, ?array $modelOperations = null, $prefix = null, ?array $exportLinks = null): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $withLabel, $prefix, $exportLinks) {
+       return function (InertiaTable $table) use ($modelOperations, $withLabel, $prefix, $exportLinks, $parent) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -195,11 +195,17 @@ class IndexSnapshots extends OrgAction
                 $table->column(key: 'label', label: __('label'));
             }
             $table->column(key: 'publisher', label: __('publisher'), sortable: true)
-                ->column(key: 'published_at', label: __('date published'), sortable: true)
-                ->column(key: 'published_until', label: __('published until'))
-                ->column(key: 'comment', label: __('comment'))
-                ->column(key: 'recyclable', label: ['fal', 'fa-recycle'])
-                ->defaultSort('published_at');
+            ->column(key: 'published_at', label: __('date published'), sortable: true)
+            ->column(key: 'published_until', label: __('published until'))
+            ->column(key: 'comment', label: __('comment'));
+             $table->column(key: 'recyclable',label: ['fal', 'fa-recycle']);
+
+           if (
+                class_basename($parent) === 'Website' &&
+                in_array($this->scope, ['header', 'footer', 'menu'], true)
+            ) {
+                $table->column(key: 'action', label: _('Action'));
+            }
         };
     }
 
