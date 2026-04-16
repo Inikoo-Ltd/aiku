@@ -34,7 +34,12 @@ class GetChatDashboardData
 
         $stats = [
             'chatEnabledShops'    => $chatEnabledOpenShopIds->count(),
-            'chatAgents'          => ShopHasChatAgent::query()->where('organisation_id', $organisation->id)->distinct('chat_agent_id')->count('chat_agent_id'),
+            'chatAgents'          => ShopHasChatAgent::query()
+                ->join('chat_agents', 'chat_agents.id', '=', 'shop_has_chat_agents.chat_agent_id')
+                ->where('shop_has_chat_agents.organisation_id', $organisation->id)
+                ->whereNull('chat_agents.deleted_at')
+                ->distinct('shop_has_chat_agents.chat_agent_id')
+                ->count('shop_has_chat_agents.chat_agent_id'),
             'chatSessionsTotal'   => (clone $sessionQuery)->count(),
             'chatSessionsWaiting' => (clone $sessionQuery)->where('status', ChatSessionStatusEnum::WAITING)->count(),
             'chatSessionsActive'  => (clone $sessionQuery)->where('status', ChatSessionStatusEnum::ACTIVE)->count(),
@@ -55,10 +60,12 @@ class GetChatDashboardData
     private function getOrganisationShops(Organisation $organisation): array
     {
         $agentCounts = ShopHasChatAgent::query()
-            ->select('shop_id')
-            ->selectRaw('COUNT(DISTINCT chat_agent_id) as chat_agents_count')
-            ->where('organisation_id', $organisation->id)
-            ->groupBy('shop_id')
+            ->select('shop_has_chat_agents.shop_id')
+            ->selectRaw('COUNT(DISTINCT shop_has_chat_agents.chat_agent_id) as chat_agents_count')
+            ->join('chat_agents', 'chat_agents.id', '=', 'shop_has_chat_agents.chat_agent_id')
+            ->where('shop_has_chat_agents.organisation_id', $organisation->id)
+            ->whereNull('chat_agents.deleted_at')
+            ->groupBy('shop_has_chat_agents.shop_id')
             ->get()
             ->keyBy('shop_id');
 
