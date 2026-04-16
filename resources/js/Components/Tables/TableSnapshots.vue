@@ -9,10 +9,12 @@ import Table from '@/Components/Table/Table.vue'
 import Image from '@/Components/Image.vue'
 import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import {faBroadcastTower, faSeedling, faGhost, faRecycle, faPoo} from '@fal'
+import {faBroadcastTower, faSeedling, faGhost, faRecycle, faPoo, faSignal} from '@fal'
 import {useFormatTime} from "@/Composables/useFormatTime"
 import {useLocaleStore} from '@/Stores/locale'
 import { Link } from '@inertiajs/vue3'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import axios from 'axios'
 
 const locale = useLocaleStore()
 
@@ -21,6 +23,7 @@ library.add(faSeedling, faGhost, faBroadcastTower, faRecycle, faPoo);
 const props = defineProps<{
     data: object,
     tab?: string
+    display_apply_button?: boolean
 }>()
 
 function snapshotRoute(data: {}) {
@@ -37,6 +40,14 @@ function snapshotRoute(data: {}) {
                 data.id
             ]);
     }
+}
+const doThis = async (id: string) => {
+    console.log("ASDASD")
+    /// 'grp.models.website.set-snapshot-as-live'
+    /// 'grp.models.website.set-snapshot-as-unpublished'
+    await axios.patch(route('grp.models.website.set-snapshot-as-unpublished', {
+        snapshot: id
+    }));
 }
 
 </script>
@@ -66,6 +77,7 @@ function snapshotRoute(data: {}) {
                 <Link :href="snapshotRoute(user)" class="primaryLink">
                   {{ useFormatTime(user['published_at'], { localeCode: locale.language.code, formatTime: 'hm' }) }}
                 </Link>
+                <FontAwesomeIcon v-if="display_apply_button" :icon="faSignal" class="ml-2 text-green-500 cursor-pointer" @click="doThis(user.id)"/>
             </div>
         </template>
 
