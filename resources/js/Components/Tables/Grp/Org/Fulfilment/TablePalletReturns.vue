@@ -20,6 +20,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { RouteParams } from "@/types/route-params"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(faPlus)
 
@@ -146,6 +147,31 @@ function storedItemReturnRoute(palletReturn: PalletDelivery) {
     }
 }
 
+function pickingSessionRoute(palletReturn: any) {
+    if (!palletReturn?.picking_session_slug) {
+        return ''
+    }
+
+    switch (route().current()) {
+        case 'grp.org.warehouses.show.dispatching.pallet-returns.index':
+        case 'grp.org.warehouses.show.dispatching.pallet-returns.confirmed.index':
+        case 'grp.org.warehouses.show.dispatching.pallet-returns.picking.index':
+        case 'grp.org.warehouses.show.dispatching.pallet-returns.picked.index':
+        case 'grp.org.warehouses.show.dispatching.pallet-returns.dispatched.index':
+        case 'grp.org.warehouses.show.dispatching.pallet-returns.cancelled.index':
+            return route(
+                'grp.org.warehouses.show.dispatching.picking_sessions.fulfilment.show',
+                [
+                    route().params['organisation'],
+                    route().params['warehouse'],
+                    palletReturn.picking_session_slug
+                ]
+            )
+        default:
+            return ''
+    }
+}
+
 const locale = inject('locale', aikuLocaleStructure)
 
 </script>
@@ -154,16 +180,28 @@ const locale = inject('locale', aikuLocaleStructure)
     <Table :resource="data" :name="tab" class="mt-5">
         <!-- Column: Reference -->
         <template #cell(reference)="{ item: palletReturn }">
-            <Link v-if="palletReturn.type === 'pallet'" :href="palletReturnRoute(palletReturn)" class="primaryLink">
-                {{ palletReturn['reference'] }}
-            </Link>
+            <div class="flex flex-col items-start gap-1">
+                <Link v-if="palletReturn.type === 'pallet'" :href="palletReturnRoute(palletReturn)" class="primaryLink">
+                    {{ palletReturn['reference'] }}
+                </Link>
 
-            <Link v-else-if="palletReturn.type === 'stored_item'" :href="storedItemReturnRoute(palletReturn)" class="primaryLink">
-                {{ palletReturn['reference'] }}
-            </Link>
+                <Link v-else-if="palletReturn.type === 'stored_item'" :href="storedItemReturnRoute(palletReturn)" class="primaryLink">
+                    {{ palletReturn['reference'] }}
+                </Link>
 
-            <div v-else>
-                {{ palletReturn.reference }}
+                <div v-else>
+                    {{ palletReturn.reference }}
+                </div>
+
+                <template v-if="pickingSessionRoute(palletReturn)">
+                    <Link
+                        :href="pickingSessionRoute(palletReturn)"
+                        class="secondaryLink"
+                        v-tooltip="`Picking session: ${palletReturn.picking_session_slug}`"
+                    >
+                        <FontAwesomeIcon icon="fab fa-stack-overflow" class="text-yellow-500" fixed-width aria-hidden="true" />
+                    </Link>
+                </template>
             </div>
         </template>
 
@@ -219,7 +257,7 @@ const locale = inject('locale', aikuLocaleStructure)
             <div v-else class="text-gray-400">
                 -
             </div>
-            
+
         </template>
 
         <template #cell(confirmed_at)="{ item: palletReturn }">
