@@ -9,7 +9,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class RehydrateChildProductImages extends OrgAction
 {
-    public function handle(ProductCategory $productCategory) 
+    public function handle(ProductCategory $productCategory)
     {
         foreach ($productCategory->getProducts() as $product) {
             HydrateProductImagesFromTradeUnits::run($product);

@@ -122,7 +122,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                 if ($caseKey === 'handling_blocked' && $widget['waiting_items']['count'] > 0) {
                     $entry['warning'] = [
                         'route_target' => $widget['waiting_items']['route'],
-                        'tooltip' =>__('Waiting items'),
+                        'tooltip' => __('Waiting items'),
                         'value' => $widget['waiting_items']['count'],
                     ];
                 }

@@ -33,7 +33,7 @@ class PickAllItemFromWaitingWarehouse extends OrgAction
             ]);
             DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 
-            $picking= PickAllItem::make()->action(
+            $picking = PickAllItem::make()->action(
                 $deliveryNoteItem,
                 [
                     'location_org_stock_id' => Arr::get($modelData, 'location_org_stock_id'),

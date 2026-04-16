@@ -15,7 +15,6 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Discounts\Offer;
 use App\Models\Helpers\Media;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -127,7 +126,6 @@ use Spatie\Translatable\HasTranslations;
  * @property-read ProductCategory|null $subDepartment
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ProductCategoryTimeSeries> $timeSeries
  * @property-read mixed $translations
- * @property-read UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
  * @property-read LaravelCollection<int, Webpage> $webpages
  * @method static \Database\Factories\Catalogue\ProductCategoryFactory factory($count = null, $state = [])

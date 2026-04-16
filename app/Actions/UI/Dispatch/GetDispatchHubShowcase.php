@@ -40,7 +40,7 @@ class GetDispatchHubShowcase
                 'count' => $warehouse->deliveryNotes()
                     ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
                     ->where('delivery_note_items.has_waiting_warehouse', true)
-                    ->where('delivery_notes.state','!=', DeliveryNoteStateEnum::HANDLING)
+                    ->where('delivery_notes.state', '!=', DeliveryNoteStateEnum::HANDLING)
                     ->count(),
                 'route' => [
                     'name' => 'grp.org.warehouses.show.dispatching.waiting_items',

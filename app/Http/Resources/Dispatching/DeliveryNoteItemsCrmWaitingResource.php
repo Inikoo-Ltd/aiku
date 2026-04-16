@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Thu, 16 Apr 2026 16:22:24 Malaysia Time, Kuala Lumpur, Malaysia
@@ -7,11 +8,7 @@
 
 namespace App\Http\Resources\Dispatching;
 
-use App\Http\Resources\Inventory\LocationOrgStocksForPickingActionsResource;
-use App\Models\Dispatching\DeliveryNoteItem;
-use App\Models\Dispatching\Picking;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\DB;
 
 /**
  * @property mixed $org_stock_id

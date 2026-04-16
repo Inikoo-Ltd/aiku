@@ -59,7 +59,7 @@ class UpdateWebsite extends OrgAction
             $shop = $website->shop;
             UpdateShop::run($shop, $shopUpdateData);
         }
-        
+
         $hydrateDescriptionOverview = false;
         if (Arr::has($modelData, 'description_has_overview')) {
             data_set($modelData, 'settings.catalogue_pages.description_has_overview', Arr::pull($modelData, 'description_has_overview'));

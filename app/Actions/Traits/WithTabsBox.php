@@ -51,12 +51,12 @@ trait WithTabsBox
 
         if ($parent instanceof Group) {
             $currency = "_grp_currency";
-            $parent->loadMissing(['organisations' => fn($q) => $q->where('type', OrganisationTypeEnum::SHOP)->with(['orderHandlingStats', 'currency'])]);
+            $parent->loadMissing(['organisations' => fn ($q) => $q->where('type', OrganisationTypeEnum::SHOP)->with(['orderHandlingStats', 'currency'])]);
             $children            = $parent->organisations->where('type', OrganisationTypeEnum::SHOP)->values();
             $childCurrencySuffix = "_org_currency";
         } elseif ($parent instanceof Organisation) {
             $currency = "_org_currency";
-            $parent->loadMissing(['shops' => fn($q) => $q->where('state', ShopStateEnum::OPEN)->with(['orderHandlingStats', 'currency'])]);
+            $parent->loadMissing(['shops' => fn ($q) => $q->where('state', ShopStateEnum::OPEN)->with(['orderHandlingStats', 'currency'])]);
             $children            = $parent->shops->where('state', ShopStateEnum::OPEN)->values();
             $childCurrencySuffix = "";
         } else {
@@ -84,7 +84,7 @@ trait WithTabsBox
                         ]
                     ]
                 ],
-                'children'      => $children->map(fn($child) => [
+                'children'      => $children->map(fn ($child) => [
                     'label'         => $child->name,
                     'slug'          => $child->slug,
                     'currency_code' => $child->currency?->code ?? $currencyCode,
@@ -146,7 +146,7 @@ trait WithTabsBox
                         ]
                     ],
                 ],
-                'children'      => $children->map(fn($child) => [
+                'children'      => $children->map(fn ($child) => [
                     'label'         => $child->name,
                     'slug'          => $child->slug,
                     'currency_code' => $child->currency?->code ?? $currencyCode,
@@ -249,7 +249,7 @@ trait WithTabsBox
                         ]
                     ],
                 ],
-                'children'      => $children->map(fn($child) => [
+                'children'      => $children->map(fn ($child) => [
                     'label'         => $child->name,
                     'slug'          => $child->slug,
                     'currency_code' => $child->currency?->code ?? $currencyCode,
@@ -308,7 +308,7 @@ trait WithTabsBox
                         ]
                     ],
                 ],
-                'children'      => $children->map(fn($child) => [
+                'children'      => $children->map(fn ($child) => [
                     'label'         => $child->name,
                     'slug'          => $child->slug,
                     'currency_code' => $child->currency?->code ?? $currencyCode,
@@ -337,7 +337,7 @@ trait WithTabsBox
                         ]
                     ],
                 ],
-                'children'      => $children->map(fn($child) => [
+                'children'      => $children->map(fn ($child) => [
                     'label'         => $child->name,
                     'slug'          => $child->slug,
                     'currency_code' => $child->currency?->code ?? $currencyCode,

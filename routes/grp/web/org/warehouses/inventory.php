@@ -9,7 +9,6 @@
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInOrgStock;
 use App\Actions\Fulfilment\Pallet\UI\EditPallet;
 use App\Actions\Fulfilment\Pallet\UI\IndexDamagedPalletsInWarehouse;
-use App\Actions\Fulfilment\Pallet\UI\IndexLostPallets;
 use App\Actions\Fulfilment\Pallet\UI\IndexLostPalletsInWarehouse;
 use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInWarehouse;
 use App\Actions\Fulfilment\Pallet\UI\IndexReturnedPalletsInWarehouse;
