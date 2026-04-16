@@ -9,10 +9,10 @@ import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import type { Table as TableTS } from "@/types/Table"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faStickyNote, faExchangeAlt, faSearch, faSave } from "@fal"
+import { faStickyNote, faExchangeAlt, faSearch, faSave, faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { inject, reactive, ref, watch } from "vue"
+import { computed, inject, reactive, ref, watch } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -20,7 +20,8 @@ import axios from "axios"
 import { debounce } from "lodash-es"
 import { InputNumber } from "primevue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-library.add(faStickyNote, faExchangeAlt, faSearch, faSave)
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+library.add(faStickyNote, faExchangeAlt, faSearch, faSave, faTimes)
 
 defineProps<{
     data: TableTS
@@ -28,6 +29,7 @@ defineProps<{
 }>()
 
 const layout = inject('layout', layoutStructure)
+const locale = inject('locale', aikuLocaleStructure)
 
 const orderRoute = (item: Record<string, any>): string | null => {
     if (!item['order_slug'] || !item['shop_slug'] || !item['organisation_slug']) {
@@ -130,7 +132,18 @@ watch(modalSearchQuery, () => {
     fetchModalProducts()
 })
 
-const selectedProductCount = () => Object.values(productQuantities).filter(p => p.quantity > 0).length
+
+const selectedProducts = computed(() =>
+    Object.entries(productQuantities)
+        .filter(([, p]) => p.quantity > 0)
+        .map(([id, p]) => ({ id: Number(id), code: p.code, name: p.name, quantity: p.quantity }))
+)
+
+const unselectProduct = (id: number) => {
+    if (productQuantities[id]) {
+        productQuantities[id].quantity = 0
+    }
+}
 
 interface SuccessContext {
     replacedItem: Record<string, any>
@@ -142,21 +155,20 @@ const successContext = ref<SuccessContext | null>(null)
 
 const submitReplaceProduct = () => {
     if (!selectedItem.value) return
-    const selectedProducts = Object.entries(productQuantities)
-        .filter(([, p]) => p.quantity > 0)
-        .map(([id, p]) => ({ id: Number(id), code: p.code, name: p.name, quantity: p.quantity }))
-    if (selectedProducts.length === 0) return
+    if (selectedProducts.value.length === 0) return
     const submitRoute = replaceProductRoute(selectedItem.value)
     if (!submitRoute) return
     isSubmittingReplaceProduct.value = true
 
-    router.post(submitRoute, { products: selectedProducts.map(({ id, quantity }) => ({ id, quantity })) }, {
+    const snapshotSelectedProducts = [...selectedProducts.value]
+
+    router.post(submitRoute, { products: selectedProducts.value.map(({ id, quantity }) => ({ id, quantity })) }, {
         preserveScroll: true,
         onSuccess: () => {
             isOpenModalReplaceProduct.value = false
             successContext.value = {
                 replacedItem: { ...selectedItem.value },
-                newProducts: selectedProducts,
+                newProducts: snapshotSelectedProducts,
             }
             isModalConfirmationSuccess.value = true
         },
@@ -252,27 +264,36 @@ const submitReplaceProduct = () => {
         </template>
     </Table>
 
+    <!-- Modal: Replace product -->
     <Modal :isOpen="isOpenModalReplaceProduct" width="w-full max-w-3xl" @onClose="closeReplaceProductModal" :closeButton="true">
         <div class="flex flex-col gap-4">
-            <h2 class="text-xl font-semibold text-gray-800 text-center">{{ ctrans('Replace Product') }}</h2>
+            <h2 class="text-xl font-semibold text-center">{{ ctrans('Replace Product') }}</h2>
 
-            <div>
+            <div class="">
                 <div>
-                    Product to replace:
+                    {{ ctrans("Product to replace") }}:
                 </div>
-                <div class="bg-amber-50 rounded px-4 py-2 text-sm text-amber-600 border border-amber-400 flex justify-between">
-                    <div>
-                        <span class="font-semibold">{{ selectedItem?.org_stock_code }}</span> — {{ selectedItem?.org_stock_name }}
-                    </div>
-                    <div>
-                        {{ selectedItem?.quantity_waiting_crm }} {{ ctrans("items") }}
+                <div class="bg-amber-50 rounded px-4 py-2 text-sm text-amber-700 border border-amber-400">
+                    <div class="flex justify-between items-start gap-4">
+                        <div>
+                            <span class="font-semibold">{{ selectedItem?.org_stock_code }}</span>
+                            <span class="ml-1.5 opacity-80">{{ selectedItem?.org_stock_name }}</span>
+                        </div>
+                        <div class="shrink-0 text-right">
+                            <div class="tabular-nums font-semibold">
+                                {{ selectedItem?.quantity_waiting_crm }} {{ ctrans("items") }}
+                            </div>
+                            <div v-if="selectedItem?.net_amount" class="tabular-nums text-xs opacity-70 mt-0.5">
+                                {{ locale.currencyFormat(selectedItem?.currency_code, selectedItem?.net_amount) }}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div>
                 <div>
-                    Select product:
+                    {{ ctrans("Select product") }}:
                 </div>
                 <div class="relative">
                     <FontAwesomeIcon icon="fal fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" fixed-width />
@@ -317,8 +338,8 @@ const submitReplaceProduct = () => {
                                 <div class="font-bold">{{ product.code }}</div>
                                 <div class="italic opacity-75">{{ product.name }}</div>
                             </td>
-                            <td class="px-4 py-3 text-right tabular-nums" :class="!product.stock ? 'text-red-500' : 'text-gray-600'">
-                                {{ product.stock ?? 0 }}
+                            <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap" :class="!product.stock ? 'text-red-500' : 'text-gray-600'">
+                                {{ product.stock > 0 ? locale.number(product.stock) : ctrans('Empty stock') }}
                             </td>
                             <td class="px-4 py-3 flex justify-end">
                                 <InputNumber
@@ -337,24 +358,52 @@ const submitReplaceProduct = () => {
                 </table>
             </div>
 
-            <div class="flex justify-between items-center pt-2 border-t border-gray-200">
-                <span class="text-sm text-gray-500">
-                    {{ selectedProductCount() }} {{ ctrans('product(s) selected') }}
-                </span>
-                <div class="flex gap-2">
-                    <Button :label="ctrans('Cancel')" type="negative" @click="closeReplaceProductModal" />
-                    <Button
-                        :label="ctrans('Save')"
-                        icon="fad fa-save"
-                        :loading="isSubmittingReplaceProduct"
-                        :disabled="selectedProductCount() === 0"
-                        @click="submitReplaceProduct"
-                    />
+            <div class="flex flex-col gap-2 pt-2 border-t border-gray-200">
+                <!-- Section: selected products list -->
+                <div class="flex flex-wrap gap-1.5">
+                    <template v-if="selectedProducts.length > 0">
+                        <div
+                            v-for="product in selectedProducts"
+                            :key="product.id"
+                            class="inline-flex items-center gap-1.5 bg-green-100 border border-green-300 text-green-800 rounded-full px-3 py-1 text-xs font-medium"
+                        >
+                            <span class="font-bold">{{ product.code }}</span>
+                            <span class="opacity-70">×{{ product.quantity }}</span>
+                            <button
+                                type="button"
+                                @click="unselectProduct(product.id)"
+                                class="ml-0.5 text-green-600 hover:text-red-600 transition-colors"
+                                :aria-label="ctrans('Remove')"
+                            >
+                                <FontAwesomeIcon icon="fal fa-times" class="text-xs" />
+                            </button>
+                        </div>
+                    </template>
+                    <div v-else class="border border-transparent">
+                        {{ ctrans("No selected products") }}
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-400">
+                        {{ selectedProducts.length }} {{ ctrans('product(s) selected') }}
+                    </span>
+                    <div class="flex gap-2">
+                        <Button :label="ctrans('Cancel')" type="negative" @click="closeReplaceProductModal" />
+                        <Button
+                            :label="ctrans('Save')"
+                            icon="fad fa-save"
+                            :loading="isSubmittingReplaceProduct"
+                            :disabled="selectedProducts.length === 0"
+                            @click="submitReplaceProduct"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
     </Modal>
 
+    <!-- Modal: information after success -->
     <Modal
         :isOpen="isModalConfirmationSuccess"
         @onClose="isModalConfirmationSuccess = false"
@@ -368,10 +417,11 @@ const submitReplaceProduct = () => {
 
             <div class="flex flex-col gap-1 border-b border-gray-300 pb-3">
                 <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ ctrans('Order') }}</div>
-                <Link
+                <a
                     v-if="orderRoute(successContext.replacedItem)"
                     :href="orderRoute(successContext.replacedItem)!"
-                    class="primaryLink font-semibold text-base flex justify-between items-center"
+                    target="_blank"
+                    class="font-semibold text-base flex justify-between items-center"
                     xclick="isModalConfirmationSuccess = false"
                 >
                     <div>
@@ -381,7 +431,7 @@ const submitReplaceProduct = () => {
                     <div class="underline font-normal opacity-70 italic text-xs hover:opacity-100">
                         Click to open ->
                     </div>
-                </Link>
+                </a>
                 <span v-else class="font-semibold text-base">{{ successContext.replacedItem.order_reference ?? '-' }}</span>
             </div>
 
@@ -392,8 +442,11 @@ const submitReplaceProduct = () => {
                         <span class="font-bold text-gray-700">{{ successContext.replacedItem.org_stock_code }}</span>
                         <span class="block text-gray-500 italic">{{ successContext.replacedItem.org_stock_name }}</span>
                     </div>
-                    <div class="tabular-nums text-gray-500">
-                        {{ successContext.replacedItem.quantity_waiting_crm }} {{ ctrans('items') }}
+                    <div class="text-right tabular-nums text-gray-500 shrink-0">
+                        <div>{{ successContext.replacedItem.quantity_waiting_crm }} {{ ctrans('items') }}</div>
+                        <div v-if="successContext.replacedItem.revenue_amount" class="text-xs opacity-70 mt-0.5">
+                            {{ locale.currencyFormat(successContext.replacedItem.currency_code, successContext.replacedItem.revenue_amount) }}
+                        </div>
                     </div>
                 </div>
             </div>
