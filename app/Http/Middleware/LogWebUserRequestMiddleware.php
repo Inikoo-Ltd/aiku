@@ -25,11 +25,7 @@ class LogWebUserRequestMiddleware
         if (!$this->canLogWebUserRequest()) {
             return $next($request);
         }
-        ds([
-            'name'      => $request->route()->getName(),
-            'arguments' => $request->route()->originalParameters(),
-            'url'       => $request->path(),
-        ]);
+
         $geoLocation = [
             $request->header('CF-IPCountry') ?? 'XX',
             $request->header('CF-Region'),
@@ -60,6 +56,10 @@ class LogWebUserRequestMiddleware
             return false;
         }
 
+        if (session('from-iris-redirect')) {
+            return false;
+        }
+
         /* @var WebUser|null $webUser */
         $webUser = request()->user();
 
@@ -73,7 +73,7 @@ class LogWebUserRequestMiddleware
             return false;
         }
 
-        $skipPrefixes = ['retina.models', 'iris.models', 'retina.webhooks', 'iris.json', 'retina.json'];
+        $skipPrefixes = ['retina.models', 'iris.models', 'retina.webhooks', 'iris.json', 'retina.json','iris.catalogue'];
         if ($routeName == 'retina.logout') {
             return false;
         }
@@ -89,6 +89,7 @@ class LogWebUserRequestMiddleware
         if (app()->runningUnitTests()) {
             return false;
         }
+        
         return true;
     }
 }
