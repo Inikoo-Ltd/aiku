@@ -11,9 +11,9 @@ import Button from '../Elements/Buttons/Button.vue';
 import { InputText, Select, Dialog, Textarea, Checkbox, Skeleton } from "primevue"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import InformationIcon from '../Utils/InformationIcon.vue';
-import { faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, faMinus } from '@fas'
+import { faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, faMinus, faUpload } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-library.add(faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, faMinus)
+library.add(faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, faMinus, faUpload)
 import { router } from '@inertiajs/vue3';
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import Image from '../Image.vue';
@@ -379,6 +379,7 @@ const submitBundle = async () => {
                 selectedMediaForAI.value = []
                 bundle.close()
                 bundle.resetBundle()
+                localStorage.removeItem('iris_bundle_products')
             },
             onError: errors => {
                 notify({
@@ -471,7 +472,7 @@ const bundle = useBundle({
             })
         },
         edit: {
-            name: 'iris.dropshipping.customer_sales_channels.bundles.show',
+            name: 'iris.catalogue.bundles.show',
             getParameters: () => ({
                 customerSalesChannel: customerChannelsId.value
             })
@@ -540,9 +541,8 @@ watch(customerChannelsId, (val) => {
                     </div>
 
                     <div v-for="item in bundle.products.value" :key="item.id" class="flex gap-3 py-3 border-b border-t">
-                        <img :src="item.web_images?.main?.gallery?.png"
+                        <img :src="item.web_images?.main?.gallery?.png || item.image"
                             class="w-14 h-14 object-contain bg-gray-50 rounded" />
-
                         <div class="flex-1">
                             <div class="text-sm font-semibold">{{ item.name }}</div>
                             <div class="flex gap-2">
@@ -693,7 +693,7 @@ watch(customerChannelsId, (val) => {
                                 text-gray-400 cursor-pointer hover:bg-gray-50 transition" @dragover.prevent
                             @drop.prevent="onDrop" @click="openFilePicker">
 
-                            <FontAwesomeIcon icon='fal fa-upload'
+                            <FontAwesomeIcon icon='fas fa-upload'
                                 class='!border-2 !rounded-full !p-2 !text-xl !text-muted-color' fixed-width
                                 aria-hidden='true' />
 

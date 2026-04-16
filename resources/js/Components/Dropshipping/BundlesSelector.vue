@@ -62,12 +62,13 @@ const portfoliosList = ref<Portfolio[]>([])
 const portfoliosMeta = ref()
 const portfoliosLinks = ref()
 const getPortfoliosList = async (url?: string) => {
-    console.log('getPortfoliosList', url)
+    
     isLoadingFetch.value = true
     try {
         const urlToFetch = url || route(props.routeFetch.name, {
             ...props.routeFetch.parameters,
-            'filter[global]': queryPortfolio.value
+            'filter[global]': queryPortfolio.value,
+            'origin': 'bundles'
         })
         const response = await axios.get(urlToFetch)
         portfoliosList.value = response.data.data

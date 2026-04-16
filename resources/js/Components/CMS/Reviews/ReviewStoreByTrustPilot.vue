@@ -94,7 +94,7 @@ watch(
     data-style-height="200px"  
     data-style-width="100%"
     :data-token="review?.data?.token"
-    data-stars="4"
+    data-stars="5"
   >
   </div>
 </template>

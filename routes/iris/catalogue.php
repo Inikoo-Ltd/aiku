@@ -10,8 +10,10 @@
 use App\Actions\Iris\Catalogue\DownloadIrisProduct;
 use App\Actions\Iris\Catalogue\GetProductDetail;
 use App\Actions\Retina\Dropshipping\Bundle\UI\IndexRetinaBulkProductImages;
+use App\Actions\Retina\Dropshipping\Bundle\UI\ShowRetinaBundle;
 
 Route::get('product/{product}', GetProductDetail::class)->name('product.resource');
+Route::get('bundles/{bundle:id}', ShowRetinaBundle::class)->name('bundles.show')->withoutScopedBindings();
 
 Route::prefix('feeds')->as('feeds.')->group(function () {
     Route::get('product-category/{productCategory}/download.csv', [DownloadIrisProduct::class, 'inProductCategory'])->name('product_category.download');
