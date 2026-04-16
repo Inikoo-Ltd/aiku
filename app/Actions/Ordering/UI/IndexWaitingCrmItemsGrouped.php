@@ -1,8 +1,7 @@
 <?php
-
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 13 Apr 2026 00:00:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Thu, 16 Apr 2026 14:46:11 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
@@ -10,10 +9,12 @@ namespace App\Actions\Ordering\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Http\Resources\Dispatching\WaitingDeliveryNoteItemsGroupedResource;
 use App\Http\Resources\Ordering\WaitingCrmItemsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
-use App\Models\Dispatching\DeliveryNoteItem;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -23,7 +24,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexWaitingCrmItems extends OrgAction
+class IndexWaitingCrmItemsGrouped extends OrgAction
 {
     use WithOrderingAuthorisation;
 
@@ -31,8 +32,7 @@ class IndexWaitingCrmItems extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('org_stocks.code', $value)
-                    ->orWhereStartWith('org_stocks.name', $value);
+                $query->whereWith('delivery_notes.reference', $value);
             });
         });
 
@@ -40,35 +40,31 @@ class IndexWaitingCrmItems extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for(DeliveryNoteItem::class);
+        $query = QueryBuilder::for(DeliveryNote::class);
+        $query->leftjoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
+        ->leftJoin('delivery_note_order', 'delivery_notes.id', '=', 'delivery_note_order.delivery_note_id')
+        ->leftJoin('orders', 'delivery_note_order.order_id', '=', 'orders.id');
 
-        $query->join('delivery_notes', 'delivery_note_items.delivery_note_id', '=', 'delivery_notes.id')
-            ->leftJoin('delivery_note_order', 'delivery_notes.id', '=', 'delivery_note_order.delivery_note_id')
-            ->leftJoin('orders', 'delivery_note_order.order_id', '=', 'orders.id')
-            ->leftJoin('shops', 'orders.shop_id', '=', 'shops.id')
-            ->leftJoin('organisations', 'orders.organisation_id', '=', 'organisations.id')
-            ->leftJoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id')
-            ->where('delivery_note_items.quantity_waiting_crm', '>', 0);
 
-        $query->where('delivery_note_items.shop_id', $shop->id);
 
-        return $query->defaultSort('org_stocks.code')
+        $query->where('delivery_notes.shop_id', $shop->id);
+        $query->where('delivery_notes.number_items_waiting_crm', '>',0);
+      //  $query->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED->value);
+
+        return $query->defaultSort('delivery_notes.id')
             ->select([
-                'delivery_note_items.id',
-                'delivery_note_items.quantity_waiting_crm',
-                'delivery_note_items.notes',
-                'org_stocks.code as org_stock_code',
-                'org_stocks.name as org_stock_name',
-                'org_stocks.slug as org_stock_slug',
-                'orders.id as order_id',
-                'orders.slug as order_slug',
-                'orders.reference as order_reference',
-                'shops.slug as shop_slug',
-                'shops.type as shop_type',
-                'shops.engine as shop_engine',
-                'organisations.slug as organisation_slug',
+                'delivery_notes.id as delivery_note_id',
+                'delivery_notes.slug as delivery_note_slug',
+                'delivery_notes.reference as delivery_note_reference',
+                'delivery_notes.state as delivery_note_state',
+                'delivery_notes.customer_notes as delivery_note_customer_notes',
+                'delivery_notes.public_notes as delivery_note_public_notes',
+                'delivery_notes.internal_notes as delivery_note_internal_notes',
+                'delivery_notes.shipping_notes as delivery_note_shipping_notes',
+                'delivery_notes.is_premium_dispatch as delivery_note_is_premium_dispatch',
+                'delivery_notes.has_extra_packing as delivery_note_has_extra_packing',
             ])
-            ->allowedSorts(['org_stock_code', 'org_stock_name', 'quantity_waiting_crm', 'order_reference'])
+            ->allowedSorts(['delivery_note_reference'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -82,14 +78,11 @@ class IndexWaitingCrmItems extends OrgAction
             }
 
             $table->withEmptyState([
-                'title' => __('No items waiting for CRM'),
-            ])->defaultSort('org_stock_code');
+                'title' => __('There is not delivery note with waiting items'),
+            ])->defaultSort('delivery_notes.id');
 
-            $table->column(key: 'order_reference', label: __('Order'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity_waiting_crm', label: __('Waiting Qty'), canBeHidden: false, sortable: true);
-            $table->column(key: 'actions', label: __('Actions'), canBeHidden: false);
+            $table->column(key: 'delivery_note_reference', label: __('Delivery Note'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'items', label: __('Items'), canBeHidden: false);
         };
     }
 
@@ -110,7 +103,7 @@ class IndexWaitingCrmItems extends OrgAction
                         'title' => __('Waiting for CRM'),
                     ],
                 ],
-                'waiting_crm_items' => WaitingCrmItemsResource::collection($items),
+                'waiting_crm_items' => WaitingDeliveryNoteItemsGroupedResource::collection($items),
             ]
         )->table($this->tableStructure());
     }

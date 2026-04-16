@@ -70,9 +70,7 @@ const replaceProductRoute = (item: Record<string, any>): string | null => {
     }
 
     try {
-        return route('grp.org.shops.show.ordering.backlog.waiting_items.replace_product', [
-            item['organisation_slug'],
-            item['shop_slug'],
+        return route('grp.models.delivery_note_item.waiting_items_replace_product', [
             item['id'],
         ])
     } catch {
