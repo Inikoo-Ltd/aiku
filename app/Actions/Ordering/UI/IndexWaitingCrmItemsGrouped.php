@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Http\Resources\Dispatching\WaitingDeliveryNoteItemsCrmGroupedResource;
 use App\Http\Resources\Dispatching\WaitingDeliveryNoteItemsGroupedResource;
 use App\Http\Resources\Ordering\WaitingCrmItemsResource;
 use App\InertiaTable\InertiaTable;
@@ -111,7 +112,7 @@ class IndexWaitingCrmItemsGrouped extends OrgAction
                         'title' => __('Waiting for CRM'),
                     ],
                 ],
-                'waiting_crm_items' => WaitingDeliveryNoteItemsGroupedResource::collection($items),
+                'waiting_crm_items' => WaitingDeliveryNoteItemsCrmGroupedResource::collection($items),
             ]
         )->table($this->tableStructure());
     }
