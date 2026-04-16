@@ -80,7 +80,7 @@ function onPickBlock(value: any) {
 </script>
 
 <template>
-  <div class="h-full flex flex-col bg-gray-50">
+  <div class="">
     <TabGroup
       :selectedIndex="selectedTab"
       @change="changeTab"
@@ -108,7 +108,7 @@ function onPickBlock(value: any) {
           <!-- active indicator -->
           <span
             v-if="selected"
-            class="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-[2px] bg-indigo-500 rounded-full"
+            class="absolute bottom-0 left-1/2 w-full -translate-x-1/2 w-4 h-[2px] bg-indigo-500 rounded-full"
           />
         </Tab>
       </TabList>
@@ -117,15 +117,13 @@ function onPickBlock(value: any) {
       <TabPanels class="flex-1 overflow-auto p-2 space-y-2">
         <!-- Templates -->
         <TabPanel>
-          <div
-            class="bg-white rounded-lg border border-gray-200 shadow-sm p-2 hover:shadow-md transition-shadow"
-          >
+         
             <WebBlockListDnd
               :webBlockTypes="webBlockTypes"
               @pick-block="onPickBlock"
               :selectedWeblock="data?.code"
             />
-          </div>
+      
         </TabPanel>
 
         <!-- Settings -->
