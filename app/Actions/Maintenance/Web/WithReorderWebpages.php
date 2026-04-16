@@ -12,8 +12,8 @@ trait WithReorderWebpages
     public function reorderDepartmentPageBlocks(Webpage $webpage, $setDescriptionTop = false): void
     {
         $departmentDescriptionWebBlock  = $this->getWebpageBlocksByType($webpage, 'department-description-1')->first()->model_has_web_blocks_id;
-        $subDepartmentBlock             = $this->getWebpageBlocksByType($webpage, $this->fetchUsedTemplate($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS))->first()?->model_has_web_blocks_id;
-        $familiesBlock                  = $this->getWebpageBlocksByType($webpage, $this->fetchUsedTemplate($webpage, WebBlockTemplateEnum::FAMILIES))->first()?->model_has_web_blocks_id;
+        $subDepartmentBlock             = $this->getWebpageBlocksByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes())->first()?->model_has_web_blocks_id;
+        $familiesBlock                  = $this->getWebpageBlocksByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes())->first()?->model_has_web_blocks_id;
         $webBlocks                      = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
 
         $runningPosition = 1;
@@ -49,6 +49,6 @@ trait WithReorderWebpages
                 ->update(['position' => $position]);
         }
 
-        UpdateWebpageContent::run($webpage);
+        UpdateWebpageContent::run($webpage->refresh());
     }
 }
