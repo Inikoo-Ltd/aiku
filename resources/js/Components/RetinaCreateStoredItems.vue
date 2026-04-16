@@ -115,6 +115,43 @@
       return e;
   };
 
+  const getOptionLabelText = (option: any, label: string): string => {
+      const rawValue = option?.[label]
+      if (typeof rawValue === "string") {
+          return rawValue
+      }
+      if (rawValue === null || rawValue === undefined) {
+          return ""
+      }
+
+      return String(rawValue)
+  }
+
+  const escapeHtml = (value: string): string => {
+      return value
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;")
+  }
+
+  const escapeRegExp = (value: string): string => {
+      return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  }
+
+  const highlightOptionLabel = (option: any, label: string, search: string): string => {
+      const labelText = getOptionLabelText(option, label)
+      if (!search) {
+          return escapeHtml(labelText)
+      }
+
+      const escapedLabelText = escapeHtml(labelText)
+      const searchPattern = new RegExp(escapeRegExp(search), "ig")
+
+      return escapedLabelText.replace(searchPattern, (match) => `<span style='background: #eded02'>${match}</span>`)
+  }
+
   const incrementQuantity = () => {
       props.form.quantity = Number(props.form.quantity) + 1;
   }
@@ -227,7 +264,7 @@
                       </template>
 
                       <template #option="{option, isSelected, isPointed, search, label}">
-                          <div v-html="option[label]?.replace(search, `<span style='background: #eded02'>${search}</span>`)"></div>
+                          <div v-html="highlightOptionLabel(option, label, search)"></div>
                       </template>
 
                       <template #noresults="{ search }: { search: string }">
