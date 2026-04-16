@@ -43,7 +43,8 @@ class IndexWaitingCrmItemsGrouped extends OrgAction
         $query = QueryBuilder::for(DeliveryNote::class);
         $query->leftjoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
         ->leftJoin('delivery_note_order', 'delivery_notes.id', '=', 'delivery_note_order.delivery_note_id')
-        ->leftJoin('orders', 'delivery_note_order.order_id', '=', 'orders.id');
+        ->leftJoin('orders', 'delivery_note_order.order_id', '=', 'orders.id')
+        ->leftJoin('organisations', 'delivery_notes.organisation_id', '=', 'organisations.id');
 
 
 
@@ -63,6 +64,13 @@ class IndexWaitingCrmItemsGrouped extends OrgAction
                 'delivery_notes.shipping_notes as delivery_note_shipping_notes',
                 'delivery_notes.is_premium_dispatch as delivery_note_is_premium_dispatch',
                 'delivery_notes.has_extra_packing as delivery_note_has_extra_packing',
+                'orders.id as order_id',
+                'orders.slug as order_slug',
+                'orders.reference as order_reference',
+                'shops.slug as shop_slug',
+                'shops.type as shop_type',
+                'shops.engine as shop_engine',
+                'organisations.slug as organisation_slug',
             ])
             ->allowedSorts(['delivery_note_reference'])
             ->allowedFilters([$globalSearch])

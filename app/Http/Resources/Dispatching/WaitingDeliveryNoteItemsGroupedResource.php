@@ -24,6 +24,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $delivery_note_shipping_notes
  * @property mixed $delivery_note_is_premium_dispatch
  * @property mixed $delivery_note_has_extra_packing
+ * @property mixed $order_id
+ * @property mixed $order_slug
+ * @property mixed $order_reference
+ * @property mixed $shop_slug
+ * @property mixed $shop_type
+ * @property mixed $shop_engine
+ * @property mixed $organisation_slug
  */
 class WaitingDeliveryNoteItemsGroupedResource extends JsonResource
 {
@@ -42,6 +49,13 @@ class WaitingDeliveryNoteItemsGroupedResource extends JsonResource
             'delivery_note_public_notes'        => $this->delivery_note_public_notes,
             'delivery_note_internal_notes'      => $this->delivery_note_internal_notes,
             'delivery_note_shipping_notes'      => $this->delivery_note_shipping_notes,
+            'order_id'                          => $this->order_id,
+            'order_slug'                        => $this->order_slug,
+            'order_reference'                   => $this->order_reference,
+            'shop_slug'                         => $this->shop_slug,
+            'shop_type'                         => $this->shop_type,
+            'shop_engine'                       => $this->shop_engine,
+            'organisation_slug'                 => $this->organisation_slug,
             'notes'                             => $this->notes,
             'items'                             => $deliveryNote
                 ? collect(DeliveryNoteItemsStateHandlingResource::collection(

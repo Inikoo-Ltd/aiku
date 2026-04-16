@@ -9,7 +9,7 @@ import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import type { Table as TableTS } from "@/types/Table"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faStickyNote, faExchangeAlt, faSearch, faSave, faTimes } from "@fal"
+import { faStickyNote, faExchangeAlt, faSearch, faSave, faTimes, faTruck, faShoppingCart } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { computed, inject, reactive, ref, watch } from "vue"
@@ -21,7 +21,7 @@ import { debounce } from "lodash-es"
 import { InputNumber } from "primevue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-library.add(faStickyNote, faExchangeAlt, faSearch, faSave, faTimes)
+library.add(faStickyNote, faExchangeAlt, faSearch, faSave, faTimes, faTruck, faShoppingCart)
 
 defineProps<{
     data: TableTS
@@ -47,27 +47,21 @@ const orderRoute = (item: Record<string, any>): string | null => {
 }
 
 const setAsNotPickRoute = (item: Record<string, any>): string | null => {
-    if (!item['id'] || !item['shop_slug'] || !item['organisation_slug']) {
+    if (!item['id']) {
         return null
     }
 
     try {
-        // return route('grp.org.shops.show.ordering.backlog.waiting_items.set_as_not_pick', [
-        //     item['organisation_slug'],
-        //     item['shop_slug'],
-        //     item['id'],
-        // ])
         return route('grp.models.delivery_note_item.not_picking_from_waiting_crm.store', {
             deliveryNoteItem: item['id']
-        }
-        )
+        })
     } catch {
         return null
     }
 }
 
 const replaceProductRoute = (item: Record<string, any>): string | null => {
-    if (!item['id'] || !item['shop_slug'] || !item['organisation_slug']) {
+    if (!item['id']) {
         return null
     }
 
@@ -176,88 +170,100 @@ const submitReplaceProduct = () => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab">
-        <template #cell(order_reference)="{ item }">
-            <FontAwesomeIcon icon="fal fa-shopping-cart" class="opacity-75" fixed-width aria-hidden="true" />
-            <Link v-if="orderRoute(item)" :href="orderRoute(item)!" class="primaryLink">
-                {{ item['order_reference'] }}
-            </Link>
-            <span v-else>{{ item['order_reference'] ?? '-' }}</span>
-        </template>
-
-        <template #cell(org_stock_code)="{ item }">
-            <span class="font-semibold">{{ item['org_stock_code'] }}</span>
-        </template>
-
-        <template #cell(org_stock_name)="{ item }">
-            <span>{{ item['org_stock_name'] }}</span>
-        </template>
-
-        <template #cell(quantity_waiting_crm)="{ item }">
-            <div class="flex flex-col gap-0.5">
-                <span class="tabular-nums">
-                    {{ item['quantity_waiting_crm'] }} {{ ctrans("items") }}
-                </span>
-                <span v-if="item['notes']" class="text-left border border-gray-300 bg-gray-100 px-2 py-1 rounded">
-                    <div class="font-medium">
-                        <FontAwesomeIcon icon="fal fa-sticky-note" class="" fixed-width aria-hidden="true" />
-                        {{ ctrans("Notes") }} ({{ ctrans("may from Picker or other staff") }})
-                    </div>
-                    <div class="opacity-70 italic text-xs ">{{ item['notes'] }}</div>
-                </span>
+    <Table :resource="data" :name="tab" rowAlignTop>
+        <template #cell(delivery_note_reference)="{ item }">
+            <div class="flex gap-2 flex-wrap items-center">
+                <FontAwesomeIcon icon="fal fa-truck" class="opacity-60" fixed-width aria-hidden="true" />
+                <span class="font-semibold">{{ item.delivery_note_reference }}</span>
+                <FontAwesomeIcon
+                    v-if="item.delivery_note_is_premium_dispatch"
+                    v-tooltip="ctrans('Priority dispatch')"
+                    icon="fas fa-star"
+                    class="text-yellow-500"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+            <div v-if="item.order_reference" class="mt-1 text-xs text-gray-500">
+                <Link v-if="orderRoute(item)" :href="orderRoute(item)!" class="primaryLink">
+                    <FontAwesomeIcon icon="fal fa-shopping-cart" class="opacity-75 mr-1" fixed-width aria-hidden="true" />
+                    {{ item.order_reference }}
+                </Link>
+                <span v-else>{{ item.order_reference }}</span>
             </div>
         </template>
 
-        <template #cell(actions)="{ item }">
-            <div class="flex justify-end gap-2">
-                <!-- <Link
-                    v-if="setAsNotPickRoute(item)"
-                    :href="setAsNotPickRoute(item)!"
-                    method="post"
-                    preserve-scroll
-                    xclass="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 transition hover:bg-amber-100"
+        <template #cell(items)="{ item: deliveryNoteRow }">
+            <div v-if="deliveryNoteRow.items?.length" class="divide-y divide-gray-100">
+                <div
+                    v-for="subItem in deliveryNoteRow.items"
+                    :key="subItem.id"
+                    class="py-3 first:pt-1 flex flex-wrap items-start gap-x-6 gap-y-2"
                 >
-            </Link> -->
-            
-                <ButtonWithLink
-                    v-tooltip="ctrans(':itemNotPick items will not picked, and will not billed to customer', { itemNotPick: Number(item.quantity_waiting_crm) })"
-                    :url="setAsNotPickRoute(item)"
-                    method="post"
-                    :label="ctrans(`Don't pick :itemNotPick items`, { itemNotPick: Number(item.quantity_waiting_crm) })"
-                    type="negative"
-                    icon="fas fa-skull"
-                    size="xs"
-                />
+                    <!-- Item info -->
+                    <div class="flex-1 min-w-0 flex flex-col gap-0.5">
+                        <div>
+                            <span class="font-semibold">{{ subItem.org_stock_code }}</span>
+                            <span class="ml-1.5 text-gray-600 italic opacity-80">{{ subItem.org_stock_name }}</span>
+                        </div>
+                        <div class="tabular-nums text-sm text-gray-500">
+                            {{ Number(subItem.quantity_waiting_crm) }} {{ ctrans("items") }}
+                        </div>
+                        <div v-if="subItem.notes" class="text-left border border-gray-300 bg-gray-100 px-2 py-1 rounded text-xs w-fit">
+                            <FontAwesomeIcon icon="fal fa-sticky-note" fixed-width aria-hidden="true" />
+                            {{ subItem.notes }}
+                        </div>
+                    </div>
 
+                    <!-- Actions -->
+                    <div class="flex gap-2 shrink-0 flex-wrap">
+                        <ButtonWithLink
+                            v-tooltip="ctrans(':itemNotPick items will not picked, and will not billed to customer', { itemNotPick: Number(subItem.quantity_waiting_crm) })"
+                            :url="setAsNotPickRoute(subItem)"
+                            method="post"
+                            :label="ctrans(`Don't pick :itemNotPick items`, { itemNotPick: Number(subItem.quantity_waiting_crm) })"
+                            type="negative"
+                            icon="fas fa-skull"
+                            size="xs"
+                        />
 
-                <!-- Button: Refresh Faire Data -->
-                <div v-if="item.shop_type == 'external' && item.shop_engine === 'faire'">
-                    <ButtonWithLink
-                        :label="ctrans('Refresh Faire data')"
-                        size="xs"
-                        type="tertiary"
-                        key="2"
-                        icon="fal fa-sync-alt"
-                        :routeTarget="{
-                            name: 'grp.models.order.update_faire',
-                            parameters: {
-                                order: item.order_id
-                            },
-                            method: 'post'
-                        }"
-                    />
+                        <!-- Refresh Faire Data -->
+                        <ButtonWithLink
+                            v-if="deliveryNoteRow.shop_type == 'external' && deliveryNoteRow.shop_engine === 'faire'"
+                            :label="ctrans('Refresh Faire data')"
+                            size="xs"
+                            type="tertiary"
+                            icon="fal fa-sync-alt"
+                            :routeTarget="{
+                                name: 'grp.models.order.update_faire',
+                                parameters: { order: deliveryNoteRow.order_id },
+                                method: 'post'
+                            }"
+                        />
+
+                        <!-- Replace Product -->
+                        <Button
+                            v-else-if="layout.app.environment === 'local' && replaceProductRoute(subItem)"
+                            :label="ctrans('Replace :itemNotPick items', { itemNotPick: Number(subItem.quantity_waiting_crm) })"
+                            size="xs"
+                            type="positive"
+                            icon="fal fa-exchange-alt"
+                            @click="openReplaceProductModal({
+                                ...subItem,
+                                shop_slug: subItem.shop_slug ?? deliveryNoteRow.shop_slug,
+                                shop_type: deliveryNoteRow.shop_type,
+                                shop_engine: deliveryNoteRow.shop_engine,
+                                order_id: deliveryNoteRow.order_id,
+                                order_slug: deliveryNoteRow.order_slug,
+                                order_reference: deliveryNoteRow.order_reference,
+                                organisation_slug: deliveryNoteRow.organisation_slug,
+                            })"
+                        />
+                    </div>
                 </div>
-                
-                <!-- Button: Replace Product -->
-                <Button
-                    v-else-if="layout.app.environment === 'local' && replaceProductRoute(item)"
-                    :label="ctrans('Replace :itemNotPick items', { itemNotPick: Number(item.quantity_waiting_crm) })"
-                    key="3"
-                    size="xs"
-                    type="positive"
-                    icon="fal fa-exchange-alt"
-                    @click="openReplaceProductModal(item)"
-                />
+            </div>
+            <div v-else class="text-gray-400 text-sm italic py-2">
+                {{ ctrans('No items') }}
             </div>
         </template>
     </Table>
@@ -279,7 +285,7 @@ const submitReplaceProduct = () => {
                         </div>
                         <div class="shrink-0 text-right">
                             <div class="tabular-nums font-semibold">
-                                {{ selectedItem?.quantity_waiting_crm }} {{ ctrans("items") }}
+                                {{ Number(selectedItem?.quantity_waiting_crm) }} {{ ctrans("items") }}
                             </div>
                             <div v-if="selectedItem?.net_amount" class="tabular-nums text-xs opacity-70 mt-0.5">
                                 {{ locale.currencyFormat(selectedItem?.currency_code, selectedItem?.net_amount) }}
