@@ -1,4 +1,9 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 16 Apr 2026 22:18:19 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -11,21 +16,13 @@ return new class extends Migration
     {
         Schema::create('web_user_logins', function (Blueprint $table) {
             $table->id();
-
-            $table->string('type', 100)->index();
-            $table->dateTime('datetime')->index();
-            $table->string('username')->nullable()->index();
-            $table->unsignedBigInteger('web_user_id')->nullable()->index();
-            $table->foreign('web_user_id')->references('id')->on('web_users');
-            $table->ipAddress()->nullable();
+            $table->unsignedInteger('web_user_id')->nullable()->index();
+            $table->foreign('web_user_id')->references('id')->on('web_users')->nullOnDelete();
+            $table->string('os')->nullable();
+            $table->string('device')->nullable();
+            $table->string('browser')->nullable();
+            $table->string('ip_address')->nullable();
             $table->jsonb('location')->nullable();
-            $table->text('user_agent')->nullable();
-            $table->jsonb('device_type')->nullable();
-            $table->jsonb('platform')->nullable();
-            $table->jsonb('browser')->nullable();
-
-            $table->index(['type', 'datetime', 'web_user_id']);
-
             $table->timestampsTz();
         });
     }

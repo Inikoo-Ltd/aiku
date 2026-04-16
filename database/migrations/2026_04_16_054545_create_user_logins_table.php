@@ -1,4 +1,9 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 16 Apr 2026 22:12:47 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -11,21 +16,13 @@ return new class extends Migration
     {
         Schema::create('user_logins', function (Blueprint $table) {
             $table->id();
-
-            $table->string('type', 100)->index();
-            $table->dateTime('datetime')->index();
-            $table->string('username')->nullable()->index();
-            $table->unsignedBigInteger('user_id')->nullable()->index();
-            $table->foreign('user_id')->references('id')->on('users');
-            $table->ipAddress()->nullable();
+            $table->unsignedSmallInteger('user_id')->index();
+            $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
+            $table->string('os')->nullable();
+            $table->string('device')->nullable();
+            $table->string('browser')->nullable();
+            $table->string('ip_address')->nullable();
             $table->jsonb('location')->nullable();
-            $table->text('user_agent')->nullable();
-            $table->jsonb('device_type')->nullable();
-            $table->jsonb('platform')->nullable();
-            $table->jsonb('browser')->nullable();
-
-            $table->index(['type', 'datetime', 'user_id']);
-
             $table->timestampsTz();
         });
     }
