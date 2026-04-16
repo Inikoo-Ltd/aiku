@@ -52,7 +52,7 @@ const props = defineProps<{
     }
     liveStats?: any[]
     ownShopTemplates?: { templates: any[], shop_name: string }
-    otherShopTemplates?: { templates: any[] }
+    otherShopTemplates?: { templates: any[] } | { data: any[], current_page: number, last_page: number, per_page: number, total: number }
     organisationSlug?: string
     shopSlug?: string
 }>()

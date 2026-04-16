@@ -290,7 +290,7 @@ class ShowMailshot extends OrgAction
                 'mailshotId' => $mailshot->id,
                 'groupId' => $mailshot->group_id,
                 'ownShopTemplates' => GetOwnShopEmailTemplates::run($this->shop),
-                'otherShopTemplates' => GetOtherShopEmailTemplates::run($this->organisation, $this->shop),
+                'otherShopTemplates' => GetOtherShopEmailTemplates::make()->action($this->shop),
                 'organisationSlug' => $this->organisation->slug,
                 'shopSlug' => $this->shop->slug,
             ]

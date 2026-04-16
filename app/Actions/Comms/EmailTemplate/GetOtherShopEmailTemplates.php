@@ -61,4 +61,10 @@ class GetOtherShopEmailTemplates extends OrgAction
     {
         return EmailTemplateResource::collection($emailTemplates);
     }
+
+    public function action(Shop $currentShop, $prefix = null, ?int $numberOfRecords = 4): LengthAwarePaginator
+    {
+        $this->initialisationFromShop($currentShop, []);
+        return $this->handle($this->organisation, $currentShop, $prefix, $numberOfRecords);
+    }
 }

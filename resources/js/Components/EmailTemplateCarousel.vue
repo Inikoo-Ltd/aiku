@@ -123,7 +123,9 @@ const handlePageUpdate = (event: number) => {
     // if (neededItems > 4 && !isLoading.value) {
     //     const nextPage = Math.ceil(neededItems / 4);
     //     if (nextPage > currentPage.value && nextPage <= lastPage.value) {
-    fetchOtherShopTemplates(event + 1);
+    if (!pagination.value || pagination.value.total > pagination.value.perPage) {
+        fetchOtherShopTemplates(event + 1);
+    }
     //     }
     // }
 };
@@ -142,6 +144,7 @@ const fetchOtherShopTemplates = async (page: number) => {
         });
 
         const data = response.data;
+        console.log(data);
         currentPage.value = data.current_page;
         lastPage.value = data.last_page;
 
