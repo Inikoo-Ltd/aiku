@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 trait WithRepairWebpages
 {
     use WithStoreWebpage;
+    use WithReorderWebpages;
 
     protected function getWebpageBlocksByType(Webpage $webpage, string $type): \Illuminate\Support\Collection
     {
