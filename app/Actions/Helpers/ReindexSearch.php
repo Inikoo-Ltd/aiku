@@ -143,7 +143,7 @@ class ReindexSearch extends HydrateModel
     protected function reindexSysadmin(Command $command): void
     {
         $command->info('Sysadmin section 🛠');
-        $command->call('search:users');
+        //$command->call('search:users');
         //todo $command->call('search:guests');
         //todo $command->call('search:users requests');
     }
