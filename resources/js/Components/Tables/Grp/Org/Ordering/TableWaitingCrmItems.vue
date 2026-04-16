@@ -131,7 +131,7 @@ const replaceProductRoute = (item: Record<string, any>): string | null => {
                 />
 
 
-                
+                <!-- Button: Refresh Faire Data -->
                 <div v-if="item.shop_type == 'external' && item.shop_engine === 'faire'">
                     <ButtonWithLink
                         :label="ctrans('Refresh Faire data')"
@@ -148,6 +148,8 @@ const replaceProductRoute = (item: Record<string, any>): string | null => {
                         }"
                     />
                 </div>
+                
+                <!-- Button: Replace Product -->
                 <Link
                     v-else-if="layout.app.environment === 'local' && replaceProductRoute(item)"
                     :href="replaceProductRoute(item)!"

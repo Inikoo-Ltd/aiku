@@ -26,9 +26,16 @@ class WaitingCrmItemsResource extends JsonResource
             'id'                   => $this->id,
             'org_stock_code'       => $this->org_stock_code,
             'org_stock_name'       => $this->org_stock_name,
+            'org_stock_slug'       => $this->org_stock_slug,
             'quantity_waiting_crm' => (float) $this->quantity_waiting_crm,
             'notes'                => $this->notes,
+            'order_id'              => $this->order_id,
+            'order_slug'           => $this->order_slug,
             'order_reference'      => $this->order_reference,
+            'shop_slug'            => $this->shop_slug,
+            'shop_type'            => $this->shop_type,
+            'shop_engine'          => $this->shop_engine,
+            'organisation_slug'    => $this->organisation_slug,
         ];
     }
 }
