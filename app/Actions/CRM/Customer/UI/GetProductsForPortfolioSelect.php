@@ -115,7 +115,7 @@ class GetProductsForPortfolioSelect extends OrgAction
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 
         return $queryBuilder->allowedSorts(['code', 'name', 'shop_slug', 'department_slug', 'family_slug'])
-            ->allowedFilters([$globalSearch, $typeFilter])
+            ->allowedFilters([$globalSearch, $typeFilter, 'origin'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
