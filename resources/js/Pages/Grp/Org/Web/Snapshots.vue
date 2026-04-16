@@ -18,6 +18,7 @@ defineProps<{
   pageHead: PageHeadingTypes
   title: string
   data: {}
+  display_apply_button?: boolean
 }>();
 
 
@@ -26,5 +27,5 @@ defineProps<{
 <template>
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead" />
-  <TableSnapshots :data="data" class="mt-5" />
+  <TableSnapshots :data="data" class="mt-5" :display_apply_button="display_apply_button"/>
 </template>

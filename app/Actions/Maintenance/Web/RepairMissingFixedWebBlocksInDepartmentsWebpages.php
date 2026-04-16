@@ -168,7 +168,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
 
         $webpage->refresh();
 
-        $this->reorderWebBlock($webpage, (bool) $command->option('set-description-top'));
+        $this->reorderDepartmentPageBlocks($webpage, (bool) $command->option('set-description-top'));
 
         if ($command->option('hide-description')) {
             $this->setDescriptionWebBlockHidden($webpage);
@@ -198,72 +198,6 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
                 );
             }
         }
-    }
-
-    public function reorderWebBlock(Webpage $webpage, $setDescriptionTop = false): void
-    {
-        $departmentDescriptionWebBlock  = $this->getWebpageBlocksByType($webpage, 'department-description-1')->first()->model_has_web_blocks_id;
-        $subDepartmentBlock             = $this->getWebpageBlocksByType($webpage, $this->fetchUsedTemplate($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS))->first()?->model_has_web_blocks_id;
-        $familiesBlock                  = $this->getWebpageBlocksByType($webpage, $this->fetchUsedTemplate($webpage, WebBlockTemplateEnum::FAMILIES))->first()?->model_has_web_blocks_id;
-        $webBlocks                      = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
-
-        $runningPosition = 1;
-        if ($setDescriptionTop) {
-            $runningPosition = 2;
-        }
-
-        $reorderFamily = $subDepartmentBlock && $familiesBlock;
-        $familyPosition = null;
-
-        foreach ($webBlocks as $key => $position) {
-            if ($key == $departmentDescriptionWebBlock && $setDescriptionTop) {
-                $webBlocks[$key] = 1;
-            } else {
-                $webBlocks[$key] = $runningPosition;
-
-                if ($key == $subDepartmentBlock && $reorderFamily) {
-                    $runningPosition++;
-                    $familyPosition = $runningPosition;
-                }
-
-                $runningPosition++;
-            }
-        }
-
-        if ($familyPosition) {
-            $webBlocks[$familiesBlock] = $familyPosition;
-        }
-
-        foreach ($webBlocks as $key => $position) {
-            DB::table('model_has_web_blocks')
-                ->where('id', $key)
-                ->update(['position' => $position]);
-        }
-        
-        UpdateWebpageContent::run($webpage);
-    }
-
-    public function setDescriptionWebBlockOnTop(Webpage $webpage): void
-    {
-        $departmentDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1')->first()->model_has_web_blocks_id;
-        $webBlocks                     = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
-
-        $runningPosition = 2;
-        foreach ($webBlocks as $key => $position) {
-            if ($key == $departmentDescriptionWebBlock) {
-                $webBlocks[$key] = 1;
-            } else {
-                $webBlocks[$key] = $runningPosition;
-                $runningPosition++;
-            }
-        }
-
-        foreach ($webBlocks as $key => $position) {
-            DB::table('model_has_web_blocks')
-                ->where('id', $key)
-                ->update(['position' => $position]);
-        }
-        UpdateWebpageContent::run($webpage);
     }
 
     public function setDescriptionWebBlockHidden(Webpage $webpage): void

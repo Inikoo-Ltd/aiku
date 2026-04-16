@@ -1,11 +1,9 @@
 <?php
-
 /*
- * Author: Vika Aqordi
- * Created on 13-04-2026-15h-04m
- * Github: https://github.com/aqordeon
- * Copyright: 2026
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 16 Apr 2026 14:00:43 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Ordering\WaitingCrmItem;
 
@@ -17,10 +15,24 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ReplaceWaitingCrmItemProduct extends OrgAction
 {
-    public function asController(Organisation $organisation, Shop $shop, DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): void
+    public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): void
     {
-        $this->initialisationFromShop($shop, $request);
+        dd($deliveryNoteItem->quantity_waiting_crm,$modelData);
+    }
 
-        dd('yyyyy');
+    public function rules(): array
+    {
+        return [
+            'products'            => ['required', 'array', 'min:1'],
+            'products.*.id'       => ['required', 'integer', 'exists:products,id'],
+            'products.*.quantity' => ['required', 'numeric', 'min:0'],
+        ];
+    }
+
+    public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($deliveryNoteItem->deliveryNote->shop, $request);
+
+        $this->handle($deliveryNoteItem, $this->validatedData);
     }
 }

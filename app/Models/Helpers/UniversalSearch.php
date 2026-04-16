@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Arr;
-use Laravel\Scout\Searchable;
 
 /**
  * @property int $id
@@ -52,8 +51,6 @@ use Laravel\Scout\Searchable;
  */
 class UniversalSearch extends Model
 {
-    use Searchable;
-
     protected $casts = [
         'sections'    => 'array',
         'permissions' => 'array',

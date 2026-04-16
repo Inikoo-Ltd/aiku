@@ -237,6 +237,7 @@ use App\Actions\Helpers\Brand\UpdateBrand;
 use App\Actions\Helpers\GoogleDrive\AuthorizeClientGoogleDrive;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
+use App\Actions\Helpers\Snapshot\ApplyWebsiteMenuSnapshot;
 use App\Actions\Helpers\Snapshot\SetSnapshotAsLive;
 use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
@@ -936,6 +937,9 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     // LLMs.txt upload
     Route::post('llms-txt', StoreLlmsTxt::class)->name('llms_txt.store');
 });
+
+Route::patch('set-snapshot-website/{snapshot:id}/published', ApplyWebsiteMenuSnapshot::class)->name('website.set-snapshot-as-live')->withoutScopedBindings();
+Route::patch('set-snapshot-website/{snapshot:id}/unpublished', [ApplyWebsiteMenuSnapshot::class, 'asUnpublished'])->name('website.set-snapshot-as-unpublished')->withoutScopedBindings();
 
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::patch('', UpdateWebpage::class)->name('update')->withoutScopedBindings();

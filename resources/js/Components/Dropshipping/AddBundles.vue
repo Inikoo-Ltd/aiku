@@ -13,11 +13,12 @@ import { Textarea, Dialog, Checkbox, InputText, Skeleton } from "primevue"
 import { debounce } from 'lodash-es'
 import { route } from 'ziggy-js'
 import Image from '../Image.vue'
-import { faLayerGroup, faSparkles, faTrash, faImages } from '@fas'
+import { faLayerGroup, faSparkles, faTrash, faImages, faUpload } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { router } from '@inertiajs/vue3';
 import { useBundle } from '@/Composables/useBundle';
-library.add(faLayerGroup, faSparkles, faTrash, faImages)
+import { useConfirm, ConfirmDialog } from "primevue"
+library.add(faLayerGroup, faSparkles, faTrash, faImages, faUpload)
 
 const props = defineProps<{
     step: {
@@ -349,6 +350,7 @@ const submitBundle = async () => {
                 selectedMediaIds.value = []
                 selectedMediaForAI.value = []
                 props.step.current = 0
+                localStorage.removeItem('iris_bundle_products')
                 emits('onDone')
             },
             onError: errors => {
@@ -466,9 +468,49 @@ const onFileChange = (e: Event) => {
     uploadFilesLocal(target.files)
 }
 
+const confirm = useConfirm()
+
 const handleClose = () => {
-    emits('onClose')
+    confirm.require({
+        message: 'close this modal will discard this bundle. You’ll need to start again.',
+        header: 'Discard bundle?',
+        acceptLabel: 'Discard',
+        rejectLabel: 'Stay',        
+        accept: () => {
+            handleDelete()
+        },
+    })
+    
 }
+
+const handleDelete = () => {
+    router.delete(route(props.bundle_routes.delete.name, {
+        ...props.bundle_routes.delete.parameters,
+        bundle: bundle.bundle_id.value
+    }), {
+        preserveScroll: true,
+
+        onSuccess: () => {
+            bundle.resetBundle()
+            bundle.products.value = []
+            selectedMedia.value = []
+            selectedMediaIds.value = []
+            selectedMediaForAI.value = []
+            idxSubmitSuccess.value++
+            emits('onClose')
+            props.step.current = 0
+        },
+
+        onError: () => {
+            notify({
+                title: trans('Error'),
+                text: trans('Failed to delete bundle'),
+                type: 'error'
+            })
+        }
+    })
+}
+
 
 const handleBack = () => {
     props.step.current = 0
@@ -532,6 +574,27 @@ onMounted(() => {
         fetchIndexUnuploadedPortfolios()
     }
 })
+watch(
+    selectedMedia,
+    (val) => {
+        if (!val.length) return
+
+        let found = false
+
+        val.forEach((img, i) => {
+            if (img.is_main && !found) {
+                found = true
+            } else {
+                img.is_main = false
+            }
+        })
+
+        if (!found) {
+            val[0].is_main = true
+        }
+    },
+    { deep: true }
+)
 </script>
 
 <template>
@@ -734,7 +797,7 @@ onMounted(() => {
                                 text-gray-400 cursor-pointer hover:bg-gray-50 transition" @dragover.prevent
                             @drop.prevent="onDrop" @click="openFilePicker">
 
-                            <FontAwesomeIcon icon='fal fa-upload'
+                            <FontAwesomeIcon icon='fas fa-upload'
                                 class='!border-2 !rounded-full !p-2 !text-xl !text-muted-color' fixed-width
                                 aria-hidden='true' />
 
@@ -891,6 +954,56 @@ onMounted(() => {
                     </template>
 
                 </Dialog>
+                <ConfirmDialog>
+                    <template #container="{ message, acceptCallback, rejectCallback }">
+                        <div class="p-5 w-[360px]">
+
+                            <!-- ICON -->
+                            <div class="flex justify-center mb-3">
+                               <FontAwesomeIcon
+                                    :icon="message.data?.type === 'danger'
+                                        ? 'fas fa-exclamation-triangle'
+                                        : 'fas fa-question-circle'"
+                                    class="text-3xl text-red-500"
+                                />
+                            </div>
+
+                            <!-- TITLE -->
+                            <div class="text-center font-semibold text-lg mb-2">
+                                {{ message.header }}
+                            </div>
+
+                            <!-- MESSAGE -->
+                            <div class="text-center text-sm text-gray-500 mb-5 leading-relaxed">
+                                {{ message.message }}
+                            </div>
+
+                            <!-- ACTIONS -->
+                            <div class="flex justify-center gap-3">
+
+                                <!-- CANCEL -->
+                                <button
+                                    @click="rejectCallback"
+                                    class="px-4 py-2 text-sm border rounded-md hover:bg-gray-100"
+                                >
+                                    {{ message.rejectLabel || 'Cancel' }}
+                                </button>
+
+                                <!-- ACCEPT -->
+                                <button
+                                    @click="acceptCallback"
+                                    :class="[
+                                        'px-4 py-2 text-sm text-white rounded-md bg-red-500 hover:bg-red-600'
+                                    ]"
+                                >
+                                    {{ message.acceptLabel || 'Yes' }}
+                                </button>
+
+                            </div>
+
+                        </div>
+                    </template>
+                </ConfirmDialog>
             </div>
 
         </KeepAlive>
