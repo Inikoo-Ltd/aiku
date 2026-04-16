@@ -13,11 +13,11 @@ import { Textarea, Dialog, Checkbox, InputText, Skeleton } from "primevue"
 import { debounce } from 'lodash-es'
 import { route } from 'ziggy-js'
 import Image from '../Image.vue'
-import { faLayerGroup, faSparkles, faTrash, faImages } from '@fas'
+import { faLayerGroup, faSparkles, faTrash, faImages, faUpload } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { router } from '@inertiajs/vue3';
 import { useBundle } from '@/Composables/useBundle';
-library.add(faLayerGroup, faSparkles, faTrash, faImages)
+library.add(faLayerGroup, faSparkles, faTrash, faImages, faUpload)
 
 const props = defineProps<{
     step: {
@@ -349,6 +349,7 @@ const submitBundle = async () => {
                 selectedMediaIds.value = []
                 selectedMediaForAI.value = []
                 props.step.current = 0
+                localStorage.removeItem('iris_bundle_products')
                 emits('onDone')
             },
             onError: errors => {
@@ -734,7 +735,7 @@ onMounted(() => {
                                 text-gray-400 cursor-pointer hover:bg-gray-50 transition" @dragover.prevent
                             @drop.prevent="onDrop" @click="openFilePicker">
 
-                            <FontAwesomeIcon icon='fal fa-upload'
+                            <FontAwesomeIcon icon='fas fa-upload'
                                 class='!border-2 !rounded-full !p-2 !text-xl !text-muted-color' fixed-width
                                 aria-hidden='true' />
 

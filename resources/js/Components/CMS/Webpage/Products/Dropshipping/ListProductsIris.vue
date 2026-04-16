@@ -236,7 +236,7 @@ const handleSearch = () => {
 
 watch([q, orderBy], () => {
     page.value = 1;
-    isFetchingOutOfStock.value = false;
+    isFetchingOutOfStock.value = true;
     updateQueryParams();
     debFetchProducts(false, true);
 }, { deep: true });
