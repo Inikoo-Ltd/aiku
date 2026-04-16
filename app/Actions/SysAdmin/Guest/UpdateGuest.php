@@ -11,7 +11,7 @@ namespace App\Actions\SysAdmin\Guest;
 use App\Actions\GrpAction;
 use App\Actions\SysAdmin\User\UpdateUser;
 use App\Actions\Traits\WithActionUpdate;
-use App\Http\Resources\SysAdmin\GuestResource;
+use App\Http\Resources\SysAdmin\Guest\GuestResource;
 use App\Models\SysAdmin\Guest;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;

@@ -13,7 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
 use App\Actions\SysAdmin\User\WithUsersSubNavigation;
 use App\Actions\SysAdmin\WithSysAdminAuthorization;
-use App\Http\Resources\SysAdmin\UsersResource;
+use App\Http\Resources\SysAdmin\User\UsersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;

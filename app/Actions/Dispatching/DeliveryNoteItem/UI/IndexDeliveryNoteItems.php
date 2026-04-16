@@ -79,6 +79,9 @@ class IndexDeliveryNoteItems extends OrgAction
                 'org_stocks.slug as org_stock_slug',
                 'org_stocks.packed_in as packed_in',
                 'packings.id as packing_id',
+                'delivery_note_items.quantity_waiting_crm',
+                'delivery_note_items.quantity_waiting_warehouse',
+
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state'])
             ->allowedFilters([$globalSearch])

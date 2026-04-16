@@ -10,10 +10,10 @@ namespace App\Actions\SysAdmin\User;
 
 use App\Actions\HumanResources\JobPosition\Hydrators\JobPositionHydrateEmployees;
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithReorganisePositions;
-use App\Http\Resources\SysAdmin\UserResource;
+use App\Http\Resources\SysAdmin\User\UserResource;
 use App\Models\HumanResources\JobPosition;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;

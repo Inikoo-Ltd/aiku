@@ -15,6 +15,7 @@ use App\Models\Traits\HasImage;
 use App\Models\Traits\HasRoles;
 use App\Models\Traits\IsUserable;
 use Laravel\Sanctum\HasApiTokens;
+use Laravel\Scout\Searchable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\SlugOptions;
 use Illuminate\Support\Collection;
@@ -132,6 +133,7 @@ class User extends Authenticatable implements HasMedia, Auditable
     use IsUserable;
     use HasImage;
     use HasApiTokens;
+    use Searchable;
 
     protected $guarded = [
     ];
@@ -156,6 +158,18 @@ class User extends Authenticatable implements HasMedia, Auditable
         'settings' => '{}',
         'sources'  => '{}',
     ];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'           => (string)$this->id,
+            'username'     => $this->username,
+            'email'        => (string)$this->email,
+            'contact_name' => (string)$this->contact_name,
+            'status'       => $this->status,
+            'created_at'   => $this->created_at->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {
@@ -295,7 +309,6 @@ class User extends Authenticatable implements HasMedia, Auditable
      */
     public function getOrganisations(): Collection
     {
-
         return $this->employees->map(function ($employee) {
             return $employee->organisation;
         })->flatten();

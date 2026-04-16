@@ -16,6 +16,7 @@ import Select from 'primevue/select'
 import IftaLabel from 'primevue/iftalabel'
 import { trans } from "laravel-vue-i18n";
 import Icon from "../Icon.vue"
+import { Link } from "@inertiajs/vue3"
 
 library.add(faInfoCircle, faRoad, faClock, faDatabase, faPallet, faCircle, faNetworkWired, faSpinnerThird, faEye, faThLarge,faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream)
 
@@ -111,11 +112,11 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
                     {{ box.label }}
                 </div>
                 
-                <div class="flex gap-x-4">
-                    <div v-for="tab in box.tabs" class="w-full flex flex-col items-center">
+                <div class="flex gap-x-4 justify-center">
+                    <div v-for="tab in box.tabs" class="flex flex-col items-center">
                         <div
                             @click="onChangeTab(tab.tab_slug)"
-                            class="group tabular-nums relative cursor-pointer text-xl px-2 hover:underline"
+                            class="group tabular-nums relative cursor-pointer text-xl px-2"
                             xclass="tab.tab_slug === currentTab ? 'text-indigo-600' : 'text-gray-500'"
                         >
                             <div class="mx-auto text-center">
@@ -125,21 +126,33 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
                                     <FontAwesomeIcon v-else :icon='tab.icon' class='text-xl' fixed-width aria-hidden='true' />
                                 </template>
                             </div>
-                            
-                            <div class="relative text-center">
-                                <span class="inline" :class="tabLoading == tab.tab_slug ? 'opacity-0' : 'opacity-80 group-hover:opacity-100'">
+
+                            <div class="relative flex items-center justify-center gap-1">
+                                <span class="whitespace-nowrap inline" :class="tabLoading == tab.tab_slug ? 'opacity-0' : 'opacity-80 group-hover:opacity-100 group-hover:underline'">
                                     {{ renderLabelBasedOnType(tab.value, tab.type, {currency_code: box.currency_code}) }}
                                 </span>
                                 <div v-if="!(tab.icon || tab.icon_data) && tabLoading == tab.tab_slug" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
                                     <LoadingIcon />
                                 </div>
+
+                                <!-- Section: Warning -->
+                                <Link v-if="tab.warning"
+                                    :href="tab.warning?.route_target?.name ? route(tab.warning?.route_target?.name, tab.warning?.route_target.parameters) : '#'"
+                                    class="relative aspect-square w-5 flex items-center justify-center bg-purple-300 text-purple-700 rounded text-[10px] leading-none opacity-70 hover:opacity-100 no-underline"
+                                    v-tooltip="tab.warning?.tooltip"
+                                    @click.stop
+                                >
+                                    {{ tab.warning.value }}
+                                    <FontAwesomeIcon v-if="tab.warning?.indicator" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                    <FontAwesomeIcon v-if="tab.warning?.indicator" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
+                                </Link>
                             </div>
                             <template v-if="tab.indicator">
                                 <FontAwesomeIcon icon='fas fa-circle' class='absolute top-1 -right-0 text-green-500 text-[6px]' fixed-width aria-hidden='true' />
                                 <FontAwesomeIcon icon='fas fa-circle' class='absolute top-1 -right-0 text-green-500 text-[6px] animate-ping' fixed-width aria-hidden='true' />
                             </template>
                         </div>
-                        
+
                         <div class="xtext-gray-400 font-normal text-xs opacity-70">
                             {{ renderLabelBasedOnType(tab.information?.label, tab.information?.type, {currency_code: box.currency_code}) }}
                         </div>

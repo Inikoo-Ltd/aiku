@@ -17,6 +17,7 @@ use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\UI\Dispatch\DispatchHubTabsEnum;
 use App\Http\Resources\Dispatching\DashboardDispatchHubDashboardResource;
@@ -160,7 +161,8 @@ class ShowDispatchHub extends OrgAction
                             'name'       => 'grp.org.warehouses.show.dispatching.backlog',
                             'parameters' => $routeParameters
                         ],
-                        'label' => __('Dispatching'),
+                        'icon'  => ['fal', 'fa-arrow-from-left'],
+                        'label' => __('Goods out'),
                     ]
                 ]
             ]

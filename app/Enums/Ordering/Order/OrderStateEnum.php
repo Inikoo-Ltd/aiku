@@ -39,7 +39,7 @@ enum OrderStateEnum: string
             'submitted'        => __('Submitted'),
             'in_warehouse'     => __('In Warehouse'),
             'handling'         => __('Handling'),
-            'handling_blocked' => __('Handling Blocked'),
+            'handling_blocked' => __('Waiting'),
             'picked'           => __('Picked'),
             'packing'          => __('Packing'),
             'packed'           => __('Packed'),
@@ -113,7 +113,7 @@ enum OrderStateEnum: string
                 ]
             ],
             'handling_blocked' => [
-                'tooltip' => __('Handling Blocked'),
+                'tooltip' => __('Waiting'),
                 'icon'    => 'fal fa-snooze',
                 'class'   => 'text-red-500',
                 'color'   => 'slate',

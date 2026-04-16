@@ -96,12 +96,5 @@ watch(
     :data-token="review?.data?.token"
     data-stars="4"
   >
-    <a
-      :href="review?.data?.link || '#'"
-      target="_blank"
-      rel="noopener"
-    >
-      Trustpilot
-    </a>
   </div>
 </template>

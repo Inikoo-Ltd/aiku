@@ -534,6 +534,30 @@ test("UI Index dispatching delivery-notes", function () {
     });
 });
 
+test("UI Index dispatching waiting items", function () {
+    $this->withoutExceptionHandling();
+
+    $response = get(
+        route("grp.org.warehouses.show.dispatching.waiting_items", [
+            $this->organisation->slug,
+            $this->warehouse->slug,
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component("Org/Dispatching/WaitingDeliveryNoteItems")
+            ->where("title", 'Waiting items acme')
+            ->has("breadcrumbs", 3)
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page
+                    ->where("title", "Waiting items")
+                    ->etc()
+            )
+            ->has("tabs");
+    });
+});
+
 test("UI Index dispatching show delivery-notes", function (DeliveryNote $deliveryNote) {
     $this->withoutExceptionHandling();
     $response = get(
@@ -546,7 +570,7 @@ test("UI Index dispatching show delivery-notes", function (DeliveryNote $deliver
     $response->assertInertia(function (AssertableInertia $page) use ($deliveryNote) {
         $page
             ->component("Org/Dispatching/DeliveryNote")
-            ->where("title", 'delivery note')
+            ->where("title", 'Delivery note 123456')
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",

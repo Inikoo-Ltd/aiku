@@ -12,7 +12,7 @@ namespace App\Actions\UI\Profile;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\UI\WithInertia;
-use App\Http\Resources\SysAdmin\MayaUserResource;
+use App\Http\Resources\SysAdmin\User\MayaUserResource;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
