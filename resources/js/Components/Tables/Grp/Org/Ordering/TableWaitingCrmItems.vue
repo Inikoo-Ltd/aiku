@@ -273,6 +273,7 @@ const submitReplaceProduct = () => {
         <div class="flex flex-col gap-4">
             <h2 class="text-xl font-semibold text-center">{{ ctrans('Replace Product') }}</h2>
 
+            <!-- Section: product to replace -->
             <div class="">
                 <div>
                     {{ ctrans("Product to replace") }}:
@@ -295,6 +296,7 @@ const submitReplaceProduct = () => {
                 </div>
             </div>
 
+            <!-- Section: search product -->
             <div>
                 <div>
                     {{ ctrans("Select product") }}:
@@ -314,6 +316,7 @@ const submitReplaceProduct = () => {
                 <LoadingIcon />
             </div>
 
+            <!-- Section: list products -->
             <div v-else class="overflow-y-auto h-96 border border-gray-200 rounded-lg isolate">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-100 border-b border-gray-200 sticky top-0 z-10">
