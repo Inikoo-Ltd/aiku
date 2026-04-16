@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 14 Apr 2026 11:00:07 Malaysia Time, Kuala Lumpur, Malaysia
@@ -26,7 +27,7 @@ class UndoSetAsWaitingWarehouse extends OrgAction
     public function handle(DeliveryNoteItem $deliveryNoteItem): DeliveryNoteItem
     {
 
-        if($deliveryNoteItem->quantity_waiting_warehouse==0){
+        if ($deliveryNoteItem->quantity_waiting_warehouse == 0) {
             return $deliveryNoteItem;
         }
 

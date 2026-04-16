@@ -3,7 +3,6 @@
 namespace App\Actions\Web\Website;
 
 use App\Actions\Maintenance\Web\WithRepairWebpages;
-use App\Actions\OrgAction;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\StoreWebpage;
@@ -25,7 +24,7 @@ class WebsiteGenerateFamiliesOverviewPages
     {
         $generateFamiliesOverview = data_get($website->settings, 'catalogue_pages.description_has_overview', false);
         $shop = $website->shop;
-        
+
         foreach ($shop->departments() as $department) {
 
             $hasFamiliesOverview = $department->webpages()->where('layout_style', 'families-overview')->exists();
@@ -42,7 +41,7 @@ class WebsiteGenerateFamiliesOverviewPages
                     'model_id'      => $department->id,
                     'layout_style'  => 'families-overview'
                 ];
-    
+
                 $overviewPage = StoreWebpage::make()->action($department->shop->website, $webpageData);
                 PublishWebpage::make()->action($overviewPage, [
                     'comment'   => 'Generate Overview Page'

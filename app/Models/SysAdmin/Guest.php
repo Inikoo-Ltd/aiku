@@ -62,7 +62,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\GuestStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, TimeTracker> $timeTrackers
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Timesheet> $timesheets
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read \App\Models\SysAdmin\User|null $user
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\User> $users
  * @method static \Database\Factories\SysAdmin\GuestFactory factory($count = null, $state = [])

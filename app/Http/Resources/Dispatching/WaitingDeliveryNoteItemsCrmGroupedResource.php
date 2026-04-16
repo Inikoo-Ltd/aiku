@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Thu, 16 Apr 2026 16:10:02 Malaysia Time, Kuala Lumpur, Malaysia
@@ -8,8 +9,6 @@
 namespace App\Http\Resources\Dispatching;
 
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsCrm;
-use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
-use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Http\Resources\Json\JsonResource;
 

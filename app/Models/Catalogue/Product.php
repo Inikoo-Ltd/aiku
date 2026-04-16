@@ -227,7 +227,6 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $topImage
  * @property-read LaravelCollection<int, TradeUnit> $tradeUnits
  * @property-read mixed $translations
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read \App\Models\Catalogue\Variant|null $variant
  * @property-read Webpage|null $webpage
  * @property-read LaravelCollection<int, WebpageHasProduct> $webpageHasProducts

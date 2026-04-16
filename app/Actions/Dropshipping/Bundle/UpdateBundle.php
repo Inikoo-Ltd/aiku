@@ -42,7 +42,7 @@ class UpdateBundle extends OrgAction
      */
     public function handle(Bundle $bundle, array $modelData): Bundle
     {
-         return DB::transaction(function () use ($bundle, $modelData) {
+        return DB::transaction(function () use ($bundle, $modelData) {
             $tradeUnits = [];
             Arr::forget($modelData, 'id');
 
@@ -57,7 +57,7 @@ class UpdateBundle extends OrgAction
             $images = collect(Arr::get($modelData, 'images'))->pluck('id');
 
             $selectedProducts = [];
-            if(Arr::get($modelData, 'products')) {
+            if (Arr::get($modelData, 'products')) {
                 $selectedProducts = $this->processDelete($bundle, Arr::get($modelData, 'products'));
             }
 
@@ -128,7 +128,7 @@ class UpdateBundle extends OrgAction
                 ]);
             }
 
-            if(! blank($selectedProducts)) {
+            if (! blank($selectedProducts)) {
                 $productSelected = Product::where('shop_id', $bundle->customer->shop_id)
                     ->whereIn('id', Arr::pluck($selectedProducts, 'product_id'))
                     ->get();
@@ -151,7 +151,7 @@ class UpdateBundle extends OrgAction
                         ->where('item_id', $selectedProduct['product_id'])
                         ->first();
 
-                    if($bundleItem) {
+                    if ($bundleItem) {
                         $this->update($bundleItem, [
                             'quantity' => Arr::get($selectedProduct, 'quantity')
                         ]);
@@ -178,7 +178,7 @@ class UpdateBundle extends OrgAction
             $bundle->refresh();
 
             return $bundle;
-         });
+        });
     }
 
     public function processDelete(Bundle $bundle, array $selectedProducts): array

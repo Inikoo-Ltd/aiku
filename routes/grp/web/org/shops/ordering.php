@@ -24,7 +24,6 @@ use App\Actions\Ordering\Purge\UI\IndexPurges;
 use App\Actions\Ordering\Purge\UI\ShowPurge;
 use App\Actions\Ordering\UI\IndexWaitingCrmItemsGrouped;
 use App\Actions\Ordering\WaitingCrmItem\SetWaitingCrmItemAsNotPick;
-use App\Actions\Ordering\UI\IndexWaitingCrmItems;
 use App\Actions\Ordering\UI\ShowOrderingDashboard;
 use App\Actions\Ordering\UI\ShowOrdersBacklog;
 use Illuminate\Support\Facades\Route;

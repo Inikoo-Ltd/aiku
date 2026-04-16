@@ -6,7 +6,6 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
 use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNotePercentage;

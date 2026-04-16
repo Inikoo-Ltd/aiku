@@ -383,7 +383,7 @@ test('UI show dashboard org', function (User $user) {
             ->has('title')
             ->has(
                 'dashboard',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->has('super_blocks')
                     ->etc()
             );
@@ -513,7 +513,7 @@ test('UI show dashboard org (tab invoice_categories)', function (User $user) {
             ->has('breadcrumbs', 1)
             ->has(
                 'dashboard',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->etc()
             );
     });
@@ -543,7 +543,7 @@ test('UI index overview org', function (User $user) {
             ->has('breadcrumbs', 2)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Overview')
                     ->etc()
             )->has('dashboard_stats');
@@ -573,7 +573,7 @@ test('UI index overview org changelog', function (User $user) {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Changelog')
                     ->etc()
             )->has('data');
@@ -739,7 +739,8 @@ test('user status change', function (User $user) {
 test('delete guest', function (User $user) {
     /** @var Guest $guest */
     $guest = $user->guests()->first();
-    $guest = DeleteGuest::make()->action($guest);;
+    $guest = DeleteGuest::make()->action($guest);
+    ;
     expect($guest->deleted_at)->toBeInstanceOf(Carbon::class);
 })->depends('update user password');
 
@@ -972,7 +973,7 @@ test('UI show organisation setting', function () {
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('name', 'grp.models.org.settings.update')
                     ->where('parameters', [$organisation->id])
             );
@@ -997,7 +998,7 @@ test('UI index organisation', function () {
             ->has('data')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Organisations')
                     ->etc()
             );
@@ -1024,7 +1025,7 @@ test('UI edit organisation', function () {
             ->has('formData')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $organisation->name)
                     ->etc()
             );
@@ -1049,7 +1050,7 @@ test('UI organisation edit settings', function () {
             ->has('formData')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Organisation settings')
                     ->etc()
             );
@@ -1167,7 +1168,7 @@ test('UI index request logs', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'User Requests')
                     ->etc()
             )->has('data');
@@ -1192,7 +1193,7 @@ test('UI index overview group', function () {
             ->has('breadcrumbs', 2)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Overview')
                     ->etc()
             )->has('dashboard_stats');
@@ -1217,7 +1218,7 @@ test('UI index overview group changelog', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Changelog')
                     ->etc()
             )->has('data');
@@ -1241,7 +1242,7 @@ test('UI show dashboard group', function () {
             ->has('breadcrumbs', 1)
             ->has(
                 'dashboard',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->etc()
             );
     });
@@ -1262,7 +1263,7 @@ test('UI show goods dashboard group', function () {
         $page
             ->component('Goods/GoodsDashboard')
             ->has('breadcrumbs', 2)
-            ->has('pageHead', fn(AssertableInertia $page) => $page->where('title', 'Goods strategy')->etc())
+            ->has('pageHead', fn (AssertableInertia $page) => $page->where('title', 'Goods strategy')->etc())
             ->has('flatTreeMaps');
     });
 });
@@ -1287,7 +1288,7 @@ test('UI show dashboard group (tab invoice_shops)', function () {
             ->has('breadcrumbs', 1)
             ->has(
                 'dashboard',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->etc()
             );
     });

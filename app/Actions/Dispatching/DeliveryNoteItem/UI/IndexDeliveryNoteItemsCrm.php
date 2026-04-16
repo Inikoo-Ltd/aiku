@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Thu, 16 Apr 2026 16:14:01 Malaysia Time, Kuala Lumpur, Malaysia
@@ -27,11 +28,11 @@ class IndexDeliveryNoteItemsCrm extends OrgAction
         $query = QueryBuilder::for(DeliveryNoteItem::class);
 
         $query->where('delivery_note_items.delivery_note_id', $deliveryNote->id);
-        $query->where('delivery_note_items.has_waiting_crm','true');
+        $query->where('delivery_note_items.has_waiting_crm', 'true');
         $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
 
         return $query
-            ->defaultSort( 'org_stocks.code')
+            ->defaultSort('org_stocks.code')
             ->select([
                 'delivery_note_items.id',
                 'delivery_note_items.state',
@@ -53,7 +54,7 @@ class IndexDeliveryNoteItemsCrm extends OrgAction
                 'org_stocks.packed_in'
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state', 'picking_position'])
-            ->withPaginator( 'deliveryNoteItems', tableName: request()->route()->getName())
+            ->withPaginator('deliveryNoteItems', tableName: request()->route()->getName())
             ->withQueryString();
     }
 

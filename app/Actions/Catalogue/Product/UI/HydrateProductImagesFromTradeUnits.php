@@ -14,23 +14,23 @@ class HydrateProductImagesFromTradeUnits extends OrgAction
     {
         $masterAsset                = $product->masterProduct;
         $masterFollowTradeUnitMedia = $masterAsset?->follow_trade_unit_media;
-        
+
         $followMaster = false;
-        if ($masterAsset ) {
+        if ($masterAsset) {
             if ($masterAsset->is_single_trade_unit && $masterFollowTradeUnitMedia) {
-                CloneMasterAssetImagesFromTradeUnits::run($masterAsset);    
+                CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
             }
 
             if (!$masterFollowTradeUnitMedia) {
                 $followMaster = true;
             }
-        } 
+        }
 
         if ($product->is_single_trade_unit && !$followMaster) {
             CloneProductImagesFromTradeUnits::run($product);
         }
     }
-    
+
     public function asController(Product $product, ActionRequest $request)
     {
         $this->initialisationFromShop($product->shop, $request);

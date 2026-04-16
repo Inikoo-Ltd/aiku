@@ -24,7 +24,8 @@ trait WithRepairWebpages
             ->select(['web_blocks.layout', 'web_blocks.id', 'web_block_types.code as type','model_has_web_blocks.id as model_has_web_blocks_id'])
             ->leftJoin('web_blocks', 'web_blocks.id', '=', 'model_has_web_blocks.web_block_id')
             ->leftJoin('web_block_types', 'web_block_types.id', '=', 'web_blocks.web_block_type_id')
-            ->when(is_array($type), 
+            ->when(
+                is_array($type),
                 fn ($q) => $q->whereIn('web_block_types.code', $type),
                 fn ($q) => $q->where('web_block_types.code', $type)
             )
