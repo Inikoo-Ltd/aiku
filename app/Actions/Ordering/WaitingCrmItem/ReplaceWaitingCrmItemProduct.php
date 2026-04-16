@@ -9,12 +9,14 @@ namespace App\Actions\Ordering\WaitingCrmItem;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
+use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -23,7 +25,7 @@ class ReplaceWaitingCrmItemProduct extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): void
+    public function handle(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): void
     {
         /** @var \App\Models\Ordering\Order $order */
         $order = $deliveryNoteItem->deliveryNote->orders()->first();
@@ -32,12 +34,24 @@ class ReplaceWaitingCrmItemProduct extends OrgAction
         }
 
 
-        DB::transaction(function () use ($deliveryNoteItem, $modelData, $order) {
+        DB::transaction(function () use ($deliveryNoteItem, $modelData, $order, $user) {
+            $crmWaitingQuantity = $deliveryNoteItem->quantity_waiting_crm;
+
+
             $deliveryNoteItem->update([
                 'quantity_waiting_crm' => 0,
                 'has_waiting_crm'      => false,
             ]);
             DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
+
+            StoreNotPickPicking::make()->action(
+                $deliveryNoteItem,
+                $user,
+                [
+                    'quantity' => $crmWaitingQuantity
+                ]
+            );
+
 
             foreach ($modelData['products'] as $productData) {
                 $product = Product::find($productData['id']);
@@ -92,6 +106,6 @@ class ReplaceWaitingCrmItemProduct extends OrgAction
     {
         $this->initialisationFromShop($deliveryNoteItem->deliveryNote->shop, $request);
 
-        $this->handle($deliveryNoteItem, $this->validatedData);
+        $this->handle($deliveryNoteItem, $request->user(), $this->validatedData);
     }
 }
