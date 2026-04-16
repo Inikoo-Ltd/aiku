@@ -5,7 +5,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\SysAdmin\User;
+namespace App\Actions\SysAdmin\User\Search;
 
 use Lorisleiva\Actions\Concerns\AsObject;
 
