@@ -15,6 +15,7 @@ import SearchResultDefault from '@/Components/Search/SearchResultDefault.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { faPallet, faReceipt, faTimes, faSearch, faShoppingCart, faUser } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import Skeleton from 'primevue/skeleton';
 
 library.add(faPallet, faReceipt, faTimes, faSearch, faShoppingCart, faUser)
 
@@ -234,12 +235,12 @@ const fetchApi = debounce(async (query: string) => {
             selectedTab.value = null
             return
         }
-
-        await fetch(`${urlSearch()}?q=${query}&route_src=${route().current()}${paramsToString()}`)
+        
+        const url = `${urlSearch()}?q=${query}&route_src=${route().current()}${paramsToString()}`
+        await fetch(url)
             .then(response => {
                 response.json().then((data: { data: {} }) => {
                     resultsSearch.value = data.data
-                    console.log('query:', query, resultsSearch.value)
                     isLoadingSearch.value = false
                     selectedTab.value = null
                 })
@@ -255,7 +256,6 @@ const isOnTyping = ref(false)
 const onTypeSearch = () => {
     // searchValue.value = e.target.value
     isOnTyping.value = true
-    console.log("searfh", searchValue.value)
     fetchApi(searchValue.value)
 }
 
@@ -322,11 +322,11 @@ const hasRoute = (item: any) => {
                         class="w-full max-w-lg sm:max-w-2xl md:min-w-[60vw] lg:max-w-4xl xl:max-w-[1200px] h-[75vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
 
                         <!-- HEADER -->
-                        <div class="border-b p-3 flex items-center gap-3">
+                        <div class="border-b p-3 flex items-center">
                             <FontAwesomeIcon icon="fa-regular fa-search" class="text-gray-400" />
                             <input v-model="searchValue" @input="onTypeSearch" type="text"
                                 class="h-12 w-full border-0 bg-transparent text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm" placeholder="Search..." />
-                            <button @click="closeModal">✕</button>
+                            <button @click="closeModal"><FontAwesomeIcon icon="fal fa-times" class="text-lg" /></button>
                         </div>
                         
                         <!-- EMPTY -->
@@ -343,27 +343,35 @@ const hasRoute = (item: any) => {
                             <!-- LEFT -->
                             <div class="col-span-3 border-r p-4 bg-gray-50">
                                 <p class="text-xs text-gray-400 mb-2">Query</p>
-                                <p class="font-semibold mb-4">{{ searchValue }}</p>
+                                 <div v-if="isLoadingSearch">
+                                    <Skeleton height="1.25rem" width="60%" class="mb-4" />
+                                </div>
+                                <p v-else class="font-semibold mb-4">{{ searchValue }}</p>
 
                                 <p class="text-xs text-gray-400 mb-2">Types</p>
 
-                                <button
-                                    class="w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium transition"
-                                    :class="!selectedType ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-slate-900'"
-                                    @click="selectedType = null"
-                                >
-                                    All ({{ resultsSearch.length ?? 0 }})
-                                </button>
+                                <div v-if="isLoadingSearch" class="space-y-2">
+                                    <Skeleton v-for="i in 5" :key="i" height="2.5rem" borderRadius="0.75rem" />
+                                </div>
+                                <template v-else>
+                                    <button
+                                        class="w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium transition"
+                                        :class="!selectedType ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-slate-900'"
+                                        @click="selectedType = null"
+                                    >
+                                        All ({{ resultsSearch.length ?? 0 }})
+                                    </button>
 
-                                <button
-                                    v-for="(count, type) in groupedTypes"
-                                    :key="type"
-                                    @click="selectedType = type"
-                                    class="mt-1 w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium transition"
-                                    :class="selectedType === type ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-slate-900'"
-                                >
-                                    {{ type }} ({{ count }})
-                                </button>
+                                    <button
+                                        v-for="(count, type) in groupedTypes"
+                                        :key="type"
+                                        @click="selectedType = type"
+                                        class="mt-1 w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium transition"
+                                        :class="selectedType === type ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-slate-900'"
+                                    >
+                                        {{ type }} ({{ count }})
+                                    </button>
+                                </template>
                             </div>
 
                             <!-- MIDDLE (PREVIEW) -->
@@ -382,8 +390,13 @@ const hasRoute = (item: any) => {
                                 <!-- TITLE -->
                                 <p class="text-sm text-gray-400 mb-3">Preview</p>
 
+                                <div v-if="isLoadingSearch" class="w-full flex flex-col items-center gap-4">
+                                    <Skeleton width="60%" height="1.5rem" />
+                                    <Skeleton width="40%" height="1rem" />
+                                    <Skeleton width="30%" height="0.75rem" />
+                                </div>
                                 <!-- CONTENT -->
-                                <template v-if="highlightItem">
+                                <template v-else-if="highlightItem">
                                     <p class="text-lg font-semibold text-slate-900">
                                         {{ highlightItem.result?.description?.label || highlightItem.result?.code?.label }}
                                     </p>
@@ -411,17 +424,24 @@ const hasRoute = (item: any) => {
                             <!-- RIGHT -->
                             <div class="col-span-5 overflow-y-auto p-4 space-y-2">
 
-                                <div v-if="isLoadingSearch" class="text-gray-400">
-                                    Searching...
+                                 <div v-if="isLoadingSearch" class="space-y-3">
+                                    <div v-for="i in 6" :key="i" class="flex gap-3 items-center">
+                                        <Skeleton shape="circle" size="2.5rem" />
+                                        <div class="flex flex-col gap-2 w-full">
+                                            <Skeleton width="50%" height="1rem" />
+                                            <Skeleton width="30%" height="0.75rem" />
+                                        </div>
+                                    </div>
                                 </div>
-
-                                <div v-for="item in filteredResults" :key="item.model_id"
-                                    class="rounded-xl border border-transparent p-3 transition"
-                                    :class="hasRoute(item) ? 'cursor-pointer hover:border-slate-200 hover:bg-gray-100' : 'hover:bg-gray-100'"
-                                    @mouseenter="hoverItem = item">
-                                    <SearchResultDefault :data="item.result" :modelType="item.model_type"
-                                        @finishVisit="closeModal" />
-                                </div>
+                                 <template v-else>
+                                    <div v-for="item in filteredResults" :key="item.model_id"
+                                        class="rounded-xl border border-transparent p-3 transition"
+                                        :class="hasRoute(item) ? 'cursor-pointer hover:border-slate-200 hover:bg-gray-100' : 'hover:bg-gray-100'"
+                                        @mouseenter="hoverItem = item">
+                                        <SearchResultDefault :data="item.result" :modelType="item.model_type"
+                                            @finishVisit="closeModal" />
+                                    </div>
+                                </template>
 
                                 <div v-if="!filteredResults.length && !isLoadingSearch" class="text-gray-400">
                                     No results
