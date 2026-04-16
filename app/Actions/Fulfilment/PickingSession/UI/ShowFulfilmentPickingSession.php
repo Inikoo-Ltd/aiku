@@ -379,6 +379,13 @@ class ShowFulfilmentPickingSession extends OrgAction
                         ],
                         'method' => 'post',
                     ],
+                    'revertToPickingRoute' => [
+                        'name'       => 'grp.models.pallet-return.revert-to-picking',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id,
+                        ],
+                        'method' => 'post',
+                    ],
                     'pickAllRoute' => [
                         'name'       => 'grp.models.fulfilment-customer.pallet-return.picked',
                         'parameters' => [

@@ -97,7 +97,7 @@ class IndexFulfilmentPickingSessionPalletItems extends OrgAction
             $table->column(key: 'customer_reference', label: __("Pallet reference (customer's), notes"), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'stored_items', label: __("Customer's SKUs"), canBeHidden: false);
             $table->column(key: 'location', label: __('Location'), canBeHidden: false, searchable: true);
-            $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, searchable: false);
+            // $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, searchable: false);
 
             $table->defaultSort('pallet_return_reference');
         };

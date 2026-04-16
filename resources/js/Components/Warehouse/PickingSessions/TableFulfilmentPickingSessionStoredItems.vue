@@ -93,6 +93,10 @@ const palletRoute = (palletStoredItem: any) => {
 
 const isRowPicking = (item: any) => item?.pallet_return_state === 'picking'
 const canRowDispatch = (item: any) => !!getDispatchableReturn(item)?.canDispatch
+const canRowRevertToPicking = (item: any) => {
+    const dispatchableReturn = getDispatchableReturn(item)
+    return Boolean(dispatchableReturn?.revertToPickingRoute?.name && dispatchableReturn?.state === "picked")
+}
 const canRowSetAsPicked = (item: any) => !!getDispatchableReturn(item)?.canSetAsPicked
 const isPickingFinished = () => props.pickingSession?.state === 'picking_finished'
 const isPackingFinished = () => props.pickingSession?.state === 'packing_finished'
@@ -954,6 +958,22 @@ const onDispatchPalletReturn = async () => {
                     class="py-0"
                     @click="onOpenSetAsPickedModal(item)"
                 />
+                <Link
+                    v-if="canRowRevertToPicking(item)"
+                    as="div"
+                    :href="route(getDispatchableReturn(item).revertToPickingRoute.name, getDispatchableReturn(item).revertToPickingRoute.parameters)"
+                    :method="getDispatchableReturn(item).revertToPickingRoute.method || 'post'"
+                    preserveScroll
+                    v-tooltip="trans('Revert to Picking')"
+                >
+                    <Button
+                        icon="fal fa-arrow-alt-left"
+                        :label="trans('Revert to Picking')"
+                        type="negative"
+                        size="xs"
+                        class="py-0"
+                    />
+                </Link>
 
 
             </div>

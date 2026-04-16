@@ -73,7 +73,7 @@ class IndexFulfilmentPickingSessionPalletItemsGrouped extends OrgAction
             $table->column(key: 'pallet_return_reference', label: __('Return'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'pallets', label: __('Pallets'), canBeHidden: false);
 
-            if ($pickingSession->state === PickingSessionStateEnum::PICKING_FINISHED) {
+            if (in_array($pickingSession->state, [PickingSessionStateEnum::PICKING_FINISHED, PickingSessionStateEnum::PACKING_FINISHED], true)) {
                 $table->column(key: 'actions', label: __('Actions'), canBeHidden: false);
             }
 
