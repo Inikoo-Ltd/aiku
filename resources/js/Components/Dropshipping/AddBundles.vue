@@ -533,6 +533,27 @@ onMounted(() => {
         fetchIndexUnuploadedPortfolios()
     }
 })
+watch(
+    selectedMedia,
+    (val) => {
+        if (!val.length) return
+
+        let found = false
+
+        val.forEach((img, i) => {
+            if (img.is_main && !found) {
+                found = true
+            } else {
+                img.is_main = false
+            }
+        })
+
+        if (!found) {
+            val[0].is_main = true
+        }
+    },
+    { deep: true }
+)
 </script>
 
 <template>

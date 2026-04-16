@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp;
 
+use App\Actions\Dispatching\UI\GetDispatchingWaitingBadgeData;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\UI\Grp\Layout\GetLayout;
 use App\Http\Resources\Helpers\LanguageResource;
@@ -52,8 +53,8 @@ class GetFirstLoadProps
                 'environment'      => app()->environment(),
                 'help_portal_url'  => config('app.help_portal_url'),
                 'avatar_thumbnail' => $image,
-                'notifications'    => $user ? NotificationsResource::collection($user->notifications()->orderBy('created_at', 'desc')->limit(10)->get())->collection : null,
-
+                'notifications'             => $user ? NotificationsResource::collection($user->notifications()->orderBy('created_at', 'desc')->limit(10)->get())->collection : null,
+                'dispatching_waiting_badge' => $user ? GetDispatchingWaitingBadgeData::run($user) : [],
             ];
     }
 }

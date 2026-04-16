@@ -40,6 +40,7 @@ class IndexSnapshots extends OrgAction
     use WithMenuSubNavigation;
     private Website $website;
     private string $scope;
+    private Website|Webpage|EmailTemplate|Banner|Announcement $parent;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -67,6 +68,7 @@ class IndexSnapshots extends OrgAction
 
     public function handle(Website|Webpage|EmailTemplate|Banner|Announcement $parent, $prefix = null, $scope = null, $withLabel = false)
     {
+        $this->parent = $parent;
         $queryBuilder = QueryBuilder::for(Snapshot::class);
         $queryBuilder->where('state', '!=', SnapshotStateEnum::UNPUBLISHED->value);
 
@@ -160,7 +162,7 @@ class IndexSnapshots extends OrgAction
                     'actions'       => $actions
                 ],
                 'data'        => SnapshotsResource::collection($snapshots),
-
+                'display_apply_button'  => class_basename($this->parent) === 'Website',
             ]
         )->table($this->tableStructure($this->website));
     }
