@@ -9,7 +9,6 @@
 namespace App\Actions\SysAdmin;
 
 use App\Actions\Analytics\WebUserRequest\StoreWebUserFailedLogin;
-use App\Actions\Elasticsearch\IndexElasticsearchDocument;
 use App\Actions\SysAdmin\User\StoreUserFailedLogin;
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Enums\Elasticsearch\ElasticsearchUserRequestTypeEnum;

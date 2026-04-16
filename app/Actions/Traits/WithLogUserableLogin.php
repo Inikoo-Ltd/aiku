@@ -8,7 +8,8 @@
 
 namespace App\Actions\Traits;
 
-use App\Actions\Elasticsearch\IndexElasticsearchDocument;
+use App\Actions\Analytics\WebUserRequest\StoreWebUserLogin;
+use App\Actions\SysAdmin\User\StoreUserLogin;
 use App\Actions\SysAdmin\WithLogRequest;
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\CRM\WebUser;
@@ -19,7 +20,7 @@ trait WithLogUserableLogin
 {
     use WithLogRequest;
 
-    public function logUserableLogin(string $index, string $type, Carbon $datetime, string $ip, string $userAgent, User|WebUser $userable): void
+    public function logUserableLogin(string $type, Carbon $datetime, string $ip, string $userAgent, User|WebUser $userable): void
     {
         $browserData = GetBrowserInfo::run($userAgent);
 
@@ -29,22 +30,30 @@ trait WithLogUserableLogin
             'username'    => $userable->username,
             'userable_id' => $userable->id,
             'ip_address'  => $ip,
-            'location'    => json_encode($this->getLocation($ip)), // reference: https://github.com/stevebauman/location
+            'location'    => $this->getLocation($ip), // reference: https://github.com/stevebauman/location
             'user_agent'  => $userAgent,
-            'device_type'          => json_encode([
+            'device_type'          => [
                 'title' => $browserData['device'],
                 'icon'  => $this->getDeviceIcon($browserData['device'])
-            ]),
-            'platform'             => json_encode([
+            ],
+            'platform'             => [
                 'title' => $browserData['os'],
                 'icon'  => $this->getPlatformIcon($browserData['os'])
-            ]),
-            'browser'              => json_encode([
+            ],
+            'browser'              => [
                 'title' => $browserData['browser'],
                 'icon'  => $this->getBrowserIcon(strtolower($browserData['browser']))
-            ])
+            ]
         ];
 
-        IndexElasticsearchDocument::dispatch(index: $index, body: $body);
+        if($userable instanceof WebUser) {
+            $body['web_user_id'] = $userable->id;
+
+            StoreWebUserLogin::run($userable, $body);
+        } else {
+            $body['user_id'] = $userable->id;
+
+            StoreUserLogin::run($userable, $body);
+        }
     }
 }

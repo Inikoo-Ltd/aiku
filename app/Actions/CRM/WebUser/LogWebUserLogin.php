@@ -23,7 +23,6 @@ class LogWebUserLogin
     public function handle(WebUser $webUser, string $ip, string $userAgent, Carbon $datetime): void
     {
         $this->logUserableLogin(
-            config('elasticsearch.index_prefix').'web_users_requests',
             ElasticsearchUserRequestTypeEnum::LOGIN->value,
             $datetime,
             $ip,
