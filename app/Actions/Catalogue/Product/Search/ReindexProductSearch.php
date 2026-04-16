@@ -20,7 +20,10 @@ class ReindexProductSearch
 
     public function asCommand(): void
     {
-        Artisan::call('scout:import', ['model' => Product::class]);
+        Artisan::call('scout:queue-import', [
+            'model'   => Product::class,
+            '--chunk' => 1000
+        ]);
     }
 
 

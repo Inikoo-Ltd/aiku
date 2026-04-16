@@ -38,7 +38,7 @@ class ReindexSearch extends HydrateModel
             $this->reindexGoods($command);
         }
 
-        if ($this->checkIfCanReindex(['catalogue'], $command)) {
+        if ($this->checkIfCanReindex(['catalogue', 'cat'], $command)) {
             $this->reindexCatalogue($command);
         }
 
@@ -105,7 +105,7 @@ class ReindexSearch extends HydrateModel
         $command->info('Catalogue section 📚');
         $command->call('reindex_search:products');
         $command->call('reindex_search:product_categories');
-        $command->call('search:collections');
+        $command->call('reindex_search:collections');
     }
 
     protected function reindexBillables(Command $command): void
@@ -194,7 +194,6 @@ class ReindexSearch extends HydrateModel
     protected function reindexProduction(Command $command): void
     {
         $command->info('Production section 🏭');
-
     }
 
     protected function reindexInventory(Command $command): void
