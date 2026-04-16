@@ -8,8 +8,7 @@
 
 namespace App\Actions\CRM\WebUser;
 
-use App\Actions\Traits\WithLogUserableLogin;
-use App\Enums\Elasticsearch\ElasticsearchUserRequestTypeEnum;
+use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\CRM\WebUser;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -17,17 +16,23 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class LogWebUserLogin
 {
     use AsAction;
-    use WithLogUserableLogin;
 
+    public string $jobQueue = 'analytics';
 
-    public function handle(WebUser $webUser, string $ip, string $userAgent, Carbon $datetime): void
+    public function handle(WebUser $webUser, string $ip, string $userAgent, Carbon $datetime, array $geoLocation = [], $source = 'A'): void
     {
-        $this->logUserableLogin(
-            ElasticsearchUserRequestTypeEnum::LOGIN->value,
-            $datetime,
-            $ip,
-            $userAgent,
-            $webUser
+        $browserData = GetBrowserInfo::run($userAgent);
+
+        $webUser->webUserLogins()->create(
+            [
+                'ip_address' => $ip,
+                'date'       => $datetime,
+                'os'         => $browserData['os'],
+                'device'     => $browserData['device'],
+                'browser'    => $browserData['browser'],
+                'location'   => json_encode($geoLocation),
+                'source'     => $source,
+            ]
         );
 
         $stats = [
@@ -36,12 +41,7 @@ class LogWebUserLogin
             'number_logins' => ($webUser->stats->number_logins ?? 0) + 1
         ];
 
-        if (!$webUser->stats) {
-            $webUser->stats()->create($stats);
-        } else {
-            $webUser->stats()->update($stats);
-        }
-
+        $webUser->stats()->update($stats);
     }
 
 

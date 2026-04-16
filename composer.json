@@ -101,7 +101,6 @@
     "spiral/roadrunner-cli": "^2.7",
     "spiral/roadrunner-http": "^3.3.0",
     "srmklive/paypal": "^3.0",
-    "stevebauman/location": "^7.2",
     "symfony/psr-http-message-bridge": "^7.2",
     "theiconic/name-parser": "^1.2",
     "theodo-group/llphant": "^0.11",

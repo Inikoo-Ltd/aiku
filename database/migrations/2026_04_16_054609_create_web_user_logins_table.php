@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Thu, 16 Apr 2026 22:18:19 Malaysia Time, Kuala Lumpur, Malaysia
@@ -9,21 +10,20 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
-
+return new class () extends Migration {
     public function up(): void
     {
         Schema::create('web_user_logins', function (Blueprint $table) {
             $table->id();
+            $table->dateTimeTz('date')->index();
             $table->unsignedInteger('web_user_id')->nullable()->index();
             $table->foreign('web_user_id')->references('id')->on('web_users')->nullOnDelete();
+            $table->string('source', 1)->comment('A: aiku login form, G: google login');
             $table->string('os')->nullable();
             $table->string('device')->nullable();
             $table->string('browser')->nullable();
             $table->string('ip_address')->nullable();
             $table->jsonb('location')->nullable();
-            $table->timestampsTz();
         });
     }
 

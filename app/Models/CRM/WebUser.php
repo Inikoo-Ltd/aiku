@@ -90,6 +90,8 @@ use App\Models\Traits\HasHistory;
  * @property-read \App\Models\CRM\WebUserStats|null $stats
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ * @property-read Collection<int, WebUserFailedLogin> $webUserFailedLogins
+ * @property-read Collection<int, WebUserLogin> $webUserLogins
  * @property-read Collection<int, WebUserRequest> $webUserRequests
  * @property-read Website $website
  * @method static \Database\Factories\CRM\WebUserFactory factory($count = null, $state = [])

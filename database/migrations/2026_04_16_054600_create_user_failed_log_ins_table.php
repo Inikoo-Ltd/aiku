@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Thu, 16 Apr 2026 22:22:10 Malaysia Time, Kuala Lumpur, Malaysia
@@ -9,13 +10,12 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
-
+return new class () extends Migration {
     public function up(): void
     {
         Schema::create('user_failed_log_ins', function (Blueprint $table) {
             $table->id();
+            $table->dateTimeTz('failed_at')->index();
             $table->string('username')->index();
             $table->unsignedSmallInteger('user_id')->nullable()->index();
             $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
@@ -24,7 +24,6 @@ return new class extends Migration
             $table->string('browser')->nullable();
             $table->string('ip_address')->nullable();
             $table->jsonb('location')->nullable();
-            $table->timestampsTz();
         });
     }
 

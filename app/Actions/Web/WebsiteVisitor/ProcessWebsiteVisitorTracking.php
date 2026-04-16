@@ -35,9 +35,10 @@ class ProcessWebsiteVisitorTracking implements ShouldBeUnique
         Website $website,
         ?WebUser $webUser,
         string $userAgent,
-        array $ips,
+        string $ip,
         string $currentUrl,
-        ?string $referrer
+        ?string $referrer,
+        array $geoLocation
     ): void {
         if (IsBot::run($userAgent)) {
             return;
@@ -53,20 +54,20 @@ class ProcessWebsiteVisitorTracking implements ShouldBeUnique
         if ($visitor) {
             $visitor = UpdateWebsiteVisitor::run($visitor, $currentUrl);
         } else {
-
             $browserData = GetBrowserInfo::run($userAgent);
 
             $visitor = StoreWebsiteVisitor::run(
                 website: $website,
                 sessionId: $sessionId,
                 webUser: $webUser,
-                ips: $ips,
+                ip: $ip,
                 device: $browserData['device'],
                 browser: $browserData['browser'],
                 os: $browserData['os'],
                 userAgent: $userAgent,
                 currentUrl: $currentUrl,
                 referrer: $referrer,
+                geoLocation: $geoLocation
             );
         }
 
