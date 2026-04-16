@@ -48,6 +48,8 @@ class IndexWaitingCrmItems extends OrgAction
             ->leftJoin('shops', 'orders.shop_id', '=', 'shops.id')
             ->leftJoin('organisations', 'orders.organisation_id', '=', 'organisations.id')
             ->leftJoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id')
+            ->leftJoin('transactions', 'transactions.id', '=', 'delivery_note_items.transaction_id')
+            ->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id')
             ->where('delivery_note_items.quantity_waiting_crm', '>', 0);
 
         $query->where('delivery_note_items.shop_id', $shop->id);
@@ -57,6 +59,7 @@ class IndexWaitingCrmItems extends OrgAction
                 'delivery_note_items.id',
                 'delivery_note_items.quantity_waiting_crm',
                 'delivery_note_items.notes',
+                'transactions.net_amount',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
                 'org_stocks.slug as org_stock_slug',
@@ -67,6 +70,7 @@ class IndexWaitingCrmItems extends OrgAction
                 'shops.type as shop_type',
                 'shops.engine as shop_engine',
                 'organisations.slug as organisation_slug',
+                'currencies.code as currency_code',
             ])
             ->allowedSorts(['org_stock_code', 'org_stock_name', 'quantity_waiting_crm', 'order_reference'])
             ->allowedFilters([$globalSearch])
