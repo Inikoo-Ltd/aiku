@@ -28,7 +28,6 @@ trait WithLogUserableLogin
             'type'        => $type,
             'datetime'    => $datetime,
             'username'    => $userable->username,
-            'user_id' => $userable->id,
             'ip_address'  => $ip,
             'location'    => $this->getLocation($ip), // reference: https://github.com/stevebauman/location
             'user_agent'  => $userAgent,
