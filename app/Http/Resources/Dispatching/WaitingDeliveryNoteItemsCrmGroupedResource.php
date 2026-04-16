@@ -1,14 +1,13 @@
 <?php
-
 /*
- * Author: Vika Aqordi
- * Created on 09-04-2026-10h-52m
- * Github: https://github.com/aqordeon
- * Copyright: 2026
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 16 Apr 2026 16:10:02 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Http\Resources\Dispatching;
 
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsCrm;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
@@ -31,8 +30,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $shop_type
  * @property mixed $shop_engine
  * @property mixed $organisation_slug
+ * @property mixed $notes
  */
-class WaitingDeliveryNoteItemsGroupedResource extends JsonResource
+class WaitingDeliveryNoteItemsCrmGroupedResource extends JsonResource
 {
     public function toArray($request): array
     {
@@ -58,12 +58,8 @@ class WaitingDeliveryNoteItemsGroupedResource extends JsonResource
             'organisation_slug'                 => $this->organisation_slug,
             'notes'                             => $this->notes,
             'items'                             => $deliveryNote
-                ? collect(DeliveryNoteItemsStateHandlingResource::collection(
-                    IndexDeliveryNoteItemsStateHandling::run(
-                        $deliveryNote,
-                        ignoreParentPagination: true,
-                        stateFilter: DeliveryNoteItemStateEnum::HANDLING_BLOCKED
-                    )
+                ? collect(DeliveryNoteItemsCrmWaitingResource::collection(
+                    IndexDeliveryNoteItemsCrm::run($deliveryNote)
                 )->resolve())->map(function ($item) {
                     $item['upsert_picking_route'] = [
                         'name'       => 'grp.models.delivery_note_item.picking.upsert_from_waiting_warehouse',

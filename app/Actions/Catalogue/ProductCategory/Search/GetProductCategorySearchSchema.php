@@ -1,15 +1,16 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 16 Apr 2026 03:47:21 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Thu, 16 Apr 2026 19:26:07 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\SysAdmin\Guest;
+namespace App\Actions\Catalogue\ProductCategory\Search;
 
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetGuestSearchSchema
+class GetProductCategorySearchSchema
 {
     use AsObject;
 
@@ -23,28 +24,32 @@ class GetGuestSearchSchema
                         'type' => 'string',
                     ],
                     [
-                        'name' => 'contact_name',
+                        'name' => 'shop_id',
+                        'type' => 'int32',
+                    ],
+                    [
+                        'name' => 'code',
                         'type' => 'string',
                     ],
                     [
-                        'name' => 'company_name',
+                        'name' => 'name',
                         'type' => 'string',
                     ],
                     [
-                        'name' => 'email',
+                        'name' => 'description',
                         'type' => 'string',
                     ],
                     [
-                        'name' => 'phone',
+                        'name' => 'state',
                         'type' => 'string',
                     ],
                     [
-                        'name' => 'identity_document_number',
+                        'name' => 'description_extra',
                         'type' => 'string',
                     ],
                     [
-                        'name' => 'status',
-                        'type' => 'bool',
+                        'name' => 'type',
+                        'type' => 'string',
                     ],
                     [
                         'name' => 'created_at',
@@ -59,7 +64,7 @@ class GetGuestSearchSchema
                 'default_sorting_field' => 'created_at',
             ],
             'search-parameters' => [
-                'query_by' => 'contact_name,email,phone,company_name,identity_document_number'
+                'query_by' => 'code,name,description,description_extra'
             ],
         ];
     }

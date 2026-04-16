@@ -41,7 +41,7 @@ trait WithRepairWebpages
         $liveWebBlockSnapshot = $website->{"live{$scope}Snapshot"};
         $unpublishedWebBlockSnapshot = $website->{"unpublished{$scope}Snapshot"};
 
-        return data_get($liveWebBlockSnapshot?->layout, 'code', data_get($unpublishedWebBlockSnapshot?->layout, 'code', array_key_first($webBlockTemplateType->templateCodes()))); // Get published WebBlock layout code
+        return data_get($liveWebBlockSnapshot?->layout, 'code', array_first($webBlockTemplateType->templateCodes())); // Get published WebBlock layout code
     }
 
     protected function normalizeWebBlockByType(Webpage $webpage, array $webBlockTemplateCodes, WebBlockTemplateEnum $webBlockTemplateType): void
@@ -57,7 +57,7 @@ trait WithRepairWebpages
         $liveWebBlockSnapshot = $website->{"live{$scope}Snapshot"};
         $unpublishedWebBlockSnapshot = $website->{"unpublished{$scope}Snapshot"};
 
-        $usedWebBlockTemplateCodes = data_get($liveWebBlockSnapshot?->layout, 'code', data_get($unpublishedWebBlockSnapshot?->layout, 'code', array_key_first($webBlockTemplateType->templateCodes()))); // Get published WebBlock layout code
+        $usedWebBlockTemplateCodes = data_get($liveWebBlockSnapshot?->layout, 'code', array_first($webBlockTemplateType->templateCodes())); // Get published WebBlock layout code
 
         if ($usedWebBlockTemplateCodes) {
             $unusedWebBlockTemplateCodes = array_filter(

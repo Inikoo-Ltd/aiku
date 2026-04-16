@@ -130,6 +130,7 @@ class IndexProductsInProductCategory extends OrgAction
             'products.asset_id',
             'products.available_quantity',
             'products.units',
+            'products.web_images',
             DB::raw('products.price / products.units as rrp_per_unit'),
             'currencies.code as currency_code',
             'variant.slug as variant_slug',
@@ -229,7 +230,8 @@ class IndexProductsInProductCategory extends OrgAction
                     ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
                     ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
-                $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
+                $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
+                    ->column(key: 'image_thumbnail', label: '', type: 'avatar');
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
                 if ($productCategory->type === ProductCategoryTypeEnum::FAMILY) {
                     $table->column(key: 'variant_slug', label: __('Variant'), canBeHidden: false, searchable: true);
@@ -272,6 +274,7 @@ class IndexProductsInProductCategory extends OrgAction
         $afterTitle      = null;
         $model           = null;
         $modelNavigation = [];
+        $actions = [];
 
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $title           = $productCategory->name;
@@ -296,6 +299,34 @@ class IndexProductsInProductCategory extends OrgAction
             $afterTitle = [
                 'label' => __('Products')
             ];
+
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'secondary',
+                'tooltip' => __('Sync Product Images from Trade Units'),
+                'label'   => __('Repair Images'),
+                'icon'    => 'fal fa-tools',
+                'route'   => [
+                    'name'          => 'grp.models.product_category.repair_product_images',
+                    'method'        => 'patch',
+                    'parameters'    => [
+                        'productCategory' => $productCategory->id
+                    ],
+                ]
+            ];
+
+            if ($this->canEdit) {
+                $actions[] = [
+                    'type'    => 'button',
+                    'style'   => 'create',
+                    'tooltip' => __('New product'),
+                    'label'   => __('Product'),
+                    'route'   => [
+                        'name'       => str_replace('index', 'create', $request->route()->getName()),
+                        'parameters' => $request->route()->originalParameters()
+                    ]
+                ];
+            }
 
             //to do ini-1241
             //Also, the next and previous navigation are not based on the selected product category.
@@ -332,21 +363,7 @@ class IndexProductsInProductCategory extends OrgAction
                     'icon'          => $icon,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
-                    'actions'       => [
-                        $this->canEdit
-                        && $productCategory->type == ProductCategoryTypeEnum::FAMILY ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('New product'),
-                            'label'   => __('Product'),
-                            'route'   => [
-                                'name'       => str_replace('index', 'create', $request->route()->getName()),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : false,
-
-
-                    ],
+                    'actions'       => $actions,
                     'subNavigation' => $subNavigation,
                 ],
                 'editable_table'               => true,

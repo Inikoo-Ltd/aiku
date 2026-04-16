@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpUnused */
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
@@ -8,7 +8,12 @@
 
 namespace App\Actions\Helpers;
 
+use App\Actions\Catalogue\Collection\Search\ReindexCollectionSearch;
+use App\Actions\Catalogue\Product\Search\ReindexProductSearch;
+use App\Actions\Catalogue\ProductCategory\Search\ReindexProductCategorySearch;
 use App\Actions\HydrateModel;
+use App\Actions\SysAdmin\Guest\Search\ReindexGuestSearch;
+use App\Actions\SysAdmin\User\Search\ReindexUserSearch;
 use App\Actions\Traits\WithOrganisationsArgument;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
@@ -18,7 +23,7 @@ class ReindexSearch extends HydrateModel
 {
     use WithOrganisationsArgument;
 
-    public string $commandSignature = 'search {--s|sections=*}';
+    public string $commandSignature = 'search {--s|sections=*} {--r|reset}';
 
     public function asCommand(Command $command): int
     {
@@ -38,7 +43,7 @@ class ReindexSearch extends HydrateModel
             $this->reindexGoods($command);
         }
 
-        if ($this->checkIfCanReindex(['catalogue'], $command)) {
+        if ($this->checkIfCanReindex(['catalogue', 'cat'], $command)) {
             $this->reindexCatalogue($command);
         }
 
@@ -103,9 +108,12 @@ class ReindexSearch extends HydrateModel
     protected function reindexCatalogue(Command $command): void
     {
         $command->info('Catalogue section 📚');
-        $command->call('search:products');
-        $command->call('search:product_categories');
-        $command->call('search:collections');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexCollectionSearch::run(reset: $command->option('reset'));
+        ReindexProductCategorySearch::run(reset: $command->option('reset'));
+        ReindexProductSearch::run(reset: $command->option('reset'));
     }
 
     protected function reindexBillables(Command $command): void
@@ -143,9 +151,11 @@ class ReindexSearch extends HydrateModel
     protected function reindexSysadmin(Command $command): void
     {
         $command->info('Sysadmin section 🛠');
-        $command->call('search:users');
-        //todo $command->call('search:guests');
-        //todo $command->call('search:users requests');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexUserSearch::run(reset: $command->option('reset'));
+        ReindexGuestSearch::run(reset: $command->option('reset'));
     }
 
     protected function reindexOrdering(Command $command): void
@@ -171,7 +181,6 @@ class ReindexSearch extends HydrateModel
         $command->info('Accounting section 💰');
         $command->call('search:payments');
         $command->call('search:payment_accounts');
-        // $command->call('search:topups'); -> error on record search
     }
 
     protected function reindexProcurement(Command $command): void
@@ -194,7 +203,6 @@ class ReindexSearch extends HydrateModel
     protected function reindexProduction(Command $command): void
     {
         $command->info('Production section 🏭');
-
     }
 
     protected function reindexInventory(Command $command): void

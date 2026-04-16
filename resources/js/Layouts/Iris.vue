@@ -346,7 +346,7 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
 
             <Footer
                 v-if="footer && !isArray(footer)"
-                v-once
+                v-once  
                 :data="footer"
                 :colorThemed="theme"
             />

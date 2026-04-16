@@ -327,6 +327,7 @@ const selectedTransactionToSetAsWaiting = ref(null)
                                 :tooltip="trans('Pass :qtyInWarehouse to customer services', { qtyInWarehouse: Number(itemValue.quantity_waiting_warehouse) })"
                                 :size="twBreakPoint().includes('lg') ? 'xs' : 'lg'"
                                 type="tertiary"
+                                class="!bg-purple-300 !text-purple-700 !py-2"
                             />
                         </div>
                     </div>

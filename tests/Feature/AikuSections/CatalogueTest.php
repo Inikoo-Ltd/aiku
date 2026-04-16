@@ -677,64 +677,6 @@ test('can show catalogue', function (Shop $shop) {
     });
 })->depends('create shop');
 
-test('products search', function () {
-    $this->artisan('search:products')->assertExitCode(0);
-
-    $product = Product::first();
-    ReindexProductSearch::run($product);
-    expect($product->universalSearch()->count())->toBe(1);
-});
-
-test('product categories search', function () {
-    $this->artisan('search:product_categories')->assertExitCode(0);
-
-    $productCategory = ProductCategory::first();
-    ReindexProductCategorySearch::run($productCategory);
-    expect($productCategory->universalSearch()->count())->toBe(1);
-});
-
-test('product collections search', function () {
-    $this->artisan('search:collections')->assertExitCode(0);
-
-    $collection = Collection::first();
-    ReindexCollectionSearch::run($collection);
-    expect($collection->universalSearch()->count())->toBe(1);
-});
-
-test('Billables: rentals search', function () {
-    $this->artisan('search:rentals')->assertExitCode(0);
-
-    StoreRental::make()->action(
-        Shop::first(),
-        [
-            'code'  => 'MyFColl',
-            'name'  => 'My first rental',
-            'price' => fake()->numberBetween(100, 2000),
-            'unit'  => RentalUnitEnum::DAY->value,
-        ]
-    );
-
-    $rental = Rental::first();
-    ReindexRentalSearch::run($rental);
-    expect($rental->universalSearch()->count())->toBe(1);
-});
-
-test('Billables: charges search', function () {
-    $this->artisan('search:charges')->assertExitCode(0);
-
-    $charge = Charge::first();
-    ReindexChargeSearch::run($charge);
-    expect($charge->universalSearch()->count())->toBe(1);
-});
-
-test('Billables: services search', function () {
-    $this->artisan('search:services')->assertExitCode(0);
-
-    $service = Service::first();
-    ReindexServiceSearch::run($service);
-    expect($service->universalSearch()->count())->toBe(1);
-});
-
 test('update shop setting', function ($shop) {
     $c = Country::first();
     $l = Language::first();

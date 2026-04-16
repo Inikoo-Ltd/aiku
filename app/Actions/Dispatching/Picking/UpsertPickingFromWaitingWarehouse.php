@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\Picking;
 
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -44,6 +45,7 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
                 'quantity_waiting_warehouse' => $waitingWarehouseQuantity,
                 'has_waiting_warehouse'      => $waitingWarehouseQuantity > 0,
             ]);
+            DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 
 
             data_set($modelData, 'picker_user_id', $user->id);

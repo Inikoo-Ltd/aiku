@@ -38,6 +38,7 @@ use App\Actions\Catalogue\Product\MoveFamilyProductToOtherFamily;
 use App\Actions\Catalogue\Product\SetProductOffline;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\SyncProductTradeUnitsToMasterAsset;
+use App\Actions\Catalogue\Product\UI\HydrateProductImagesFromTradeUnits;
 use App\Actions\Catalogue\Product\UpdateBulkProduct;
 use App\Actions\Catalogue\Product\UpdateMultipleProductsFamily;
 use App\Actions\Catalogue\Product\UpdateProduct;
@@ -49,6 +50,7 @@ use App\Actions\Catalogue\ProductCategory\AttachFamiliesToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\DeleteImageFromProductCategory;
 use App\Actions\Catalogue\ProductCategory\DeleteProductCategory;
 use App\Actions\Catalogue\ProductCategory\DetachFamilyToSubDepartment;
+use App\Actions\Catalogue\ProductCategory\RehydrateChildProductImages;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
@@ -237,6 +239,7 @@ use App\Actions\Helpers\Brand\UpdateBrand;
 use App\Actions\Helpers\GoogleDrive\AuthorizeClientGoogleDrive;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
+use App\Actions\Helpers\Snapshot\ApplyWebsiteMenuSnapshot;
 use App\Actions\Helpers\Snapshot\SetSnapshotAsLive;
 use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
@@ -937,6 +940,9 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('llms-txt', StoreLlmsTxt::class)->name('llms_txt.store');
 });
 
+Route::patch('set-snapshot-website/{snapshot:id}/published', ApplyWebsiteMenuSnapshot::class)->name('website.set-snapshot-as-live')->withoutScopedBindings();
+Route::patch('set-snapshot-website/{snapshot:id}/unpublished', [ApplyWebsiteMenuSnapshot::class, 'asUnpublished'])->name('website.set-snapshot-as-unpublished')->withoutScopedBindings();
+
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::patch('', UpdateWebpage::class)->name('update')->withoutScopedBindings();
     Route::patch('web-block-check', WebpageWorkshopCheckWebBlock::class)->name('web_block_check');
@@ -1111,6 +1117,10 @@ Route::name('product_category.')->group(function () {
 
 Route::post('family/{family:id}/move-products', UpdateMultipleProductsFamily::class)->name('family.move_products');
 Route::post('department/{department:id}/move-families', AttachFamiliesToDepartment::class)->name('department.move_families');
+
+Route::patch('product_category/{productCategory:id}/repair-products-images', RehydrateChildProductImages::class)->name('product_category.repair_product_images');
+Route::patch('product/{product:id}/repair-images', HydrateProductImagesFromTradeUnits::class)->name('product.repair_product_images');
+
 
 Route::name('model_has_content.')->prefix('model-has-content/{modelHasContent:id}')->group(function () {
     Route::patch('update', UpdateModelHasContent::class)->name('update');
