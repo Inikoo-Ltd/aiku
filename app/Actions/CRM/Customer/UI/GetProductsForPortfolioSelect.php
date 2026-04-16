@@ -89,6 +89,8 @@ class GetProductsForPortfolioSelect extends OrgAction
                         ->where('status', true)
                         ->where('customer_sales_channel_id', $customerSalesChannel->id);
                 });
+        } else {
+            $queryBuilder->where('products.shop_id', $customerSalesChannel->shop->id);
         }
 
         $queryBuilder->leftJoin('currencies', 'currencies.id', 'products.currency_id');
