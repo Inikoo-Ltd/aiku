@@ -15,8 +15,8 @@ use Lorisleiva\Actions\Concerns\AsCommand;
 class ReindexProductSearch
 {
     use AsCommand;
-    public string $commandSignature = 'reindex_search:products';
 
+    public string $commandSignature = 'reindex_search:products';
 
     public function asCommand(): void
     {

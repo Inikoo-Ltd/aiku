@@ -104,7 +104,7 @@ class ReindexSearch extends HydrateModel
     {
         $command->info('Catalogue section 📚');
         $command->call('reindex_search:products');
-        $command->call('search:product_categories');
+        $command->call('reindex_search:product_categories');
         $command->call('search:collections');
     }
 
