@@ -61,6 +61,7 @@ class WebsiteGenerateFamiliesOverviewPages
                 ]);
 
                 $this->normalizeWebBlockByType($mainPage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES);
+                $mainPage->refresh();
                 $this->reorderDepartmentPageBlocks($mainPage);
             }
 
