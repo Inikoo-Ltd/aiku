@@ -10,7 +10,6 @@ namespace App\Actions\SysAdmin\User;
 
 use App\Actions\GrpAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateUsers;
-use App\Actions\SysAdmin\User\Search\UserRecordSearch;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\SysAdmin\User\UserAuthTypeEnum;
 use App\Models\HumanResources\Employee;
@@ -82,7 +81,6 @@ class StoreUser extends GrpAction
         });
 
 
-        UserRecordSearch::dispatch($user);
         GroupHydrateUsers::dispatch($user->group)->delay($this->hydratorsDelay);
 
 
@@ -141,7 +139,7 @@ class StoreUser extends GrpAction
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
-        if ($this->get('status') and $this->parent->user) {
+        if ($this->get('status') && $this->parent->user) {
             $validator->errors()->add('user', __('This record already has a user associated with it.'));
         }
 

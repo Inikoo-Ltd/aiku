@@ -34,7 +34,6 @@ use App\Actions\SysAdmin\Organisation\HydrateOrganisations;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
 use App\Actions\SysAdmin\User\HydrateUser;
-use App\Actions\SysAdmin\User\Search\ReindexUserSearch;
 use App\Actions\SysAdmin\User\UpdateUser;
 use App\Actions\SysAdmin\User\UpdateUserOrganisationPseudoJobPositions;
 use App\Actions\SysAdmin\User\UpdateUserStatus;
@@ -935,15 +934,6 @@ test('employee job position in another organisation', function () {
         ->and($user->authorisedOrganisations()->where('model_type', 'Organisation')->where('model_id', $org1->id)->count())->toBe(0);
 
     return $employee;
-});
-
-
-test('users search', function () {
-    $this->artisan('search:users')->assertExitCode(0);
-
-    $user = User::first();
-    ReindexUserSearch::run($user);
-    expect($user->universalSearch()->count())->toBe(1);
 });
 
 test('can show hr dashboard', function () {

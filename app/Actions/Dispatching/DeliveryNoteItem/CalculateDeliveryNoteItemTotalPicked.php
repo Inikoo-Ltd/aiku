@@ -1,11 +1,11 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 23-05-2025-14h-59m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Arya Permana - Kirin
+ * Created: Fri, 23 May 2025 11:05:01 Malaysia Time, Bali, Indonesia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
 
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
@@ -27,14 +27,16 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
         $pickings = $deliveryNoteItem->pickings;
 
 
-        $totalPicked    = $pickings->whereIn('type', [
+        $totalPicked = $pickings->whereIn('type', [
             PickingTypeEnum::PICK,
             PickingTypeEnum::MAGIC_PICK
         ])->sum('quantity');
+
+        $totalWaiting   = $deliveryNoteItem->quantity_waiting_warehouse + $deliveryNoteItem->quantity_waiting_crm;
         $totalNotPicked = $pickings->where('type', PickingTypeEnum::NOT_PICK)->sum('quantity');
 
         $isFullyPicked        = $totalPicked == $deliveryNoteItem->quantity_required;
-        $isMarkedAsUnpickable = $totalNotPicked == $deliveryNoteItem->quantity_required - $totalPicked;
+        $isMarkedAsUnpickable = ($totalNotPicked + $totalWaiting) == $deliveryNoteItem->quantity_required - $totalPicked;
 
         $isCompleted = $isFullyPicked || $isMarkedAsUnpickable;
 
@@ -59,9 +61,7 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
         ];
 
         $deliveryNoteItem = $this->update($deliveryNoteItem, $dataToUpdate);
-
         $deliveryNoteItem->refresh();
-
 
         CalculateDeliveryNotePercentage::make()->action($deliveryNoteItem->deliveryNote);
 
@@ -74,4 +74,18 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
 
         return $this->handle($deliveryNoteItem);
     }
+
+    public function getCommandSignature(): string
+    {
+        return 'calculate:delivery_note_item_total_picked {delivery_note_item}';
+    }
+
+    public function asCommand($command): int
+    {
+        $deliveryNoteItem = DeliveryNoteItem::where('id', $command->argument('delivery_note_item'))->firstOrFail();
+        $this->handle($deliveryNoteItem);
+
+        return 0;
+    }
+
 }

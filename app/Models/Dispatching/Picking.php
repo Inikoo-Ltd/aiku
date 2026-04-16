@@ -62,6 +62,7 @@ class Picking extends Model
         'type'              => PickingTypeEnum::class,
         'not_picked_reason' => PickingNotPickedReasonEnum::class,
         'engine'            => PickingEngineEnum::class,
+        'quantity'          => 'decimal:6'
     ];
 
     protected $guarded = [];

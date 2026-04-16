@@ -66,7 +66,8 @@ class ShowShop extends OrgAction
         $timeSeriesData = GetShopDashboardTimeSeriesData::run($shop, $performanceDates[0], $performanceDates[1]);
         $shopTimeSeriesStats = $timeSeriesData['shops'];
 
-        $tabsBox = $this->getTabsBox($shop);
+        $waitingItemsData = $this->buildWaitingItemsData($shop, $request);
+        $tabsBox          = $this->getTabsBox($shop, $waitingItemsData);
 
         $dashboard = [
             'super_blocks' => [

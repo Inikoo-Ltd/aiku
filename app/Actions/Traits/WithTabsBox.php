@@ -12,12 +12,39 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use Lorisleiva\Actions\ActionRequest;
 
 trait WithTabsBox
 {
-    public function getTabsBox(Group|Organisation|Shop $parent): array
+    public function buildWaitingItemsData(Group|Organisation|Shop $parent, ActionRequest $request): array
+    {
+        $query = DeliveryNoteItem::query()->where('quantity_waiting_crm', '>', 0);
+
+        if ($parent instanceof Shop) {
+            $query->where('shop_id', $parent->id);
+        } elseif ($parent instanceof Organisation) {
+            $query->where('organisation_id', $parent->id);
+        } else {
+            $query->where('group_id', $parent->id);
+        }
+
+        $count = $query->count();
+        $route = null;
+
+        if ($parent instanceof Shop) {
+            $route = [
+                'name'       => 'grp.org.shops.show.ordering.backlog.waiting_items',
+                'parameters' => $request->route()->originalParameters(),
+            ];
+        }
+
+        return compact('count', 'route');
+    }
+
+    public function getTabsBox(Group|Organisation|Shop $parent, ?array $waitingItemsData = null): array
     {
         $currency = "";
         $currencyCode = $parent->currency->code;
@@ -183,7 +210,13 @@ trait WithTabsBox
                         'information' => [
                             'label' => $parent->orderHandlingStats?->{"orders_state_handling_blocked_amount$currency"} ?? 0,
                             'type'  => 'currency',
-                        ]
+                        ],
+                        'warning' => ($waitingItemsData && ($waitingItemsData['count'] ?? 0) > 0) ? [
+                            'route_target' => $waitingItemsData['route'] ?? null,
+                            'tooltip'      => __('Items waiting for CRM'),
+                            'value'        => $waitingItemsData['count'],
+                            'indicator'    => true,
+                        ] : null,
                     ],
                     [
                         'tab_slug'    => 'picked',

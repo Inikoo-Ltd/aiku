@@ -86,7 +86,7 @@ trait WithDeliveryNotesSubNavigation
                         : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_handling'},
                 ],
                 [
-                    'label'  => __('Handling Blocked'),
+                    'label'  => __('Waiting'),
                     'route'  => $isAll ? [
                         'name'       => 'grp.org.warehouses.show.dispatching.handling-blocked.delivery-notes',
                         'parameters' => [$this->organisation->slug, $this->warehouse->slug]

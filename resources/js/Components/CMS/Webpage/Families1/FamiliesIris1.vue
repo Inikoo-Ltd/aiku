@@ -78,11 +78,13 @@ const idxSlideLoading = ref<string | null>(null)
                 </div> -->
                 <template v-if="fieldValue?.show_overview_button">
                     <LinkIris :href="fieldValue?.webpage_data?.overview_url" type="internal" class="block">
-                        
-                        <div class="relative w-full bg-white rounded-md shadow-md overflow-hidden"
-                            :style="getStyles(props.fieldValue?.chip?.container?.properties, props.screenType)"
-                        >
-                            <div class="aspect-[1/1] flex items-center justify-center bg-gray-50 hover:bg-gray-100">
+                        <div class="relative w-full bg-white rounded-md shadow-md overflow-hidden">
+                            <div :style="{
+                                ...getStyles(
+                                    props.fieldValue?.button?.view_more?.properties,
+                                    props.screenType
+                                )
+                            }" class="aspect-[1/1] flex items-center justify-center bg-gray-50 hover:bg-gray-100">
                                 <span class="text-base font-semibold text-center">
                                     {{ trans("View All") }}
                                 </span>

@@ -152,14 +152,14 @@ test('create warehouse by command', function () {
 
     expect($organisation->inventoryStats->number_warehouses)->toBe(2)
         ->and($organisation->group->inventoryStats->number_warehouses)->toBe(2)
-        ->and($warehouse->roles()->count())->toBe(8);
+        ->and($warehouse->roles()->count())->toBe(9);
 });
 
 test('seed warehouse permissions', function () {
     setPermissionsTeamId($this->group->id);
     $this->artisan('warehouse:seed-permissions')->assertExitCode(0);
     $warehouse = Warehouse::where('code', 'AA')->first();
-    expect($warehouse->roles()->count())->toBe(8);
+    expect($warehouse->roles()->count())->toBe(9);
 });
 
 
@@ -309,7 +309,7 @@ test('create org stock from 2nd stock (within stock family)', function () {
     $stockFamily = $stock->stockFamily;
     expect($stockFamily)->toBeInstanceOf(StockFamily::class);
 
-
+    /** @var OrgStockFamily $orgStockFamily */
     $orgStockFamily = $stockFamily->orgStockFamilies()->where('organisation_id', $this->organisation->id)->first();
     expect($orgStockFamily)->toBeInstanceOf(OrgStockFamily::class);
     $orgStock = StoreOrgStock::make()->action(

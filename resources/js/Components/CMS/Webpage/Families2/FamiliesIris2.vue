@@ -221,7 +221,14 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
                     <div class="inline-flex items-center rounded-3xl border border-gray/10
           justify-center h-auto px-3  sm:py-3
            text-base font-semibold leading-tight text-center
-           overflow-hidden sm:overflow-visible">
+           overflow-hidden sm:overflow-visible" :style="{
+            background: '#ffff',
+            ...getStyles(
+              props.fieldValue?.button?.view_more?.properties,
+              props.screenType
+
+            ),
+          }">
                       <span class="whitespace-normal break-words w-full text-center
              sm:whitespace-normal sm:max-w-full" :class="{
               '!w-full !text-xs': screenType === 'mobile'
