@@ -11,8 +11,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Http\Resources\Dispatching\WaitingDeliveryNoteItemsCrmGroupedResource;
-use App\Http\Resources\Dispatching\WaitingDeliveryNoteItemsGroupedResource;
-use App\Http\Resources\Ordering\WaitingCrmItemsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\Dispatching\DeliveryNote;
@@ -43,15 +41,14 @@ class IndexWaitingCrmItemsGrouped extends OrgAction
 
         $query = QueryBuilder::for(DeliveryNote::class);
         $query->leftjoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
-        ->leftJoin('delivery_note_order', 'delivery_notes.id', '=', 'delivery_note_order.delivery_note_id')
-        ->leftJoin('orders', 'delivery_note_order.order_id', '=', 'orders.id')
-        ->leftJoin('organisations', 'delivery_notes.organisation_id', '=', 'organisations.id');
-
+            ->leftJoin('delivery_note_order', 'delivery_notes.id', '=', 'delivery_note_order.delivery_note_id')
+            ->leftJoin('orders', 'delivery_note_order.order_id', '=', 'orders.id')
+            ->leftJoin('organisations', 'delivery_notes.organisation_id', '=', 'organisations.id');
 
 
         $query->where('delivery_notes.shop_id', $shop->id);
-        $query->where('delivery_notes.number_items_waiting_crm', '>',0);
-      //  $query->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED->value);
+        $query->where('delivery_notes.number_items_waiting_crm', '>', 0);
+        $query->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED->value);
 
         return $query->defaultSort('delivery_notes.id')
             ->select([
@@ -103,7 +100,7 @@ class IndexWaitingCrmItemsGrouped extends OrgAction
             'Ordering/WaitingCrmItems',
             [
                 'breadcrumbs'       => $this->getBreadcrumbs($parent, $request->route()->originalParameters()),
-                'title'             => __('Waiting Items') . ' (CRM)',
+                'title'             => __('Waiting Items').' (CRM)',
                 'pageHead'          => [
                     'title' => __('Waiting Items'),
                     'model' => __('Pending Orders'),
@@ -120,6 +117,7 @@ class IndexWaitingCrmItemsGrouped extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
         $this->initialisationFromShop($shop, $request);
+
         return $shop;
     }
 
