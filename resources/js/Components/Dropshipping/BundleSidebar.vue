@@ -19,6 +19,8 @@ import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import Image from '../Image.vue';
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { useLocaleStore } from "@/Stores/locale"
+import { useConfirm, ConfirmDialog } from "primevue"
+
 const props = defineProps<{
     symbol: string
     code: string
@@ -395,6 +397,57 @@ const submitBundle = async () => {
     )
 }
 
+const confirm = useConfirm()
+
+const handleClose = () => {
+    confirm.require({
+        message: 'close this modal will discard this bundle. You’ll need to start again.',
+        header: 'Discard bundle?',
+        acceptLabel: 'Discard',
+        rejectLabel: 'Stay',        
+        accept: () => {
+            handleDelete()
+        },
+    })
+    
+}
+
+const handleDelete = () => {
+    const routeConfig = bundleRoutes.delete
+    const routeParams = {
+        ...resolveParams(routeConfig),
+        bundle: bundle.bundle_id.value
+    }
+
+    router.delete(route(routeConfig.name, routeParams), {
+        preserveScroll: true,
+
+        onSuccess: () => {
+            bundle.resetBundle()
+            bundle.products.value = []
+            selectedMedia.value = []
+            selectedMediaIds.value = []
+            selectedMediaForAI.value = []
+            customerChannelsId.value = null
+            bundle.step.value = 1
+            bundle.close()
+            notify({
+                title: trans('Success'),
+                // text: trans('Failed to delete bundle'),
+                type: 'success'
+            })
+        },
+
+        onError: () => {
+            notify({
+                title: trans('Error'),
+                text: trans('Failed to delete bundle'),
+                type: 'error'
+            })
+        }
+    })
+}
+
 const handleBack = () => {
     bundle.step.value = 1
     fetchGetBundle()
@@ -487,6 +540,27 @@ watch(customerChannelsId, (val) => {
         bundle.calculateBundle()
     }
 })
+watch(
+    selectedMedia,
+    (val) => {
+        if (!val.length) return
+
+        let found = false
+
+        val.forEach((img, i) => {
+            if (img.is_main && !found) {
+                found = true
+            } else {
+                img.is_main = false
+            }
+        })
+
+        if (!found) {
+            val[0].is_main = true
+        }
+    },
+    { deep: true }
+)
 </script>
 
 <template>
@@ -653,7 +727,7 @@ watch(customerChannelsId, (val) => {
                         </div>
 
                         <button
-                            @click="bundle.close()"
+                            @click="handleClose"
                             class="text-gray-500 hover:text-red-500"
                         >
                             <FontAwesomeIcon icon="fal fa-times" />
@@ -843,6 +917,56 @@ watch(customerChannelsId, (val) => {
                     </template>
 
                 </Dialog>
+                <ConfirmDialog>
+                    <template #container="{ message, acceptCallback, rejectCallback }">
+                        <div class="p-5 w-[360px]">
+
+                            <!-- ICON -->
+                            <div class="flex justify-center mb-3">
+                               <FontAwesomeIcon
+                                    :icon="message.data?.type === 'danger'
+                                        ? 'fas fa-exclamation-triangle'
+                                        : 'fas fa-question-circle'"
+                                    class="text-3xl text-red-500"
+                                />
+                            </div>
+
+                            <!-- TITLE -->
+                            <div class="text-center font-semibold text-lg mb-2">
+                                {{ message.header }}
+                            </div>
+
+                            <!-- MESSAGE -->
+                            <div class="text-center text-sm text-gray-500 mb-5 leading-relaxed">
+                                {{ message.message }}
+                            </div>
+
+                            <!-- ACTIONS -->
+                            <div class="flex justify-center gap-3">
+
+                                <!-- CANCEL -->
+                                <button
+                                    @click="rejectCallback"
+                                    class="px-4 py-2 text-sm border rounded-md hover:bg-gray-100"
+                                >
+                                    {{ message.rejectLabel || 'Cancel' }}
+                                </button>
+
+                                <!-- ACCEPT -->
+                                <button
+                                    @click="acceptCallback"
+                                    :class="[
+                                        'px-4 py-2 text-sm text-white rounded-md bg-red-500 hover:bg-red-600'
+                                    ]"
+                                >
+                                    {{ message.acceptLabel || 'Yes' }}
+                                </button>
+
+                            </div>
+
+                        </div>
+                    </template>
+                </ConfirmDialog>
             </template>
         </div>
     </Transition>
