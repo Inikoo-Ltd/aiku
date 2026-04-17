@@ -2,7 +2,7 @@
 
 /*
  * Author: eka yudinata (https://github.com/ekayudinata)
- * Created: Thursday, 10 April 2026 16:40:00 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Created: Thursday, 17 April 2026 11:20:00 Central Indonesia Time, Sanur, Bali, Indonesia
  * Copyright (c) 2026, eka yudinata
  */
 
@@ -18,21 +18,25 @@ use App\Services\QueryBuilder;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetOtherShopEmailTemplates extends OrgAction
+class GetEmailTemplates extends OrgAction
 {
     use AsObject;
 
-    public function handle(Organisation $organisation, Shop $currentShop): array
+    public function handle(Organisation $organisation, Shop $shop, string $type): array
     {
         $queryBuilder = QueryBuilder::for(EmailTemplate::class);
 
-        $queryBuilder->where('email_templates.shop_id', '!=', $currentShop->id);
+        if ($type === 'own') {
+            $queryBuilder->where('email_templates.shop_id', $shop->id);
+        } elseif ($type === 'other') {
+            $queryBuilder->where('email_templates.shop_id', '!=', $shop->id);
+            $queryBuilder->where('email_templates.is_seeded', false);
+            $queryBuilder->where('email_templates.state', EmailTemplateStateEnum::ACTIVE->value);
+            $queryBuilder->where('email_templates.builder', EmailTemplateBuilderEnum::BEEFREE->value);
+        }
+
         $queryBuilder->whereNotNull('email_templates.compiled_layout');
         $queryBuilder->where('email_templates.compiled_layout', '!=', '');
-        $queryBuilder->where('email_templates.is_seeded', false);
-        $queryBuilder->where('email_templates.state', EmailTemplateStateEnum::ACTIVE->value);
-        $queryBuilder->where('email_templates.builder', EmailTemplateBuilderEnum::BEEFREE->value);
-
 
         return $queryBuilder
             ->leftJoin('shops', 'email_templates.shop_id', '=', 'shops.id')
@@ -57,7 +61,8 @@ class GetOtherShopEmailTemplates extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): array
     {
         $this->initialisationFromShop($shop, $request);
-        return $this->handle($organisation, $shop);
+        $type = $request->get('type', 'own');
+        return $this->handle($organisation, $shop, $type);
     }
 
     public function jsonResponse(array $emailTemplates): array
@@ -65,9 +70,9 @@ class GetOtherShopEmailTemplates extends OrgAction
         return $emailTemplates;
     }
 
-    public function action(Shop $currentShop): array
+    public function action(Shop $shop, string $type = 'own'): array
     {
-        $this->initialisationFromShop($currentShop, []);
-        return $this->handle($this->organisation, $currentShop);
+        $this->initialisationFromShop($shop, []);
+        return $this->handle($this->organisation, $shop, $type);
     }
 }

@@ -23,7 +23,14 @@ interface Props {
     shopId: string;
     organisationSlug: string;
     shopSlug: string;
-    ownShopTemplates: { templates: Template[], shop_name: string };
+    ownShopTemplates?: Array<{
+        id: number,
+        slug: string,
+        name: string,
+        compiled_layout: string,
+        created_at: string,
+        shop_name: string
+    }>;
     otherShopTemplates?: Array<{
         id: number,
         slug: string,
@@ -42,7 +49,7 @@ const carouselOptions = [
     { breakpoint: '560px', numVisible: 2, numScroll: 2 }
 ]
 
-const hasOwnTemplates = computed(() => props.ownShopTemplates?.templates?.length > 0);
+const hasOwnTemplates = computed(() => props.ownShopTemplates && props.ownShopTemplates.length > 0);
 
 const otherShopTemplatesData = computed(() => {
     return props.otherShopTemplates || [];
@@ -50,6 +57,12 @@ const otherShopTemplatesData = computed(() => {
 
 const hasOtherTemplates = computed(() => otherShopTemplatesData.value.length > 0);
 const hasAnyTemplates = computed(() => hasOwnTemplates.value || hasOtherTemplates.value);
+
+const ownShopName = computed(() => {
+    return props.ownShopTemplates && props.ownShopTemplates.length > 0
+        ? props.ownShopTemplates[0].shop_name
+        : '';
+});
 </script>
 
 
@@ -61,11 +74,11 @@ const hasAnyTemplates = computed(() => hasOwnTemplates.value || hasOtherTemplate
                 <h3 class="text-lg font-semibold text-gray-900 flex items-center">
                     <FontAwesomeIcon :icon="faStore" class="mr-2 text-blue-600" />
                     {{ trans('Your Templates') }}
-                    <span class="ml-2 text-sm text-gray-500">({{ props.ownShopTemplates.shop_name }})</span>
+                    <span class="ml-2 text-sm text-gray-500">({{ ownShopName }})</span>
                 </h3>
             </div>
 
-            <Carousel :value="props.ownShopTemplates.templates" :numVisible="4" :options="carouselOptions" class="mb-8">
+            <Carousel :value="props.ownShopTemplates" :numVisible="4" :options="carouselOptions" class="mb-8">
                 <template #item="slotProps">
                     <TemplateCarouselItem :template="slotProps.data" :organisation-slug="props.organisationSlug"
                         :shop-slug="props.shopSlug" :mailshot-id="props.mailshotId" button-type="primary"

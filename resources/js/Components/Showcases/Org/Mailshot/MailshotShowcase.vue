@@ -51,7 +51,14 @@ const props = defineProps<{
         compiled_layout: any
     }
     liveStats?: any[]
-    ownShopTemplates?: { templates: any[], shop_name: string }
+    ownShopTemplates?: Array<{
+        id: number,
+        slug: string,
+        name: string,
+        compiled_layout: string,
+        created_at: string,
+        shop_name: string
+    }>
     otherShopTemplates?: Array<{
         id: number,
         slug: string,
