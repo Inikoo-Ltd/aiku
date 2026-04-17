@@ -1,11 +1,10 @@
 <?php
-
 /*
- * author Arya Permana - Kirin
- * created on 09-01-2025-15h-26m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Arya Permana - Kirin
+ * Created: Thu, 09 Jan 2025 15:26
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
 
 namespace App\Http\Middleware;
 
@@ -22,6 +21,10 @@ class LogWebUserRequestMiddleware
 
     public function handle(Request $request, Closure $next)
     {
+        if (!$request->user()) {
+            return $next($request);
+        }
+
         if (!$this->canLogWebUserRequest()) {
             return $next($request);
         }
@@ -73,12 +76,12 @@ class LogWebUserRequestMiddleware
             return false;
         }
 
-        $skipPrefixes = ['retina.models', 'iris.models', 'retina.webhooks', 'iris.json', 'retina.json','iris.catalogue'];
+        $skipPrefixes = ['retina.models', 'iris.models', 'retina.webhooks', 'iris.json', 'retina.json', 'iris.catalogue'];
         if ($routeName == 'retina.logout') {
             return false;
         }
 
-        if (array_any($skipPrefixes, fn ($prefix) => str_starts_with($routeName, $prefix))) {
+        if (array_any($skipPrefixes, fn($prefix) => str_starts_with($routeName, $prefix))) {
             return false;
         }
 

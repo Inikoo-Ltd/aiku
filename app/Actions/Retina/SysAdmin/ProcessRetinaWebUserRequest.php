@@ -25,8 +25,12 @@ class ProcessRetinaWebUserRequest
     /**
      * @throws \Throwable
      */
-    public function handle(WebUser $webUser, Carbon $datetime, array $routeData, string $ip, string $userAgent, array $geoLocation): WebUserRequest|null
+    public function handle(?WebUser $webUser, Carbon $datetime, array $routeData, string $ip, string $userAgent, array $geoLocation): WebUserRequest|null
     {
+        if(!$webUser){
+            return null;
+        }
+
         if ($routeData['name'] == 'retina.search.index') {
             return null;
         }
