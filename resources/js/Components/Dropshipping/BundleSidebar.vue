@@ -377,6 +377,15 @@ const submitBundle = async () => {
                     type: 'success'
                 })
 
+                const selectedChannel = customerChannelOptions.value.find(
+                    c => c.customer_sales_channel_id === customerChannelsId.value
+                )
+                if (selectedChannel) {
+                    localStorage.setItem('layout_dropshipping', JSON.stringify({
+                        currentPlatform: selectedChannel.customer_sales_channel_slug
+                    }))
+                }
+
                 bundle.step.value = 1
                 selectedMedia.value = []
                 selectedMediaIds.value = []

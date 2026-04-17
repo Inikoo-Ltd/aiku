@@ -183,7 +183,8 @@ class ShowRetinaEcomBasket extends RetinaAction
                 'total_to_pay'       => $order ? max(0, $order->total_amount - $order->customer->balance) : 0,
                 'total_products'     => $order ? $order->transactions->whereIn('model_type', ['Product', 'Service'])->count() : 0,
                 'transactions'       => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
-                'gr_gifts'           => $grGifts
+                'gr_gifts'           => $grGifts,
+                'missed_offers'      => $order ? $this->getMissedOffers($order) : []
             ]
         )->table(
             IndexBasketTransactions::make()->tableStructure()
