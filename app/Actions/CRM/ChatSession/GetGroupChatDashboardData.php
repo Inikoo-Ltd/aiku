@@ -36,11 +36,11 @@ class GetGroupChatDashboardData
             ->where('settings->chat->enable_chat', true)
             ->pluck('id');
 
-        $sessionQuery = ChatSession::query()->whereIn('shop_id', $openShopIds);
+        $sessionQuery = ChatSession::query()->whereIn('shop_id', $openShopIds)->whereHas('messages');
 
         $stats = [
             'chatEnabledShops'    => $chatEnabledOpenShopIds->count(),
-            'chatAgents'          => ShopHasChatAgent::query()->whereIn('shop_id', $openShopIds)->distinct('chat_agent_id')->count('chat_agent_id'),
+            'chatAgents'          => ShopHasChatAgent::query()->whereIn('shop_id', $openShopIds)->join('chat_agents', 'chat_agents.id', '=', 'shop_has_chat_agents.chat_agent_id')->whereNull('chat_agents.deleted_at')->distinct('chat_agent_id')->count('chat_agent_id'),
             'chatSessionsTotal'   => (clone $sessionQuery)->count(),
             'chatSessionsWaiting' => (clone $sessionQuery)->where('status', ChatSessionStatusEnum::WAITING)->count(),
             'chatSessionsActive'  => (clone $sessionQuery)->where('status', ChatSessionStatusEnum::ACTIVE)->count(),
@@ -69,13 +69,13 @@ class GetGroupChatDashboardData
                     ->where('state', ShopStateEnum::OPEN)
                     ->pluck('id');
 
-                $sessionQuery = ChatSession::query()->whereIn('shop_id', $orgShopIds);
+                $sessionQuery = ChatSession::query()->whereIn('shop_id', $orgShopIds)->whereHas('messages');
 
                 return [
                     'id'              => $organisation->id,
                     'slug'            => $organisation->slug,
                     'name'            => $organisation->name,
-                    'chatAgentsCount' => ShopHasChatAgent::query()->where('organisation_id', $organisation->id)->distinct('chat_agent_id')->count('chat_agent_id'),
+                    'chatAgentsCount' => ShopHasChatAgent::query()->where('organisation_id', $organisation->id)->join('chat_agents', 'chat_agents.id', '=', 'shop_has_chat_agents.chat_agent_id')->whereNull('chat_agents.deleted_at')->distinct('chat_agent_id')->count('chat_agent_id'),
                     'sessionsTotal'   => (clone $sessionQuery)->count(),
                     'sessionsActive'  => (clone $sessionQuery)->where('status', ChatSessionStatusEnum::ACTIVE)->count(),
                     'sessionsWaiting' => (clone $sessionQuery)->where('status', ChatSessionStatusEnum::WAITING)->count(),

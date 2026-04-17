@@ -43,6 +43,7 @@ class IndexChatSessions extends OrgAction
 
         $queryBuilder = QueryBuilder::for(ChatSession::class)
             ->where('chat_sessions.shop_id', $parent->id)
+            ->whereHas('messages')
             ->leftJoin('web_users', 'chat_sessions.web_user_id', '=', 'web_users.id')
             ->with([
                 'webUser.customer',
