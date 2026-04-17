@@ -42,6 +42,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
@@ -83,11 +84,11 @@ use Spatie\Translatable\HasTranslations;
  * @property numeric $variant_ratio
  * @property bool $variant_is_visible
  * @property int|null $main_product_id
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $source_id
  * @property string|null $historic_source_id
  * @property bool $is_for_sale For-sale products including out of stock
@@ -135,7 +136,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $hts_us
  * @property string|null $marketing_ingredients
  * @property string|null $price_updated_at
- * @property \Illuminate\Support\Carbon|null $available_quantity_updated_at
+ * @property Carbon|null $available_quantity_updated_at
  * @property string|null $images_updated_at
  * @property string|null $unit_price price per unit
  * @property array<array-key, mixed>|null $name_i8n
@@ -144,8 +145,8 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_extra_i8n
  * @property bool $is_single_trade_unit Indicates if the product has a single trade unit
  * @property int|null $master_product_id
- * @property \Illuminate\Support\Carbon|null $mark_for_discontinued_at
- * @property \Illuminate\Support\Carbon|null $discontinued_at
+ * @property Carbon|null $mark_for_discontinued_at
+ * @property Carbon|null $discontinued_at
  * @property string|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
@@ -166,7 +167,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $ufi_number
  * @property string|null $scpn_number
  * @property array<array-key, mixed>|null $offers_data
- * @property \Illuminate\Support\Carbon|null $not_for_sale_since
+ * @property Carbon|null $not_for_sale_since
  * @property bool $not_for_sale_from_master
  * @property bool $not_for_sale_from_trade_unit
  * @property bool|null $is_unit_reviewed
@@ -308,7 +309,7 @@ class Product extends Model implements Auditable, HasMedia
             'description_extra' => (string)$this->description_extra,
             'state'             => $this->state->value,
             'is_for_sale'       => $this->is_for_sale,
-            'created_at'        => $this->created_at->timestamp,
+            'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }
 

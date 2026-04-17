@@ -8,8 +8,7 @@
 
 namespace App\Actions\SysAdmin\User;
 
-use App\Actions\Traits\WithLogUserableLogin;
-use App\Enums\Elasticsearch\ElasticsearchUserRequestTypeEnum;
+use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -17,19 +16,24 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class LogUserLogin
 {
     use AsAction;
-    use WithLogUserableLogin;
 
+    public string $jobQueue = 'analytics';
 
-    public function handle(User $user, string $ip, string $userAgent, Carbon $datetime): void
+    public function handle(User $user, string $ip, string $userAgent, Carbon $datetime, array $geoLocation = []): void
     {
-        $this->logUserableLogin(
-            config('elasticsearch.index_prefix').'web_users_requests',
-            ElasticsearchUserRequestTypeEnum::LOGIN->value,
-            $datetime,
-            $ip,
-            $userAgent,
-            $user
+        $browserData = GetBrowserInfo::run($userAgent);
+
+        $user->userLogins()->create(
+            [
+                'ip_address' => $ip,
+                'date'       => $datetime,
+                'os'         => $browserData['os'],
+                'device'     => $browserData['device'],
+                'browser'    => $browserData['browser'],
+                'location'   => json_encode($geoLocation),
+            ]
         );
+
 
         $stats = [
             'last_login_at' => $datetime,
@@ -38,8 +42,6 @@ class LogUserLogin
         ];
 
         $user->stats()->update($stats);
-
-
     }
 
 

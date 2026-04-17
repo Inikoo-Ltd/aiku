@@ -24,7 +24,7 @@
 - Backend: PHP/Laravel 12
 - Frontend: Vue 3 (inertia.js)
 - Mobile: React Native
-- Search: ElasticSearch
+- Search: Typesense
 
 #### Contributing
 

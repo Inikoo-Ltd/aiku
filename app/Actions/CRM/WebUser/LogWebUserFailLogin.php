@@ -8,9 +8,9 @@
 
 namespace App\Actions\CRM\WebUser;
 
-use App\Actions\SysAdmin\WithLogRequest;
+use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\CRM\WebUser;
-use App\Models\Web\Website;
+use App\Models\WebUserFailedLogin;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -18,15 +18,28 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class LogWebUserFailLogin
 {
     use AsAction;
-    use WithLogRequest;
 
-    public function handle(Website $website, array $credentials, string $ip, string $userAgent, Carbon $datetime): void
+    public string $jobQueue = 'analytics';
+
+    public function handle(int $websiteId, array $credentials, string $ip, string $userAgent, Carbon $datetime, array $geoLocation = [], string $source = 'A'): void
     {
+        $webUser     = WebUser::withTrashed()->where('username', Arr::get($credentials, 'username'))->where('website_id', $websiteId)->first();
+        $browserData = GetBrowserInfo::run($userAgent);
 
-        $webUser = WebUser::withTrashed()->where('username', Arr::get($credentials, 'username'))->where('website_id', $website->id)->first();
-
-        $this->logFail('web_users_requests', $datetime, $ip, $userAgent, Arr::get($credentials, 'username'), $webUser?->id);
-
+        WebUserFailedLogIn::create(
+            [
+                'ip_address'  => $ip,
+                'website_id'  => $websiteId,
+                'username'    => mb_substr(Arr::get($credentials, 'username', ''), 0, 254),
+                'web_user_id' => $webUser->id ?? null,
+                'failed_at'   => $datetime,
+                'os'          => $browserData['os'],
+                'device'      => $browserData['device'],
+                'browser'     => $browserData['browser'],
+                'location'    => json_encode($geoLocation),
+                'source'      => $source,
+            ]
+        );
 
         if ($webUser) {
             $stats = [
@@ -38,7 +51,6 @@ class LogWebUserFailLogin
             $webUser->stats()->update($stats);
         }
     }
-
 
 
 }

@@ -9,9 +9,9 @@
 namespace App\Actions\CRM\WebUser\Retina;
 
 use App\Actions\CRM\WebUser\AuthoriseWebUserWithLegacyPassword;
+use App\Actions\CRM\WebUser\LogWebUserFailLogin;
 use App\Actions\CRM\WebUser\LogWebUserLogin;
 use App\Actions\Dropshipping\Tiktok\User\ProcessUnregisterCustomerTiktokUser;
-use App\Actions\SysAdmin\User\LogUserFailLogin;
 use App\Actions\Traits\WithLogin;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
@@ -36,7 +36,7 @@ class RetinaLogin
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(ActionRequest $request): array | RedirectResponse
+    public function handle(ActionRequest $request): array|RedirectResponse
     {
         $this->ensureIsNotRateLimited($request);
 
@@ -83,19 +83,27 @@ class RetinaLogin
                 // try now with email
                 data_set($credentials, 'email', $credentials['username']);
                 data_forget($credentials, 'username');
-                // Note we're using custom CaseInsensitiveEloquentUserProvider for case insensitive username
+                // Note we're using custom CaseInsensitiveEloquentUserProvider for case-insensitive username
                 $authorised = Auth::guard('retina')->attempt($credentials, $rememberMe);
             }
         }
 
         if (!$authorised) {
             RateLimiter::hit($this->throttleKey($request));
-
-            LogUserFailLogin::dispatch(
+            $geoLocation = [
+                $request->header('CF-IPCountry') ?? 'XX',
+                $request->header('CF-Region'),
+                $request->header('CF-IPCity'),
+                $request->header('CF-IPLongitude'),
+                $request->header('CF-IPLatitude'),
+            ];
+            LogWebUserFailLogin::dispatch(
+                websiteId: $websiteId,
                 credentials: $request->validated(),
                 ip: request()->ip(),
                 userAgent: $request->header('User-Agent'),
-                datetime: now()
+                datetime: now(),
+                geoLocation: $geoLocation
             );
 
             throw ValidationException::withMessages([
@@ -109,18 +117,27 @@ class RetinaLogin
     }
 
 
-    public function postProcessRetinaLogin($request): array | RedirectResponse
+    public function postProcessRetinaLogin($request): array|RedirectResponse
     {
         RateLimiter::clear($this->throttleKey($request));
 
         /** @var WebUser $webUser */
         $webUser = auth('retina')->user();
 
+        $geoLocation = [
+            $request->header('CF-IPCountry') ?? 'XX',
+            $request->header('CF-Region'),
+            $request->header('CF-IPCity'),
+            $request->header('CF-IPLongitude'),
+            $request->header('CF-IPLatitude'),
+        ];
+
         LogWebUserLogin::dispatch(
             webUser: $webUser,
             ip: request()->ip(),
             userAgent: $request->header('User-Agent'),
-            datetime: now()
+            datetime: now(),
+            geoLocation: $geoLocation
         );
 
         if ($tiktokCode = $request->input('tiktok_code')) {
@@ -134,13 +151,12 @@ class RetinaLogin
         Cookie::queue('iris_vua', true, config('session.lifetime') * 60);
 
 
-
         $language = $webUser->language;
         if ($language) {
             app()->setLocale($language->code);
         }
 
-        $retinaHome = '';
+        $retinaHome  = '';
         $webpage_key = request()->input('ref');
         if ($webpage_key && is_numeric($webpage_key)) {
             $webpage = Webpage::where('id', $webpage_key)->where('website_id', $request->input('website')->id)
@@ -151,7 +167,6 @@ class RetinaLogin
         }
 
         return [$retinaHome];
-
     }
 
 }
