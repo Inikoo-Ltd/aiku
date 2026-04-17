@@ -65,7 +65,7 @@ class RepairDebugFulfilmentOrderFromEbay extends OrgAction
                     $hasOutProducts = DB::table('portfolios')->where('customer_sales_channel_id', $ebayUser->customer_sales_channel_id)
                         ->whereIn('platform_product_variant_id', $lineItems)->exists();
 
-                    if($hasOutProducts) {
+                    if ($hasOutProducts) {
                         StoreOrderFromEbay::run($ebayUser, $fulfillmentOrder);
                     }
                 } catch (\Exception $e) {

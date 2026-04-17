@@ -59,7 +59,7 @@ class UpdateWebsite extends OrgAction
             $shop = $website->shop;
             UpdateShop::run($shop, $shopUpdateData);
         }
-        
+
         $hydrateDescriptionOverview = false;
         if (Arr::has($modelData, 'description_has_overview')) {
             data_set($modelData, 'settings.catalogue_pages.description_has_overview', Arr::pull($modelData, 'description_has_overview'));
@@ -108,6 +108,10 @@ class UpdateWebsite extends OrgAction
 
         if (Arr::has($modelData, "script_website")) {
             data_set($modelData, "settings.script_website.header", Arr::pull($modelData, "script_website"));
+        }
+        
+        if (Arr::has($modelData, "welcome_message")) {
+            data_set($modelData, "settings.welcome_message", Arr::pull($modelData, "welcome_message"));
         }
 
         // Handle LLMs.txt file upload
@@ -252,6 +256,7 @@ class UpdateWebsite extends OrgAction
             ],
             'enable_chat'              => ['sometimes', 'boolean'],
             'description_has_overview' => ['sometimes', 'boolean'],
+            'welcome_message' => ['sometimes', 'nullable', 'string'],
         ];
 
         if (!$this->strict) {

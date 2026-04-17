@@ -6,8 +6,14 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-use App\Actions\SysAdmin\Guest\GetGuestSearchSchema;
-use App\Actions\SysAdmin\User\GetUserSearchSchema;
+use App\Actions\Catalogue\Collection\Search\GetCollectionSearchSchema;
+use App\Actions\Catalogue\Product\Search\GetProductSearchSchema;
+use App\Actions\Catalogue\ProductCategory\Search\GetProductCategorySearchSchema;
+use App\Actions\SysAdmin\Guest\Search\GetGuestSearchSchema;
+use App\Actions\SysAdmin\User\Search\GetUserSearchSchema;
+use App\Models\Catalogue\Collection;
+use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\User;
 
@@ -148,8 +154,11 @@ return [
         ],
         'max_total_results' => env('TYPESENSE_MAX_TOTAL_RESULTS', 100),
         'model-settings'    => [
-            User::class  => GetUserSearchSchema::run(),
-            Guest::class => GetGuestSearchSchema::run(),
+            User::class            => GetUserSearchSchema::run(),
+            Guest::class           => GetGuestSearchSchema::run(),
+            Product::class         => GetProductSearchSchema::run(),
+            ProductCategory::class => GetProductCategorySearchSchema::run(),
+            Collection::class      => GetCollectionSearchSchema::run(),
 
         ],
     ],

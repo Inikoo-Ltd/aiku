@@ -18,9 +18,14 @@ use App\Actions\Dispatching\Picking\StorePicking;
 use App\Actions\Dispatching\Picking\UndoSetAsWaitingWarehouse;
 use App\Actions\Dispatching\Picking\UpsertPicking;
 use App\Actions\Dispatching\Picking\UpsertPickingFromWaitingWarehouse;
+use App\Actions\Ordering\WaitingCrmItem\ReplaceWaitingCrmItemProduct;
 use Illuminate\Support\Facades\Route;
 
 Route::name('delivery_note_item.')->prefix('delivery-note-item/{deliveryNoteItem:id}')->group(function () {
+
+    Route::post('replace-product', ReplaceWaitingCrmItemProduct::class)->name('waiting_items_replace_product');
+
+
     // Route::post('packing', StorePacking::class)->name('packing.store')->withoutScopedBindings();
     Route::post('picking', StorePicking::class)->name('picking.store');
     Route::post('picking', UpsertPicking::class)->name('picking.upsert');

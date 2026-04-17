@@ -17,7 +17,7 @@ export const layoutStructure = {
         color: null as unknown | Colors,  // Styling layout color
         theme: useColorTheme[0] as string[],  // For styling app color
         url: null as string | null, // For url on logo top left
-        environment: null as string | null, // 'local' | 'staging' 
+        environment: null as string | null, // 'local' | 'staging'
     },
     currentModule: "",
     currentRoute: "grp.dashboard.show", // Define value to avoid route null at first load
@@ -67,4 +67,14 @@ export const layoutStructure = {
     isShopPage: false as boolean,
     isFulfilmentPage: false as boolean,
     // isShopPage: false as boolean,
+    dispatching_waiting_badge: [] as Array<{
+        organisation: { slug: string; name: string; code: string }
+        warehouses: Array<{
+            slug: string
+            name: string
+            code: string
+            waiting_items: { count: number; route: { name: string; parameters: Record<string, string> } }
+            waiting_items_still_picking: { count: number; route: { name: string; parameters: Record<string, string> } }
+        }>
+    }>,
 }

@@ -14,7 +14,6 @@ use App\Http\Resources\Ordering\WaitingCrmItemsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\Dispatching\DeliveryNoteItem;
-use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -28,9 +27,7 @@ class IndexWaitingCrmItems extends OrgAction
 {
     use WithOrderingAuthorisation;
 
-    private Group|Organisation|Shop $parent;
-
-    public function handle(Group|Organisation|Shop $parent, ?string $prefix = null): LengthAwarePaginator
+    public function handle(Shop $shop, ?string $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -51,21 +48,18 @@ class IndexWaitingCrmItems extends OrgAction
             ->leftJoin('shops', 'orders.shop_id', '=', 'shops.id')
             ->leftJoin('organisations', 'orders.organisation_id', '=', 'organisations.id')
             ->leftJoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id')
+            ->leftJoin('transactions', 'transactions.id', '=', 'delivery_note_items.transaction_id')
+            ->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id')
             ->where('delivery_note_items.quantity_waiting_crm', '>', 0);
 
-        if ($parent instanceof Shop) {
-            $query->where('delivery_note_items.shop_id', $parent->id);
-        } elseif ($parent instanceof Organisation) {
-            $query->where('delivery_note_items.organisation_id', $parent->id);
-        } else {
-            $query->where('delivery_note_items.group_id', $parent->id);
-        }
+        $query->where('delivery_note_items.shop_id', $shop->id);
 
         return $query->defaultSort('org_stocks.code')
             ->select([
                 'delivery_note_items.id',
                 'delivery_note_items.quantity_waiting_crm',
                 'delivery_note_items.notes',
+                'transactions.net_amount',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
                 'org_stocks.slug as org_stock_slug',
@@ -76,6 +70,7 @@ class IndexWaitingCrmItems extends OrgAction
                 'shops.type as shop_type',
                 'shops.engine as shop_engine',
                 'organisations.slug as organisation_slug',
+                'currencies.code as currency_code',
             ])
             ->allowedSorts(['org_stock_code', 'org_stock_name', 'quantity_waiting_crm', 'order_reference'])
             ->allowedFilters([$globalSearch])
@@ -98,11 +93,11 @@ class IndexWaitingCrmItems extends OrgAction
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_waiting_crm', label: __('Waiting Qty'), canBeHidden: false, sortable: true);
-            $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'actions', label: __('Actions'), canBeHidden: false);
         };
     }
 
-    public function htmlResponse(Group|Organisation|Shop $parent, ActionRequest $request): Response
+    public function htmlResponse(Shop $parent, ActionRequest $request): Response
     {
         $items = $this->handle($parent);
 
@@ -124,34 +119,16 @@ class IndexWaitingCrmItems extends OrgAction
         )->table($this->tableStructure());
     }
 
-    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Group|Organisation|Shop
+    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
         $this->initialisationFromShop($shop, $request);
-        $this->parent = $shop;
-
         return $shop;
     }
 
-    public function inOrganisation(Organisation $organisation, ActionRequest $request): Group|Organisation|Shop
-    {
-        $this->initialisation($organisation, $request);
-        $this->parent = $organisation;
-
-        return $organisation;
-    }
-
-    public function inGroup(ActionRequest $request): Group|Organisation|Shop
-    {
-        $this->initialisationFromGroup(group(), $request);
-        $this->parent = group();
-
-        return group();
-    }
-
-    public function getBreadcrumbs(Group|Organisation|Shop $parent, array $routeParameters): array
+    public function getBreadcrumbs(Shop $shop, array $routeParameters): array
     {
         return array_merge(
-            ShowOrdersBacklog::make()->getBreadcrumbs($parent, $routeParameters),
+            ShowOrdersBacklog::make()->getBreadcrumbs($shop, $routeParameters),
             [
                 [
                     'type'   => 'simple',

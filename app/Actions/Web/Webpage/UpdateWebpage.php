@@ -140,20 +140,13 @@ class UpdateWebpage extends OrgAction
                 'lowercase',
                 'max:255',
                 new AlphaDashSlash(),
-                new IUnique(
-                    table: 'webpages',
-                    extraConditions: [
-                        [
-                            'column' => 'website_id',
-                            'value'  => $this->webpage->website->id
-                        ],
-                        [
-                            'column'   => 'id',
-                            'operator' => '!=',
-                            'value'    => $this->webpage->id
-                        ],
-                    ]
-                ),
+                Rule::unique('webpages', 'url')
+                    ->where(function ($query) {
+                        return $query
+                            ->where('website_id', $this->webpage->website_id)
+                            ->whereNull('deleted_at');
+                    })
+                    ->ignore($this->webpage->id),
             ],
             'code'                           => [
                 'sometimes',
@@ -161,19 +154,13 @@ class UpdateWebpage extends OrgAction
                 'ascii',
                 'max:64',
                 'alpha_dash',
-                new IUnique(
-                    table: 'webpages',
-                    extraConditions: [
-
-                        ['column' => 'website_id', 'value' => $this->webpage->website_id],
-                        [
-                            'column'   => 'id',
-                            'operator' => '!=',
-                            'value'    => $this->webpage->id
-                        ],
-                    ]
-                ),
-
+                Rule::unique('webpages', 'code')
+                    ->where(function ($query) {
+                        return $query
+                            ->where('website_id', $this->webpage->website_id)
+                            ->whereNull('deleted_at');
+                    })
+                    ->ignore($this->webpage->id),
             ],
             'seo_image'                      => [
                 'sometimes',

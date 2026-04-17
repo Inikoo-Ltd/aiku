@@ -20,7 +20,7 @@ const props = defineProps<{
 console.log('RetinaB2BDashboard', props)
 const layout = inject('layout', retinaLayoutStructure)
 
-const showBanner = ref(true);
+const showBanner = ref(false);
 
 const userCustomerTags = computed(() => {
     return props.data?.customer?.tags?.filter((tag: any) => tag.scope === 'User Customer') || []
@@ -28,9 +28,9 @@ const userCustomerTags = computed(() => {
 
 const hasTags = computed(() => userCustomerTags.value.length > 0)
 
-onMounted(() => {
+/* onMounted(() => {
     showBanner.value = !hasTags.value
-})
+}) */
 </script>
 
 <template>

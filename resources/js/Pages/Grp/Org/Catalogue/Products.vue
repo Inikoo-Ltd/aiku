@@ -25,7 +25,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faPencil } from '@far'
 import { faWarning } from '@fortawesome/free-solid-svg-icons'
 
-library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk)
+library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk, faTools)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes

@@ -38,7 +38,7 @@ trait HasOrderStateUpdates
             foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
                 $packedData = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction, $deliveryNote);
 
-                $transactionData=[
+                $transactionData = [
                     'status'          => TransactionStatusEnum::PROCESSING,
                     'quantity_picked' => $packedData['quantity'],
                     'gross_amount'    => $packedData['gross_amount'],
@@ -46,8 +46,8 @@ trait HasOrderStateUpdates
                     'org_net_amount'  => $packedData['org_net_amount'],
                     'grp_net_amount'  => $packedData['grp_net_amount'],
                 ];
-                if($newTransactionState!==null){
-                    $transactionData['state']=$newTransactionState;
+                if ($newTransactionState !== null) {
+                    $transactionData['state'] = $newTransactionState;
                 }
 
                 $transaction->update($transactionData);

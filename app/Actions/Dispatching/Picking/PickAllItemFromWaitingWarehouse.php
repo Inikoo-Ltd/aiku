@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\Picking;
 
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -30,8 +31,9 @@ class PickAllItemFromWaitingWarehouse extends OrgAction
                 'quantity_waiting_warehouse' => 0,
                 'has_waiting_warehouse'      => false,
             ]);
+            DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 
-            $picking= PickAllItem::make()->action(
+            $picking = PickAllItem::make()->action(
                 $deliveryNoteItem,
                 [
                     'location_org_stock_id' => Arr::get($modelData, 'location_org_stock_id'),

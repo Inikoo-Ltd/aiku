@@ -81,7 +81,7 @@ class GetProductsForPortfolioSelect extends OrgAction
         $queryBuilder->whereNot('products.state', ProductStateEnum::DISCONTINUED->value);
 
         $origin = CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value;
-        if(request()->input('origin') !== $origin) {
+        if (request()->input('origin') !== $origin) {
             $queryBuilder->where('products.shop_id', $customerSalesChannel->shop->id)
                 ->whereNotIn('products.id', function ($subQuery) use ($customerSalesChannel) {
                     $subQuery->select('item_id')

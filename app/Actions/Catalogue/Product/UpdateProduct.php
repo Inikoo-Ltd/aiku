@@ -12,7 +12,6 @@ use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
-use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
@@ -257,19 +256,6 @@ class UpdateProduct extends OrgAction
 
         if (Arr::has($changed, 'exclusive_for_customer_id')) {
             CustomerHydrateExclusiveProducts::dispatch($product->exclusive_for_customer_id)->delay($this->hydratorsDelay);
-        }
-
-        if (Arr::hasAny(
-            $changed,
-            [
-                'code',
-                'name',
-                'description',
-                'state',
-                'price',
-            ]
-        )) {
-            ProductRecordSearch::dispatch($product);
         }
 
         $isOutOfStock = $product->available_quantity > 0;
