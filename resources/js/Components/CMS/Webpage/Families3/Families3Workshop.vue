@@ -49,9 +49,11 @@ const refreshTrigger = ref(0)
 const containerRef = ref<HTMLElement | null>(null)
 
 const allItems = computed(() => [
+  {
+    __type: 'view_all'
+  },
   ...(props.modelValue?.families || [])
 ])
-
 const perRow = computed(() => {
   const cfg = props.modelValue?.settings?.per_row
 
@@ -133,7 +135,7 @@ async function computeMaxHeight() {
   }
 
   const heights = [...nodes].map(n => Math.ceil(n.getBoundingClientRect().height))
-  maxHeight.value = Math.max(...heights)
+  maxHeight.value = Math.max(...heights) - 5
   swiperInstance.value?.update?.()
 }
 
@@ -178,12 +180,13 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
         <!-- swiper -->
         <div class="mx-8">
           <Swiper :modules="[Navigation]" :loop="true" :slides-per-view="perRow" :space-between="spaceBetween"
-            :allow-touch-move="true" :navigation="true" @swiper="onSwiper" class="w-full swiper-mask">
-            <SwiperSlide class="flex !w-[220px]">
+            :allow-touch-move="true" :navigation="true"  :initial-slide="0" @swiper="onSwiper" class="w-full swiper-mask">
+            <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="flex h-auto">
               <div class="w-full h-full flex">
-                <div
+
+                <!-- View All -->
+                <div v-if="item.__type === 'view_all'"
                   class="family-item w-full h-full cursor-pointer flex flex-col rounded-xl overflow-hidden border bg-white hover:bg-gray-50 transition-all">
-                  <!-- TOP AREA (fill space like image) -->
                   <div :style="{
                     fontWeight: 600,
                     minHeight: maxHeight ? maxHeight + 'px' : undefined,
@@ -194,15 +197,13 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
                     </span>
                   </div>
                 </div>
-              </div>
-            </SwiperSlide>
 
-            <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="flex h-auto">
-              <div class="w-full h-full flex">
-                <Family3Render class="family-item w-full h-full" :data="item" :style="{
+                <!-- Normal item -->
+                <Family3Render v-else class="family-item w-full h-full" :data="item" :style="{
                   ...getStyles(props.modelValue?.chip?.container?.properties, props.screenType),
                   fontWeight: 600
                 }" :screenType="props.screenType" />
+
               </div>
             </SwiperSlide>
           </Swiper>
