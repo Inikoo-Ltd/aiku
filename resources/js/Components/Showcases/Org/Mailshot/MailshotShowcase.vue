@@ -40,7 +40,6 @@ const props = defineProps<{
         mailshot: {
             data: {
                 id: any,
-                slug: any,
                 subject: any,
                 state: any,
                 state_label: any,

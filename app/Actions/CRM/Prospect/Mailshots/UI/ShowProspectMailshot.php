@@ -263,8 +263,6 @@ class ShowProspectMailshot extends OrgAction
                 'isHasParentMailshot' => $isHasParentMailshot,
                 'isSecondWave' => $mailshot->is_second_wave,
                 'numberSecondWaveRecipients' => $mailshotSecondWave?->recipients?->count() ?? 0,
-                'mailshotId' => $mailshot->id,
-                'groupId' => $mailshot->group_id,
                 'ownShopTemplates' => $canLoadTemplates ? GetEmailTemplates::make()->action($this->shop, 'own') : [],
                 'otherShopTemplates' => $canLoadTemplates ? GetEmailTemplates::make()->action($this->shop, 'other') : [],
                 'workshopRoute' => [

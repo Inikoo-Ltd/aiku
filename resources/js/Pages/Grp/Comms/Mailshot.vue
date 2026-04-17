@@ -60,8 +60,6 @@ const props = defineProps<{
     groupId: number
     ownShopTemplates?: { templates: any[], shop_name: string }
     otherShopTemplates?: { templates: any[] }
-    organisationSlug?: string
-    shopSlug?: string
     workshopRoute?: routeType
 }>();
 
@@ -694,8 +692,6 @@ watch(
         liveStats,
         ownShopTemplates: props.ownShopTemplates,
         otherShopTemplates: props.otherShopTemplates,
-        organisationSlug: props.organisationSlug,
-        shopSlug: props.shopSlug,
         workshopRoute: props.workshopRoute
     } : {}" />
 </template>
