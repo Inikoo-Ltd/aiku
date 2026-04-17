@@ -427,26 +427,26 @@ class IndexOrders extends OrgAction
                     ?
                     fn () => OrdersResource::collection(
                         IndexOrders::run(
-                            $shop,
+                            $this->parent,
                             OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value,
                             OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value
                         )
                     )
                     : Inertia::lazy(fn () => OrdersResource::collection(
                         IndexOrders::run(
-                            $shop,
+                            $this->parent,
                             OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value,
                             OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value
                         )
                     )),
 
                 OrdersTabsEnum::LAST_ORDERS->value => $this->tab == OrdersTabsEnum::LAST_ORDERS->value ?
-                    fn () => GetLastOrders::run($shop)
-                    : Inertia::lazy(fn () => GetLastOrders::run($shop)),
+                    fn () => GetLastOrders::run($this->parent)
+                    : Inertia::lazy(fn () => GetLastOrders::run($this->parent)),
 
                 OrdersTabsEnum::EXCESS_ORDERS->value => $this->tab == OrdersTabsEnum::EXCESS_ORDERS->value ?
-                    fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($shop, OrdersTabsEnum::EXCESS_ORDERS->value))
-                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($shop, OrdersTabsEnum::EXCESS_ORDERS->value))),
+                    fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($this->parent, OrdersTabsEnum::EXCESS_ORDERS->value))
+                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($this->parent, OrdersTabsEnum::EXCESS_ORDERS->value))),
             ]
         )->table(
             $this->tableStructure($this->parent, OrdersTabsEnum::ORDERS->value, $this->bucket)

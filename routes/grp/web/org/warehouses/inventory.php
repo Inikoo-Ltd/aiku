@@ -8,10 +8,10 @@
 
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInOrgStock;
 use App\Actions\Fulfilment\Pallet\UI\EditPallet;
-use App\Actions\Fulfilment\Pallet\UI\IndexDamagedPallets;
-use App\Actions\Fulfilment\Pallet\UI\IndexLostPallets;
+use App\Actions\Fulfilment\Pallet\UI\IndexDamagedPalletsInWarehouse;
+use App\Actions\Fulfilment\Pallet\UI\IndexLostPalletsInWarehouse;
 use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInWarehouse;
-use App\Actions\Fulfilment\Pallet\UI\IndexReturnedPallets;
+use App\Actions\Fulfilment\Pallet\UI\IndexReturnedPalletsInWarehouse;
 use App\Actions\Fulfilment\Pallet\UI\ShowPallet;
 use App\Actions\Fulfilment\StoredItem\UI\EditStoredItem;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInWarehouse;
@@ -51,7 +51,6 @@ Route::prefix('stock-histories')->as('org_stock_histories.')->group(function () 
 
 
 Route::prefix('stocks')->as('org_stocks.')->group(function () {
-
     Route::patch('{orgStock}/update', UpdateOrgStock::class)->name('update');
 
     Route::prefix('orphans-from-product')->as('orphan-product.')->group(function () {
@@ -75,7 +74,6 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
             Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
-
         });
     });
 
@@ -88,7 +86,6 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
             Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
-
         });
     });
 
@@ -101,7 +98,6 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
             Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
-
         });
     });
 
@@ -114,7 +110,6 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
             Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
-
         });
     });
 
@@ -127,7 +122,6 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
             Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
-
         });
     });
 
@@ -140,7 +134,6 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
             Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
-
         });
     });
 
@@ -153,7 +146,6 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
             Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
-
         });
     });
 });
@@ -198,17 +190,17 @@ Route::prefix('pallets')->as('pallets.')->group(function () {
     });
 
     Route::prefix('returned')->as('returned.')->group(function () {
-        Route::get('', IndexReturnedPallets::class)->name('index');
+        Route::get('', IndexReturnedPalletsInWarehouse::class)->name('index');
         Route::get('{pallet}', [ShowPallet::class, 'inWarehouse'])->name('show');
     });
 
     Route::prefix('damaged')->as('damaged.')->group(function () {
-        Route::get('', IndexDamagedPallets::class)->name('index');
+        Route::get('', IndexDamagedPalletsInWarehouse::class)->name('index');
         Route::get('{pallet}', [ShowPallet::class, 'inWarehouse'])->name('show');
     });
 
     Route::prefix('lost')->as('lost.')->group(function () {
-        Route::get('', IndexLostPallets::class)->name('index');
+        Route::get('', IndexLostPalletsInWarehouse::class)->name('index');
         Route::get('{pallet}', [ShowPallet::class, 'inWarehouse'])->name('show');
     });
     Route::get('{pallet}/stored-item-audits/create', CreateStoredItemAuditFromPalletInWarehouse::class)->name('show.stored-item-audit.create');

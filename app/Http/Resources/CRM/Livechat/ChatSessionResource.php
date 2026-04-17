@@ -14,21 +14,43 @@ class ChatSessionResource extends JsonResource
      * @param  \Illuminate\Http\Request  $request
      * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
      */
-    public function toArray($request)
+    public function toArray($request): array
     {
         $chatSession = $this;
 
+        $webUser = $chatSession->relationLoaded('webUser') ? $chatSession->webUser : null;
+        $contactName = $webUser?->customer?->contact_name
+            ?? $webUser?->username
+            ?? $chatSession->guest_identifier
+            ?? 'Guest';
+
+        $activeAssignment = null;
+        if ($chatSession->relationLoaded('assignments')) {
+            $activeAssignment = $chatSession->assignments
+                ->sortByDesc('assigned_at')
+                ->first();
+        }
+
         return [
-            'ulid' => $chatSession->ulid,
-            'status' => $chatSession->status->value,
-            'is_guest' => is_null($chatSession->web_user_id),
+            'ulid'          => $chatSession->ulid,
+            'status'        => $chatSession->status->value,
+            'is_guest'      => is_null($chatSession->web_user_id),
             'guest_identifier' => $chatSession->guest_identifier,
-            'created_at' => $this->formatDate($chatSession->created_at),
-            'closed_at' => $chatSession->closed_at ? $this->formatDate($chatSession->closed_at) : null,
-            'priority' => $chatSession->priority->value,
-            'shop_id'  => $chatSession->shop_id,
-            'shop_name' => $chatSession->shop ? $chatSession->shop->name : null,
-            'contact_name' => $chatSession->webUser ? $chatSession->webUser->contact_name : $webUser?->customer?->contact_name ?? $chatSession->username ?? 'Guest',
+            'created_at'    => $this->formatDate($chatSession->created_at),
+            'closed_at'     => $chatSession->closed_at ? $this->formatDate($chatSession->closed_at) : null,
+            'priority'      => $chatSession->priority->value,
+            'shop_id'       => $chatSession->shop_id,
+            'shop_name'     => $chatSession->relationLoaded('shop') && $chatSession->shop ? $chatSession->shop->name : null,
+            'contact_name'  => $contactName,
+            'assigned_agent' => $activeAssignment?->chatAgent?->user?->contact_name,
+            'route'         => [
+                'name'       => 'grp.org.shops.show.crm.chat_sessions.show',
+                'parameters' => [
+                    'organisation' => request()->route()?->originalParameters()['organisation'] ?? null,
+                    'shop'         => request()->route()?->originalParameters()['shop'] ?? null,
+                    'chatSession'  => $chatSession->id,
+                ],
+            ],
         ];
     }
 

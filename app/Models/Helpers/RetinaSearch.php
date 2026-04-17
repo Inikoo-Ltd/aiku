@@ -10,7 +10,6 @@ namespace App\Models\Helpers;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
-use Laravel\Scout\Searchable;
 
 /**
  * @property int $id
@@ -40,8 +39,6 @@ use Laravel\Scout\Searchable;
  */
 class RetinaSearch extends Model
 {
-    use Searchable;
-
     protected $casts = [
         'sections'    => 'array',
         'permissions' => 'array',

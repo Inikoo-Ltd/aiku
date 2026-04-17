@@ -3,7 +3,7 @@ import { inject, ref, computed } from "vue"
 import { trans } from "laravel-vue-i18n"
 import Icon from "../Icon.vue"
 import { faSpinnerThird } from '@fad'
-import { router } from '@inertiajs/vue3'
+import { router, Link } from '@inertiajs/vue3'
 import { faInfoCircle, faPallet, faCircle, faTimesCircle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -45,6 +45,12 @@ const props = defineProps<{
                 name: string
                 parameters: {}
             }
+            warning?: {
+                route_target?: { name: string; parameters?: Record<string, any> }
+                tooltip?: string
+                value?: number | string
+                indicator?: boolean
+            } | null
         }[]
         children?: {
             label: string
@@ -211,7 +217,7 @@ const clickVisitRoute = (visitRoute: {
                     {{ box.label }}
                 </div>
 
-                <div class="flex gap-x-4">
+                <div class="flex gap-x-4 justify-center">
                     <div
                         v-for="tab in box.tabs"
                         :key="tab.tab_slug"
@@ -232,13 +238,25 @@ const clickVisitRoute = (visitRoute: {
                                 </template>
                             </div>
 
-                            <div class="relative text-center">
+                            <div class="flex items-center gap-1">
                                 <span
                                     class="inline opacity-80 group-hover:opacity-100 transition-all"
                                     :class="!(['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) || tab.visitRoute) ? '' : 'group-hover:underline'"
                                 >
                                   {{ renderLabelBasedOnType(tab.value, tab.type, { currency_code: box.currency_code }) }}
                                 </span>
+
+                                <!-- Section: Warning -->
+                                <Link v-if="tab.warning"
+                                    :href="tab.warning?.route_target?.name ? route(tab.warning.route_target.name, tab.warning.route_target.parameters ?? {}) : '#'"
+                                    class="relative aspect-square w-5 flex items-center justify-center bg-purple-300 text-purple-700 rounded text-[10px] leading-none opacity-70 hover:opacity-100 no-underline"
+                                    v-tooltip="tab.warning?.tooltip"
+                                    @click.stop
+                                >
+                                    {{ tab.warning.value }}
+                                    <FontAwesomeIcon v-if="tab.warning?.indicator" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                    <FontAwesomeIcon v-if="tab.warning?.indicator" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
+                                </Link>
                             </div>
 
                             <template v-if="tab.indicator">
@@ -367,11 +385,25 @@ const clickVisitRoute = (visitRoute: {
                             </div>
 
                             <div class="text-center relative">
-                                <div
-                                    class="text-xl font-semibold tabular-nums mb-1"
-                                    :style="tab.tab_slug === props.current ? { color: layoutStore.app.theme[4] } : {}"
-                                >
-                                    {{ renderLabelBasedOnType(tab.value, tab.type, { currency_code: box.currency_code }) }}
+                                <div class="flex items-center justify-center gap-1">
+                                    <div
+                                        class="text-xl font-semibold tabular-nums mb-1"
+                                        :style="tab.tab_slug === props.current ? { color: layoutStore.app.theme[4] } : {}"
+                                    >
+                                        {{ renderLabelBasedOnType(tab.value, tab.type, { currency_code: box.currency_code }) }}
+                                    </div>
+
+                                    <!-- Section: Warning (Mobile) -->
+                                    <Link v-if="tab.warning"
+                                        :href="tab.warning?.route_target?.name ? route(tab.warning.route_target.name, tab.warning.route_target.parameters ?? {}) : '#'"
+                                        class="relative bg-purple-300 text-purple-700 rounded px-1.5 text-xs opacity-70 hover:opacity-100 mb-1"
+                                        v-tooltip="tab.warning?.tooltip"
+                                        @click.stop
+                                    >
+                                        {{ tab.warning.value }}
+                                        <FontAwesomeIcon v-if="tab.warning?.indicator" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                        <FontAwesomeIcon v-if="tab.warning?.indicator" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
+                                    </Link>
                                 </div>
 
                                 <template v-if="tab.indicator">

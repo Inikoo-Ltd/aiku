@@ -160,7 +160,8 @@ class ShowDispatchHub extends OrgAction
                             'name'       => 'grp.org.warehouses.show.dispatching.backlog',
                             'parameters' => $routeParameters
                         ],
-                        'label' => __('Dispatching'),
+                        'icon'  => ['fal', 'fa-arrow-from-left'],
+                        'label' => __('Goods out'),
                     ]
                 ]
             ]

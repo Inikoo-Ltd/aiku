@@ -12,7 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateUsers;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\SysAdmin\User\UserAuthTypeEnum;
-use App\Http\Resources\SysAdmin\UsersResource;
+use App\Http\Resources\SysAdmin\User\UsersResource;
 use App\Models\SysAdmin\User;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;

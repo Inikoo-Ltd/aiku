@@ -32,9 +32,8 @@ class LocationOrgStocksResource extends JsonResource
 
     public function toArray($request): array
     {
-        /** @var LocationOrgStock */ 
         $locationOrgStock = $this->resource;
-        
+
         $location = $locationOrgStock->location;
 
         $locationData = [

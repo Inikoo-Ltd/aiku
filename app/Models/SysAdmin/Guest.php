@@ -12,7 +12,6 @@ use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\Timesheet;
 use App\Models\HumanResources\TimeTracker;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -62,7 +62,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\GuestStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, TimeTracker> $timeTrackers
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Timesheet> $timesheets
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read \App\Models\SysAdmin\User|null $user
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\User> $users
  * @method static \Database\Factories\SysAdmin\GuestFactory factory($count = null, $state = [])
@@ -81,15 +80,15 @@ class Guest extends Model implements HasMedia, Auditable
     use SoftDeletes;
     use HasFactory;
     use HasHistory;
-    use HasUniversalSearch;
+    use Searchable;
 
 
     protected $casts = [
-        'data'          => 'array',
-        'date_of_birth' => 'datetime:Y-m-d',
-        'status'        => 'boolean',
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'data'            => 'array',
+        'date_of_birth'   => 'datetime:Y-m-d',
+        'status'          => 'boolean',
+        'fetched_at'      => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
@@ -97,6 +96,20 @@ class Guest extends Model implements HasMedia, Auditable
     ];
 
     protected $guarded = [];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'                       => (string)$this->id,
+            'status'                   => $this->status,
+            'contact_name'             => (string)$this->contact_name,
+            'company_name'             => (string)$this->company_name,
+            'email'                    => (string)$this->email,
+            'phone'                    => (string)$this->phone,
+            'identity_document_number' => (string)$this->identity_document_number,
+            'created_at'               => $this->created_at->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {
@@ -129,7 +142,10 @@ class Guest extends Model implements HasMedia, Auditable
 
     public function getUser(): ?User
     {
-        return $this->morphToMany(User::class, 'model', 'user_has_models')->wherePivot('status', true)->withTimestamps()->first();
+        /** @var User $user */
+        $user = $this->morphToMany(User::class, 'model', 'user_has_models')->wherePivot('status', true)->withTimestamps()->first();
+
+        return $user;
     }
 
     public function users(): MorphToMany

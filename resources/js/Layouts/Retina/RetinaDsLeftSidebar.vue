@@ -110,7 +110,7 @@ const handleToggleLeftBar = () => {
             <RetinaLeftSidebarNavigation>
                 <template #default>
                     <a
-                        v-if="layout.retina.portal_link"
+                        v-if="layout.retina.portal_link && layout.retina.portal_link !== ''"
                         :href="layout.retina.portal_link"
                         class="relative group hover:underline rounded-md py-2 w-full group flex items-center text-sm gap-x-2" xclass="[open ? 'bg-black/25' : '']"
                         :class="

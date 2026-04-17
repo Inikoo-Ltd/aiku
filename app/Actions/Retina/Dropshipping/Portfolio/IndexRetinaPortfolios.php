@@ -484,7 +484,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
                 'bundle_routes' => [
                     'store' => [
-                        'name'       => 'retina.models.dropshipping.bundles.store',
+                        'name'       => 'retina.models.dropshipping.bundles.store_or_update',
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ]
@@ -513,9 +513,9 @@ class IndexRetinaPortfolios extends RetinaAction
                             ]
                             ],
                              'edit' => [
-                            'name'       => 'retina.dropshipping.customer_sales_channels.bundles.show',
-                            'parameters' => [
-                                'customerSalesChannel' => $this->customerSalesChannel->slug
+                                'name'       => 'retina.dropshipping.customer_sales_channels.bundles.show',
+                                'parameters' => [
+                                    'customerSalesChannel' => $this->customerSalesChannel->slug
                             ]
                         ],
                     ],
@@ -544,7 +544,8 @@ class IndexRetinaPortfolios extends RetinaAction
                 ],
 
                 'shop_data' => [
-                    'currency_code' => $shop->currency->symbol,
+                    'currency_symbol' => $shop->currency->symbol,
+                    'currency_code'      => $shop->currency->code,
                 ],
 
                 'order_route'    => isset($this->platform) && $this->platform->type === PlatformTypeEnum::MANUAL ? [

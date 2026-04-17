@@ -9,7 +9,7 @@
 namespace App\Actions\SysAdmin\User;
 
 use App\Actions\Traits\WithActionUpdate;
-use App\Http\Resources\SysAdmin\UsersResource;
+use App\Http\Resources\SysAdmin\User\UsersResource;
 use App\Models\SysAdmin\User;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;

@@ -9,7 +9,8 @@ import {
     faFolderDownload,faQuoteLeft,
     faSync,
     faSearch,
-    faBadgePercent
+    faBadgePercent,
+    faTools
 } from '@fal'
 import { ref, computed, inject } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -69,7 +70,8 @@ library.add(
     faFolderDownload,
     faQuoteLeft,
     faMagnifyingGlass,
-    faBadgePercent
+    faBadgePercent,
+    faTools
 )
 
 const props = defineProps<{

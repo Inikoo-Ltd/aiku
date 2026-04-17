@@ -20,9 +20,8 @@ trait WithInvoiceTransactionFulfilmentExtraData
 {
     public function getServicePalletInfo(array $data, bool $isRetina): ?array
     {
-        $palletId     = Arr::get($data, 'handling_service_date');
-        $handlingDate = Arr::get($data, 'handling_service_pallet_id');
-
+        $handlingDate   = Arr::get($data, 'handling_service_date');
+        $palletId       = Arr::get($data, 'handling_service_pallet_id');
 
         $pallet = null;
         if ($palletId) {
@@ -31,7 +30,6 @@ trait WithInvoiceTransactionFulfilmentExtraData
         if (!$pallet) {
             return null;
         }
-
 
         $palletReference = $pallet->reference;
         $palletRoute     = $isRetina ?
@@ -65,7 +63,6 @@ trait WithInvoiceTransactionFulfilmentExtraData
         return $servicePalletInfo;
     }
 
-
     public function getRentedScopeInfo(?int $recurring_bill_transaction_id, ?string $modelType, ?int $modelId, bool $isRetina): ?array
     {
 
@@ -73,7 +70,6 @@ trait WithInvoiceTransactionFulfilmentExtraData
         if (!$recurring_bill_transaction_id || !$modelType) {
             return null;
         }
-
 
         $recurringBillTransaction = RecurringBillTransaction::find($recurring_bill_transaction_id);
 

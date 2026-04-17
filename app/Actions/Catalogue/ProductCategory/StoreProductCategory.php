@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\ProductCategory;
 
-use App\Actions\Catalogue\ProductCategory\Search\ProductCategoryRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
@@ -89,7 +88,6 @@ class StoreProductCategory extends OrgAction
             $this->processCatalogueImage($imageData, $productCategory);
         }
 
-        ProductCategoryRecordSearch::dispatch($productCategory);
         $this->productCategoryHydrators($productCategory);
         $this->masterProductCategoryUsageHydrators($productCategory, $productCategory->masterProductCategory);
 

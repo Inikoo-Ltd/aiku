@@ -143,7 +143,7 @@ class ShowProduct extends OrgAction
         $shop           = $product->shop;
         $isExternalShop = $shop->type == ShopTypeEnum::EXTERNAL;
         $hasMaster      = (bool)$product->masterProduct;
-        
+
         $miniBreadcrumbs = [];
         if ($product->department) {
             $miniBreadcrumbs[] = [
@@ -222,6 +222,21 @@ class ShowProduct extends OrgAction
         ];
 
         $actions = [];
+
+        $actions[] = [
+            'type'    => 'button',
+            'style'   => 'edit',
+            'tooltip' => __('Sync Product Images from Trade Units'),
+            'label'   => __('Repair Images'),
+            'icon'    => 'fal fa-tools',
+            'route'   => [
+                'name'          => 'grp.models.product.repair_product_images',
+                'method'        => 'patch',
+                'parameters'    => [
+                    'product' => $product->id
+                ],
+            ]
+        ];
 
         if ($this->canEdit) {
             $actions[] = [

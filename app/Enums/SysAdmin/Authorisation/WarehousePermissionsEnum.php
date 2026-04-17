@@ -18,19 +18,20 @@ enum WarehousePermissionsEnum: string
 
     case LOCATIONS_VIEW = 'locations.view';
 
-    case STOCKS      = 'stocks';
+    case STOCKS = 'stocks';
     case STOCKS_EDIT = 'stocks.edit';
     case STOCKS_VIEW = 'stocks.view';
 
 
-    case INCOMING      = 'incoming';
+    case INCOMING = 'incoming';
     case INCOMING_EDIT = 'incoming.edit';
     case INCOMING_VIEW = 'incoming.view';
 
-    case DISPATCHING      = 'dispatching';
+    case DISPATCHING = 'dispatching';
     case DISPATCHING_EDIT = 'dispatching.edit';
     case DISPATCHING_VIEW = 'dispatching.view';
 
+    case EXCEPTION_DISPATCHING = 'exception.dispatching';
 
     case FULFILMENT = 'fulfilment';
 
@@ -39,11 +40,11 @@ enum WarehousePermissionsEnum: string
     case FULFILMENT_EDIT = 'fulfilment.edit';
 
 
-    case SUPERVISOR_LOCATIONS   = 'supervisor-locations';
-    case SUPERVISOR_STOCKS      = 'supervisor-stocks';
+    case SUPERVISOR_LOCATIONS = 'supervisor-locations';
+    case SUPERVISOR_STOCKS = 'supervisor-stocks';
     case SUPERVISOR_DISPATCHING = 'supervisor-dispatching';
-    case SUPERVISOR_INCOMING    = 'supervisor-incoming';
-    case SUPERVISOR_FULFILMENT  = 'supervisor-fulfilment';
+    case SUPERVISOR_INCOMING = 'supervisor-incoming';
+    case SUPERVISOR_FULFILMENT = 'supervisor-fulfilment';
 
     public static function getAllValues(Warehouse $warehouse): array
     {

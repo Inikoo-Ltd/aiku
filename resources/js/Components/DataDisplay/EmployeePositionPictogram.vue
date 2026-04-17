@@ -343,6 +343,13 @@ const optionsJob = reactive<optionsJob>({
                 number_employees: props.options.positions.data.find(position => position.slug == 'dist-pik')?.number_employees || 0,
             },
             {
+                slug: "dist-excp-pick",
+                grade: "clerk",
+                label: trans("Replenisher"),
+                optionsType: ["warehouses"],
+                number_employees: props.options.positions.data.find(position => position.slug == "dist-excp-pik")?.number_employees || 0
+            },
+            {
                 slug: "dist-pak",
                 grade: "clerk",
                 label: trans("Packer"),

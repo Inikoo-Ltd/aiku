@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
+use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandlingBlocked;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPicked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -31,18 +32,29 @@ class UpdateDeliveryNoteStateToPicked extends OrgAction
         $oldState = $deliveryNote->state;
 
         $deliveryNote = DB::transaction(function () use ($deliveryNote) {
-            data_set($modelData, 'picked_at', now());
-            data_set($modelData, 'state', DeliveryNoteStateEnum::PICKED->value);
 
-            if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
-                UpdateOrderStateToPicked::make()->action($deliveryNote->orders->first(), $deliveryNote);
+
+            $hasWaiting = $deliveryNote->deliveryNoteItems->where('has_waiting_warehouse', true)->count() || $deliveryNote->deliveryNoteItems->where('has_waiting_crm', true)->count();
+
+            if ($hasWaiting) {
+                data_set($modelData, 'state', DeliveryNoteStateEnum::HANDLING_BLOCKED->value);
+                if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
+                    UpdateOrderStateToHandlingBlocked::make()->action($deliveryNote->orders->first(), $deliveryNote);
+                }
+            } else {
+                data_set($modelData, 'state', DeliveryNoteStateEnum::PICKED->value);
+                data_set($modelData, 'picked_at', now());
+                if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
+                    UpdateOrderStateToPicked::make()->action($deliveryNote->orders->first(), $deliveryNote);
+                }
             }
+
 
             return $this->update($deliveryNote, $modelData);
         });
 
         $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
-        $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::PICKED);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, $deliveryNote->state);
 
         return $deliveryNote;
     }

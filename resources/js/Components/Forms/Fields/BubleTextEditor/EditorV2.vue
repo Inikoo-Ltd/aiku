@@ -428,7 +428,8 @@ const onEditorClick = () => {
 }
 
 const setVariabel = (value) => {
-    const content = `<span class="mention" data-type="mention" data-id="username" contenteditable="false">{{ ${value} }}</span>`;
+    console.log(value)
+    const content = `<span class="mention" data-type="mention" data-id="${value}" contenteditable="false">${value}</span>`;
     editorInstance.value?.chain().focus().insertContent(content).run();
 };
 

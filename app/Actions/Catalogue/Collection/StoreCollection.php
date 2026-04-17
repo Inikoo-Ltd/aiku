@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\Collection;
 
-use App\Actions\Catalogue\Collection\Search\CollectionRecordSearch;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateCollections;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCollections;
 use App\Actions\OrgAction;
@@ -68,7 +67,6 @@ class StoreCollection extends OrgAction
 
         AttachCollectionToModel::make()->action($parent, $collection);
 
-        CollectionRecordSearch::dispatch($collection);
         OrganisationHydrateCollections::dispatch($collection->organisation)->delay($this->hydratorsDelay);
         GroupHydrateCollections::dispatch($collection->group)->delay($this->hydratorsDelay);
         ShopHydrateCollections::dispatch($collection->shop)->delay($this->hydratorsDelay);

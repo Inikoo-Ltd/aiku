@@ -206,9 +206,9 @@ const openBundlePanel = (product:any) => {
                         :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)" />
                     
                     <Button
-                        v-if="layout?.iris?.is_logged_in"
+                        v-if="layout?.iris?.is_logged_in && props.product.stock > 0"
                         @click.prevent="openBundlePanel(product)"
-                        class="flex items-center justify-center transition"
+                        class="flex items-center justify-center transition rounded-md"
                         type="primary"
                         size="sm"
                         v-tooltip="trans('Add to bundle')"

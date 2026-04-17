@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\ProductCategory;
 
-use App\Actions\Catalogue\ProductCategory\Search\ProductCategoryRecordSearch;
 use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -94,10 +93,6 @@ class UpdateProductCategory extends OrgAction
         }
 
         $changes = Arr::except($productCategory->getChanges(), ['updated_at']);
-
-        if (Arr::hasAny($changes, ['code', 'name', 'type'])) {
-            ProductCategoryRecordSearch::dispatch($productCategory);
-        }
 
         if (Arr::has($changes, 'state')) {
             $this->productCategoryHydrators($productCategory);
