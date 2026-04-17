@@ -53,7 +53,7 @@ class IndexAgent extends OrgAction
             ->join('shop_has_chat_agents as shca', function ($join) use ($parent) {
                 if ($parent instanceof Organisation) {
                     $join->on('shca.chat_agent_id', '=', 'chat_agents.id')->where('shca.organisation_id', $parent->id);
-                } else if ($parent instanceof Shop) {
+                } elseif ($parent instanceof Shop) {
                     $join->on('shca.chat_agent_id', '=', 'chat_agents.id')->where('shca.shop_id', $parent->id);
                 } else {
                     $join->on('shca.chat_agent_id', '=', 'chat_agents.id');

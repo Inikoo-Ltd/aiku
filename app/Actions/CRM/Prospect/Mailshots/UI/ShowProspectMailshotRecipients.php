@@ -38,37 +38,37 @@ class ShowProspectMailshotRecipients extends OrgAction
 
         $filtersStructure = [
             'prospects' => [
-                'title'   => 'Prospect Filters',
+                'title'   => __('Prospect Filters'),
                 'filters' => [
                     'never_contacted' => [
-                        'label'       => 'Never Contacted',
+                        'label'       => __('Never Contacted'),
                         'type'        => 'boolean',
-                        'description' => 'Targets prospects who have never been contacted.',
+                        'description' => __('Targets prospects who have never been contacted.'),
                     ],
                     'last_contacted' => [
-                        'label'       => 'Last Contacted',
+                        'label'       => __('Last Contacted'),
                         'type'        => 'boolean',
-                        'description' => 'Targets prospects whose last contact was a specified number of weeks ago or more.',
+                        'description' => __('Targets prospects whose last contact was a specified number of weeks ago or more.'),
                         'options'     => [
                             'weeks' => [
-                                'label' => 'Time period',
+                                'label' => __('Time period'),
                                 'presets' => [
-                                    ['label' => '1 week ago', 'value' => 'one_week_ago'],
-                                    ['label' => '2 weeks ago', 'value' => 'two_weeks_ago'],
-                                    ['label' => '3 weeks ago', 'value' => 'three_weeks_ago'],
-                                    ['label' => 'Custom date', 'value' => 'custom'],
+                                    ['label' => __('1 week ago'), 'value' => 'one_week_ago'],
+                                    ['label' => __('2 weeks ago'), 'value' => 'two_weeks_ago'],
+                                    ['label' => __('3 weeks ago'), 'value' => 'three_weeks_ago'],
+                                    ['label' => __('Custom date'), 'value' => 'custom'],
                                 ],
                                 'default' => 'three_weeks_ago',
                             ],
                         ],
                     ],
                     'sent_email_times' => [
-                        'label'       => 'Number of Emails',
+                        'label'       => __('Number of Emails'),
                         'type'        => 'boolean',
-                        'description' => 'Targeting potential prospects who have received a certain number of emails.',
+                        'description' => __('Targeting potential prospects who have received a certain number of emails.'),
                         'options'     => [
                             'count' => [
-                                'label' => 'Number of emails',
+                                'label' => __('Number of emails'),
                                 'default' => 3,
                                 'min' => 1,
                             ],

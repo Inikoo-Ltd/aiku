@@ -59,7 +59,7 @@ class UpdateWebsite extends OrgAction
             $shop = $website->shop;
             UpdateShop::run($shop, $shopUpdateData);
         }
-        
+
         $hydrateDescriptionOverview = false;
         if (Arr::has($modelData, 'description_has_overview')) {
             data_set($modelData, 'settings.catalogue_pages.description_has_overview', Arr::pull($modelData, 'description_has_overview'));
@@ -110,6 +110,10 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.script_website.header", Arr::pull($modelData, "script_website"));
         }
 
+        if (Arr::has($modelData, "welcome_message")) {
+            data_set($modelData, "settings.welcome_message", Arr::pull($modelData, "welcome_message"));
+        }
+
         // Handle LLMs.txt file upload
         if (Arr::has($modelData, 'llms_txt') && $modelData['llms_txt'] instanceof \Illuminate\Http\UploadedFile) {
             $file = Arr::pull($modelData, 'llms_txt');
@@ -135,9 +139,9 @@ class UpdateWebsite extends OrgAction
             WebsiteGenerateFamiliesOverviewPages::dispatch($website);
         }
 
-        // if (Arr::hasAny($changes, ['domain', 'settings'])) {
-        //     BreakWebsiteCache::run($website);
-        // }
+        if (Arr::hasAny($changes, ['domain', 'settings'])) {
+            BreakWebsiteCache::run($website);
+        }
 
         return $website;
     }
@@ -252,6 +256,7 @@ class UpdateWebsite extends OrgAction
             ],
             'enable_chat'              => ['sometimes', 'boolean'],
             'description_has_overview' => ['sometimes', 'boolean'],
+            'welcome_message' => ['sometimes', 'nullable', 'string'],
         ];
 
         if (!$this->strict) {

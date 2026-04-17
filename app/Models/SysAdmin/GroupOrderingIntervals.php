@@ -325,43 +325,43 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $baskets_updated_pq3
  * @property int $baskets_updated_pq4
  * @property int $baskets_updated_pq5
- * @property string $lost_revenue_other_amount_grp_currency_all
- * @property string $lost_revenue_other_amount_grp_currency_1y
- * @property string $lost_revenue_other_amount_grp_currency_1q
- * @property string $lost_revenue_other_amount_grp_currency_1m
- * @property string $lost_revenue_other_amount_grp_currency_1w
- * @property string $lost_revenue_other_amount_grp_currency_3d
- * @property string $lost_revenue_other_amount_grp_currency_ytd
- * @property string $lost_revenue_other_amount_grp_currency_qtd
- * @property string $lost_revenue_other_amount_grp_currency_mtd
- * @property string $lost_revenue_other_amount_grp_currency_wtd
- * @property string $lost_revenue_other_amount_grp_currency_tdy
- * @property string $lost_revenue_other_amount_grp_currency_lm
- * @property string $lost_revenue_other_amount_grp_currency_lw
- * @property string $lost_revenue_other_amount_grp_currency_ld
- * @property string $lost_revenue_other_amount_grp_currency_1y_ly
- * @property string $lost_revenue_other_amount_grp_currency_1q_ly
- * @property string $lost_revenue_other_amount_grp_currency_1m_ly
- * @property string $lost_revenue_other_amount_grp_currency_1w_ly
- * @property string $lost_revenue_other_amount_grp_currency_3d_ly
- * @property string $lost_revenue_other_amount_grp_currency_ytd_ly
- * @property string $lost_revenue_other_amount_grp_currency_qtd_ly
- * @property string $lost_revenue_other_amount_grp_currency_mtd_ly
- * @property string $lost_revenue_other_amount_grp_currency_wtd_ly
- * @property string $lost_revenue_other_amount_grp_currency_tdy_ly
- * @property string $lost_revenue_other_amount_grp_currency_lm_ly
- * @property string $lost_revenue_other_amount_grp_currency_lw_ly
- * @property string $lost_revenue_other_amount_grp_currency_ld_ly
- * @property string $lost_revenue_other_amount_grp_currency_py1
- * @property string $lost_revenue_other_amount_grp_currency_py2
- * @property string $lost_revenue_other_amount_grp_currency_py3
- * @property string $lost_revenue_other_amount_grp_currency_py4
- * @property string $lost_revenue_other_amount_grp_currency_py5
- * @property string $lost_revenue_other_amount_grp_currency_pq1
- * @property string $lost_revenue_other_amount_grp_currency_pq2
- * @property string $lost_revenue_other_amount_grp_currency_pq3
- * @property string $lost_revenue_other_amount_grp_currency_pq4
- * @property string $lost_revenue_other_amount_grp_currency_pq5
+ * @property numeric $lost_revenue_other_amount_grp_currency_all
+ * @property numeric $lost_revenue_other_amount_grp_currency_1y
+ * @property numeric $lost_revenue_other_amount_grp_currency_1q
+ * @property numeric $lost_revenue_other_amount_grp_currency_1m
+ * @property numeric $lost_revenue_other_amount_grp_currency_1w
+ * @property numeric $lost_revenue_other_amount_grp_currency_3d
+ * @property numeric $lost_revenue_other_amount_grp_currency_ytd
+ * @property numeric $lost_revenue_other_amount_grp_currency_qtd
+ * @property numeric $lost_revenue_other_amount_grp_currency_mtd
+ * @property numeric $lost_revenue_other_amount_grp_currency_wtd
+ * @property numeric $lost_revenue_other_amount_grp_currency_tdy
+ * @property numeric $lost_revenue_other_amount_grp_currency_lm
+ * @property numeric $lost_revenue_other_amount_grp_currency_lw
+ * @property numeric $lost_revenue_other_amount_grp_currency_ld
+ * @property numeric $lost_revenue_other_amount_grp_currency_1y_ly
+ * @property numeric $lost_revenue_other_amount_grp_currency_1q_ly
+ * @property numeric $lost_revenue_other_amount_grp_currency_1m_ly
+ * @property numeric $lost_revenue_other_amount_grp_currency_1w_ly
+ * @property numeric $lost_revenue_other_amount_grp_currency_3d_ly
+ * @property numeric $lost_revenue_other_amount_grp_currency_ytd_ly
+ * @property numeric $lost_revenue_other_amount_grp_currency_qtd_ly
+ * @property numeric $lost_revenue_other_amount_grp_currency_mtd_ly
+ * @property numeric $lost_revenue_other_amount_grp_currency_wtd_ly
+ * @property numeric $lost_revenue_other_amount_grp_currency_tdy_ly
+ * @property numeric $lost_revenue_other_amount_grp_currency_lm_ly
+ * @property numeric $lost_revenue_other_amount_grp_currency_lw_ly
+ * @property numeric $lost_revenue_other_amount_grp_currency_ld_ly
+ * @property numeric $lost_revenue_other_amount_grp_currency_py1
+ * @property numeric $lost_revenue_other_amount_grp_currency_py2
+ * @property numeric $lost_revenue_other_amount_grp_currency_py3
+ * @property numeric $lost_revenue_other_amount_grp_currency_py4
+ * @property numeric $lost_revenue_other_amount_grp_currency_py5
+ * @property numeric $lost_revenue_other_amount_grp_currency_pq1
+ * @property numeric $lost_revenue_other_amount_grp_currency_pq2
+ * @property numeric $lost_revenue_other_amount_grp_currency_pq3
+ * @property numeric $lost_revenue_other_amount_grp_currency_pq4
+ * @property numeric $lost_revenue_other_amount_grp_currency_pq5
  * @property int $registrations_with_orders_all
  * @property int $registrations_with_orders_ld
  * @property int $registrations_with_orders_tdy
@@ -436,7 +436,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $registrations_without_orders_pq3
  * @property int $registrations_without_orders_pq4
  * @property int $registrations_without_orders_pq5
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupOrderingIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupOrderingIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupOrderingIntervals query()

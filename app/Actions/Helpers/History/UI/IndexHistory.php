@@ -8,7 +8,6 @@
 
 namespace App\Actions\Helpers\History\UI;
 
-use App\Actions\SysAdmin\User\Traits\WithFormattedUserHistories;
 use App\Enums\Helpers\Audit\AuditEventEnum;
 use App\InertiaTable\InertiaTable;
 use App\Services\QueryBuilder;
@@ -23,7 +22,6 @@ class IndexHistory
 {
     use AsAction;
     use WithAttributes;
-    use WithFormattedUserHistories;
 
     public string $model;
 

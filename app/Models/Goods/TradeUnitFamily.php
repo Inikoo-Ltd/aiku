@@ -37,7 +37,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property HealthRankEnum|null $health_rank
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Goods\TradeUnitFamilyStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\TradeUnitFamilyTimeSeries> $timeSeries

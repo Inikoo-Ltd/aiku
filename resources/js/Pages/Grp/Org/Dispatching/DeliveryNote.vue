@@ -62,6 +62,7 @@ import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
 import ButtonSetAsWaiting from "@/Components/DeliveryNote/ButtonSetAsWaiting.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ButtonSelectBaysAndWaiting from "@/Components/DeliveryNote/ButtonSelectBaysAndWaiting.vue"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 
 library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes, faClipboardCheck, faClipboardListCheck);
@@ -286,6 +287,10 @@ const listError = ref({
 });
 provide("listError", listError.value);
 
+// Section: to show Modal 'Add Shipment' if failed Dispatch (because no shipment yet)
+const openModalAddShipment = ref(false);
+provide("openModalAddShipment", openModalAddShipment);
+
 // const isModalEditAddress = ref(false)
 const xxxCopyAddress = ref({...props.address.delivery})
 
@@ -354,6 +359,23 @@ onMounted(() => {
 				class="text-yellow-500 animate-bounce"
 				fixed-width
 				aria-hidden="true" />
+		</template>
+		
+		<template #button-finalise-and-dispatch="{ action }">
+			<ButtonWithLink
+				:label="action.label"
+				:style="action.style"
+				v-tooltip="action.tooltip"
+				:routeTarget="action.route"
+				@error="(e) => {
+					notify({
+						title: ctrans('Something went wrong'),
+						text: e.message || 'Please try again later or contact administrator.',
+						type: 'error',
+					}),
+					openModalAddShipment = true
+				}"
+			/>
 		</template>
 
 		<template #otherBefore v-if="!box_stats.is_replacement">

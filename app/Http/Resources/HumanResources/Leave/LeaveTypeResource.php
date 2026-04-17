@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Resources\HumanResources;
+namespace App\Http\Resources\HumanResources\Leave;
 
 use App\Enums\HumanResources\Leave\LeaveCategoryEnum;
 use Illuminate\Contracts\Support\Arrayable;

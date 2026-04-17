@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\Dropshipping\Bundle\UI;
 
 use App\Actions\RetinaAction;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Redirector;
 use Lorisleiva\Actions\ActionRequest;
@@ -22,7 +23,14 @@ class RedirectIrisToRetinaBundle extends RetinaAction
     public function asController(ActionRequest $request): RedirectResponse|Redirector
     {
         $this->initialisation($request);
-        $customerSalesChannel = $this->customer->customerSalesChannels->first();
+
+        $platform = $request->query('platform');
+
+        if ($platform) {
+            return redirect("/app/dropshipping/channels/$platform/my-products?tab=bundles");
+        }
+
+        $customerSalesChannel = $this->customer->customerSalesChannels()->where('status', CustomerSalesChannelStatusEnum::OPEN)->first();
 
         return redirect("/app/dropshipping/channels/$customerSalesChannel->slug/my-products?tab=bundles");
     }

@@ -52,7 +52,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $customer_client_id
  * @property string $reference
  * @property ReturnStateEnum $state
- * @property string|null $weight actual weight, grams
+ * @property numeric|null $weight actual weight, grams
  * @property int $number_items current number of items
  * @property int|null $inspector_id Employee who inspected the return
  * @property int|null $processed_id Employee who processed the return
@@ -74,10 +74,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Customer $customer
+ * @property-read Customer|null $customer
  * @property-read CustomerClient|null $customerClient
  * @property-read CustomerSalesChannel|null $customerSalesChannel
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read User|null $inspector
  * @property-read Collection<int, Order> $orders
  * @property-read Organisation $organisation
@@ -85,10 +85,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read User|null $receiver
  * @property-read Address|null $returnAddress
  * @property-read Collection<int, \App\Models\GoodsIn\ReturnItem> $returnItems
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @property-read \App\Models\GoodsIn\ReturnStats|null $stats
  * @property-read UniversalSearch|null $universalSearch
- * @property-read Warehouse $warehouse
+ * @property-read Warehouse|null $warehouse
  * @method static Builder<static>|OrderReturn newModelQuery()
  * @method static Builder<static>|OrderReturn newQuery()
  * @method static Builder<static>|OrderReturn onlyTrashed()

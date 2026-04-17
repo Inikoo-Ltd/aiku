@@ -11,7 +11,6 @@ namespace App\Actions\SysAdmin\Guest\UI;
 use App\Actions\SysAdmin\User\GetUserGroupScopeJobPositionsData;
 use App\Actions\SysAdmin\User\GetUserOrganisationScopeJobPositionsData;
 use App\Actions\Traits\UI\WithPermissionsPictogram;
-use App\Actions\Utils\GetLocationFromIp;
 use App\Models\SysAdmin\Guest;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -44,8 +43,7 @@ class GetGuestShowcase
                 'permissions_pictogram' => $this->getPermissionsPictogram($user, $permissionsGroupData, $jobPositionsOrganisationsData),
                 'last_active_at'        => $user->stats->last_active_at,
                 'last_login'            => [
-                    'ip'          => $user->stats->last_login_ip,
-                    'geolocation' => GetLocationFromIp::run($user->stats->last_login_ip)
+                    'ip'          => $user->stats->last_login_ip
                 ]
             ]
         ];

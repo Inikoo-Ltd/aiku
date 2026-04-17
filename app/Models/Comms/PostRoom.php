@@ -31,7 +31,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read \App\Models\Comms\PostRoomIntervals|null $intervals
  * @property-read Collection<int, \App\Models\Comms\OrgPostRoom> $orgPostRooms
  * @property-read Collection<int, \App\Models\Comms\Outbox> $outboxes

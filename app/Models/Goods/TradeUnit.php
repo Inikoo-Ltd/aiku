@@ -110,7 +110,7 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_extra_i8n
  * @property string|null $description_title
  * @property string|null $description_extra
- * @property string|null $cost_price
+ * @property numeric|null $cost_price
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
  * @property int|null $art1_image_id
@@ -137,7 +137,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $bottomImage
  * @property-read Collection<int, Brand> $brands
  * @property-read Media|null $frontImage
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Media|null $image
  * @property-read MediaCollection<int, Media> $images
  * @property-read Collection<int, \App\Models\Goods\Ingredient> $ingredients

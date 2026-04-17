@@ -20,10 +20,22 @@ const props = defineProps<{
 	organisationSlug?: string
 }>()
 
-const orgSlug = computed(() => props.organisationSlug ?? route().params.organisation as string)
+const orgSlug = computed(() =>
+	props.organisationSlug ??
+	(route().params as any)?.organisation ??
+	(route().params as any)?.org ??
+	(route().params as any)?.organisationSlug
+)
 
 function editRoute(id: number) {
-	return route("grp.org.chat.agents.edit", [orgSlug.value, id])
+	if (!orgSlug.value) {
+		return "#"
+	}
+
+	return route("grp.org.chat.agents.edit", {
+		organisation: orgSlug.value,
+		agentId: id,
+	})
 }
 
 const waitEchoReady = (callback: Function) => {
@@ -104,7 +116,7 @@ onMounted(() => {
 
 		<template #cell(action)="{ item }">
 			<div class="flex items-center gap-2">
-				<Link :href="editRoute(item.id)">
+				<Link v-if="orgSlug" :href="editRoute(item.id)">
 					<Button
 						v-tooltip="trans('Edit Agent')"
 						type="secondary"
@@ -112,9 +124,10 @@ onMounted(() => {
 						size="s" />
 				</Link>
 				<ModalConfirmationDelete
+					v-if="orgSlug"
 					:routeDelete="{
 						name: 'grp.org.chat.agents.delete',
-						parameters: [orgSlug.value, item.id],
+						parameters: [orgSlug, item.id],
 					}"
 					:title="trans('Are you sure you want to delete this agent?')"
 					:noLabel="trans('Delete')"

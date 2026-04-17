@@ -26,8 +26,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Model|\Eloquent $bundleable
- * @property-read Customer $customer
- * @property-read CustomerSalesChannel $customerSalesChannel
+ * @property-read Customer|null $customer
+ * @property-read CustomerSalesChannel|null $customerSalesChannel
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\BundleItem> $items
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Bundle newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Bundle newQuery()

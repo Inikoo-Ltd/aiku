@@ -19,6 +19,8 @@ import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import Image from '../Image.vue';
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { useLocaleStore } from "@/Stores/locale"
+import { useConfirm, ConfirmDialog } from "primevue"
+
 const props = defineProps<{
     symbol: string
     code: string
@@ -54,11 +56,11 @@ const resolveParams = (config: any) => {
 
     return config.parameters || {}
 }
-
+const aiGenerateImagesError = ref<string | null>(null)
 const generateAIImages = async () => {
     try {
         isGeneratingAI.value = true
-
+        aiGenerateImagesError.value = null
         const payload = {
             images: selectedMediaForAI.value.map(m => m.image_id),
             prompt: aiPrompt.value
@@ -105,12 +107,14 @@ const generateAIImages = async () => {
         })
 
     } catch (e) {
+        console.log("e", e)
         console.error("e", e)
-        notify({
-            title: trans('Error'),
-            text: trans('Failed to generate AI'),
-            type: 'error'
-        })
+         aiGenerateImagesError.value = 'The OpenAI service is currently unreachable, please try again later.'
+        // notify({
+        //     title: trans('Error'),
+        //     text: trans('Failed to generate AI'),
+        //     type: 'error'
+        // })
     } finally {
         isGeneratingAI.value = false
     }
@@ -373,6 +377,15 @@ const submitBundle = async () => {
                     type: 'success'
                 })
 
+                const selectedChannel = customerChannelOptions.value.find(
+                    c => c.customer_sales_channel_id === customerChannelsId.value
+                )
+                if (selectedChannel) {
+                    localStorage.setItem('layout_dropshipping', JSON.stringify({
+                        currentPlatform: selectedChannel.customer_sales_channel_slug
+                    }))
+                }
+
                 bundle.step.value = 1
                 selectedMedia.value = []
                 selectedMediaIds.value = []
@@ -393,6 +406,57 @@ const submitBundle = async () => {
             },
         }
     )
+}
+
+const confirm = useConfirm()
+
+const handleClose = () => {
+    confirm.require({
+        message: 'close this modal will discard this bundle. You’ll need to start again.',
+        header: 'Discard bundle?',
+        acceptLabel: 'Discard',
+        rejectLabel: 'Stay',        
+        accept: () => {
+            handleDelete()
+        },
+    })
+    
+}
+
+const handleDelete = () => {
+    const routeConfig = bundleRoutes.delete
+    const routeParams = {
+        ...resolveParams(routeConfig),
+        bundle: bundle.bundle_id.value
+    }
+
+    router.delete(route(routeConfig.name, routeParams), {
+        preserveScroll: true,
+
+        onSuccess: () => {
+            bundle.resetBundle()
+            bundle.products.value = []
+            selectedMedia.value = []
+            selectedMediaIds.value = []
+            selectedMediaForAI.value = []
+            customerChannelsId.value = null
+            bundle.step.value = 1
+            bundle.close()
+            notify({
+                title: trans('Success'),
+                // text: trans('Failed to delete bundle'),
+                type: 'success'
+            })
+        },
+
+        onError: () => {
+            notify({
+                title: trans('Error'),
+                text: trans('Failed to delete bundle'),
+                type: 'error'
+            })
+        }
+    })
 }
 
 const handleBack = () => {
@@ -487,6 +551,27 @@ watch(customerChannelsId, (val) => {
         bundle.calculateBundle()
     }
 })
+watch(
+    selectedMedia,
+    (val) => {
+        if (!val.length) return
+
+        let found = false
+
+        val.forEach((img, i) => {
+            if (img.is_main && !found) {
+                found = true
+            } else {
+                img.is_main = false
+            }
+        })
+
+        if (!found) {
+            val[0].is_main = true
+        }
+    },
+    { deep: true }
+)
 </script>
 
 <template>
@@ -495,9 +580,18 @@ watch(customerChannelsId, (val) => {
             <template v-if="bundle.step.value === 1">
                 <!-- HEADER -->
                 <div class="p-4 border-b flex justify-between items-center">
-                    <div class="font-semibold text-lg">
-                        Create Your Bundle
+                    <div class="flex items-center gap-2">
+                        <div class="font-semibold text-lg">
+                            Create Your Bundle
+                        </div>
+
+                        <!-- BETA BADGE -->
+                        <span class="text-[10px] px-2 py-[2px] rounded-full 
+                                    bg-red-500 text-white font-semibold tracking-wide">
+                            {{trans('BETA VERSION')}}
+                        </span>
                     </div>
+
                     <button @click="bundle.close()">✕</button>
                 </div>
 
@@ -529,7 +623,9 @@ watch(customerChannelsId, (val) => {
 
                             <InputText v-model="bundle.title.value" type="text" class="w-full pr-10 text-base p-2"
                                 :placeholder="ctrans('Bundle Title')" required />
-
+                            <div v-if="bundle.aiTitleError" class="text-xs text-red-500 mt-1">
+                                {{ bundle.aiTitleError }}
+                            </div>
                             <!-- AI ICON BUTTON -->
                             <Button icon="fal fa-sparkles" type="button" @click="bundle.generateAITitle" :tooltip="trans('Generate AI')"  :loading="bundle.isGeneratingAI.value"
                                 :disabled="isGeneratingAI || !bundle.products.value.length" class="absolute right-2 top-1/2 -translate-y-1/2 
@@ -653,7 +749,7 @@ watch(customerChannelsId, (val) => {
                         </div>
 
                         <button
-                            @click="bundle.close()"
+                            @click="handleClose"
                             class="text-gray-500 hover:text-red-500"
                         >
                             <FontAwesomeIcon icon="fal fa-times" />
@@ -669,7 +765,9 @@ watch(customerChannelsId, (val) => {
 
                         <Textarea v-model="bundle.description.value" rows="6" autoResize class="w-full mt-1"
                             placeholder="Input your description" />
-
+                        <div v-if="bundle.aiDescError" class="text-xs text-red-500 mt-1">
+                            {{ bundle.aiDescError }}
+                        </div>
                         <div class="flex justify-between items-center mt-2">
 
                             <div class="text-xs text-gray-400">
@@ -837,12 +935,66 @@ watch(customerChannelsId, (val) => {
                         <Textarea v-model="aiPrompt" rows="3" class="w-full" placeholder="Input description" />
                     </div>
 
+                    <div v-if="aiGenerateImagesError" class="text-xs text-red-500 mt-1">
+                        {{ aiGenerateImagesError }}
+                    </div>
+
                     <template #footer>
                         <Button label="Generate" @click="generateAIImages" :loading="isGeneratingAI"
                             :disabled="!selectedMediaForAI.length || !aiPrompt" />
                     </template>
 
                 </Dialog>
+                <ConfirmDialog>
+                    <template #container="{ message, acceptCallback, rejectCallback }">
+                        <div class="p-5 w-[360px]">
+
+                            <!-- ICON -->
+                            <div class="flex justify-center mb-3">
+                               <FontAwesomeIcon
+                                    :icon="message.data?.type === 'danger'
+                                        ? 'fas fa-exclamation-triangle'
+                                        : 'fas fa-question-circle'"
+                                    class="text-3xl text-red-500"
+                                />
+                            </div>
+
+                            <!-- TITLE -->
+                            <div class="text-center font-semibold text-lg mb-2">
+                                {{ message.header }}
+                            </div>
+
+                            <!-- MESSAGE -->
+                            <div class="text-center text-sm text-gray-500 mb-5 leading-relaxed">
+                                {{ message.message }}
+                            </div>
+
+                            <!-- ACTIONS -->
+                            <div class="flex justify-center gap-3">
+
+                                <!-- CANCEL -->
+                                <button
+                                    @click="rejectCallback"
+                                    class="px-4 py-2 text-sm border rounded-md hover:bg-gray-100"
+                                >
+                                    {{ message.rejectLabel || 'Cancel' }}
+                                </button>
+
+                                <!-- ACCEPT -->
+                                <button
+                                    @click="acceptCallback"
+                                    :class="[
+                                        'px-4 py-2 text-sm text-white rounded-md bg-red-500 hover:bg-red-600'
+                                    ]"
+                                >
+                                    {{ message.acceptLabel || 'Yes' }}
+                                </button>
+
+                            </div>
+
+                        </div>
+                    </template>
+                </ConfirmDialog>
             </template>
         </div>
     </Transition>

@@ -60,15 +60,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_payments_type_refund_state_cancelled
  * @property int $number_payments_type_refund_state_error
  * @property int $number_payments_type_refund_state_declined
- * @property string $amount_paid_balance amount_successfully_paid-amount_returned
- * @property string $amount_successfully_paid
- * @property string $amount_refunded
- * @property string $org_amount_paid_balance organisation currency, amount_successfully_paid-amount_returned
- * @property string $org_amount_successfully_paid
- * @property string $org_amount_refunded
- * @property string $grp_amount_paid_balance Group currency, amount_successfully_paid-amount_returned
- * @property string $grp_amount_successfully_paid
- * @property string $grp_amount_refunded
+ * @property numeric $amount_paid_balance amount_successfully_paid-amount_returned
+ * @property numeric $amount_successfully_paid
+ * @property numeric $amount_refunded
+ * @property numeric $org_amount_paid_balance organisation currency, amount_successfully_paid-amount_returned
+ * @property numeric $org_amount_successfully_paid
+ * @property numeric $org_amount_refunded
+ * @property numeric $grp_amount_paid_balance Group currency, amount_successfully_paid-amount_returned
+ * @property numeric $grp_amount_successfully_paid
+ * @property numeric $grp_amount_refunded
  * @property int $number_credit_transactions
  * @property int $number_customers_with_balances
  * @property int $number_customers_with_positive_balances
@@ -79,7 +79,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_top_ups_status_fail
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static Builder<static>|ShopAccountingStats newModelQuery()
  * @method static Builder<static>|ShopAccountingStats newQuery()
  * @method static Builder<static>|ShopAccountingStats query()

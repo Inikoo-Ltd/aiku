@@ -1,15 +1,16 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 16 Apr 2026 03:44:41 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Thu, 16 Apr 2026 19:26:07 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\SysAdmin\User;
+namespace App\Actions\Catalogue\Product\Search;
 
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetUserSearchSchema
+class GetProductSearchSchema
 {
     use AsObject;
 
@@ -23,19 +24,31 @@ class GetUserSearchSchema
                         'type' => 'string',
                     ],
                     [
-                        'name' => 'username',
+                        'name' => 'shop_id',
+                        'type' => 'int32',
+                    ],
+                    [
+                        'name' => 'code',
                         'type' => 'string',
                     ],
                     [
-                        'name' => 'contact_name',
+                        'name' => 'name',
                         'type' => 'string',
                     ],
                     [
-                        'name' => 'email',
+                        'name' => 'description',
                         'type' => 'string',
                     ],
                     [
-                        'name' => 'status',
+                        'name' => 'state',
+                        'type' => 'string',
+                    ],
+                    [
+                        'name' => 'description_extra',
+                        'type' => 'string',
+                    ],
+                    [
+                        'name' => 'is_for_sale',
                         'type' => 'bool',
                     ],
                     [
@@ -51,7 +64,7 @@ class GetUserSearchSchema
                 'default_sorting_field' => 'created_at',
             ],
             'search-parameters' => [
-                'query_by' => 'username,contact_name,email'
+                'query_by' => 'code,name,description,description_extra'
             ],
         ];
     }

@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Organisation $organisation
- * @property-read User $user
+ * @property-read User|null $user
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprover active()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprover byOrganisation(\App\Models\SysAdmin\Organisation $organisation)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprover bySequence(int $sequence)

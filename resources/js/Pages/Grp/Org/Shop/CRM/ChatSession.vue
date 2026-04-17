@@ -3,10 +3,10 @@ import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faComments, faCircle, faUser, faRobot, faHeadset, faCog } from '@fal'
+import { faComments, faCircle, faUser, faRobot, faHeadset, faCog, faPaperclip, faImage, faDownload } from '@fal'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { PageHeadingTypes } from '@/types/PageHeading'
-library.add(faComments, faCircle, faUser, faRobot, faHeadset, faCog)
+library.add(faComments, faCircle, faUser, faRobot, faHeadset, faCog, faPaperclip, faImage, faDownload)
 
 const props = defineProps<{
     title: string
@@ -24,6 +24,7 @@ const props = defineProps<{
     messages: Array<{
         id: number
         message_text: string | null
+        message_type: string
         sender_type: string
         is_agent: boolean
         is_guest: boolean
@@ -31,6 +32,11 @@ const props = defineProps<{
         is_system: boolean
         is_ai: boolean
         is_read: boolean
+        media_url: string | null
+        file_name: string | null
+        file_size: number | null
+        file_mime: string | null
+        download_route: { url: string } | null
         created_at: string
     }>
 }>()
@@ -43,7 +49,11 @@ const statusColors: Record<string, string> = {
     closed: 'bg-gray-100 text-gray-600',
 }
 
-function senderLabel(msg: any): string {
+function isFromAgent(msg: typeof props.messages[0]): boolean {
+    return msg.is_agent
+}
+
+function senderLabel(msg: typeof props.messages[0]): string {
     if (msg.is_agent) return 'Agent'
     if (msg.is_ai) return 'AI'
     if (msg.is_system) return 'System'
@@ -53,6 +63,13 @@ function senderLabel(msg: any): string {
 
 function formatTimestamp(raw: string): string {
     return new Date(raw).toLocaleString()
+}
+
+function formatFileSize(bytes: number | null): string {
+    if (!bytes) return ''
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 </script>
 
@@ -90,29 +107,55 @@ function formatTimestamp(raw: string): string {
             <template v-for="msg in messages" :key="msg.id">
                 <div
                     v-if="!msg.is_system && !msg.is_ai"
-                    :class="[
-                        'flex',
-                        (msg.is_agent || msg.is_user) ? 'justify-end' : 'justify-start'
-                    ]"
+                    :class="['flex', isFromAgent(msg) ? 'justify-end' : 'justify-start']"
                 >
                     <div
                         :class="[
                             'max-w-xs md:max-w-md lg:max-w-lg rounded-2xl px-4 py-2.5 shadow-sm',
-                            (msg.is_agent || msg.is_user)
-                                ? 'bg-org-500 text-white rounded-br-sm'
+                            isFromAgent(msg)
+                                ? 'bg-indigo-500 text-white rounded-br-sm'
                                 : 'bg-white text-gray-800 rounded-bl-sm border border-gray-100'
                         ]"
                     >
                         <div class="text-[11px] font-semibold mb-0.5 opacity-70">
                             {{ senderLabel(msg) }}
                         </div>
-                        <p class="text-sm whitespace-pre-wrap break-words">
-                            {{ msg.message_text || '—' }}
-                        </p>
+
+                        <template v-if="msg.message_type === 'image' && msg.media_url">
+                            <img
+                                :src="msg.media_url"
+                                class="rounded-lg max-w-full max-h-64 object-contain"
+                                alt="image"
+                            />
+                        </template>
+
+                        <template v-else-if="msg.message_type === 'file' && msg.download_route">
+                            <a
+                                :href="msg.download_route.url"
+                                target="_blank"
+                                :class="[
+                                    'flex items-center gap-x-2 text-sm underline',
+                                    isFromAgent(msg) ? 'text-white/90' : 'text-indigo-600'
+                                ]"
+                            >
+                                <FontAwesomeIcon icon="fal fa-paperclip" />
+                                <span>{{ msg.file_name || 'Download file' }}</span>
+                                <span v-if="msg.file_size" class="text-xs opacity-60">
+                                    ({{ formatFileSize(msg.file_size) }})
+                                </span>
+                            </a>
+                        </template>
+
+                        <template v-else>
+                            <p class="text-sm whitespace-pre-wrap break-words">
+                                {{ msg.message_text || '—' }}
+                            </p>
+                        </template>
+
                         <div
                             :class="[
                                 'text-[10px] mt-1 text-right',
-                                (msg.is_agent || msg.is_user) ? 'text-white/60' : 'text-gray-400'
+                                isFromAgent(msg) ? 'text-white/60' : 'text-gray-400'
                             ]"
                         >
                             {{ formatTimestamp(msg.created_at) }}

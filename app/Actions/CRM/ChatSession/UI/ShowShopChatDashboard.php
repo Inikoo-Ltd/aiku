@@ -10,7 +10,7 @@ namespace App\Actions\CRM\ChatSession\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Agent\UI\IndexAgent;
-use App\Actions\CRM\ChatSession\GetChatDashboardData;
+use App\Actions\CRM\ChatSession\GetShopChatDashboardData;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
 use App\Models\Catalogue\Shop;
@@ -40,8 +40,8 @@ class ShowShopChatDashboard extends OrgAction
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
         $title         = __('Chat');
-        $dashboardData = GetChatDashboardData::run($shop->organisation);
-        $agents        = IndexAgent::make()->handle($shop->organisation, 'agents');
+        $dashboardData = GetShopChatDashboardData::run($shop);
+        $agents        = IndexAgent::make()->handle($shop, 'agents');
         $routeParams   = $request->route()->originalParameters();
 
         return Inertia::render(
@@ -71,10 +71,8 @@ class ShowShopChatDashboard extends OrgAction
                         ],
                     ],
                 ],
-                'stats'            => $dashboardData['stats'],
-                'chatEnabledShops' => $dashboardData['chatEnabledShops'],
-                'table'            => $dashboardData['table'],
-                'agents'           => $agents,
+                'stats'  => $dashboardData,
+                'agents' => $agents,
             ]
         )->table(
             IndexAgent::make()->tableStructure(prefix: 'agents')

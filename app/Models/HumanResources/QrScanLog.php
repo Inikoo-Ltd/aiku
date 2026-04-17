@@ -14,8 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $employee_id
  * @property string|null $qr_token
  * @property \Illuminate\Support\Carbon $scanned_at
- * @property string|null $lat
- * @property string|null $lng
+ * @property numeric|null $lat
+ * @property numeric|null $lng
  * @property string|null $status
  * @property string|null $reason
  * @property \Illuminate\Support\Carbon|null $created_at

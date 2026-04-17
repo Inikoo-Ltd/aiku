@@ -17,6 +17,7 @@ import { faLayerGroup, faSparkles, faTrash, faImages, faUpload } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { router } from '@inertiajs/vue3';
 import { useBundle } from '@/Composables/useBundle';
+import { useConfirm, ConfirmDialog } from "primevue"
 library.add(faLayerGroup, faSparkles, faTrash, faImages, faUpload)
 
 const props = defineProps<{
@@ -198,11 +199,12 @@ const removeMedia = (media: any) => {
 const showGenerateModal = ref(false)
 const aiPrompt = ref('')
 const selectedMediaForAI = ref<any[]>([])
+const aiGenerateImagesError = ref<string | null>(null)
 
 const generateAIImages = async () => {
     try {
         isGeneratingAI.value = true
-
+        aiGenerateImagesError.value = null
         const payload = {
             images: selectedMediaForAI.value.map(m => m.image_id),
             prompt: aiPrompt.value
@@ -246,11 +248,12 @@ const generateAIImages = async () => {
             type: 'success'
         })
     } catch (e) {
-        notify({
-            title: trans('Error'),
-            text: trans('Failed to generate AI'),
-            type: 'error'
-        })
+        aiGenerateImagesError.value = trans('The OpenAI service is currently unreachable, please try again later.')
+        // notify({
+        //     title: trans('Error'),
+        //     text: trans('Failed to generate AI'),
+        //     type: 'error'
+        // })
     } finally {
         isGeneratingAI.value = false
     }
@@ -467,9 +470,49 @@ const onFileChange = (e: Event) => {
     uploadFilesLocal(target.files)
 }
 
+const confirm = useConfirm()
+
 const handleClose = () => {
-    emits('onClose')
+    confirm.require({
+        message: trans('close this modal will discard this bundle. You’ll need to start again.'),
+        header: trans('Discard bundle?'),
+        acceptLabel: 'Discard',
+        rejectLabel: 'Stay',        
+        accept: () => {
+            handleDelete()
+        },
+    })
+    
 }
+
+const handleDelete = () => {
+    router.delete(route(props.bundle_routes.delete.name, {
+        ...props.bundle_routes.delete.parameters,
+        bundle: bundle.bundle_id.value
+    }), {
+        preserveScroll: true,
+
+        onSuccess: () => {
+            bundle.resetBundle()
+            bundle.products.value = []
+            selectedMedia.value = []
+            selectedMediaIds.value = []
+            selectedMediaForAI.value = []
+            idxSubmitSuccess.value++
+            emits('onClose')
+            props.step.current = 0
+        },
+
+        onError: () => {
+            notify({
+                title: trans('Error'),
+                text: trans('Failed to delete bundle'),
+                type: 'error'
+            })
+        }
+    })
+}
+
 
 const handleBack = () => {
     props.step.current = 0
@@ -533,6 +576,27 @@ onMounted(() => {
         fetchIndexUnuploadedPortfolios()
     }
 })
+watch(
+    selectedMedia,
+    (val) => {
+        if (!val.length) return
+
+        let found = false
+
+        val.forEach((img, i) => {
+            if (img.is_main && !found) {
+                found = true
+            } else {
+                img.is_main = false
+            }
+        })
+
+        if (!found) {
+            val[0].is_main = true
+        }
+    },
+    { deep: true }
+)
 </script>
 
 <template>
@@ -542,13 +606,13 @@ onMounted(() => {
             <!-- LEFT -->
             <div>
                 <div class="text-xl font-semibold">
-                    Create Your Bundle
+                    {{ trans('Create Your Bundle') }}
                     <FontAwesomeIcon icon="fal fa-layer-group" class="text-xl text-black" fixed-width
                         aria-hidden="true" />
                 </div>
 
                 <div class="text-sm mt-1">
-                    STEP {{ step.current + 1 }}/2
+                    {{ trans('STEP') }} {{ step.current + 1 }}/2
                 </div>
             </div>
 
@@ -570,28 +634,28 @@ onMounted(() => {
 
                     <template v-else>
                         <div class="flex justify-between border-b pb-1">
-                            <span class="text-gray-500">Cost Price (Individual Purchase)</span>
+                            <span class="text-gray-500">{{trans('Cost Price (Individual Purchase)')}}</span>
                             <span class="font-medium">
                                 {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_price ?? 0) }}
                             </span>
                         </div>
 
                         <div class="flex justify-between border-b pb-1">
-                            <span class="text-gray-500">Bundle Price</span>
+                            <span class="text-gray-500">{{trans('Bundle Price')}}</span>
                             <span class="font-medium text-green-600">
                                  {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_bundle_price ?? 0) }}
                             </span>
                         </div>
 
                         <div class="flex justify-between border-b pb-1">
-                            <span class="text-gray-500">RRP</span>
+                            <span class="text-gray-500">{{trans('RRP')}}</span>
                             <span class="font-medium">
                                 {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_rrp ?? 0) }}
                             </span>
                         </div>
 
                         <div class="flex justify-between pt-1">
-                            <span class="text-gray-500">Profit</span>
+                            <span class="text-gray-500">{{trans('Profit')}}</span>
                             <span class="font-semibold text-green-600"> [{{ bundle.summary.value.profit_percentage }}%] {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.profit ?? 0) }}
                                 </span>
                         </div>
@@ -616,14 +680,16 @@ onMounted(() => {
                     <div>
                         <div class="mb-4">
                             <label class="text-sm block mb-1">
-                                Bundle Title
+                                {{trans('Bundle Title')}}
                             </label>
 
                             <div class="relative">
 
                                 <InputText v-model="bundle.title.value" type="text" class="w-full pr-10 text-base p-2"
                                     :placeholder="ctrans('Bundle Title')" required />
-
+                                <div v-if="bundle.aiTitleError" class="text-xs text-red-500 mt-1">
+                                    {{ bundle.aiTitleError }}
+                                </div>
                                 <Button type="button" @click="bundle.generateAITitle"
                                     :loading="bundle.isGeneratingAI.value"
                                     :disabled="!bundle.productIds.value.length || bundle.isGeneratingAI.value"
@@ -680,7 +746,7 @@ onMounted(() => {
                             <!-- CENTER: TITLE -->
                             <div class="text-left">
                                 <div class="text-xl font-semibold flex items-center justify-center gap-2">
-                                    Create Your Bundle
+                                    {{trans('Create Your Bundle')}}
 
                                     <FontAwesomeIcon
                                         v-tooltip="trans('Bundle generator')"
@@ -691,7 +757,7 @@ onMounted(() => {
                                 </div>
 
                                 <div class="text-sm text-gray-400">
-                                    STEP 2 / 2
+                                    {{trans('STEP')}} 2 / 2
                                 </div>
                             </div>
                         </div>
@@ -714,7 +780,9 @@ onMounted(() => {
 
                         <Textarea v-model="bundle.description.value" rows="6" autoResize class="w-full mt-1"
                             placeholder="Input your description" />
-
+                        <div v-if="bundle.aiDescError" class="text-xs text-red-500 mt-1">
+                            {{ bundle.aiDescError }}
+                        </div>
                         <div class="flex justify-between items-center mt-2">
 
                             <div class="text-xs text-gray-400">
@@ -740,11 +808,11 @@ onMounted(() => {
                                 aria-hidden='true' />
 
                             <div class="text-sm font-medium">
-                                Upload Media
+                                {{trans('Upload Media')}}
                             </div>
 
                             <div class="text-xs">
-                                Drag & drop images or click
+                                {{trans('Drag & drop images or click')}}
                             </div>
 
                         </div>
@@ -756,13 +824,13 @@ onMounted(() => {
                         <div class="flex gap-2 mt-3">
                             <Button @click="openExistingMedia" type="secondary">
                                 <FontAwesomeIcon :icon="faImages" class="mr-2" fixed-width />
-                                Select existing media
+                                {{trans('Select existing media')}}
                             </Button>
 
                             <Button @click="showGenerateModal = true" type="primary" icon="fal fa-arrow-left"
                                 :disabled="!selectedMedia.length">
                                 <FontAwesomeIcon :icon="faSparkles" class="mr-2" fixed-width />
-                                Generate Image AI
+                                {{trans('Generate Image AI')}}
                             </Button>
                         </div>
                     </div>
@@ -781,7 +849,7 @@ onMounted(() => {
                                     @change="setMainImage(img.image_id)" class="absolute top-2 left-2 z-20" />
                                 <div v-if="img.is_main"
                                     class="absolute bottom-1 left-1 text-[10px] bg-black/70 text-white px-1 rounded">
-                                    MAIN IMAGE
+                                    {{trans('MAIN IMAGE')}}
                                 </div>
                                 <button
                                     class="absolute top-1 right-1 bg-black/70 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
@@ -847,7 +915,7 @@ onMounted(() => {
 
                     <div class="mb-4">
                         <div class="text-sm font-semibold mb-2">
-                            Select images of products you want to include in generated image
+                            {{trans('Select images of products you want to include in generated image')}}
                         </div>
 
                         <div class="grid grid-cols-4 gap-3">
@@ -880,10 +948,14 @@ onMounted(() => {
 
                     <div class="mb-4">
                         <div class="text-sm font-semibold mb-1">
-                            Describe your image
+                            {{trans('Describe your image')}}
                         </div>
 
                         <Textarea v-model="aiPrompt" rows="3" class="w-full" placeholder="Input description" />
+                    </div>
+
+                    <div v-if="aiGenerateImagesError" class="text-xs text-red-500 mt-1">
+                        {{ aiGenerateImagesError }}
                     </div>
 
                     <template #footer>
@@ -892,6 +964,56 @@ onMounted(() => {
                     </template>
 
                 </Dialog>
+                <ConfirmDialog>
+                    <template #container="{ message, acceptCallback, rejectCallback }">
+                        <div class="p-5 w-[360px]">
+
+                            <!-- ICON -->
+                            <div class="flex justify-center mb-3">
+                               <FontAwesomeIcon
+                                    :icon="message.data?.type === 'danger'
+                                        ? 'fas fa-exclamation-triangle'
+                                        : 'fas fa-question-circle'"
+                                    class="text-3xl text-red-500"
+                                />
+                            </div>
+
+                            <!-- TITLE -->
+                            <div class="text-center font-semibold text-lg mb-2">
+                                {{ message.header }}
+                            </div>
+
+                            <!-- MESSAGE -->
+                            <div class="text-center text-sm text-gray-500 mb-5 leading-relaxed">
+                                {{ message.message }}
+                            </div>
+
+                            <!-- ACTIONS -->
+                            <div class="flex justify-center gap-3">
+
+                                <!-- CANCEL -->
+                                <button
+                                    @click="rejectCallback"
+                                    class="px-4 py-2 text-sm border rounded-md hover:bg-gray-100"
+                                >
+                                    {{ message.rejectLabel || 'Cancel' }}
+                                </button>
+
+                                <!-- ACCEPT -->
+                                <button
+                                    @click="acceptCallback"
+                                    :class="[
+                                        'px-4 py-2 text-sm text-white rounded-md bg-red-500 hover:bg-red-600'
+                                    ]"
+                                >
+                                    {{ message.acceptLabel || 'Yes' }}
+                                </button>
+
+                            </div>
+
+                        </div>
+                    </template>
+                </ConfirmDialog>
             </div>
 
         </KeepAlive>

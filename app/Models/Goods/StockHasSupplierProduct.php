@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OrgStockHasOrgSupplierProduct> $orgStockHasOrgSupplierProducts
- * @property-read \App\Models\Goods\Stock $stock
+ * @property-read \App\Models\Goods\Stock|null $stock
  * @property-read SupplierProduct|null $supplierProduct
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockHasSupplierProduct newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockHasSupplierProduct newQuery()

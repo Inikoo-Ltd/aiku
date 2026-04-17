@@ -51,7 +51,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_clocking_machines_type_qr_code
  * @property int $number_employees_type_internship
- * @property-read \App\Models\HumanResources\Workplace $workplace
+ * @property-read \App\Models\HumanResources\Workplace|null $workplace
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkplaceStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkplaceStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkplaceStats query()

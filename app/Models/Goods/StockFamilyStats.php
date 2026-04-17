@@ -28,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $deleted_at
- * @property-read \App\Models\Goods\StockFamily $stockFamily
+ * @property-read \App\Models\Goods\StockFamily|null $stockFamily
  * @method static Builder<static>|StockFamilyStats newModelQuery()
  * @method static Builder<static>|StockFamilyStats newQuery()
  * @method static Builder<static>|StockFamilyStats query()

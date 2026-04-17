@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float $unpaid_used
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\HumanResources\Employee $employee
+ * @property-read \App\Models\HumanResources\Employee|null $employee
  * @property-read float $annual_remaining
  * @property-read float $medical_remaining
  * @property-read float $unpaid_remaining

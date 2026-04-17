@@ -46,7 +46,7 @@ trait WithReviewIOApi
         ];
     }
 
-    public function buildReviewIoRequest(string $method = 'GET', string $endpoint, array $params = [], array|null $data = []): array|string
+    public function buildReviewIoRequest(string $method, string $endpoint, array $params = [], array|null $data = []): array|string
     {
         $this->initializeReviewIoApi();
 
