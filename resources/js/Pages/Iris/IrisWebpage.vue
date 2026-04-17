@@ -18,6 +18,8 @@ const props = defineProps<{
   webpage_data : any
   web_blocks: any,
   webpage_img : any,
+  index_page: boolean,
+  follow_link: boolean
 }>()
 
 defineOptions({ layout: LayoutIris })
@@ -35,7 +37,11 @@ const checkScreenType = () => {
   else screenType.value = 'desktop'
 }
 
-
+const robotsContent = computed(() => {
+  const index = props.index_page ? 'index' : 'noindex'
+  const follow = props.follow_link ? 'follow' : 'nofollow'
+  return `${index}, ${follow}`
+})
 
 
 onMounted(() => {
@@ -79,6 +85,10 @@ onBeforeUnmount(() => {
 <template>
     <Head>
         <title>{{ webpage_data.title }}</title>
+        <meta
+          name="robots"
+          :content="robotsContent"
+        />
         <meta name="description" :content="webpage_data.description" />
         <meta property="og:type" content="website" />
         <meta property="og:title" :content="webpage_data.title" />

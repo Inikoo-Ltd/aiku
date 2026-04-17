@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property int $id
  * @property int $currency_id
- * @property string $exchange
+ * @property numeric $exchange
  * @property string $date
  * @property string|null $source F:Frankfurter, CB:currencyBeacon, M:manual
  * @property \Illuminate\Support\Carbon|null $created_at

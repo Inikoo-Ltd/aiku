@@ -369,7 +369,13 @@ class ShowDeliveryNote extends OrgAction
                         (bool)$deliveryNote->collection_address_id => __('Finalise and set as Collected'),
                         default => __('Finalise and Dispatch')
                     },
-                    'key'     => 'action',
+                    'key'     => match (true) {
+                        $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && !$deliveryNote->collection_address_id => 'action',
+                        $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && $deliveryNote->collection_address_id => 'action',
+                        $deliveryNote->type !== DeliveryNoteTypeEnum::REPLACEMENT && !$deliveryNote->collection_address_id => 'finalise-and-dispatch',
+                        (bool)$deliveryNote->collection_address_id => 'action',
+                        default => 'finalise-and-dispatch'
+                    },
                     'route'   => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.delivery_note.state.finalise_and_dispatch',
@@ -916,7 +922,7 @@ class ShowDeliveryNote extends OrgAction
                 [
                     "label"       => __("Shipping label message").' ('.__("Customer").')',
                     "note"        => $deliveryNote->shipping_notes ?? '',
-                    "information" => __("This note is from the customer. Will be printed in the shipping label."),
+                    "information" => __("Note from crm. First 34 char. Will be printed on the shipping label."),
                     "editable"    => true,
                     "bgColor"     => "#38bdf8",
                     "field"       => "shipping_notes"

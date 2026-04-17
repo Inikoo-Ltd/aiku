@@ -16,8 +16,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property int $location_id
  * @property string $code
- * @property string $quantity
- * @property string $stock_value
+ * @property numeric $quantity
+ * @property numeric $stock_value
  * @property string $type
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at

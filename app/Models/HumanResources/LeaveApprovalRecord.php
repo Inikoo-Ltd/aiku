@@ -18,8 +18,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property-read User $approver
- * @property-read \App\Models\HumanResources\Leave $leave
+ * @property-read User|null $approver
+ * @property-read \App\Models\HumanResources\Leave|null $leave
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord approved()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord byLeave(\App\Models\HumanResources\Leave $leave)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord newModelQuery()

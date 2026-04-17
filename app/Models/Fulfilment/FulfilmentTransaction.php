@@ -30,24 +30,24 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property int $asset_id
  * @property int $historic_asset_id
  * @property int|null $rental_agreement_clause_id
- * @property string $quantity
- * @property string $gross_amount net amount before discounts
- * @property string $net_amount
- * @property string|null $grp_net_amount
- * @property string|null $org_net_amount
+ * @property numeric $quantity
+ * @property numeric $gross_amount net amount before discounts
+ * @property numeric $net_amount
+ * @property numeric|null $grp_net_amount
+ * @property numeric|null $org_net_amount
  * @property int $tax_category_id
- * @property string|null $grp_exchange
- * @property string|null $org_exchange
+ * @property numeric|null $grp_exchange
+ * @property numeric|null $org_exchange
  * @property bool $is_auto_assign
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read Asset $asset
+ * @property-read Asset|null $asset
  * @property-read \App\Models\Fulfilment\RentalAgreementClause|null $clause
  * @property-read \App\Models\Fulfilment\Fulfilment|null $fulfilment
  * @property-read \App\Models\Fulfilment\FulfilmentCustomer|null $fulfilmentCustomer
- * @property-read \App\Models\SysAdmin\Group $group
- * @property-read HistoricAsset $historicAsset
+ * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read HistoricAsset|null $historicAsset
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read Model|\Eloquent $parent
  * @property-read \App\Models\Fulfilment\RecurringBillTransaction|null $recurringBillTransaction

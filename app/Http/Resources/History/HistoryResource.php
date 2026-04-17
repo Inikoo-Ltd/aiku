@@ -33,7 +33,7 @@ class HistoryResource extends JsonResource
             'user_type'      => $this['user_type'],
             'slug'           => $this['slug'],
             'user_agent'     => $this['user_agent'],
-            'user_name'      => $this->user?->contact_name ?? __('System'),
+            'user_name'      => $this['user_type'] === __('WebUser') ? __('Customer') : ($this->user?->contact_name ?? __('System')),
             'tags'           => $this['tags']
         ];
     }

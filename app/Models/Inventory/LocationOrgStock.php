@@ -25,9 +25,9 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int|null $warehouse_area_id
  * @property int $org_stock_id
  * @property int $location_id
- * @property string $quantity
- * @property string $value total value based in cost
- * @property string $commercial_value total value based selling price
+ * @property numeric $quantity
+ * @property numeric $value total value based in cost
+ * @property numeric $commercial_value total value based selling price
  * @property LocationStockTypeEnum $type
  * @property int|null $picking_priority
  * @property string|null $notes
@@ -44,11 +44,11 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property bool $default_wholesale_picking_location
  * @property bool $default_dropshipping_picking_location
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
- * @property-read \App\Models\Inventory\Location $location
- * @property-read \App\Models\Inventory\OrgStock $orgStock
+ * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read \App\Models\Inventory\Location|null $location
+ * @property-read \App\Models\Inventory\OrgStock|null $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Inventory\Warehouse $warehouse
+ * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LocationOrgStock newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LocationOrgStock newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LocationOrgStock query()

@@ -36,11 +36,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\CRM\Poll $poll
+ * @property-read \App\Models\CRM\Poll|null $poll
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\PollReply> $pollReplies
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\CRM\PollOptionStat|null $stats
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollOption newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollOption newQuery()

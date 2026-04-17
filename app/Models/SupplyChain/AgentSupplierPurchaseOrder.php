@@ -51,16 +51,16 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $cancelled_at
  * @property string|null $not_received_at
  * @property int $currency_id
- * @property string|null $grp_exchange
- * @property string|null $org_exchange
+ * @property numeric|null $grp_exchange
+ * @property numeric|null $org_exchange
  * @property bool $is_costed
  * @property array<array-key, mixed> $cost_data
- * @property string|null $cost_items
- * @property string|null $cost_extra
- * @property string|null $cost_shipping
- * @property string|null $cost_duties
- * @property string $cost_tax
- * @property string $cost_total
+ * @property numeric|null $cost_items
+ * @property numeric|null $cost_extra
+ * @property numeric|null $cost_shipping
+ * @property numeric|null $cost_duties
+ * @property numeric $cost_tax
+ * @property numeric $cost_total
  * @property int $number_stock_deliveries Number supplier deliveries
  * @property int $number_current_stock_deliveries Number supplier deliveries (except: cancelled and not_received)
  * @property int $number_is_costed_stock_deliveries is_costed=true
@@ -88,7 +88,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Currency $currency
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read PurchaseOrder|null $purchaseOrder
  * @property-read \App\Models\SupplyChain\Supplier|null $supplier

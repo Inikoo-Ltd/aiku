@@ -48,12 +48,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property string|null $bracket
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferAllowance> $offerAllowances
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\Offer> $offers
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Discounts\OfferCampaignStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferCampaignTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Transaction> $transactions

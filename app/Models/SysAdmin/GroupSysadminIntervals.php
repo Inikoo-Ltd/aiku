@@ -55,7 +55,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $user_requests_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupSysadminIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupSysadminIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupSysadminIntervals query()

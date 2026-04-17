@@ -149,9 +149,9 @@ use App\Models\HumanResources\WorkSchedule;
  * @property bool $registration_needs_approval
  * @property array<array-key, mixed>|null $extra_languages
  * @property bool $is_aiku
- * @property string $cost_price_ratio
+ * @property numeric $cost_price_ratio
  * @property array<array-key, mixed>|null $forbidden_dispatch_countries
- * @property string $price_rrp_ratio
+ * @property numeric $price_rrp_ratio
  * @property bool $is_migrating_to_aiku
  * @property array<array-key, mixed>|null $offers_data
  * @property ShopEngineEnum $engine
@@ -161,7 +161,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property string|null $external_shop_connection_failed_at
  * @property string|null $external_shop_connection_error
  * @property int|null $migration_pivot
- * @property string|null $product_price_currency_exchange
+ * @property numeric|null $product_price_currency_exchange
  * @property int|null $seeder_shop_id
  * @property string|null $proforma_footer
  * @property \Illuminate\Support\Carbon|null $migrated_to_aiku_on
@@ -181,7 +181,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read Address|null $collectionAddress
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
  * @property-read \App\Models\Catalogue\ShopCommsStats|null $commsStats
- * @property-read Country $country
+ * @property-read Country|null $country
  * @property-read LaravelCollection<int, CreditTransaction> $creditTransactions
  * @property-read \App\Models\Catalogue\ShopCRMStats|null $crmStats
  * @property-read Currency $currency
@@ -194,7 +194,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, EmailTemplate> $emailTemplates
  * @property-read LaravelCollection<int, InvoiceTransactionHasFeedback> $feedbackBridges
  * @property-read Fulfilment|null $fulfilment
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read LaravelCollection<int, Invoice> $invoices

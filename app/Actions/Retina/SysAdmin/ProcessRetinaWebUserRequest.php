@@ -2,36 +2,35 @@
 
 /*
  * Author: Ganes <gustiganes@gmail.com>
- * Created on: 20-01-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
- * Copyright: 2025
- *
-*/
+ * Created: Mon, 20 Jan 2025 02:08:09 Bali, Indonesia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Retina\SysAdmin;
 
 use App\Actions\Analytics\WebUserRequest\StoreWebUserRequest;
-use App\Actions\RetinaAction;
-use App\Actions\SysAdmin\WithLogRequest;
-use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\Analytics\WebUserRequest;
 use App\Models\CRM\WebUser;
 use Illuminate\Support\Carbon;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProcessRetinaWebUserRequest extends RetinaAction
+class ProcessRetinaWebUserRequest
 {
-    use WithNoStrictRules;
-    use WithLogRequest;
+    use AsAction;
 
     public string $jobQueue = 'analytics';
 
     /**
      * @throws \Throwable
      */
-    public function handle(WebUser $webUser, Carbon $datetime, array $routeData, string $ip, string $userAgent): WebUserRequest|null
+    public function handle(?WebUser $webUser, Carbon $datetime, array $routeData, string $ip, string $userAgent, array $geoLocation): WebUserRequest|null
     {
+        if(!$webUser){
+            return null;
+        }
+
         if ($routeData['name'] == 'retina.search.index') {
             return null;
         }
@@ -49,7 +48,6 @@ class ProcessRetinaWebUserRequest extends RetinaAction
             }
         }
 
-        $location = json_encode($this->getLocation($ip));
 
         $browserData = GetBrowserInfo::run($userAgent);
 
@@ -61,7 +59,7 @@ class ProcessRetinaWebUserRequest extends RetinaAction
             'device'       => $browserData['device'],
             'browser'      => $browserData['browser'],
             'ip_address'   => $ip,
-            'location'     => $location,
+            'location'     => json_encode($geoLocation),
             'webpage_id'   => $webpageID,
         ];
 
@@ -72,9 +70,9 @@ class ProcessRetinaWebUserRequest extends RetinaAction
         );
 
         $webUser->stats()->update([
-            'last_device'    => $device,
-            'last_os'        => $os,
-            'last_location'  => $location,
+            'last_device'    => $browserData['device'],
+            'last_os'        => $browserData['os'],
+            'last_location'  => json_encode($geoLocation),
             'last_active_at' => $datetime
         ]);
 

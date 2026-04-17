@@ -31,11 +31,11 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int|null $from_webpage_id
  * @property int|null $to_webpage_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Web\Webpage|null $webpage
- * @property-read \App\Models\Web\Website $website
+ * @property-read \App\Models\Web\Website|null $website
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Redirect newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Redirect newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Redirect query()

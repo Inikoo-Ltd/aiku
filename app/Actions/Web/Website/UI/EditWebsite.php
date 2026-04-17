@@ -383,7 +383,7 @@ class EditWebsite extends OrgAction
                     ],
                     'label' => __('Welcome Message'),
                     'required' => false,
-                    'value' => Arr::get($website->settings,'welcome_message'),
+                    'value' => Arr::get($website->settings, 'welcome_message'),
                     'full' => true,
                     'information' => __('Displayed on the Retina dashboard as the main text.'),
                     'toogle' => [

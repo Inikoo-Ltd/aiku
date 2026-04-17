@@ -27,8 +27,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string $code
  * @property string|null $name
  * @property string|null $description
- * @property string|null $price
- * @property string $units
+ * @property numeric|null $price
+ * @property numeric $units
  * @property string $unit
  * @property array<array-key, mixed> $data
  * @property array<array-key, mixed> $settings
@@ -42,7 +42,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Helpers\Currency $currency
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Catalogue\HistoricAsset|null $historicAsset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\HistoricAsset> $historicAssets
  * @property-read \App\Models\SysAdmin\Organisation $organisation

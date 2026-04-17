@@ -96,7 +96,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
             </button>
 
             <!-- Search: AI -->
-            <button v-if="true" @click="showAskBot = !showAskBot" id="ask-bot"
+            <!-- <button v-if="true" @click="showAskBot = !showAskBot" id="ask-bot"
                 class="bg-gradient-to-tr from-pink-200 xvia-pink-200 to-pink-100 border-none ring-1 ring-fuchsia-400 h-7 w-fit flex items-center justify-center gap-x-3 rounded-md px-3">
                 <div class="flex gap-x-1 items-center ">
                     <FontAwesomeIcon icon="fas fa-sparkles" class="text-pink-500" fixed-width aria-hidden="true" />
@@ -112,7 +112,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
                     <span class="ring-1 ring-fuchsia-400 bg-fuchsia-50 text-fuchsia-500 px-1.5 py-0.5 text-xs rounded">K</span>
                 </div>
                 <AskBot v-model="showAskBot" />
-            </button>
+            </button> -->
 
             <div class="pl-2 sm:pl-4 flex items-center gap-x-2">
 
@@ -203,9 +203,10 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
                     </Popover>
                 </div>
 
-                <div @click="() => layout.stackedComponents.push({ component: Profile, data: { currentTab: 'todo' }})">
+                <!-- Button: To do -->
+                <!-- <div @click="() => layout.stackedComponents.push({ component: Profile, data: { currentTab: 'todo' }})">
                     <Button label="To do" size="xs" :style="'tertiary'" />
-                </div>
+                </div> -->
 
                 <!-- Button: Notifications -->
                 <div class="relative px-2 rounded-full flex items-center">

@@ -169,7 +169,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_products_status_coming_soon
  * @property int $number_shops_type_external
  * @property int $number_current_shops_type_external
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCatalogueStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCatalogueStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCatalogueStats query()

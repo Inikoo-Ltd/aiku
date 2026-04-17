@@ -10,7 +10,6 @@ namespace App\Http\Resources\SysAdmin\User;
 
 use App\Actions\SysAdmin\User\GetUserGroupScopeJobPositionsData;
 use App\Actions\SysAdmin\User\GetUserOrganisationScopeJobPositionsData;
-use App\Actions\Utils\GetLocationFromIp;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Api\Dropshipping\ShopResource;
 use App\Http\Resources\HumanResources\JobPositionResource;
@@ -68,11 +67,9 @@ class UserShowcaseResource extends JsonResource
                 'group' => $permissionsGroupData,
                 'organisations' => $jobPositionsOrganisationsData
             ],
-         /*    'permissions'             => $user->getAllPermissions()->pluck('name')->toArray(), */
             'last_active_at'          => $user->stats->last_active_at,
             'last_login'              => [
-                'ip'          => $user->stats->last_login_ip,
-                'geolocation' => GetLocationFromIp::run($user->stats->last_login_ip)
+                'ip'          => $user->stats->last_login_ip
             ]
         ];
     }

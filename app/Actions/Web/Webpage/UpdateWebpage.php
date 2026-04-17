@@ -23,7 +23,6 @@ use App\Http\Resources\Web\WebpageResource;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashSlash;
-use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
@@ -54,8 +53,6 @@ class UpdateWebpage extends OrgAction
         if (Arr::has($modelData, 'product_description_extra')) {
             $productData['description_extra'] = Arr::pull($modelData, 'product_description_extra');
         }
-
-
         // Prepare new SEO data
         $newData = [];
 
@@ -189,6 +186,8 @@ class UpdateWebpage extends OrgAction
             'product_description'       => ['sometimes', 'required', 'max:1500'],
             'product_description_extra' => ['sometimes', 'nullable', 'max:65500'],
             'breadcrumb_label'          => ['sometimes', 'string', 'max:40'],
+            'index_page' => ['sometimes', 'nullable', 'boolean'],
+            'follow_link' => ['sometimes', 'nullable', 'boolean'],
         ];
 
         if (!$this->strict) {
