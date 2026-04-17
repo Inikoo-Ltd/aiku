@@ -12,13 +12,13 @@ import NavigationSimple from "@/Layouts/Grp/NavigationSimple.vue"
 import { useLogoutAuth } from "@/Composables/useAppMethod"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft } from "@far"
-import { faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt } from "@fal"
+import { faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { inject, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
-library.add(faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt)
+library.add(faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut)
 
 const layout = inject("layout", layoutStructure)
 
