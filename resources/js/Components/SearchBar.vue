@@ -19,6 +19,28 @@ import Skeleton from 'primevue/skeleton';
 
 library.add(faPallet, faReceipt, faTimes, faSearch, faShoppingCart, faUser)
 
+type User = {
+    id: number
+    username: string
+    email: string
+    contact_name: string
+    status: boolean
+}
+
+// Guest dari API
+type Guest = {
+    id: number
+    slug: string
+    code: string
+    contact_name: string
+    email: string
+}
+
+type SearchResults = {
+    users: User[]
+    guests: Guest[]
+}
+
 const isOpen = defineModel<boolean>()
 
 const emits = defineEmits<{
@@ -28,10 +50,8 @@ const emits = defineEmits<{
 const layout = inject('layout', layoutStructure)
 const isLoadingSearch = ref(false)
 const searchValue = ref('')
-const resultsSearch = ref<{
-    users: any[],
-    guests: any[]
-} | null>(null)
+const resultsSearch = ref<SearchResults | null>(null)
+let abortController: AbortController | null = null
 
 const selectedTab = ref(null)
 const isUsingLocalMock = false
@@ -69,25 +89,28 @@ const filteredResults = computed(() => {
 })
 const fetchApi = debounce(async (query: string) => {
     isOnTyping.value = false
-    if (query !== '') {
-        resultsSearch.value = []
-        isLoadingSearch.value = true
-        
-        const url = `${urlSearch()}?q=${query}&route_src=${route().current()}${paramsToString()}`
-        await fetch(url)
-            .then(async (response) => {
-                const data = await response.json()
 
-                resultsSearch.value = data.results
-                isLoadingSearch.value=false
-            })
-            .catch(() => {
-                resultsSearch.value = []
-                isLoadingSearch.value = false
-                selectedTab.value = null
-            })
+    if (!query) return
+
+    abortController?.abort()
+    abortController = new AbortController()
+
+    resultsSearch.value = null
+    isLoadingSearch.value = true
+
+    try {
+        const url = `${urlSearch()}?q=${query}&route_src=${route().current()}${paramsToString()}`
+        const response = await fetch(url, { signal: abortController.signal })
+        const data = await response.json()
+        resultsSearch.value = data.results
+    } catch (e) {
+        if ((e as DOMException).name === 'AbortError') return
+        resultsSearch.value = null
+        selectedTab.value = null
+    } finally {
+        isLoadingSearch.value = false
     }
-}, 700)
+}, 400)
 const isOnTyping = ref(false)
 const onTypeSearch = () => {
     // searchValue.value = e.target.value
@@ -134,7 +157,7 @@ const hasRoute = (item: any) => {
 </script>
 
 <template>
-    <TransitionRoot :show="isOpen" as="template" @after-leave="() => (searchValue = '', resultsSearch = [])" appear>
+    <TransitionRoot :show="isOpen" as="template" @after-leave="() => (searchValue = '', resultsSearch = null)" appear>
         <Dialog as="div" class="relative z-50" @close="closeModal">
 
             <!-- Overlay -->
@@ -169,8 +192,6 @@ const hasRoute = (item: any) => {
 
                         <!-- CONTENT -->
                         <div v-else class="grid grid-cols-12 flex-1 min-h-0">
-
-                            <!-- LEFT -->
                            <div class="col-span-3 border-r p-4 bg-gray-50">
                                 <p class="text-xs text-gray-400 mb-2">Query</p>
                                 <p class="font-semibold mb-4">{{ searchValue }}</p>
@@ -202,9 +223,9 @@ const hasRoute = (item: any) => {
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-span-4 border-r flex flex-col">
+                            <div class="col-span-4 border-r flex flex-col min-h-0">
                                 <!-- CONTENT -->
-                                <div class="flex-1 p-4 space-y-2 overflow-y-auto">
+                                <div class="flex-1 p-4 space-y-4 overflow-y-auto">
 
                                     <div v-if="isLoadingSearch" class="space-y-4">
                                         <div v-for="i in 5" :key="i"
@@ -223,9 +244,9 @@ const hasRoute = (item: any) => {
                                         <div
                                         v-for="user in resultsSearch.users"
                                         :key="user.id"
-                                        class="group p-4 rounded-xl border border-transparent bg-white 
-                                                hover:border-slate-200 hover:bg-slate-50 hover:shadow-sm 
-                                                cursor-pointer transition-all duration-150"
+                                        class="group p-4 rounded-xl border border-transparent bg-slate-50 
+                                                hover:border-slate-200 hover:bg-slate-150 hover:shadow-sm 
+                                                cursor-pointer transition-all duration-150 mb-3"
                                         >
                                             <div class="flex items-center justify-between">
                                                 <p class="text-sm font-semibold text-slate-900">
@@ -257,7 +278,7 @@ const hasRoute = (item: any) => {
                                 </div>
                             </div>
                             <!-- RIGHT -->
-                           <div class="col-span-5 flex flex-col">
+                           <div class="col-span-5 flex flex-col min-h-0">
                                 <!-- CONTENT -->
                                 <div class="flex-1 p-4 space-y-4 overflow-y-auto">
                                     <div v-if="isLoadingSearch" class="space-y-4">
