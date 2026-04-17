@@ -39,15 +39,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property PickingTypeEnum|null $type
  * @property string|null $last_picked_at
- * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
+ * @property-read \App\Models\Dispatching\DeliveryNote|null $deliveryNote
  * @property-read \App\Models\Dispatching\DeliveryNoteItem $deliveryNoteItem
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Location|null $location
- * @property-read OrgStock $orgStock
+ * @property-read OrgStock|null $orgStock
  * @property-read OrgStockMovement|null $orgStockMovement
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read User|null $picker
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Picking newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Picking newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Picking query()

@@ -10,17 +10,19 @@ import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "@inertiajs/vue3";
 import GoldReward from '@/Components/Utils/GoldReward.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import { textReplaceVariables } from "@/Composables/Workshop"
 
 library.add(faUser, faMedal, fasMedal, fadMedal,faBuilding, faEnvelope, faPhone, faXmark, faTags)
 
 const props = defineProps<{
     data: {}
+    welcome_message: string
 }>()
 
 console.log('RetinaB2BDashboard', props)
 const layout = inject('layout', retinaLayoutStructure)
 
-const showBanner = ref(true);
+const showBanner = ref(false);
 
 const userCustomerTags = computed(() => {
     return props.data?.customer?.tags?.filter((tag: any) => tag.scope === 'User Customer') || []
@@ -28,9 +30,9 @@ const userCustomerTags = computed(() => {
 
 const hasTags = computed(() => userCustomerTags.value.length > 0)
 
-onMounted(() => {
+/* onMounted(() => {
     showBanner.value = !hasTags.value
-})
+}) */
 </script>
 
 <template>
@@ -109,12 +111,13 @@ onMounted(() => {
             </div>
         </div>
 
-        <div>
+        <!-- <div>
             <h1 class="text-4xl mb-4">{{ trans("Hello") }}, <span class="font-bold">{{ data?.customer?.contact_name }}</span>!</h1>
             <p>
                 {{ trans("Welcome to the E-commerce dashboard. Here you can manage your business-to-business operations.") }}
             </p>
-        </div>
+        </div> -->
+        <div v-if="welcome_message" v-html="textReplaceVariables(welcome_message, layout.iris_variables)"></div>
     </div>
 
     <div v-if="showBanner" class="absolute inset-x-0 bottom-0">

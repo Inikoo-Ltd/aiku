@@ -199,11 +199,12 @@ const removeMedia = (media: any) => {
 const showGenerateModal = ref(false)
 const aiPrompt = ref('')
 const selectedMediaForAI = ref<any[]>([])
+const aiGenerateImagesError = ref<string | null>(null)
 
 const generateAIImages = async () => {
     try {
         isGeneratingAI.value = true
-
+        aiGenerateImagesError.value = null
         const payload = {
             images: selectedMediaForAI.value.map(m => m.image_id),
             prompt: aiPrompt.value
@@ -247,11 +248,12 @@ const generateAIImages = async () => {
             type: 'success'
         })
     } catch (e) {
-        notify({
-            title: trans('Error'),
-            text: trans('Failed to generate AI'),
-            type: 'error'
-        })
+        aiGenerateImagesError.value = 'The OpenAI service is currently unreachable, please try again later.'
+        // notify({
+        //     title: trans('Error'),
+        //     text: trans('Failed to generate AI'),
+        //     type: 'error'
+        // })
     } finally {
         isGeneratingAI.value = false
     }
@@ -685,7 +687,9 @@ watch(
 
                                 <InputText v-model="bundle.title.value" type="text" class="w-full pr-10 text-base p-2"
                                     :placeholder="ctrans('Bundle Title')" required />
-
+                                <div v-if="bundle.aiTitleError" class="text-xs text-red-500 mt-1">
+                                    {{ bundle.aiTitleError }}
+                                </div>
                                 <Button type="button" @click="bundle.generateAITitle"
                                     :loading="bundle.isGeneratingAI.value"
                                     :disabled="!bundle.productIds.value.length || bundle.isGeneratingAI.value"
@@ -776,7 +780,9 @@ watch(
 
                         <Textarea v-model="bundle.description.value" rows="6" autoResize class="w-full mt-1"
                             placeholder="Input your description" />
-
+                        <div v-if="bundle.aiDescError" class="text-xs text-red-500 mt-1">
+                            {{ bundle.aiDescError }}
+                        </div>
                         <div class="flex justify-between items-center mt-2">
 
                             <div class="text-xs text-gray-400">
@@ -946,6 +952,10 @@ watch(
                         </div>
 
                         <Textarea v-model="aiPrompt" rows="3" class="w-full" placeholder="Input description" />
+                    </div>
+
+                    <div v-if="aiGenerateImagesError" class="text-xs text-red-500 mt-1">
+                        {{ aiGenerateImagesError }}
                     </div>
 
                     <template #footer>

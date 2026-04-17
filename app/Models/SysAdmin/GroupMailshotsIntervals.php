@@ -211,7 +211,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $total_emails_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupMailshotsIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupMailshotsIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupMailshotsIntervals query()

@@ -123,7 +123,12 @@ watch(
 )
 
 const goToBundle = () => {
-     window.location.href = '/redirect-bundle-to-retina'
+    const stored = localStorage.getItem('layout_dropshipping')
+    const currentPlatform = stored ? JSON.parse(stored)?.currentPlatform : null
+    const url = currentPlatform
+        ? `/redirect-bundle-to-retina?platform=${encodeURIComponent(currentPlatform)}`
+        : '/redirect-bundle-to-retina'
+    window.location.href = url
 }
 </script>
 

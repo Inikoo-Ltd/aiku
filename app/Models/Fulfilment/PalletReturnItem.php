@@ -22,19 +22,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $pallet_id
  * @property int|null $stored_item_id
  * @property int|null $pallet_stored_item_id
- * @property string $quantity_ordered
- * @property string $quantity_dispatched
- * @property string $quantity_fail
- * @property string $quantity_cancelled
+ * @property numeric $quantity_ordered
+ * @property numeric $quantity_dispatched
+ * @property numeric $quantity_fail
+ * @property numeric $quantity_cancelled
  * @property int|null $picking_location_id
  * @property PalletReturnItemStateEnum $state
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string $quantity_picked
+ * @property numeric $quantity_picked
  * @property string|null $not_setup_reason
  * @property int|null $picking_session_id
- * @property-read \App\Models\Fulfilment\Pallet $pallet
- * @property-read \App\Models\Fulfilment\PalletReturn $palletReturn
+ * @property-read \App\Models\Fulfilment\Pallet|null $pallet
+ * @property-read \App\Models\Fulfilment\PalletReturn|null $palletReturn
  * @property-read \App\Models\Fulfilment\PalletStoredItem|null $palletStoredItem
  * @property-read Location|null $pickingLocation
  * @property-read \App\Models\Fulfilment\StoredItem|null $storedItem

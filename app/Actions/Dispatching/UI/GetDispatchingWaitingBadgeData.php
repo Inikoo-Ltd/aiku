@@ -20,7 +20,7 @@ class GetDispatchingWaitingBadgeData
     {
         $organisationsMap = [];
 
-        foreach ($user->authorisedWarehouses()->with('organisation')->get() as $warehouse) {
+        foreach ($user->authorisedWarehouses()->with("organisation")->get() as $warehouse) {
             if (!$user->authTo("dispatching.{$warehouse->id}.view")) {
                 continue;
             }
@@ -29,48 +29,60 @@ class GetDispatchingWaitingBadgeData
 
             if (!isset($organisationsMap[$orgSlug])) {
                 $organisationsMap[$orgSlug] = [
-                    'organisation' => [
-                        'slug' => $warehouse->organisation->slug,
-                        'name' => $warehouse->organisation->name,
-                        'code' => $warehouse->organisation->code,
+                    "organisation" => [
+                        "slug" => $warehouse->organisation->slug,
+                        "name" => $warehouse->organisation->name,
+                        "code" => $warehouse->organisation->code,
                     ],
-                    'warehouses' => [],
+                    "warehouses" => [],
                 ];
             }
 
-            $waitingCount = $warehouse->deliveryNotes()
-                ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
-                ->where('delivery_note_items.has_waiting_warehouse', true)
-                ->where('delivery_notes.state', '!=', DeliveryNoteStateEnum::HANDLING)
+            $waitingCount = $warehouse
+                ->deliveryNotes()
+                ->join(
+                    "delivery_note_items",
+                    "delivery_notes.id",
+                    "=",
+                    "delivery_note_items.delivery_note_id",
+                )
+                ->where("delivery_note_items.has_waiting_warehouse", true)
+                ->where("delivery_notes.state", DeliveryNoteStateEnum::HANDLING_BLOCKED)
                 ->count();
 
-            $stillPickingCount = $warehouse->deliveryNotes()
-                ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
-                ->where('delivery_note_items.has_waiting_warehouse', true)
-                ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING)
+            $stillPickingCount = $warehouse
+                ->deliveryNotes()
+                ->join(
+                    "delivery_note_items",
+                    "delivery_notes.id",
+                    "=",
+                    "delivery_note_items.delivery_note_id",
+                )
+                ->where("delivery_note_items.has_waiting_warehouse", true)
+                ->where("delivery_notes.state", DeliveryNoteStateEnum::HANDLING)
                 ->count();
 
-            $organisationsMap[$orgSlug]['warehouses'][] = [
-                'slug' => $warehouse->slug,
-                'name' => $warehouse->name,
-                'code' => $warehouse->code,
-                'waiting_items' => [
-                    'count' => $waitingCount,
-                    'route' => [
-                        'name'       => 'grp.org.warehouses.show.dispatching.waiting_items',
-                        'parameters' => [
-                            'organisation' => $warehouse->organisation->slug,
-                            'warehouse'    => $warehouse->slug,
+            $organisationsMap[$orgSlug]["warehouses"][] = [
+                "slug" => $warehouse->slug,
+                "name" => $warehouse->name,
+                "code" => $warehouse->code,
+                "waiting_items" => [
+                    "count" => $waitingCount,
+                    "route" => [
+                        "name" => "grp.org.warehouses.show.dispatching.waiting_items",
+                        "parameters" => [
+                            "organisation" => $warehouse->organisation->slug,
+                            "warehouse" => $warehouse->slug,
                         ],
                     ],
                 ],
-                'waiting_items_still_picking' => [
-                    'count' => $stillPickingCount,
-                    'route' => [
-                        'name'       => 'grp.org.warehouses.show.dispatching.waiting_items_still_picking',
-                        'parameters' => [
-                            'organisation' => $warehouse->organisation->slug,
-                            'warehouse'    => $warehouse->slug,
+                "waiting_items_still_picking" => [
+                    "count" => $stillPickingCount,
+                    "route" => [
+                        "name" => "grp.org.warehouses.show.dispatching.waiting_items_still_picking",
+                        "parameters" => [
+                            "organisation" => $warehouse->organisation->slug,
+                            "warehouse" => $warehouse->slug,
                         ],
                     ],
                 ],

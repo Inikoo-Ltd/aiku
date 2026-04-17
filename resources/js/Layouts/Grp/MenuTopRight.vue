@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { trans } from 'laravel-vue-i18n'
-import { ref, onMounted, onUnmounted, inject, computed, defineAsyncComponent } from 'vue'
+import { ref, onMounted, onUnmounted, inject, computed, watch, defineAsyncComponent } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import SearchBar from "@/Components/SearchBar.vue"
 import Image from '@/Components/Image.vue'
@@ -33,6 +33,17 @@ const showAskBot = ref(false)
 const expandedOrgs = ref<Set<string>>(new Set())
 
 const dispatchingBadge = computed(() => layout?.dispatching_waiting_badge ?? [])
+const crmBadge = computed(() => layout?.crm_waiting_badge ?? [])
+
+const expandedCrmOrgs = ref<Set<string>>(new Set())
+
+watch(dispatchingBadge, (badge) => {
+    badge.forEach(orgData => expandedOrgs.value.add(orgData.organisation.slug))
+}, { immediate: true })
+
+watch(crmBadge, (badge) => {
+    badge.forEach(orgData => expandedCrmOrgs.value.add(orgData.organisation.slug))
+}, { immediate: true })
 
 const totalWaitingCount = computed(() =>
     dispatchingBadge.value.reduce((total, org) =>
@@ -42,11 +53,27 @@ const totalWaitingCount = computed(() =>
     )
 )
 
+const totalCrmWaitingCount = computed(() =>
+    crmBadge.value.reduce((total, org) =>
+        total + org.warehouses.reduce((wTotal, wh) =>
+            wTotal + wh.waiting_crm_items.count + wh.waiting_crm_items_still_picking.count, 0
+        ), 0
+    )
+)
+
 function toggleOrg(orgSlug: string) {
     if (expandedOrgs.value.has(orgSlug)) {
         expandedOrgs.value.delete(orgSlug)
     } else {
         expandedOrgs.value.add(orgSlug)
+    }
+}
+
+function toggleCrmOrg(orgSlug: string) {
+    if (expandedCrmOrgs.value.has(orgSlug)) {
+        expandedCrmOrgs.value.delete(orgSlug)
+    } else {
+        expandedCrmOrgs.value.add(orgSlug)
     }
 }
 
@@ -92,7 +119,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
             </button>
 
             <!-- Search: AI -->
-            <button v-if="true" @click="showAskBot = !showAskBot" id="ask-bot"
+            <!-- <button v-if="true" @click="showAskBot = !showAskBot" id="ask-bot"
                 class="bg-gradient-to-tr from-pink-200 xvia-pink-200 to-pink-100 border-none ring-1 ring-fuchsia-400 h-7 w-fit flex items-center justify-center gap-x-3 rounded-md px-3">
                 <div class="flex gap-x-1 items-center ">
                     <FontAwesomeIcon icon="fas fa-sparkles" class="text-pink-500" fixed-width aria-hidden="true" />
@@ -108,26 +135,22 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
                     <span class="ring-1 ring-fuchsia-400 bg-fuchsia-50 text-fuchsia-500 px-1.5 py-0.5 text-xs rounded">K</span>
                 </div>
                 <AskBot v-model="showAskBot" />
-            </button>
+            </button> -->
 
             <div class="pl-2 sm:pl-4 flex items-center gap-x-2">
 
                 <!-- Badge: Dispatching Waiting Items -->
-                <div v-if="dispatchingBadge.length > 0" class="relative flex items-center mr-2">
+                <div v-if="dispatchingBadge.length > 0" class="relative flex items-center">
                     <Popover width="w-80" position="right-0">
                         <template #button>
-                            <div tabindex="-1" class="relative text-orange-500 hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-400 cursor-pointer">
-                                <FontAwesomeIcon aria-hidden="true" icon="fal fa-hourglass-start" size="lg" />
-                                <span
-                                    v-if="totalWaitingCount > 0"
-                                    class="absolute -top-1.5 -right-2 min-w-[16px] h-4 flex items-center justify-center bg-orange-500 text-white text-[10px] font-bold rounded-full px-0.5 leading-none"
-                                >
-                                    {{ totalWaitingCount > 99 ? '99+' : totalWaitingCount }}
-                                </span>
+                            <div class="relative bg-amber-300 text-amber-700 rounded px-2.5 opacity-70 hover:opacity-100 cursor-pointer font-semibold text-sm tabular-nums">
+                                {{ totalWaitingCount > 99 ? '99+' : totalWaitingCount }}
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
                             </div>
                         </template>
                         <template #content="{ close }">
-                            <div class="max-h-96 overflow-y-auto">
+                            <div>
                                 <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                     {{ trans('Dispatching Waiting Items') }}
                                 </p>
@@ -199,9 +222,89 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
                     </Popover>
                 </div>
 
-                <div @click="() => layout.stackedComponents.push({ component: Profile, data: { currentTab: 'todo' }})">
-                    <Button label="To do" size="xs" :style="'tertiary'" />
+                <!-- Badge: CRM Waiting Items -->
+                <div v-if="crmBadge.length > 0" class="relative flex items-center">
+                    <Popover width="w-80" position="right-0">
+                        <template #button>
+                            <div class="relative bg-purple-300 text-purple-700 rounded px-2.5 opacity-70 hover:opacity-100 cursor-pointer font-semibold text-sm tabular-nums">
+                                {{ totalCrmWaitingCount > 99 ? '99+' : totalCrmWaitingCount }}
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
+                            </div>
+                        </template>
+                        <template #content="{ close }">
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                    {{ trans('CRM Waiting Items') }}
+                                </p>
+
+                                <div v-for="orgData in crmBadge" :key="orgData.organisation.slug" class="mb-2">
+                                    <button
+                                        @click="toggleCrmOrg(orgData.organisation.slug)"
+                                        class="w-full flex items-center justify-between px-2 py-1.5 rounded hover:bg-gray-50 text-left"
+                                    >
+                                        <span class="text-sm font-medium text-gray-700">
+                                            {{ orgData.organisation.name }}
+                                            <span class="ml-1 text-xs text-gray-400">({{ orgData.organisation.code }})</span>
+                                        </span>
+                                        <FontAwesomeIcon
+                                            :icon="expandedCrmOrgs.has(orgData.organisation.slug) ? 'fal fa-chevron-down' : 'fal fa-chevron-right'"
+                                            class="text-gray-400 text-xs"
+                                        />
+                                    </button>
+
+                                    <div v-if="expandedCrmOrgs.has(orgData.organisation.slug)" class="pl-3 mt-1 space-y-1">
+                                        <div v-for="warehouse in orgData.warehouses" :key="warehouse.slug" class="space-y-1">
+                                            <p class="text-xs text-gray-400 font-medium">{{ warehouse.name }}</p>
+
+                                            <Link
+                                                v-if="warehouse.waiting_crm_items.count > 0"
+                                                :href="route(warehouse.waiting_crm_items.route.name, warehouse.waiting_crm_items.route.parameters)"
+                                                @click="close()"
+                                                class="flex items-center justify-between px-2 py-1 rounded hover:bg-blue-50 group"
+                                            >
+                                                <div class="flex items-center gap-x-1.5 text-xs text-gray-600 group-hover:text-blue-700">
+                                                    <FontAwesomeIcon icon="fal fa-hourglass-start" class="text-blue-400" fixed-width />
+                                                    <span>{{ trans('CRM Waiting Items') }}</span>
+                                                </div>
+                                                <span class="text-xs font-semibold text-blue-600 bg-blue-100 rounded-full px-1.5 py-0.5">
+                                                    {{ warehouse.waiting_crm_items.count }}
+                                                </span>
+                                            </Link>
+
+                                            <Link
+                                                v-if="warehouse.waiting_crm_items_still_picking.count > 0"
+                                                :href="route(warehouse.waiting_crm_items_still_picking.route.name, warehouse.waiting_crm_items_still_picking.route.parameters)"
+                                                @click="close()"
+                                                class="flex items-center justify-between px-2 py-1 rounded hover:bg-indigo-50 group"
+                                            >
+                                                <div class="flex items-center gap-x-1.5 text-xs text-gray-600 group-hover:text-indigo-700">
+                                                    <FontAwesomeIcon icon="fal fa-hourglass-half" class="text-indigo-500" fixed-width />
+                                                    <span>{{ trans('Still Picking') }}</span>
+                                                </div>
+                                                <span class="text-xs font-semibold text-indigo-700 bg-indigo-100 rounded-full px-1.5 py-0.5">
+                                                    {{ warehouse.waiting_crm_items_still_picking.count }}
+                                                </span>
+                                            </Link>
+
+                                            <div
+                                                v-if="warehouse.waiting_crm_items.count === 0 && warehouse.waiting_crm_items_still_picking.count === 0"
+                                                class="px-2 py-1 text-xs text-gray-400 italic"
+                                            >
+                                                {{ trans('No CRM waiting items') }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </Popover>
                 </div>
+
+                <!-- Button: To do -->
+                <!-- <div @click="() => layout.stackedComponents.push({ component: Profile, data: { currentTab: 'todo' }})">
+                    <Button label="To do" size="xs" :style="'tertiary'" />
+                </div> -->
 
                 <!-- Button: Notifications -->
                 <div class="relative px-2 rounded-full flex items-center">

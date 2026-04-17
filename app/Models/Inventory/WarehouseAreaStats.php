@@ -26,8 +26,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_locations_allow_stocks
  * @property int $number_locations_allow_fulfilment
  * @property int $number_locations_allow_dropshipping
- * @property string $stock_value
- * @property string $stock_commercial_value
+ * @property numeric $stock_value
+ * @property numeric $stock_commercial_value
  * @property int $number_pallets
  * @property int $number_pallets_with_stored_items
  * @property int $number_pallets_type_pallet
@@ -85,8 +85,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_stored_items_state_discontinued
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string $total_volume cbm
- * @property string $total_weight kg
+ * @property numeric $total_volume cbm
+ * @property numeric $total_weight kg
  * @property int $number_pallets_state_request_return_submitted
  * @property int $number_pallets_state_request_return_confirmed
  * @property-read \App\Models\Inventory\WarehouseArea|null $warehouse

@@ -14,10 +14,10 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property int $master_shop_time_series_id
  * @property string $frequency
- * @property string|null $sales_grp_currency_external
- * @property string|null $lost_revenue_grp_currency
- * @property string|null $baskets_created_grp_currency
- * @property string|null $baskets_updated_grp_currency
+ * @property numeric|null $sales_grp_currency_external
+ * @property numeric|null $lost_revenue_grp_currency
+ * @property numeric|null $baskets_created_grp_currency
+ * @property numeric|null $baskets_updated_grp_currency
  * @property int|null $invoices
  * @property int|null $refunds
  * @property int|null $orders
@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $period
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $sales_grp_currency_internal
+ * @property numeric|null $sales_grp_currency_internal
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopTimeSeriesRecord query()

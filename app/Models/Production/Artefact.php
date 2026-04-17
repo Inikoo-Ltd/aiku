@@ -40,10 +40,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ManufactureTask> $manufactureTasks
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Production\Production $production
+ * @property-read \App\Models\Production\Production|null $production
  * @property-read \App\Models\Production\ArtefactStats|null $stats
  * @property-read Stock|null $stock
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch

@@ -44,7 +44,7 @@ class Login
         $processed  = false;
         if (config('app.with_user_legacy_passwords')) {
             $user = User::where('username', Arr::get($request->validated(), 'username'))->first();
-            if ($user and $user->auth_type == UserAuthTypeEnum::AURORA) {
+            if ($user && $user->auth_type == UserAuthTypeEnum::AURORA) {
                 $processed  = true;
                 $authorised = AuthoriseUserWithLegacyPassword::run($user, $request->validated());
                 if ($authorised) {
@@ -62,11 +62,19 @@ class Login
         if (!$authorised) {
             RateLimiter::hit($this->throttleKey($request));
 
+            $geoLocation = [
+                $request->header('CF-IPCountry') ?? 'XX',
+                $request->header('CF-Region'),
+                $request->header('CF-IPCity'),
+                $request->header('CF-IPLongitude'),
+                $request->header('CF-IPLatitude'),
+            ];
             LogUserFailLogin::dispatch(
                 credentials: $request->validated(),
                 ip: request()->ip(),
                 userAgent: $request->header('User-Agent'),
-                datetime: now()
+                datetime: now(),
+                geoLocation: $geoLocation
             );
 
             throw ValidationException::withMessages([
@@ -81,11 +89,20 @@ class Login
 
         app()->instance('group', $user->group);
 
+        $geoLocation = [
+            $request->header('CF-IPCountry') ?? 'XX',
+            $request->header('CF-Region'),
+            $request->header('CF-IPCity'),
+            $request->header('CF-IPLongitude'),
+            $request->header('CF-IPLatitude'),
+        ];
+
         LogUserLogin::dispatch(
             user: $user,
             ip: request()->ip(),
             userAgent: $request->header('User-Agent'),
-            datetime: now()
+            datetime: now(),
+            geoLocation: $geoLocation
         );
 
         if ($user) {
@@ -110,8 +127,6 @@ class Login
 
         return redirect()->intended('/dashboard');
     }
-
-
 
 
 }

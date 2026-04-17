@@ -100,7 +100,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $delivery_address_id
  * @property CustomerStatusEnum $status
  * @property CustomerStateEnum $state
- * @property string $balance
+ * @property numeric $balance
  * @property CustomerTradeStateEnum $trade_state number of invoices
  * @property bool $is_fulfilment
  * @property bool $is_dropshipping
@@ -164,7 +164,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\CRM\Favourite> $favourites
  * @property-read FulfilmentCustomer|null $fulfilmentCustomer
  * @property-read bool $has_closed_channels
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Media|null $image
  * @property-read MediaCollection<int, Media> $images
  * @property-read \App\Models\CRM\CustomerInterest|null $interests

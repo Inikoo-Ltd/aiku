@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, inject, nextTick, ref, watch } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router, useForm } from "@inertiajs/vue3"
@@ -82,6 +82,19 @@ const emits = defineEmits<{
 	(e: "deleteSuccsess", value: string | number): void
 	(e: "editAddressSuccsess", value: string | number): void
 }>()
+
+const openModalAddShipment = inject<ReturnType<typeof ref<boolean>>>("openModalAddShipment")
+if (openModalAddShipment) {
+	watch(openModalAddShipment, async (val) => {
+		if (val) {
+			isModalShipment.value = true
+			await onOpenModalTrackingNumber()
+			nextTick(() => {
+				openModalAddShipment.value = false
+			})
+		}
+	})
+}
 
 // Shipment deletion
 const isDeleteShipment = ref<number | null>(null)

@@ -80,32 +80,32 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $source_alt_id to be used in no product transactions
  * @property int|null $estimated_weight grams
  * @property string|null $platform_transaction_id
- * @property string|null $quantity_picked
- * @property string $submitted_quantity_ordered
+ * @property numeric|null $quantity_picked
+ * @property numeric $submitted_quantity_ordered
  * @property array<array-key, mixed>|null $offers_data
  * @property \Illuminate\Support\Carbon|null $dispatched_at
  * @property \Illuminate\Support\Carbon|null $cancelled_at
  * @property int|null $family_id
  * @property int|null $department_id
  * @property int|null $sub_department_id
- * @property string|null $discretionary_offer
+ * @property numeric|null $discretionary_offer
  * @property string|null $discretionary_offer_label
  * @property string|null $label
  * @property string|null $marketplace_id
  * @property numeric $commission_amount
- * @property string $profit_amount
- * @property string|null $margin
+ * @property numeric $profit_amount
+ * @property numeric|null $margin
  * @property bool $is_cut_view
  * @property bool $is_gift
- * @property string|null $submitted_gross_amount
- * @property string|null $submitted_net_amount
+ * @property numeric|null $submitted_gross_amount
+ * @property numeric|null $submitted_net_amount
  * @property float $submitted_discount_factor
  * @property float $current_discount_factor
  * @property-read Asset|null $asset
- * @property-read Customer $customer
+ * @property-read Customer|null $customer
  * @property-read Collection<int, DeliveryNoteItem> $deliveryNoteItems
  * @property-read Collection<int, Feedback> $feedbacks
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read HistoricAsset|null $historicAsset
  * @property-read InvoiceTransaction|null $invoiceTransaction
  * @property-read Model|\Eloquent|null $model
@@ -114,7 +114,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read Collection<int, Offer> $offers
  * @property-read \App\Models\Ordering\Order|null $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @method static \Database\Factories\Ordering\TransactionFactory factory($count = null, $state = [])
  * @method static Builder<static>|Transaction newModelQuery()
  * @method static Builder<static>|Transaction newQuery()

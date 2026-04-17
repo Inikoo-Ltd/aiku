@@ -92,9 +92,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\CRM\Customer|null $customer
  * @property-read Collection<int, DispatchedEmail> $dispatchedEmails
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Organisation $organisation
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @property-read Collection<int, SubscriptionEvent> $subscriptionEvents
  * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\CRM\ProspectFactory factory($count = null, $state = [])

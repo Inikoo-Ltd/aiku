@@ -62,6 +62,7 @@ class IndexTransactions extends OrgAction
         $query->leftjoin('products', 'assets.model_id', '=', 'products.id');
         $query->leftjoin('orders', 'transactions.order_id', '=', 'orders.id');
         $query->leftjoin('currencies', 'orders.currency_id', '=', 'currencies.id');
+        $query->leftjoin('delivery_note_items', 'delivery_note_items.transaction_id', '=', 'transactions.id');
 
         return $query->defaultSort('transactions.id')
             ->select([
@@ -83,6 +84,7 @@ class IndexTransactions extends OrgAction
                 'transactions.discretionary_offer',
                 'transactions.discretionary_offer_label',
                 'transactions.is_cut_view',
+                'delivery_note_items.quantity_not_picked as dni_quantity_not_picked',
                 'assets.code as asset_code',
                 'assets.name as asset_name',
                 'assets.type as asset_type',

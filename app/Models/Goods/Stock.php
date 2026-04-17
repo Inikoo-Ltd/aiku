@@ -54,7 +54,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $raw_material
  * @property int|null $units_per_pack units per pack
  * @property int|null $units_per_carton units per carton
- * @property string|null $unit_value
+ * @property numeric|null $unit_value
  * @property int|null $image_id
  * @property int|null $gross_weight package weight grams
  * @property array<array-key, mixed> $settings
@@ -75,7 +75,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $packed_in_data
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Barcode> $barcode
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Media|null $image
  * @property-read MediaCollection<int, Media> $images
  * @property-read StockIntervals|null $intervals

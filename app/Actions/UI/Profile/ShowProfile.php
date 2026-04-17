@@ -8,7 +8,6 @@
 
 namespace App\Actions\UI\Profile;
 
-use App\Actions\Analytics\UserRequest\UI\IndexUserRequestLogs;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\HumanResources\Timesheet\UI\IndexTimesheets;
 use App\Actions\OrgAction;
@@ -19,7 +18,6 @@ use App\Enums\UI\SysAdmin\ProfileTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\HumanResources\TimesheetsResource;
 use App\Http\Resources\SysAdmin\User\UsersResource;
-use App\Http\Resources\SysAdmin\UserRequestLogsResource;
 use App\Models\SysAdmin\User;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -90,9 +88,7 @@ class ShowProfile extends OrgAction
                     fn () => HistoryResource::collection(IndexHistory::run($user, ProfileTabsEnum::HISTORY->value))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($user, ProfileTabsEnum::HISTORY->value))),
 
-                ProfileTabsEnum::VISIT_LOGS->value => $this->tab == ProfileTabsEnum::VISIT_LOGS->value ?
-                    fn () => UserRequestLogsResource::collection(IndexUserRequestLogs::run())
-                    : Inertia::lazy(fn () => UserRequestLogsResource::collection(IndexUserRequestLogs::run())),
+
 
 
 

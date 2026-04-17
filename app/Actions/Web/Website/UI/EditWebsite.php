@@ -341,7 +341,6 @@ class EditWebsite extends OrgAction
             ]
         ];
 
-
         // LLMs.txt section - for AI crawler configuration
         $blueprints[] = [
             'label'  => __('LLMs.txt'),
@@ -362,6 +361,56 @@ class EditWebsite extends OrgAction
                     'value'       => Arr::get($website->settings, 'llms_txt.use_fallback', true),
                     'information' => __('If enabled and no file is uploaded, the global LLMs.txt will be used.'),
                 ],
+            ]
+        ];
+
+        $blueprints[] = [
+            'label' => __('Retina'),
+            'icon' => 'fal fa-chart-network',
+            'fields' => [
+                'welcome_message' => [
+                    'type' => 'textEditor',
+                    'routeGetInternalLink' => [
+                        'name' => 'grp.org.shops.show.web.webpages.index',
+                        'parameters' => [
+                            'shop' => $website->shop->slug,
+                            'organisation' => $website->organisation->slug,
+                            'website' => $website?->slug
+                        ]
+                    ],
+                    'options' => [
+                        'counter' => true,
+                    ],
+                    'label' => __('Welcome Message'),
+                    'required' => false,
+                    'value' => Arr::get($website->settings, 'welcome_message'),
+                    'full' => true,
+                    'information' => __('Displayed on the Retina dashboard as the main text.'),
+                    'toogle' => [
+                        'heading2',
+                        'heading3',
+                        'fontSize',
+                        'bold',
+                        'italic',
+                        'underline',
+                        'bulletList',
+                        "fontFamily",
+                        'orderedList',
+                        'blockquote',
+                        'divider',
+                        'alignLeft',
+                        'alignRight',
+                        "customLink",
+                        'alignCenter',
+                        'undo',
+                        'redo',
+                        'highlight',
+                        'color',
+                        'clear',
+                        'query'
+                    ],
+                ],
+
             ]
         ];
 

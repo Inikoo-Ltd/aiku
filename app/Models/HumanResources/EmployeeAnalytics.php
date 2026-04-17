@@ -28,8 +28,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array<array-key, mixed>|null $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\HumanResources\Employee $employee
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\HumanResources\Employee|null $employee
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeAnalytics newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeAnalytics newQuery()

@@ -56,11 +56,11 @@ const resolveParams = (config: any) => {
 
     return config.parameters || {}
 }
-
+const aiGenerateImagesError = ref<string | null>(null)
 const generateAIImages = async () => {
     try {
         isGeneratingAI.value = true
-
+        aiGenerateImagesError.value = null
         const payload = {
             images: selectedMediaForAI.value.map(m => m.image_id),
             prompt: aiPrompt.value
@@ -107,12 +107,14 @@ const generateAIImages = async () => {
         })
 
     } catch (e) {
+        console.log("e", e)
         console.error("e", e)
-        notify({
-            title: trans('Error'),
-            text: trans('Failed to generate AI'),
-            type: 'error'
-        })
+         aiGenerateImagesError.value = 'The OpenAI service is currently unreachable, please try again later.'
+        // notify({
+        //     title: trans('Error'),
+        //     text: trans('Failed to generate AI'),
+        //     type: 'error'
+        // })
     } finally {
         isGeneratingAI.value = false
     }
@@ -375,6 +377,15 @@ const submitBundle = async () => {
                     type: 'success'
                 })
 
+                const selectedChannel = customerChannelOptions.value.find(
+                    c => c.customer_sales_channel_id === customerChannelsId.value
+                )
+                if (selectedChannel) {
+                    localStorage.setItem('layout_dropshipping', JSON.stringify({
+                        currentPlatform: selectedChannel.customer_sales_channel_slug
+                    }))
+                }
+
                 bundle.step.value = 1
                 selectedMedia.value = []
                 selectedMediaIds.value = []
@@ -603,7 +614,9 @@ watch(
 
                             <InputText v-model="bundle.title.value" type="text" class="w-full pr-10 text-base p-2"
                                 :placeholder="ctrans('Bundle Title')" required />
-
+                            <div v-if="bundle.aiTitleError" class="text-xs text-red-500 mt-1">
+                                {{ bundle.aiTitleError }}
+                            </div>
                             <!-- AI ICON BUTTON -->
                             <Button icon="fal fa-sparkles" type="button" @click="bundle.generateAITitle" :tooltip="trans('Generate AI')"  :loading="bundle.isGeneratingAI.value"
                                 :disabled="isGeneratingAI || !bundle.products.value.length" class="absolute right-2 top-1/2 -translate-y-1/2 
@@ -743,7 +756,9 @@ watch(
 
                         <Textarea v-model="bundle.description.value" rows="6" autoResize class="w-full mt-1"
                             placeholder="Input your description" />
-
+                        <div v-if="bundle.aiDescError" class="text-xs text-red-500 mt-1">
+                            {{ bundle.aiDescError }}
+                        </div>
                         <div class="flex justify-between items-center mt-2">
 
                             <div class="text-xs text-gray-400">
@@ -909,6 +924,10 @@ watch(
                         </div>
 
                         <Textarea v-model="aiPrompt" rows="3" class="w-full" placeholder="Input description" />
+                    </div>
+
+                    <div v-if="aiGenerateImagesError" class="text-xs text-red-500 mt-1">
+                        {{ aiGenerateImagesError }}
                     </div>
 
                     <template #footer>

@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon $snapshot_date
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerRfmSnapshot newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerRfmSnapshot newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerRfmSnapshot query()

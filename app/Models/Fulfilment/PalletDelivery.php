@@ -61,18 +61,18 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @property string|null $public_notes
  * @property string|null $internal_notes
  * @property int $currency_id
- * @property string|null $grp_exchange
- * @property string|null $org_exchange
- * @property string $gross_amount Total asserts amount (excluding charges and shipping) before discounts
- * @property string $goods_amount
- * @property string $services_amount
- * @property string $net_amount
- * @property string|null $grp_net_amount
- * @property string|null $org_net_amount
+ * @property numeric|null $grp_exchange
+ * @property numeric|null $org_exchange
+ * @property numeric $gross_amount Total asserts amount (excluding charges and shipping) before discounts
+ * @property numeric $goods_amount
+ * @property numeric $services_amount
+ * @property numeric $net_amount
+ * @property numeric|null $grp_net_amount
+ * @property numeric|null $org_net_amount
  * @property int $tax_category_id
- * @property string $tax_amount
- * @property string $total_amount
- * @property string $payment_amount
+ * @property numeric $tax_amount
+ * @property numeric $total_amount
+ * @property numeric $payment_amount
  * @property array<array-key, mixed>|null $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -85,9 +85,9 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @property-read Currency $currency
  * @property-read Address|null $deliveryAddress
  * @property-read mixed $discount_amount
- * @property-read \App\Models\Fulfilment\Fulfilment $fulfilment
- * @property-read \App\Models\Fulfilment\FulfilmentCustomer $fulfilmentCustomer
- * @property-read Group $group
+ * @property-read \App\Models\Fulfilment\Fulfilment|null $fulfilment
+ * @property-read \App\Models\Fulfilment\FulfilmentCustomer|null $fulfilmentCustomer
+ * @property-read Group|null $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Organisation $organisation
  * @property-read Collection<int, \App\Models\Fulfilment\Pallet> $pallets

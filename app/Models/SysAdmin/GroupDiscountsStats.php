@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_orders
  * @property int $number_invoices
  * @property int $number_delivery_notes
- * @property string $grp_amount
+ * @property numeric $grp_amount
  * @property int $number_offer_campaigns
  * @property int $number_current_offer_campaigns
  * @property int $number_offer_campaigns_offers_state_in_process
@@ -39,7 +39,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_offer_allowances_state_suspended
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupDiscountsStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupDiscountsStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupDiscountsStats query()

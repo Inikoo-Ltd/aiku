@@ -36,8 +36,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $code
  * @property string $description
  * @property RawMaterialUnitEnum $unit
- * @property string $unit_cost
- * @property string|null $quantity_on_location
+ * @property numeric $unit_cost
+ * @property numeric|null $quantity_on_location
  * @property RawMaterialStockStatusEnum $stock_status
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -45,9 +45,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Organisation $organisation
- * @property-read \App\Models\Production\Production $production
+ * @property-read \App\Models\Production\Production|null $production
  * @property-read \App\Models\Production\RawMaterialStats|null $stats
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RawMaterial newModelQuery()

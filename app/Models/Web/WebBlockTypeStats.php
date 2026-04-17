@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_webpages
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Web\WebBlockType $webBlockType
+ * @property-read \App\Models\Web\WebBlockType|null $webBlockType
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebBlockTypeStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebBlockTypeStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebBlockTypeStats query()

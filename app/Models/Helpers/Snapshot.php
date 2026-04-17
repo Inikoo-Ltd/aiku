@@ -48,7 +48,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $last_fetched_at
  * @property string|null $source_id
  * @property string|null $label
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Model|\Eloquent|null $parent
  * @property-read Model|\Eloquent|null $publisher
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Slide> $slides

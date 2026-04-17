@@ -18,8 +18,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_orders
  * @property int $number_invoices
  * @property int $number_delivery_notes
- * @property string $org_amount
- * @property string $grp_amount
+ * @property numeric $org_amount
+ * @property numeric $grp_amount
  * @property int $number_offer_campaigns
  * @property int $number_current_offer_campaigns
  * @property int $number_offer_campaigns_offers_state_in_process

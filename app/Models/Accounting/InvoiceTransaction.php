@@ -49,7 +49,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property numeric|null $quantity
  * @property numeric $gross_amount
  * @property numeric $net_amount
- * @property string|null $profit_amount
+ * @property numeric|null $profit_amount
  * @property int $tax_category_id
  * @property numeric|null $grp_exchange
  * @property numeric|null $org_exchange
@@ -73,19 +73,19 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $master_family_id
  * @property int|null $master_asset_id
  * @property bool $is_refund
- * @property string $tax_amount
+ * @property numeric $tax_amount
  * @property bool $is_tax_only
- * @property string $amount_total
+ * @property numeric $amount_total
  * @property numeric $commission_amount
- * @property string|null $margin
+ * @property numeric|null $margin
  * @property bool $is_gift
  * @property string|null $marketplace_id
  * @property int|null $brand_id
  * @property-read Asset|null $asset
  * @property-read Currency|null $currency
- * @property-read \App\Models\CRM\Customer $customer
+ * @property-read \App\Models\CRM\Customer|null $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransactionHasFeedback> $feedbackBridges
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read HistoricAsset|null $historicAsset
  * @property-read \App\Models\Accounting\Invoice|null $invoice
  * @property-read Model|\Eloquent $item
@@ -97,7 +97,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\InvoiceTransactionHasOrgStock> $orgStockBridges
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read RecurringBillTransaction|null $recurringBillTransaction
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read TaxCategory $taxCategory
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\InvoiceTransactionHasTradeUnit> $tradeUnitBridges
  * @property-read Transaction|null $transaction

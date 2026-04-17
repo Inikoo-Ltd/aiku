@@ -100,7 +100,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\HumanResources\Clocking> $clockings
  * @property-read string|null $department
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Collection<int, \App\Models\HumanResources\HRAnnouncement> $hrAnnouncements
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $images

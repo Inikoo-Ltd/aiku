@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
@@ -43,9 +44,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $image_id
  * @property int|null $shop_id
  * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  * @property string|null $delete_comment
  * @property CollectionStateEnum $state
  * @property string|null $source_id
@@ -59,7 +60,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $description_extra
  * @property CollectionProductsStatusEnum $products_status
  * @property array<array-key, mixed>|null $offers_data
- * @property \Illuminate\Support\Carbon|null $inactivated_at
+ * @property Carbon|null $inactivated_at
  * @property string|null $name_i8n
  * @property string|null $description_i8n
  * @property string|null $description_title_i8n
@@ -68,7 +69,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read MasterCollection|null $masterCollection
@@ -130,7 +131,7 @@ class Collection extends Model implements Auditable, HasMedia
             'name'              => (string)$this->name,
             'description'       => (string)$this->description,
             'state'             => $this->state->value,
-            'created_at'        => $this->created_at->timestamp,
+            'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }
 
