@@ -56,6 +56,27 @@ const props = defineProps<{
     isHasParentMailshot: boolean
     numberSecondWaveRecipients?: number
     isSecondWave: boolean
+    ownShopTemplates?: Array<{
+        id: number,
+        slug: string,
+        name: string,
+        compiled_layout: string,
+        created_at: string,
+        shop_name: string
+    }>
+    otherShopTemplates?: Array<{
+        id: number,
+        slug: string,
+        name: string,
+        compiled_layout: string,
+        created_at: string,
+        shop_name: string
+    }>
+    organisationSlug?: string
+    shopSlug?: string
+    workshopRoute?: routeType
+    mailshotId?: number
+    groupId?: string
 }>();
 
 const currentTab = ref(props.tabs.current);
@@ -664,5 +685,10 @@ watch(
         </div>
 
     </div>
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
+    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
+        :own-shop-templates="currentTab === 'showcase' ? props.ownShopTemplates : undefined"
+        :other-shop-templates="currentTab === 'showcase' ? props.otherShopTemplates : undefined"
+        :organisation-slug="currentTab === 'showcase' ? props.organisationSlug : undefined"
+        :shop-slug="currentTab === 'showcase' ? props.shopSlug : undefined"
+        :workshop-route="currentTab === 'showcase' ? props.workshopRoute : undefined" />
 </template>
