@@ -257,10 +257,9 @@ const effectiveShopSlug = computed(() =>
             </div>
 
             <!-- Template Carousel -->
-            <EmailTemplateCarousel :mailshot-id="props.data.mailshot.data.slug"
-                :shop-id="props.data.mailshot.data.shop_id || ''" :organisation-slug="effectiveOrganisationSlug"
+            <EmailTemplateCarousel :mailshot-slug="props.data.mailshot.data.slug" :organisation-slug="effectiveOrganisationSlug"
                 :shop-slug="effectiveShopSlug" :own-shop-templates="effectiveOwnShopTemplates"
-                :other-shop-templates="effectiveOtherShopTemplates" @loadOtherShopTemplates="loadOtherShopTemplates" />
+                :other-shop-templates="effectiveOtherShopTemplates" />
         </div>
     </div>
 </template>

@@ -19,8 +19,7 @@ interface Template {
 }
 
 interface Props {
-    mailshotId: string;
-    shopId: string;
+    mailshotSlug: string;
     organisationSlug: string;
     shopSlug: string;
     ownShopTemplates?: Array<{
@@ -78,10 +77,11 @@ const ownShopName = computed(() => {
                 </h3>
             </div>
 
-            <Carousel :value="props.ownShopTemplates" :numVisible="4" :options="carouselOptions" class="mb-8">
+            <Carousel :value="props.ownShopTemplates" :showIndicators="true" :numVisible="4" :numScroll="4"
+                :options="carouselOptions" class="mb-8">
                 <template #item="slotProps">
                     <TemplateCarouselItem :template="slotProps.data" :organisation-slug="props.organisationSlug"
-                        :shop-slug="props.shopSlug" :mailshot-id="props.mailshotId" button-type="primary"
+                        :shop-slug="props.shopSlug" :mailshot-slug="props.mailshotSlug" button-type="secondary"
                         :show-shop-name="false" :show-envelope-icon="true" />
                 </template>
             </Carousel>
@@ -101,7 +101,7 @@ const ownShopName = computed(() => {
                     :circular="false" :responsiveOptions="carouselOptions" class="mb-8">
                     <template #item="slotProps">
                         <TemplateCarouselItem :template="slotProps.data" :organisation-slug="props.organisationSlug"
-                            :shop-slug="props.shopSlug" :mailshot-id="props.mailshotId" button-type="secondary"
+                            :shop-slug="props.shopSlug" :mailshot-slug="props.mailshotSlug" button-type="secondary"
                             :show-shop-name="true" :show-envelope-icon="false" />
                     </template>
                 </Carousel>

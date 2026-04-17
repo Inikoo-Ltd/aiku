@@ -22,7 +22,7 @@ interface Props {
     template: Template;
     organisationSlug: string;
     shopSlug: string;
-    mailshotId: string;
+    mailshotSlug: string;
     buttonType: 'primary' | 'secondary';
     showShopName: boolean;
     showEnvelopeIcon: boolean;
@@ -69,7 +69,7 @@ const formatDate = (dateString?: string): string => {
                 <Link :href="route(`grp.org.shops.show.marketing.${mailshotType || 'mailshots'}.workshop`, {
                     organisation: organisationSlug,
                     shop: shopSlug,
-                    mailshot: mailshotId,
+                    mailshot: mailshotSlug,
                     template: template.slug
                 })" class="block w-full">
                     <Button :label="trans('Use Template')" :type="buttonType" size="sm" class="w-full" />
