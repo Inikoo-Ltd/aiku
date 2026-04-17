@@ -341,7 +341,10 @@ class GetPalletReturnActions
                 ]
             ];
 
-        $dispatchTooltip = $palletReturn->is_collection ? __('Set as collected') : __('Set as dispatched');
+        $requiresShipmentBeforeDispatch = !$palletReturn->is_collection && !$palletReturn->shipments()->exists();
+        $dispatchTooltip = $requiresShipmentBeforeDispatch
+            ? __('Please add shipment before dispatch')
+            : ($palletReturn->is_collection ? __('Set as collected') : __('Set as dispatched'));
         $dispatchLabel = $palletReturn->is_collection ? __('Set as Collected') : __('Dispatch');
 
         $actions[] =
@@ -357,7 +360,8 @@ class GetPalletReturnActions
                     'parameters' => [
                         'palletReturn' => $palletReturn->id
                     ]
-                ]
+                ],
+                'disabled' => $requiresShipmentBeforeDispatch
 
         ];
 

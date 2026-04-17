@@ -292,6 +292,20 @@ const modalPrimaryLabel = computed(() => {
 })
 const canShowModalPrimaryButton = computed(() => selectedDispatchableReturn.value?.state !== "dispatched")
 const canEditParcels = computed(() => selectedDispatchableReturn.value?.state !== "dispatched")
+const hasShipmentRequirementMet = computed(() => {
+    if (selectedDispatchableReturn.value?.isCollection) {
+        return true
+    }
+
+    return (selectedDispatchableReturn.value?.shipments?.length ?? 0) > 0
+})
+const canSubmitModalPrimaryButton = computed(() => {
+    if (selectedDispatchableReturn.value?.state === "picking") {
+        return true
+    }
+
+    return hasShipmentRequirementMet.value
+})
 
 const onOpenModalPickingUsers = () => {
     if (canChangePacker.value) {
@@ -543,6 +557,15 @@ const onSetAsPicked = async () => {
 const onDispatchPalletReturn = async () => {
     const dispatchRoute = selectedDispatchableReturn.value?.dispatchRoute
     if (!dispatchRoute?.name) {
+        return
+    }
+
+    if (!hasShipmentRequirementMet.value) {
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Please add shipment before dispatch"),
+            type: "error",
+        })
         return
     }
 
@@ -993,6 +1016,8 @@ const onDispatchPalletReturn = async () => {
                 type="save"
                 size="sm"
                 :loading="isLoadingSetAsPicked"
+                :disabled="!canSubmitModalPrimaryButton"
+                v-tooltip="!canSubmitModalPrimaryButton ? trans('Please add shipment before dispatch') : ''"
                 @click="selectedDispatchableReturn?.state === 'picking' ? onSetAsPicked() : onDispatchPalletReturn()"
             />
         </div>

@@ -109,6 +109,20 @@ watch(
 
 const canShowModalPrimaryButton = computed(() => selectedDispatchableReturn.value?.state !== "dispatched")
 const isPickedState = computed(() => selectedDispatchableReturn.value?.state === "picked")
+const hasShipmentRequirementMet = computed(() => {
+    if (selectedDispatchableReturn.value?.isCollection) {
+        return true
+    }
+
+    return (selectedDispatchableReturn.value?.shipments?.length ?? 0) > 0
+})
+const canSubmitModalPrimaryButton = computed(() => {
+    if (selectedDispatchableReturn.value?.state === "picking") {
+        return true
+    }
+
+    return hasShipmentRequirementMet.value
+})
 const modalPrimaryLabel = computed(() => {
     if (selectedDispatchableReturn.value?.state === "picking") {
         return trans("Set as Picked")
@@ -208,6 +222,15 @@ const onSetAsPicked = () => {
 const onDispatchPalletReturn = async () => {
     const dispatchRoute = selectedDispatchableReturn.value?.dispatchRoute
     if (!dispatchRoute?.name) {
+        return
+    }
+
+    if (!hasShipmentRequirementMet.value) {
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Please add at least one shipment before dispatch"),
+            type: "error",
+        })
         return
     }
 
@@ -923,6 +946,8 @@ const palletRoute = (item: any) => {
                 type="save"
                 size="sm"
                 :loading="isLoadingSetAsPicked"
+                :disabled="!canSubmitModalPrimaryButton"
+                v-tooltip="!canSubmitModalPrimaryButton ? trans('Please add shipment before dispatch') : ''"
                 @click="selectedDispatchableReturn?.state === 'picking' ? onSetAsPicked() : onDispatchPalletReturn()"
             />
         </div>
