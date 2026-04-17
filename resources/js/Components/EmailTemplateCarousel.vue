@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faStore, faEnvelope } from '@fal'
 import Carousel from 'primevue/carousel'
 import TemplateCarouselItem from './TemplateCarouselItem.vue'
+import { routeType } from "@/types/route";
 
 library.add(faStore, faEnvelope);
 
@@ -38,6 +39,7 @@ interface Props {
         created_at: string,
         shop_name: string
     }>;
+    workshopRoute?: routeType;
 }
 
 const props = defineProps<Props>();
@@ -82,7 +84,7 @@ const ownShopName = computed(() => {
                 <template #item="slotProps">
                     <TemplateCarouselItem :template="slotProps.data" :organisation-slug="props.organisationSlug"
                         :shop-slug="props.shopSlug" :mailshot-slug="props.mailshotSlug" button-type="secondary"
-                        :show-shop-name="false" :show-envelope-icon="true" />
+                        :show-shop-name="false" :show-envelope-icon="true" :workshop-route="props.workshopRoute" />
                 </template>
             </Carousel>
         </div>
@@ -102,7 +104,7 @@ const ownShopName = computed(() => {
                     <template #item="slotProps">
                         <TemplateCarouselItem :template="slotProps.data" :organisation-slug="props.organisationSlug"
                             :shop-slug="props.shopSlug" :mailshot-slug="props.mailshotSlug" button-type="secondary"
-                            :show-shop-name="true" :show-envelope-icon="false" />
+                            :show-shop-name="true" :show-envelope-icon="false" :workshop-route="props.workshopRoute" />
                     </template>
                 </Carousel>
             </div>

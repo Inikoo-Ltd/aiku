@@ -62,6 +62,7 @@ const props = defineProps<{
     otherShopTemplates?: { templates: any[] }
     organisationSlug?: string
     shopSlug?: string
+    workshopRoute?: routeType
 }>();
 
 const currentTab = ref(props.tabs.current);
@@ -694,6 +695,7 @@ watch(
         ownShopTemplates: props.ownShopTemplates,
         otherShopTemplates: props.otherShopTemplates,
         organisationSlug: props.organisationSlug,
-        shopSlug: props.shopSlug
+        shopSlug: props.shopSlug,
+        workshopRoute: props.workshopRoute
     } : {}" />
 </template>

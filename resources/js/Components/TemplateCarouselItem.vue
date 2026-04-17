@@ -5,6 +5,7 @@ import { trans } from 'laravel-vue-i18n'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faEnvelope } from '@fal'
+import { routeType } from "@/types/route";
 
 library.add(faEnvelope);
 
@@ -25,8 +26,8 @@ interface Props {
     mailshotSlug: string;
     buttonType: 'primary' | 'secondary';
     showShopName: boolean;
-    showEnvelopeIcon: boolean;
     mailshotType?: 'mailshots' | 'newsletters';
+    workshopRoute?: routeType;
 }
 
 const props = defineProps<Props>();
@@ -57,7 +58,6 @@ const formatDate = (dateString?: string): string => {
                             <span v-if="template.created_at">{{ formatDate(template.created_at) }}</span>
                         </p>
                     </div>
-                    <FontAwesomeIcon v-if="showEnvelopeIcon" :icon="faEnvelope" class="text-gray-400 ml-2" />
                 </div>
 
                 <div class="mb-4">
@@ -66,10 +66,8 @@ const formatDate = (dateString?: string): string => {
                     </div>
                 </div>
 
-                <Link :href="route(`grp.org.shops.show.marketing.${mailshotType || 'mailshots'}.workshop`, {
-                    organisation: organisationSlug,
-                    shop: shopSlug,
-                    mailshot: mailshotSlug,
+                <Link v-if="workshopRoute?.name" :href="route(workshopRoute.name, {
+                    ...workshopRoute.parameters,
                     template: template.slug
                 })" class="block w-full">
                     <Button :label="trans('Use Template')" :type="buttonType" size="sm" class="w-full" />

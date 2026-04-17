@@ -293,6 +293,15 @@ class ShowMailshot extends OrgAction
                 'otherShopTemplates' => $canLoadTemplates ? GetEmailTemplates::make()->action($this->shop, 'other') : [],
                 'organisationSlug' => $this->organisation->slug,
                 'shopSlug' => $this->shop->slug,
+                'workshopRoute' => [
+                    'name' => $mailshot->type === MailshotTypeEnum::MARKETING ? "grp.org.shops.show.marketing.mailshots.workshop" : "grp.org.shops.show.marketing.newsletters.workshop",
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'shop' => $this->shop->slug,
+                        'mailshot' => $mailshot->slug
+                    ]
+                ],
+
             ]
         )->table(
             IndexDispatchedEmails::make()->tableStructure(

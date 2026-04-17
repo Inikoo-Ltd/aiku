@@ -26,6 +26,7 @@ import { Link, router } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
 import EmailTemplateCarousel from "@/Components/EmailTemplateCarousel.vue"
+import { routeType } from "@/types/route";
 
 library.add(
     faUser, faEnvelope, faSeedling, faShare, faInboxOut, faCheck,
@@ -69,6 +70,7 @@ const props = defineProps<{
     }>
     organisationSlug?: string
     shopSlug?: string
+    workshopRoute?: routeType
 }>()
 
 const previewOpen = ref(false)
@@ -257,9 +259,10 @@ const effectiveShopSlug = computed(() =>
             </div>
 
             <!-- Template Carousel -->
-            <EmailTemplateCarousel :mailshot-slug="props.data.mailshot.data.slug" :organisation-slug="effectiveOrganisationSlug"
-                :shop-slug="effectiveShopSlug" :own-shop-templates="effectiveOwnShopTemplates"
-                :other-shop-templates="effectiveOtherShopTemplates" />
+            <EmailTemplateCarousel :mailshot-slug="props.data.mailshot.data.slug"
+                :organisation-slug="effectiveOrganisationSlug" :shop-slug="effectiveShopSlug"
+                :own-shop-templates="effectiveOwnShopTemplates" :other-shop-templates="effectiveOtherShopTemplates"
+                :workshop-route="props.workshopRoute" />
         </div>
     </div>
 </template>
