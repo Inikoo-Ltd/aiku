@@ -3,27 +3,27 @@ import { trans } from "laravel-vue-i18n"
 export const irisVariable = [
     {
         label: trans("Name"),
-        value: "{{ name }}",
+        value: "name",
     },
     {
         label: trans("Username"),
-        value: "{{ username }}",
+        value: "username",
     },
     {
         label: trans("Email"),
-        value: "{{ email }}",
+        value: "email",
     },
     {
         label: trans("Favourites count"),
-        value: "{{ favourites_count }}",
+        value: "favourites_count",
     },
     {
         label: trans("Cart count"),
-        value: "{{ cart_count }}",
+        value: "cart_count",
     },
     {
         label: trans("Cart amount"),
-        value: "{{ cart_amount }}",
+        value: "cart_amount",
     },
 ]
 
