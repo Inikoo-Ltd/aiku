@@ -291,8 +291,6 @@ class ShowMailshot extends OrgAction
                 'groupId' => $mailshot->group_id,
                 'ownShopTemplates' => $canLoadTemplates ? GetEmailTemplates::make()->action($this->shop, 'own') : [],
                 'otherShopTemplates' => $canLoadTemplates ? GetEmailTemplates::make()->action($this->shop, 'other') : [],
-                'organisationSlug' => $this->organisation->slug,
-                'shopSlug' => $this->shop->slug,
                 'workshopRoute' => [
                     'name' => $mailshot->type === MailshotTypeEnum::MARKETING ? "grp.org.shops.show.marketing.mailshots.workshop" : "grp.org.shops.show.marketing.newsletters.workshop",
                     'parameters' => [

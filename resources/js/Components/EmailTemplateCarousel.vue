@@ -11,9 +11,6 @@ import { routeType } from "@/types/route";
 library.add(faStore, faEnvelope);
 
 interface Props {
-    mailshotSlug: string;
-    organisationSlug: string;
-    shopSlug: string;
     ownShopTemplates?: Array<{
         id: number,
         slug: string,
@@ -92,9 +89,8 @@ const ownShopName = computed(() => {
                 <Carousel :value="otherShopTemplatesData" :showIndicators="true" :numVisible="4" :numScroll="4"
                     :circular="false" :responsiveOptions="carouselOptions" class="mb-8">
                     <template #item="slotProps">
-                        <TemplateCarouselItem :template="slotProps.data" :organisation-slug="props.organisationSlug"
-                            button-type="secondary" :show-shop-name="true" :show-envelope-icon="false"
-                            :workshop-route="props.workshopRoute" />
+                        <TemplateCarouselItem :template="slotProps.data" button-type="secondary" :show-shop-name="true"
+                            :show-envelope-icon="false" :workshop-route="props.workshopRoute" />
                     </template>
                 </Carousel>
             </div>

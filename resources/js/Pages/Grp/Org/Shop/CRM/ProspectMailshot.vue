@@ -72,11 +72,7 @@ const props = defineProps<{
         created_at: string,
         shop_name: string
     }>
-    organisationSlug?: string
-    shopSlug?: string
     workshopRoute?: routeType
-    mailshotId?: number
-    groupId?: string
 }>();
 
 const currentTab = ref(props.tabs.current);
@@ -688,7 +684,5 @@ watch(
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
         :own-shop-templates="currentTab === 'showcase' ? props.ownShopTemplates : undefined"
         :other-shop-templates="currentTab === 'showcase' ? props.otherShopTemplates : undefined"
-        :organisation-slug="currentTab === 'showcase' ? props.organisationSlug : undefined"
-        :shop-slug="currentTab === 'showcase' ? props.shopSlug : undefined"
         :workshop-route="currentTab === 'showcase' ? props.workshopRoute : undefined" />
 </template>

@@ -68,8 +68,6 @@ const props = defineProps<{
         created_at: string,
         shop_name: string
     }>
-    organisationSlug?: string
-    shopSlug?: string
     workshopRoute?: routeType
 }>()
 
@@ -185,14 +183,6 @@ const effectiveOtherShopTemplates = computed(() =>
     props.otherShopTemplates
 )
 
-const effectiveOrganisationSlug = computed(() =>
-    props.organisationSlug || 'demo-org'
-)
-
-const effectiveShopSlug = computed(() =>
-    props.shopSlug || 'demo-shop'
-)
-
 </script>
 
 <template>
@@ -259,10 +249,8 @@ const effectiveShopSlug = computed(() =>
             </div>
 
             <!-- Template Carousel -->
-            <EmailTemplateCarousel :mailshot-slug="props.data.mailshot.data.slug"
-                :organisation-slug="effectiveOrganisationSlug" :shop-slug="effectiveShopSlug"
-                :own-shop-templates="effectiveOwnShopTemplates" :other-shop-templates="effectiveOtherShopTemplates"
-                :workshop-route="props.workshopRoute" />
+            <EmailTemplateCarousel :own-shop-templates="effectiveOwnShopTemplates"
+                :other-shop-templates="effectiveOtherShopTemplates" :workshop-route="props.workshopRoute" />
         </div>
     </div>
 </template>

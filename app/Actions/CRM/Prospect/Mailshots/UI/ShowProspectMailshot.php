@@ -267,8 +267,6 @@ class ShowProspectMailshot extends OrgAction
                 'groupId' => $mailshot->group_id,
                 'ownShopTemplates' => $canLoadTemplates ? GetEmailTemplates::make()->action($this->shop, 'own') : [],
                 'otherShopTemplates' => $canLoadTemplates ? GetEmailTemplates::make()->action($this->shop, 'other') : [],
-                'organisationSlug' => $this->organisation->slug,
-                'shopSlug' => $this->shop->slug,
                 'workshopRoute' => [
                     'name' => "grp.org.shops.show.crm.prospects.mailshots.workshop",
                     'parameters' => [
