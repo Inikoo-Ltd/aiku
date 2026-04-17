@@ -70,6 +70,8 @@ class ShowIrisWebpage
                 'model_type'    => $webpage->model_type
             ],
             'webpage_img'  => $webpageImg,
+            'index_page'    => $webpage->index_page,
+            'follow_link'   => $webpage->follow_link
         ];
 
         return array_merge($baseWebpageData, [
