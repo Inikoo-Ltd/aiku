@@ -80,6 +80,7 @@ class ShowMailshot extends OrgAction
         }
         $isHasParentMailshot = $mailshot->parentMailshot()->exists();
 
+        $canLoadTemplates = in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS]);
         /* NOTE:
          * is_second_wave_enabled is perspective from parent mailshot
          * is_second_wave  is perspective from child mailshot
@@ -289,8 +290,8 @@ class ShowMailshot extends OrgAction
                 'numberSecondWaveRecipients' => $mailshotSecondWave?->recipients?->count() ?? 0,
                 'mailshotId' => $mailshot->id,
                 'groupId' => $mailshot->group_id,
-                'ownShopTemplates' => GetOwnShopEmailTemplates::run($this->shop),
-                'otherShopTemplates' => GetOtherShopEmailTemplates::make()->action($this->shop),
+                'ownShopTemplates' => $canLoadTemplates ? GetOwnShopEmailTemplates::run($this->shop) : [],
+                'otherShopTemplates' => $canLoadTemplates ? GetOtherShopEmailTemplates::make()->action($this->shop) : [],
                 'organisationSlug' => $this->organisation->slug,
                 'shopSlug' => $this->shop->slug,
             ]

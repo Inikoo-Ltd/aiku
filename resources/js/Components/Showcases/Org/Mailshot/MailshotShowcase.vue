@@ -52,7 +52,21 @@ const props = defineProps<{
     }
     liveStats?: any[]
     ownShopTemplates?: { templates: any[], shop_name: string }
-    otherShopTemplates?: { templates: any[] } | { data: any[], current_page: number, last_page: number, per_page: number, total: number }
+    otherShopTemplates?: {
+        data: any[],
+        current_page: number,
+        first_page_url: string | null,
+        from: number | null,
+        last_page: number,
+        last_page_url: string | null,
+        links: any[],
+        next_page_url: string | null,
+        path: string,
+        per_page: number,
+        prev_page_url: string | null,
+        to: number | null,
+        total: number
+    }
     organisationSlug?: string
     shopSlug?: string
 }>()

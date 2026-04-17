@@ -3,13 +3,13 @@ import { ref, computed } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faStore } from '@fal'
+import { faStore, faChevronLeft, faChevronRight, faEnvelope } from '@fal'
 import Carousel from 'primevue/carousel'
 import ProgressSpinner from 'primevue/progressspinner'
 import axios from 'axios'
 import TemplateCarouselItem from './TemplateCarouselItem.vue'
 
-library.add(faStore);
+library.add(faStore, faChevronLeft, faChevronRight, faEnvelope);
 
 interface Template {
     id: number;
@@ -26,7 +26,21 @@ interface Props {
     organisationSlug: string;
     shopSlug: string;
     ownShopTemplates: { templates: Template[], shop_name: string };
-    otherShopTemplates: { templates: Template[] } | { data: Template[], current_page: number, last_page: number, per_page: number, total: number };
+    otherShopTemplates: {
+        data: any[],
+        current_page: number,
+        first_page_url: string | null,
+        from: number | null,
+        last_page: number,
+        last_page_url: string | null,
+        links: any[],
+        next_page_url: string | null,
+        path: string,
+        per_page: number,
+        prev_page_url: string | null,
+        to: number | null,
+        total: number
+    }
 }
 
 const props = defineProps<Props>();
@@ -35,18 +49,19 @@ const isLoading = ref(false);
 const localOtherShopTemplates = ref<Template[]>([]);
 const currentPage = ref(1);
 const lastPage = ref(1);
+const currentCarouselPage = ref(0);
 
 const carouselOptions = computed(() => ({
     responsive: [
         {
             breakpoint: '1024px',
             numVisible: 3,
-            numScroll: 1
+            numScroll: 3
         },
         {
             breakpoint: '768px',
             numVisible: 2,
-            numScroll: 1
+            numScroll: 2
         },
         {
             breakpoint: '560px',
@@ -61,6 +76,32 @@ const carouselOptions = computed(() => ({
     showNavigators: true,
     showIndicators: false
 }));
+
+const numVisibleOther = ref(4);
+
+const carouselOptionsForOther = [
+    {
+        breakpoint: '1024px',
+        numVisible: 4,
+        numScroll: 4
+    },
+    {
+        breakpoint: '768px',
+        numVisible: 3,
+        numScroll: 3
+    },
+    {
+        breakpoint: '560px',
+        numVisible: 2,
+        numScroll: 2
+    }
+]
+
+const carouselOptionsOwn = [
+    { breakpoint: '1024px', numVisible: 4, numScroll: 4 },
+    { breakpoint: '768px', numVisible: 3, numScroll: 3 },
+    { breakpoint: '560px', numVisible: 2, numScroll: 2 }
+]
 
 const hasOwnTemplates = computed(() => props.ownShopTemplates?.templates?.length > 0);
 
@@ -77,6 +118,32 @@ const otherShopTemplatesData = computed(() => {
 
 const hasOtherTemplates = computed(() => otherShopTemplatesData.value.length > 0);
 const hasAnyTemplates = computed(() => hasOwnTemplates.value || hasOtherTemplates.value);
+
+// Boundary detection for carousel
+const isAtStartOfPage = computed(() => currentCarouselPage.value === 0);
+const isAtEndOfPage = computed(() => {
+    const totalItems = otherShopTemplatesData.value.length;
+    return currentCarouselPage.value >= Math.ceil(totalItems / numVisibleOther.value) - 1;
+});
+
+// Page availability from pagination data
+const hasPrevPage = computed(() => {
+    if (localOtherShopTemplates.value.length > 0) {
+        return currentPage.value > 1;
+    }
+    return props.otherShopTemplates?.prev_page_url !== null;
+});
+
+const hasNextPage = computed(() => {
+    if (localOtherShopTemplates.value.length > 0) {
+        return currentPage.value < lastPage.value;
+    }
+    return props.otherShopTemplates?.next_page_url !== null;
+});
+
+// Show custom buttons only at boundaries when pages are available
+const showPrevPageButton = computed(() => isAtStartOfPage.value && hasPrevPage.value);
+const showNextPageButton = computed(() => isAtEndOfPage.value && hasNextPage.value);
 
 const pagination = computed(() => {
     if (localOtherShopTemplates.value.length > 0) {
@@ -98,39 +165,52 @@ const pagination = computed(() => {
     };
 });
 
-const formatDate = (dateString?: string): string => {
-    if (!dateString) return '';
-    return new Date(dateString).toLocaleDateString();
-};
-
 const emit = defineEmits<{
     loadOtherShopTemplates: [page: number];
 }>();
 
-const loadPage = (page: number) => {
-    if (page >= 1 && pagination.value && page <= pagination.value.lastPage) {
-        emit('loadOtherShopTemplates', page);
-    }
-};
-
 const handlePageUpdate = (event: number) => {
-
-    console.log(event)
-    // const pageNumber = event + 1;
-    // const numVisible = carouselOptions.value.numVisible;
-    // const neededItems = numVisible * pageNumber;
-
-    // if (neededItems > 4 && !isLoading.value) {
-    //     const nextPage = Math.ceil(neededItems / 4);
-    //     if (nextPage > currentPage.value && nextPage <= lastPage.value) {
-    if (!pagination.value || pagination.value.total > pagination.value.perPage) {
-        fetchOtherShopTemplates(event + 1);
-    }
-    //     }
-    // }
+    currentCarouselPage.value = event;
 };
 
-const fetchOtherShopTemplates = async (page: number) => {
+const extractPageFromUrl = (url: string | null): number | null => {
+    if (!url) return null;
+    const match = url.match(/[?&]page=(\d+)/);
+    return match ? parseInt(match[1], 10) : null;
+};
+
+const loadPrevPage = () => {
+    let prevPage: number | null = null;
+
+    if (localOtherShopTemplates.value.length > 0) {
+        prevPage = currentPage.value - 1;
+    } else {
+        prevPage = extractPageFromUrl(props.otherShopTemplates?.prev_page_url);
+    }
+
+    if (prevPage !== null && prevPage >= 1) {
+        fetchOtherShopTemplates(prevPage, 'prev');
+    }
+};
+
+const loadNextPage = () => {
+    let nextPage: number | null = null;
+
+    if (localOtherShopTemplates.value.length > 0) {
+        nextPage = currentPage.value + 1;
+    } else {
+        nextPage = extractPageFromUrl(props.otherShopTemplates?.next_page_url);
+    }
+
+    if (nextPage !== null) {
+        const maxPage = localOtherShopTemplates.value.length > 0 ? lastPage.value : props.otherShopTemplates?.last_page;
+        if (maxPage && nextPage <= maxPage) {
+            fetchOtherShopTemplates(nextPage);
+        }
+    }
+};
+
+const fetchOtherShopTemplates = async (page: number, direction: 'next' | 'prev' = 'next') => {
     if (isLoading.value) return;
 
     isLoading.value = true;
@@ -144,12 +224,20 @@ const fetchOtherShopTemplates = async (page: number) => {
         });
 
         const data = response.data;
-        console.log(data);
         currentPage.value = data.current_page;
         lastPage.value = data.last_page;
 
-        // Append new templates to local data
-        localOtherShopTemplates.value = [...localOtherShopTemplates.value, ...data.data];
+        // Replace templates with new page data
+        localOtherShopTemplates.value = data.data;
+
+        // Reset carousel position based on direction
+        if (direction === 'next') {
+            currentCarouselPage.value = 0;
+        } else {
+            // Set to last page of carousel when going back
+            const totalItems = data.data.length;
+            currentCarouselPage.value = Math.max(0, Math.ceil(totalItems / numVisibleOther.value) - 1);
+        }
     } catch (error) {
         console.error('Error fetching other shop templates:', error);
     } finally {
@@ -194,15 +282,27 @@ const fetchOtherShopTemplates = async (page: number) => {
             </div>
 
             <div class="relative">
-                <Carousel :value="otherShopTemplatesData" :numVisible="4" :numScroll="4" :circular="true"
-                    :options="carouselOptions" @update:page="handlePageUpdate" class="mb-8"
-                    :class="{ 'opacity-50 pointer-events-none': isLoading }">
+                <Carousel :value="otherShopTemplatesData" :showIndicators="true" :numVisible="4" :numScroll="4"
+                    :circular="false" :responsiveOptions="carouselOptionsOwn" @update:page="handlePageUpdate"
+                    class="mb-8" :class="{ 'opacity-50 pointer-events-none': isLoading }"
+                    :showNavigators="!showPrevPageButton && !showNextPageButton">
                     <template #item="slotProps">
                         <TemplateCarouselItem :template="slotProps.data" :organisation-slug="props.organisationSlug"
                             :shop-slug="props.shopSlug" :mailshot-id="props.mailshotId" button-type="secondary"
                             :show-shop-name="true" :show-envelope-icon="false" />
                     </template>
                 </Carousel>
+
+                <!-- Custom Pagination Buttons -->
+                <button v-if="showPrevPageButton" @click="loadPrevPage" :disabled="isLoading"
+                    class="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center bg-white/80 hover:bg-white border border-gray-300 rounded-lg shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    <FontAwesomeIcon :icon="faChevronLeft" class="text-gray-700" />
+                </button>
+
+                <button v-if="showNextPageButton" @click="loadNextPage" :disabled="isLoading"
+                    class="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center bg-white/80 hover:bg-white border border-gray-300 rounded-lg shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    <FontAwesomeIcon :icon="faChevronRight" class="text-gray-700" />
+                </button>
 
                 <!-- Loading Overlay -->
                 <div v-if="isLoading"

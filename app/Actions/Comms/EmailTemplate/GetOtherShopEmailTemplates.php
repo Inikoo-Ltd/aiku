@@ -9,13 +9,12 @@
 namespace App\Actions\Comms\EmailTemplate;
 
 use App\Actions\OrgAction;
-use App\Http\Resources\Mail\EmailTemplateResource;
+use App\Enums\Comms\EmailTemplate\EmailTemplateBuilderEnum;
+use App\Enums\Comms\EmailTemplate\EmailTemplateStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\EmailTemplate;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -23,13 +22,17 @@ class GetOtherShopEmailTemplates extends OrgAction
 {
     use AsObject;
 
-    public function handle(Organisation $organisation, Shop $currentShop, $prefix = null, ?int $numberOfRecords = 4): LengthAwarePaginator
+    public function handle(Organisation $organisation, Shop $currentShop): array
     {
         $queryBuilder = QueryBuilder::for(EmailTemplate::class);
 
         $queryBuilder->where('email_templates.shop_id', '!=', $currentShop->id);
         $queryBuilder->whereNotNull('email_templates.compiled_layout');
         $queryBuilder->where('email_templates.compiled_layout', '!=', '');
+        $queryBuilder->where('email_templates.is_seeded', false);
+        $queryBuilder->where('email_templates.state', EmailTemplateStateEnum::ACTIVE->value);
+        $queryBuilder->where('email_templates.builder', EmailTemplateBuilderEnum::BEEFREE->value);
+
 
         return $queryBuilder
             ->leftJoin('shops', 'email_templates.shop_id', '=', 'shops.id')
@@ -42,8 +45,8 @@ class GetOtherShopEmailTemplates extends OrgAction
                 'shops.name as shop_name'
             ])
             ->orderBy('email_templates.created_at', 'desc')
-            ->withPaginator($prefix, $numberOfRecords)
-            ->withQueryString();
+            ->get()
+            ->toArray();
     }
 
     public function authorize(ActionRequest $request): bool
@@ -51,20 +54,20 @@ class GetOtherShopEmailTemplates extends OrgAction
         return true;
     }
 
-    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): array
     {
         $this->initialisationFromShop($shop, $request);
         return $this->handle($organisation, $shop);
     }
 
-    public function jsonResponse(LengthAwarePaginator $emailTemplates): AnonymousResourceCollection
+    public function jsonResponse(array $emailTemplates): array
     {
-        return EmailTemplateResource::collection($emailTemplates);
+        return $emailTemplates;
     }
 
-    public function action(Shop $currentShop, $prefix = null, ?int $numberOfRecords = 4): LengthAwarePaginator
+    public function action(Shop $currentShop): array
     {
         $this->initialisationFromShop($currentShop, []);
-        return $this->handle($this->organisation, $currentShop, $prefix, $numberOfRecords);
+        return $this->handle($this->organisation, $currentShop);
     }
 }
