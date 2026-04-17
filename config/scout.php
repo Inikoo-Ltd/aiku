@@ -59,7 +59,9 @@ return [
     |
     */
 
-    'queue' => env('SCOUT_QUEUE', false),
+    'queue' => [
+        'queue' => 'search'
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -86,8 +88,8 @@ return [
     */
 
     'chunk' => [
-        'searchable'   => 500,
-        'unsearchable' => 500,
+        'searchable'   => 1000,
+        'unsearchable' => 1000,
     ],
 
     /*
