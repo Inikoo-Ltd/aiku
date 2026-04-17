@@ -108,6 +108,7 @@ class TransactionsResource extends JsonResource
             'quantity_dispatched_fractional'    => $quantityDispatchedFractional,
             'quantity_fail'             => $this->quantity_fail,
             'quantity_cancelled'        => $this->quantity_cancelled,
+            'quantity_not_picked'       => $this->dni_quantity_not_picked,
             'gross_amount'              => $this->gross_amount,
             'net_amount'                => $this->net_amount,
             'price'                     => $this->price,
