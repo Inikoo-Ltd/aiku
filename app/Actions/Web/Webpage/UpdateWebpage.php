@@ -53,8 +53,6 @@ class UpdateWebpage extends OrgAction
         if (Arr::has($modelData, 'product_description_extra')) {
             $productData['description_extra'] = Arr::pull($modelData, 'product_description_extra');
         }
-
-
         // Prepare new SEO data
         $newData = [];
 
@@ -188,6 +186,8 @@ class UpdateWebpage extends OrgAction
             'product_description'       => ['sometimes', 'required', 'max:1500'],
             'product_description_extra' => ['sometimes', 'nullable', 'max:65500'],
             'breadcrumb_label'          => ['sometimes', 'string', 'max:40'],
+            'index_page' => ['sometimes', 'nullable', 'boolean'],
+            'follow_link' => ['sometimes', 'nullable', 'boolean'],
         ];
 
         if (!$this->strict) {
