@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $traffic_source_id
  * @property int $number_customers
  * @property int $number_customer_purchases
- * @property string $total_customer_revenue
+ * @property numeric $total_customer_revenue
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\CRM\TrafficSource $trafficSource

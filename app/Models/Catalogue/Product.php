@@ -68,7 +68,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $name
  * @property string|null $description
  * @property numeric|null $price
- * @property string $units
+ * @property numeric $units
  * @property string $unit
  * @property array<array-key, mixed> $data
  * @property array<array-key, mixed> $settings
@@ -138,7 +138,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $price_updated_at
  * @property Carbon|null $available_quantity_updated_at
  * @property string|null $images_updated_at
- * @property string|null $unit_price price per unit
+ * @property numeric|null $unit_price price per unit
  * @property array<array-key, mixed>|null $name_i8n
  * @property array<array-key, mixed>|null $description_i8n
  * @property array<array-key, mixed>|null $description_title_i8n
@@ -147,7 +147,7 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $master_product_id
  * @property Carbon|null $mark_for_discontinued_at
  * @property Carbon|null $discontinued_at
- * @property string|null $cost_price_ratio
+ * @property numeric|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
  * @property int|null $art1_image_id
@@ -176,7 +176,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $is_minion_variant
  * @property bool $has_live_webpage
  * @property string|null $marketplace_id
- * @property string|null $margin
+ * @property numeric|null $margin
  * @property string|null $marketplace_second_id
  * @property bool $is_bundle
  * @property bool|null $mismatch_with_master_detected
@@ -203,7 +203,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Catalogue\ProductCategory|null $family
  * @property-read LaravelCollection<int, Favourite> $favourites
  * @property-read Media|null $frontImage
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read \App\Models\Catalogue\HistoricAsset|null $historicAsset
  * @property-read LaravelCollection<int, \App\Models\Catalogue\HistoricAsset> $historicAssets
  * @property-read Media|null $image

@@ -36,8 +36,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $fixed_scope Key where address can be shared if have same checksum
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $latitude Latitude coordinate (WGS84)
- * @property string|null $longitude Longitude coordinate (WGS84)
+ * @property numeric|null $latitude Latitude coordinate (WGS84)
+ * @property numeric|null $longitude Longitude coordinate (WGS84)
  * @property string|null $geocoding_metadata
  * @property bool|null $failed_geo_location
  * @property-read \App\Models\Helpers\Country|null $country

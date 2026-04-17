@@ -111,9 +111,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_recurring_bills_status_former
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string $current_recurring_bills_amount
- * @property string $current_recurring_bills_amount_org_currency
- * @property string $current_recurring_bills_amount_grp_currency
+ * @property numeric $current_recurring_bills_amount
+ * @property numeric $current_recurring_bills_amount_org_currency
+ * @property numeric $current_recurring_bills_amount_grp_currency
  * @property int $number_pallets_state_request_return_submitted
  * @property int $number_pallets_state_request_return_confirmed
  * @property int $number_spaces
@@ -122,7 +122,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_spaces_state_finished
  * @property int $number_customers_status_pending_approval
  * @property int $number_customers_status_pre_registration
- * @property-read \App\Models\Fulfilment\Fulfilment $fulfilment
+ * @property-read \App\Models\Fulfilment\Fulfilment|null $fulfilment
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentStats query()

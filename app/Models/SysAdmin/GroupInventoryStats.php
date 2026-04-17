@@ -28,8 +28,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_locations_allow_stocks
  * @property int $number_locations_allow_fulfilment
  * @property int $number_locations_allow_dropshipping
- * @property string $stock_value
- * @property string $stock_commercial_value
+ * @property numeric $stock_value
+ * @property numeric $stock_commercial_value
  * @property int $number_org_stock_families
  * @property int $number_current_org_stock_families active + discontinuing
  * @property int $number_org_stock_families_state_in_process
@@ -82,7 +82,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_current_picked_bays Total picking trolleys status=true
  * @property int $number_current_picked_bays_in_use Total picking trolleys in use status=true, delivery_note_id not null
  * @property int $number_picked_bays Total picking trolleys including status=false ones
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupInventoryStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupInventoryStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupInventoryStats query()

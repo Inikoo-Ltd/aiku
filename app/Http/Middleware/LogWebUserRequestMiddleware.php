@@ -89,7 +89,7 @@ class LogWebUserRequestMiddleware
         if (app()->runningUnitTests()) {
             return false;
         }
-        
+
         return true;
     }
 }

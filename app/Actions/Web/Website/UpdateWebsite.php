@@ -109,7 +109,7 @@ class UpdateWebsite extends OrgAction
         if (Arr::has($modelData, "script_website")) {
             data_set($modelData, "settings.script_website.header", Arr::pull($modelData, "script_website"));
         }
-        
+
         if (Arr::has($modelData, "welcome_message")) {
             data_set($modelData, "settings.welcome_message", Arr::pull($modelData, "welcome_message"));
         }

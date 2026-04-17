@@ -53,14 +53,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Helpers\Currency $currency
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Catalogue\HistoricAsset|null $historicAsset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\HistoricAsset> $historicAssets
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Invoice> $invoices
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Order> $orders
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Billables\ShippingZoneSchema $schema
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Billables\ShippingZoneSchema|null $schema
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Billables\ShippingZoneStats|null $stats
  * @method static \Database\Factories\Billables\ShippingZoneFactory factory($count = null, $state = [])
  * @method static Builder<static>|ShippingZone newModelQuery()

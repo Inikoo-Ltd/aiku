@@ -41,10 +41,10 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $source_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Deployment> $deployments
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Snapshot|null $liveSnapshot
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
- * @property-read \App\Models\Comms\Outbox $outbox
+ * @property-read \App\Models\Comms\Outbox|null $outbox
  * @property-read Model|\Eloquent|null $parent
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Snapshot> $snapshots

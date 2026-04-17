@@ -17,9 +17,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $group_id
  * @property int $organisation_id
  * @property \Illuminate\Support\Carbon $date
- * @property string $org_stock_value FIFO method
+ * @property numeric $org_stock_value FIFO method
  * @property numeric $grp_stock_value FIFO method
- * @property string $org_stock_commercial_value
+ * @property numeric $org_stock_commercial_value
  * @property numeric $grp_stock_commercial_value
  * @property int $number_org_stocks
  * @property int $number_out_of_stock_org_stocks
@@ -31,11 +31,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $is_year
  * @property int $number_locations
  * @property float $percentage_out_of_stock
- * @property string $value_dormant_stock_1y
+ * @property numeric $value_dormant_stock_1y
  * @property int $number_org_stocks_not_sold_1y
  * @property float $percentage_value_dormant_stock_1y
  * @property int|null $group_stock_history_id
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStockHistory> $locationOrgStockHistories
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockHistory> $orgStockHistories
  * @property-read \App\Models\SysAdmin\Organisation $organisation

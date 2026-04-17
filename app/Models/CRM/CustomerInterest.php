@@ -20,11 +20,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $top_products_computed_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\CRM\Customer $customer
- * @property-read Group $group
+ * @property-read \App\Models\CRM\Customer|null $customer
+ * @property-read Group|null $group
  * @property-read Organisation $organisation
  * @property-read Product|null $registrationProduct
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerInterest newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerInterest newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerInterest query()

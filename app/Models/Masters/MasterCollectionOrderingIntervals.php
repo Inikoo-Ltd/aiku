@@ -195,7 +195,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $customers_invoiced_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Masters\MasterCollection $masterCollection
+ * @property-read \App\Models\Masters\MasterCollection|null $masterCollection
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollectionOrderingIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollectionOrderingIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollectionOrderingIntervals query()

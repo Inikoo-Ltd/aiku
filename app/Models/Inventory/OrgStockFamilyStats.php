@@ -33,11 +33,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $deleted_at
- * @property string $stock_value
- * @property string $on_the_way_po_value
+ * @property numeric $stock_value
+ * @property numeric $on_the_way_po_value
  * @property int $on_the_way_po_count
  * @property float|null $week_of_cover
- * @property-read \App\Models\Inventory\OrgStockFamily $orgStockFamily
+ * @property-read \App\Models\Inventory\OrgStockFamily|null $orgStockFamily
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamilyStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamilyStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamilyStats query()

@@ -83,9 +83,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $deleted_by
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Fulfilment\RecurringBill|null $currentRecurringBill
- * @property-read \App\Models\Fulfilment\Fulfilment $fulfilment
- * @property-read \App\Models\Fulfilment\FulfilmentCustomer $fulfilmentCustomer
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\Fulfilment\Fulfilment|null $fulfilment
+ * @property-read \App\Models\Fulfilment\FulfilmentCustomer|null $fulfilmentCustomer
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Location|null $location
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\MovementPallet> $movements
  * @property-read Organisation $organisation
@@ -100,7 +100,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\StoredItemAudit> $storedItemAudits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\StoredItem> $storedItems
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
- * @property-read Warehouse $warehouse
+ * @property-read Warehouse|null $warehouse
  * @method static \Database\Factories\Fulfilment\PalletFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pallet locationId($located)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pallet newModelQuery()

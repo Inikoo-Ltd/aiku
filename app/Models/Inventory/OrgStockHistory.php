@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool|null $sold_within_1y
  * @property \Illuminate\Support\Carbon|null $last_sold_date
  * @property float|null $non_moving_1y
- * @property-read \App\Models\Inventory\OrgStock $orgStock
+ * @property-read \App\Models\Inventory\OrgStock|null $orgStock
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockHistory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockHistory newQuery()

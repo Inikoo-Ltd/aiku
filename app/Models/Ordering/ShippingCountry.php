@@ -26,8 +26,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Country $country
- * @property-read Shop $shop
+ * @property-read Country|null $country
+ * @property-read Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShippingCountry newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShippingCountry newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShippingCountry query()

@@ -37,10 +37,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $delete_comment
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\JobOrderItem> $jobOrderItems
  * @property-read Organisation $organisation
- * @property-read \App\Models\Production\Production $production
+ * @property-read \App\Models\Production\Production|null $production
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrder newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrder newQuery()

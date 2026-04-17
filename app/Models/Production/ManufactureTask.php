@@ -33,10 +33,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $slug
  * @property string $code
  * @property string $name
- * @property string $task_materials_cost
- * @property string $task_energy_cost
- * @property string $task_other_cost
- * @property string $task_work_cost
+ * @property numeric $task_materials_cost
+ * @property numeric $task_energy_cost
+ * @property numeric $task_other_cost
+ * @property numeric $task_work_cost
  * @property bool $status
  * @property float $task_lower_target
  * @property float $task_upper_target
@@ -50,9 +50,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\Artefact> $artefacts
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Organisation $organisation
- * @property-read \App\Models\Production\Production $production
+ * @property-read \App\Models\Production\Production|null $production
  * @property-read \App\Models\Production\ManufactureTaskStats|null $stats
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTask newModelQuery()
