@@ -37,7 +37,7 @@ class ShowGroupChatDashboard extends GrpAction
 
     public function htmlResponse(Group $group, ActionRequest $request): Response
     {
-        $title = __('Chat Dashboard');
+        $title         = __('Chat Dashboard');
         $dashboardData = GetGroupChatDashboardData::run($group);
 
         return Inertia::render(

@@ -30,11 +30,11 @@ class GetChatDashboardData
             ->where('settings->chat->enable_chat', true)
             ->pluck('id');
 
-        $sessionQuery = ChatSession::query()->whereIn('shop_id', $openShopIds);
+        $sessionQuery = ChatSession::query()->whereIn('shop_id', $openShopIds)->whereHas('messages');
 
         $stats = [
             'chatEnabledShops'    => $chatEnabledOpenShopIds->count(),
-            'chatAgents'          => ShopHasChatAgent::query()->where('organisation_id', $organisation->id)->distinct('chat_agent_id')->count('chat_agent_id'),
+            'chatAgents'          => ShopHasChatAgent::query()->where('organisation_id', $organisation->id)->join('chat_agents', 'chat_agents.id', '=', 'shop_has_chat_agents.chat_agent_id')->whereNull('chat_agents.deleted_at')->distinct('chat_agent_id')->count('chat_agent_id'),
             'chatSessionsTotal'   => (clone $sessionQuery)->count(),
             'chatSessionsWaiting' => (clone $sessionQuery)->where('status', ChatSessionStatusEnum::WAITING)->count(),
             'chatSessionsActive'  => (clone $sessionQuery)->where('status', ChatSessionStatusEnum::ACTIVE)->count(),
@@ -55,10 +55,12 @@ class GetChatDashboardData
     private function getOrganisationShops(Organisation $organisation): array
     {
         $agentCounts = ShopHasChatAgent::query()
-            ->select('shop_id')
-            ->selectRaw('COUNT(DISTINCT chat_agent_id) as chat_agents_count')
+            ->select('shop_has_chat_agents.shop_id')
+            ->selectRaw('COUNT(DISTINCT shop_has_chat_agents.chat_agent_id) as chat_agents_count')
+            ->join('chat_agents', 'chat_agents.id', '=', 'shop_has_chat_agents.chat_agent_id')
+            ->whereNull('chat_agents.deleted_at')
             ->where('organisation_id', $organisation->id)
-            ->groupBy('shop_id')
+            ->groupBy('shop_has_chat_agents.shop_id')
             ->get()
             ->keyBy('shop_id');
 
@@ -69,6 +71,7 @@ class GetChatDashboardData
             ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as sessions_waiting', [ChatSessionStatusEnum::WAITING->value])
             ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as sessions_closed', [ChatSessionStatusEnum::CLOSED->value])
             ->whereIn('shop_id', Shop::query()->where('organisation_id', $organisation->id)->pluck('id'))
+            ->whereHas('messages')
             ->groupBy('shop_id')
             ->get()
             ->keyBy('shop_id');

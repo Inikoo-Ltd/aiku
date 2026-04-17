@@ -22,6 +22,8 @@ use App\Models\Traits\HasRoles;
 use App\Models\Traits\InCustomer;
 use App\Models\Traits\IsUserable;
 use App\Models\Web\Website;
+use App\Models\WebUserFailedLogin;
+use App\Models\WebUserLogin;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -88,6 +90,8 @@ use App\Models\Traits\HasHistory;
  * @property-read \App\Models\CRM\WebUserStats|null $stats
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ * @property-read Collection<int, WebUserFailedLogin> $webUserFailedLogins
+ * @property-read Collection<int, WebUserLogin> $webUserLogins
  * @property-read Collection<int, WebUserRequest> $webUserRequests
  * @property-read Website $website
  * @method static \Database\Factories\CRM\WebUserFactory factory($count = null, $state = [])
@@ -182,6 +186,16 @@ class WebUser extends Authenticatable implements HasMedia, Auditable
     public function webUserRequests(): HasMany
     {
         return $this->hasMany(WebUserRequest::class);
+    }
+
+    public function webUserLogins(): HasMany
+    {
+        return $this->hasMany(WebUserLogin::class);
+    }
+
+    public function webUserFailedLogins(): HasMany
+    {
+        return $this->hasMany(WebUserFailedLogin::class);
     }
 
     public function passwordResets(): HasMany

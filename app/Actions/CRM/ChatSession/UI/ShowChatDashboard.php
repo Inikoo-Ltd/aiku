@@ -31,7 +31,7 @@ class ShowChatDashboard extends OrgAction
 
     public function htmlResponse(Organisation $organisation, ActionRequest $request): Response
     {
-        $title = __('Chat Dashboard');
+        $title         = __('Chat Dashboard');
         $dashboardData = GetChatDashboardData::run($organisation);
 
         return Inertia::render(

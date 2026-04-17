@@ -12,7 +12,6 @@ namespace App\Actions\SysAdmin\Organisation\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowOrganisationOverviewHub;
-use App\Actions\SysAdmin\User\Traits\WithFormattedUserHistories;
 use App\Http\Resources\History\HistoryResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\SysAdmin\Organisation;
@@ -31,7 +30,6 @@ class IndexHistoryInOrganisation extends OrgAction
 {
     use AsAction;
     use WithAttributes;
-    use WithFormattedUserHistories;
 
     public function handle(Organisation $organisation, $prefix = null): LengthAwarePaginator|array|bool
     {
