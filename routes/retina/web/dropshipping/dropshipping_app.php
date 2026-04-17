@@ -169,6 +169,10 @@ Route::prefix('invoices')->name('invoices.')->group(function () {
     Route::get('{invoice}/pdf', RetinaPdfInvoice::class)->name('pdf');
 });
 
+Route::prefix('delivery-notes')->name('delivery_notes.')->group(function () {
+    Route::get('{deliveryNote}/pdf', \App\Actions\Dispatching\DeliveryNote\PdfDeliveryNote::class)->name('pdf');
+});
+
 Route::prefix('saved-credit-cards')->name('mit_saved_cards.')->group(function () {
     Route::get('', ShowRetinaMitSavedCardsDashboard::class)->name('dashboard');
     Route::get('create', CreateMitSavedCard::class)->name('create');

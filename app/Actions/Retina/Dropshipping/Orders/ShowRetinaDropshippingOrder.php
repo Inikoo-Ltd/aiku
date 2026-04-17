@@ -240,11 +240,23 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
         if ($deliveryNotes) {
             foreach ($deliveryNotes as $deliveryNote) {
+                
+                $deliveryNoteDownloadRoute = [
+                    'name'       => 'retina.dropshipping.delivery_notes.pdf',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->slug,
+                    ],
+                ];
+
                 $deliveryNotesData[] = [
                     'id'        => $deliveryNote->id,
                     'reference' => $deliveryNote->reference,
                     'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
-                    'shipments' => $deliveryNote?->shipments ? RetinaShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
+                    'shipments' => $deliveryNote?->shipments ? RetinaShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null,
+                    
+                    'routes'    => [
+                        'download' => $deliveryNoteDownloadRoute ?? null,
+                    ]
                 ];
             }
         }
