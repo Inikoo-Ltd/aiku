@@ -42,6 +42,7 @@ import {
 	faBan,
 	faDollarSign,
 	faCube,
+	faUnlink,
 } from "@fal"
 import { faStar, faFilter, faImages, faSparkles } from "@fas"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
@@ -61,6 +62,7 @@ import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { useBundle } from "@/Composables/useBundle"
 
 library.add(
+	faUnlink,
 	faSparkles,
 	faImages,
 	faHandshake,
@@ -1214,10 +1216,9 @@ const submitBundle = async () => {
 			<div class="flex gap-2">
 				<Button v-tooltip="trans('Edit Bundle')" type="tertiary" :style="'white-w-outline'" size="xs"
 				icon="fal fa-pencil" @click="openEditModal(item)" />
-				
-				<ButtonWithLink v-tooltip="trans('Delete Bundle', {
+				<ButtonWithLink v-tooltip="trans('Unlink Bundle', {
 					platform: props.platform_data.name,
-				})" type="negative" icon="fal fa-trash-alt" size="xs" :style="'white-r-outline'" :method="'delete'"
+				})" type="negative" icon="fal fa-unlink" size="xs" :style="'white-r-outline'" :method="'delete'"
 					:bindToLink="{ preserveScroll: true }" :routeTarget="{
 						...props.bundle_routes.delete,
 						parameters: {
