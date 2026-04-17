@@ -24,7 +24,6 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
-use App\Models\Traits\HasRetinaSearch;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -119,7 +118,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Fulfilment\Pallet> $pallets
  * @property-read Platform|null $platform
  * @property-read \App\Models\Fulfilment\RecurringBill|null $recurringBill
- * @property-read \App\Models\Helpers\RetinaSearch|null $retinaSearch
  * @property-read SalesChannel|null $salesChannel
  * @property-read Collection<int, Shipment> $shipments
  * @property-read \App\Models\Fulfilment\PalletReturnStats|null $stats
@@ -139,7 +137,6 @@ class PalletReturn extends Model implements HasMedia
 {
     use HasSlug;
     use SoftDeletes;
-    use HasRetinaSearch;
     use HasAddress;
     use HasAddresses;
     use HasAttachments;
