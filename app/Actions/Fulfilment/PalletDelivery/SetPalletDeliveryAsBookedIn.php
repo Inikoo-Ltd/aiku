@@ -13,7 +13,6 @@ use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydrat
 use App\Actions\Fulfilment\Pallet\UpdatePallet;
 use App\Actions\Fulfilment\PalletDelivery\Hydrators\PalletDeliveryHydratePallets;
 use App\Actions\Fulfilment\PalletDelivery\Notifications\SendPalletDeliveryNotification;
-use App\Actions\Fulfilment\PalletDelivery\Search\PalletDeliveryRecordSearch;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePalletDeliveries;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletDeliveries;
@@ -58,7 +57,6 @@ class SetPalletDeliveryAsBookedIn extends OrgAction
         FulfilmentCustomerHydratePalletDeliveries::dispatch($palletDelivery->fulfilmentCustomer);
         FulfilmentHydratePalletDeliveries::dispatch($palletDelivery->fulfilment);
         SendPalletDeliveryNotification::dispatch($palletDelivery);
-        PalletDeliveryRecordSearch::dispatch($palletDelivery);
 
         return $palletDelivery;
     }

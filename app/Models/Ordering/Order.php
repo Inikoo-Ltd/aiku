@@ -30,13 +30,11 @@ use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InCustomer;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -185,7 +183,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Ordering\OrderStats|null $stats
  * @property-read TaxCategory $taxCategory
  * @property-read Collection<int, \App\Models\Ordering\Transaction> $transactions
- * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Ordering\OrderFactory factory($count = null, $state = [])
  * @method static Builder<static>|Order newModelQuery()
  * @method static Builder<static>|Order newQuery()
@@ -199,7 +196,6 @@ class Order extends Model implements HasMedia, Auditable
 {
     use HasSlug;
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasFactory;
     use InCustomer;
     use HasAddresses;

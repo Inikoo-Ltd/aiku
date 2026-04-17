@@ -15,7 +15,6 @@ use App\Actions\Traits\UI\WithFavicon;
 use App\Actions\Traits\UI\WithLogo;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Website\LlmsTxt\StoreLlmsTxt;
-use App\Actions\Web\Website\Search\WebsiteRecordSearch;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Http\Resources\Web\WebsiteResource;
 use App\Models\Fulfilment\Fulfilment;
@@ -124,16 +123,6 @@ class UpdateWebsite extends OrgAction
         $website = $this->update($website, $modelData, ['data', 'settings']);
 
         $changes = Arr::except($website->getChanges(), ['updated_at', 'last_fetched_at']);
-
-        if (Arr::hasAny($changes, [
-            'code',
-            'name',
-            'domain',
-            'type',
-            'state',
-        ])) {
-            WebsiteRecordSearch::run($website);
-        }
 
         if ($hydrateDescriptionOverview) {
             WebsiteGenerateFamiliesOverviewPages::dispatch($website);

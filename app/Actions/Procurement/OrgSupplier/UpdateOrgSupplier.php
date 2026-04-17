@@ -10,7 +10,6 @@ namespace App\Actions\Procurement\OrgSupplier;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateOrgSuppliers;
-use App\Actions\Procurement\OrgSupplier\Search\OrgSupplierRecordSearch;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgSuppliers;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Procurement\OrgSupplier;
@@ -24,7 +23,6 @@ class UpdateOrgSupplier extends OrgAction
     {
         $orgSupplier = $this->update($orgSupplier, $modelData);
 
-        OrgSupplierRecordSearch::dispatch($orgSupplier);
         if ($orgSupplier->wasChanged('status')) {
             OrganisationHydrateOrgSuppliers::dispatch($orgSupplier->organisation);
             if ($orgSupplier->org_agent_id) {

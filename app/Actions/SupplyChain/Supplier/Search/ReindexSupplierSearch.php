@@ -21,7 +21,6 @@ class ReindexSupplierSearch extends HydrateModel
 
     public function handle(Supplier $supplier): void
     {
-        SupplierRecordSearch::run($supplier);
     }
 
 

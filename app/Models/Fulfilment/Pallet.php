@@ -17,7 +17,6 @@ use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasRetinaSearch;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InFulfilmentCustomer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -99,7 +98,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\StoredItemAuditDelta> $storedItemAuditDeltas
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\StoredItemAudit> $storedItemAudits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\StoredItem> $storedItems
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Warehouse|null $warehouse
  * @method static \Database\Factories\Fulfilment\PalletFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pallet locationId($located)
@@ -116,7 +114,6 @@ class Pallet extends Model implements Auditable
     use HasSlug;
     use SoftDeletes;
     use HasFactory;
-    use HasUniversalSearch;
     use HasRetinaSearch;
     use InFulfilmentCustomer;
     use HasHistory;

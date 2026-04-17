@@ -10,10 +10,8 @@ namespace App\Actions\Fulfilment\PalletDelivery;
 
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletDeliveries;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletDeliveries;
-use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
 use App\Actions\Fulfilment\Pallet\UpdatePallet;
 use App\Actions\Fulfilment\PalletDelivery\Notifications\SendPalletDeliveryNotification;
-use App\Actions\Fulfilment\PalletDelivery\Search\PalletDeliveryRecordSearch;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePalletDeliveries;
 use App\Actions\OrgAction;
@@ -59,7 +57,6 @@ class ConfirmPalletDelivery extends OrgAction
             ], hydrateParents: false);
             $pallet->generateSlug();
 
-            PalletRecordSearch::dispatch($pallet);
         }
 
 
@@ -88,7 +85,6 @@ class ConfirmPalletDelivery extends OrgAction
         WarehouseHydratePalletDeliveries::dispatch($palletDelivery->warehouse);
         FulfilmentCustomerHydratePalletDeliveries::dispatch($palletDelivery->fulfilmentCustomer);
         FulfilmentHydratePalletDeliveries::dispatch($palletDelivery->fulfilment);
-        PalletDeliveryRecordSearch::dispatch($palletDelivery);
 
         return $palletDelivery;
     }

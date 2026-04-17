@@ -13,7 +13,6 @@ use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Models\Catalogue\InAssetModel;
 use App\Models\Fulfilment\RecurringBill;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -65,7 +64,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, RecurringBill> $recurringBills
  * @property-read \App\Models\Catalogue\Shop|null $shop
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Billables\ServiceFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Service newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Service newQuery()
@@ -78,7 +76,6 @@ use Spatie\Sluggable\SlugOptions;
 class Service extends Model implements Auditable
 {
     use SoftDeletes;
-    use HasUniversalSearch;
     use InAssetModel;
     use HasHistory;
     use HasFactory;

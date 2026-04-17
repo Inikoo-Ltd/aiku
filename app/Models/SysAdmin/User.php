@@ -112,7 +112,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Task> $tasks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserHasAuthorisedModels> $userAuthorisedModels
  * @property-read \Illuminate\Database\Eloquent\Collection<int, UserFailedLogIn> $userFailedLogins
  * @property-read \Illuminate\Database\Eloquent\Collection<int, UserLogin> $userLogins

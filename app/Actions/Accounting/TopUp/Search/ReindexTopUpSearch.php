@@ -20,7 +20,7 @@ class ReindexTopUpSearch extends HydrateModel
 
     public function handle(TopUp $topUp): void
     {
-        TopUpRecordSearch::run($topUp);
+
     }
 
 

@@ -12,7 +12,6 @@ use App\Actions\Catalogue\HasRentalAgreement;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletDeliveries;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletDeliveries;
 use App\Actions\Fulfilment\PalletDelivery\Notifications\SendPalletDeliveryNotification;
-use App\Actions\Fulfilment\PalletDelivery\Search\PalletDeliveryRecordSearch;
 use App\Actions\Fulfilment\WithDeliverableStoreProcessing;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePalletDeliveries;
@@ -67,7 +66,6 @@ class StorePalletDelivery extends OrgAction
         $palletDelivery->stats()->create();
         $palletDelivery->refresh();
         $palletDelivery = SetPalletDeliveryDate::run($palletDelivery);
-        PalletDeliveryRecordSearch::dispatch($palletDelivery);
 
         GroupHydratePalletDeliveries::dispatch($fulfilmentCustomer->group);
         OrganisationHydratePalletDeliveries::dispatch($fulfilmentCustomer->organisation);

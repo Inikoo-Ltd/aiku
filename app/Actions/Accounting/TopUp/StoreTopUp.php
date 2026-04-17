@@ -8,7 +8,6 @@
 
 namespace App\Actions\Accounting\TopUp;
 
-use App\Actions\Accounting\TopUp\Search\TopUpRecordSearch;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTopUps;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTopUps;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
@@ -72,7 +71,6 @@ class StoreTopUp extends OrgAction
         OrganisationHydrateTopUps::dispatch($topUp->organisation)->delay($this->hydratorsDelay);
         GroupHydrateTopUps::dispatch($topUp->group)->delay($this->hydratorsDelay);
 
-        TopUpRecordSearch::dispatch($topUp);
 
         return $topUp;
     }

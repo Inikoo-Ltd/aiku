@@ -12,7 +12,6 @@ namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
 use App\Actions\Web\Webpage\Luigi\DeleteReindexWebpageLuigiData;
-use App\Actions\Web\Webpage\Search\WebpageRecordSearch;
 use App\Models\Web\Webpage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -70,7 +69,6 @@ class DeleteWebpage extends OrgAction
             }
         }
 
-        WebpageRecordSearch::run($webpage);
         DeleteReindexWebpageLuigiData::dispatch($webpage);
 
         return $webpage;

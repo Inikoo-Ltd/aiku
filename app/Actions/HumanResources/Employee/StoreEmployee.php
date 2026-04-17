@@ -9,7 +9,6 @@
 namespace App\Actions\HumanResources\Employee;
 
 use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateWeekWorkingHours;
-use App\Actions\HumanResources\Employee\Search\EmployeeRecordSearch;
 use App\Actions\HumanResources\JobPosition\SyncEmployeeJobPositions;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateEmployees;
@@ -122,8 +121,6 @@ class StoreEmployee extends OrgAction
         EmployeeHydrateWeekWorkingHours::dispatch($employee)->delay($this->hydratorsDelay);
         GroupHydrateEmployees::dispatch($employee->group)->delay($this->hydratorsDelay);
         OrganisationHydrateEmployees::dispatch($organisation)->delay($this->hydratorsDelay);
-
-        EmployeeRecordSearch::dispatch($employee);
 
         return $employee;
     }

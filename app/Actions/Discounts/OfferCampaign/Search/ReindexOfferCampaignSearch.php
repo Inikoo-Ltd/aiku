@@ -22,7 +22,6 @@ class ReindexOfferCampaignSearch extends HydrateModel
 
     public function handle(OfferCampaign $offerCampaign): void
     {
-        OfferCampaignRecordSearch::run($offerCampaign);
     }
 
     protected function getModel(string $slug): OfferCampaign

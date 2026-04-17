@@ -8,7 +8,6 @@
 
 namespace App\Actions\HumanResources\Workplace;
 
-use App\Actions\HumanResources\Workplace\Search\WorkplaceRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWorkplaces;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
@@ -52,9 +51,7 @@ class StoreWorkplace extends OrgAction
         $addressData['group_id'] = $organisation->group_id;
         $workplace               = $this->addAddressToModelFromArray($workplace, $addressData);
 
-
         OrganisationHydrateWorkplaces::run($organisation);
-        WorkplaceRecordSearch::dispatch($workplace);
 
         return $workplace;
     }

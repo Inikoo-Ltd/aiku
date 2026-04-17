@@ -8,7 +8,6 @@
 
 namespace App\Actions\Fulfilment\Pallet;
 
-use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
 use App\Actions\Fulfilment\PalletReturn\Hydrators\PalletReturnHydratePallets;
 use App\Actions\Fulfilment\PalletStoredItem\SetPalletStoredItemStateToReturned;
 use App\Actions\Fulfilment\StoredItemMovement\StoreStoredItemMovementFromPickingAFullPallet;
@@ -70,7 +69,6 @@ class PickWholePalletInPalletReturn extends OrgAction
             }
 
             PalletReturnHydratePallets::dispatch($palletReturnItem->palletReturn);
-            PalletRecordSearch::dispatch($pallet);
 
             return $palletReturnItem;
         });

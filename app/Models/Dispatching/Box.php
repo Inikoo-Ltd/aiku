@@ -10,7 +10,6 @@
 namespace App\Models\Dispatching;
 
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -34,7 +33,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Box newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Box newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Box query()
@@ -43,7 +41,6 @@ use Spatie\Sluggable\SlugOptions;
 class Box extends Model implements Auditable
 {
     use HasSlug;
-    use HasUniversalSearch;
     use HasFactory;
     use HasHistory;
     use InOrganisation;

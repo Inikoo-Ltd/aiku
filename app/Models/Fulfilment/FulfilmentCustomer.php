@@ -14,7 +14,6 @@ use App\Models\Helpers\SerialReference;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAttachments;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InFulfilment;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -151,7 +150,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\StoredItemAudit> $storedItemAudits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\StoredItem> $storedItems
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\FulfilmentTransaction> $transactions
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentCustomer newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentCustomer newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentCustomer onlyTrashed()
@@ -163,7 +161,6 @@ use Spatie\Sluggable\SlugOptions;
 class FulfilmentCustomer extends Model implements HasMedia
 {
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasSlug;
     use InFulfilment;
     use HasAttachments;

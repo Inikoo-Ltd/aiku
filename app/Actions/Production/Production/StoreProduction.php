@@ -9,7 +9,6 @@
 namespace App\Actions\Production\Production;
 
 use App\Actions\OrgAction;
-use App\Actions\Production\Production\Search\ProductionRecordSearch;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProductions;
 use App\Actions\SysAdmin\Group\Seeders\SeedAikuScopedSections;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProductions;
@@ -65,8 +64,6 @@ class StoreProduction extends OrgAction
 
         GroupHydrateProductions::dispatch($organisation->group)->delay($this->hydratorsDelay);
         OrganisationHydrateProductions::dispatch($organisation)->delay($this->hydratorsDelay);
-        ProductionRecordSearch::dispatch($production);
-
 
         return $production;
     }

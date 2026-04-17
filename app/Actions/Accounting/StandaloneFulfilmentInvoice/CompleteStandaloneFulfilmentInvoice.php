@@ -9,7 +9,6 @@
 
 namespace App\Actions\Accounting\StandaloneFulfilmentInvoice;
 
-use App\Actions\Accounting\Invoice\Search\InvoiceRecordSearch;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\OrgAction;
@@ -59,9 +58,6 @@ class CompleteStandaloneFulfilmentInvoice extends OrgAction
         if ($invoice->invoiceCategory) {
             InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory);
         }
-
-        InvoiceRecordSearch::dispatch($invoice);
-
 
         return $invoice;
     }

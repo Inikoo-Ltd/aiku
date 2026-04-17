@@ -12,7 +12,6 @@ use App\Enums\Fulfilment\StoredItemAudit\StoredItemAuditStateEnum;
 use App\Models\Inventory\Warehouse;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasRetinaSearch;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InFulfilmentCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -63,7 +62,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Helpers\RetinaSearch|null $retinaSearch
  * @property-read Model|\Eloquent|null $scope
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Warehouse|null $warehouse
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StoredItemAudit newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StoredItemAudit newQuery()
@@ -73,7 +71,6 @@ use Spatie\Sluggable\SlugOptions;
 class StoredItemAudit extends Model implements Auditable
 {
     use HasSlug;
-    use HasUniversalSearch;
     use HasRetinaSearch;
     use InFulfilmentCustomer;
     use HasHistory;

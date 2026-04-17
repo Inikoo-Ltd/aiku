@@ -10,7 +10,6 @@ namespace App\Models\SupplyChain;
 
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Helpers\Currency;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Group;
@@ -19,7 +18,6 @@ use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InGroup;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -88,7 +86,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, StockDelivery> $stockDeliveries
  * @property-read Collection<int, \App\Models\SupplyChain\SupplierProduct> $supplierProducts
  * @property-read Collection<int, \App\Models\SupplyChain\SupplierTimeSeries> $timeSeries
- * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\SupplyChain\SupplierFactory factory($count = null, $state = [])
  * @method static Builder<static>|Supplier newModelQuery()
  * @method static Builder<static>|Supplier newQuery()
@@ -104,7 +101,6 @@ class Supplier extends Model implements HasMedia, Auditable
     use HasAddress;
     use HasAddresses;
     use HasSlug;
-    use HasUniversalSearch;
     use HasImage;
     use HasFactory;
     use HasHistory;

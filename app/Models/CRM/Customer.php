@@ -44,7 +44,6 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Helpers\TaxNumber;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\Group;
@@ -56,7 +55,6 @@ use App\Models\Traits\HasEmail;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasSearchableText;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -196,7 +194,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, TopUp> $topUps
  * @property-read \App\Models\CRM\TrafficSource|null $trafficSource
  * @property-read Collection<int, Transaction> $transactions
- * @property-read UniversalSearch|null $universalSearch
  * @property-read Collection<int, \App\Models\CRM\CustomerWebActivity> $webActivities
  * @property-read Collection<int, \App\Models\CRM\WebUser> $webUsers
  * @property-read WooCommerceUser|null $wooCommerceUser
@@ -215,7 +212,6 @@ class Customer extends Model implements HasMedia, Auditable
     use HasAddress;
     use HasAddresses;
     use HasSlug;
-    use HasUniversalSearch;
     use HasImage;
     use HasFactory;
     use HasHistory;

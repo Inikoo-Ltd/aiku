@@ -20,7 +20,6 @@ class ReindexWarehouseSearch extends HydrateModel
 
     public function handle(Warehouse $warehouse): void
     {
-        WarehouseRecordSearch::run($warehouse);
     }
 
 

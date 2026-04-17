@@ -13,7 +13,6 @@ use App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum;
 use App\Models\Goods\StockFamily;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -50,7 +49,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Inventory\OrgStockFamilyStats|null $stats
  * @property-read StockFamily|null $stockFamily
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockFamilyTimeSeries> $timeSeries
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamily newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamily newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamily onlyTrashed()
@@ -63,7 +61,6 @@ class OrgStockFamily extends Model
 {
     use HasSlug;
     use SoftDeletes;
-    use HasUniversalSearch;
     use InOrganisation;
 
     protected $casts = [

@@ -11,7 +11,6 @@ namespace App\Models\Production;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Goods\Stock;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InProduction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -46,7 +45,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Production\Production|null $production
  * @property-read \App\Models\Production\ArtefactStats|null $stats
  * @property-read Stock|null $stock
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact onlyTrashed()
@@ -59,7 +57,6 @@ class Artefact extends Model implements Auditable
 {
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use InProduction;
     use HasHistory;
 

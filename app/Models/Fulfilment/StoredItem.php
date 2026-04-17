@@ -14,7 +14,6 @@ use App\Models\Dropshipping\TiktokUserHasProduct;
 use App\Models\Inventory\Warehouse;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasRetinaSearch;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InOrganisation;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -66,7 +65,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Portfolio|null $portfolio
  * @property-read \App\Models\Helpers\RetinaSearch|null $retinaSearch
  * @property-read TiktokUserHasProduct|null $tiktokPortfolio
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Warehouse|null $warehouse
  * @method static Builder<static>|StoredItem newModelQuery()
  * @method static Builder<static>|StoredItem newQuery()
@@ -75,7 +73,6 @@ use Spatie\Sluggable\SlugOptions;
  */
 class StoredItem extends Model implements Auditable
 {
-    use HasUniversalSearch;
     use HasRetinaSearch;
     use HasSlug;
     use HasHistory;

@@ -10,7 +10,6 @@ namespace App\Models\Helpers;
 
 use App\Models\CRM\Customer;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -49,7 +48,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop|null $shop
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Query newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Query newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Query onlyTrashed()
@@ -62,7 +60,6 @@ class Query extends Model implements Auditable
 {
     use HasSlug;
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasHistory;
     use HasSlug;
     use InShop;

@@ -11,7 +11,6 @@ namespace App\Actions\Web\Banner;
 use App\Actions\Helpers\Snapshot\StoreBannerSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
-use App\Actions\Web\Banner\Search\BannerRecordSearch;
 use App\Actions\Web\Banner\UI\ParseBannerLayout;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Banner\BannerTypeEnum;
@@ -85,7 +84,6 @@ class StoreBanner extends OrgAction
 
         $banner->stats()->create();
 
-        BannerRecordSearch::dispatch($banner);
 
         return $banner;
     }

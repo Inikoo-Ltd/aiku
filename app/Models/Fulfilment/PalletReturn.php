@@ -25,7 +25,6 @@ use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasRetinaSearch;
-use App\Models\Traits\HasUniversalSearch;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -127,7 +126,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Fulfilment\StoredItem> $storedItems
  * @property-read TaxCategory $taxCategory
  * @property-read Collection<int, \App\Models\Fulfilment\FulfilmentTransaction> $transactions
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Warehouse|null $warehouse
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturn newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturn newQuery()
@@ -141,7 +139,6 @@ class PalletReturn extends Model implements HasMedia
 {
     use HasSlug;
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasRetinaSearch;
     use HasAddress;
     use HasAddresses;

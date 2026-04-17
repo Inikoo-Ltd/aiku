@@ -11,10 +11,8 @@ namespace App\Models\Inventory;
 use App\Enums\Inventory\Location\LocationStatusEnum;
 use App\Models\Dispatching\PickingRoute;
 use App\Models\Fulfilment\Pallet;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InWarehouse;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -70,7 +68,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Pallet> $pallets
  * @property-read Collection<int, PickingRoute> $pickingRoutes
  * @property-read \App\Models\Inventory\LocationStats|null $stats
- * @property-read UniversalSearch|null $universalSearch
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @property-read \App\Models\Inventory\WarehouseArea|null $warehouseArea
  * @method static \Database\Factories\Inventory\LocationFactory factory($count = null, $state = [])
@@ -86,7 +83,6 @@ class Location extends Model implements Auditable
 {
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use HasFactory;
     use HasHistory;
     use InWarehouse;

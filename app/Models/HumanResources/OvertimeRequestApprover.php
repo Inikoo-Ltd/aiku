@@ -17,8 +17,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $decided_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read Employee|null $approver
- * @property-read OvertimeRequest $overtimeRequest
+ * @property-read \App\Models\HumanResources\Employee|null $approver
+ * @property-read \App\Models\HumanResources\OvertimeRequest $overtimeRequest
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OvertimeRequestApprover newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OvertimeRequestApprover newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OvertimeRequestApprover query()

@@ -25,7 +25,6 @@ class ReindexOrgStockSearch
 
     public function handle(OrgStock $orgStock): void
     {
-        OrgStockRecordSearch::run($orgStock);
     }
 
 

@@ -25,17 +25,14 @@ use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
 use App\Actions\Accounting\OrgPaymentServiceProvider\UpdateOrgPaymentServiceProvider;
-use App\Actions\Accounting\Payment\Search\ReindexPaymentSearch;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\Payment\UpdatePayment;
-use App\Actions\Accounting\PaymentAccount\Search\ReindexPaymentAccountSearch;
 use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
 use App\Actions\Accounting\PaymentAccount\UpdatePaymentAccount;
 use App\Actions\Accounting\PaymentAccountShop\StorePaymentAccountShop;
 use App\Actions\Accounting\PaymentAccountShop\UpdatePaymentAccountShop;
 use App\Actions\Accounting\PaymentServiceProvider\DeletePaymentServiceProvider;
 use App\Actions\Accounting\PaymentServiceProvider\UpdatePaymentServiceProvider;
-use App\Actions\Accounting\TopUp\Search\ReindexTopUpSearch;
 use App\Actions\Accounting\TopUp\SetTopUpStatusToSuccess;
 use App\Actions\Accounting\TopUp\StoreTopUp;
 use App\Actions\Accounting\TopUp\UpdateTopUp;
@@ -1478,29 +1475,6 @@ test('UI get section route group overview hub (accounting)', function () {
         ->and($sectionScope->model_slug)->toBe($this->organisation->group->slug);
 });
 
-
-test('payments search', function () {
-    $this->artisan('search:payments')->assertExitCode(0);
-
-    $payment = Payment::first();
-    ReindexPaymentSearch::run($payment);
-    expect($payment->universalSearch()->count())->toBe(1);
-});
-
-test('payment accounts search', function () {
-    $this->artisan('search:payment_accounts')->assertExitCode(0);
-
-    $paymentAccount = PaymentAccount::first();
-    ReindexPaymentAccountSearch::run($paymentAccount);
-    expect($paymentAccount->universalSearch()->count())->toBe(1);
-});
-
-test('top up search', function () {
-    $this->artisan('search:top_ups')->assertExitCode(0);
-    $topUp = TopUp::first();
-    ReindexTopUpSearch::run($topUp);
-    expect($topUp->universalSearch()->count())->toBe(1);
-});
 
 test('delete payment service provider', function () {
     /** @var Group $group */

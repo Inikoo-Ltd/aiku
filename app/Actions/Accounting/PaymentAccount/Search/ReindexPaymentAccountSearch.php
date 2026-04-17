@@ -22,7 +22,7 @@ class ReindexPaymentAccountSearch extends HydrateModel
 
     public function handle(PaymentAccount $paymentAccount): void
     {
-        PaymentAccountRecordSearch::run($paymentAccount);
+
     }
 
     protected function getModel(string $slug): PaymentAccount

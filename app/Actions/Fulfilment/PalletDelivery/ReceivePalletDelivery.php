@@ -16,7 +16,6 @@ use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydrat
 use App\Actions\Fulfilment\Pallet\SetPalletRental;
 use App\Actions\Fulfilment\Pallet\UpdatePallet;
 use App\Actions\Fulfilment\PalletDelivery\Notifications\SendPalletDeliveryNotification;
-use App\Actions\Fulfilment\PalletDelivery\Search\PalletDeliveryRecordSearch;
 use App\Actions\Fulfilment\RecurringBill\CalculateRecurringBillTotals;
 use App\Actions\Fulfilment\RecurringBill\Hydrators\RecurringBillHydrateTransactions;
 use App\Actions\Fulfilment\RecurringBill\StoreRecurringBill;
@@ -156,7 +155,6 @@ class ReceivePalletDelivery extends OrgAction
         FulfilmentCustomerHydrateStoredItemAudits::dispatch($palletDelivery->fulfilmentCustomer);
 
         SendPalletDeliveryNotification::dispatch($palletDelivery);
-        PalletDeliveryRecordSearch::dispatch($palletDelivery);
 
         return $palletDelivery;
     }

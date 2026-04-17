@@ -8,7 +8,6 @@
 
 namespace App\Actions\Billables\Rental;
 
-use App\Actions\Billables\Rental\Search\RentalRecordSearch;
 use App\Actions\Catalogue\Asset\StoreAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRentals;
@@ -92,7 +91,6 @@ class StoreRental extends OrgAction
         ShopHydrateRentals::dispatch($shop)->delay($this->hydratorsDelay);
         OrganisationHydrateRentals::dispatch($shop->organisation)->delay($this->hydratorsDelay);
         GroupHydrateRentals::dispatch($shop->group)->delay($this->hydratorsDelay);
-        RentalRecordSearch::dispatch($rental);
 
         return $rental;
     }

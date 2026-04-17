@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $notes
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read Employee|null $employee
+ * @property-read \App\Models\HumanResources\Employee|null $employee
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeOvertimeAllowance newModelQuery()

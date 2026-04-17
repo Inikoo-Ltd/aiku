@@ -13,7 +13,6 @@ use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSupplierProducts;
 use App\Actions\SupplyChain\HistoricSupplierProduct\StoreHistoricSupplierProduct;
 use App\Actions\SupplyChain\Supplier\Hydrators\SupplierHydrateSupplierProducts;
-use App\Actions\SupplyChain\SupplierProduct\Search\SupplierProductRecordSearch;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSupplierProducts;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -80,11 +79,6 @@ class UpdateSupplierProduct extends GrpAction
                 AgentHydrateSupplierProducts::dispatchIf((bool)$supplierProduct->agent_id, $supplierProduct->agent)->delay($this->hydratorsDelay);
             }
         }
-
-        if ($supplierProduct->wasChanged()) {
-            SupplierProductRecordSearch::dispatch($supplierProduct);
-        }
-
 
         return $supplierProduct;
     }

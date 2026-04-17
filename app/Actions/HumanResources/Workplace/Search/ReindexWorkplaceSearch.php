@@ -22,7 +22,6 @@ class ReindexWorkplaceSearch extends HydrateModel
 
     public function handle(Workplace $workplace): void
     {
-        WorkplaceRecordSearch::run($workplace);
     }
 
 

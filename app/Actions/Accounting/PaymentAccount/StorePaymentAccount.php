@@ -9,7 +9,6 @@
 namespace App\Actions\Accounting\PaymentAccount;
 
 use App\Actions\Accounting\OrgPaymentServiceProvider\Hydrators\OrgPaymentServiceProviderHydratePaymentAccounts;
-use App\Actions\Accounting\PaymentAccount\Search\PaymentAccountRecordSearch;
 use App\Actions\Accounting\PaymentServiceProvider\Hydrators\PaymentServiceProviderHydratePaymentAccounts;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePaymentAccounts;
@@ -69,7 +68,6 @@ class StorePaymentAccount extends OrgAction
         OrganisationHydratePaymentAccounts::dispatch($parent->organisation)->delay($this->hydratorsDelay);
         GroupHydratePaymentAccounts::dispatch($parent->group)->delay($this->hydratorsDelay);
         OrgPaymentServiceProviderHydratePaymentAccounts::dispatch($parent)->delay($this->hydratorsDelay);
-        PaymentAccountRecordSearch::dispatch($paymentAccount);
 
         return $paymentAccount;
     }
