@@ -46,13 +46,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property float|null $picking_position
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Collection<int, \App\Models\Inventory\Location> $locations
  * @property-read Organisation $organisation
  * @property-read \App\Models\Inventory\WarehouseAreaStats|null $stats
  * @property-read Collection<int, \App\Models\Inventory\WarehouseAreaTimeSeries> $timeSeries
  * @property-read UniversalSearch|null $universalSearch
- * @property-read \App\Models\Inventory\Warehouse $warehouse
+ * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static \Database\Factories\Inventory\WarehouseAreaFactory factory($count = null, $state = [])
  * @method static Builder<static>|WarehouseArea newModelQuery()
  * @method static Builder<static>|WarehouseArea newQuery()

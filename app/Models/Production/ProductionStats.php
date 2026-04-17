@@ -45,7 +45,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_job_orders
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Production\Production $production
+ * @property-read \App\Models\Production\Production|null $production
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductionStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductionStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductionStats query()

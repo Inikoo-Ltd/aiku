@@ -30,32 +30,32 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $asset_id
  * @property int $historic_asset_id
  * @property int|null $rental_agreement_clause_id
- * @property string $quantity
- * @property string $gross_amount net amount before discounts
- * @property string $net_amount
- * @property string|null $grp_net_amount
- * @property string|null $org_net_amount
+ * @property numeric $quantity
+ * @property numeric $gross_amount net amount before discounts
+ * @property numeric $net_amount
+ * @property numeric|null $grp_net_amount
+ * @property numeric|null $org_net_amount
  * @property int $tax_category_id
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property string $unit_cost
- * @property string $discount_percentage
- * @property string $temporal_quantity
+ * @property numeric $unit_cost
+ * @property numeric $discount_percentage
+ * @property numeric $temporal_quantity
  * @property int|null $pallet_delivery_id
  * @property int|null $pallet_return_id
  * @property int|null $fulfilment_transaction_id
- * @property-read Asset $asset
+ * @property-read Asset|null $asset
  * @property-read \App\Models\Fulfilment\RentalAgreementClause|null $clause
- * @property-read \App\Models\Fulfilment\Fulfilment $fulfilment
- * @property-read \App\Models\Fulfilment\FulfilmentCustomer $fulfilmentCustomer
+ * @property-read \App\Models\Fulfilment\Fulfilment|null $fulfilment
+ * @property-read \App\Models\Fulfilment\FulfilmentCustomer|null $fulfilmentCustomer
  * @property-read \App\Models\Fulfilment\FulfilmentTransaction|null $fulfilmentTransaction
- * @property-read \App\Models\SysAdmin\Group $group
- * @property-read HistoricAsset $historicAsset
+ * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read HistoricAsset|null $historicAsset
  * @property-read Model|\Eloquent|null $item
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Fulfilment\RecurringBill $recurringBill
+ * @property-read \App\Models\Fulfilment\RecurringBill|null $recurringBill
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBillTransaction newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBillTransaction newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBillTransaction onlyTrashed()

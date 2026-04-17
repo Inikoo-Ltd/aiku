@@ -46,6 +46,7 @@ class ShowAgent extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'title'    => 'CRM Agent',
+                'organisationSlug' => $this->organisation?->slug,
                 'pageHeading' => [
                     'title'  => __('CRM Agent'),
                     'icon'   => [

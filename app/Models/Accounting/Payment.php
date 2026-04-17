@@ -67,7 +67,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int|null $payment_account_shop_id
  * @property string|null $api_point_type
  * @property int|null $api_point_id
- * @property string $total_refund
+ * @property numeric $total_refund
  * @property PaymentClassEnum $class
  * @property bool|null $is_mit
  * @property string|null $debug_mit_status
@@ -76,16 +76,16 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Accounting\CreditTransaction|null $creditTransaction
  * @property-read Currency $currency
- * @property-read Customer $customer
- * @property-read Group $group
+ * @property-read Customer|null $customer
+ * @property-read Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\Invoice> $invoices
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Order> $orders
  * @property-read \App\Models\Accounting\OrgPaymentServiceProvider $orgPaymentServiceProvider
  * @property-read Organisation $organisation
- * @property-read \App\Models\Accounting\PaymentAccount $paymentAccount
+ * @property-read \App\Models\Accounting\PaymentAccount|null $paymentAccount
  * @property-read \App\Models\Accounting\PaymentAccountShop|null $paymentAccountShop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Payment> $refunds
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @property-read \App\Models\Accounting\TopUp|null $topUp
  * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Accounting\PaymentFactory factory($count = null, $state = [])

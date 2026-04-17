@@ -45,7 +45,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $parent_type
  * @property int|null $parent_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
  * @property-read Model|\Eloquent|null $parent
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\UploadRecord> $records

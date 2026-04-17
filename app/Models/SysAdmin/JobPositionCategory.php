@@ -26,7 +26,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobPositionCategory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobPositionCategory newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobPositionCategory query()

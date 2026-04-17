@@ -41,18 +41,18 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @property \Illuminate\Support\Carbon $start_date
  * @property \Illuminate\Support\Carbon|null $end_date
  * @property int $currency_id
- * @property string|null $grp_exchange
- * @property string|null $org_exchange
- * @property string $gross_amount Total asserts amount (excluding charges and shipping) before discounts
- * @property string $goods_amount
- * @property string $services_amount
- * @property string $rental_amount
- * @property string $net_amount
- * @property string|null $grp_net_amount
- * @property string|null $org_net_amount
+ * @property numeric|null $grp_exchange
+ * @property numeric|null $org_exchange
+ * @property numeric $gross_amount Total asserts amount (excluding charges and shipping) before discounts
+ * @property numeric $goods_amount
+ * @property numeric $services_amount
+ * @property numeric $rental_amount
+ * @property numeric $net_amount
+ * @property numeric|null $grp_net_amount
+ * @property numeric|null $org_net_amount
  * @property int $tax_category_id
- * @property string $tax_amount
- * @property string $total_amount
+ * @property numeric $tax_amount
+ * @property numeric $total_amount
  * @property array<array-key, mixed>|null $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -60,14 +60,14 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Currency $currency
  * @property-read mixed $discount_amount
- * @property-read \App\Models\Fulfilment\Fulfilment $fulfilment
- * @property-read \App\Models\Fulfilment\FulfilmentCustomer $fulfilmentCustomer
- * @property-read Group $group
+ * @property-read \App\Models\Fulfilment\Fulfilment|null $fulfilment
+ * @property-read \App\Models\Fulfilment\FulfilmentCustomer|null $fulfilmentCustomer
+ * @property-read Group|null $group
  * @property-read Invoice|null $invoices
  * @property-read Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\PalletDelivery> $palletDeliveries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\PalletReturn> $palletReturns
- * @property-read \App\Models\Fulfilment\RentalAgreement $rentalAgreement
+ * @property-read \App\Models\Fulfilment\RentalAgreement|null $rentalAgreement
  * @property-read \App\Models\Helpers\RetinaSearch|null $retinaSearch
  * @property-read \App\Models\Fulfilment\RecurringBillStats|null $stats
  * @property-read TaxCategory $taxCategory

@@ -36,7 +36,6 @@
     "commerceguys/intl": "^2.0.7",
     "darkaonline/l5-swagger": "^9.0",
     "deepseek-php/deepseek-php-client": "^2.0",
-    "elasticsearch/elasticsearch": "^8.8",
     "ezyang/htmlpurifier": "^4.19",
     "geocoder-php/nominatim-provider": "^5.8",
     "google/apiclient": "^2.15.0",
@@ -63,7 +62,6 @@
     "maatwebsite/excel": "^3.1",
     "maennchen/zipstream-php": "^3.1",
     "masbug/flysystem-google-drive-ext": "^2.3",
-    "matchish/laravel-scout-elasticsearch": "^7.2",
     "matomo/device-detector": "^6.5",
     "meilisearch/meilisearch-php": "^1.0",
     "monicahq/laravel-cloudflare": "^4",
@@ -101,7 +99,6 @@
     "spiral/roadrunner-cli": "^2.7",
     "spiral/roadrunner-http": "^3.3.0",
     "srmklive/paypal": "^3.0",
-    "stevebauman/location": "^7.2",
     "symfony/psr-http-message-bridge": "^7.2",
     "theiconic/name-parser": "^1.2",
     "theodo-group/llphant": "^0.11",
@@ -183,7 +180,8 @@
       "ignore": [
         "PKSA-dxyf-6n16-t87m",
         "PKSA-bjyb-w14t-61js",
-        "PKSA-8x19-j2j3-bn67"
+        "PKSA-8x19-j2j3-bn67",
+        "PKSA-y2cr-5h3j-g3ys"
       ]
     }
   },

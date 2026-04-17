@@ -11,7 +11,6 @@ namespace App\Models\Helpers;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Arr;
 
 /**
  * @property int $id
@@ -67,38 +66,6 @@ class UniversalSearch extends Model
 
     protected $table = 'universal_searches';
 
-    public function searchableAs(): string
-    {
-        return config('elasticsearch.index_prefix').'search';
-    }
-
-    public function toSearchableArray(): array
-    {
-        return Arr::only($this->toArray(), [
-            'group_id',
-            'organisation_id',
-            'organisation_slug',
-            'shop_id',
-            'shop_slug',
-            'fulfilment_id',
-            'fulfilment_slug',
-            'warehouse_id',
-            'warehouse_slug',
-            'website_id',
-            'website_slug',
-            'customer_id',
-            'customer_slug',
-            'haystack_tier_1',
-            'haystack_tier_2',
-            'haystack_tier_3',
-            'status',
-            'weight',
-            'date',
-            'sections',
-            'permissions',
-            'model_type',
-        ]);
-    }
 
     public function model(): MorphTo
     {

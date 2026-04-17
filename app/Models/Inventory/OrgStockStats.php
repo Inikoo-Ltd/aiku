@@ -98,12 +98,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_org_stock_movements_type_audit
- * @property string $stock_value
- * @property string $on_the_way_po_value
+ * @property numeric $stock_value
+ * @property numeric $on_the_way_po_value
  * @property int $on_the_way_po_count
  * @property float|null $week_of_cover
  * @property int $number_products
- * @property-read \App\Models\Inventory\OrgStock $orgStock
+ * @property-read \App\Models\Inventory\OrgStock|null $orgStock
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats query()

@@ -66,7 +66,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\CRM\Customer|null $customer
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Collection<int, Invoice> $invoices
  * @property-read Collection<int, Order> $orders
  * @property-read Organisation $organisation

@@ -38,7 +38,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductCategory> $productCategories
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
- * @property-read \App\Models\Web\WebBlockType $webBlockType
+ * @property-read \App\Models\Web\WebBlockType|null $webBlockType
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Web\Webpage> $webpages
  * @method static Builder<static>|WebBlock newModelQuery()
  * @method static Builder<static>|WebBlock newQuery()

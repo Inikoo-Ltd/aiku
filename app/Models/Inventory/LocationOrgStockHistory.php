@@ -24,8 +24,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric $org_stock_value
  * @property numeric $grp_stock_value
  * @property int|null $organisation_stock_history_id
- * @property-read \App\Models\Inventory\Location $location
- * @property-read \App\Models\Inventory\OrgStock $orgStock
+ * @property-read \App\Models\Inventory\Location|null $location
+ * @property-read \App\Models\Inventory\OrgStock|null $orgStock
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LocationOrgStockHistory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LocationOrgStockHistory newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LocationOrgStockHistory query()

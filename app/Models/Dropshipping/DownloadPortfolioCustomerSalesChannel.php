@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property-read \App\Models\Dropshipping\CustomerSalesChannel $customerSalesChannel
+ * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DownloadPortfolioCustomerSalesChannel newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DownloadPortfolioCustomerSalesChannel newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DownloadPortfolioCustomerSalesChannel onlyTrashed()

@@ -48,17 +48,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $source_id
  * @property string|null $fixed
  * @property numeric|null $audited_quantity
- * @property string|null $running_quantity running quantity on org_stock/location
- * @property string|null $running_quantity_org_stock running quantity on org_stock
+ * @property numeric|null $running_quantity running quantity on org_stock/location
+ * @property numeric|null $running_quantity_org_stock running quantity on org_stock
  * @property bool|null $fixed_internal_helper
  * @property numeric|null $cost_per_sku
  * @property int|null $user_id
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Inventory\Location|null $location
- * @property-read \App\Models\Inventory\OrgStock $orgStock
+ * @property-read \App\Models\Inventory\OrgStock|null $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read User|null $user
- * @property-read \App\Models\Inventory\Warehouse $warehouse
+ * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static Builder<static>|OrgStockMovement newModelQuery()
  * @method static Builder<static>|OrgStockMovement newQuery()
  * @method static Builder<static>|OrgStockMovement query()

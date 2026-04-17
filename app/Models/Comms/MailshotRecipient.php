@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $recipient_name
  * @property-read \App\Models\Comms\DispatchedEmail|null $dispatchedEmail
- * @property-read \App\Models\Comms\Mailshot $mailshot
+ * @property-read \App\Models\Comms\Mailshot|null $mailshot
  * @property-read Model|\Eloquent $recipient
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MailshotRecipient newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MailshotRecipient newQuery()

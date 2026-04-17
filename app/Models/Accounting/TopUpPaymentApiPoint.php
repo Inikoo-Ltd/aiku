@@ -27,8 +27,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric $amount
  * @property \Illuminate\Support\Carbon|null $processed_at
  * @property TopUpPaymentApiPointStateEnum $state
- * @property-read Customer $customer
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read Customer|null $customer
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Accounting\PaymentAccountShop|null $paymentAccountShop
  * @property-read \App\Models\Accounting\TopUp|null $topUp

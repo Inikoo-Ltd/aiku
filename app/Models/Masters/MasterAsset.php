@@ -53,7 +53,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $name
  * @property string|null $description
  * @property numeric|null $price price per outer in grp currency
- * @property string $units
+ * @property numeric $units
  * @property string|null $unit
  * @property array<array-key, mixed> $data
  * @property int|null $gross_weight outer weight including packing, grams
@@ -79,7 +79,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $mark_for_discontinued
  * @property string|null $mark_for_discontinued_at
  * @property \Illuminate\Support\Carbon|null $discontinued_at
- * @property string|null $cost_price_ratio
+ * @property numeric|null $cost_price_ratio
  * @property int|null $front_image_id
  * @property int|null $34_image_id
  * @property int|null $left_image_id
@@ -153,7 +153,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $backImage
  * @property-read Media|null $bottomImage
  * @property-read Media|null $frontImage
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read Media|null $leftImage

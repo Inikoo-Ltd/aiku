@@ -33,8 +33,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read User|null $approver
- * @property-read \App\Models\HumanResources\Employee $employee
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\HumanResources\Employee|null $employee
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\HumanResources\Timesheet|null $timesheet

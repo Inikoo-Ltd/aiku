@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Organisation> $organisations
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\Livechat\ShopHasChatAgent> $shopAssignments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Shop> $shops
- * @property-read User $user
+ * @property-read User|null $user
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent available()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent newQuery()

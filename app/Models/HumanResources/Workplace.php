@@ -55,7 +55,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\HumanResources\ClockingMachine> $clockingMachines
  * @property-read Collection<int, \App\Models\HumanResources\Clocking> $clockings
  * @property-read Collection<int, \App\Models\HumanResources\Employee> $employees
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Organisation $organisation
  * @property-read \App\Models\HumanResources\WorkplaceStats|null $stats
  * @property-read Timezone|null $timezone

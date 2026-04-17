@@ -41,7 +41,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $name
  * @property string|null $description
  * @property numeric|null $price
- * @property string $units
+ * @property numeric $units
  * @property RentalUnitEnum $unit
  * @property array<array-key, mixed> $data
  * @property array<array-key, mixed> $settings
@@ -57,7 +57,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Helpers\Currency $currency
  * @property-read Fulfilment|null $fulfilment
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read HistoricAsset|null $historicAsset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, HistoricAsset> $historicAssets
  * @property-read \App\Models\SysAdmin\Organisation $organisation

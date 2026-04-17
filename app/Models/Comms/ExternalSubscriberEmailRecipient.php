@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\DispatchedEmail> $dispatchedEmails
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ExternalSubscriberEmailRecipient newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ExternalSubscriberEmailRecipient newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ExternalSubscriberEmailRecipient query()

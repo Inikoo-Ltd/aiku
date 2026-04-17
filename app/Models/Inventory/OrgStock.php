@@ -44,15 +44,15 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $slug
  * @property string $code
  * @property string|null $name
- * @property string|null $unit_cost
- * @property string|null $unit_value
- * @property string $unit_commercial_value
+ * @property numeric|null $unit_cost
+ * @property numeric|null $unit_value
+ * @property numeric $unit_commercial_value
  * @property bool $is_sellable_in_organisation
  * @property bool $is_raw_material_in_organisation
  * @property OrgStockStateEnum $state
  * @property OrgStockQuantityStatusEnum|null $quantity_status
  * @property numeric|null $quantity_in_locations stock quantity in units
- * @property string $value_in_locations
+ * @property numeric $value_in_locations
  * @property float|null $available_forecast days
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -68,17 +68,17 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $picking_dropshipping_location_id
  * @property int|null $packed_in Number of trade units usually packed together
  * @property bool $is_single_trade_unit Indicates if the org stock has a single trade unit
- * @property string $quantity_in_submitted_orders
- * @property string $quantity_to_be_picked
+ * @property numeric $quantity_in_submitted_orders
+ * @property numeric $quantity_to_be_picked
  * @property numeric $quantity_available
- * @property string $source_quantity_in_submitted_orders
- * @property string $source_quantity_to_be_picked
+ * @property numeric $source_quantity_in_submitted_orders
+ * @property numeric $source_quantity_to_be_picked
  * @property bool $is_on_demand
  * @property bool $has_been_in_warehouse
  * @property HealthRankEnum|null $health_rank
  * @property bool $movements_fixed
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Location> $locations

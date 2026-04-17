@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_rental_agreement_clauses_type_rental
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Fulfilment\RentalAgreement $rentalAgreement
+ * @property-read \App\Models\Fulfilment\RentalAgreement|null $rentalAgreement
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementStats query()

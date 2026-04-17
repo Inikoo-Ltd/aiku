@@ -39,14 +39,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $source_id
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read \App\Models\Procurement\OrgAgent|null $orgAgent
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Procurement\OrgSupplierProduct> $orgSupplierProducts
  * @property-read Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Procurement\PurchaseOrder> $purchaseOrders
  * @property-read \App\Models\Procurement\OrgSupplierStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, StockDelivery> $stockDeliveries
- * @property-read Supplier $supplier
+ * @property-read Supplier|null $supplier
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static Builder<static>|OrgSupplier newModelQuery()
  * @method static Builder<static>|OrgSupplier newQuery()

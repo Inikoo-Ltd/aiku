@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property int $chat_agent_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\CRM\Livechat\ChatAgent $agent
+ * @property-read \App\Models\CRM\Livechat\ChatAgent|null $agent
  * @property-read Organisation $organisation
  * @property-read Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopHasChatAgent newModelQuery()

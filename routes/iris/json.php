@@ -10,7 +10,7 @@
 
 use App\Actions\Iris\Basket\GetIrisBasketTransactionProductData;
 use Illuminate\Support\Facades\Route;
-use App\Actions\Iris\IrisLogWebUserRequest;
+use App\Actions\Iris\IrisCollectTrafficSources;
 use App\Actions\Helpers\Tag\Json\GetIrisTags;
 use App\Actions\Iris\Json\GetIrisSidebarData;
 use App\Actions\Iris\Json\GetIrisFirstHitData;
@@ -68,7 +68,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     Route::get('first-hit', GetIrisFirstHitData::class)->name('first_hit');
     Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');
-    Route::get('hit', IrisLogWebUserRequest::class)->name('hit');
+    Route::get('hit', IrisCollectTrafficSources::class)->name('hit');
 
     Route::get('collection/{collection:id}/portfolio-data', GetIrisPortfoliosInCollection::class)->name('collection.portfolio_data');
     Route::get('tags', GetIrisTags::class)->name('tags.index');

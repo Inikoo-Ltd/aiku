@@ -26,10 +26,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $uploaded_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Organisation $organisation
  * @property-read User|null $uploader
- * @property-read \App\Models\Web\Website $website
+ * @property-read \App\Models\Web\Website|null $website
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteLlmsTxt newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteLlmsTxt newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteLlmsTxt query()

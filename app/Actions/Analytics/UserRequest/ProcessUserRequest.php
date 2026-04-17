@@ -11,8 +11,6 @@ namespace App\Actions\Analytics\UserRequest;
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\GrpAction;
 use App\Actions\SysAdmin\User\StoreUserRequest;
-use App\Actions\SysAdmin\WithLogRequest;
-use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\Analytics\UserRequest;
 use App\Models\SysAdmin\User;
@@ -20,9 +18,6 @@ use Illuminate\Support\Carbon;
 
 class ProcessUserRequest extends GrpAction
 {
-    use WithNoStrictRules;
-    use WithLogRequest;
-
     public string $jobQueue = 'analytics';
 
     /**
