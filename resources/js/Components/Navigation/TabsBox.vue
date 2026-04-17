@@ -128,7 +128,7 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
                             </div>
 
                             <div class="relative flex items-center justify-center gap-1">
-                                <span class="whitespace-nowrap inline" :class="tabLoading == tab.tab_slug ? 'opacity-0' : 'opacity-80 group-hover:opacity-100 group-hover:underline'">
+                                <span class="whitespace-nowrap inline" :class="tabLoading == tab.tab_slug ? 'opacity-0' : 'opacity-80 group-hover:opacity-100 hover:underline'">
                                     {{ renderLabelBasedOnType(tab.value, tab.type, {currency_code: box.currency_code}) }}
                                 </span>
                                 <div v-if="!(tab.icon || tab.icon_data) && tabLoading == tab.tab_slug" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -136,16 +136,17 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
                                 </div>
 
                                 <!-- Section: Warning -->
-                                <Link v-if="tab.warning"
-                                    :href="tab.warning?.route_target?.name ? route(tab.warning?.route_target?.name, tab.warning?.route_target.parameters) : '#'"
-                                    class="relative aspect-square w-5 flex items-center justify-center bg-purple-300 text-purple-700 rounded text-[10px] leading-none opacity-70 hover:opacity-100 no-underline"
-                                    v-tooltip="tab.warning?.tooltip"
-                                    @click.stop
-                                >
-                                    {{ tab.warning.value }}
-                                    <FontAwesomeIcon v-if="tab.warning?.indicator" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
-                                    <FontAwesomeIcon v-if="tab.warning?.indicator" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
-                                </Link>
+                                <div v-if="tab.warning" @click.stop>
+                                    <Link
+                                        :href="tab.warning?.route_target?.name ? route(tab.warning?.route_target?.name, tab.warning?.route_target.parameters) : '#'"
+                                        class="relative aspect-square w-5 flex items-center justify-center bg-purple-300 text-purple-700 rounded text-[10px] leading-none opacity-70 hover:opacity-100 no-underline"
+                                        v-tooltip="tab.warning?.tooltip"
+                                    >
+                                        {{ tab.warning.value }}
+                                        <FontAwesomeIcon v-if="tab.warning?.indicator" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                        <FontAwesomeIcon v-if="tab.warning?.indicator" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
+                                    </Link>
+                                </div>
                             </div>
                             <template v-if="tab.indicator">
                                 <FontAwesomeIcon icon='fas fa-circle' class='absolute top-1 -right-0 text-green-500 text-[6px]' fixed-width aria-hidden='true' />
