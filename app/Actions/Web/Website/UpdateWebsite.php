@@ -139,9 +139,9 @@ class UpdateWebsite extends OrgAction
             WebsiteGenerateFamiliesOverviewPages::dispatch($website);
         }
 
-        // if (Arr::hasAny($changes, ['domain', 'settings'])) {
-        //     BreakWebsiteCache::run($website);
-        // }
+        if (Arr::hasAny($changes, ['domain', 'settings'])) {
+            BreakWebsiteCache::run($website);
+        }
 
         return $website;
     }
