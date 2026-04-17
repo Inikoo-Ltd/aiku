@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { trans } from 'laravel-vue-i18n'
-import { ref, onMounted, onUnmounted, inject, computed, defineAsyncComponent } from 'vue'
+import { ref, onMounted, onUnmounted, inject, computed, watch, defineAsyncComponent } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import SearchBar from "@/Components/SearchBar.vue"
 import Image from '@/Components/Image.vue'
@@ -33,6 +33,10 @@ const showAskBot = ref(false)
 const expandedOrgs = ref<Set<string>>(new Set())
 
 const dispatchingBadge = computed(() => layout?.dispatching_waiting_badge ?? [])
+
+watch(dispatchingBadge, (badge) => {
+    badge.forEach(orgData => expandedOrgs.value.add(orgData.organisation.slug))
+}, { immediate: true })
 
 const totalWaitingCount = computed(() =>
     dispatchingBadge.value.reduce((total, org) =>
