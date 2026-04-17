@@ -13,16 +13,14 @@ use App\Enums\Comms\EmailTemplate\EmailTemplateBuilderEnum;
 use App\Enums\Comms\EmailTemplate\EmailTemplateStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\EmailTemplate;
-use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
-use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetEmailTemplates extends OrgAction
 {
     use AsObject;
 
-    public function handle(Organisation $organisation, Shop $shop, string $type): array
+    public function handle(Shop $shop, string $type): array
     {
         $queryBuilder = QueryBuilder::for(EmailTemplate::class);
 
@@ -30,10 +28,11 @@ class GetEmailTemplates extends OrgAction
             $queryBuilder->where('email_templates.shop_id', $shop->id);
         } elseif ($type === 'other') {
             $queryBuilder->where('email_templates.shop_id', '!=', $shop->id);
-            $queryBuilder->where('email_templates.is_seeded', false);
-            $queryBuilder->where('email_templates.state', EmailTemplateStateEnum::ACTIVE->value);
-            $queryBuilder->where('email_templates.builder', EmailTemplateBuilderEnum::BEEFREE->value);
         }
+
+        $queryBuilder->where('email_templates.is_seeded', false);
+        $queryBuilder->where('email_templates.state', EmailTemplateStateEnum::ACTIVE->value);
+        $queryBuilder->where('email_templates.builder', EmailTemplateBuilderEnum::BEEFREE->value);
 
         $queryBuilder->whereNotNull('email_templates.compiled_layout');
         $queryBuilder->where('email_templates.compiled_layout', '!=', '');
@@ -53,26 +52,8 @@ class GetEmailTemplates extends OrgAction
             ->toArray();
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return true;
-    }
-
-    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): array
-    {
-        $this->initialisationFromShop($shop, $request);
-        $type = $request->get('type', 'own');
-        return $this->handle($organisation, $shop, $type);
-    }
-
-    public function jsonResponse(array $emailTemplates): array
-    {
-        return $emailTemplates;
-    }
-
     public function action(Shop $shop, string $type = 'own'): array
     {
-        $this->initialisationFromShop($shop, []);
-        return $this->handle($this->organisation, $shop, $type);
+        return $this->handle($shop, $type);
     }
 }

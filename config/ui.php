@@ -11,7 +11,7 @@ return [
 
     'table' => [
         'records_per_page'     => 50,
-        'min_records_per_page' => 50,
+        'min_records_per_page' => 10,
         'max_records_per_page' => 150
 
     ]

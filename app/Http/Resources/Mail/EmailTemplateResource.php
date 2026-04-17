@@ -32,13 +32,11 @@ class EmailTemplateResource extends JsonResource
         return [
             'id'              => $emailTemplate->id,
             'slug'            => $emailTemplate->slug,
-            'subject'         => $emailTemplate->name,
             'title'           => $emailTemplate->name,
-            'compiled_layout' => $emailTemplate->compiled_layout,
             'image'           => $image ? GetPictureSources::run($image) : null,
             'image_thumbnail' => $imageThumbnail ? GetPictureSources::run($imageThumbnail) : null,
             'created_at'      => $emailTemplate->created_at,
-            'shop_name'       => $emailTemplate->shop?->name ?? $emailTemplate->shop_name ?? '',
+            'shop_name'       => $emailTemplate->shop_name ?? '',
         ];
     }
 }
