@@ -206,7 +206,6 @@ test('create other org payment service provider account', function () {
 });
 
 
-//todo restrict payments account types depending of the Service Account type
 test('create payment account', function ($orgPaymentServiceProvider) {
     $modelData = PaymentAccount::factory()->definition();
     data_set($modelData, 'type', PaymentAccountTypeEnum::BANK->value);
