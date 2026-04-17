@@ -124,8 +124,8 @@ class StoreVolumeGRDiscount extends OrgAction
             ]
         );
 
-        $offer = StoreOffer::run($offerCampaign, $modelData);
-        ActivateOffer::run($offer);
+        $offer = StoreOffer::run($offerCampaign, $modelData, $this->hydratorsDelay);
+        ActivateOffer::run($offer, $this->hydratorsDelay);
 
         return $offer;
     }
@@ -144,9 +144,10 @@ class StoreVolumeGRDiscount extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(ProductCategory $family, array $modelData): ?Offer
+    public function action(ProductCategory $family, array $modelData, $hydratorDelay = 0): ?Offer
     {
-        $this->asAction = true;
+        $this->asAction       = true;
+        $this->hydratorsDelay = $hydratorDelay;
         $this->initialisationFromShop($family->shop, $modelData);
 
         return $this->handle($family, $this->validatedData);

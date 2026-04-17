@@ -23,12 +23,8 @@ class StoreEmailTrackingEvent extends OrgAction
 
     public function handle(DispatchedEmail $dispatchedEmail, array $modelData): EmailTrackingEvent
     {
-        data_set($modelData, 'group_id', $dispatchedEmail->group_id);
-        data_set($modelData, 'organisation_id', $dispatchedEmail->organisation_id);
-
         /** @var EmailTrackingEvent $emailTrackingEvent */
         $emailTrackingEvent = $dispatchedEmail->emailTrackingEvents()->create($modelData);
-
 
         DispatchedEmailHydrateEmailTracking::run($dispatchedEmail);
         if ($emailTrackingEvent->type == EmailTrackingEventTypeEnum::CLICKED) {
@@ -60,7 +56,7 @@ class StoreEmailTrackingEvent extends OrgAction
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($dispatchedEmail->organisation, $modelData);
+        $this->initialisation($dispatchedEmail->outbox->organisation, $modelData);
 
         return $this->handle($dispatchedEmail, $this->validatedData);
     }

@@ -8,9 +8,11 @@ import {
     faFolderTree, faBrowser, faLanguage,faFolders, faPaperclip,
     faFolderDownload,faQuoteLeft,
     faSync,
-    faSearch
+    faSearch,
+    faBadgePercent,
+    faTools
 } from '@fal'
-import { ref, computed } from 'vue'
+import { ref, computed, inject } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from '@/Components/Headings/PageHeading.vue'
@@ -43,7 +45,8 @@ import { faMagnifyingGlass, faMagnifyingGlassArrowRight } from '@fortawesome/fre
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import { faShapes, faStar } from '@fas'
 import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
-
+import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
+import ModalCreateGiftOffers from '@/Components/Offers/ModalCreateGiftOffers.vue'
 
 library.add(
     faFolder,
@@ -66,7 +69,9 @@ library.add(
     faFolderTree,
     faFolderDownload,
     faQuoteLeft,
-    faMagnifyingGlass
+    faMagnifyingGlass,
+    faBadgePercent,
+    faTools
 )
 
 const props = defineProps<{
@@ -128,6 +133,12 @@ const props = defineProps<{
     is_single_trade_unit?: boolean
     reminders?: {}
     trade_unit_slug?: string
+    shop_data: {
+        id: number
+        slug: string
+        currency_code: string
+    }
+    product_id: number
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -152,6 +163,7 @@ const component = computed(() => {
         attachments: AttachmentManagement,
         sales: ProductCategoryTimeSeriesTable,
         content: ProductContent,
+        offers: TableOffers,
     }
     return components[currentTab.value]
 })
@@ -164,8 +176,7 @@ const component = computed(() => {
     return !props.taxonomy?.department && !props.taxonomy?.family
 })
  */
-
-
+const layout = inject("layout", {})
 const routeVariant = () => {
     return route(
         'grp.org.shops.show.catalogue.families.show.variants.show',
@@ -177,7 +188,6 @@ const routeVariant = () => {
         }
     )
 }
-
 
 </script>
 
@@ -237,6 +247,15 @@ const routeVariant = () => {
             </div>
         </template>
         <template #other>
+        </template>
+        <template #otherBefore>
+            
+            <ModalCreateGiftOffers 
+                v-if="currentTab === 'offers' && layout.app.environment === 'local'"
+                v-tooltip="'Create New Offer'"
+                :shop_data="props.shop_data"
+                :product_id="props.product_id"
+                 />
         </template>
     </PageHeading>
 

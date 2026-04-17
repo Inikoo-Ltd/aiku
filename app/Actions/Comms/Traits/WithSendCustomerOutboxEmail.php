@@ -9,15 +9,11 @@
 namespace App\Actions\Comms\Traits;
 
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Outbox;
 use App\Models\CRM\Customer;
-use App\Models\Comms\EmailBulkRun;
-use App\Models\Comms\EmailOngoingRun;
-use App\Models\Comms\Mailshot;
 use Sentry;
 
 trait WithSendCustomerOutboxEmail
@@ -33,8 +29,7 @@ trait WithSendCustomerOutboxEmail
         array $additionalData = [],
         string $unsubscribeUrl = '',
         ?string $passwordToken = null,
-        ?string $invoiceUrl = null,
-        EmailOngoingRun|EmailBulkRun|Mailshot|null $parent = null
+        ?string $invoiceUrl = null
     ): DispatchedEmail|null {
         /** @var Outbox $outbox */
         $outbox = $customer->shop->outboxes()->where('code', $code->value)->first();
@@ -49,18 +44,14 @@ trait WithSendCustomerOutboxEmail
 
         $emailHtmlBody = $outbox->emailOngoingRun->email->liveSnapshot->compiled_layout;
         if ($emailHtmlBody === null) {
-            Sentry::captureMessage('Email live snapshot not found for outbox code: ' . $code->value.' outbox id: '.$outbox->id.'');
+            Sentry::captureMessage('Email live snapshot not found for outbox code: '.$code->value.' outbox id: '.$outbox->id);
+
             return null;
         }
 
-
-
-        $recipient = $customer;
-        $dispatchedEmail = StoreDispatchedEmail::run($parent ?? $outbox->emailOngoingRun, $recipient, [
-            'is_test'       => false,
+        $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $customer, [
             'outbox_id'     => $outbox->id,
-            'email_address' => $recipient->email,
-            'provider'      => DispatchedEmailProviderEnum::SES
+            'email_address' => $customer->email,
         ]);
         $dispatchedEmail->refresh();
 

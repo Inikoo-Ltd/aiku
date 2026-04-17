@@ -15,9 +15,9 @@ import { debounce, get, set } from 'lodash-es';
 import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 import { routeType } from "@/types/route";
-import { ref, onMounted, reactive, inject, computed } from "vue";
+import { ref, onMounted, reactive, inject, computed, watch } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf } from "@fal";
+import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox } from "@fal";
 import { faSkull, faWandMagic } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
@@ -30,7 +30,13 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import ExpiryDateLabel from "@/Components/Utils/Label/ExpiryDateLabel.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
-library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic);
+import axios from "axios";
+import Image from "@/Components/Image.vue"
+import LabelItemsWaitingForWarehouse from "./LabelItemsWaitingForWarehouse.vue"
+import LabelItemsWaitingForCrm from "./LabelItemsWaitingForCrm.vue"
+import LoadingOverlay2 from "@/Components/Utils/LoadingOverlay2.vue"
+import { ctrans } from "@/Composables/useTrans"
+library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox);
 
 
 const props = defineProps<{
@@ -38,6 +44,8 @@ const props = defineProps<{
     tab?: string
     state: string
     shop_type : string
+    allowWaiting: boolean
+    allowPickerSetNotPicked: boolean
 }>();
 
 const emit = defineEmits<{
@@ -272,19 +280,9 @@ const GetQuantityToPickFractional = (item) => {
 
 
 // Section: Set Transaction as waiting
-const listSetAsWaitingType = [
-    {
-        label: trans("Waiting for Customer"),
-        value: 'waiting_for_customer'
-    },
-    {
-        label: trans("Waiting for Warehouse"),
-        value: 'waiting_for_warehouse'
-    }
-]
 const dataToSendAsWaiting = ref({
-    type: '',
-    reason: '',
+    note: '',
+
 })
 const isOpenModalSetAsWaiting = ref(false)
 const selectedTransactionToSetAsWaiting = ref(null)
@@ -292,12 +290,13 @@ const isLoadingSetAsWaiting = ref(false)
 const submitTransactionAsWaiting = () => {
     // Section: Submit
     router.post(
-        route('grp.models.delivery_note_item.set_as_waiting.store', {
+        route('grp.models.delivery_note_item.set_as_waiting_warehouse', {
             deliveryNoteItem: selectedTransactionToSetAsWaiting.value?.id
         }),
         {
             ...dataToSendAsWaiting.value,
-            quantity: selectedTransactionToSetAsWaiting.value?.quantity_to_pick
+            transaction_id: selectedTransactionToSetAsWaiting.value?.id,
+            quantity: selectedTransactionToSetAsWaiting.value?.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.value?.quantity_waiting_warehouse || 0)
         },
         {
             preserveScroll: true,
@@ -308,16 +307,16 @@ const submitTransactionAsWaiting = () => {
             onSuccess: () => {
                 notify({
                     title: trans("Success"),
-                    text: trans("Successfully set transaction as waiting"),
+                    text: trans("Successfully set item as waiting"),
                     type: "success"
                 })
-                dataToSendAsWaiting.value.type = ''
-                dataToSendAsWaiting.value.reason = ''
+                dataToSendAsWaiting.value.note = ''
+                isOpenModalSetAsWaiting.value = false
             },
             onError: errors => {
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to set transaction as waiting. Try again"),
+                    text: trans("Failed to set item as waiting. Try again"),
                     type: "error"
                 })
             },
@@ -327,10 +326,129 @@ const submitTransactionAsWaiting = () => {
         }
     )
 }
+
+const isModalPackingInfo = ref(false)
+const selectedPackingItem = ref<any>(null)
+
+const packingDetailRows = ref<any[]>([])
+const isLoadingPackingDetail = ref(false)
+
+const openPackingModal = async (item: any) => {
+    selectedPackingItem.value = item
+    // console.log("selectedPackingItem",selectedPackingItem.value)
+    isModalPackingInfo.value = true
+    isLoadingPackingDetail.value = true
+
+    // console.log("modalResource NOW", modalResource.value)
+    try {
+        const res = await axios.get(
+            route("grp.json.fetch_single_delivery_note_item", {
+                deliveryNoteItem: item.data.id
+            })
+        )
+        // console.log("res",res)
+        packingDetailRows.value = res.data
+        // console.log("packingDetailRows",packingDetailRows.value)
+    } catch (e) {
+        console.log(e)
+        packingDetailRows.value = []
+    } finally {
+        isLoadingPackingDetail.value = false
+    }
+}
+
+const closePackingModal = () => {
+    isModalPackingInfo.value = false
+    setTimeout(() => {
+        selectedPackingItem.value = null
+    }, 200)
+}
+
+const modalResource = computed(() => {
+    if (!selectedPackingItem.value) return null
+
+    return {
+        ...props.data,
+        data: props.data.data.filter(
+            r => r.id === selectedPackingItem.value.id
+        )
+    }
+})
+
+
+const routeItemsWaitingWarehouse = (item) => {
+    if (!route().params.warehouse || !route().params.organisation) {
+        return '#'
+    }
+
+    return route('grp.org.warehouses.show.dispatching.waiting_items', {
+        organisation: route().params.organisation,
+        warehouse: route().params.warehouse,
+    })
+}
+
+const routeItemsWaitingCrm = (item) => {
+    if (!item.shop_slug || !route().params.organisation) {
+        return '#'
+    }
+
+    return route('grp.org.shops.show.ordering.backlog.waiting_items', {
+        organisation: route().params.organisation,
+        shop: item.shop_slug
+    })
+}
+
+// watch(modalResource, (val) => {
+//     // console.log("modalResource", val)
+// }, { deep: true })
+
+
+// Section: Undo Quantity Waiting Warehouse
+const isOpenModalUndoWaitingWarehouse = ref(false)
+const selectedItemToUndoWaitingWarehouse = ref(null)
+const isLoadingUndoWaitingWarehouse = ref(false)
+const onSetItemToUndoWaitingWarehouse = () => {
+    router.post(route('grp.models.delivery_note_item.undo_set_as_waiting_warehouse', {
+        deliveryNoteItem: selectedItemToUndoWaitingWarehouse.value?.id
+    }),
+    { },
+    {
+        preserveScroll: true,
+        onStart: () => {
+            isLoadingUndoWaitingWarehouse.value = true
+        },
+        onSuccess: () => {
+            isOpenModalUndoWaitingWarehouse.value = false
+            notify({
+                title: trans("Success") + '!',
+                text: ctrans('Item :itemName undo the quantity waiting warehouse', { itemName: selectedItemToUndoWaitingWarehouse.value?.org_stock_name}),
+                type: "success",
+            })
+        },
+        onFinish: () => isLoadingUndoWaitingWarehouse.value = false,
+    }
+)}
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" rowAlignTop>
+        <template #cell(quantity_packed_readonly)="{ item }">
+            <span v-tooltip="item.quantity_packed">
+            <FractionDisplay v-if="item.quantity_packed_fractional" :fractionData="item.quantity_packed_fractional" />
+            <span v-else>{{ item.quantity_packed }}</span>
+            </span>
+        </template>
+        <template #cell(quantity_required_readonly)="{ item }">
+            <span v-tooltip="item.quantity_required">
+                <FractionDisplay v-if="item.quantity_required_fractional"
+                    :fractionData="item.quantity_required_fractional" />
+                <span v-else>{{ item.quantity_required }}</span>
+            </span>
+        </template>
+        <template #cell(quantity_picked_readonly)="{ item }">
+            <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
+            <span v-else>{{ item.quantity_picked }}</span>
+        </template>
         <!-- Column: state -->
         <template #cell(state)="{ item }">
             <Icon :data="item.state_icon" />
@@ -374,6 +492,24 @@ const submitTransactionAsWaiting = () => {
             </div>
         </template>
 
+        <!-- Section: Pickings -->
+        <template #cell(picking_locations)="{ item }">
+            <div v-if="item.picking_locations && item.picking_locations.length > 0" class="flex flex-col gap-1">
+                <div v-for="picking in item.picking_locations" :key="picking.id" class="text-sm flex items-center gap-2">
+                    <Link v-if="picking.location_code" 
+                          :href="route('grp.org.warehouses.show.infrastructure.locations.show', [route().params.organisation, picking.warehouse_slug, picking.location_slug])"
+                          :class="['primaryLink font-medium', picking.location_code ? '' : 'text-gray-400 italic']">
+                        {{ picking.location_code }}
+                    </Link>
+                    <span v-else class="text-gray-400 italic">No Location</span>
+                    <div class="px-2 py-0.5 bg-gray-100 rounded-full text-xs font-medium">
+                        {{ picking.quantity }}
+                    </div>
+                </div>
+            </div>
+            <div v-else class="text-gray-400 italic text-sm">No items picked yet</div>
+        </template>
+
         <!-- Column: Quantity Required -->
         <template #cell(quantity_required)="{ item }">
 
@@ -412,6 +548,28 @@ const submitTransactionAsWaiting = () => {
         <template #cell(quantity_picked)="{ item: item, proxyItem }">
             <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
             <span v-else>{{ item.quantity_picked }}</span>
+
+            <span v-tooltip="ctrans('Not picked')"  v-if="item.quantity_not_picked!=0" class="text-red-500 rounded-sm border-red-400 bg-red-100  border px-1.5 ml-2">
+            {{ Number(item.quantity_not_picked) }}
+            </span>
+
+            <span v-tooltip="ctrans('Waiting for warehouse')"  v-if="item.quantity_waiting_warehouse!=0" class="text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
+            {{ Number(item.quantity_waiting_warehouse) }}
+            </span>
+
+
+            <Link
+                v-if="Number(item.quantity_waiting_crm) > 0"
+                :href="route('grp.org.shops.show.ordering.backlog.waiting_items', {
+                    organisation: route().params.organisation,
+                    shop: route().params.shop,
+                })"
+            >
+                <span v-tooltip="ctrans('Waiting for customer services')"  class="text-purple-500 rounded-sm border-purple-400 bg-purple-100  border px-1.5 ml-2">
+                    {{ Number(item.quantity_waiting_crm) }}
+                </span>
+            </Link>
+
 
         </template>
 
@@ -512,6 +670,7 @@ const submitTransactionAsWaiting = () => {
                     class="flex flex-col justify-between gap-x-6 items-center">
                     <!-- Action: decrease and increase quantity -->
                     <div class="mb-3 w-full flex justify-between gap-x-6 xitems-center">
+                        <!-- Section: Locations -->
                         <div class="">
                             <Transition name="spin-to-down">
                                 <div :key="findLocation(itemValue.locations, proxyItem.org_stock_id).location_code">
@@ -635,45 +794,65 @@ const submitTransactionAsWaiting = () => {
                                 </template>
                             </Button>
 
-                            <!-- Button: Set Transaction as not picked -->
-                            <!-- Button: Not picked -->
-                            <ButtonWithLink
-                                v-if="!itemValue.is_handled"
-                                type="negative"
-                                iconRight="fal fa-debug"
-                                :size="screenType == 'desktop' ? 'sm' : 'lg'"
-                                :routeTarget="itemValue.not_picking_route"
-                                :bindToLink="{preserveScroll: true}"
-                                v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
-                            >
-                            
-                                <template #label>
-                                    <div>
-                                        <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)" :fractionData="GetQuantityToPickFractional(itemValue)" />
-                                        <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
-                                    </div>
+                            <!-- Button: Not Picked || Set as Waiting -->
+                            <template v-if="!itemValue.is_handled">
+                                <!-- Button: Set Transaction as Waiting (only on Ecom) -->
+                                <template v-if="allowWaiting">                                   
+                                    <!-- Button: Not picked -->
+                                    <ButtonWithLink
+                                        v-if="allowPickerSetNotPicked"
+                                        type="negative"
+                                        iconRight="fal fa-debug"
+                                        :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                                        :routeTarget="itemValue.not_picking_route"
+                                        :bindToLink="{preserveScroll: true}"
+                                        v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
+                                    >
+                                        <template #label>
+                                            <div>
+                                                <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)" :fractionData="GetQuantityToPickFractional(itemValue)" />
+                                                <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
+                                            </div>
+                                        </template>
+                                    </ButtonWithLink>
+
+                                    <Button
+                                        @click="() => (isOpenModalSetAsWaiting = true, dataToSendAsWaiting.note = itemValue.notes, selectedTransactionToSetAsWaiting = itemValue)"
+                                        type="tertiary"
+                                        iconRight="fal fa-hourglass-half"
+                                        :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                                        v-tooltip="trans('Set :numberNotPicked as waiting', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
+                                    >
+                                        <template #label>
+                                            <div>
+                                                <FractionDisplay v-if="GetQuantityToPickFractional ? GetQuantityToPickFractional(itemValue) : null" :fractionData="GetQuantityToPickFractional(itemValue)" />
+                                                <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
+                                            </div>
+                                        </template>
+                                    </Button>
                                 </template>
-                            </ButtonWithLink>
 
-                            <!-- Button: Set Transaction as Waiting -->
-                            <Button
-                                v-if="layout.app.environment === 'local'"
-                                @click="() => (isOpenModalSetAsWaiting = true, selectedTransactionToSetAsWaiting = itemValue)"
-                                type="tertiary"
-                                iconRight="fal fa-hourglass-half"
-                                :size="screenType == 'desktop' ? 'sm' : 'lg'"
-                                v-tooltip="trans('Set :numberNotPicked as waiting', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
-                            >
-                                <template #label>
-                                    <div>
-                                        <FractionDisplay v-if="GetQuantityToPickFractional ? GetQuantityToPickFractional(itemValue) : null" :fractionData="GetQuantityToPickFractional(itemValue)" />
-                                        <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
-                                    </div>
-                                </template>
-                            </Button>
+                                <!-- Button: Not picked -->
+                                <ButtonWithLink
+                                    v-else
+                                    type="negative"
+                                    iconRight="fal fa-debug"
+                                    :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                                    :routeTarget="itemValue.not_picking_route"
+                                    :bindToLink="{preserveScroll: true}"
+                                    v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
+                                >
+                                    <template #label>
+                                        <div>
+                                            <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)" :fractionData="GetQuantityToPickFractional(itemValue)" />
+                                            <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
+                                        </div>
+                                    </template>
+                                </ButtonWithLink>
+                            </template>
 
 
-                            </div>
+                        </div>
                         </div>
                         
                         <!-- Section: Errors list -->
@@ -717,7 +896,7 @@ const submitTransactionAsWaiting = () => {
                 </div>
             </div>
 
-            <div v-else class="flex justify-between gap-x-2 gap-y-1">
+            <div v-else-if="Number(itemValue.quantity_waiting_warehouse) < 1 && Number(itemValue.quantity_waiting_crm) < 1" class="flex justify-between gap-x-2 gap-y-1">
                 <div v-if="!itemValue.is_handled" class="text-gray-400 italic text-sm">
                     {{ trans("No quantity to pick") }}
                 </div>
@@ -736,27 +915,123 @@ const submitTransactionAsWaiting = () => {
                 </div>
             </div>
 
+            <!-- Section: items are waiting for warehouse -->
+            
+            <div v-if="Number(itemValue.quantity_waiting_warehouse) > 0" class="mt-2 mx-auto w-fit flex gap-x-2">
+                <Link :href="routeItemsWaitingWarehouse(itemValue)" class="hover:underline">
+                    <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(itemValue.quantity_waiting_warehouse)">
+                    </LabelItemsWaitingForWarehouse>
+                </Link>
+                <Button
+                    @click="isOpenModalUndoWaitingWarehouse = true, selectedItemToUndoWaitingWarehouse = itemValue"
+                    v-tooltip="ctrans('Reset :qtyWaiting waiting items for warehouse', { qtyWaiting: Number(itemValue.quantity_waiting_warehouse).toString()})"
+                    type="negative"
+                    :size="screenType != 'mobile' ? 'xxs' : 'md'"
+                    icon="fal fa-undo-alt"
+                />
+            </div>
+
+            <!-- Section: items are waiting for CRM -->
+            
+            <div v-if="Number(itemValue.quantity_waiting_crm) > 0" class="mx-auto w-fit">
+                <Link :href="routeItemsWaitingCrm(itemValue)" class="hover:underline">
+                    <LabelItemsWaitingForCrm v-if="Number(itemValue.quantity_waiting_crm) > 0" :qty_waiting_crm="Number(itemValue.quantity_waiting_crm)" />
+                </Link>
+            </div>
+
         </template>
 
-         <template #cell(action)="{ item: item }">
-                <template class="" v-if="state === 'packing' && layout.app.environment === 'local' && props.shop_type !== 'dropshipping'">
+        <template #cell(action)="{ item: item }">
+                <template v-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && item.quantity_picked > 0" >
+                    
+                    <div class="flex justify-start items-center">
                     <ButtonWithLink
+                        v-if="!item.is_done_packing"
                         type="secondary"
-                        v-tooltip="trans('Click to packing the item')"
                         :label="ctrans('Packing')"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
                         :key="screenType"
                         :bindToLink="{preserveScroll: true}"
                         :routeTarget="{
                             name: 'grp.models.delivery_note_item.packing.store',
+                            method: 'patch',
                             parameters: {
                                 deliveryNoteItem: item.id
                             }
                         }"
                     />
+                    <ButtonWithLink
+                        v-else
+                        type="negative"
+                        :size="screenType == 'desktop' ? 'xs' : 'lg'"
+                        :bindToLink="{preserveScroll: true}"
+                        :routeTarget="{
+                            name: 'grp.models.delivery_note_item.packing.delete',
+                            method: 'delete',
+                            parameters: {
+                                deliveryNoteItem: item.id
+                            }
+                        }"
+                        :icon="faUndo"
+                    />
+                     <Button
+                     v-if="layout.app.environment === 'local' && !item.is_done_packing"
+                        type="negative"
+                        class="ml-4"
+                        icon="fal fa-debug"
+                        :size="screenType == 'desktop' ? 'xs' : 'lg'"
+                        v-tooltip="'Packing info'"
+                        @click="openPackingModal(item)"
+                    />
+                    </div>
                 </template>
         </template>
     </Table>
+
+    <Modal
+        :isOpen="isModalPackingInfo"
+        @onClose="closePackingModal"
+        width="w-full max-w-4xl"
+    >
+        <div class="text-center text-xl font-semibold mb-4">
+            Packing Info — {{ selectedPackingItem?.org_stock_code }}
+        </div>
+        <Table :resource="modalResource" :name="tab" class="mt-5" rowAlignTop>
+            <!-- Column: state -->
+            <template #cell(state)="{ item }">
+                <Icon :data="item.state_icon" />
+            </template>
+
+            <!-- Column: Reference -->
+            <template #cell(org_stock_code)="{ item: deliveryNoteItem }">
+                <Link :href="orgStockRoute(deliveryNoteItem)" class="primaryLink">
+                {{ deliveryNoteItem.org_stock_code }}
+                </Link>
+            </template>
+
+            <template #cell(action)="{ item: item }">
+                <!-- {{ item.not_picking_route }} -->
+                <!-- icon="fal fa-debug" -->
+                <ButtonWithLink
+                    type="negative"
+                    tooltip="No quantity to pick. Click to ignore."
+                             label="Click to ignore"
+                            :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                            :routeTarget="item.not_picking_route"
+                            :bindToLink="{preserveScroll: true}"
+                             @success="closePackingModal"
+                        />
+                    
+            </template>
+        </Table>
+       
+        <Button
+            class="mt-6"
+            full
+            label="Close"
+            @click="closePackingModal"
+        />
+    </Modal>
 
     <Modal :isOpen="isModalLocation" @onClose="() => onCloseModal()" width="w-full max-w-2xl" :dialogStyle="{
         background: '#ffffff'
@@ -916,58 +1191,155 @@ const submitTransactionAsWaiting = () => {
     </Modal>
 
     <!-- Modal: Set Transaction as Waiting -->
-    <Modal :isOpen="isOpenModalSetAsWaiting" width="w-full max-w-2xl" @close="isOpenModalSetAsWaiting = false">
-        <div class="font-semibold text-xl text-center mb-8">
-            {{ trans("Set :itemName as waiting", { itemName: selectedTransactionToSetAsWaiting?.org_stock_name ?? '-' }) }}
+    <Modal :isOpen="isOpenModalSetAsWaiting" width="w-full max-w-lg" @close="isOpenModalSetAsWaiting = false">
+        <!-- Product info header -->
+        <div class="font-semibold text-center text-2xl mb-8">
+            {{ trans("Set item as waiting") }}
         </div>
 
-        <div class="mt-8 space-y-8">
-            <div>
-                <label for="amount" class="font-medium mb-1 flex items-center gap-x-1">
-                    <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle"/>
-
-                    {{ trans('Select type waiting') }}:
-                </label>
-
-                <div class="pl-4 grid grid-cols-2 py-1 px-2 gap-x-4">
-                    <div v-for="waitingType in listSetAsWaitingType" :key="waitingType.value">
-                        <Button
-                            full
-                            @click="() => dataToSendAsWaiting.type = waitingType.value"
-                            :label="waitingType.label"
-                            :type="dataToSendAsWaiting.type === waitingType.value ? 'secondary' : 'dashed'"
-                            :key="dataToSendAsWaiting.type"
-                            xdisabled="isLoadingSubmitBay !== undefined"
-                            xloading="isLoadingSubmitBay === waitingType.value"
-                        />
-
-                    </div>
-                </div>
+        <div class="flex items-center gap-4 mb-2">
+            <div class="shrink-0 size-16 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
+                <Image
+                    v-if="selectedTransactionToSetAsWaiting?.org_stock_image_thumbnail"
+                    :src="selectedTransactionToSetAsWaiting.org_stock_image_thumbnail"
+                    :alt="selectedTransactionToSetAsWaiting.org_stock_name"
+                />
+                <FontAwesomeIcon v-else icon="fal fa-box" class="text-2xl text-gray-400" fixed-width aria-hidden="true" />
             </div>
 
-            <div>
-                <label for="amount" class="font-medium mb-1 flex items-center gap-x-1">
-                    {{ trans('Reason') }}:
-                </label>
-
-                <div class="pl-4">
-                    <PureTextarea
-                        v-model="dataToSendAsWaiting.reason"
-                    />
+            <div class="min-w-0">
+                <div class="text-xl leading-tight">
+                    {{ selectedTransactionToSetAsWaiting?.org_stock_name ?? '-' }}
+                </div>
+                <div class="text-sm opacity-75 italic">
+                    {{ selectedTransactionToSetAsWaiting?.org_stock_code }}
                 </div>
             </div>
         </div>
 
-        <div class="">
+        <!-- Section: Quantity badge -->
+        <div class="flex items-center gap-2 mb-6 p-3 rounded-lg bg-amber-50 border border-amber-200">
+            <FontAwesomeIcon icon="fal fa-hourglass-half" class="text-amber-500" fixed-width aria-hidden="true" />
+            <span class="text-sm text-amber-700">
+                {{ trans('Quantity to set as waiting') }}:
+            </span>
+            <span class="font-bold text-amber-800">
+                <!-- <FractionDisplay
+                    v-if="GetQuantityToPickFractional(selectedTransactionToSetAsWaiting)"
+                    :fractionData="GetQuantityToPickFractional(selectedTransactionToSetAsWaiting)"
+                />
+                <template v-else>{{ locale.number(selectedTransactionToSetAsWaiting.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) ?? 0) }}</template> -->
+                {{ selectedTransactionToSetAsWaiting.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) }}
+                
+            </span>
+        </div>
+
+        <!-- Note textarea -->
+        <div>
+            <label class="font-medium mb-1 flex items-center gap-x-1 text-sm">
+                {{ trans('Note') }}:
+            </label>
+            <PureTextarea v-model="dataToSendAsWaiting.note" :rows="4" />
+        </div>
+
+        <div class="flex gap-2 mt-6">
+            <Button
+                @click="() => isOpenModalSetAsWaiting = false"
+                :label="ctrans('Cancel')"
+                type="negative"
+            />
             <Button
                 @click="() => submitTransactionAsWaiting()"
                 :label="trans('Set as waiting')"
                 full
                 iconRight="far fa-arrow-right"
-                class="mt-4"
-                :disabled="!dataToSendAsWaiting.type"
                 :loading="isLoadingSetAsWaiting"
             />
+        </div>
+    </Modal>
+
+    <!-- Modal: Set Transaction to undo waiting warehouse -->
+    <Modal :isOpen="isOpenModalUndoWaitingWarehouse" width="w-full max-w-xl relative" @close="isOpenModalUndoWaitingWarehouse = false">
+        <div class="flex min-h-full xitems-end justify-center p-4 text-center items-center sm:py-4">
+            <!-- Button: Close -->
+            <div class="absolute top-0 right-0 pt-4 pr-4 hidden sm:block">
+                <button
+                    type="button"
+                    class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-hidden"
+                    @click="isOpenModalUndoWaitingWarehouse = false">
+                    <span class="sr-only">Close</span>
+                    <FontAwesomeIcon
+                        :icon="'fal fa-times'"
+                        class=""
+                        fixed-width
+                        aria-hidden="true" />
+                </button>
+            </div>
+
+            <div class="sm:flex sm:items-start">
+                <div class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:size-10">
+                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-red-600" fixed-width aria-hidden="true" />
+                </div>
+
+                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <div as="h3" class="text-base font-semibold">
+                        {{ ctrans("Are you sure want to undo quantity waiting for warehouse?") }}
+                    </div>
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-500">
+                            {{ ctrans( "Other people may on the progress to picking this item, you need to tell the others about this action" ) }}
+                        </p>
+                    </div>
+
+                    <div class="mt-4 bg-amber-50 border border-amber-200 rounded flex items-center gap-4 mb-2 py-2 px-3">
+                        <div class="shrink-0 size-16 rounded-lg overflow-hidden xbg-gray-100 border border-black/10 flex items-center justify-center">
+                            <Image
+                                v-if="selectedItemToUndoWaitingWarehouse?.org_stock_image_thumbnail"
+                                :src="selectedItemToUndoWaitingWarehouse.org_stock_image_thumbnail"
+                                :alt="selectedItemToUndoWaitingWarehouse.org_stock_name"
+                            />
+                            <FontAwesomeIcon v-else icon="fal fa-image" class="text-2xl text-gray-400" fixed-width aria-hidden="true" />
+                        </div>
+
+                        <div class="min-w-0">
+                            <div class="text-xl leading-tight font-bold">
+                                {{ selectedItemToUndoWaitingWarehouse?.org_stock_code }}
+                            </div>
+                            <div class="text- opacity-75">
+                                {{ selectedItemToUndoWaitingWarehouse?.org_stock_name ?? '-' }}
+                            </div>
+                            <div class="text-sm text-red-500 opacity-75 italic">
+                                {{ ctrans("Quantity waiting for warehouse") }}: {{ Number(selectedItemToUndoWaitingWarehouse?.quantity_waiting_warehouse) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 flex flex-row-reverse gap-2">
+                        <div class="xw-full sm:w-fit">
+                            <Button
+                                :loading="isLoadingUndoWaitingWarehouse"
+                                @click="() => (onSetItemToUndoWaitingWarehouse())"
+                                type="red"
+                                xlabel="props.noLabel ?? trans('Delete')"
+                                :icon="'far fa-trash-alt'"
+                                full
+                                :label="ctrans('Yes, undo waiting')"
+                            />
+                        </div>
+
+                        <Button
+                            type="tertiary"
+                            icccon="far fa-arrow-left"
+                            :label="ctrans('Cancel')"
+                            full
+                            @click="
+                                () => ((isOpenModalUndoWaitingWarehouse = false))
+                            "
+                        />
+                    </div>
+                </div>
+            </div>
+            <LoadingOverlay2 v-if="isLoadingUndoWaitingWarehouse" class="rounded-2xl" />
         </div>
     </Modal>
 </template>

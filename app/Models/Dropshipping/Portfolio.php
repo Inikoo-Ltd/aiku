@@ -47,10 +47,10 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $platform_product_id
  * @property array<array-key, mixed>|null $errors_response
  * @property string|null $platform_handle
- * @property string|null $selling_price
- * @property string|null $margin
- * @property string|null $vat_rate
- * @property string|null $price_inc_vat
+ * @property numeric|null $selling_price
+ * @property numeric|null $margin
+ * @property numeric|null $vat_rate
+ * @property numeric|null $price_inc_vat
  * @property string|null $upload_warning
  * @property string|null $status_reason
  * @property array<array-key, mixed>|null $platform_product_availabilities
@@ -66,11 +66,13 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property \Illuminate\Support\Carbon|null $stock_last_updated_at
  * @property string|null $stock_last_fail_updated_at
  * @property int|null $last_stock_value
+ * @property bool $is_bundle
+ * @property int|null $bundle_id
  * @property PortfolioTypeEnum $type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Customer $customer
+ * @property-read Customer|null $customer
  * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Model|\Eloquent|null $item
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Dropshipping\Platform|null $platform

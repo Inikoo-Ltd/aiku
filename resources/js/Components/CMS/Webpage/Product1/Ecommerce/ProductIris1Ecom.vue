@@ -38,6 +38,7 @@ import { Navigation, Thumbs } from 'swiper/modules'
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 import { getBestOffer } from "@/Composables/useOffers"
 import GRAmnestyPriceLabel from "@/Components/Utils/Iris/Family/GRAmnestyPriceLabel.vue"
+import ReviewsProduct from "@/Components/CMS/Reviews/ReviewsProduct.vue"
 
 
 
@@ -169,6 +170,15 @@ const varinatNavigation = ref({
   nextEl: null as HTMLElement | null,
 })
 
+const showDiscount = computed(() => {
+    return (
+        product.value?.stock &&
+        !product.value?.is_coming_soon &&
+        !(layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty) &&
+        bestOffer.value?.type === 'Category Quantity Ordered Order Interval'
+    )
+})
+
 watch([variantPrevEl, variantNextEl], () => {
   if (variantPrevEl.value && variantNextEl.value) {
     varinatNavigation.value = {
@@ -184,8 +194,7 @@ onMounted(async () => {
   varinatNavigation.value.nextEl = variantNextEl.value
 })
 
-
-
+console.log('props', props)
 </script>
 
 
@@ -291,54 +300,56 @@ onMounted(async () => {
                 />
 
                 <!-- Section: Member/Non Member label, Profit -->
+
                 <div class="flex justify-between mt-1" v-if="layout?.iris?.is_logged_in">
                     <template v-if="product.offers_data?.number_offers > 0">
-                        <div class="flex flex-col w-1/2 offers">
+                        <div class="flex flex-col  offers">
                             <template v-if="bestOffer?.type === 'Category Quantity Ordered Order Interval'">
                                 <GRAmnestyPriceLabel v-if="layout?.user?.gr_data?.amnesty" :offer="bestOffer" />
-                                <MemberPriceLabel v-else-if="layout?.user?.gr_data?.customer_is_gr" :offer="bestOffer" />
+                                <MemberPriceLabel v-else-if="(layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty)" :offer="bestOffer" />
                                 <NonMemberPriceLabel v-else :product />
                             </template>
-            
-                            <!-- <AvailableVolOfferLabel
-                                v-if="
-                                    (product.stock && !product.is_coming_soon)  // same as button add to basket conditions
-                                    && !layout?.user?.gr_data?.customer_is_gr"
-                                :offer="bestOffer(product.offers_data?.best_percentage_off?.offer_id)"
-                            /> -->
-                            
-                             <DiscountByType 
-                                v-if="(product.stock  && !product.is_coming_soon && !layout?.user?.gr_data?.customer_is_gr &&  bestOffer?.type === 'Category Quantity Ordered Order Interval')" 
+
+
+                            <DiscountByType
+                                v-if="showDiscount && bestOffer.type == 'Category Ordered'"
                                 :template="'products_triggers_label'"
-                                :offers_data="product?.offers_data" 
+                                :offers_data="product?.offers_data"
                             />
 
+                             <DiscountByType
+                                v-if="showDiscount && bestOffer.type == 'First Order Bonus'"
+                                :template="'first-order'"
+                                :offers_data="product?.offers_data"
+                            />
 
-                            <DiscountByType 
-                                v-if="(product.stock  && !product.is_coming_soon && bestOffer?.type != 'Category Quantity Ordered Order Interval')" 
+                            <DiscountByType
+                                v-if="(product.stock  && !product.is_coming_soon && bestOffer?.type != 'Category Quantity Ordered Order Interval')"
                                 :template="'max_discount'"
-                                :offers_data="product?.offers_data" 
+                                :offers_data="product?.offers_data"
                             />
                         </div>
                         <div />
                     </template>
-                    <div v-else />
+                </div>
+
+                <div class="flex justify-between mt-1" v-if="layout?.iris?.is_logged_in"><div/>
 
                     
                     <!-- Section: Profit and the popover -->
                     <div class="flex justify-between items-end">
                         <span @click="_popoverProfit?.toggle">{{ trans("Profit") }}</span>:
                         <span class="text-green-500 ml-1 font-bold">
-                            {{ layout?.user?.gr_data?.customer_is_gr ? fieldValue.product?.discounted_margin : fieldValue.product?.margin }}
+                            {{( layout?.user?.gr_data?.customer_is_gr ||  layout?.user?.gr_data?.amnesty) ? fieldValue.product?.discounted_margin : fieldValue.product?.margin }}
                         </span>
                         <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show" @mouseleave="_popoverProfit?.hide"
                             class="ml-1 cursor-pointer opacity-60 hover:opacity-100"
                         >
                             <FontAwesomeIcon icon="fal fa-plus-circle" class="" fixed-width aria-hidden="true" />
                         </span>
-                        
+
                         <!-- Popover: Question circle GR member -->
-                        <Popover ref="_popoverProfit" :style="{width: '550px'}" class="py-1 px-2">
+                        <Popover ref="_popoverProfit" class="max-w-[90vw] md:max-w-none sm:min-w-[350px]">
                             <ProfitCalculationList :product="fieldValue.product" />
                         </Popover>
                     </div>
@@ -453,266 +464,263 @@ onMounted(async () => {
     </div>
 
     <!-- MOBILE -->
-<div v-else class="block sm:hidden px-4 py-6 text-gray-800">
+    <div v-else class="block sm:hidden px-4 py-6 text-gray-800">
 
-    <!-- TITLE -->
-    <h1 class="text-xl font-bold mb-3">
-        <span v-if="product.units > 1">{{ product.units }}x</span>
-        {{ product.name }}
-    </h1>
+        <!-- TITLE -->
+        <h1 class="text-xl font-bold mb-3">
+            <span v-if="product.units > 1">{{ product.units }}x</span>
+            {{ product.name }}
+        </h1>
 
-    <!-- MEDIA -->
-    <ImageProducts :images="validImages" :video="videoSetup?.url" />
+        <!-- MEDIA -->
+        <ImageProducts :images="validImages" :video="videoSetup?.url" />
 
-    <!-- STOCK + FAVOURITE -->
-    <div v-if="layout?.iris?.is_logged_in" class="flex items-center justify-between mt-4">
-        <LabelComingSoon
-            v-if="product.status === 'coming-soon'"
-            :product="product"
-            class="w-full text-center"
-        />
+        <!-- STOCK + FAVOURITE -->
+        <div v-if="layout?.iris?.is_logged_in" class="flex items-center justify-between mt-4">
+            <LabelComingSoon
+                v-if="product.status === 'coming-soon'"
+                :product="product"
+                class="w-full text-center"
+            />
 
-        <div v-else class="flex items-center gap-2 text-sm">
+            <div v-else class="flex items-center gap-2 text-sm">
+                <FontAwesomeIcon
+                    :icon="faCircle"
+                    class="text-[10px]"
+                    :class="product.stock ? 'text-green-600' : 'text-red-600'"
+                />
+                <span>
+                    {{
+                        product.stock >= 250
+                            ? trans("Unlimited quantity available")
+                            : product.stock > 0
+                                ? `${trans("In stock")} (${product.stock} ${trans("available")})`
+                                : trans("Out Of Stock")
+                    }}
+                </span>
+            </div>
+
             <FontAwesomeIcon
-                :icon="faCircle"
-                class="text-[10px]"
-                :class="product.stock ? 'text-green-600' : 'text-red-600'"
+                v-if="layout?.retina?.type !== 'dropshipping'"
+                :icon="product?.is_favourite ? fasHeart : faHeart"
+                class="text-xl cursor-pointer transition-colors"
+                :class="product?.is_favourite
+                    ? 'text-red-500'
+                    : 'text-gray-400 hover:text-red-500'"
+                @click="
+                    product?.is_favourite
+                        ? onUnselectFavourite(product)
+                        : onAddFavourite(product)
+                "
+            />
+        </div>
+
+        <!-- PRICE / OFFERS / PROFIT -->
+        <div v-if="layout?.iris?.is_logged_in" class="mt-3 space-y-2">
+
+            <ProductPrices2
+                :field-value="fieldValue"
+                :product="product"
+                :key="product.code"
+            />
+
+            <div class="flex justify-between items-start">
+
+                <!-- OFFERS -->
+                <div v-if="product.offers_data?.number_offers > 0" class="flex flex-col gap-1 offers">
+                    <template v-if="bestOffer?.type === 'Category Quantity Ordered Order Interval'">
+                        <MemberPriceLabel
+                            v-if="layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty"
+                            :offer="bestOffer"
+                        />
+                        <NonMemberPriceLabel v-else :product />
+                    </template>
+
+                    <DiscountByType
+                        v-if="showDiscount"
+                        template="products_triggers_label"
+                        :offers_data="product?.offers_data"
+                    />
+
+                    <DiscountByType
+                        v-if="
+                            product.stock &&
+                            !product.is_coming_soon &&
+                            bestOffer?.type !== 'Category Quantity Ordered Order Interval'
+                        "
+                        template="max_discount"
+                        :offers_data="product?.offers_data"
+                    />
+                </div>
+
+                <!-- PROFIT -->
+                <div class="flex items-end text-sm">
+                    <span @click="_popoverProfit?.toggle">
+                        {{ trans("Profit") }}
+                    </span>:
+                    <span class="ml-1 font-bold text-green-500">
+                    {{ (layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty) ? fieldValue.product?.discounted_margin : fieldValue.product?.margin }}
+                    </span>
+
+                    <span
+                        class="ml-1 cursor-pointer opacity-60 hover:opacity-100"
+                        @mouseenter="_popoverProfit?.show"
+                        @mouseleave="_popoverProfit?.hide"
+                    >
+                        <FontAwesomeIcon icon="fal fa-plus-circle" />
+                    </span>
+
+                    <Popover ref="_popoverProfit" class="max-w-[90vw] md:max-w-none sm:min-w-[350px]">
+                        <ProfitCalculationList :product="fieldValue.product" />
+                    </Popover>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- TAGS -->
+        <div class="flex flex-wrap gap-2 mt-4 text-xs text-gray-500">
+            <div
+                v-for="(tag, index) in product.tags"
+                :key="index"
+                class="flex items-center gap-1"
+            >
+                <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" />
+                <Image
+                    v-else
+                    :src="tag.image"
+                    :alt="`Tag ${index}`"
+                    class="w-[15px] h-[15px] object-cover"
+                />
+                <span>{{ tag.name }}</span>
+            </div>
+        </div>
+
+        <!-- BACK IN STOCK -->
+        <button
+            v-if="!product.stock && layout?.outboxes?.oos_notification?.state === 'active'"
+            class="mt-3 inline-flex items-center gap-2 rounded-full border bg-gray-100 px-3 py-1.5 text-sm"
+            @click="
+                customerData?.back_in_stock
+                    ? onUnselectBackInStock(product)
+                    : onAddBackInStock(product)
+            "
+        >
+            <LoadingIcon v-if="isLoadingRemindBackInStock" />
+            <FontAwesomeIcon
+                v-else
+                :icon="customerData?.back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
+                :class="customerData?.back_in_stock ? 'text-green-600' : 'text-gray-600'"
             />
             <span>
-                {{
-                    product.stock >= 250
-                        ? trans("Unlimited quantity available")
-                        : product.stock > 0
-                            ? `${trans("In stock")} (${product.stock} ${trans("available")})`
-                            : trans("Out Of Stock")
-                }}
+                {{ customerData?.back_in_stock ? trans("Notified") : trans("Remind me") }}
             </span>
-        </div>
+        </button>
 
-        <FontAwesomeIcon
-            v-if="layout?.retina?.type !== 'dropshipping'"
-            :icon="product?.is_favourite ? fasHeart : faHeart"
-            class="text-xl cursor-pointer transition-colors"
-            :class="product?.is_favourite
-                ? 'text-red-500'
-                : 'text-gray-400 hover:text-red-500'"
-            @click="
-                product?.is_favourite
-                    ? onUnselectFavourite(product)
-                    : onAddFavourite(product)
-            "
-        />
-    </div>
-
-    <!-- PRICE / OFFERS / PROFIT -->
-    <div v-if="layout?.iris?.is_logged_in" class="mt-3 space-y-2">
-
-        <ProductPrices2
-            :field-value="fieldValue"
-            :product="product"
-            :key="product.code"
-        />
-
-        <div class="flex justify-between items-start">
-
-            <!-- OFFERS -->
-            <div v-if="product.offers_data?.number_offers > 0" class="flex flex-col gap-1 offers">
-                <template v-if="bestOffer?.type === 'Category Quantity Ordered Order Interval'">
-                    <MemberPriceLabel
-                        v-if="layout?.user?.gr_data?.customer_is_gr"
-                        :offer="bestOffer"
-                    />
-                    <NonMemberPriceLabel v-else :product />
-                </template>
-
-                <DiscountByType
-                    v-if="
-                        product.stock &&
-                        !product.is_coming_soon &&
-                        !layout?.user?.gr_data?.customer_is_gr &&
-                        bestOffer?.type === 'Category Quantity Ordered Order Interval'
-                    "
-                    template="products_triggers_label"
-                    :offers_data="product?.offers_data"
-                />
-
-                <DiscountByType
-                    v-if="
-                        product.stock &&
-                        !product.is_coming_soon &&
-                        bestOffer?.type !== 'Category Quantity Ordered Order Interval'
-                    "
-                    template="max_discount"
-                    :offers_data="product?.offers_data"
-                />
-            </div>
-
-            <!-- PROFIT -->
-            <div class="flex items-end text-sm">
-                <span @click="_popoverProfit?.toggle">
-                    {{ trans("Profit") }}
-                </span>:
-                <span class="ml-1 font-bold text-green-500">
-                   {{ layout?.user?.gr_data?.customer_is_gr ? fieldValue.product?.discounted_margin : fieldValue.product?.margin }}
-                </span>
-
-                <span
-                    class="ml-1 cursor-pointer opacity-60 hover:opacity-100"
-                    @mouseenter="_popoverProfit?.show"
-                    @mouseleave="_popoverProfit?.hide"
-                >
-                    <FontAwesomeIcon icon="fal fa-plus-circle" />
-                </span>
-
-                <Popover ref="_popoverProfit" :style="{ width: '550px' }">
-                    <ProfitCalculationList :product="fieldValue.product" />
-                </Popover>
-            </div>
-
-        </div>
-    </div>
-
-    <!-- TAGS -->
-    <div class="flex flex-wrap gap-2 mt-4 text-xs text-gray-500">
-        <div
-            v-for="(tag, index) in product.tags"
-            :key="index"
-            class="flex items-center gap-1"
-        >
-            <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" />
-            <Image
-                v-else
-                :src="tag.image"
-                :alt="`Tag ${index}`"
-                class="w-[15px] h-[15px] object-cover"
+        <!-- ADD TO CART -->
+        <div class="mt-5 space-y-2">
+            <EcomAddToBasketv2
+                v-if="layout?.iris?.is_logged_in && product.stock && product.status !== 'coming-soon'"
+                v-model:product="product"
+                :customerData="customerData"
+                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
             />
-            <span>{{ tag.name }}</span>
+
+            <Button
+                v-else-if="layout?.iris?.is_logged_in"
+                :label="product.status_label ?? trans('Out of stock')"
+                type="tertiary"
+                disabled
+                full
+            />
+
+            <LinkIris
+                v-else
+                :href="urlLoginWithRedirect()"
+                class="block w-full text-center border rounded px-3 py-2 text-sm text-gray-600"
+            >
+                {{ trans("Login or Register for Wholesale Prices") }}
+            </LinkIris>
         </div>
-    </div>
 
-    <!-- BACK IN STOCK -->
-    <button
-        v-if="!product.stock && layout?.outboxes?.oos_notification?.state === 'active'"
-        class="mt-3 inline-flex items-center gap-2 rounded-full border bg-gray-100 px-3 py-1.5 text-sm"
-        @click="
-            customerData?.back_in_stock
-                ? onUnselectBackInStock(product)
-                : onAddBackInStock(product)
-        "
-    >
-        <LoadingIcon v-if="isLoadingRemindBackInStock" />
-        <FontAwesomeIcon
-            v-else
-            :icon="customerData?.back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-            :class="customerData?.back_in_stock ? 'text-green-600' : 'text-gray-600'"
-        />
-        <span>
-            {{ customerData?.back_in_stock ? trans("Notified") : trans("Remind me") }}
-        </span>
-    </button>
+        <!-- VARIANTS -->
+        <div v-if="listProducts?.length" class="bg-white shadow-sm p-1 rounded-md my-5">
+            <Swiper
+                :modules="[Navigation]"
+                :navigation="varinatNavigation"
+                :slides-per-view="3.2"
+                :space-between="6"
+            >
+                <SwiperSlide v-for="item in listProducts" :key="item.id">
+                    <button
+                        @click="onSelectProduct(item)"
+                        :disabled="item.code === product.code"
+                        class="w-full rounded-lg border overflow-hidden"
+                        :class="item.code === product.code
+                            ? 'ring-1 primary'
+                            : 'border-gray-200'"
+                    >
+                        <div class="aspect-square bg-gray-50 relative">
+                            <Image
+                                v-if="item?.web_images?.main?.original"
+                                :src="item.web_images.main.original"
+                                class="absolute inset-0 object-contain"
+                            />
+                            <FontAwesomeIcon
+                                v-else
+                                :icon="faImage"
+                                class="absolute inset-0 m-auto text-gray-300"
+                            />
+                        </div>
 
-    <!-- ADD TO CART -->
-    <div class="mt-5 space-y-2">
-        <EcomAddToBasketv2
-            v-if="layout?.iris?.is_logged_in && product.stock && product.status !== 'coming-soon'"
-            v-model:product="product"
-            :customerData="customerData"
-            :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
-        />
+                        <div class="p-1">
+                            <span class="block text-[11px] bg-gray-100 rounded px-2 py-0.5 truncate">
+                                {{ item.variant_label }}
+                            </span>
+                        </div>
+                    </button>
+                </SwiperSlide>
+            </Swiper>
+        </div>
 
-        <Button
-            v-else-if="layout?.iris?.is_logged_in"
-            :label="product.status_label ?? trans('Out of stock')"
-            type="tertiary"
-            disabled
-            full
-        />
+        <!-- DESCRIPTION -->
+        <div class="mt-4 text-xs">
+            <div v-html="product.description" />
+            <div v-html="product.description_extra" class="prose prose-sm mt-2" />
+        </div>
 
-        <LinkIris
-            v-else
-            :href="urlLoginWithRedirect()"
-            class="block w-full text-center border rounded px-3 py-2 text-sm text-gray-600"
-        >
-            {{ trans("Login or Register for Wholesale Prices") }}
-        </LinkIris>
-    </div>
+        <!-- CONTENT + PAYMENT -->
+        <div class="mt-5 space-y-4">
+            <ProductContentsIris
+                :product="product"
+                :setting="fieldValue.setting"
+                :styleData="fieldValue?.information_style"
+            />
 
-    <!-- VARIANTS -->
-    <div v-if="listProducts?.length" class="bg-white shadow-sm p-1 rounded-md my-5">
-        <Swiper
-            :modules="[Navigation]"
-            :navigation="varinatNavigation"
-            :slides-per-view="3.2"
-            :space-between="6"
-        >
-            <SwiperSlide v-for="item in listProducts" :key="item.id">
-                <button
-                    @click="onSelectProduct(item)"
-                    :disabled="item.code === product.code"
-                    class="w-full rounded-lg border overflow-hidden"
-                    :class="item.code === product.code
-                        ? 'ring-1 primary'
-                        : 'border-gray-200'"
-                >
-                    <div class="aspect-square bg-gray-50 relative">
-                        <Image
-                            v-if="item?.web_images?.main?.original"
-                            :src="item.web_images.main.original"
-                            class="absolute inset-0 object-contain"
-                        />
-                        <FontAwesomeIcon
-                            v-else
-                            :icon="faImage"
-                            class="absolute inset-0 m-auto text-gray-300"
-                        />
-                    </div>
+            <InformationSideProduct
+                v-if="fieldValue?.information?.length"
+                :informations="fieldValue.information"
+                :styleData="fieldValue?.information_style"
+            />
 
-                    <div class="p-1">
-                        <span class="block text-[11px] bg-gray-100 rounded px-2 py-0.5 truncate">
-                            {{ item.variant_label }}
-                        </span>
-                    </div>
-                </button>
-            </SwiperSlide>
-        </Swiper>
-    </div>
-
-    <!-- DESCRIPTION -->
-    <div class="mt-4 text-xs">
-        <div v-html="product.description" />
-        <div v-html="product.description_extra" class="prose prose-sm mt-2" />
-    </div>
-
-    <!-- CONTENT + PAYMENT -->
-    <div class="mt-5 space-y-4">
-        <ProductContentsIris
-            :product="product"
-            :setting="fieldValue.setting"
-            :styleData="fieldValue?.information_style"
-        />
-
-        <InformationSideProduct
-            v-if="fieldValue?.information?.length"
-            :informations="fieldValue.information"
-            :styleData="fieldValue?.information_style"
-        />
-
-        <div v-if="fieldValue.paymentData?.length">
-            <h2 class="text-base font-semibold mb-2">
-                {{ trans("Secure Payments") }}:
-            </h2>
-            <div class="flex flex-wrap gap-4">
-                <img
-                    v-for="logo in fieldValue.paymentData"
-                    :key="logo.code"
-                    :src="logo.image"
-                    class="h-4"
-                />
+            <div v-if="fieldValue.paymentData?.length">
+                <h2 class="text-base font-semibold mb-2">
+                    {{ trans("Secure Payments") }}:
+                </h2>
+                <div class="flex flex-wrap gap-4">
+                    <img
+                        v-for="logo in fieldValue.paymentData"
+                        :key="logo.code"
+                        :src="logo.image"
+                        class="h-4"
+                    />
+                </div>
             </div>
         </div>
+
     </div>
 
-</div>
+    <ReviewsProduct :product="product" class="mt-10" />
 
 
 </template>

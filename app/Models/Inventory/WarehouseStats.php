@@ -27,8 +27,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_locations_allow_stocks
  * @property int $number_locations_allow_fulfilment
  * @property int $number_locations_allow_dropshipping
- * @property string $stock_value
- * @property string $stock_commercial_value
+ * @property numeric $stock_value
+ * @property numeric $stock_commercial_value
  * @property int $number_org_stock_movements
  * @property int $number_org_stock_movements_type_purchase
  * @property int $number_org_stock_movements_type_return_dispatch
@@ -148,8 +148,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_recurring_bills_status_former
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string $total_volume cbm
- * @property string $total_weight kg
+ * @property numeric $total_volume cbm
+ * @property numeric $total_weight kg
  * @property int $number_pallets_state_request_return_submitted
  * @property int $number_pallets_state_request_return_confirmed
  * @property int $number_customers_status_pre_registration
@@ -214,7 +214,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_picking_sessions_state_handling_blocked
  * @property int $number_picking_sessions_state_picking_finished
  * @property int $number_picking_sessions_state_packing_finished
- * @property-read \App\Models\Inventory\Warehouse $warehouse
+ * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static Builder<static>|WarehouseStats newModelQuery()
  * @method static Builder<static>|WarehouseStats newQuery()
  * @method static Builder<static>|WarehouseStats query()

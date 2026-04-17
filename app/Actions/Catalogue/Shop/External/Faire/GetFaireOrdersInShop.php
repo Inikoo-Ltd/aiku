@@ -41,17 +41,21 @@ class GetFaireOrdersInShop extends OrgAction
         ];
 
         $orders = $shop->getFaireOrders([
-            'excluded_states' => 'PROCESSING,PRE_TRANSIT,IN_TRANSIT,DELIVERED,PENDING_RETAILER_CONFIRMATION,BACKORDERED,CANCELED',
+            'excluded_states' => 'PRE_TRANSIT,IN_TRANSIT,DELIVERED,PENDING_RETAILER_CONFIRMATION,BACKORDERED,CANCELED',
             ...$filters
         ]);
 
 
         foreach (Arr::get($orders, 'orders', []) as $faireOrder) {
-            $externalId             = Arr::get($faireOrder, 'id');
-            $retailerId             = Arr::get($faireOrder, 'retailer_id');
-            $retailer               = GetFaireRetailers::run($shop, $retailerId);
-            $transactionCommissions = Arr::get($faireOrder, 'payout_costs.commission_bps', 0) / 10000;
-            $orderCommission        = Arr::get($faireOrder, 'payout_costs.commission.amount_minor', 0) / 100;
+            // try {
+            $externalId                   = Arr::get($faireOrder, 'id');
+            $retailerId                   = Arr::get($faireOrder, 'retailer_id');
+            $retailer                     = GetFaireRetailers::run($shop, $retailerId);
+            $transactionCommissionsFactor = Arr::get($faireOrder, 'payout_costs.commission_bps', 0) / 10000;
+            $orderCommission              = Arr::get($faireOrder, 'payout_costs.commission.amount_minor', 0) / 100;
+
+            $command?->info('Processing order '.Arr::get($faireOrder, 'display_id'));
+
 
             $orderExists = Order::where('shop_id', $shop->id)->where('external_id', $externalId)->exists();
 
@@ -81,6 +85,14 @@ class GetFaireOrdersInShop extends OrgAction
                 if ($phone != '') {
                     $customerData['phone'] = $phone;
                 }
+
+                $isRe = false;
+                foreach (Arr::get($faireOrder, 'payout_costs.taxes', []) as $taxData) {
+                    if (Arr::get($taxData, 'tax_type') == 'RECARGO' && Arr::get($taxData, 'value.amount_minor', 0) > 0) {
+                        $isRe = true;
+                    }
+                }
+                data_set($customerData, 'is_re', $isRe);
 
                 if ($customer) {
                     $customer = UpdateCustomer::make()->action(customer: $customer, modelData: $customerData, strict: false);
@@ -119,70 +131,14 @@ class GetFaireOrdersInShop extends OrgAction
                     $orderData['sales_channel_id'] = $salesChannel->id;
                 }
 
-                $transactionsData = [];
-                $errors           = [];
-                foreach (Arr::get($faireOrder, 'items', []) as $item) {
-                    $product = Product::where('shop_id', $shop->id)
-                        ->where('marketplace_id', $item['variant_id'])
-                        ->first();
+                $result = $this->processFaireOrderItems(
+                    Arr::get($faireOrder, 'items', []),
+                    $shop,
+                    $transactionCommissionsFactor
+                );
 
-                    $product = UpdateProduct::run(
-                        $product,
-                        [
-                            'price' => $product->units * Arr::get($item, 'price.amount_minor') / 100,
-                        ]
-                    );
-
-
-                    if (!$product) {
-                        $errors[] = [
-                            'product_code'           => Arr::get($item, 'sku', 'NO SKU'),
-                            'product_name'           => Arr::get($item, 'product_name', 'NO NAME').' '.Arr::get($item, 'variant_name', 'NO VARIANT NAME'),
-                            'product_marketplace_id' => Arr::get($item, 'variant_id', 'NO VARIANT ID'),
-                            'message'                => "Product not found in catalogue"
-                        ];
-                        continue;
-                    }
-
-
-                    $historicAsset = $product->currentHistoricProduct;
-
-                    if (!$historicAsset) {
-                        $errors[] = [
-                            'product_code'           => $item['sku'],
-                            'product_name'           => $item['name'],
-                            'product_marketplace_id' => $item['variant_id'],
-                            'product_slug'           => $product->slug,
-                            'message'                => "Product has no historic asset"
-                        ];
-                        continue;
-                    }
-
-                    $price        = Arr::get($item, 'price.amount_minor', 0) / 100;
-                    $currencyCode = Arr::get($item, 'price.currency');
-                    $currency     = Currency::where('code', $currencyCode)->first();
-                    if (!$currency) {
-                        $errors[] = [
-                            'message' => 'Currency ('.$currencyCode.') not found'
-                        ];
-                    }
-
-                    $price = $price * GetCurrencyExchange::run($currency, $shop->currency);
-
-
-                    $quantity = $item['quantity'] / $product->units;
-
-                    $transactionsData[] = [
-                        'historical_asset'  => $historicAsset,
-                        'quantity_ordered'  => $quantity,
-                        'external_id'       => $item['id'],
-                        'net_amount'        => $price * $quantity,
-                        'gross_amount'      => $price * $quantity,
-                        'commission_amount' => $price * $transactionCommissions * $quantity,
-                        'marketplace_id'    => $item['id'],
-                        'created_at'        => Carbon::parse(Arr::get($item, 'created_at'))->toDateTimeString(),
-                    ];
-                }
+                $transactionsData = $result['transactions'];
+                $errors           = $result['errors'];
 
                 if (empty($errors)) {
                     $order = StoreOrder::make()->action($customer, $orderData);
@@ -226,6 +182,98 @@ class GetFaireOrdersInShop extends OrgAction
                 }
             }
         }
+    }
+
+    public function processFaireOrderItem($item, Shop $shop, float $transactionCommissionsFactor): array
+    {
+        $product = Product::where('shop_id', $shop->id)
+            ->where('marketplace_id', $item['variant_id'])
+            ->first();
+
+        if (!$product) {
+            return [
+                'state' => 'error',
+                'data'  => [
+                    'product_code'           => Arr::get($item, 'sku', 'NO SKU'),
+                    'product_name'           => Arr::get($item, 'product_name', 'NO NAME').' '.Arr::get($item, 'variant_name', 'NO VARIANT NAME'),
+                    'product_marketplace_id' => Arr::get($item, 'variant_id', 'NO VARIANT ID'),
+                    'message'                => "Product not found in catalogue"
+                ]
+            ];
+        }
+
+        $product = UpdateProduct::run(
+            $product,
+            [
+                'price' => $product->units * Arr::get($item, 'price.amount_minor') / 100,
+            ]
+        );
+
+        $historicAsset = $product->currentHistoricProduct;
+
+        if (!$historicAsset) {
+            return [
+                'state' => 'error',
+                'data'  => [
+                    'product_code'           => $item['sku'],
+                    'product_name'           => $item['name'],
+                    'product_marketplace_id' => $item['variant_id'],
+                    'product_slug'           => $product->slug,
+                    'message'                => "Product has no historic asset"
+                ]
+            ];
+        }
+
+        $price        = Arr::get($item, 'price.amount_minor', 0) / 100;
+        $currencyCode = Arr::get($item, 'price.currency');
+        $currency     = Currency::where('code', $currencyCode)->first();
+        if (!$currency) {
+            return [
+                'state' => 'error',
+                'data'  => [
+                    'message' => 'Currency ('.$currencyCode.') not found'
+                ]
+            ];
+        }
+
+        $price = $price * GetCurrencyExchange::run($currency, $shop->currency);
+
+
+        $quantity = $item['quantity'] / $product->units;
+
+        return [
+            'state' => 'ok',
+            'data'  => [
+                'historical_asset'  => $historicAsset,
+                'quantity_ordered'  => $quantity,
+                'external_id'       => $item['id'],
+                'net_amount'        => $price * $quantity,
+                'gross_amount'      => $price * $quantity,
+                'commission_amount' => $price * $transactionCommissionsFactor * $quantity,
+                'marketplace_id'    => $item['id'],
+                'created_at'        => Carbon::parse(Arr::get($item, 'created_at'))->toDateTimeString(),
+            ]
+        ];
+    }
+
+    public function processFaireOrderItems(array $items, Shop $shop, float $transactionCommissionsFactor): array
+    {
+        $transactionsData = [];
+        $errors           = [];
+
+        foreach ($items as $item) {
+            $transactionData = $this->processFaireOrderItem($item, $shop, $transactionCommissionsFactor);
+            if ($transactionData['state'] == 'error') {
+                $errors[] = $transactionData['data'];
+            } else {
+                $transactionsData[] = $transactionData['data'];
+            }
+        }
+
+        return [
+            'transactions' => $transactionsData,
+            'errors'       => $errors
+        ];
     }
 
     public function getFormattedAddress(array $address): array

@@ -63,7 +63,11 @@ const comment = ref('')
 const status = ref(!props.status)
 const iframeClass = ref('w-full h-full')
 const isIframeLoading = ref(true)
-const iframeSrc = route('grp.websites.header.preview', [route().params['website']])
+const iframeSrc = route('grp.websites.header.preview', {
+    website: route().params.website,
+    organisation: route().params.organisation,
+    shop: route().params.shop,
+})
 const tabs = [
     {
         label: "TopBars settings",
@@ -182,6 +186,7 @@ const openFullScreenPreview = () => {
     const url = new URL(iframeSrc, window.location.origin);
     url.searchParams.set('isInWorkshop', 'true');
     url.searchParams.set('mode', 'iris');
+    url.searchParams.set('organisation', route().params['organisation']);
     window.open(url.toString(), '_blank');
 }
 
@@ -301,6 +306,14 @@ watch(currentView, (newValue) => {
                             :blueprint="getBlueprint(usedTemplates[selectedTab.key].code)"
                             :uploadImageRoute="uploadImageRoute" :panelOpen="panelActive" 
                             @update:model-value="e => usedTemplates[selectedTab.key].data.fieldValue = e"/>
+
+                        <div v-else>
+                            <EmptyState :data="{ description: 'No template selected', title: 'Pick Template' }">
+                                <template #button-empty-state>
+                                    <Button label="template" icon="fas fa-th-large" @click="isModalOpen = true" />
+                                </template>
+                            </EmptyState>
+                        </div>
                     </div>
                 </div>
             </div>

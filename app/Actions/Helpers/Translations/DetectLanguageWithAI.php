@@ -43,7 +43,8 @@ class DetectLanguageWithAI extends OrgAction
             $model = 'gpt-4o-mini';
 
             $response = Http::withToken($apiKey)
-                ->timeout(5)
+                ->connectTimeout(10)
+                ->timeout(30)
                 ->post('https://api.openai.com/v1/chat/completions', [
                     'model' => $model,
                     'messages' => [
@@ -53,7 +54,7 @@ class DetectLanguageWithAI extends OrgAction
                         ],
                         [
                             'role' => 'user',
-                            'content' => substr($text, 0, 500)
+                            'content' => substr($text, 0, 100)
                         ],
                     ],
                     'temperature' => 0,

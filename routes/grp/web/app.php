@@ -179,6 +179,10 @@ Route::middleware(["auth", "two_fa"])->group(function () {
         ->name("catalogue.")
         ->group(__DIR__."/catalogue.php");
 
+    Route::prefix("chat")
+        ->name("chat.")
+        ->group(__DIR__."/chat.php");
+
     Route::fallback(function () {
         $status = 404;
 

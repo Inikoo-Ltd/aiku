@@ -11,13 +11,18 @@ use App\Actions\CRM\WebUser\Retina\RetinaLogout;
 use App\Actions\Fulfilment\FulfilmentCustomer\IndexFulfilmentCustomerFromWebhook;
 use Illuminate\Support\Facades\Route;
 use App\Actions\CRM\WebUser\Retina\RetinaLogin;
+use App\Actions\Web\Website\SearchOnWebsite;
 use Inertia\Inertia;
 
-Route::get('/login', function () {return Inertia::render('RetinaLogin');})->name('login');
-Route::get('/search', function () {return Inertia::render('Search');})->name('search');
+Route::get('/login', function () {
+    return Inertia::render('RetinaLogin');
+})->name('login');
+Route::get('/search', SearchOnWebsite::class)->name('search');
 Route::post('login', RetinaLogin::class)->name('login.store');
 Route::post('logout', RetinaLogout::class)->name('logout');
-Route::get('/register', function () {return Inertia::render('Register');})->name('register');
+Route::get('/register', function () {
+    return Inertia::render('Register');
+})->name('register');
 Route::get('webhooks/{fulfilmentCustomer:webhook_access_key}', IndexFulfilmentCustomerFromWebhook::class)->name('fulfilment-customer.webhook.show');
 Route::prefix("disclosure")->name("disclosure.")->group(__DIR__."/disclosure.php");
 Route::prefix("unsubscribe")->name("unsubscribe.")->group(__DIR__."/unsubscribe.php");

@@ -2,18 +2,15 @@
 import Drawer from 'primevue/drawer';
 import { ref, inject, onMounted, onUnmounted, computed } from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-// import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBars, faChevronCircleDown } from '@fal';
+import { faBars } from '@fal';
 import { getStyles } from '@/Composables/styles';
 import { isNull } from 'lodash-es';
 import IrisSidebarDesktop from './Iris/Layout/IrisSidebarDesktop.vue';
 import IrisSidebarMobile from './Iris/Layout/IrisSidebarMobile.vue';
 import { Image as ImageTS } from '@/types/Image';
-import Image from './Image.vue';
 import { trans } from 'laravel-vue-i18n';
 import { faSearch, faTimes } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { useIrisLayoutStore } from '@/Stores/irisLayout';
 library.add(faSearch, faTimes)
 
 const props = defineProps<{
@@ -24,7 +21,7 @@ const props = defineProps<{
 	customMenusBottom?: Array<any>
 	customMenusTop?: Array<any>
 	sidebarLogo: ImageTS
-	sidebar: {
+	sidebar?: {
 		data: {
 			fieldValue: {
 				sidebar_logo: ImageTS

@@ -107,7 +107,63 @@ function stockFamilyRoute(stock: Stock) {
 }
 
 
+const orgStockRouteProductIndex = (orgStock: OrgStock) => {
+    const current = route().current()
 
+    if (current === "grp.org.warehouses.show.inventory.org_stock_families.show") {
+        return route(
+            "grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show.products",
+            {
+                organisation: (route().params as RouteParams).organisation,
+                warehouse: (route().params as RouteParams).warehouse,
+                orgStockFamily: (route().params as RouteParams).orgStockFamily,
+                orgStock: orgStock.slug,
+                tab: 'products'
+            }
+        )
+    } else if (current === "grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.index") {
+        return route(
+            "grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show.products",
+            {
+                organisation: (route().params as RouteParams).organisation,
+                warehouse: (route().params as RouteParams).warehouse,
+                orgStock: orgStock.slug,
+                tab: 'products'
+            }
+        )
+    } else if (current === "grp.overview.inventory.org-stocks.index" || current === "grp.org.shops.show.catalogue.products.all_products.show") {
+        return route(
+            "grp.helpers.redirect_org_stock",
+            [orgStock.id])
+    } else if (current === "grp.org.warehouses.show.inventory.org_stocks.index") {
+        return route(
+            "grp.org.warehouses.show.inventory.org_stocks.show.products",
+            {
+                organisation: (route().params as RouteParams).organisation,
+                warehouse: (route().params as RouteParams).warehouse,
+                orgStock: orgStock.slug,
+                tab: 'products'
+            }
+        )
+    } else if (current === "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.index") {
+        return route(
+            "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show.products",
+            {
+                organisation: (route().params as RouteParams).organisation,
+                warehouse: (route().params as RouteParams).warehouse,
+                orgStock: orgStock.slug,
+                tab: 'products'
+            }
+        )
+    }else{
+      return route(
+            "grp.helpers.redirect_org_stock.to_products_index",
+            [
+                orgStock.id
+            ]
+        )
+    }
+}
 </script>
 
 <template>
@@ -149,7 +205,7 @@ function stockFamilyRoute(stock: Stock) {
         </template>
 
         <template #cell(value)="{ item: stock }">
-            {{ locale.currencyFormat(layout.group.currency.code, stock.value) }}
+            {{ locale.currencyFormat(stock.currency_code, stock.value) }}
         </template>
 
         <template #cell(dropshipping_pipe)="{ item: stock }">
@@ -158,7 +214,7 @@ function stockFamilyRoute(stock: Stock) {
 
         <template #cell(quantity)="{ item: stock }">
             <div class="text-right">
-                <FractionDisplay v-if="stock.pick_fractional.length > 0" :fractionData="stock.pick_fractional"/>
+                <FractionDisplay v-if="stock.pick_fractional?.length > 0" :fractionData="stock.pick_fractional"/>
             </div>
         </template>
 
@@ -166,8 +222,28 @@ function stockFamilyRoute(stock: Stock) {
             {{ stock.notes ?? "" }}
         </template>
 
+        <template #cell(woc)="{ item }">
+            <span v-if="item.woc !== null" class="tabular-nums">{{ item.woc }}w</span>
+            <span v-else class="text-gray-400">-</span>
+        </template>
+
+        <template #cell(unit_cost)="{ item }">
+            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.unit_cost) }}</span>
+        </template>
+
+        <template #cell(on_the_way_po_value)="{ item }">
+            <span class="tabular-nums">
+                {{ locale.currencyFormat(item.currency_code, item.on_the_way_po_value) }}
+                <span v-if="item.on_the_way_po_count > 0" class="text-gray-400">({{ item.on_the_way_po_count }})</span>
+            </span>
+        </template>
+
+         <template #cell(stock_value)="{ item }">
+            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.stock_value) }}</span>
+        </template>
+
         <template #cell(sales_grp_currency_external)="{ item }">
-            <span class="tabular-nums">{{ locale.currencyFormat('GBP', item.sales_grp_currency_external) }}</span>
+            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.sales_grp_currency_external) }}</span>
         </template>
 
         <template #cell(sales_grp_currency_external_delta)="{ item }">
@@ -215,7 +291,30 @@ function stockFamilyRoute(stock: Stock) {
                 <FontAwesomeIcon :icon="faEquals" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
             </div>
         </template>
+
+        <template #cell(product_count)="{ item }">
+            <Link :href="orgStockRouteProductIndex(item) as string" class="primaryLink">
+                {{ item.product_count }}
+            </Link>
+        </template>
+
+        <template #cell(quantity_in_locations)="{ item }">
+            <span class="tabular-nums">{{ locale.number(item.quantity_in_locations) }}</span>
+        </template>
+
+        <template #cell(org_stock_value)="{ item }">
+            <span v-if="item.org_stock_value">{{ locale.currencyFormat(item.currency_code, item.org_stock_value) }}</span>
+        </template>
+
+        <template #cell(sold_within_1y)="{ item }">
+            <Icon :data="item.sold_within_1y" />
+        </template>
+
+        <template #cell(non_moving_1y)="{ item }">
+            <span class="tabular-nums">{{ locale.number(item.non_moving_1y) }}</span>
+        </template>
+
+
+
     </Table>
 </template>
-
-

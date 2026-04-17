@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject } from "vue"
+import { ref, inject, onMounted } from "vue"
 import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -11,6 +11,8 @@ import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { ulid } from "ulid"
+import { get, set  } from "lodash-es"
+import axios from "axios"
 
 import { GridProducts } from "@/Components/Product"
 import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
@@ -36,7 +38,7 @@ const props = defineProps<{
         }
     >
     attachToFavouriteRoute: { name: string }
-    dettachToFavouriteRoute: { name: string }
+    detachToFavouriteRoute: { name: string }
     attachBackInStockRoute: { name: string }
     detachBackInStockRoute: { name: string }
 	addToBasketRoute:{ name: string }
@@ -100,7 +102,7 @@ const onAddFavourite = (product: ProductResource) => {
 
 const onUnselectFavourite = (product: ProductResource) => {
     router.delete(
-        route(props.dettachToFavouriteRoute.name, { product: product.id }),
+        route(props.detachToFavouriteRoute.name, { product: product.id }),
         {
             preserveScroll: true,
             preserveState: true,
@@ -188,7 +190,38 @@ const onUnselectBackInStock = (product: ProductResource) => {
     )
 }
 
-console.log('sdfsdf',props)
+const fetchHasInBasket = async () => {
+    set(layout, ['family_page', 'productInBasket', 'isLoading'], true)
+    try {
+        const apiUrl = `/json/basket/transaction-data`
+
+        if (!apiUrl) {
+            throw new Error("Invalid model_type or missing route configuration");
+        }
+
+        const response = await axios.get(apiUrl);
+        /* console.log('plmnbvc',response.data) */
+        set(layout, ['family_page', 'productInBasket', 'list'], response.data || [])
+    } catch (error) {
+        console.error('Failed to load product portfolio', error);
+    } finally {
+        set(layout, ['family_page', 'productInBasket', 'isLoading'], false)
+
+    }
+};
+
+const handleTabFocus = () => {
+    if (document.visibilityState === 'visible') {
+        fetchHasInBasket()
+    }
+}
+
+onMounted(() => {
+    document.addEventListener('visibilitychange', handleTabFocus)
+    if(layout?.iris?.is_logged_in){
+        fetchHasInBasket()
+    }
+})
 </script>
 
 
@@ -208,7 +241,7 @@ console.log('sdfsdf',props)
                 <ProductRenderEcom
                     :product="item"
                     :hasInBasket="item"
-                    :basketButton="false"
+                    :basketButton="true"
                     :isLoadingRemindBackInStock="isLoadingRemindBackInStock.includes(item.id)"
                     :isLoadingFavourite="isLoadingFavourite.includes(item.id)"
                     @setBackInStock="onAddBackInStock"
@@ -217,6 +250,8 @@ console.log('sdfsdf',props)
                     @unset-favorite="onUnselectFavourite"
                     :addToBasketRoute="addToBasketRoute"
                     :update-basket-quantity-route="updateBasketQuantityRoute"
+                    :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list',item.id], null)" 
+                    :routeGettransactionProductData="{name : 'retina.json.basket_transaction_product_data' }"
                 />
             </div>
         </template>

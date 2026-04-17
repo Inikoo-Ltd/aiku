@@ -8,36 +8,23 @@
 
 namespace App\Actions\Comms\DispatchedEmail\UI;
 
-use App\Actions\Comms\PostRoom\UI\ShowPostRoom;
 use App\Actions\OrgAction;
-use App\Actions\Overview\ShowGroupOverviewHub;
-use App\Actions\UI\Marketing\MarketingHub;
-use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
-use App\Models\Comms\PostRoom;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
-use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Inertia\Inertia;
-use Inertia\Response;
-use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Ordering\Order;
 
 class IndexDispatchedEmails extends OrgAction
 {
-    private Group|Organisation|Shop $parent;
-
-    public function handle(Group|Mailshot|Outbox|PostRoom|Organisation|Shop|Customer|Prospect $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Mailshot|Outbox|Customer|Prospect $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -51,16 +38,11 @@ class IndexDispatchedEmails extends OrgAction
 
         $queryBuilder = QueryBuilder::for(DispatchedEmail::class);
         $queryBuilder->leftJoin('email_addresses', 'dispatched_emails.email_address_id', '=', 'email_addresses.id');
-        $queryBuilder->leftJoin('shops', 'dispatched_emails.shop_id', '=', 'shops.id');
-
 
         switch (class_basename($parent)) {
             case 'Customer':
-                $queryBuilder->where('dispatched_emails.recipient_type', class_basename(Customer::class));
-                $queryBuilder->where('dispatched_emails.recipient_id', $parent->id);
-                break;
-            case 'PostRoom':
-                $queryBuilder->where('dispatched_emails.post_room_id', $parent->id);
+                $queryBuilder->join('customer_has_dispatched_emails', 'customer_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
+                $queryBuilder->where('customer_has_dispatched_emails.customer_id', $parent->id);
                 break;
             case 'Outbox':
                 /*
@@ -75,43 +57,30 @@ class IndexDispatchedEmails extends OrgAction
                     OutboxCodeEnum::REORDER_REMINDER_3RD,
                     OutboxCodeEnum::ORDER_CONFIRMATION
                 ])) {
-                    $queryBuilder->leftJoin('customers', function ($join) {
-                        $join->on('dispatched_emails.recipient_id', '=', 'customers.id')
-                            ->where('dispatched_emails.recipient_type', '=', class_basename(Customer::class));
-                    });
+                    $queryBuilder->leftJoin('customer_has_dispatched_emails', 'customer_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
 
                     // for fulfilment customer
                     if ($parent->fulfilment_id) {
                         $queryBuilder->leftJoin('fulfilment_customers', function ($join) {
-                            $join->on('fulfilment_customers.customer_id', '=', 'customers.id');
+                            $join->on('fulfilment_customers.customer_id', '=', 'customer_has_dispatched_emails.customer_id');
                         });
                     }
                     $queryBuilder->leftJoin('model_has_dispatched_emails', function ($join) {
                         $join->on('model_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id')
                             ->where('model_has_dispatched_emails.model_type', '=', class_basename(Order::class));
                     });
-                    $queryBuilder->leftJoin('orders', function ($join) {
-                        $join->on('orders.id', '=', 'model_has_dispatched_emails.model_id');
-                    });
                 }
                 $queryBuilder->where('dispatched_emails.outbox_id', $parent->id);
                 break;
             case 'Mailshot':
-                $queryBuilder->where('dispatched_emails.parent_type', 'Mailshot');
-                $queryBuilder->where('dispatched_emails.parent_id', $parent->id);
-                break;
-            case 'Organisation':
-                $queryBuilder->where('dispatched_emails.organisation_id', $parent->id);
-                break;
-            case 'Group':
-                $queryBuilder->where('dispatched_emails.group_id', $parent->id);
-                break;
-            case 'Shop':
-                $queryBuilder->where('dispatched_emails.shop_id', $parent->id);
+                $queryBuilder->leftJoin('mailshot_has_dispatched_emails', 'mailshot_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
+                $queryBuilder->where('mailshot_id', $parent->id);
+                $queryBuilder->leftJoin('test_email_recipient_has_dispatched_emails', 'test_email_recipient_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
+                $queryBuilder->whereNull('test_email_recipient_has_dispatched_emails.dispatched_email_id');
                 break;
             case 'Prospect':
-                $queryBuilder->where('dispatched_emails.recipient_type', 'Prospect');
-                $queryBuilder->where('dispatched_emails.recipient_id', $parent->id);
+                $queryBuilder->join('prospect_has_dispatched_emails', 'prospect_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
+                $queryBuilder->where('prospect_has_dispatched_emails.prospect_id', $parent->id);
                 break;
             default:
                 abort(404);
@@ -125,30 +94,25 @@ class IndexDispatchedEmails extends OrgAction
             'dispatched_emails.number_email_tracking_events',
             'email_addresses.email as email_address',
             'dispatched_emails.sent_at as sent_at',
-            'shops.code as shop_code',
-            'shops.slug as shop_slug',
             'dispatched_emails.number_reads',
             'dispatched_emails.number_clicks',
         ];
 
         if ($parent instanceof Outbox) {
             if (in_array($parent->code, [
-                    OutboxCodeEnum::BASKET_LOW_STOCK,
-                    OutboxCodeEnum::DELIVERY_CONFIRMATION,
-                    OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
-                    OutboxCodeEnum::REORDER_REMINDER,
-                    OutboxCodeEnum::REORDER_REMINDER_2ND,
-                    OutboxCodeEnum::REORDER_REMINDER_3RD,
-                    OutboxCodeEnum::ORDER_CONFIRMATION
+                OutboxCodeEnum::BASKET_LOW_STOCK,
+                OutboxCodeEnum::DELIVERY_CONFIRMATION,
+                OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+                OutboxCodeEnum::REORDER_REMINDER,
+                OutboxCodeEnum::REORDER_REMINDER_2ND,
+                OutboxCodeEnum::REORDER_REMINDER_3RD,
+                OutboxCodeEnum::ORDER_CONFIRMATION
             ])) {
                 $selectColumns = array_merge(
                     $selectColumns,
                     [
-                        'customers.id as customer_id',
-                        'customers.slug as customer_slug',
-                        'customers.name as customer_name',
-                        'orders.id as order_id',
-                        'orders.slug as order_slug'
+                        'customer_has_dispatched_emails.customer_id as customer_id',
+                        'model_has_dispatched_emails.model_id as order_id',
                     ]
                 );
                 if ($parent->fulfilment_id) {
@@ -162,6 +126,7 @@ class IndexDispatchedEmails extends OrgAction
                 }
             }
         }
+
 
         return $queryBuilder
             ->defaultSort('-sent_at')
@@ -187,10 +152,7 @@ class IndexDispatchedEmails extends OrgAction
             $table->column(key: 'email_address', label: __('Email'), canBeHidden: false, sortable: true);
 
             $table->column(key: 'sent_at', label: __('Sent Date'), canBeHidden: false, sortable: true);
-            if ($parent instanceof Group) {
-                $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
-            }
+
             if ($parent instanceof Outbox) {
                 if (in_array($parent->code, [
                     OutboxCodeEnum::BASKET_LOW_STOCK,
@@ -202,110 +164,14 @@ class IndexDispatchedEmails extends OrgAction
                     OutboxCodeEnum::ORDER_CONFIRMATION
 
                 ])) {
-                    $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: false, searchable: false);
-                    $table->column(key: 'order_slug', label: __('Order'), canBeHidden: false, sortable: false, searchable: false);
+                    $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false);
+                    $table->column(key: 'order_slug', label: __('Order'), canBeHidden: false);
                 }
             }
             $table->column(key: 'number_email_tracking_events', label: __('events'), canBeHidden: false, sortable: true);
             $table->column(key: 'number_reads', label: __('reads'), canBeHidden: false, sortable: true)
                 ->column(key: 'number_clicks', label: __('clicks'), canBeHidden: false, sortable: true);
             $table->defaultSort('-sent_at');
-        };
-    }
-
-
-    public function htmlResponse(LengthAwarePaginator $dispatched_emails, ActionRequest $request): Response
-    {
-        return Inertia::render(
-            'Comms/DispatchedEmails',
-            [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
-                'title'       => __('dispatched emails'),
-                'pageHead'    => [
-                    'title' => __('Dispatched emails'),
-                    'icon'  => ['fal', 'fa-paper-plane'],
-                ],
-                ...array_merge(
-                    ($this->parent instanceof Group)
-                        ?
-                        ['data' => DispatchedEmailsResource::collection($dispatched_emails)]
-                        :
-                        ['dispatched_emails' => DispatchedEmailsResource::collection($dispatched_emails)]
-                ),
-            ]
-        )->table($this->tableStructure($this->parent));
-    }
-
-    public function inGroup(ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = group();
-        $this->initialisationFromGroup($this->parent, $request);
-
-        return $this->handle(parent: $this->parent);
-    }
-
-    public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $organisation;
-        $this->initialisation($organisation, $request);
-
-        return $this->handle($organisation);
-    }
-
-    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $shop;
-        $this->initialisationFromShop($shop, $request);
-
-        return $this->handle($shop);
-    }
-
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
-    {
-        $headCrumb = function (array $routeParameters = []) {
-            return [
-                [
-                    'type'   => 'simple',
-                    'simple' => [
-                        'route' => $routeParameters,
-                        'label' => __('Dispatched Emails'),
-                        'icon'  => 'fal fa-bars'
-                    ],
-                ],
-            ];
-        };
-
-        return match ($routeName) {
-            'mail.dispatched-emails.index' =>
-            array_merge(
-                (new MarketingHub())->getBreadcrumbs(
-                    $routeName,
-                    $routeParameters
-                ),
-                $headCrumb()
-            ),
-            'mail.post_rooms.show.dispatched-emails.index' =>
-            array_merge(
-                (new ShowPostRoom())->getBreadcrumbs(
-                    $routeName,
-                    $routeParameters
-                ),
-                $headCrumb([])
-            ),
-            'grp.overview.comms-marketing.dispatched-emails.index' =>
-            array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs(),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ]
-                )
-            ),
-            default => []
         };
     }
 }

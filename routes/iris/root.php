@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Retina\Dropshipping\Bundle\UI\RedirectIrisToRetinaBundle;
 use App\Actions\Retina\Media\DownloadRetinaAttachment;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Iris\UpdateIrisLocale;
@@ -48,38 +49,39 @@ Route::get(".well-known/apple-developer-merchantid-domain-association", function
 
 Route::prefix("disclosure")
     ->name("disclosure.")
-    ->group(__DIR__ . "/disclosure.php");
+    ->group(__DIR__."/disclosure.php");
 
 Route::prefix("unsubscribe")
     ->name("unsubscribe.")
-    ->group(__DIR__ . "/unsubscribe.php");
+    ->group(__DIR__."/unsubscribe.php");
 
 
 Route::get('/unsubscribe.php', ShowUnsubscribeFromAurora::class)->name('unsubscribe.aurora');
 
 Route::prefix("json")
     ->name("json.")
-    ->group(__DIR__ . "/json.php");
+    ->group(__DIR__."/json.php");
 
 Route::patch('/locale/{locale}', UpdateIrisLocale::class)->name('locale.update');
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::prefix("models")
         ->name("models.")
-        ->group(__DIR__ . "/models.php");
+        ->group(__DIR__."/models.php");
 
 
     Route::get('attachment/{media:ulid}/download', DownloadRetinaAttachment::class)->name('attach.download')->withoutScopedBindings();
 
     Route::get('data-feed.csv', DownloadIrisProduct::class)->name('shop.data_feed');
     Route::get('{productCategory}/data-feed.csv', [DownloadIrisProduct::class, 'inProductCategory'])->name('product_category.data_feed');
+    Route::get('redirect-bundle-to-retina', RedirectIrisToRetinaBundle::class)->name('redirect_bundle_to_retina');
 
     Route::prefix("catalogue")
         ->name("catalogue.")
-        ->group(__DIR__ . "/catalogue.php");
+        ->group(__DIR__."/catalogue.php");
 
 
     Route::prefix("")->group(function () {
-        Route::group([], __DIR__ . '/system.php');
+        Route::group([], __DIR__.'/system.php');
 
         Route::get('/sitemap.xml', ShowIrisSitemap::class)->name('iris_sitemap');
         Route::get('/sitemaps/{sitemapType}.xml', ShowIrisSubSitemap::class)

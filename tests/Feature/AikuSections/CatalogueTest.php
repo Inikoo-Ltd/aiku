@@ -8,23 +8,16 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
-use App\Actions\Billables\Charge\HydrateCharge;
-use App\Actions\Billables\Charge\Search\ReindexChargeSearch;
 use App\Actions\Billables\Charge\StoreCharge;
 use App\Actions\Billables\Charge\UpdateCharge;
-use App\Actions\Billables\Rental\Search\ReindexRentalSearch;
-use App\Actions\Billables\Rental\StoreRental;
-use App\Actions\Billables\Service\Search\ReindexServiceSearch;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Billables\Service\UpdateService;
 use App\Actions\Catalogue\Collection\AttachModelsToCollection;
 use App\Actions\Catalogue\Collection\DetachModelFromCollection;
-use App\Actions\Catalogue\Collection\Search\ReindexCollectionSearch;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\Catalogue\Product\DeleteProduct;
 use App\Actions\Catalogue\Product\HydrateProducts;
-use App\Actions\Catalogue\Product\Search\ReindexProductSearch;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\StoreProductVariant;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
@@ -32,7 +25,6 @@ use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\ProductCategory\HydrateDepartments;
 use App\Actions\Catalogue\ProductCategory\HydrateFamilies;
 use App\Actions\Catalogue\ProductCategory\HydrateSubDepartments;
-use App\Actions\Catalogue\ProductCategory\Search\ReindexProductCategorySearch;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
@@ -41,7 +33,6 @@ use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Website\StoreWebsite;
-use App\Enums\Billables\Rental\RentalUnitEnum;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
@@ -51,7 +42,6 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Billables\Charge;
-use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Collection;
@@ -678,64 +668,6 @@ test('can show catalogue', function (Shop $shop) {
     });
 })->depends('create shop');
 
-test('products search', function () {
-    $this->artisan('search:products')->assertExitCode(0);
-
-    $product = Product::first();
-    ReindexProductSearch::run($product);
-    expect($product->universalSearch()->count())->toBe(1);
-});
-
-test('product categories search', function () {
-    $this->artisan('search:product_categories')->assertExitCode(0);
-
-    $productCategory = ProductCategory::first();
-    ReindexProductCategorySearch::run($productCategory);
-    expect($productCategory->universalSearch()->count())->toBe(1);
-});
-
-test('product collections search', function () {
-    $this->artisan('search:collections')->assertExitCode(0);
-
-    $collection = Collection::first();
-    ReindexCollectionSearch::run($collection);
-    expect($collection->universalSearch()->count())->toBe(1);
-});
-
-test('Billables: rentals search', function () {
-    $this->artisan('search:rentals')->assertExitCode(0);
-
-    StoreRental::make()->action(
-        Shop::first(),
-        [
-            'code'  => 'MyFColl',
-            'name'  => 'My first rental',
-            'price' => fake()->numberBetween(100, 2000),
-            'unit'  => RentalUnitEnum::DAY->value,
-        ]
-    );
-
-    $rental = Rental::first();
-    ReindexRentalSearch::run($rental);
-    expect($rental->universalSearch()->count())->toBe(1);
-});
-
-test('Billables: charges search', function () {
-    $this->artisan('search:charges')->assertExitCode(0);
-
-    $charge = Charge::first();
-    ReindexChargeSearch::run($charge);
-    expect($charge->universalSearch()->count())->toBe(1);
-});
-
-test('Billables: services search', function () {
-    $this->artisan('search:services')->assertExitCode(0);
-
-    $service = Service::first();
-    ReindexServiceSearch::run($service);
-    expect($service->universalSearch()->count())->toBe(1);
-});
-
 test('update shop setting', function ($shop) {
     $c = Country::first();
     $l = Language::first();
@@ -763,10 +695,6 @@ test('update shop setting', function ($shop) {
         ->and($shop->phone)->toBe('08912312313');
 })->depends('create shop');
 
-test('Billables: charges hydrator', function () {
-    $this->artisan('hydrate:charges')->assertExitCode(0);
-    HydrateCharge::run(Charge::first());
-});
 
 test('catalogue hydrator', function () {
     $this->artisan('hydrate -s cat')->assertExitCode(0);

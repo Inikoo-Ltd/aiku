@@ -83,7 +83,6 @@ const props = defineProps<{
     box_stats: {}
     routes: {
         update: routeType
-
     }
     address: {
         delivery: {}
@@ -282,7 +281,7 @@ const onCreateReplacement = (action: any) => {
                     <div class="flex flex-wrap items-center gap-2 font-bold underline">
                         <template v-for="(item, idx) in warning?.picking_sessions" :key="idx">
                             <Link :href="route(item.route.name, item.route.parameters)" class="text-sm hover:underline">
-                            {{ item.reference }}
+                                {{ item.reference }}
                             </Link>
                         </template>
                     </div>
@@ -293,10 +292,9 @@ const onCreateReplacement = (action: any) => {
 
     <div v-if="layout?.app?.environment === 'local'" class="relative">
         <Transition name="headlessui">
-            <div xv-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
-                class="p-2 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
-                <BoxNote v-for="(note, index) in notes.note_list" :key="index + note.label" :noteData="note"
-                    :updateRoute="null" />
+            <div class="p-2 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
+                <BoxNote v-for="(note, index) in notes?.note_list" :key="index + note.label" :noteData="note"
+                    :updateRoute="routes.update" />
             </div>
         </Transition>
     </div>

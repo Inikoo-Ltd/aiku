@@ -23,13 +23,15 @@ enum OfferCampaignTypeEnum: string
     case PRODUCT_OFFERS = 'product-offers';
     case DISCRETIONARY = 'discretionary';
     case SHIPPING = 'shipping';
+    case GIFT = 'gift';
+    case VOUCHERS = 'vouchers';
 
 
     public function labels(): array
     {
         return [
             'order-recursion' => __('Order recursion'),
-            'volume-discount' => __('Volume discount'),
+            'volume-discount' => __('Volume/GR discount'),
             'first-order'     => __('First order'),
             'customer-offers' => __('Customer offers'),
             'shop-offers'     => __('Shop offers'),
@@ -37,6 +39,8 @@ enum OfferCampaignTypeEnum: string
             'product-offers'  => __('Product offers'),
             'discretionary'   => __('Discretionary discounts'),
             'shipping'        => __('Shipping discount'),
+            'gift'            => __('Gifts'),
+            'vouchers'        => __('Vouchers'),
         ];
     }
 
@@ -52,6 +56,8 @@ enum OfferCampaignTypeEnum: string
             'product-offers'  => 'PO',
             'discretionary'   => 'DI',
             'shipping'        => 'SH',
+            'gift'            => 'GI',
+            'vouchers'        => 'VR',
         ];
     }
 
@@ -101,6 +107,16 @@ enum OfferCampaignTypeEnum: string
             'shipping'        => [
                 'icon'    => 'fal fa-truck',
                 'tooltip' => self::from('shipping')->labels()['shipping'] ?? 'Unknown',
+                'class'   => '',
+            ],
+            'gift'            => [
+                'icon'    => 'fal fa-gift',
+                'tooltip' => self::from('gift')->labels()['gift'] ?? 'Unknown',
+                'class'   => '',
+            ],
+            'vouchers'        => [
+                'icon'    => 'fal fa-badge-percent',
+                'tooltip' => self::from('vouchers')->labels()['vouchers'] ?? 'Unknown',
                 'class'   => '',
             ]
         ];

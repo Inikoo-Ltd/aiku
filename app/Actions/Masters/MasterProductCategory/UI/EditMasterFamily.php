@@ -146,7 +146,7 @@ class EditMasterFamily extends OrgAction
                                     ],
                                     'toogle'  => [
                                           'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                          'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                          'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "link",
                                           'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
                                     ],
                                     'value'   => $masterProductCategory->description
@@ -159,7 +159,7 @@ class EditMasterFamily extends OrgAction
                                     ],
                                     'toogle'  => [
                                           'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                          'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                          'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "link",
                                           'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
                                     ],
                                     'value'   => $masterProductCategory->description_extra

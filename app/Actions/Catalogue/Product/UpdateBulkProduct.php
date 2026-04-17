@@ -24,14 +24,22 @@ class UpdateBulkProduct extends OrgAction
 
     public function handle(array $modelData): void
     {
-        $rawProductDatas = Arr::get($modelData, 'products', []);
-        foreach ($rawProductDatas as $productData) {
-            $product = Product::find((int) Arr::get($productData, 'id'));
-            UpdateProduct::make()->action($product, [
-                'rrp'  => Arr::get($productData, 'rrp', $product->rrp),
-                'price' => Arr::get($productData, 'price', $product->price),
-                'unit' => Arr::get($productData, 'unit', $product->unit),
-            ]);
+        $rawProductData = Arr::get($modelData, 'products', []);
+        foreach ($rawProductData as $productData) {
+            $product = Product::find((int)Arr::get($productData, 'id'));
+
+            $dataToUpdate = [];
+            if (Arr::exists($productData, 'rrp')) {
+                $dataToUpdate['rrp'] = Arr::get($productData, 'rrp');
+            }
+            if (Arr::exists($productData, 'price')) {
+                $dataToUpdate['price'] = Arr::get($productData, 'price');
+            }
+            if (Arr::exists($productData, 'unit')) {
+                $dataToUpdate['unit'] = Arr::get($productData, 'unit');
+            }
+
+            UpdateProduct::make()->action($product, $dataToUpdate);
         }
     }
 
@@ -39,11 +47,11 @@ class UpdateBulkProduct extends OrgAction
     public function rules(): array
     {
         return [
-            'products' => ['required', 'array'],
-            'products.*.id' => ['required'],
-            'products.*.rrp' => ['sometimes', 'numeric'],
+            'products'         => ['required', 'array'],
+            'products.*.id'    => ['required'],
+            'products.*.rrp'   => ['sometimes', 'numeric'],
             'products.*.price' => ['sometimes', 'numeric'],
-            'products.*.unit' => ['sometimes', 'string'],
+            'products.*.unit'  => ['sometimes', 'string'],
         ];
     }
 

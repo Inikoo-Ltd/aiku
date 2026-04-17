@@ -54,10 +54,10 @@ const bestOffer = computed(() => {
             </div>
 
             <!-- Section: Discounted Price -->
-            <div v-if="product?.units < 2" :class="bestOffer?.type == 'Category Ordered' ?  'text-by-offer' : 'text-primary'">
+            <div   v-if="bestOffer && product?.units < 2"  :class="bestOffer?.type == 'Category Ordered' ?  'text-by-offer' : 'text-primary'">
                 <span class="font-bold">{{ locale.currencyFormat(currency?.code, product?.discounted_price) }}</span>/{{ product?.unit }}
             </div>
-            <div v-else :class="bestOffer?.type == 'Category Ordered' ?  'text-by-offer' : 'text-primary'">
+            <div  v-else-if="bestOffer"  :class="bestOffer?.type == 'Category Ordered' ?  'text-by-offer' : 'text-primary'">
                 <span class="font-bold">{{ locale.currencyFormat(currency?.code, product?.discounted_price) }}</span> ({{ locale.currencyFormat(currency?.code, product?.discounted_price_per_unit) }}/{{ product?.unit }})
             </div>
         </div>

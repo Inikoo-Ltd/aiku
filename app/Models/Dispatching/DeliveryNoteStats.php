@@ -57,7 +57,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_waiting_items_type_customer_status_to_do
  * @property int $number_waiting_items_type_customer_status_in_progress
  * @property int $number_waiting_items_type_customer_status_done
- * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
+ * @property-read \App\Models\Dispatching\DeliveryNote|null $deliveryNote
  * @method static Builder<static>|DeliveryNoteStats newModelQuery()
  * @method static Builder<static>|DeliveryNoteStats newQuery()
  * @method static Builder<static>|DeliveryNoteStats query()

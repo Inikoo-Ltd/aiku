@@ -31,7 +31,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_assets_type_shipping_zone
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Catalogue\Asset $asset
+ * @property-read \App\Models\Catalogue\Asset|null $asset
  * @method static Builder<static>|AssetStats newModelQuery()
  * @method static Builder<static>|AssetStats newQuery()
  * @method static Builder<static>|AssetStats query()

@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import EmailSubscribetion from '@/Components/EmailSubscribetion.vue'
+import EmailSubscription from '@/Components/EmailSubscription.vue'
 
 const props = defineProps<{
     form: any
@@ -23,5 +23,5 @@ const props = defineProps<{
 
 </script>
 <template>
-    <EmailSubscribetion :emailSubscriptions="fieldData.customer.email_subscriptions" containerClass="w-full border p-2 rounded-md" />
+    <EmailSubscription :emailSubscriptions="fieldData.customer.email_subscriptions" containerClass="w-full border p-2 rounded-md" />
 </template>

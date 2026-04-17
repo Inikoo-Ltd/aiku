@@ -99,6 +99,7 @@ class GetProducts extends RetinaApiAction
             'products.updated_at',
             'products.gross_weight',
             'products.slug',
+            'products.barcode',
             'currencies.code as currency_code',
             'currencies.id as currency_id',
             'department.slug as department_slug',

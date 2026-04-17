@@ -119,9 +119,11 @@
                 <div style="font-size:7pt">
                     {{$shop->address->locality}} {{$shop->address->postal_code}}
                 </div>
-                <div style="font-size:7pt">
-                    www.{{$shop->website->domain}}
-                </div>
+                @if($shop->website)
+                    <div style="font-size:7pt">
+                        www.{{$shop->website->domain}}
+                    </div>
+                @endif
             </td>
 
             <td style="text-align: right;">{{ __('Proforma Number') }}<br />
@@ -245,7 +247,10 @@
                 <td style="text-align:left" colspan="2">{{ $transaction->historicAsset?->name }}</td>
             @else
                 <td style="text-align:left" colspan="2">
-                    {{ $transaction->historicAsset?->units . 'x' . $transaction->historicAsset?->name . '(' . $order->currency->symbol . $transaction->net_amount . ')' }}
+                    @if($transaction->historicAsset?->units > 1)
+                        {{ trimDecimalZeros($transaction->historicAsset?->units) . 'x' }}
+                    @endif
+                    {{ $transaction->historicAsset?->name . ' (' . $order->currency->symbol . $transaction->net_amount . ')' }}
                     <br>
                     @if($rrp)
                         RRP: {{ $transaction->model->rrp }} <br>
@@ -326,6 +331,20 @@
         <td><b>{{ __('Total') }}</b></td>
         <td>{{ $order->currency->symbol . $order->total_amount }}</td>
     </tr>
+
+    @if($amountToDeduct > 0)
+        <tr class="amount">
+            <td style="border:none" colspan="4"></td>
+            <td>{{ __('Paid') }}</td>
+            <td>{{ $order->currency->symbol . number_format($amountToDeduct, 2, '.', '') }}</td>
+        </tr>
+
+        <tr class="total">
+            <td style="border:none" colspan="4"></td>
+            <td><b>{{ __('To Pay') }}</b></td>
+            <td>{{ $order->currency->symbol . number_format((float) $order->total_amount - $amountToDeduct, 2, '.', '') }}</td>
+        </tr>
+    @endif
     </tbody>
 
 </table>
@@ -400,9 +419,9 @@
 <br>
 <br>
 
-@if($order->footer)
-    <div>
-        {!! $order->footer !!}
+@if($shop->proforma_footer)
+    <div style="text-align:center;font-size:10pt;">
+        {!! $shop->proforma_footer !!}
     </div>
 @endif
 

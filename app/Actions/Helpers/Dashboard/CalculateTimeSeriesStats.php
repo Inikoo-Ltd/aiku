@@ -71,15 +71,15 @@ class CalculateTimeSeriesStats
         $now = now();
 
         if ($from_date && $to_date) {
-            $start = Carbon::parse($from_date);
-            $end = Carbon::parse($to_date);
+            $start = Carbon::parse($from_date)->startOfDay();
+            $end = Carbon::parse($to_date)->endOfDay();
             foreach ($metricsMapping as $outputKey => $column) {
                 $selects[] = "SUM(CASE WHEN \"from\" >= ? AND \"from\" <= ? THEN $column ELSE 0 END) as {$outputKey}_ctm";
                 $bindings[] = $start;
                 $bindings[] = $end;
             }
-            $startLy = $start->copy()->subYear();
-            $endLy = $end->copy()->subYear();
+            $startLy = $this->getSameDayPreviousYear($start);
+            $endLy = $this->getSameDayPreviousYear($end);
 
             foreach ($metricsMapping as $outputKey => $column) {
                 $selects[] = "SUM(CASE WHEN \"from\" >= ? AND \"from\" <= ? THEN $column ELSE 0 END) as {$outputKey}_ctm_ly";
@@ -102,8 +102,8 @@ class CalculateTimeSeriesStats
                 $bindings[] = $end;
             }
 
-            $startLy = $start->copy()->subYear();
-            $endLy = $end->copy()->subYear();
+            $startLy = $this->getSameDayPreviousYear($start);
+            $endLy = $this->getSameDayPreviousYear($end);
 
             foreach ($metricsMapping as $outputKey => $column) {
                 $selects[] = "SUM(CASE WHEN \"from\" >= ? AND \"from\" <= ? THEN $column ELSE 0 END) as {$outputKey}_{$interval->value}_ly";
@@ -189,6 +189,22 @@ class CalculateTimeSeriesStats
             'formatted_value' => $formattedValue,
             'delta_icon'      => $deltaIcon,
         ];
+    }
+
+    protected function getSameDayPreviousYear(Carbon $date): Carbon
+    {
+        $previousYear = $date->year - 1;
+        $isoWeek      = $date->isoWeek;
+        $isoDayOfWeek = $date->dayOfWeekIso;
+
+        $maxWeeks = Carbon::create($previousYear, 12, 28)->isoWeeksInYear();
+        if ($isoWeek > $maxWeeks) {
+            $isoWeek = $maxWeeks;
+        }
+
+        return Carbon::now()
+            ->setISODate($previousYear, $isoWeek, $isoDayOfWeek)
+            ->setTime($date->hour, $date->minute, $date->second);
     }
 
     protected function getIntervalRange(DateIntervalEnum $interval, Carbon $now): ?array

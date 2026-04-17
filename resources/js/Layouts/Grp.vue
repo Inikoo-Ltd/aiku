@@ -28,7 +28,7 @@ import {
 	faAllergies,
 	faSpellCheck,
 	faHandPaper,
-	faHourglassStart,
+	faHourglassStart, faHourglassHalf, faHourglass,
 	faSadTear,
 	faRainbow,
 	faParking,
@@ -71,9 +71,16 @@ import {
 	faEye,
 	faEyeSlash,
 	faCheckDouble,
-	faSmile,
+	faSmile, faUserHeadset,
 	faMailBulk, faEllipsisV,
-	faShare, faUndoAlt, faRobot, faDollyFlatbedAlt, faMonument as falMonument,faUnlink, faBoxOpen, faArrowRight as falArrowRight
+	faShare, faUndoAlt, faRobot, faDollyFlatbedAlt, faMonument as falMonument,faUnlink, faBoxOpen, faArrowRight as falArrowRight,
+	faStar as faStarLight,
+	faArrowUp as faArrowUpLight,
+	faMinus as faMinusLight,
+	faTimesCircle as faTimesCircleLight,
+	faUserAlien,
+	faTombstone as faTombstoneLight,
+	faCopyright, faSyncAlt
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import { faViruses } from "@fad"
@@ -99,6 +106,8 @@ import Modal from "@/Components/Utils/Modal.vue"
 import { setColorStyleRoot } from "@/Composables/useApp"
 import { fetchUnreadCount } from "@/Composables/useNotificationSound"
 import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
+import { useColorTheme } from "@/Composables/useStockList"
+import { computed } from 'vue'
 
 library.add(
 	faRainbow,
@@ -111,7 +120,7 @@ library.add(
 	faAllergies,
 	faSpellCheck,
 	faHandPaper,
-	faHourglassStart,
+	faHourglassStart, faHourglassHalf, faHourglass,
 	faSadTear,
 	faPauseCircle,
 	faBoxHeart,
@@ -171,7 +180,11 @@ library.add(
 	faMailBulk, faEllipsisV,
 	faShare, faUndoAlt,faRobot,faMonument, faCubes, fasExclamationTriangle, faCandleHolder, faMedal, faDollyFlatbedAlt, faViruses,
 	faShare, faUndoAlt, faRobot, faUnlink, faBoxOpen, falArrowRight,
-	faBadgePercent
+	faBadgePercent, faUserHeadset,
+	faStarLight, faArrowUpLight, faMinusLight, faTimesCircleLight,
+	faUserAlien,
+	faTombstoneLight,
+	faCopyright, faSyncAlt
 )
 
 provide("layout", useLayoutStore())
@@ -244,6 +257,7 @@ watch(
 )
 
 // Method: listen if app recently deployed
+const isLoadingRefreshPage = ref(false)
 const isModalNeedToRefresh = ref(false)
 const onCheckAppVersion = () => {
 	const xxx = window.Echo.private("app.general").listen(".post-deployed", (eventData) => {
@@ -258,6 +272,7 @@ const onCheckAppVersion = () => {
 	// console.log('Websocket subscription:', xxx.subscription.subscribed)
 }
 const onRefreshPage = () => {
+	isLoadingRefreshPage.value = true
 	window.location.reload()
 }
 
@@ -294,7 +309,13 @@ onMounted(() => {
 	setColorStyleRoot(layout?.app?.theme)
 })
 
+const fallbackTheme = useColorTheme[3]
 
+const safeTheme = computed(() => {
+	const t = layout?.app?.theme
+
+	return (t && t.length >= 8) ? t : fallbackTheme
+})
 console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 </script>
 
@@ -459,7 +480,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 				</div>
 
 				<div class="mt-5 sm:mt-6">
-					<Button @click="() => onRefreshPage()" :label="trans('Refresh page')" full />
+					<Button @click="() => onRefreshPage()" :label="trans('Refresh page')" full :loading="isLoadingRefreshPage" />
 				</div>
 			</div>
 		</div>
@@ -512,7 +533,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 
 .bottomNavigationActive {
 	@apply w-5/6 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all duration-200 ease-in-out;
-	background-color: v-bind("layout.app.theme[4]");
+	background-color: v-bind("safeTheme[4]");
 }
 
 .bottomNavigation {
@@ -529,12 +550,12 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 
 .primaryLink {
 	background: v-bind(
-		'`linear-gradient(to top, ${layout.app.theme[6]}, ${layout.app.theme[6] + "77"})`'
+		'`linear-gradient(to top, ${safeTheme[6]}, ${safeTheme[6] + "77"})`'
 	);
 
 	&:hover,
 	&:focus {
-		color: v-bind("`${layout.app.theme[7]}`");
+		color: v-bind("`${safeTheme[7]}`");
 	}
 
 	@apply focus:ring-0 focus:outline-none focus:border-none
@@ -548,12 +569,12 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 
 .secondaryLink {
 	background: v-bind(
-		'`linear-gradient(to top, ${layout.app.theme[6] + "77"}, ${layout.app.theme[6] + "11"})`'
+		'`linear-gradient(to top, ${safeTheme[6] + "77"}, ${safeTheme[6] + "11"})`'
 	);
 
 	&:hover,
 	&:focus {
-		color: v-bind("`${layout.app.theme[7]}`");
+		color: v-bind("`${safeTheme[7]}`");
 	}
 
 	@apply focus:ring-0 focus:outline-none focus:border-none
@@ -567,10 +588,10 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 // For icon box in FlatTreemap
 .specialBoxActive {
 	background: v-bind(
-		'`linear-gradient(to top, ${layout.app.theme[0]}, ${layout.app.theme[0] + "AA"})`'
+		'`linear-gradient(to top, ${safeTheme[0]}, ${safeTheme[0] + "AA"})`'
 	);
-	color: v-bind("`${layout.app.theme[1]}`");
-	border: v-bind('`2px solid ${layout.app.theme[0] + "99"}`') !important;
+	color: v-bind("`${safeTheme[1]}`");
+	border: v-bind('`2px solid ${safeTheme[0] + "99"}`') !important;
 
 	@apply rounded overflow-hidden
     cursor-pointer
@@ -583,14 +604,14 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 
 .specialBox {
 	background: v-bind(
-		'`linear-gradient(to top, ${layout.app.theme[0]}, ${layout.app.theme[0] + "AA"})`'
+		'`linear-gradient(to top, ${safeTheme[0]}, ${safeTheme[0] + "AA"})`'
 	);
-	color: v-bind("`${layout.app.theme[0]}`");
-	border: v-bind('`2px solid ${layout.app.theme[0] + "99"}`') !important;
+	color: v-bind("`${safeTheme[0]}`");
+	border: v-bind('`2px solid ${safeTheme[0] + "99"}`') !important;
 
 	&:hover,
 	&:focus {
-		color: v-bind("`${layout.app.theme[1]}`");
+		color: v-bind("`${safeTheme[1]}`");
 	}
 
 	@apply rounded overflow-hidden

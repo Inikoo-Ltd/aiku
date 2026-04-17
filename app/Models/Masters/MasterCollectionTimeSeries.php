@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $number_records
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Masters\MasterCollection $masterCollection
+ * @property-read \App\Models\Masters\MasterCollection|null $masterCollection
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterCollectionTimeSeriesRecord> $records
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollectionTimeSeries newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollectionTimeSeries newQuery()

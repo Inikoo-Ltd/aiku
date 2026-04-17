@@ -14,7 +14,12 @@ class DashboardDispatchHubDashboardResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $widgets = collect($this->resource);
+        $waitingItemsStillPicking    = $this->resource['waiting_items_still_picking'] ?? ['count' => 0, 'route' => null];
+        $waitingItems                = $this->resource['waiting_items'] ?? ['count' => 0, 'route' => null];
+        $waitingCrmItemsStillPicking = $this->resource['waiting_crm_items_still_picking'] ?? ['count' => 0, 'route' => null];
+        $waitingCrmItems             = $this->resource['waiting_crm_items'] ?? ['count' => 0, 'route' => null];
+
+        $widgets = collect($this->resource)->filter(fn ($widget, $key) => is_int($key))->values();
 
         $dimensionItems = $widgets->map(fn ($widget) => [
             'key'   => $widget['slug'] ?? str($widget['label'])->slug()->toString(),
@@ -95,23 +100,132 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                     ];
                 }
 
+                if ($caseKey === 'handling' && ($widget['queued'] ?? 0) > 0) {
+                    $queuedCaseData              = $widget['cases']['queued'] ?? null;
+                    $entry['queued_prefix']       = ['value' => $widget['queued']];
+                    if ($queuedCaseData && isset($queuedCaseData['route'])) {
+                        $entry['queued_prefix']['route_target'] = [
+                            'name'       => $queuedCaseData['route']['name'],
+                            'parameters' => $queuedCaseData['route']['parameters'] ?? [],
+                        ];
+                    }
+                }
+
+                if ($caseKey === 'handling' && $widget['waiting_items_still_picking']['count'] > 0) {
+                    $entry['warning'] = [
+                        'route_target' => $widget['waiting_items_still_picking']['route'],
+                        'tooltip' => __('Waiting items in delivery notes still picking'),
+                        'value' => $widget['waiting_items_still_picking']['count'],
+                    ];
+                }
+
+                if ($caseKey === 'handling_blocked' && $widget['waiting_items']['count'] > 0) {
+                    $entry['warning'] = [
+                        'route_target' => $widget['waiting_items']['route'],
+                        'tooltip' => __('Waiting items'),
+                        'value' => $widget['waiting_items']['count'],
+                    ];
+                }
+
+                if ($caseKey === 'handling' && ($widget['waiting_crm_items_still_picking']['count'] ?? 0) > 0) {
+                    $entry['crm_warning'] = [
+                        'route_target' => $widget['waiting_crm_items_still_picking']['route'],
+                        'tooltip' => __('CRM waiting items in delivery notes still picking'),
+                        'value' => $widget['waiting_crm_items_still_picking']['count'],
+                    ];
+                }
+
+                if ($caseKey === 'handling_blocked' && ($widget['waiting_crm_items']['count'] ?? 0) > 0) {
+                    $entry['crm_warning'] = [
+                        'route_target' => $widget['waiting_crm_items']['route'],
+                        'tooltip' => __('CRM waiting items'),
+                        'value' => $widget['waiting_crm_items']['count'],
+                    ];
+                }
+
                 $data[$rowKey][$caseKey] = $entry;
             }
         }
 
         $rowTotals = [];
         foreach ($widgets as $widget) {
-            $rowKey                = $widget['slug'] ?? str($widget['label'])->slug()->toString();
+            $rowKey            = $widget['slug'] ?? str($widget['label'])->slug()->toString();
             $rowTotals[$rowKey] = ['value' => $widget['total'] ?? 0];
+
+            if (isset($widget['total_route'])) {
+                $rowTotals[$rowKey]['route_target'] = [
+                    'name'       => $widget['total_route']['name'],
+                    'parameters' => $widget['total_route']['parameters'] ?? [],
+                ];
+            }
         }
+
+        $deliveryNotesWidget = $widgets->first(function ($widget) {
+            $route = $widget['cases']['todo']['route']['name'] ?? '';
+
+            return str_contains($route, 'delivery-notes');
+        });
 
         $totals = [];
         foreach ($allCaseKeysForTotals as $caseKey) {
             $totals[$caseKey] = ['value' => $widgets->sum($caseKey)];
+
+            if ($deliveryNotesWidget && isset($deliveryNotesWidget['cases'][$caseKey]['route'])) {
+                $caseRoute                      = $deliveryNotesWidget['cases'][$caseKey]['route'];
+                $totals[$caseKey]['route_target'] = [
+                    'name'       => str_replace('.shop', '', $caseRoute['name']),
+                    'parameters' => array_slice($caseRoute['parameters'], 0, -1),
+                ];
+            }
+
+            if ($caseKey === 'handling' && $waitingItemsStillPicking['count'] > 0) {
+                $totals[$caseKey]['warning'] = [
+                    'route_target' => $waitingItemsStillPicking['route'],
+                    'tooltip'      => __('Waiting items in delivery notes still picking'),
+                    'value'        => $waitingItemsStillPicking['count'],
+                ];
+            }
+
+            if ($caseKey === 'handling_blocked' && $waitingItems['count'] > 0) {
+                $totals[$caseKey]['warning'] = [
+                    'route_target' => $waitingItems['route'],
+                    'tooltip'      => __('Waiting items'),
+                    'value'        => $waitingItems['count'],
+                ];
+            }
+
+            if ($caseKey === 'handling' && $waitingCrmItemsStillPicking['count'] > 0) {
+                $totals[$caseKey]['crm_warning'] = [
+                    'route_target' => $waitingCrmItemsStillPicking['route'],
+                    'tooltip'      => __('CRM waiting items in delivery notes still picking'),
+                    'value'        => $waitingCrmItemsStillPicking['count'],
+                ];
+            }
+
+            if ($caseKey === 'handling_blocked' && $waitingCrmItems['count'] > 0) {
+                $totals[$caseKey]['crm_warning'] = [
+                    'route_target' => $waitingCrmItems['route'],
+                    'tooltip'      => __('CRM waiting items'),
+                    'value'        => $waitingCrmItems['count'],
+                ];
+            }
+        }
+
+        $totalQueued = $widgets->sum('queued');
+        if ($totalQueued > 0 && $deliveryNotesWidget && isset($deliveryNotesWidget['cases']['queued']['route'])) {
+            $queuedRoute                            = $deliveryNotesWidget['cases']['queued']['route'];
+            $totals['handling']['queued_prefix']    = [
+                'value'        => $totalQueued,
+                'route_target' => [
+                    'name'       => str_replace('.shop', '', $queuedRoute['name']),
+                    'parameters' => array_slice($queuedRoute['parameters'], 0, -1),
+                ],
+            ];
         }
 
         $grandTotal = $widgets->sum('total');
 
+        $routeParams = $totals['todo']['route_target']['parameters'] ?? [];
         return [
             'dimension'   => [
                 'key'   => 'channel',
@@ -125,7 +239,11 @@ class DashboardDispatchHubDashboardResource extends JsonResource
             'grand_total' => [
                 'value' => $grandTotal,
                 'icon'  => ['fal', 'fa-chart-line'],
-                'tooltip' => 'Total'
+                'tooltip' => 'Total',
+                'route_target' => [
+                        'name'       => 'grp.org.warehouses.show.dispatching.in_warehouse.delivery-notes',
+                        'parameters' => $routeParams,
+                ],
             ],
         ];
     }

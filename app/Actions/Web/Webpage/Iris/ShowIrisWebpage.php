@@ -65,9 +65,13 @@ class ShowIrisWebpage
                 'title'         => $webpage->title,
                 'description'   => $webpage->description,
                 'canonical_url' => $webpage->canonical_url,
-
+                'type'          => $webpage->type,
+                'sub_type'      => $webpage->sub_type,
+                'model_type'    => $webpage->model_type
             ],
             'webpage_img'  => $webpageImg,
+            'index_page'    => $webpage->index_page,
+            'follow_link'   => $webpage->follow_link
         ];
 
         return array_merge($baseWebpageData, [
@@ -211,8 +215,9 @@ class ShowIrisWebpage
 
             return redirect()->to($webpageData, 301)
                 ->withHeaders([
-                    'x-original-referer' => request()->headers->get('referer', '')
-                ]);
+                    'x-original-referer' => request()->headers->get('referer', ''),
+                ])
+                ->with('from-iris-redirect', true);
         }
 
         $browserTitle = Arr::get($webpageData, 'webpage_data.title', '');
@@ -238,11 +243,18 @@ class ShowIrisWebpage
         if ($path === null) {
             $webpageID = $website->storefront_id;
         } else {
-            $webpageID = DB::table('webpages')->where('website_id', $website->id)
+            $webpage = Webpage::where('website_id', $website->id)
                 ->where('url', strtolower($path))
-                ->where('state', '=', WebpageStateEnum::LIVE)
                 ->whereNull('deleted_at')
-                ->value('id');
+                ->first();
+
+            if ($webpage?->state === WebpageStateEnum::LIVE) {
+                $webpageID = $webpage->id;
+            } elseif ($webpage?->state === WebpageStateEnum::CLOSED) {
+                $webpageID = $webpage->redirectWebpage?->id;
+            } else {
+                $webpageID = null;
+            }
         }
 
 
@@ -346,10 +358,6 @@ class ShowIrisWebpage
 
         $label = $webpage->breadcrumb_label;
 
-
-        if (!$label) {
-            $label = $webpage->title;
-        }
         if (!$label) {
             $label = $webpage->code;
         }

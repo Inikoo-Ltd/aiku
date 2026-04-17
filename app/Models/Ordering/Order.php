@@ -142,7 +142,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_item_transactions Count of product item transactions in the order
  * @property array<array-key, mixed>|null $offer_meters
  * @property bool $is_shipping_tbc
- * @property string|null $shipping_tbc_amount
+ * @property numeric|null $shipping_tbc_amount
  * @property string|null $external_id
  * @property string|null $tracking_number for search purposes
  * @property array<array-key, mixed> $shipping_data for UI purposes
@@ -151,26 +151,27 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed> $discretionary_offers_data
  * @property string|null $marketplace_id
  * @property numeric $commission_amount
- * @property string $profit_amount
- * @property string|null $margin
+ * @property numeric $profit_amount
+ * @property numeric|null $margin
  * @property bool $is_shipping_by_external
  * @property \Illuminate\Support\Carbon|null $picked_at
  * @property string|null $packing_at
- * @property string $amount_off
+ * @property numeric $amount_off
+ * @property string|null $handling_blocked_at
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
  * @property-read Address|null $collectionAddress
  * @property-read Currency $currency
- * @property-read \App\Models\CRM\Customer $customer
+ * @property-read \App\Models\CRM\Customer|null $customer
  * @property-read CustomerClient|null $customerClient
  * @property-read CustomerSalesChannel|null $customerSalesChannel
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, DeliveryNote> $deliveryNotes
  * @property-read Collection<int, DispatchedEmail> $dispatchedEmails
  * @property-read Collection<int, Address> $fixedAddresses
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Collection<int, Invoice> $invoices
  * @property-read Collection<int, \App\Models\Ordering\Transaction> $itemTransactions
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
@@ -180,7 +181,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Platform|null $platform
  * @property-read \App\Models\Ordering\SalesChannel|null $salesChannel
  * @property-read ShippingZone|null $shippingZone
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @property-read \App\Models\Ordering\OrderStats|null $stats
  * @property-read TaxCategory $taxCategory
  * @property-read Collection<int, \App\Models\Ordering\Transaction> $transactions
@@ -281,7 +282,8 @@ class Order extends Model implements HasMedia, Auditable
     protected array $auditInclude = [
         'reference',
         'handing_type',
-        'is_shipping_by_external'
+        'is_shipping_by_external'.
+        'state'
     ];
 
 

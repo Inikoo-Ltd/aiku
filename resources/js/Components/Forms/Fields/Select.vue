@@ -9,7 +9,7 @@ import Multiselect from "@vueform/multiselect"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { onMounted } from "vue"
+import { onMounted, ref, computed } from "vue"
 import Tag from '@/Components/Tag.vue'
 library.add(faExclamationCircle, faCheckCircle)
 
@@ -28,6 +28,38 @@ const props = defineProps<{
     }
 }>()
 
+const normalizeStr = (str: string): string =>
+    str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+
+const searchQuery = ref('')
+
+const filteredOptions = computed(() => {
+    if (!searchQuery.value || !props.fieldData.searchable) return props.options
+
+    const optionsArray = Array.isArray(props.options)
+        ? props.options
+        : Object.values(props.options as Record<string, any>)
+
+    const labelKey = props.fieldData.labelProp || 'label'
+
+    // Return it in the same format as the original input
+    if (Array.isArray(props.options)) {
+        return optionsArray.filter((option: any) => {
+            const label = typeof option === 'string' ? option : (option[labelKey] ?? '')
+            return normalizeStr(String(label)).includes(normalizeStr(searchQuery.value))
+        })
+    } else {
+        // If the origin is an object, return it as an object too
+        const result: Record<string, any> = {}
+        Object.entries(props.options as Record<string, any>).forEach(([key, option]) => {
+            const label = typeof option === 'string' ? option : (option[labelKey] ?? '')
+            if (normalizeStr(String(label)).includes(normalizeStr(searchQuery.value))) {
+                result[key] = option
+            }
+        })
+        return result
+    }
+})
 
 // Auto assign to first option if 'required' and value is null
 onMounted(() => {
@@ -47,8 +79,9 @@ console.log(props)
 			<Multiselect
 				v-model="form[fieldName]"
                 @update:modelValue="() => form.errors[fieldName] = null"
+				@search-change="(val) => searchQuery = val"
 				:class="{ 'pr-8': form.errors[fieldName] || form.recentlySuccessful }"
-				:options="props.options"
+				:options="filteredOptions"
 				:placeholder="props.fieldData.placeholder ?? 'Select your option'"
 				:canClear="!props.fieldData.required"
 				:mode="props.fieldData.mode ? props.fieldData.mode : 'single'"
@@ -59,6 +92,7 @@ console.log(props)
                 :caret="!fieldData.readonly"
 				:searchable="!!props.fieldData.searchable" 
 				:label="fieldData.labelProp || 'label'"
+				:filter-results="false"
 				:valueProp="fieldData.valueProp || 'value'"
 				>
 				<template

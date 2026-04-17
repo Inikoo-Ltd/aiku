@@ -118,6 +118,8 @@ class IndexOrgStockMovements extends OrgAction
                 'org_stock_movements.grp_amount',
                 'org_stock_movements.operation_type',
                 'org_stock_movements.operation_id',
+                'org_stock_movements.running_quantity',
+                'org_stock_movements.running_quantity_org_stock',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
                 'warehouses.slug as warehouse_slug',
@@ -126,13 +128,15 @@ class IndexOrgStockMovements extends OrgAction
                 'locations.code as location_code',
                 'org_stocks.slug as org_stock_slug',
                 'org_stocks.name as org_stock_name',
+                'org_stock_movements.user_id'
             ])
             ->selectRaw("'{$organisation->currency->code}'  as currency_code")
             ->leftJoin('organisations', 'org_stock_movements.organisation_id', 'organisations.id')
             ->leftJoin('warehouses', 'warehouses.id', 'org_stock_movements.warehouse_id')
             ->leftJoin('locations', 'locations.id', 'org_stock_movements.location_id')
             ->leftJoin('org_stocks', 'org_stocks.id', 'org_stock_movements.org_stock_id')
-            ->allowedSorts(['date', 'flow', 'type', 'class', 'quantity', 'org_amount', 'grp_amount', 'org_stock_name', 'organisation_name'])
+            ->with('user')
+            ->allowedSorts(['date', 'flow', 'type', 'class', 'quantity', 'org_amount', 'grp_amount', 'org_stock_name', 'organisation_name', 'user'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -163,7 +167,8 @@ class IndexOrgStockMovements extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->column(key: 'date', label: __('Date'), sortable: true, type: 'date_hm');
+                ->column(key: 'date', label: __('Date'), sortable: true, type: 'date_hm')
+                ->column(key: 'user', label: __('User'), sortable: true);
 
             if (!($parent instanceof OrgStock)) {
                 $table->column(key: 'org_stock_name', label: __('Stock'), sortable: true);
@@ -174,6 +179,8 @@ class IndexOrgStockMovements extends OrgAction
                 ->column(key: 'class', label: __('Class'), sortable: true)
                 ->column(key: 'location_code', label: __('Location'))
                 ->column(key: 'quantity', label: __('Quantity'), sortable: true, align: 'right')
+                ->column(key: 'running_quantity', label: __('Running Quantity'), sortable: true, align: 'right')
+                ->column(key: 'running_quantity_org_stock', label: __('Running Quantity (All)'), sortable: true, align: 'right')
                 ->column(key: 'org_amount', label: __('Amount'), sortable: true, type: 'currency');
         };
     }

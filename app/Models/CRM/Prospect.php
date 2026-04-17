@@ -15,6 +15,7 @@ use App\Enums\CRM\Prospect\ProspectFailStatusEnum;
 use App\Enums\CRM\Prospect\ProspectStateEnum;
 use App\Enums\CRM\Prospect\ProspectSuccessStatusEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\SubscriptionEvent;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\UniversalSearch;
@@ -30,6 +31,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -84,13 +86,15 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_opt_in
  * @property array<array-key, mixed>|null $contact_name_components
  * @property string|null $post_source_id
+ * @property int $number_dispatched_emails
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\CRM\Customer|null $customer
- * @property-read Group $group
+ * @property-read Collection<int, DispatchedEmail> $dispatchedEmails
+ * @property-read Group|null $group
  * @property-read Organisation $organisation
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @property-read Collection<int, SubscriptionEvent> $subscriptionEvents
  * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\CRM\ProspectFactory factory($count = null, $state = [])
@@ -218,6 +222,11 @@ class Prospect extends Model implements Auditable
     public function subscriptionEvents(): MorphMany
     {
         return $this->morphMany(SubscriptionEvent::class, 'model');
+    }
+
+    public function dispatchedEmails(): BelongsToMany
+    {
+        return $this->belongsToMany(DispatchedEmail::class, 'prospect_has_dispatched_emails');
     }
 
 

@@ -36,7 +36,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $last_os
  * @property array<array-key, mixed>|null $last_location
  * @property int $number_web_user_requests
- * @property-read \App\Models\CRM\WebUser $webUser
+ * @property-read \App\Models\CRM\WebUser|null $webUser
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebUserStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebUserStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebUserStats query()

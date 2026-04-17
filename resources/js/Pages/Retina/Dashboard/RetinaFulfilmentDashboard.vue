@@ -36,6 +36,8 @@ import CountUp from "vue-countup-v3"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { faCheck, faCheckCircle } from "@fas"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import { textReplaceVariables } from "@/Composables/Workshop"
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 library.add(
 	faWallet,
 	faLink,
@@ -53,6 +55,7 @@ library.add(
 )
 
 const props = defineProps<{
+	welcome_message: string
 	data: {
 		addresses: AddressManagement
 		address_update_route: routeType
@@ -128,7 +131,7 @@ const props = defineProps<{
 
 
 const locale = inject("locale", aikuLocaleStructure)
-const layout = inject("layout", layoutStructure)
+const layout = inject("layout", retinaLayoutStructure)
 
 const optionRadio = [
 	{
@@ -164,7 +167,9 @@ const radioValue = ref<string[]>(
 </script>
 
 <template>
-	<div class="p-8 pb-3 text-4xl font-bold">Welcome, {{ props?.data?.fulfilment_customer?.customer?.contact_name }}!</div>
+	<div v-if="welcome_message" class="p-8 pb-3 text-4xl font-bold">
+		 <div v-html="textReplaceVariables(welcome_message, layout.iris_variables)"></div>
+	</div>
 	<!-- Section: Radiobox, Recurring bills balance, Rental agreement-->
 	<div
 		v-if="layout.user.fulfilment_active"

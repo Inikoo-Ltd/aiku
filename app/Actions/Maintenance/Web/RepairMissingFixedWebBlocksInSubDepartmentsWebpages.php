@@ -40,10 +40,10 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
         $subDepartment = $webpage->model;
 
         // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
-        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES->value);
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES);
 
         // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
-        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS->value);
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
 
         $collectionsWebBlock = $this->getWebpageBlocksByType($webpage, 'collections-1');
         if (count($collectionsWebBlock) > 0) {
@@ -58,6 +58,9 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
             };
         }
 
+        foreach (WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes() as $code) {
+            $this->deleteWebBlocksByCode($webpage, $code);
+        }
 
         $countCollectionDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'sub-department-description-1');
         if (count($countCollectionDescriptionBlock) == 0) {
@@ -65,7 +68,13 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
         }
 
         $webpage->refresh();
-        $this->setDescriptionWebBlockOnTop($webpage);
+        if ($command->option('set-description-top')) {
+            $this->setDescriptionWebBlockOnTop($webpage);
+        }
+
+        if ($command->option('hide-description')) {
+            $this->setDescriptionWebBlockHidden($webpage);
+        }
         $webpage->refresh();
 
         UpdateWebpageContent::run($webpage);
@@ -112,8 +121,20 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
         UpdateWebpageContent::run($webpage);
     }
 
+    public function setDescriptionWebBlockHidden(Webpage $webpage): void
+    {
+        $subDepartmentDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'sub-department-description-1')->first();
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_sub_departments_webpages {--website_id=}';
+        if ($subDepartmentDescriptionWebBlock) {
+            DB::table('model_has_web_blocks')
+                ->where('id', $subDepartmentDescriptionWebBlock->model_has_web_blocks_id)
+                ->update(['show' => false]);
+        }
+
+        UpdateWebpageContent::run($webpage);
+    }
+
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_sub_departments_webpages {--website_id=} {--hide-description} {--set-description-top}';
 
     public function asCommand(Command $command): void
     {

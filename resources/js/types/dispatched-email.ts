@@ -8,8 +8,6 @@ export interface DispatchedEmailResource {
     id:string,
     mailshot_id: string,
     outbox_id: string,
-    recipient_type: string
-    recipient_id: string
     state: string
     created_at: string
     updated_at: string

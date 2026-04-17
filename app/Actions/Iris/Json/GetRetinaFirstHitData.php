@@ -8,7 +8,6 @@
 
 namespace App\Actions\Iris\Json;
 
-use App\Actions\Iris\RetinaLogWebUserRequest;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\HasIrisUserData;
 use App\Models\Catalogue\Collection;
@@ -18,6 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 class GetRetinaFirstHitData extends RetinaAction
 {
     use HasIrisUserData;
+
     /**
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Psr\Container\NotFoundExceptionInterface
@@ -25,13 +25,15 @@ class GetRetinaFirstHitData extends RetinaAction
     public function handle(): array
     {
 
-        RetinaLogWebUserRequest::run();
-        Cookie::queue('iris_vua', true, config('session.lifetime') * 60);
+        if (auth()->check()) {
+            Cookie::queue('iris_vua', true, config('session.lifetime') * 60);
+        } else {
+            Cookie::queue(Cookie::forget('iris_vua'));
+        }
+
         return $this->getIrisUserData();
     }
 
-
-    // getIrisUserData moved to HasIrisUserData trait
 
     /**
      * @throws \Psr\Container\ContainerExceptionInterface

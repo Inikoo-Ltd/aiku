@@ -45,8 +45,6 @@ trait WithDepartmentsInOverview
 
         $queryBuilder->leftJoin('shops', 'product_categories.shop_id', 'shops.id');
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', '=', 'organisations.id');
-        $queryBuilder->leftJoin('product_category_sales_intervals', 'product_category_sales_intervals.product_category_id', 'product_categories.id');
-        $queryBuilder->leftJoin('product_category_ordering_intervals', 'product_category_ordering_intervals.product_category_id', 'product_categories.id');
         $queryBuilder->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id');
 
         if ($parent instanceof Organisation) {
@@ -54,7 +52,6 @@ trait WithDepartmentsInOverview
         } else {
             $queryBuilder->where('product_categories.group_id', $parent->id);
         }
-
 
         return $queryBuilder
             ->defaultSort('product_categories.code')
@@ -73,8 +70,6 @@ trait WithDepartmentsInOverview
                 'shops.slug as shop_slug',
                 'shops.code as shop_code',
                 'shops.name as shop_name',
-                'product_category_sales_intervals.sales_grp_currency_all as sales_all',
-                'product_category_ordering_intervals.invoices_all as invoices_all',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
                 'organisations.code as organisation_code',

@@ -22,17 +22,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $location_id
  * @property \Illuminate\Support\Carbon|null $audited_at
  * @property int|null $user_id User who audited the stock
- * @property string|null $original_quantity
- * @property string $audited_quantity
+ * @property numeric|null $original_quantity
+ * @property numeric $audited_quantity
  * @property OrgStockAuditDeltaTypeEnum $type Addition, Subtraction, NoChange
  * @property string|null $reason
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Inventory\OrgStockAudit|null $orgStockAudit
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Inventory\Warehouse $warehouse
+ * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockAuditDelta newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockAuditDelta newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockAuditDelta query()

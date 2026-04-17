@@ -19,6 +19,7 @@ import ColorBackground from "@/Components/Banners/Slider/ColorBackground.vue"
 import SlideVideo from "@/Components/Banners/SlidesWorkshop/Fields/SlideVideo.vue"
 import RangeSlider from "@/Components/Banners/SlidesWorkshop/Fields/RangeSlider.vue"
 import CardsBuilder from "@/Components/Banners/SlidesWorkshop/Fields/CardsBuilder.vue"
+import ShowBlockInResponsive from '@/Components/CMS/Fields/ShowBlockInResponsive.vue'
 
 const componentsMap: Record<string, any> = {
 	text: PureInput,
@@ -38,6 +39,7 @@ const componentsMap: Record<string, any> = {
 	"color-background": ColorBackground,
 	slideVideo: SlideVideo,
 	cardsBuilder: CardsBuilder,
+	visibility : ShowBlockInResponsive
 }
 
 export const getComponent = (componentName: string) => {

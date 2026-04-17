@@ -22,6 +22,8 @@ class ProcessTradeUnitTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
 
+    public string $jobQueue = 'sales';
+
     public function getJobUniqueId(int $tradeUnitId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
         return "$tradeUnitId:$frequency->value:$from:$to";
@@ -53,18 +55,14 @@ class ProcessTradeUnitTimeSeriesRecords implements ShouldBeUnique
     {
         $processedPeriods = [];
 
-        $query = DB::table('invoice_transactions')
-            ->whereExists(function ($query) use ($timeSeries) {
-                $query->select(DB::raw(1))
-                      ->from('invoice_transaction_has_trade_units')
-                      ->whereColumn('invoice_transaction_has_trade_units.invoice_transaction_id', 'invoice_transactions.id')
-                      ->where('invoice_transaction_has_trade_units.trade_unit_id', $timeSeries->trade_unit_id);
-            })
+        $query = DB::table('invoice_transaction_has_trade_units as pivot')
+            ->join('invoice_transactions', 'invoice_transactions.id', '=', 'pivot.invoice_transaction_id')
+            ->where('pivot.trade_unit_id', $timeSeries->trade_unit_id)
             ->where('invoice_transactions.date', '>=', $from)
             ->where('invoice_transactions.date', '<=', $to)
             ->whereNull('invoice_transactions.deleted_at');
 
-        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency)->get();
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, $this->pivotBasedSelects())->get();
 
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);

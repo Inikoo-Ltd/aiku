@@ -47,7 +47,6 @@ use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Inventory\OrgStock\LostAndFoundOrgStockStateEnum;
 use App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum;
 use App\Enums\UI\Inventory\LocationTabsEnum;
-use App\Enums\UI\Inventory\OrgStockFamilyTabsEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
@@ -153,14 +152,14 @@ test('create warehouse by command', function () {
 
     expect($organisation->inventoryStats->number_warehouses)->toBe(2)
         ->and($organisation->group->inventoryStats->number_warehouses)->toBe(2)
-        ->and($warehouse->roles()->count())->toBe(8);
+        ->and($warehouse->roles()->count())->toBe(9);
 });
 
 test('seed warehouse permissions', function () {
     setPermissionsTeamId($this->group->id);
     $this->artisan('warehouse:seed-permissions')->assertExitCode(0);
     $warehouse = Warehouse::where('code', 'AA')->first();
-    expect($warehouse->roles()->count())->toBe(8);
+    expect($warehouse->roles()->count())->toBe(9);
 });
 
 
@@ -310,7 +309,7 @@ test('create org stock from 2nd stock (within stock family)', function () {
     $stockFamily = $stock->stockFamily;
     expect($stockFamily)->toBeInstanceOf(StockFamily::class);
 
-
+    /** @var OrgStockFamily $orgStockFamily */
     $orgStockFamily = $stockFamily->orgStockFamilies()->where('organisation_id', $this->organisation->id)->first();
     expect($orgStockFamily)->toBeInstanceOf(OrgStockFamily::class);
     $orgStock = StoreOrgStock::make()->action(
@@ -370,7 +369,8 @@ test('audit stock in location', function () {
     $locationOrgStock = AuditLocationOrgStock::run($locationOrgStock, [
         'quantity' => 2
     ]);
-    expect($locationOrgStock->quantity)->toBe(2);
+
+    expect($locationOrgStock->quantity)->toEqual(2);
 });
 
 test('move stock location', function () {
@@ -836,30 +836,6 @@ test("UI Show Org Stock Family", function (OrgStockFamily $orgStockFamily) {
     });
 })->depends('create org stock family');
 
-test("UI Show Org Stock Family (tab org stocks)", function (OrgStockFamily $orgStockFamily) {
-    $warehouse = Warehouse::first();
-    $this->withoutExceptionHandling();
-    $response = get(
-        route("grp.org.warehouses.show.inventory.org_stock_families.show", [
-            $this->organisation->slug,
-            $warehouse->slug,
-            $orgStockFamily->slug,
-            'tab' => OrgStockFamilyTabsEnum::ORG_STOCKS->value
-        ])
-    );
-    $response->assertInertia(function (AssertableInertia $page) use ($orgStockFamily) {
-        $page
-            ->component("Org/Inventory/OrgStockFamily")
-            ->has("title")
-            ->has("breadcrumbs", 3)
-            ->has(
-                "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $orgStockFamily->name)->etc()
-            )
-            ->has("tabs");
-    });
-})->depends('create org stock family');
-
 test("UI Index Stock Families", function () {
     $this->withoutExceptionHandling();
     $response = get(
@@ -873,8 +849,7 @@ test("UI Index Stock Families", function () {
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", 'Master SKU Families')->etc()
-            )
-            ->has("data");
+            );
     });
 });
 

@@ -14,10 +14,17 @@ use App\Actions\Comms\Mailshot\RunMailshotScheduled;
 use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
 use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
 use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns;
+use App\Actions\Comms\Outbox\LowStockInBasket\RunBasketLowStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
-use App\Actions\Comms\Outbox\ReorderRemainder\SendReorderRemainderEmails;
-use App\Actions\Comms\Outbox\RunBasketLowStockEmailBulkRuns;
+use App\Actions\Comms\Outbox\ReorderRemainder\RunReorderRemainderEmailBulkRuns;
+use App\Actions\CRM\Customer\PruneCustomerWebActivities;
+use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
+use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
+use App\Actions\Discounts\OfferCampaign\HydrateOfferCampaigns;
+use App\Actions\Web\Website\PruneWebsiteConversionEvents;
+use App\Actions\Web\Website\PruneWebsitePageViews;
+use App\Actions\Web\Website\PruneWebsiteVisitors;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
@@ -27,6 +34,7 @@ use App\Actions\Helpers\Intervals\ResetQuarterlyIntervals;
 use App\Actions\Helpers\Intervals\ResetWeeklyIntervals;
 use App\Actions\Helpers\Intervals\ResetYearIntervals;
 use App\Actions\Helpers\Isdoc\DeleteTempIsdoc;
+use App\Actions\HydrateHealthRank;
 use App\Actions\Retina\Dropshipping\Portfolio\PurgeDownloadPortfolioCustomerSalesChannel;
 use App\Actions\Transfers\FetchStack\ProcessFetchStacks;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
@@ -40,6 +48,60 @@ class Kernel extends ConsoleKernel
 
     protected function schedule(Schedule $schedule): void
     {
+        $this->logSchedule(
+            $schedule->job(RunNewsletterScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'RunNewsletterScheduled',
+            ),
+            name: 'RunNewsletterScheduled',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(RunMailshotScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'RunMailshotScheduled',
+            ),
+            name: 'RunMailshotScheduled',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(RunMailshotSecondWave::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'RunMailshotSecondWave',
+            ),
+            name: 'RunMailshotSecondWave',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(RunProspectMailshotScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'RunProspectMailshotScheduled',
+            ),
+            name: 'RunProspectMailshotScheduled',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(RunProspectMailshotSecondWave::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'RunProspectMailshotSecondWave',
+            ),
+            name: 'RunProspectMailshotSecondWave',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->command('run:current_stock_history')->twiceDailyAt(0, 22, 5)->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'RunCurrentStockHistory',
+            ),
+            name: 'RunCurrentStockHistory',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
         $schedule->command('horizon:snapshot')->everyFiveMinutes();
 
         $schedule->command('queue:prune-failed --hours=168')->daily();
@@ -98,6 +160,15 @@ class Kernel extends ConsoleKernel
                 monitorSlug: 'ResetDailyIntervals',
             ),
             name: 'ResetDailyIntervals',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(HydrateOfferCampaigns::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'HydrateOfferCampaignStats',
+            ),
+            name: 'HydrateOfferCampaignStats',
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
@@ -187,6 +258,16 @@ class Kernel extends ConsoleKernel
                 monitorSlug: 'FetchAuroraStockLocationsAroma',
             ),
             name: 'FetchAuroraStockLocationsAroma',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
+
+        $this->logSchedule(
+            $schedule->command('fetch:stock_movements -N -D 2')->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'FetchAuroraStockMovements',
+            ),
+            name: 'FetchAuroraStockMovements',
             type: 'command',
             scheduledAt: now()->format('H:i')
         );
@@ -319,7 +400,7 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->job(SaveWebsitesSitemap::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+            $schedule->job(SaveWebsitesSitemap::makeJob())->dailyAt('19:00')->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'SaveWebsitesSitemap',
             ),
             name: 'SaveWebsitesSitemap',
@@ -363,13 +444,21 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
+        $this->logSchedule(
+            $schedule->command('art hydrate:mismatch_detected')->weeklyOn(1, '03:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'HydrateMismatchDetected',
+            ),
+            name: 'HydrateMismatchDetected',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
 
 
         $this->logSchedule(
-            $schedule->job(SendReorderRemainderEmails::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'SendReorderRemainderEmails',
+            $schedule->job(RunReorderRemainderEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'RunReorderRemainderEmailBulkRuns',
             ),
-            name: 'SendReorderRemainderEmails',
+            name: 'RunReorderRemainderEmailBulkRuns',
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
@@ -402,52 +491,23 @@ class Kernel extends ConsoleKernel
         );
 
 
-        if (app()->environment('local')) {
-            $this->logSchedule(
-                $schedule->job(RunNewsletterScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'RunNewsletterScheduled',
-                ),
-                name: 'RunNewsletterScheduled',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
+        $this->logSchedule(
+            $schedule->job(RunPriceChangeNotificationEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'RunPriceChangeNotificationEmailBulkRuns',
+            ),
+            name: 'RunPriceChangeNotificationEmailBulkRuns',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
 
-            $this->logSchedule(
-                $schedule->job(RunMailshotScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'RunMailshotScheduled',
-                ),
-                name: 'RunMailshotScheduled',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->job(RunMailshotSecondWave::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'RunMailshotSecondWave',
-                ),
-                name: 'RunMailshotSecondWave',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-        }
-
-        // $this->logSchedule(
-        //     $schedule->job(RunPriceChangeNotificationEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-        //         monitorSlug: 'RunPriceChangeNotificationEmailBulkRuns',
-        //     ),
-        //     name: 'RunPriceChangeNotificationEmailBulkRuns',
-        //     type: 'job',
-        //     scheduledAt: now()->format('H:i')
-        // );
-
-        // $this->logSchedule(
-        //     $schedule->job(RunBasketLowStockEmailBulkRuns::makeJob())->hourly()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-        //         monitorSlug: 'RunBasketLowStockEmailBulkRuns',
-        //     ),
-        //     name: 'RunBasketLowStockEmailBulkRuns',
-        //     type: 'job',
-        //     scheduledAt: now()->format('H:i')
-        // );
+        $this->logSchedule(
+            $schedule->job(RunBasketLowStockEmailBulkRuns::makeJob())->hourly()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'RunBasketLowStockEmailBulkRuns',
+            ),
+            name: 'RunBasketLowStockEmailBulkRuns',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
 
         $this->logSchedule(
             $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
@@ -457,7 +517,77 @@ class Kernel extends ConsoleKernel
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
+        $this->logSchedule(
+            $schedule->command('dispatched-email:clean-provider-dispatch-id')->dailyAt('3:30')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'CleanProviderDispatchID',
+            ),
+            name: 'CleanProviderDispatchID',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
 
+        $this->logSchedule(
+            $schedule->job(HydrateHealthRank::makeJob())->dailyAt('04:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'HydrateHealthRank',
+            ),
+            name: 'HydrateHealthRank',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(PruneCustomerWebActivities::makeJob())->dailyAt('03:30')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'PruneCustomerWebActivities',
+            ),
+            name: 'PruneCustomerWebActivities',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(PruneWebsitePageViews::makeJob())->dailyAt('03:35')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'PruneWebsitePageViews',
+            ),
+            name: 'PruneWebsitePageViews',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(PruneWebsiteConversionEvents::makeJob())->dailyAt('03:40')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'PruneWebsiteConversionEvents',
+            ),
+            name: 'PruneWebsiteConversionEvents',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(PruneWebsiteVisitors::makeJob())->dailyAt('03:45')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'PruneWebsiteVisitors',
+            ),
+            name: 'PruneWebsiteVisitors',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->command(' offer:update_status_from_dates')->hourly()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'OfferUpdateStatusFromDates',
+            ),
+            name: 'OfferUpdateStatusFromDates',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->command('art clone:aurora_vol_gr_offers sk eu')->twiceDailyAt(12, 18)->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'CloneAuroraVolGrOffers',
+            ),
+            name: 'CloneAuroraVolGrOffers',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
     }
 
     protected function commands(): void

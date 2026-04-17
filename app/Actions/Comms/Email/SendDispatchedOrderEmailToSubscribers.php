@@ -36,13 +36,26 @@ class SendDispatchedOrderEmailToSubscribers extends OrgAction
         $outbox = $order->shop->outboxes()->where('code', OutboxCodeEnum::DELIVERY_NOTE_DISPATCHED->value)->first();
 
         $customer = $order->customer;
+        $deliveryNote = $order->deliveryNotes->first();
+        $invoice = $order->invoices?->first() ?? null;
+        $invoiceLink = '#';
+        $invoiceReference = '';
+
+        if ($invoice) {
+            $invoiceLink = route('grp.org.accounting.invoices.show', [
+                $order->organisation->slug,
+                $invoice->slug
+            ]);
+
+            $invoiceReference = $invoice->reference;
+        }
 
         $this->sendOutboxEmailToSubscribers(
             $outbox,
             additionalData: [
                 'customer_name' => $customer->name,
                 'order_reference' => $order->reference,
-                'date' => $order->created_at->format('F jS, Y'),
+                'dispatched_date' => $order->dispatched_at->format('F jS, Y'),
                 'order_link' => route('grp.org.shops.show.crm.customers.show.orders.show', [
                     $order->organisation->slug,
                     $order->shop->slug,
@@ -54,9 +67,15 @@ class SendDispatchedOrderEmailToSubscribers extends OrgAction
                     $order->shop->slug,
                     $customer->slug
                 ]),
-                'invoice_link' => route('grp.org.accounting.invoices.show', [
+                'invoice_link' => $invoiceLink,
+                'invoice_reference' => $invoiceReference,
+                'delivery_note_reference' => $deliveryNote->reference,
+                'delivery_note_link' => route('grp.org.shops.show.crm.customers.show.orders.show.delivery-note.show', [
                     $order->organisation->slug,
-                    $order->invoices->first()->slug
+                    $order->shop->slug,
+                    $order->customer->slug,
+                    $order->slug,
+                    $deliveryNote->slug
                 ]),
             ]
         );

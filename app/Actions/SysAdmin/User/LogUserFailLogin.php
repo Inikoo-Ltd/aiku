@@ -8,8 +8,9 @@
 
 namespace App\Actions\SysAdmin\User;
 
-use App\Actions\SysAdmin\WithLogRequest;
+use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\SysAdmin\User;
+use App\Models\UserFailedLogIn;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -17,14 +18,27 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class LogUserFailLogin
 {
     use AsAction;
-    use WithLogRequest;
 
-    public function handle(array $credentials, string $ip, string $userAgent, Carbon $datetime): void
+    public string $jobQueue = 'analytics';
+
+    public function handle(array $credentials, string $ip, string $userAgent, Carbon $datetime, array $geoLocation = []): void
     {
         $user = User::withTrashed()->where('username', Arr::get($credentials, 'username'))->first();
 
-        $this->logFail('users_requests', $datetime, $ip, $userAgent, Arr::get($credentials, 'username'), $user?->id);
+        $browserData = GetBrowserInfo::run($userAgent);
 
+        UserFailedLogIn::create(
+            [
+                'ip_address' => $ip,
+                'username'   => mb_substr(Arr::get($credentials, 'username', ''), 0, 254),
+                'user_id'    => $user->id ?? null,
+                'failed_at'  => $datetime,
+                'os'         => $browserData['os'],
+                'device'     => $browserData['device'],
+                'browser'    => $browserData['browser'],
+                'location'   => json_encode($geoLocation),
+            ]
+        );
 
         if ($user) {
             $stats = [
@@ -36,7 +50,6 @@ class LogUserFailLogin
             $user->stats()->update($stats);
         }
     }
-
 
 
 }

@@ -13,7 +13,8 @@ use App\Actions\Web\WebBlock\GetWebBlockBlog;
 use App\Actions\Web\WebBlock\GetWebBlockCollection;
 use App\Actions\Web\WebBlock\GetWebBlockDepartment;
 use App\Actions\Web\WebBlock\GetWebBlockFamilies;
-use App\Actions\Web\WebBlock\GetWebBlockFamily;
+use App\Actions\Web\WebBlock\GetWebBlockFamiliesOverview;
+use App\Actions\Web\WebBlock\GetWebBlockFamilyDescription;
 use App\Actions\Web\WebBlock\GetWebBlockLuigiRecommendations;
 use App\Actions\Web\WebBlock\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\GetWebBlockProducts;
@@ -34,6 +35,8 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetBlockSubDepartment::run($webpage, $webBlock);
         } elseif ($webBlockType == 'collection-description-1') {
             $parsedWebBlocks[$key] = GetWebBlockCollection::run($webpage, $webBlock);
+        } elseif (str_starts_with($webBlockType, 'families-') &&  str_ends_with($webBlockType, '-overview')) {
+            $parsedWebBlocks[$key] = GetWebBlockFamiliesOverview::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'sub-departments-')) {
             $parsedWebBlocks[$key] = GetWebBlockSubDepartments::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'families-')) {
@@ -41,7 +44,11 @@ trait WithFillIrisWebBlocks
         } elseif (str_contains($webBlockType, 'products-')) {
             $parsedWebBlocks[$key] = GetWebBlockProducts::run($webpage, $webBlock, $isLoggedIn);
         } elseif ($webBlockType == 'family-1') {
-            $parsedWebBlocks[$key] = GetWebBlockFamily::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetWebBlockFamilyDescription::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'family-2') {
+            $parsedWebBlocks[$key] = GetWebBlockFamilyDescription::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'family-2-extra-description') {
+            $parsedWebBlocks[$key] = GetWebBlockFamilyDescription::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'product-')) {
             $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock, $isIris);
         } elseif ($webBlockType == 'see-also-1') {

@@ -183,6 +183,7 @@ const updateTab = (value: string) => {
 						:field="colSlug"
 						:frozen="columnHeader.frozen"
 						:alignFrozen="columnHeader.alignFrozen"
+						:style="columnHeader.type === 'icon' ? { width: '1px', whiteSpace: 'nowrap' } : {}"
 					>
 						<template #header>
 							<div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2 font-semibold text-gray-600"
@@ -254,6 +255,11 @@ const updateTab = (value: string) => {
 :deep(.p-datatable-scrollable .p-datatable-frozen-column) {
     position: sticky;
     background: var(--p-datatable-header-cell-background);
+    z-index: 3;
+}
+
+:deep(.p-datatable-scrollable .p-datatable-tbody > tr > td) {
+    z-index: 1;
 }
 
 :deep(.p-datatable-footer){

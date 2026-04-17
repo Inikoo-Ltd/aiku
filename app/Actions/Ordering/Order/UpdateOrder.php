@@ -10,20 +10,15 @@ namespace App\Actions\Ordering\Order;
 
 use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInOrders;
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInOrders;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\Search\OrderRecordSearch;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCustomerUpdateIntervals;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
-use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
@@ -75,15 +70,23 @@ class UpdateOrder extends OrgAction
         }
 
 
-        if (count($changes) > 0) {
-            if (Arr::has($changes, 'updated_by_customer_at')) {
-                $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
-                GroupHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->group, $intervalsExceptHistorical, []);
-                OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->organisation, $intervalsExceptHistorical, []);
-                ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
-                MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->master_shop_id, $intervalsExceptHistorical, []);
-            }
+        if ($oldState != $order->state) {
+            $this->orderHydrators($order);
+            $this->orderHandlingHydrators($order, $oldState, 30);
+            $this->orderHandlingHydrators($order, $order->state, 30);
+        }
 
+        if ($oldPlatform != $order->platform) {
+            if ($order->platform) {
+                PlatformHydrateOrders::dispatch($order->platform)->delay($this->hydratorsDelay);
+            }
+            if ($oldPlatform) {
+                PlatformHydrateOrders::dispatch($oldPlatform)->delay($this->hydratorsDelay);
+            }
+        }
+
+
+        if (count($changes) > 0) {
             $deliveryNote = $order->deliveryNotes()->where('delivery_notes.type', DeliveryNoteTypeEnum::ORDER)->first();
             if ($deliveryNote) {
                 if (Arr::has($changes, 'collection_address_id') && !in_array($deliveryNote->state, [DeliveryNoteStateEnum::CANCELLED, DeliveryNoteStateEnum::DISPATCHED])) {
@@ -127,19 +130,6 @@ class UpdateOrder extends OrgAction
             }
 
 
-            if (array_key_exists('state', $changedFields)) {
-                $this->orderHydrators($order);
-                $this->orderHandlingHydrators($order, $oldState);
-                $this->orderHandlingHydrators($order, $order->state);
-            }
-            if (array_key_exists('platform_id', $changedFields)) {
-                if ($order->platform) {
-                    PlatformHydrateOrders::dispatch($order->platform)->delay($this->hydratorsDelay);
-                } elseif ($oldPlatform) {
-                    PlatformHydrateOrders::dispatch($oldPlatform)->delay($this->hydratorsDelay);
-                }
-            }
-
             if (Arr::hasAny($changedFields, ['reference', 'state', 'net_amount', 'payment_amount', 'date'])) {
                 OrderRecordSearch::dispatch($order);
             }
@@ -167,6 +157,12 @@ class UpdateOrder extends OrgAction
             if (Arr::has($changedFields, 'is_shipping_by_external')) {
                 $deliveryNote = $order->deliveryNotes()->where('delivery_notes.type', DeliveryNoteTypeEnum::ORDER)->first();
                 UpdateDeliveryNote::run($deliveryNote, ['is_shipping_by_external' => $order->is_shipping_by_external]);
+            }
+
+            if (Arr::has($changedFields, 'internal_notes')) {
+                foreach ($order->deliveryNotes()->whereNotIn('delivery_notes.state', [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::CANCELLED])->get() as $deliveryNote) {
+                    UpdateDeliveryNote::run($deliveryNote, ['internal_notes' => $order->internal_notes]);
+                }
             }
         }
 

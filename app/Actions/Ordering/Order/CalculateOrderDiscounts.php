@@ -53,6 +53,7 @@ class CalculateOrderDiscounts
                     'department_id'
                 ])
                 ->where('order_id', $order->id)
+                ->where('quantity_ordered', '>', 0)
                 ->where('model_type', 'Product')
                 ->whereNull('deleted_at')
                 ->get()
@@ -62,20 +63,27 @@ class CalculateOrderDiscounts
         }
         $this->processDiscretionaryOffers($order);
 
-        DB::table('transaction_has_offer_allowances')->where('order_id', $order->id)->delete();
-        DB::table('transactions')->where('order_id', $order->id)->update([
-            'net_amount'  => DB::raw('gross_amount'),
-            'offers_data' => []
-        ]);
+        DB::table('transaction_has_offer_allowances')
+            ->where('is_gift', false)
+            ->where('order_id', $order->id)->delete();
+        DB::table('transactions')->where('order_id', $order->id)
+            ->where('quantity_ordered', '>', 0)
+            ->update([
+                'net_amount'  => DB::raw('gross_amount'),
+                'offers_data' => []
+            ]);
 
         foreach ($this->transactions as $transaction) {
             if (property_exists($transaction, 'with_offer')) {
+                $discountsRatio = 1 - $transaction->discounted_percentage ?? 0;
+
                 DB::table('transactions')->where('id', $transaction->id)
                     ->update(
                         [
-                            'gross_amount' => $transaction->gross_amount,
-                            'net_amount'   => $transaction->net_amount,
-                            'offers_data'  => [
+                            'gross_amount'            => $transaction->gross_amount,
+                            'net_amount'              => $transaction->net_amount,
+                            'current_discount_factor' => $discountsRatio,
+                            'offers_data'             => [
                                 'v' => 1,
                                 'o' => [
                                     'oc'  => $transaction->offer_campaign_id,
@@ -142,8 +150,8 @@ class CalculateOrderDiscounts
                 if ($passAmount && $passOrderNumber) {
                     $enabledOffers[$offerData->allowance_signature] = [
                         'offer_id'    => $offerData->id,
-                        'offer_label' => $offerData->name
-
+                        'offer_label' => $offerData->name,
+                        'sub_trigger' => 'fob',
                     ];
                 }
                 if ($passOrderNumber) {
@@ -165,6 +173,17 @@ class CalculateOrderDiscounts
                     $triggerData = json_decode($offerData->trigger_data, true);
 
                     if (Arr::get($order->categories_data, "family.$offerData->trigger_id.quantity", 0) >= Arr::get($triggerData, 'item_quantity')) {
+                        $enabledOffers[$offerData->allowance_signature] = [
+                            'offer_id'    => $offerData->id,
+                            'offer_label' => $offerData->name,
+                        ];
+                    }
+                }
+            } elseif ($offerData->type == 'Category Amount Ordered') {
+                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'family_ids', []))) {
+                    $triggerData = json_decode($offerData->trigger_data, true);
+
+                    if (Arr::get($order->categories_data, "family.$offerData->trigger_id.net_amount", 0) >= Arr::get($triggerData, 'item_amount')) {
                         $enabledOffers[$offerData->allowance_signature] = [
                             'offer_id'    => $offerData->id,
                             'offer_label' => $offerData->name,

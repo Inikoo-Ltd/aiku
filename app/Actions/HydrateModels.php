@@ -107,6 +107,10 @@ class HydrateModels extends HydrateModel
             $this->hydrateDropshipping($command);
         }
 
+        if ($this->checkIfCanHydrate(['stock_histories', 'sh'], $command)) {
+            $this->hydrateStockHistories($command);
+        }
+
         return 0;
     }
 
@@ -179,16 +183,11 @@ class HydrateModels extends HydrateModel
     {
         $command->info('Catalogue section 📚');
         $command->call('hydrate:shops_sales');
-        $command->call('hydrate:departments_sales');
-        $command->call('hydrate:sub_departments_sales');
-        $command->call('hydrate:families_sales');
-        $command->call('hydrate:assets_sales');
     }
 
     protected function hydrateBillables(Command $command): void
     {
         $command->info('Billables section 💸');
-        $command->call('hydrate:charges');
         $command->call('hydrate:shipping_zone_schemas');
         $command->call('hydrate:shipping_zones');
     }
@@ -292,6 +291,13 @@ class HydrateModels extends HydrateModel
         $command->info('CRM section 👸🏻');
         $command->call('hydrate:customers');
         $command->call('hydrate:web_users');
+    }
+
+    protected function hydrateStockHistories(Command $command): void
+    {
+        $command->info('Stock History section 🗃️');
+        $command->call('hydrate:group_stock_histories');
+        $command->call('hydrate:organisation_stock_histories');
     }
 
     protected function hydrateFulfilment(Command $command): void

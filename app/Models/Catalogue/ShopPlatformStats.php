@@ -50,13 +50,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_customer_sales_channel_broken
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string $sales
- * @property string $sales_org_currency
- * @property string $sales_grp_currency
+ * @property numeric $sales
+ * @property numeric $sales_org_currency
+ * @property numeric $sales_grp_currency
  * @property int $number_orders_state_picked
  * @property int $number_orders_state_packing
  * @property-read Platform $platform
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopPlatformStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopPlatformStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopPlatformStats query()

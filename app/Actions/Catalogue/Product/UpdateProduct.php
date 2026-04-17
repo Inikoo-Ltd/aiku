@@ -12,7 +12,6 @@ use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
-use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
@@ -260,19 +259,6 @@ class UpdateProduct extends OrgAction
             CustomerHydrateExclusiveProducts::dispatch($product->exclusive_for_customer_id)->delay($this->hydratorsDelay);
         }
 
-        if (Arr::hasAny(
-            $changed,
-            [
-                'code',
-                'name',
-                'description',
-                'state',
-                'price',
-            ]
-        )) {
-            ProductRecordSearch::dispatch($product);
-        }
-
         $isOutOfStock = $product->available_quantity > 0;
 
 
@@ -468,10 +454,12 @@ class UpdateProduct extends OrgAction
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
             'has_live_webpage'             => ['sometimes', 'boolean'],
             'marketplace_id'               => ['sometimes'],
+            'not_follow_master_trade_units' => ['sometimes', 'boolean']
         ];
 
 
         if (!$this->strict) {
+            $rules['marketplace_second_id']     = ['sometimes', 'nullable', 'string'];
             $rules['code']                      = ['sometimes', 'string'];
             $rules['org_stocks']                = ['sometimes', 'nullable', 'array'];
             $rules['gross_weight']              = ['sometimes', 'integer', 'gt:0'];

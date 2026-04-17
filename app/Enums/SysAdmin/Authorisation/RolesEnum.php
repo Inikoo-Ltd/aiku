@@ -48,6 +48,7 @@ enum RolesEnum: string
     case PROCUREMENT_SUPERVISOR = 'procurement-supervisor';
 
     case DISPATCH_CLERK = 'dispatch-clerk';
+    case DISPATCH_EXCEPTION_CLERK = 'dispatch-exception-clerk';
     case DISPATCH_SUPERVISOR = 'dispatch-supervisor';
 
 
@@ -120,6 +121,7 @@ enum RolesEnum: string
             RolesEnum::PROCUREMENT_CLERK => __('Procurement clerk'),
             RolesEnum::PROCUREMENT_SUPERVISOR => __('Procurement supervisor'),
             RolesEnum::DISPATCH_CLERK => __('Dispatching clerk'),
+            RolesEnum::DISPATCH_EXCEPTION_CLERK => __('Dispatching exception clerk'),
             RolesEnum::DISPATCH_SUPERVISOR => __('Dispatching supervisor'),
             RolesEnum::ORG_ADMIN => __('Organisation admin'),
             RolesEnum::HUMAN_RESOURCES_CLERK => __('Human resources clerk'),
@@ -232,6 +234,11 @@ enum RolesEnum: string
                 WarehousePermissionsEnum::LOCATIONS_VIEW,
                 WarehousePermissionsEnum::DISPATCHING,
                 OrganisationPermissionsEnum::INVENTORY_VIEW
+            ],
+            RolesEnum::DISPATCH_EXCEPTION_CLERK => [
+                WarehousePermissionsEnum::LOCATIONS_VIEW,
+                WarehousePermissionsEnum::EXCEPTION_DISPATCHING,
+                OrganisationPermissionsEnum::INVENTORY_EDIT
             ],
             RolesEnum::DISPATCH_SUPERVISOR => [
                 WarehousePermissionsEnum::LOCATIONS_VIEW,
@@ -505,6 +512,7 @@ enum RolesEnum: string
             RolesEnum::FULFILMENT_WAREHOUSE_WORKER,
             RolesEnum::WAREHOUSE_ADMIN,
             RolesEnum::DISPATCH_CLERK,
+            RolesEnum::DISPATCH_EXCEPTION_CLERK,
             RolesEnum::DISPATCH_SUPERVISOR,
             RolesEnum::GOODS_IN_CLERK,
             RolesEnum::GOODS_IN_SUPERVISOR,
@@ -554,6 +562,7 @@ enum RolesEnum: string
             RolesEnum::PROCUREMENT_CLERK,
             RolesEnum::PROCUREMENT_SUPERVISOR,
             RolesEnum::DISPATCH_CLERK,
+            RolesEnum::DISPATCH_EXCEPTION_CLERK,
             RolesEnum::DISPATCH_SUPERVISOR,
             RolesEnum::WAREHOUSE_ADMIN,
             RolesEnum::STOCK_CONTROLLER,

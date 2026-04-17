@@ -10,12 +10,13 @@ import PageHeading from '@/Components/Headings/PageHeading.vue';
 
 
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faEnvelope, faIdCard, faPhone, faSignature, faUser, faBuilding, faBirthdayCake, faVenusMars, faHashtag, faHeading, faHospitalUser, faClock, faPaperclip, faTimes, faCameraRetro, faQrcode } from '@fal';
+import { faEnvelope, faIdCard, faPhone, faSignature, faUser, faBuilding, faBirthdayCake, faVenusMars, faHashtag, faHeading, faHospitalUser, faClock, faPaperclip, faTimes, faCameraRetro, faQrcode, faUserShield } from '@fal';
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { computed, defineAsyncComponent, ref } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import ClockingMachineShowcase from "./ClockingMachinesShowcase.vue";
 import TableClockings from "@/Components/Tables/Grp/Org/HumanResources/TableClockings.vue";
+import TableClockingPolicies from "@/Components/Tables/Grp/Org/HumanResources/TableClockingPolicies.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import ScanQrCode from "./ScanQrCode.vue";
 import { capitalize } from "@/Composables/capitalize"
@@ -40,7 +41,8 @@ library.add(
     faTimes,
     faCameraRetro,
     faBuilding,
-    faQrcode
+    faQrcode,
+    faUserShield
 );
 
 
@@ -57,6 +59,7 @@ const props = defineProps<{
     history?: Record<string, any>;
     showcase?: Record<string, any>;
     scan_qr_code?: Record<string, any>;
+    clocking_policies?: Record<string, any>;
 }>()
 
 let currentTab = ref(props.tabs.current);
@@ -69,6 +72,7 @@ const component = computed(() => {
         showcase: ClockingMachineShowcase,
         history: TableHistories,
         scan_qr_code: ScanQrCode,
+        clocking_policies: TableClockingPolicies,
     };
     return components[currentTab.value as keyof typeof components];
 

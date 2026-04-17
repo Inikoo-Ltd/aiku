@@ -1,11 +1,10 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 26-05-2025-14h-07m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 26 May 2025 14:07 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Dispatching\Picking;
 
@@ -15,6 +14,8 @@ use App\Enums\Dispatching\Picking\PickingEngineEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use App\Models\Inventory\LocationOrgStock;
+use Carbon\Carbon;
+use Exception;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -27,16 +28,37 @@ class PickAllItem extends OrgAction
 
     protected DeliveryNoteItem $deliveryNoteItem;
 
-    public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): Picking
+    public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): ?Picking
     {
-        $toPickQuantity = $deliveryNoteItem->quantity_required - $deliveryNoteItem->quantity_picked;
+        // If locked, will skip the process
+        if ($deliveryNoteItem->locked_at && (Carbon::parse($deliveryNoteItem->locked_at)->diffInSeconds(now()) < 3)) {
+            return null;
+        }
 
-        $locationOrgStock = LocationOrgStock::find($modelData['location_org_stock_id']);
+        $deliveryNoteItem->update(['locked_at' => now()]);
+
+        try {
+            $toPickQuantity = $deliveryNoteItem->quantity_required
+                - $deliveryNoteItem->quantity_picked
+                - $deliveryNoteItem->quantity_waiting_warehouse
+                - $deliveryNoteItem->quantity_waiting_crm;
 
 
-        data_set($modelData, 'quantity', min($toPickQuantity, $locationOrgStock->quantity));
+            $locationOrgStock = LocationOrgStock::find($modelData['location_org_stock_id']);
 
-        return StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
+
+            data_set($modelData, 'quantity', min($toPickQuantity, $locationOrgStock->quantity));
+
+            $picking = StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
+
+            $deliveryNoteItem->update(['locked_at' => null]);
+
+            return $picking;
+        } catch (Exception) {
+            $deliveryNoteItem->update(['locked_at' => null]);
+
+            return null;
+        }
     }
 
     public function rules(): array
@@ -70,7 +92,7 @@ class PickAllItem extends OrgAction
         $this->handle($deliveryNoteItem, $this->validatedData);
     }
 
-    public function action(DeliveryNoteItem $deliveryNoteItem, array $modelData): Picking
+    public function action(DeliveryNoteItem $deliveryNoteItem, array $modelData): ?Picking
     {
         $this->deliveryNoteItem = $deliveryNoteItem;
         $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);

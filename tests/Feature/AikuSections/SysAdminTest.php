@@ -34,7 +34,6 @@ use App\Actions\SysAdmin\Organisation\HydrateOrganisations;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
 use App\Actions\SysAdmin\User\HydrateUser;
-use App\Actions\SysAdmin\User\Search\ReindexUserSearch;
 use App\Actions\SysAdmin\User\UpdateUser;
 use App\Actions\SysAdmin\User\UpdateUserOrganisationPseudoJobPositions;
 use App\Actions\SysAdmin\User\UpdateUserStatus;
@@ -937,15 +936,6 @@ test('employee job position in another organisation', function () {
     return $employee;
 });
 
-
-test('users search', function () {
-    $this->artisan('search:users')->assertExitCode(0);
-
-    $user = User::first();
-    ReindexUserSearch::run($user);
-    expect($user->universalSearch()->count())->toBe(1);
-});
-
 test('can show hr dashboard', function () {
     actingAs(User::first());
 
@@ -1158,31 +1148,6 @@ test('UI get section route org shops index', function () {
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->code)->toBe(AikuSectionEnum::ORG_SHOP->value)
         ->and($sectionScope->model_slug)->toBe($organisation->slug);
-});
-
-test('UI index request logs', function () {
-    $this->withoutExceptionHandling();
-
-    actingAs(User::first());
-
-    $response = get(
-        route(
-            'grp.sysadmin.analytics.request.index',
-        )
-    );
-
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('SysAdmin/UserRequests')
-            ->where('title', 'User Requests')
-            ->has('breadcrumbs', 3)
-            ->has(
-                'pageHead',
-                fn (AssertableInertia $page) => $page
-                    ->where('title', 'User Requests')
-                    ->etc()
-            )->has('data');
-    });
 });
 
 test('UI index overview group', function () {

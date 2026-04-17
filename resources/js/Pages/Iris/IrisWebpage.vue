@@ -5,28 +5,30 @@
   -->
 
 <script setup lang="ts">
-import { inject, ref, onMounted, onBeforeUnmount } from 'vue'
+import { inject, ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { faCheck, faPlus, faMinus } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { Head } from '@inertiajs/vue3'
 import LayoutIris from '@/Layouts/Iris.vue'
 import { getIrisComponent } from '@/Composables/getIrisComponents'
-
+import { usePage } from '@inertiajs/vue3'
+import ReviewByStore from "@/Components/CMS/Reviews/ReviewByStore.vue"
 
 const props = defineProps<{
   webpage_data : any
   web_blocks: any,
   webpage_img : any,
+  index_page: boolean,
+  follow_link: boolean
 }>()
 
 defineOptions({ layout: LayoutIris })
 library.add(faCheck, faPlus, faMinus)
 
 const layout: any = inject("layout", {})
-
+const review = ref(usePage().props?.iris?.website?.reviews_settings)
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const currentUrl = ref('')
-
 
 const checkScreenType = () => {
   const width = window.innerWidth
@@ -34,6 +36,13 @@ const checkScreenType = () => {
   else if (width >= 640 && width < 1024) screenType.value = 'tablet'
   else screenType.value = 'desktop'
 }
+
+const robotsContent = computed(() => {
+  const index = props.index_page ? 'index' : 'noindex'
+  const follow = props.follow_link ? 'follow' : 'nofollow'
+  return `${index}, ${follow}`
+})
+
 
 onMounted(() => {
   currentUrl.value = window.location.href
@@ -71,13 +80,15 @@ onBeforeUnmount(() => {
 })
 
 
-
-
 </script>
 
 <template>
     <Head>
         <title>{{ webpage_data.title }}</title>
+        <meta
+          name="robots"
+          :content="robotsContent"
+        />
         <meta name="description" :content="webpage_data.description" />
         <meta property="og:type" content="website" />
         <meta property="og:title" :content="webpage_data.title" />
@@ -102,6 +113,11 @@ onBeforeUnmount(() => {
           :is="getIrisComponent(web_block_data.type, { shop_type: layout.retina.type })"
           :theme="layout?.app?.theme" :key="web_block_data_idx"
           :fieldValue="web_block_data.web_block.layout.data.fieldValue" />
+
+       
+      </div>
+      <div v-if="(webpage_data.type == 'storefront' || webpage_data.model_type == 'ProductCategory') && (review?.enabled ?? true)" class="my-10">
+          <ReviewByStore :code="'review-by-store'" />
       </div>
   </div>
 </template>

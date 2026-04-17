@@ -37,15 +37,19 @@ class RedoOrgStockFamilyTimeSeries implements ShouldBeUnique
     public function handle(OrgStockFamily $orgStockFamily, bool $async = false, ?string $from = null, ?string $to = null): void
     {
         if (!$from || !$to) {
-            $firstInvoicedDate = DB::table('invoice_transaction_has_org_stocks')->where('org_stock_family_id', $orgStockFamily->id)->min('date');
-            $lastInvoicedDate  = DB::table('invoice_transaction_has_org_stocks')->where('org_stock_family_id', $orgStockFamily->id)->max('date');
+            $dateRange = DB::table('invoice_transactions')
+                ->join('invoice_transaction_has_org_stocks', 'invoice_transaction_has_org_stocks.invoice_transaction_id', '=', 'invoice_transactions.id')
+                ->where('invoice_transaction_has_org_stocks.org_stock_family_id', $orgStockFamily->id)
+                ->whereNull('invoice_transactions.deleted_at')
+                ->selectRaw('MIN(invoice_transactions.date) as first_date, MAX(invoice_transactions.date) as last_date')
+                ->first();
 
-            if (!$firstInvoicedDate) {
+            if (!$dateRange?->first_date) {
                 return;
             }
 
-            $from = $from ?? Carbon::parse($firstInvoicedDate)->toDateString();
-            $to   = $to ?? Carbon::parse($lastInvoicedDate ?? now())->toDateString();
+            $from = $from ?? Carbon::parse($dateRange->first_date)->toDateString();
+            $to   = $to ?? Carbon::parse($dateRange->last_date ?? now())->toDateString();
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
@@ -63,11 +67,17 @@ class RedoOrgStockFamilyTimeSeries implements ShouldBeUnique
         $query     = DB::table($tableName)->select('id')->orderBy('id', 'desc');
 
         $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($from, $to) {
+            $ids   = $modelsData->pluck('id')->all();
+            $model = new $this->model();
+            $instances = $this->hasSoftDeletes($model)
+                ? $model->withTrashed()->whereIn('id', $ids)->get()->keyBy('id')
+                : $model->whereIn('id', $ids)->get()->keyBy('id');
+
             foreach ($modelsData as $modelId) {
-                $model    = (new $this->model());
-                $instance = $this->hasSoftDeletes($model)
-                    ? $model->withTrashed()->find($modelId->id)
-                    : $model->find($modelId->id);
+                $instance = $instances->get($modelId->id);
+                if (!$instance) {
+                    continue;
+                }
 
                 try {
                     $this->handle($instance, false, $from, $to);
@@ -89,11 +99,18 @@ class RedoOrgStockFamilyTimeSeries implements ShouldBeUnique
         $bar->start();
 
         $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($bar, $command) {
+            $ids   = $modelsData->pluck('id')->all();
+            $model = new $this->model();
+            $instances = $this->hasSoftDeletes($model)
+                ? $model->withTrashed()->whereIn('id', $ids)->get()->keyBy('id')
+                : $model->whereIn('id', $ids)->get()->keyBy('id');
+
             foreach ($modelsData as $modelId) {
-                $model    = (new $this->model());
-                $instance = $this->hasSoftDeletes($model)
-                    ? $model->withTrashed()->find($modelId->id)
-                    : $model->find($modelId->id);
+                $instance = $instances->get($modelId->id);
+                if (!$instance) {
+                    $bar->advance();
+                    continue;
+                }
 
                 try {
                     $this->handle($instance, (bool) $command->option('async'), $command->option('from'), $command->option('to'));

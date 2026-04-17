@@ -10,10 +10,9 @@ namespace App\Actions\Ordering\Order\UpdateState;
 
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
-use App\Actions\Catalogue\Shop\External\Faire\CancelFaireOrder;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
-use App\Actions\Dropshipping\Shopify\Fulfilment\CancelFulfillOrderToShopify;
+use App\Actions\Dropshipping\Shopify\Fulfilment\CloseFulfillOrderToShopify;
 use App\Actions\Dropshipping\Tiktok\Order\CancelFulfillOrderTiktok;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\HasOrderHydrators;
@@ -48,6 +47,9 @@ class CancelOrder extends OrgAction
     private Order $order;
 
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Order $order): Order
     {
         $oldState = $order->state;
@@ -106,7 +108,9 @@ class CancelOrder extends OrgAction
 
         $deliveryNotes = $order->deliveryNotes;
         foreach ($deliveryNotes as $deliveryNote) {
-            CancelDeliveryNote::make()->action($deliveryNote, false);
+            if ($deliveryNote->state != DeliveryNoteStateEnum::CANCELLED) {
+                CancelDeliveryNote::make()->action($deliveryNote, false);
+            }
         }
 
         if ($oldState == OrderStateEnum::CREATING) {
@@ -114,9 +118,9 @@ class CancelOrder extends OrgAction
         }
 
         if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
-            if ($order->customerSalesChannel?->user && app()->isProduction()) {
+            if ($order->customerSalesChannel?->user) {
                 match ($order->customerSalesChannel->platform->type) {
-                    PlatformTypeEnum::SHOPIFY => CancelFulfillOrderToShopify::run($order),
+                    PlatformTypeEnum::SHOPIFY => CloseFulfillOrderToShopify::run($order),
                     PlatformTypeEnum::TIKTOK => CancelFulfillOrderTiktok::run($order),
                     default => null,
                 };
@@ -127,9 +131,6 @@ class CancelOrder extends OrgAction
             }
         }
 
-        if ($order->shop->type == ShopTypeEnum::EXTERNAL && $order->external_id && app()->isProduction()) {
-            CancelFaireOrder::run($order->shop, $order);
-        }
 
         $this->orderHydrators($order);
         $this->orderHandlingHydrators($order, $oldState);

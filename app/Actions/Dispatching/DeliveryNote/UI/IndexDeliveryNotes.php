@@ -61,7 +61,10 @@ class IndexDeliveryNotes extends OrgAction
             $model     = __('Goods Out');
         }
 
-        $todo = $this->bucket == 'unassigned' || $this->bucket == 'queued';
+        $isQueueBucket = in_array($this->bucket, ['unassigned', 'queued'], true);
+        $isHiddenShop  = !in_array($this->shopType, ['b2b', 'external'], true);
+
+        $todo = $isQueueBucket && $isHiddenShop;
 
         $pickingSessionRoute = [
                     'name' => 'grp.models.warehouse.picking_session.store',
@@ -323,6 +326,27 @@ class IndexDeliveryNotes extends OrgAction
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
 
         return $this->handle(parent: $warehouse, bucket: $this->bucket);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inWarehouse(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $warehouse;
+        $this->bucket = 'inWarehouse';
+        $this->shopType = 'all';
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
+
+        return $this->handle(parent: $warehouse, bucket: $this->bucket);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inWarehouseShopTypes(Organisation $organisation, Warehouse $warehouse, string $shopType, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $warehouse;
+        $this->bucket = 'inWarehouse';
+        $this->shopType = $shopType;
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
+
+        return $this->handle(parent: $warehouse, bucket: $this->bucket, shopType: $shopType);
     }
 
 

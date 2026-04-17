@@ -57,25 +57,31 @@ class EditDepartment extends OrgAction
         }
         $languages = [$department->shop->language_id => LanguageResource::make($department->shop->language)->resolve()];
 
-        $warning = [];
+        $warning                     = [];
         $forceFollowMasterDepartment = data_get($department->shop->settings, 'catalog.department_follow_master');
 
         if ($department->masterProductCategory && $forceFollowMasterDepartment) {
             $warning = [
-                'warning'     => [
+                'warning' => [
                     'type'  => 'warning',
                     'title' => 'Warning',
-                    // 'text'  => __('Changing name or description may affect master department .'), // Isn't true anymore. Not neccessarily the case. Turned off
                     'text'  => __('This shop has enabled the Department force follow master setting. Updates made on master will overwrite local changes'),
                     'icon'  => ['fas', 'fa-exclamation-triangle'],
                 ]
             ];
         }
 
+        $webOptions = $department->webpages->mapWithKeys(fn ($item) => [
+            $item->id => [
+                'label' => $item->slug,
+                'id'    => $item->id
+            ]
+        ]);
+
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('department'),
+                'title'       => __('Department'),
                 ...$warning,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
@@ -109,7 +115,7 @@ class EditDepartment extends OrgAction
                         ]
                     ]
                 ],
-                'formData' => [
+                'formData'    => [
                     'blueprint' =>
                         array_filter(
                             [
@@ -145,24 +151,24 @@ class EditDepartment extends OrgAction
                                                 'label' => __('Name'),
                                                 'value' => $department->name
                                             ],
-                                      /*   'description_title' => $department->masterProductCategory
-                                            ? [
-                                                'type'          => 'input_translation',
-                                                'label'         => __('description title'),
-                                                'language_from' => 'en',
-                                                'full'          => true,
-                                                'main'          => $department->masterProductCategory->description_title,
-                                                'languages'     => $languages,
-                                                'mode'          => 'single',
-                                                'value'         => $department->description_title,
-                                                'reviewed'      => $department->is_description_title_reviewed
+                                        /*   'description_title' => $department->masterProductCategory
+                                              ? [
+                                                  'type'          => 'input_translation',
+                                                  'label'         => __('description title'),
+                                                  'language_from' => 'en',
+                                                  'full'          => true,
+                                                  'main'          => $department->masterProductCategory->description_title,
+                                                  'languages'     => $languages,
+                                                  'mode'          => 'single',
+                                                  'value'         => $department->description_title,
+                                                  'reviewed'      => $department->is_description_title_reviewed
 
-                                            ]
-                                            : [
-                                                'type'  => 'input',
-                                                'label' => __('description title'),
-                                                'value' => $department->description_title
-                                            ], */
+                                              ]
+                                              : [
+                                                  'type'  => 'input',
+                                                  'label' => __('description title'),
+                                                  'value' => $department->description_title
+                                              ], */
                                         'description'       => $department->masterProductCategory
                                             ? [
                                                 'type'          => 'textEditor_translation',
@@ -174,23 +180,73 @@ class EditDepartment extends OrgAction
                                                 'mode'          => 'single',
                                                 'value'         => $department->description,
                                                 'reviewed'      => $department->is_description_reviewed,
-                                                'toogle'  => [
-                                                        'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                                        'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                        'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                                'routeGetInternalLink' => [
+                                                    'name' => 'grp.org.shops.show.web.webpages.index',
+                                                    'parameters' => [
+                                                        'shop' => $department->shop->slug,
+                                                        'organisation' => $department->organisation->slug,
+                                                        'website' => $department->shop->website?->slug
+                                                    ]
+                                                ],
+                                                'toogle'        => [
+                                                    'heading2',
+                                                    'heading3',
+                                                    'fontSize',
+                                                    'bold',
+                                                    'italic',
+                                                    'underline',
+                                                    'bulletList',
+                                                    "fontFamily",
+                                                    'orderedList',
+                                                    'blockquote',
+                                                    'divider',
+                                                    'alignLeft',
+                                                    'alignRight',
+                                                    "customLink",
+                                                    'alignCenter',
+                                                    'undo',
+                                                    'redo',
+                                                    'highlight',
+                                                    'color',
+                                                    'clear'
                                                 ],
                                             ]
                                             : [
-                                                'type'  => 'textEditor',
-                                                'label' => __('Description'),
-                                                'value' => $department->description,
+                                                'type'    => 'textEditor',
+                                                'label'   => __('Description'),
+                                                'value'   => $department->description,
                                                 'options' => [
                                                     'counter' => true,
                                                 ],
+                                               'routeGetInternalLink' => [
+                                                    'name' => 'grp.org.shops.show.web.webpages.index',
+                                                    'parameters' => [
+                                                        'shop' => $department->shop->slug,
+                                                        'organisation' => $department->organisation->slug,
+                                                        'website' => $department->shop->website?->slug
+                                                    ]
+                                                ],
                                                 'toogle'  => [
-                                                        'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                                        'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                        'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                                    'heading2',
+                                                    'heading3',
+                                                    'fontSize',
+                                                    'bold',
+                                                    'italic',
+                                                    'underline',
+                                                    'bulletList',
+                                                    "fontFamily",
+                                                    'orderedList',
+                                                    'blockquote',
+                                                    'divider',
+                                                    'alignLeft',
+                                                    'alignRight',
+                                                    "customLink",
+                                                    'alignCenter',
+                                                    'undo',
+                                                    'redo',
+                                                    'highlight',
+                                                    'color',
+                                                    'clear'
                                                 ],
                                             ],
                                         'description_extra' => $department->masterProductCategory
@@ -204,23 +260,73 @@ class EditDepartment extends OrgAction
                                                 'mode'          => 'single',
                                                 'value'         => $department->description_extra,
                                                 'reviewed'      => $department->is_description_extra_reviewed,
-                                                'toogle'  => [
-                                                        'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                                        'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                        'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                                'routeGetInternalLink' => [
+                                                    'name' => 'grp.org.shops.show.web.webpages.index',
+                                                    'parameters' => [
+                                                        'shop' => $department->shop->slug,
+                                                        'organisation' => $department->organisation->slug,
+                                                        'website' => $department->shop->website->slug
+                                                    ]
+                                                ],
+                                                'toogle'        => [
+                                                    'heading2',
+                                                    'heading3',
+                                                    'fontSize',
+                                                    'bold',
+                                                    'italic',
+                                                    'underline',
+                                                    'bulletList',
+                                                    "fontFamily",
+                                                    'orderedList',
+                                                    'blockquote',
+                                                    'divider',
+                                                    'alignLeft',
+                                                    'alignRight',
+                                                    "customLink",
+                                                    'alignCenter',
+                                                    'undo',
+                                                    'redo',
+                                                    'highlight',
+                                                    'color',
+                                                    'clear'
                                                 ]
                                             ]
                                             : [
-                                                'type'  => 'textEditor',
-                                                'label' => __('Extra description'),
-                                                'value' => $department->description_extra,
+                                                'type'    => 'textEditor',
+                                                'label'   => __('Extra description'),
+                                                'value'   => $department->description_extra,
                                                 'options' => [
                                                     'counter' => true,
                                                 ],
+                                                'routeGetInternalLink' => [
+                                                    'name' => 'grp.org.shops.show.web.webpages.index',
+                                                    'parameters' => [
+                                                        'shop' => $department->shop->slug,
+                                                        'organisation' => $department->organisation->slug,
+                                                        'website' => $department->shop->website?->slug
+                                                    ]
+                                                ],
                                                 'toogle'  => [
-                                                        'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                                        'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                                                        'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                                    'heading2',
+                                                    'heading3',
+                                                    'fontSize',
+                                                    'bold',
+                                                    'italic',
+                                                    'underline',
+                                                    'bulletList',
+                                                    "fontFamily",
+                                                    'orderedList',
+                                                    'blockquote',
+                                                    'divider',
+                                                    'alignLeft',
+                                                    'alignRight',
+                                                    "customLink",
+                                                    'alignCenter',
+                                                    'undo',
+                                                    'redo',
+                                                    'highlight',
+                                                    'color',
+                                                    'clear'
                                                 ],
                                             ],
                                     ]
@@ -261,6 +367,20 @@ class EditDepartment extends OrgAction
                                         ]
                                     ]
                                 ],
+                                $department->webpage ? [
+                                    'label'  => __('Webpage Properties'),
+                                    'icon'   => 'fa-light fa-browser',
+                                    'fields' => [
+                                        'set_main_webpage' => [
+                                            'type'     => 'select',
+                                            'label'    => __('Main Webpage'),
+                                            'value'    => $department->webpage->id,
+                                            'options'  => $webOptions->toArray(),
+                                            'mode'     => 'single',
+                                            'required' => true,
+                                        ],
+                                    ]
+                                ] : null,
                             ]
                         ),
                     'args'      => [

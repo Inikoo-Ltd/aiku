@@ -24,8 +24,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $stored_item_id
  * @property \Illuminate\Support\Carbon|null $audited_at
  * @property int|null $user_id User who audited the stock
- * @property string|null $original_quantity
- * @property string $audited_quantity
+ * @property numeric|null $original_quantity
+ * @property numeric $audited_quantity
  * @property StoredItemAuditDeltaStateEnum|null $state
  * @property StoredItemAuditDeltaTypeEnum|null $audit_type
  * @property string|null $notes
@@ -35,9 +35,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $location_id
  * @property bool $is_new_stored_item Stored item just created
  * @property bool $is_stored_item_new_in_pallet Existing Stored item was associated to the pallet
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Organisation $organisation
- * @property-read \App\Models\Fulfilment\Pallet $pallet
+ * @property-read \App\Models\Fulfilment\Pallet|null $pallet
  * @property-read \App\Models\Fulfilment\StoredItem $storedItem
  * @property-read \App\Models\Fulfilment\StoredItemAudit|null $storedItemAudit
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StoredItemAuditDelta newModelQuery()

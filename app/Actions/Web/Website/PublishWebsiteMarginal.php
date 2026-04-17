@@ -14,12 +14,15 @@ use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Web\UpdateWebBlockToWebsiteAndChild;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\UpdateDescriptionBlockToWebsiteAndChild;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
+use Illuminate\Support\Facades\Event;
 use App\Models\Helpers\Snapshot;
 use App\Models\Web\Website;
 use App\Models\Web\WebBlockType;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
+use OwenIt\Auditing\Events\AuditCustom;
 
 class PublishWebsiteMarginal extends OrgAction
 {
@@ -30,28 +33,51 @@ class PublishWebsiteMarginal extends OrgAction
 
     public function handle(Website $website, string $marginal, array $modelData): Website
     {
-        $this->marginal =  $marginal;
-        $layout = Arr::get($modelData, 'layout', []);
+        $this->marginal = $marginal;
+        $layout         = Arr::get($modelData, 'layout', []);
+        $customAudit    = false;
         if ($marginal == 'header') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedHeaderSnapshot->layout[$marginal];
+            $oldLayout = $website->liveHeaderSnapshot?->layout[$marginal] ?? Arr::get($website->unpublishedHeaderSnapshot?->layout, $marginal);
+            $layout    = Arr::get($modelData, 'layout') ?? Arr::get($website->unpublishedHeaderSnapshot?->layout, $marginal);
         } elseif ($marginal == 'footer') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedFooterSnapshot->layout[$marginal];
+            $oldLayout = $website->liveFooterSnapshot?->layout[$marginal] ?? Arr::get($website->unpublishedFooterSnapshot?->layout, $marginal);
+            $layout    = Arr::get($modelData, 'layout') ?? Arr::get($website->unpublishedFooterSnapshot?->layout, $marginal);
         } elseif ($marginal == 'menu') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedMenuSnapshot->layout[$marginal];
+            $oldLayout = $website->liveMenuSnapshot?->layout[$marginal] ?? Arr::get($website->unpublishedMenuSnapshot?->layout, $marginal);
+            $layout    = Arr::get($modelData, 'layout') ?? Arr::get($website->unpublishedMenuSnapshot?->layout, $marginal);
         } elseif ($marginal == 'sidebar') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedSidebarSnapshot->layout[$marginal];
+            $oldLayout = $website->liveSidebarSnapshot?->layout[$marginal] ?? Arr::get($website->unpublishedSidebarSnapshot?->layout, $marginal);
+            $layout    = Arr::get($modelData, 'layout') ?? Arr::get($website->unpublishedSidebarSnapshot?->layout, $marginal);
         } elseif ($marginal == 'department') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedDepartmentSnapshot->layout[$marginal];
+            $oldLayout = $website->liveDepartmentSnapshot?->layout[$marginal] ?? Arr::get($website->unpublishedDepartmentSnapshot?->layout, $marginal);
+            $layout    = Arr::get($modelData, 'layout') ?? Arr::get($website->unpublishedDepartmentSnapshot?->layout, $marginal);
         } elseif ($marginal == 'sub_department') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedSubDepartmentSnapshot->layout[$marginal];
+            $customAudit = true;
+            $oldLayout   = $website->liveSubDepartmentSnapshot?->layout[$marginal] ?? Arr::get($website->unpublishedSubDepartmentSnapshot?->layout, $marginal);
+            $layout      = Arr::get($modelData, 'layout') ?? Arr::get($website->unpublishedSubDepartmentSnapshot?->layout, $marginal);
         } elseif ($marginal == 'family') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedFamilySnapshot->layout[$marginal];
+            $customAudit = true;
+            $oldLayout   = $website->liveFamilySnapshot?->layout[$marginal] ?? Arr::get($website->unpublishedFamilySnapshot?->layout, $marginal);
+            $layout      = Arr::get($modelData, 'layout') ?? Arr::get($website->unpublishedFamilySnapshot?->layout, $marginal);
+        } elseif ($marginal == 'families_overview') {
+            $customAudit = true;
+            $oldLayout   = $website->liveFamiliesOverviewSnapshot?->layout[$marginal] ?? Arr::get($website->unpublishedFamiliesOverviewSnapshot?->layout, $marginal);
+            $layout      = Arr::get($modelData, 'layout') ?? Arr::get($website->unpublishedFamiliesOverviewSnapshot?->layout, $marginal);
+        } elseif ($marginal == 'family_description') {
+            $customAudit = true;
+            $oldLayout   = $website->liveFamilyDescriptionSnapshot?->layout ?? $website->unpublishedFamilyDescriptionSnapshot?->layout;
+            $layout      = Arr::get($modelData, 'layout') ?? Arr::get($website->unpublishedFamilyDescriptionSnapshot?->layout, $marginal);
         } elseif ($marginal == 'product') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedProductSnapshot->layout[$marginal];
+            $customAudit = true;
+            $oldLayout   = $website->liveProductSnapshot?->layout[$marginal] ?? Arr::get($website->unpublishedProductSnapshot?->layout, $marginal);
+            $layout      = Arr::get($modelData, 'layout') ?? Arr::get($website->unpublishedProductSnapshot?->layout, $marginal);
         } elseif ($marginal == 'products') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedProductsSnapshot->layout[$marginal];
+            $customAudit = true;
+            $oldLayout   = $website->liveProductsSnapshot?->layout ?? Arr::get($website->unpublishedProductsSnapshot?->layout, $marginal);
+            $layout      = Arr::get($modelData, 'layout') ?? Arr::get($website->unpublishedProductsSnapshot?->layout, $marginal);
         } elseif ($marginal == 'collection') {
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedCollectionSnapshot->layout[$marginal];
+            $oldLayout = $website->liveCollectionSnapshot?->layout[$marginal] ?? Arr::get($website->unpublishedCollectionSnapshot?->layout, $marginal);
+            $layout    = Arr::get($modelData, 'layout') ?? Arr::get($website->unpublishedCollectionSnapshot?->layout, $marginal);
         }
 
         $firstCommit = true;
@@ -89,25 +115,53 @@ class PublishWebsiteMarginal extends OrgAction
             ]
         );
 
-        if (in_array($marginal, ['header', 'footer','menu', 'sidebar', 'department', 'sub_department', 'family', 'product', 'products', 'collection'])) {
+        if (in_array($marginal, ['header', 'footer', 'menu', 'sidebar', 'department', 'sub_department', 'family', 'families_overview', 'family_description', 'product', 'products', 'collection'])) {
             $updateData = [
-                "live_{$marginal}_snapshot_id"    => $snapshot->id,
-                "published_layout->$marginal"     => $snapshot->layout,
-                "published_{$marginal}_checksum"  => md5(json_encode($snapshot->layout)),
+                "live_{$marginal}_snapshot_id"   => $snapshot->id,
+                "published_layout->$marginal"    => $snapshot->layout,
+                "published_{$marginal}_checksum" => md5(json_encode($snapshot->layout)),
             ];
         } else {
             $updateData = [
-                "published_layout->$marginal"     => $snapshot->layout
+                "published_layout->$marginal" => $snapshot->layout
             ];
         }
 
         $website->update($updateData);
-        if (in_array($marginal, ['department', 'sub_department', 'family', 'product', 'products'])) {
+        // todo family_description
+        if (in_array($marginal, ['department', 'sub_department', 'family', 'product', 'products', 'families_overview'])) {
             // Update webpage, web_blocks & their snapshots (unpublished/published)
-            UpdateWebBlockToWebsiteAndChild::dispatch($website, WebBlockType::find(data_get($layout, "id")), $marginal, data_get($layout, 'data.fieldValue'));
+            UpdateWebBlockToWebsiteAndChild::dispatch($website, WebBlockType::find(data_get($layout, "id")), $marginal, data_get($layout, 'data.fieldValue'))->onQueue('low-priority');
+        } elseif (in_array($marginal, ['family_description'])) {
+            UpdateDescriptionBlockToWebsiteAndChild::dispatch($website, $layout, $marginal)->onQueue('low-priority');
         }
 
         BreakWebsiteCache::run($website);
+
+        if ($customAudit) {
+            $titleAudit             = ucfirst(str_replace('_', ' ', $marginal));
+            $website->auditEvent    = "{$marginal}_published";
+            $website->isCustomEvent = true;
+
+            if (Arr::has($snapshot->layout, 'data')) {
+                $layoutFormatted    = Arr::except(data_get($snapshot->layout, 'data.fieldValue'), ['product']);
+                $oldLayoutFormatted = Arr::only(data_get($oldLayout, 'data.fieldValue'), array_keys($layoutFormatted));
+            } else {
+                $layoutFormatted    = Arr::except(data_get($snapshot->layout, '*.fieldValue'), ['product']);
+                $oldLayoutFormatted = Arr::only(data_get($oldLayout, '*.fieldValue'), array_keys($layoutFormatted));
+            }
+
+            $website->auditCustomOld = [
+                ...array_filter(Arr::dot($oldLayoutFormatted), mode: ARRAY_FILTER_USE_BOTH)
+            ];
+
+            $website->auditCustomNew = [
+                '_published_layout' => "{$titleAudit} Web Block",
+                ...array_filter(Arr::dot($layoutFormatted), mode: ARRAY_FILTER_USE_BOTH)
+            ];
+
+            Event::dispatch(new AuditCustom($website));
+        }
 
         return $website;
     }
@@ -171,6 +225,18 @@ class PublishWebsiteMarginal extends OrgAction
         $this->handle($website, 'family', $this->validatedData);
     }
 
+    public function familiesOverview(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'families_overview', $this->validatedData);
+    }
+
+    public function familyDescription(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'family_description', $this->validatedData);
+    }
+
     public function product(Website $website, ActionRequest $request): void
     {
         $this->initialisationFromShop($website->shop, $request);
@@ -194,7 +260,6 @@ class PublishWebsiteMarginal extends OrgAction
         $this->initialisationFromShop($website->shop, $request);
         $this->handle($website, 'theme', $this->validatedData);
     }
-
 
 
     public function action(Website $website, $marginal, $modelData): string

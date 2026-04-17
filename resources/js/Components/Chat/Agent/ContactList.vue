@@ -193,11 +193,12 @@ const back = () => {
     selectedSession.value = null
 }
 
-const handleSendMessage = async ({ text, image, message_type, tempId }: {
+const handleSendMessage = async ({ text, image, message_type, tempId, is_email_notif }: {
     text: string
     image?: File | null
     message_type: "text" | "image" | "file"
     tempId: number
+    is_email_notif: boolean
 }) => {
     if (!selectedSession.value?.ulid) return
 
@@ -208,6 +209,7 @@ const handleSendMessage = async ({ text, image, message_type, tempId }: {
         formData.append("message_text", text ?? "")
         formData.append("message_type", message_type)
         formData.append("sender_type", "agent")
+        formData.append("is_email_notif", is_email_notif ?? false)
 
         if (image) {
             formData.append(
@@ -217,7 +219,7 @@ const handleSendMessage = async ({ text, image, message_type, tempId }: {
         }
 
         const assignRoute: routeType = {
-            name: "grp.org.crm.agents.messages.send",
+            name: "grp.org.chat.agents.messages.send",
             parameters: [organisation, selectedSession.value.ulid],
             method: "post",
         }
@@ -240,7 +242,7 @@ const assignToSelf = async (ulid: string) => {
         const organisation = route().params?.organisation ?? "aw"
 
         const assignRoute: routeType = {
-            name: "grp.org.crm.agents.assign.self",
+            name: "grp.org.chat.agents.assign.self",
             parameters: [organisation, ulid],
             method: "post",
         }

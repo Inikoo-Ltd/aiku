@@ -9,13 +9,13 @@ import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TableCustomers from '@/Components/Tables/Grp/Org/CRM/TableCustomers.vue'
 import { capitalize } from "@/Composables/capitalize"
-import { faCircleNotch } from "@fal"
+import { faCircleNotch, faTachometerAlt } from "@fal"
 import { faExclamationCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from '@/types/route'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { PageHeadingTypes } from '@/types/PageHeading'
-library.add(faCircleNotch, faExclamationCircle)
+library.add(faCircleNotch, faExclamationCircle, faTachometerAlt)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes

@@ -151,9 +151,9 @@ class ShowMasterDepartment extends GrpAction
                     fn () => GetMasterProductCategoryContent::run($masterDepartment)
                     : Inertia::lazy(fn () => GetMasterProductCategoryContent::run($masterDepartment)),
 
-                MasterDepartmentTabsEnum::DEPARTMENTS->value => $this->tab == MasterDepartmentTabsEnum::DEPARTMENTS->value ?
-                    fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))
-                    : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))),
+                // MasterDepartmentTabsEnum::DEPARTMENTS->value => $this->tab == MasterDepartmentTabsEnum::DEPARTMENTS->value ?
+                //     fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))
+                //     : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))),
 
                 'salesData' => $this->tab == MasterDepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductCategoryTimeSeriesData::run($masterDepartment)
@@ -174,7 +174,7 @@ class ShowMasterDepartment extends GrpAction
 
             ]
         )
-            ->table(IndexDepartments::make()->tableStructure(parent: $masterDepartment, prefix: MasterDepartmentTabsEnum::DEPARTMENTS->value, sales:false))
+            // ->table(IndexDepartments::make()->tableStructure(parent: $masterDepartment, prefix: MasterDepartmentTabsEnum::DEPARTMENTS->value, sales:false))
             ->table(IndexMasterProductCategoryTimeSeries::make()->tableStructure(MasterDepartmentTabsEnum::SALES->value))
             ->table(IndexHistory::make()->tableStructure(prefix: MasterDepartmentTabsEnum::HISTORY->value));
     }

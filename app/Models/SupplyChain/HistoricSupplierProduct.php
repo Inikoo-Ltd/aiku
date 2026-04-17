@@ -25,14 +25,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string|null $code
  * @property int $units_per_pack
  * @property int $units_per_carton
- * @property string|null $cbm carton cubic meters
+ * @property numeric|null $cbm carton cubic meters
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $fetched_at
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
  * @property array<array-key, mixed> $sources
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SupplyChain\HistoricSupplierProductStats|null $stats
  * @property-read \App\Models\SupplyChain\SupplierProduct|null $supplierProduct
  * @method static Builder<static>|HistoricSupplierProduct newModelQuery()

@@ -66,9 +66,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_payments_type_refund_state_cancelled
  * @property int $number_payments_type_refund_state_error
  * @property int $number_payments_type_refund_state_declined
- * @property string $grp_amount_paid_balance Group currency, amount_successfully_paid-amount_returned
- * @property string $grp_amount_successfully_paid
- * @property string $grp_amount_refunded
+ * @property numeric $grp_amount_paid_balance Group currency, amount_successfully_paid-amount_returned
+ * @property numeric $grp_amount_successfully_paid
+ * @property numeric $grp_amount_refunded
  * @property int $number_invoices
  * @property int $number_invoices_type_invoice
  * @property int $number_invoices_type_refund
@@ -77,9 +77,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_customers_with_balances
  * @property int $number_customers_with_positive_balances
  * @property int $number_customers_with_negative_balances
- * @property string $customer_balances_grp_amount
- * @property string $customer_positive_balances_grp_amount
- * @property string $customer_negative_balances_grp_amount
+ * @property numeric $customer_balances_grp_amount
+ * @property numeric $customer_positive_balances_grp_amount
+ * @property numeric $customer_negative_balances_grp_amount
  * @property int $number_top_ups
  * @property int $number_top_ups_status_in_process
  * @property int $number_top_ups_status_success
@@ -92,7 +92,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_invoice_categories_state_active
  * @property int $number_invoice_categories_state_closed
  * @property int $number_invoice_categories_state_cooldown
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupAccountingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupAccountingStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupAccountingStats query()

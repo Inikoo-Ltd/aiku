@@ -56,6 +56,31 @@ class TransactionsResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $quantityOrderedFractional = riseDivisor(
+            divideWithRemainder(
+                findSmallestFactors(
+                    $this->quantity_ordered ?? 0
+                )
+            ),
+            $this->product_units
+        );
+        $quantityPickedFractional = riseDivisor(
+            divideWithRemainder(
+                findSmallestFactors(
+                    $this->quantity_picked ?? 0
+                )
+            ),
+            $this->product_units
+        );
+        $quantityDispatchedFractional = riseDivisor(
+            divideWithRemainder(
+                findSmallestFactors(
+                    $this->quantity_dispatched ?? 0
+                )
+            ),
+            $this->product_units
+        );
+
         $media = null;
         if ($this->product_image_id) {
             $media = Media::find($this->product_image_id);
@@ -69,16 +94,21 @@ class TransactionsResource extends JsonResource
             $webpageUrl = $webpage?->getUrl();
         }
 
+
         return [
             'id'                        => $this->id,
             'state'                     => $this->state,
             'status'                    => $this->status,
-            'quantity_ordered'          => $this->quantity_ordered,
-            'quantity_bonus'            => $this->quantity_bonus,
-            'quantity_picked'           => $this->quantity_picked,
-            'quantity_dispatched'       => $this->quantity_dispatched,
+            'quantity_ordered'          => trimDecimalZeros($this->quantity_ordered),
+            'quantity_ordered_fractional'       => $quantityOrderedFractional,
+            'quantity_bonus'            => trimDecimalZeros($this->quantity_bonus),
+            'quantity_picked'           => trimDecimalZeros($this->quantity_picked),
+            'quantity_picked_fractional'        => $quantityPickedFractional,
+            'quantity_dispatched'       => trimDecimalZeros($this->quantity_dispatched),
+            'quantity_dispatched_fractional'    => $quantityDispatchedFractional,
             'quantity_fail'             => $this->quantity_fail,
             'quantity_cancelled'        => $this->quantity_cancelled,
+            'quantity_not_picked'       => $this->dni_quantity_not_picked,
             'gross_amount'              => $this->gross_amount,
             'net_amount'                => $this->net_amount,
             'price'                     => $this->price,
@@ -97,6 +127,7 @@ class TransactionsResource extends JsonResource
             'transaction_label'         => $this->transaction_label,
             'product_units'             => $this->product_units,
             'is_cut_view'               => $this->is_cut_view,
+            'is_gift'                   => $this->is_gift,
 
 
             'deleteRoute' => $request->user() instanceof User

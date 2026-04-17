@@ -8,6 +8,7 @@
 
 namespace App\Http;
 
+use App\Http\Middleware\AcceptClientHintsMiddleware;
 use App\Http\Middleware\AddSentryBrowserProfilingHeader;
 use App\Http\Middleware\AddVaryHeader;
 use App\Http\Middleware\ApiBindGroupInstance;
@@ -81,7 +82,8 @@ class Kernel extends HttpKernel
         ValidatePostSize::class,
         TrimStrings::class,
         ConvertEmptyStringsToNull::class,
-        AddSentryBrowserProfilingHeader::class
+        AddSentryBrowserProfilingHeader::class,
+        AcceptClientHintsMiddleware::class,
     ];
 
     protected $middlewareGroups = [
@@ -185,7 +187,7 @@ class Kernel extends HttpKernel
             SetWebUserLocale::class,
             HandleIrisInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            //LogWebUserRequestMiddleware::class,
+            LogWebUserRequestMiddleware::class,
             TrackWebsiteVisitor::class,
             InspectorOctaneMiddleware::class,
             //CaptureTrafficSourceMiddleWare::class,
@@ -204,7 +206,7 @@ class Kernel extends HttpKernel
             SetWebUserLocale::class,
             HandleRetinaInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            //LogWebUserRequestMiddleware::class,
+            LogWebUserRequestMiddleware::class,
             TrackWebsiteVisitor::class,
             InspectorOctaneMiddleware::class,
             //CaptureTrafficSourceMiddleWare::class,

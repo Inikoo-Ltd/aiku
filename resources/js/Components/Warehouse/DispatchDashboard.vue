@@ -20,17 +20,25 @@ import {
     faAllergies,
     faChartLine,
 } from "@fal"
+import { faExclamationSquare} from "@fas"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faClock, faList, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine)
+library.add(faClock, faList, faExclamationSquare, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine)
 
 interface RouteTarget {
     name: string
     parameters?: object
 }
 
+interface QueuedPrefix {
+    value: number
+    route_target?: RouteTarget
+}
+
 interface MetricData {
     value: number | null
     route_target?: RouteTarget
+    queued_prefix?: QueuedPrefix
 }
 
 interface MetricItem {
@@ -60,14 +68,15 @@ interface DashboardData {
         }
     }
     row_totals: {
-        [rowKey: string]: { value: number }
+        [rowKey: string]: { value: number; route_target?: RouteTarget }
     }
     totals: {
-        [metricKey: string]: { value: number }
+        [metricKey: string]: { value: number; route_target?: RouteTarget; queued_prefix?: QueuedPrefix }
     }
     grand_total: {
         value: number
         icon?: string[]
+        route_target?: RouteTarget
     }
 }
 
@@ -98,10 +107,12 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
 const isWeakValue = (value: number | null | undefined) => {
     return value === null || value === 0
 }
+
 </script>
 
 <template>
     <div class="bg-white px-1 sm:px-2 md:px-4 overflow-x-auto pb-4">
+
         <div class="flex gap-1 md:gap-3 w-full pt-3">
 
             <!-- ================= DIMENSION COLUMN ================= -->
@@ -166,10 +177,15 @@ const isWeakValue = (value: number | null | undefined) => {
                         </component>
                     </template>
 
-                    <div v-if="data?.dimension"
-                        class="h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200">
+                    <component v-if="data?.dimension"
+                        :is="getSafeRoute(data.totals[metric.key]?.route_target) ? Link : 'div'"
+                        :href="getSafeRoute(data.totals[metric.key]?.route_target) ?? undefined"
+                        :class="[
+                            'h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200',
+                            getSafeRoute(data.totals[metric.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
+                        ]">
                         {{ data.totals[metric.key]?.value ?? '-' }}
-                    </div>
+                    </component>
                 </div>
 
                 <!-- GROUP METRIC -->
@@ -188,23 +204,93 @@ const isWeakValue = (value: number | null | undefined) => {
                         </div>
 
                         <template v-for="row in rows" :key="row.key + '-' + item.key">
-                            <component :is="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ? Link : 'div'"
-                                :href="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ?? undefined" :class="[
-                                    'h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0',
-                                    isWeakValue(data.data[row.key]?.[item.key]?.value)
-                                        ? 'opacity-40'
-                                        : '',
-                                    getSafeRoute(data.data[row.key]?.[item.key]?.route_target)
-                                        ? 'hover:underline cursor-pointer'
-                                        : ''
-                                ]">
-                                {{ data.data[row.key]?.[item.key]?.value ?? '-' }}
-                            </component>
+                            <div class="h-9 md:h-11 flex items-center justify-center gap-2 text-xs md:text-lg border-b border-gray-100 last:border-b-0">
+                                <template v-if="data.data[row.key]?.[item.key]?.queued_prefix?.value">
+                                    <component
+                                        :is="getSafeRoute(data.data[row.key]?.[item.key]?.queued_prefix?.route_target) ? Link : 'span'"
+                                        :href="getSafeRoute(data.data[row.key]?.[item.key]?.queued_prefix?.route_target) ?? undefined"
+                                        v-tooltip="'Queued: ' + data.data[row.key]?.[item.key]?.queued_prefix?.value"
+                                        class="opacity-80 hover:underline cursor-pointer tabular-nums"
+                                    >{{ data.data[row.key]?.[item.key]?.queued_prefix?.value }}<template v-if="row.key !== 'dropshipping'">+</template></component><span v-if="row.key === 'dropshipping'" class="opacity-60">+</span>
+                                </template>
+                                <component
+                                    :is="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ? Link : 'span'"
+                                    :href="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ?? undefined"
+                                    :class="[
+                                        isWeakValue(data.data[row.key]?.[item.key]?.value) ? 'opacity-40' : '',
+                                        getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
+                                    ]"
+                                >{{ data.data[row.key]?.[item.key]?.value ?? '-' }}</component>
+
+                                <!-- Section: Warning -->
+                                <Link v-if="data.data[row.key]?.[item.key]?.warning"
+                                    :href="data.data[row.key]?.[item.key]?.warning?.route_target?.name ? route(data.data[row.key]?.[item.key]?.warning?.route_target?.name, data.data[row.key]?.[item.key]?.warning?.route_target.parameters) : '#'"
+                                    class="relative bg-amber-300 text-amber-700 rounded px-2.5  ml-2 opacity-70 hover:opacity-100"
+                                    v-tooltip="data.data[row.key]?.[item.key]?.warning?.tooltip"
+                                >
+                                    {{ data.data[row.key]?.[item.key]?.warning?.value }}
+
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
+                                </Link>
+
+                                <!-- Section: CRM Warning -->
+                                <component
+                                    v-if="data.data[row.key]?.[item.key]?.crm_warning"
+                                    :is="getSafeRoute(data.data[row.key]?.[item.key]?.crm_warning?.route_target) ? Link : 'span'"
+                                    :href="getSafeRoute(data.data[row.key]?.[item.key]?.crm_warning?.route_target) ?? undefined"
+                                    class="relative bg-purple-300 text-purple-700 rounded px-2.5 ml-2 opacity-70 hover:opacity-100"
+                                    v-tooltip="data.data[row.key]?.[item.key]?.crm_warning?.tooltip"
+                                >
+                                    {{ data.data[row.key]?.[item.key]?.crm_warning?.value }}
+
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
+                                </component>
+                            </div>
                         </template>
 
                         <div v-if="data?.dimension"
-                            class="h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200">
-                            {{ data.totals[item.key]?.value ?? '-' }}
+                            class="h-10 md:h-12 flex items-center justify-center gap-2 text-xs md:text-lg border-t border-gray-200">
+                            <template v-if="data.totals[item.key]?.queued_prefix?.value">
+                                <component
+                                    :is="getSafeRoute(data.totals[item.key]?.queued_prefix?.route_target) ? Link : 'span'"
+                                    :href="getSafeRoute(data.totals[item.key]?.queued_prefix?.route_target) ?? undefined"
+                                    v-tooltip="'Queued: ' + data.totals[item.key]?.queued_prefix?.value"
+                                    class="opacity-80 hover:underline cursor-pointer tabular-nums"
+                                >{{ data.totals[item.key]?.queued_prefix?.value }}</component><span class="opacity-60">+</span>
+                            </template>
+                            <component
+                                :is="getSafeRoute(data.totals[item.key]?.route_target) ? Link : 'span'"
+                                :href="getSafeRoute(data.totals[item.key]?.route_target) ?? undefined"
+                                :class="getSafeRoute(data.totals[item.key]?.route_target) ? 'hover:underline cursor-pointer' : ''"
+                            >{{ data.totals[item.key]?.value ?? '-' }}</component>
+
+                            <!-- Section: Warning -->
+                            <Link v-if="data.totals[item.key]?.warning"
+                                :href="data.totals[item.key]?.warning?.route_target?.name ? route(data.totals[item.key]?.warning?.route_target?.name, data.totals[item.key]?.warning?.route_target.parameters) : '#'"
+                                class="relative bg-amber-300 text-amber-700 rounded px-2.5  ml-2 opacity-70 hover:opacity-100"
+                                v-tooltip="data.totals[item.key]?.warning?.tooltip"
+                            >
+                                {{ data.totals[item.key]?.warning?.value }}
+
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
+                            </Link>
+
+                            <!-- Section: CRM Warning -->
+                            <component
+                                v-if="data.totals[item.key]?.crm_warning"
+                                :is="getSafeRoute(data.totals[item.key]?.crm_warning?.route_target) ? Link : 'span'"
+                                :href="getSafeRoute(data.totals[item.key]?.crm_warning?.route_target) ?? undefined"
+                                class="relative bg-purple-300 text-purple-700 rounded px-2.5 ml-2 opacity-70 hover:opacity-100"
+                                v-tooltip="data.totals[item.key]?.crm_warning?.tooltip"
+                            >
+                                {{ data.totals[item.key]?.crm_warning?.value }}
+
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
+                            </component>
                         </div>
                     </div>
                 </div>
@@ -219,15 +305,28 @@ const isWeakValue = (value: number | null | undefined) => {
                     <Icon v-if="data?.grand_total?.icon" :data="data.grand_total" class='text-xs md:text-lg' />
                 </div>
 
-                <div v-for="row in rows" :key="row.key"
-                    class="h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0">
+                <component v-for="row in rows" :key="row.key"
+                    :is="getSafeRoute(data.row_totals[row.key]?.route_target) ? Link : 'div'"
+                    :href="getSafeRoute(data.row_totals[row.key]?.route_target) ?? undefined"
+                    :class="[
+                        'h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0',
+                        isWeakValue(data.row_totals[row.key]?.value) ? 'opacity-40' : '',
+                        getSafeRoute(data.row_totals[row.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
+                    ]">
                     {{ data.row_totals[row.key]?.value ?? '-' }}
-                </div>
+                </component>
 
-                <div v-if="data?.dimension"
-                    class="h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200">
-                    {{ data.grand_total?.value ?? '-' }}
-                </div>
+                <component
+    v-if="data?.dimension"
+    :is="getSafeRoute(data.grand_total?.route_target) ? Link : 'div'"
+    :href="getSafeRoute(data.grand_total?.route_target) ?? undefined"
+    :class="[
+        'h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200',
+        getSafeRoute(data.grand_total?.route_target) ? 'hover:underline cursor-pointer' : ''
+    ]"
+>
+    {{ data.grand_total?.value ?? '-' }}
+</component>
             </div>
 
         </div>

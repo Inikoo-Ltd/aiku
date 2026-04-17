@@ -16,4 +16,8 @@ export interface CreditTransaction {
   created_at: string // ISO date-time strings
   order_slug: string | null // Maybe null
   order_reference: string | null // Maybe null
+  customer_slug: string | null // Maybe null
+  customer_ref: string | null // Maybe null
+  shop_slug: string | null // Maybe null
+  org_slug: string | null // Maybe null
 }

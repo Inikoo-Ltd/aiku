@@ -15,7 +15,6 @@ use App\Actions\UI\Profile\ShowProfileIndexHistory;
 use App\Actions\UI\Profile\ShowProfileIndexKpi;
 use App\Actions\UI\Profile\ShowProfileIndexTimesheets;
 use App\Actions\UI\Profile\ShowProfileIndexTodo;
-use App\Actions\UI\Profile\ShowProfileIndexVisitLogs;
 use App\Actions\UI\Profile\ShowProfilePageHeadTabs;
 use App\Actions\UI\Profile\ShowProfileShowcase;
 use App\Actions\UI\Profile\UpdateProfile;
@@ -35,6 +34,5 @@ Route::get('/page-head-tabs', ShowProfilePageHeadTabs::class)->name('page-head-t
 Route::get('/showcase', ShowProfileShowcase::class)->name('showcase.show');
 Route::get('/timesheets', ShowProfileIndexTimesheets::class)->name('timesheets.index');
 Route::get('/histories', ShowProfileIndexHistory::class)->name('history.index');
-Route::get('/visit-logs', ShowProfileIndexVisitLogs::class)->name('visit-logs.index');
 Route::get('/kpis', ShowProfileIndexKpi::class)->name('kpis.index');
 Route::get('/todo', ShowProfileIndexTodo::class)->name('todo.index');

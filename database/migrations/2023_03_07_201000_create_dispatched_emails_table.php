@@ -24,12 +24,12 @@ return new class () extends Migration {
             $table->unsignedSmallInteger('outbox_id')->nullable();
             $table->foreign('outbox_id')->references('id')->on('outboxes');
 
-            $table->string('parent_type')->index()->comment('MailShot|EmailBulkRun|EmailPush|EmailOngoingRun');
-            $table->unsignedInteger('parent_id');
+            $table->string('parent_type')->nullable()->index()->comment('MailShot|EmailBulkRun|EmailPush|EmailOngoingRun');
+            $table->unsignedInteger('parent_id')->nullable();
 
             $table->unsignedInteger('email_address_id')->nullable();
             $table->foreign('email_address_id')->references('id')->on('email_addresses');
-            $table->string('provider')->index();
+            $table->string('provider')->nullable()->index();
             $table->string('provider_dispatch_id')->nullable();
             $table->string('recipient_type')->nullable();
             $table->unsignedInteger('recipient_id')->nullable();

@@ -21,9 +21,7 @@ import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 import { ProductResource } from '@/types/Iris/Products'
 import { routeType } from '@/types/route'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
-import Discount from '@/Components/Utils/Label/Discount.vue'
-import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
- import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
+import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 
 library.add(faStarHalfAlt, faQuestionCircle)
 

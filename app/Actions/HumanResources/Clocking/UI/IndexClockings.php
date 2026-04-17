@@ -59,23 +59,26 @@ class IndexClockings extends OrgAction
         }
 
         return $queryBuilder
-            ->defaultSort('clockings.clocked_at')
+            ->defaultSort('-clockings.clocked_at')
             ->select(
                 [
                     'clocked_at',
                     'clockings.id',
                     'clockings.type',
                     'clockings.notes',
+                    'clockings.organisation_id',
                     'workplaces.slug as workplace_slug',
                     'clocking_machines.slug as clocking_machine_slug',
                     'clocking_machine_id',
                     'media.slug as media_slug',
-                    'media.id as media_id'
+                    'media.id as media_id',
+                    'organisations.code as organisation_code'
                 ]
             )
             ->leftJoin('workplaces', 'clockings.workplace_id', 'workplaces.id')
             ->leftJoin('media', 'clockings.image_id', 'media.id')
             ->leftJoin('clocking_machines', 'clockings.clocking_machine_id', 'clocking_machines.id')
+            ->leftJoin('organisations', 'clockings.organisation_id', 'organisations.id')
             ->allowedSorts(['clocked_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -104,8 +107,8 @@ class IndexClockings extends OrgAction
                 )
                 ->column(key: 'media_slug', label: __('Photo'), canBeHidden: false)
                 ->column(key: 'clocked_at', label: __('Time'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'notes', label: __('Notes'), canBeHidden: false, sortable: true, searchable: true)
-                ->defaultSort('slug');
+                ->column(key: 'notes', label: __('Notes'), canBeHidden: false, sortable: false, searchable: true)
+                ->defaultSort('clocked_at', 'desc');
 
             if ($showActions && class_basename($parent) == 'Timesheet') {
                 $table->column(key: 'actions', label: 'Actions');

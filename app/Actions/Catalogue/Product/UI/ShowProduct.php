@@ -223,6 +223,21 @@ class ShowProduct extends OrgAction
 
         $actions = [];
 
+        $actions[] = [
+            'type'    => 'button',
+            'style'   => 'edit',
+            'tooltip' => __('Sync Product Images from Trade Units'),
+            'label'   => __('Repair Images'),
+            'icon'    => 'fal fa-tools',
+            'route'   => [
+                'name'          => 'grp.models.product.repair_product_images',
+                'method'        => 'patch',
+                'parameters'    => [
+                    'product' => $product->id
+                ],
+            ]
+        ];
+
         if ($this->canEdit) {
             $actions[] = [
                 'type'  => 'button',
@@ -392,6 +407,12 @@ class ShowProduct extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $isExternalShop ? ProductInExternalTabsEnum::navigation() : ProductTabsEnum::navigation()
                 ],
+                'product_id'           => $product->id,
+                'shop_data'            => [
+                    'id'            => $product->shop_id,
+                    'slug'          => $product->shop->slug,
+                    'currency_code' => $product->shop->currency->code,
+                ],
                 'is_external_shop'      => $isExternalShop,
                 'family_slug'           => $product->family->slug ?? null,
                 'product_state'         => $product->state->value,
@@ -544,6 +565,25 @@ class ShowProduct extends OrgAction
                         ],
                         'model' => [
                             'name'       => 'grp.org.shops.show.catalogue.products.out_of_stock_products.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    ' ('.__('Out Of Stock').')'
+                )
+            ),
+            'grp.org.shops.show.catalogue.products.rrp_violation_products.show' =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.rrp_violation_products.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.rrp_violation_products.show',
                             'parameters' => $routeParameters
                         ]
                     ],

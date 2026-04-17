@@ -13,7 +13,9 @@ use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
+use Exception;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -27,26 +29,39 @@ class UpsertPicking extends OrgAction
     protected DeliveryNoteItem $deliveryNoteItem;
     protected User $user;
 
-    public function handle(DeliveryNoteItem $deliveryNoteItem, LocationOrgStock $locationOrgStock, array $modelData): bool
+    public function handle(DeliveryNoteItem $deliveryNoteItem, LocationOrgStock $locationOrgStock, array $modelData): ?bool
     {
-
-        $pickingID = Arr::pull($modelData, 'picking_id');
-        $picking = null;
-        if ($pickingID) {
-            $picking = Picking::find($pickingID);
+        // If locked, will skip the process
+        if ($deliveryNoteItem->locked_at && (Carbon::parse($deliveryNoteItem->locked_at)->diffInSeconds(now()) < 3)) {
+            return null;
         }
 
-        if ($picking) {
-            $modelData = [
-                'quantity' => Arr::get($modelData, 'quantity', 0),
-            ];
-            $picking = UpdatePicking::run($picking, $modelData);
-        } else {
-            $picking = StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
+        $deliveryNoteItem->update(['locked_at' => now()]);
+
+        try {
+            $pickingID = Arr::pull($modelData, 'picking_id');
+            $picking   = null;
+            if ($pickingID) {
+                $picking = Picking::find($pickingID);
+            }
+
+            if ($picking) {
+                $modelData = [
+                    'quantity' => Arr::get($modelData, 'quantity', 0),
+                ];
+                UpdatePicking::run($picking, $modelData);
+            } else {
+                StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
+            }
+
+            $deliveryNoteItem->update(['locked_at' => null]);
+
+            return true;
+        } catch (Exception) {
+            $deliveryNoteItem->update(['locked_at' => null]);
+
+            return false;
         }
-
-
-        return true;
     }
 
     public function rules(): array
@@ -62,7 +77,7 @@ class UpsertPicking extends OrgAction
                 Rule::Exists('location_org_stocks', 'id')->where('warehouse_id', $this->deliveryNoteItem->deliveryNote->warehouse_id)
             ],
             'quantity'              => ['required', 'numeric', 'min:0'],
-            'picker_user_id' => [
+            'picker_user_id'        => [
                 'required',
                 Rule::Exists('users', 'id')->where('group_id', $this->shop->group_id)
             ],

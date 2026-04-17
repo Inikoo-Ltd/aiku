@@ -12,6 +12,7 @@ import OfflineChatForm from "../OfflineChatForm.vue"
 import { router } from "@inertiajs/vue3"
 import { faSpinner } from "@fal"
 import { useWindowSize } from "@vueuse/core"
+import { useBundle } from "../../../Composables/useBundle"
 
 interface ChatMessage {
     id: number
@@ -31,6 +32,22 @@ interface ChatSessionData {
     contact_name?: string
 }
 
+interface ChatOfflineInfo {
+    reason?: string
+    today?: {
+        day_of_week?: number
+        day_name?: string
+        is_working_day?: boolean
+    }
+    next_opening?: {
+        day_of_week?: number
+        day_name?: string
+        start?: string | null
+        end?: string | null
+        timezone?: string
+    } | null
+}
+
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
 type LocalChatMessage = ChatMessage & {
@@ -40,6 +57,8 @@ type LocalChatMessage = ChatMessage & {
 
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
+
+const isClient = typeof window !== "undefined"
 
 const open = ref(false)
 const buttonRef = ref<HTMLElement | null>(null)
@@ -80,11 +99,13 @@ const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
 const { width } = useWindowSize()
 const isMobile = computed(() => width.value < 640)
 
-watch(open, (val) => {
-    if (isMobile.value) {
-        document.body.style.overflow = val ? "hidden" : ""
-    }
-})
+if (isClient) {
+    watch(open, (val) => {
+        if (isMobile.value) {
+            document.body.style.overflow = val ? "hidden" : ""
+        }
+    })
+}
 
 const syncLoginState = () => {
     const iris = JSON.parse(localStorage.getItem("iris") || "{}")
@@ -364,6 +385,7 @@ const chatHours = ref({
     start: '',
     end: ''
 })
+const chatOfflineInfo = ref<ChatOfflineInfo | null>(null)
 
 const isUser = ref<boolean>(false)
 const isCheckingStatus = ref(false)
@@ -436,17 +458,24 @@ const checkChatStatus = async (sessionUlid: string) => {
 
         statusChat.value = config?.is_online ?? false
         isUser.value = config?.is_metadata ?? false
+        chatOfflineInfo.value = config?.offline_info ?? null
 
         if (config?.schedule) {
             chatHours.value = {
                 start: config.schedule.start,
                 end: config.schedule.end
             }
+        } else {
+            chatHours.value = {
+                start: '',
+                end: ''
+            }
         }
 
     } catch (e) {
         console.error("Chat status fetch failed", e)
         statusChat.value = false
+        chatOfflineInfo.value = null
     } finally {
         isCheckingStatus.value = false
     }
@@ -476,11 +505,36 @@ const handleOfflineSession = (sessionData: ChatSessionData) => {
     saveChatSession(sessionData)
 }
 
+const handleChatFromUrl = async () => {
+    const params = new URLSearchParams(window.location.search)
+    const sessionUlid = params.get("chat_session")
+
+    if (!sessionUlid) return
+
+    const sessionData: ChatSessionData & { saved_at: string } = {
+        ulid: sessionUlid,
+        saved_at: new Date().toISOString(),
+    }
+
+    localStorage.setItem("chat", JSON.stringify(sessionData))
+
+    chatSession.value = sessionData
+
+    const cleanUrl = window.location.origin + window.location.pathname
+    window.history.replaceState({}, document.title, cleanUrl)
+
+    if (!open.value) {
+        await toggle()
+    }
+}
+
 watch(activeMenu, (v) => v === "history" && loadUserSessions())
 
 onMounted(() => {
     syncLoginState()
     window.addEventListener("storage", syncLoginState)
+
+    handleChatFromUrl()
 
     document.addEventListener("mousedown", (e) => {
         if (
@@ -505,12 +559,52 @@ defineExpose({
     isLoadingMore,
 })
 
+const bundle = useBundle()
+
+const waitForElement = (selector: string, cb: (el: HTMLElement) => void) => {
+    if (!isClient) return
+
+    const run = () => {
+        const el = document.querySelector<HTMLElement>(selector)
+        if (el) {
+            cb(el)
+            return true
+        }
+        return false
+    }
+
+    if (run()) return
+
+    let tries = 0
+    const interval = setInterval(() => {
+        if (run() || ++tries > 50) {
+            clearInterval(interval)
+        }
+    }, 200)
+}
+
+if (isClient) {
+    watch(
+        [() => bundle.open.value, () => layout?.rightbasket?.show],
+        () => {
+            waitForElement('#jsd-widget', (widget) => {
+                widget.style.setProperty(
+                    'right',
+                    (bundle.open.value || layout?.rightbasket?.show)
+                        ? '420px'
+                        : '16px',
+                    'important'
+                )
+            })
+        },
+        { immediate: true }
+    )
+}
 </script>
 
 <template>
     <div>
-        <button ref="buttonRef" @click="toggle"
-            class="fixed bottom-36 right-5 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary">
+        <button ref="buttonRef" @click="toggle" class="fixed z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary" :class="['fixed bottom-36 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary transition-all duration-300', (bundle.open.value || layout?.rightbasket?.show) ? 'right-[470px]' : 'right-10']">
             <FontAwesomeIcon :icon="faMessage" class="text-base" />
             <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1
                bg-red-500 text-white text-[10px] font-semibold
@@ -524,7 +618,9 @@ defineExpose({
             leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95" id="chat">
             <div v-if="open" ref="panelRef" class="fixed z-[70] bg-[#f6f6f7] border shadow-xl flex flex-col" :class="isMobile
                 ? 'inset-0 rounded-none h-[100dvh] flex flex-col'
-                : 'right-3 bottom-[180px] w-[350px] rounded-md max-h-[calc(100dvh-12rem)] flex flex-col'">
+                : ['bottom-[180px] w-[350px] rounded-md max-h-[calc(100dvh-12rem)] flex flex-col',
+                    (bundle.open.value || layout?.rightbasket?.show) ? 'right-[430px]' : 'right-3'
+                ]">
                 <!-- header -->
                 <div class="flex items-center px-4 border-b bg-white" :class="isMobile
                     ? 'pt-[calc(env(safe-area-inset-top)+0.5rem)] pb-3'
@@ -572,7 +668,7 @@ defineExpose({
                         @new-session="startNewSession" :assignedAgent="assignedAgent" />
 
                     <OfflineChatForm v-else-if="activeMenu == 'chat' && !isCheckingStatus && !statusChat"
-                        :hours="chatHours" :session="chatSession" :isLoggedIn="isLoggedIn"
+                        :hours="chatHours" :offlineInfo="chatOfflineInfo" :session="chatSession" :isLoggedIn="isLoggedIn"
                         @session-created="handleOfflineSession" />
 
                     <div v-if="activeMenu === 'history'" :class="isMobile

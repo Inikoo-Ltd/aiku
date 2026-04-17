@@ -32,10 +32,8 @@ trait WithOrgStockSubNavigation
                     'tooltip' => __('SKU')
                 ]
             ],
-
-
             [
-                'label' => __('Stock history'),
+                'label' => __('Stock History'),
 
                 'route'    => [
                     'name'       => $routeName.'.stock_history',
@@ -43,7 +41,7 @@ trait WithOrgStockSubNavigation
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-scanner'],
-                    'tooltip' => __('Stock history')
+                    'tooltip' => __('Stock History')
                 ]
             ],
             [

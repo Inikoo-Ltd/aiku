@@ -84,21 +84,6 @@ class EditWebsite extends OrgAction
 
         $blueprints = [];
 
-        $blueprints[] = [
-            'label' => __('Upload Your LLM'),
-            'icon' => 'fa-light fa-upload',
-            'fields' => [
-                'llms_txt' => [
-                    'type'        => 'file_upload',
-                    'label'       => __('LLMs.txt File'),
-                    'placeholder' => __('Upload a .txt file (max 50KB)'),
-                    'required'    => false,
-                    'value'       => Arr::get($website->settings, 'llms_txt.filename'),
-                    'accept'      => '.txt,text/plain',
-                    'information' => __('This file tells AI crawlers (ChatGPT, Gemini, etc.) how to interact with your website.'),
-                ],
-            ]
-        ];
 
         $blueprints[] = [
             'label'  => __('ID/Domain'),
@@ -161,7 +146,7 @@ class EditWebsite extends OrgAction
                 ],
                 "image"                 => [
                     "type"    => "image_crop_square",
-                    "label"   => __("logo"),
+                    "label"   => __("Logo"),
                     "value"   => $website->imageSources(320, 320),
                     'options' => [
                         "minAspectRatio" => 1,
@@ -171,7 +156,7 @@ class EditWebsite extends OrgAction
                 "favicon"               => [
                     "information" => __("Will show on browsers tab icon in size 18x18 pixels."),
                     "type"        => "image_crop_square",
-                    "label"       => __("favicon"),
+                    "label"       => __("Favicon"),
                     "value"       => $website->faviconSources(160, 160),
                     'options'     => [
                         'aspectRatio' => 1
@@ -181,6 +166,18 @@ class EditWebsite extends OrgAction
         ];
 
         if (in_array($website->type, [WebsiteTypeEnum::B2B, WebsiteTypeEnum::DROPSHIPPING])) {
+            $blueprints[] = [
+                'label'  => __('Catalogue Pages'),
+                'icon'   => 'fa-light fa-browser',
+                'fields' => [
+                    'description_has_overview'  => [
+                        'type'          => 'toggle',
+                        'information'   => __('Toggle whether or not Department Pages have a dedicated overview page that lists all of the families under that department'),
+                        'label'         => __('Department Pages has Family Overview'),
+                        'value'         => data_get($website->settings, 'catalogue_pages.description_has_overview', false),
+                    ]
+                ]
+            ];
             $blueprints[] = [
                 'label'  => __('Registration'),
                 'icon'   => 'fa-light fa-id-card',
@@ -328,6 +325,22 @@ class EditWebsite extends OrgAction
             ];
         }
 
+        $blueprints[] = [
+            'label' => __('Upload Your LLM'),
+            'icon' => 'fa-light fa-upload',
+            'fields' => [
+                'llms_txt' => [
+                    'type'        => 'file_upload',
+                    'label'       => __('LLMs.txt File'),
+                    'placeholder' => __('Upload a .txt file (max 50KB)'),
+                    'required'    => false,
+                    'value'       => Arr::get($website->settings, 'llms_txt.filename'),
+                    'accept'      => '.txt,text/plain',
+                    'information' => __('This file tells AI crawlers (ChatGPT, Gemini, etc.) how to interact with your website.'),
+                ],
+            ]
+        ];
+
         // LLMs.txt section - for AI crawler configuration
         $blueprints[] = [
             'label'  => __('LLMs.txt'),
@@ -348,6 +361,56 @@ class EditWebsite extends OrgAction
                     'value'       => Arr::get($website->settings, 'llms_txt.use_fallback', true),
                     'information' => __('If enabled and no file is uploaded, the global LLMs.txt will be used.'),
                 ],
+            ]
+        ];
+
+        $blueprints[] = [
+            'label' => __('Retina'),
+            'icon' => 'fal fa-chart-network',
+            'fields' => [
+                'welcome_message' => [
+                    'type' => 'textEditor',
+                    'routeGetInternalLink' => [
+                        'name' => 'grp.org.shops.show.web.webpages.index',
+                        'parameters' => [
+                            'shop' => $website->shop->slug,
+                            'organisation' => $website->organisation->slug,
+                            'website' => $website?->slug
+                        ]
+                    ],
+                    'options' => [
+                        'counter' => true,
+                    ],
+                    'label' => __('Welcome Message'),
+                    'required' => false,
+                    'value' => Arr::get($website->settings, 'welcome_message'),
+                    'full' => true,
+                    'information' => __('Displayed on the Retina dashboard as the main text.'),
+                    'toogle' => [
+                        'heading2',
+                        'heading3',
+                        'fontSize',
+                        'bold',
+                        'italic',
+                        'underline',
+                        'bulletList',
+                        "fontFamily",
+                        'orderedList',
+                        'blockquote',
+                        'divider',
+                        'alignLeft',
+                        'alignRight',
+                        "customLink",
+                        'alignCenter',
+                        'undo',
+                        'redo',
+                        'highlight',
+                        'color',
+                        'clear',
+                        'query'
+                    ],
+                ],
+
             ]
         ];
 

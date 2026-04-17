@@ -19,6 +19,7 @@ use App\Actions\Inventory\WarehouseArea\UI\CreateWarehouseArea;
 use App\Actions\Inventory\WarehouseArea\UI\EditWarehouseArea;
 use App\Actions\Inventory\WarehouseArea\UI\IndexWarehouseAreas;
 use App\Actions\Inventory\WarehouseArea\UI\ShowWarehouseArea;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowWarehouse::class)->name('dashboard');
 Route::get('edit', EditWarehouse::class)->name('edit');
@@ -44,6 +45,8 @@ Route::scopeBindings()->prefix('areas')->name('warehouse_areas.')->group(functio
     });
 });
 
+Route::get('locations/{orgStock}/exclude', [IndexLocations::class, 'excludeOrgStockLocs'])->name('locations.index.excluded_in_org_stock')->withoutScopedBindings();
+Route::get('locations/{orgStock}/only', [IndexLocations::class, 'onlyOrgStockLocs'])->name('locations.index.only_in_org_stock')->withoutScopedBindings();
 
 Route::scopeBindings()->prefix('locations')->name('locations.')->group(function () {
     Route::get('export', [ExportLocations::class, 'inWarehouse'])->name('export');

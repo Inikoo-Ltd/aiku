@@ -18,21 +18,24 @@ trait WithRetinaOrderPlacedRedirection
     public function htmlResponse(array $arr): RedirectResponse
     {
         $itemsToPushLayer = [];
-        foreach ($arr['order']?->transactions as $index => $transaction) {
-            if ($transaction->model_type != 'Product') {
-                continue;
-            }
 
-            $itemsToPushLayer[] = (object)[
-                'item_id'   => $transaction->model?->getLuigiIdentity(),
-                'item_name' => $transaction->model?->name,
-                'index'     => $index,
-                'price'     => (float)$transaction->model?->price,
-                'quantity'  => (float)$transaction->quantity_ordered,
-            ];
+        if (Arr::get($arr, 'order')) {
+            foreach ($arr['order']?->transactions as $index => $transaction) {
+                if ($transaction->model_type != 'Product') {
+                    continue;
+                }
+
+                $itemsToPushLayer[] = (object)[
+                    'item_id'   => $transaction->model?->getLuigiIdentity(),
+                    'item_name' => $transaction->model?->name,
+                    'index'     => $index,
+                    'price'     => (float)$transaction->model?->price,
+                    'quantity'  => (float)$transaction->quantity_ordered,
+                ];
+            }
         }
 
-        if ($arr['success']) {
+        if (Arr::get($arr, 'success')) {
             $notification = [
                 'status'      => 'success',
                 'title'       => __('Success!'),

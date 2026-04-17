@@ -8,7 +8,6 @@
 
 namespace App\Actions\Maintenance\Masters;
 
-use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\OrgAction;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
@@ -28,21 +27,53 @@ class RepairMasterProductUnits extends OrgAction
      */
     public function handle(MasterAsset $masterAsset): MasterAsset
     {
+        $seedShopID = null;
+        if ($masterAsset->masterShop->slug == 'aw') {
+            $seedShopID = 18;
+        }
+
+        if (!$seedShopID) {
+            return $masterAsset;
+            //abort(419, 'Seed shop not found');
+        }
+
+
         if ($masterAsset->type != MasterAssetTypeEnum::PRODUCT) {
             return $masterAsset;
         }
 
         $masterAsset = ModelHydrateSingleTradeUnits::run($masterAsset);
 
+        $units = null;
+        $unit  = null;
+
+
+        $seedProduct = $masterAsset->products()->where('shop_id', $seedShopID)->first();
+
         if ($masterAsset->is_single_trade_unit) {
             $tradeUnitData = $masterAsset->tradeUnits->first();
-            $packedIn      = $tradeUnitData->pivot->quantity;
+            $units         = $tradeUnitData->pivot->quantity;
 
-            UpdateMasterAsset::make()->action($masterAsset, [
-                'units' => $packedIn
-            ]);
+            if ($seedProduct && $seedProduct->units != $units) {
+                print "\n$seedProduct->code units $seedProduct->units do not match trade units $units ";
+                $units = null;
+            }
+        } elseif ($seedProduct) {
+            $units = $seedProduct->units;
+        }
+        $unit = $seedProduct?->unit;
+
+        $dataToUpdate = [];
+        if ($units) {
+            $dataToUpdate['units'] = $units;
+        }
+        if ($unit) {
+            $dataToUpdate['unit'] = $unit;
         }
 
+        if ($units || $unit) {
+            $masterAsset->update($dataToUpdate);
+        }
 
         return $masterAsset;
     }
@@ -57,11 +88,11 @@ class RepairMasterProductUnits extends OrgAction
      */
     public function asCommand(Command $command): int
     {
-
         if ($command->argument('masterAsset')) {
             $masterAsset = MasterAsset::where('slug', $command->argument('masterAsset'))->firstOrFail();
             $command->info("Fixing units value from trade units for $masterAsset->code");
             $this->handle($masterAsset);
+
             return 0;
         }
 
@@ -91,7 +122,7 @@ class RepairMasterProductUnits extends OrgAction
                         $command->error("Error processing asset $asset->id: {$e->getMessage()}");
                     }
                     $count++;
-                    $bar->advance();
+                    //$bar->advance();
                 }
             }
         );

@@ -100,6 +100,12 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.catalog.product_follow_master', Arr::pull($modelData, 'product_follow_master'));
         }
 
+        if (Arr::exists($modelData, 'portal_link')) {
+            if (Arr::get($modelData, 'portal_link') === null) {
+                data_set($modelData, 'portal_link', '');
+            }
+        }
+
         foreach ($modelData as $key => $value) {
             data_set(
                 $modelData,
@@ -122,6 +128,7 @@ class UpdateShop extends OrgAction
                     'wix_access_token' => 'settings.wix.access_token',
                     'enable_chat' => 'settings.chat.enable_chat',
                     'portal_link' => 'settings.portal.link',
+                    'reviews' => 'settings.reviews',
                     default => $key
                 },
                 $value
@@ -146,26 +153,26 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'is_shipping_by_external');
         data_forget($modelData, 'wix_access_token');
         data_forget($modelData, 'portal_link');
+        data_forget($modelData, 'reviews');
 
         if (Arr::exists($modelData, 'enable_chat')) {
             $enableChat = Arr::pull($modelData, 'enable_chat');
             UpdateWebsite::make()->action(
                 website: $shop->website,
                 modelData: ['enable_chat' => $enableChat],
-                hydratorsDelay: 0,
-                strict: false,
-                audit: true
+                strict: false
             );
         }
 
         if (Arr::exists($modelData, 'widget_key')) {
             $widgetKey = Arr::pull($modelData, 'widget_key');
+            if ($widgetKey === null) {
+                $widgetKey = '';
+            }
             UpdateWebsite::make()->action(
                 website: $shop->website,
                 modelData: ['jira_help_desk_widget' => $widgetKey],
-                hydratorsDelay: 0,
-                strict: false,
-                audit: true
+                strict: false
             );
         }
 
@@ -220,6 +227,14 @@ class UpdateShop extends OrgAction
 
         if (Arr::exists($modelData, 'stand_alone_invoice_numbers')) {
             data_set($modelData, "settings.invoicing.stand_alone_invoice_numbers", Arr::pull($modelData, 'stand_alone_invoice_numbers'));
+        }
+
+        if (Arr::exists($modelData, 'download_pdf_columns')) {
+            $columnsMap = [];
+            foreach (Arr::pull($modelData, 'download_pdf_columns') as $col) {
+                $columnsMap[$col['key']] = (bool)$col['value'];
+            }
+            data_set($modelData, "settings.invoicing.download_pdf_columns", $columnsMap);
         }
 
         $shop    = $this->update($shop, $modelData, ['data', 'settings']);
@@ -353,13 +368,14 @@ class UpdateShop extends OrgAction
             'wix_access_token'                                        => ['sometimes', 'string'],
             'enable_chat'                                             => ['sometimes', 'boolean'],
             'is_shipping_by_external'                                 => ['sometimes', 'boolean'],
-            'portal_link'                                             => ['sometimes', 'string'],
-            'widget_key'                                              => ['sometimes', 'string'],
+            'portal_link'                                             => ['sometimes', 'nullable', 'string'],
+            'widget_key'                                              => ['sometimes', 'nullable', 'string'],
             'required_approval'                                       => ['sometimes', 'boolean'],
             'required_phone_number'                                   => ['sometimes', 'boolean'],
             'marketing_opt_in_default'                                => ['sometimes', 'boolean'],
             'marketing_opt_in_label'                                  => ['sometimes', 'string'],
             'invoice_footer'                                          => ['sometimes', 'string', 'max:10000'],
+            'download_pdf_columns'                                    => ['sometimes', 'array'],
             'cost_price_ratio'                                        => ['sometimes', 'numeric', 'min:0'],
             'price_rrp_ratio'                                         => ['sometimes', 'numeric', 'min:0'],
             'extra_languages'                                         => ['sometimes', 'array', 'nullable'],
@@ -377,6 +393,9 @@ class UpdateShop extends OrgAction
             'family_follow_master'                                    => ['sometimes', 'boolean'],
             'product_follow_master'                                   => ['sometimes', 'boolean'],
             'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
+            'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
+            'family_webpage_split_description'                        => ['sometimes', 'boolean'],
+            'reviews'                                                 => ['sometimes', 'nullable', 'array'],
         ];
 
         $channelIds = SalesChannel::pluck('id');

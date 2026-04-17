@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $number_records
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Catalogue\Collection $collection
+ * @property-read \App\Models\Catalogue\Collection|null $collection
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\CollectionTimeSeriesRecord> $records
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionTimeSeries newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionTimeSeries newQuery()

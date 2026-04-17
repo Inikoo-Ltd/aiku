@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import Table from '@/Components/Table/Table.vue';
 import { ref } from 'vue';
+import { useLayoutStore } from "@/Stores/retinaLayout";
 import JsonViewer from 'vue-json-viewer';
 import { faPlus, faMinus } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowRight } from '@fal';
+import { faArrowRight, faChevronDoubleDown } from '@fal';
 
 library.add(faPlus, faMinus, faArrowRight);
 
@@ -16,6 +17,7 @@ defineProps<{
 
 const index = ref(null);
 const ExpandData = ref(null);
+const layout = useLayoutStore()
 
 const formatDate = (dateIso: string) => {
     const date = new Date(dateIso);
@@ -40,8 +42,8 @@ const onCloseExpand = (data) => {
 
 const getKeys = (oldValues: any, newValues: any): string[] => {
   const keys = new Set([
+    ...Object.keys(newValues || {}),
     ...Object.keys(oldValues || {}),
-    ...Object.keys(newValues || {})
   ]);
   return Array.from(keys);
 };
@@ -62,16 +64,29 @@ const formatValue = (value: any) => {
   }
   return value;
 };
+
+const expandedRows = ref<String[]>([]);
+
+const clickExpand = (id: string) => {
+    if (id) {
+        if (expandedRows.value.includes(id)) {
+            expandedRows.value = expandedRows.value.filter((item) => item != id);
+        } else {
+            expandedRows.value.push(id);
+        }
+    }
+}
+
 </script>
 
 <template>
     <!-- <pre>{{ data }}</pre> {{ tab }} -->
     <Table :resource="data" class="mt-5" :name="tab" :useExpandTable="true">
         <template #cell(expand)="{ item: user }">
-            <div v-if="user?.rowIndex === index" class="p-4">
+            <div v-if="user?.rowIndex === index" class="p-4 cursor-pointer">
                 <FontAwesomeIcon @click="() => onCloseExpand(user)" icon="fas fa-minus" />
             </div>
-            <div v-else class="p-4">
+            <div v-else class="p-4 cursor-pointer">
                 <FontAwesomeIcon @click="() => onExpand(user)" icon="fas fa-plus" />
             </div>
         </template>
@@ -82,18 +97,45 @@ const formatValue = (value: any) => {
 
         <template #cell(values)="{ item: user }">
             <!-- Only display the values column if the event is not "migration" -->
-            <div v-if="user.event !== 'migration'" class="space-y-2">
-                <div
-                  v-for="key in getChangedKeys(user.old_values, user.new_values)"
-                  :key="key"
-                  class="flex items-center space-x-2 text-sm"
+             <div class="flex">
+                <div 
+                    v-if="user.event !== 'migration'" 
+                    class="space-y-2 overflow-y-auto grid flex-auto transition-all ease-in-out duration-700" 
+                    :class="user.id && expandedRows.includes(user.id) ? 'max-h-[999px]' : 'max-h-[100px]'"
+                    style="scrollbar-width:none"
                 >
-                  <span class="font-bold text-gray-700">{{ formatKey(key) }}:</span>
-                  <span class="text-gray-600">{{ formatValue(user.old_values[key]) }}</span>
-                  <FontAwesomeIcon :icon="faArrowRight" aria-hidden="true" size="xs" />
-                  <span class="text-gray-800">{{ formatValue(user.new_values[key]) }}</span>
+                    <div
+                    v-for="key in getChangedKeys(user.old_values, user.new_values)"
+                    :key="key"
+                    class="flex items-center space-x-2 text-sm"
+                    >
+                        <span class="font-bold text-gray-700">{{ formatKey(key) }}:</span>
+                        <span class="text-gray-600">{{ formatValue(user.old_values[key]) }}</span>
+                            <FontAwesomeIcon :icon="faArrowRight" aria-hidden="true" size="xs" />
+                        <span class="text-gray-800">{{ formatValue(user.new_values[key]) }}</span>
+                    </div>
                 </div>
-            </div>
+                <div 
+                    v-if="getChangedKeys(user.old_values, user.new_values).length ?? 0 > 4"
+                    @click="clickExpand(user.id)"
+                    class="flex-initial w-[50px] my-auto cursor-pointer"
+                >
+                    <span
+                        class="justify-self-end text-md p-2 rounded-full h-[30px] w-[30px] flex align-center hover:opacity-85" 
+                        :class="user.id && expandedRows.includes(user.id) ? 'align-top' : 'align-center'"
+                        :style="{
+                            background: layout?.app?.theme[0],
+                            color: layout?.app?.theme[1],
+                        }"
+                    >
+                        <FontAwesomeIcon 
+                            :icon="faChevronDoubleDown" 
+                            class="h-fit transition-all ease-out duration-700"
+                            :class="user.id && expandedRows.includes(user.id) ? 'rotate-180' : ''"
+                        />
+                    </span>
+                </div>
+             </div>
         </template>
 
         <template #expandRow="{ item: data }">

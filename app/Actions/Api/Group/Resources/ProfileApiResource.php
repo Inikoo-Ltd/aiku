@@ -9,7 +9,7 @@
 namespace App\Actions\Api\Group\Resources;
 
 use App\Http\Resources\HumanResources\EmployeeResource;
-use App\Http\Resources\SysAdmin\GuestResource;
+use App\Http\Resources\SysAdmin\Guest\GuestResource;
 use App\Models\SysAdmin\User;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Resources\Json\JsonResource;

@@ -48,13 +48,13 @@ export const getDashboardDateRange = (intervalValue?: string, rangeInterval?: st
             startDate = startOfMonth(now)
             break
         case 'wtd':
-            startDate = startOfWeek(now)
+            startDate = startOfWeek(now, { weekStartsOn: 1 })
             break
         case 'lm':
             startDate = [startOfMonth(subMonths(now, 1)), endOfMonth(subMonths(now, 1))]
             break
         case 'lw':
-            startDate = [startOfWeek(subWeeks(now, 1)), endOfWeek(subWeeks(now, 1))]
+            startDate = [startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 }), endOfWeek(subWeeks(now, 1), { weekStartsOn: 1 })]
             break
         case 'ld':
             startDate = [startOfDay(subDays(now, 1)), endOfDay(subDays(now, 1))]

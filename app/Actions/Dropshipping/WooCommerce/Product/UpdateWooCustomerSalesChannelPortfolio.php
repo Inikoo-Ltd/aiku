@@ -48,13 +48,14 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
 
         foreach ($portfolios->chunk(100) as $portfolioChunk) {
             foreach ($portfolioChunk as $portfolio) {
+                /**  @var Portfolio $portfolio */
                 if ($this->checkIfApplicable($portfolio)) {
                     $portfoliosID[$portfolio->id] = $portfolio->id;
                 }
             }
         }
 
-        foreach (collect($portfoliosID)->chunk(100) as $portfolioIdChunk) {
+        foreach (collect($portfoliosID)->chunk(20) as $portfolioIdChunk) {
             $productData = [];
             foreach ($portfolioIdChunk as $portfolio) {
                 $portfolio = Portfolio::find($portfolio);
@@ -98,7 +99,7 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
                 }
 
                 if (is_string($rawMessage)) {
-                    $messageData = json_decode(Arr::get($stockUpdated, '0'), true);
+                    $messageData = json_decode($rawMessage, true);
                     if ($messageData) {
                         if (Arr::get($messageData, 'code') == 'rest_invalid_param' || Arr::get($messageData, 'code') == 'woocommerce_rest_product_invalid_id' || Arr::get($messageData, 'data.status') == 404 || Arr::get($messageData, 'data.status') == 400) {
                             $ban = false;
@@ -126,7 +127,7 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
             /** @var Product $product */
             $product = $portfolio->item;
 
-            if (!$product->available_quantity_updated_at || $product->available_quantity_updated_at->gt($portfolio->stock_last_updated_at)) {
+            if (!$product->available_quantity_updated_at || !$portfolio->stock_last_updated_at || $product->available_quantity_updated_at->gt($portfolio->stock_last_updated_at)) {
                 $applicable = true;
             }
         }

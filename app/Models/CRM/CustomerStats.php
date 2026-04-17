@@ -18,9 +18,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property int $id
  * @property int $customer_id
- * @property string $sales_all
- * @property string $sales_org_currency_all
- * @property string $sales_grp_currency_all
+ * @property numeric $sales_all
+ * @property numeric $sales_org_currency_all
+ * @property numeric $sales_grp_currency_all
  * @property string|null $last_order_created_at
  * @property string|null $last_order_submitted_at
  * @property string|null $last_order_dispatched_at
@@ -40,9 +40,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_orders_handing_type_collection
  * @property int $number_orders_handing_type_shipping
  * @property int $number_item_transactions_out_of_stock_in_basket transactions at the time up submission from basket
- * @property string|null $out_of_stock_in_basket_grp_net_amount
- * @property string|null $out_of_stock_in_basket_org_net_amount
- * @property string $out_of_stock_in_basket_net_amount
+ * @property numeric|null $out_of_stock_in_basket_grp_net_amount
+ * @property numeric|null $out_of_stock_in_basket_org_net_amount
+ * @property numeric $out_of_stock_in_basket_net_amount
  * @property int $number_item_transactions transactions including cancelled
  * @property int $number_current_item_transactions transactions excluding cancelled
  * @property int $number_item_transactions_state_creating
@@ -126,9 +126,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_unpaid_invoices
- * @property string $unpaid_invoices_amount
- * @property string $unpaid_invoices_amount_org_currency
- * @property string $unpaid_invoices_amount_grp_currency
+ * @property numeric $unpaid_invoices_amount
+ * @property numeric $unpaid_invoices_amount_org_currency
+ * @property numeric $unpaid_invoices_amount_grp_currency
  * @property int $number_deleted_invoices
  * @property int $number_platforms
  * @property int $number_customer_sales_channels
@@ -140,42 +140,42 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_customer_sales_channels_platform_type_amazon
  * @property int $number_customer_sales_channels_platform_type_magento
  * @property int $number_customer_sales_channels_platform_type_wix
- * @property string|null $historic_clv_amount
- * @property string|null $historic_clv_amount_org_currency
- * @property string|null $historic_clv_amount_grp_currency
- * @property string|null $predicted_clv_amount
- * @property string|null $predicted_clv_amount_org_currency
- * @property string|null $predicted_clv_amount_grp_currency
- * @property string|null $total_clv_amount
- * @property string|null $total_clv_amount_org_currency
- * @property string|null $total_clv_amount_grp_currency
+ * @property numeric|null $historic_clv_amount
+ * @property numeric|null $historic_clv_amount_org_currency
+ * @property numeric|null $historic_clv_amount_grp_currency
+ * @property numeric|null $predicted_clv_amount
+ * @property numeric|null $predicted_clv_amount_org_currency
+ * @property numeric|null $predicted_clv_amount_grp_currency
+ * @property numeric|null $total_clv_amount
+ * @property numeric|null $total_clv_amount_org_currency
+ * @property numeric|null $total_clv_amount_grp_currency
  * @property float|null $churn_interval in days
  * @property float|null $churn_risk_prediction
  * @property float|null $average_time_between_orders
- * @property string|null $average_order_value
+ * @property numeric|null $average_order_value
  * @property string|null $expected_date_of_next_order
- * @property string $revenue_amount
- * @property string $revenue_amount_org_currency
- * @property string $revenue_amount_grp_currency
- * @property string $lost_revenue_out_of_stock_amount
- * @property string $lost_revenue_out_of_stock_amount_org_currency
- * @property string $lost_revenue_out_of_stock_amount_grp_currency
- * @property string $lost_revenue_replacements_amount
- * @property string $lost_revenue_replacements_amount_org_currency
- * @property string $lost_revenue_replacements_amount_grp_currency
- * @property string $lost_revenue_compensations_amount
- * @property string $lost_revenue_compensations_amount_org_currency
- * @property string $lost_revenue_compensations_amount_grp_currency
- * @property string $lost_revenue_other_amount
- * @property string $lost_revenue_other_amount_org_currency
- * @property string $lost_revenue_other_amount_grp_currency
- * @property string $predicted_clv_amount_next_year
- * @property string $predicted_clv_amount_next_year_org_currency
- * @property string $predicted_clv_amount_next_year_grp_currency
+ * @property numeric $revenue_amount
+ * @property numeric $revenue_amount_org_currency
+ * @property numeric $revenue_amount_grp_currency
+ * @property numeric $lost_revenue_out_of_stock_amount
+ * @property numeric $lost_revenue_out_of_stock_amount_org_currency
+ * @property numeric $lost_revenue_out_of_stock_amount_grp_currency
+ * @property numeric $lost_revenue_replacements_amount
+ * @property numeric $lost_revenue_replacements_amount_org_currency
+ * @property numeric $lost_revenue_replacements_amount_grp_currency
+ * @property numeric $lost_revenue_compensations_amount
+ * @property numeric $lost_revenue_compensations_amount_org_currency
+ * @property numeric $lost_revenue_compensations_amount_grp_currency
+ * @property numeric $lost_revenue_other_amount
+ * @property numeric $lost_revenue_other_amount_org_currency
+ * @property numeric $lost_revenue_other_amount_grp_currency
+ * @property numeric $predicted_clv_amount_next_year
+ * @property numeric $predicted_clv_amount_next_year_org_currency
+ * @property numeric $predicted_clv_amount_next_year_grp_currency
  * @property string|null $first_order_date
  * @property int $expected_remaining_lifespan_months
- * @property string $today_timeline_position
- * @property string|null $next_order_timeline_position
+ * @property numeric $today_timeline_position
+ * @property numeric|null $next_order_timeline_position
  * @property int $number_returns Total order returns
  * @property int $number_returns_state_waiting_to_receive
  * @property int $number_returns_state_received
@@ -199,7 +199,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_delivery_notes_cancelled_at_state_picked
  * @property int $number_orders_state_picked
  * @property int $number_orders_state_packing
- * @property-read \App\Models\CRM\Customer $customer
+ * @property int $number_customer_sales_channels_platform_type_allegro
+ * @property-read \App\Models\CRM\Customer|null $customer
  * @method static Builder<static>|CustomerStats newModelQuery()
  * @method static Builder<static>|CustomerStats newQuery()
  * @method static Builder<static>|CustomerStats query()

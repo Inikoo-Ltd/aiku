@@ -8,19 +8,21 @@
 namespace App\Actions\Dropshipping\Platform;
 
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Dropshipping\Platform;
-use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 
 class RedoPlatformTimeSeries implements ShouldBeUnique
 {
     use WithHydrateCommand;
+    use WithTimeSeriesRedo {
+        WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
+    }
 
-    public string $jobQueue         = 'default-long';
+    public string $jobQueue = 'default-long';
     public string $commandSignature = 'platforms:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -28,13 +30,24 @@ class RedoPlatformTimeSeries implements ShouldBeUnique
         $this->model = Platform::class;
     }
 
-    public function getJobUniqueId(string $from, string $to): string
+    public function getJobUniqueId(?int $platformId, ?string $from, ?string $to): string
     {
-        return "{$from}_{$to}";
+        if ($platformId === null) {
+            return 'empty'.'_'.$from.'_'.$to;
+        }
+        return $platformId.'_'.$from.'_'.$to;
     }
 
-    public function handle(Platform $platform, bool $async = false, ?string $from = null, ?string $to = null): void
+    public function handle(?int $platformId, ?string $from = null, ?string $to = null, bool $async = false): void
     {
+        if (!$platformId) {
+            return;
+        }
+        $platform = Platform::find($platformId);
+        if (!$platform) {
+            return;
+        }
+
         $shopIds = DB::table('invoices')->where('platform_id', $platform->id)->whereNull('deleted_at')->whereNotNull('shop_id')->distinct()->pluck('shop_id');
 
         foreach ($shopIds as $shopId) {
@@ -70,57 +83,4 @@ class RedoPlatformTimeSeries implements ShouldBeUnique
         }
     }
 
-    public function asJob(string $from, string $to): void
-    {
-        $tableName = (new $this->model())->getTable();
-        $query     = DB::table($tableName)->select('id')->orderBy('id', 'desc');
-
-        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($from, $to) {
-            foreach ($modelsData as $modelId) {
-                $model    = (new $this->model());
-                $instance = $this->hasSoftDeletes($model)
-                    ? $model->withTrashed()->find($modelId->id)
-                    : $model->find($modelId->id);
-
-                try {
-                    $this->handle($instance, false, $from, $to);
-                } catch (Throwable $e) {
-                    report($e);
-                }
-            }
-        });
-    }
-
-    public function asCommand(Command $command): int
-    {
-        $command->info($command->getName());
-        $tableName = (new $this->model())->getTable();
-        $query     = $this->prepareQuery($tableName, $command);
-        $count     = $query->count();
-        $bar       = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
-        $bar->start();
-
-        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($bar, $command) {
-            foreach ($modelsData as $modelId) {
-                $model    = (new $this->model());
-                $instance = $this->hasSoftDeletes($model)
-                    ? $model->withTrashed()->find($modelId->id)
-                    : $model->find($modelId->id);
-
-                try {
-                    $this->handle($instance, (bool) $command->option('async'), $command->option('from'), $command->option('to'));
-                } catch (Throwable $e) {
-                    $command->error($e->getMessage());
-                }
-
-                $bar->advance();
-            }
-        });
-
-        $bar->finish();
-        $command->info('');
-
-        return 0;
-    }
 }

@@ -11,19 +11,18 @@ namespace App\Actions\CRM\Customer;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCrmStats;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomerInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
+use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
+use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use App\Actions\CRM\Customer\Search\CustomerRecordSearch;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomerFromCustomer;
 use App\Actions\Helpers\Address\ParseCountryID;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateRegistrationIntervals;
+use App\Actions\Masters\MasterShop\RedoMasterShopTimeSeries;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomers;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRegistrationIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomers;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRegistrationIntervals;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Traits\WithPrepareTaxNumberValidation;
@@ -42,6 +41,7 @@ use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
@@ -167,11 +167,16 @@ class StoreCustomer extends OrgAction
         OrganisationHydrateCustomers::dispatch($customer->organisation)->delay($this->hydratorsDelay);
 
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
-        ShopHydrateRegistrationIntervals::dispatch($customer->shop_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-        OrganisationHydrateRegistrationIntervals::dispatch($customer->organisation_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-        GroupHydrateRegistrationIntervals::dispatch($customer->group_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-        if ($customer->master_shop_id) {
-            MasterShopHydrateRegistrationIntervals::dispatch($customer->master_shop_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+
+        if ($customer->registered_at) {
+            $registeredAtDate = Carbon::parse($customer->registered_at)->toDateString();
+
+            RedoShopTimeSeries::dispatch(shopId: $customer->shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+            RedoOrganisationTimeSeries::dispatch(organisationId: $customer->organisation_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+
+            if ($customer->master_shop_id) {
+                RedoMasterShopTimeSeries::dispatch(masterShopId: $customer->master_shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+            }
         }
 
         CustomerRecordSearch::dispatch($customer);
@@ -278,6 +283,7 @@ class StoreCustomer extends OrgAction
             'traffic_sources'                                       => ['sometimes', 'nullable'],
             'tax_number'                                            => ['sometimes', 'nullable', 'array'],
             'is_re'                                                 => ['sometimes', 'boolean'],
+            'eori'                                                  => ['sometimes', 'nullable', 'string', 'max:20'],
 
 
             'password' =>
@@ -288,7 +294,7 @@ class StoreCustomer extends OrgAction
                 ],
 
         ];
-        // Used for autora and external shops (Faire)
+        // Used for aurora and external shops (Faire)
         if (!$this->strict) {
             $rules['is_vip']             = ['sometimes', 'boolean'];
             $rules['as_organisation_id'] = ['sometimes', 'nullable', 'integer'];

@@ -34,11 +34,17 @@ class ShowMailshotRecipients extends OrgAction
         $previewMailshot->recipients_recipe = $currentFilters;
 
         $queryBuilder = GetMailshotRecipientsQueryBuilder::make()->handle($previewMailshot);
-        $estimatedRecipients = $queryBuilder?->count() ?? 0;
+        $estimatedRecipients = $queryBuilder?->count('customers.id') ?? 0;
 
 
         $interestTags = Tag::query()
-            ->where('scope', TagScopeEnum::SYSTEM_CUSTOMER)
+            ->where(function ($query) use ($mailshot) {
+                $query->where('scope', TagScopeEnum::SYSTEM_CUSTOMER)
+                    ->orWhere(function ($query) use ($mailshot) {
+                        $query->whereIn('scope', [TagScopeEnum::ADMIN_CUSTOMER, TagScopeEnum::USER_CUSTOMER])
+                            ->where('shop_id', $mailshot->shop_id);
+                    });
+            })
             ->orderBy('name')
             ->get()
             ->map(fn ($tag) => ['value' => $tag->id, 'label' => $tag->name])
@@ -173,9 +179,9 @@ class ShowMailshotRecipients extends OrgAction
                         ],
                     ],
                     'by_interest' => [
-                        'label'          => 'By Interest',
+                        'label'          => 'By Tags',
                         'type'           => 'multiselect',
-                        'description'    => 'Targets customers who have selected at least one of the chosen interests in their profile.',
+                        'description'    => 'Targets customers who have selected at least one of the chosen tags in their profile.',
                         'options'        => $interestTags,
                         'multiple'       => true,
                         'logic'          => 'OR'

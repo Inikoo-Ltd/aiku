@@ -10,7 +10,7 @@ import {
     faEllipsisVertical,
     faTimesCircle,
     faMessage,
-    faPaperclip, faXmark, faFilePdf
+    faPaperclip, faXmark, faFilePdf, faEnvelope
 } from "@fortawesome/free-solid-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
@@ -104,6 +104,8 @@ const selectedFile = ref<File | null>(null)
 const previewUrl = ref<string | null>(null)
 const previewType = ref<"image" | "file" | null>(null)
 
+const isEmailNotif = ref(false)
+
 const handleImageSelect = (e: Event) => {
     const file = (e.target as HTMLInputElement)?.files?.[0]
     if (!file) return
@@ -166,6 +168,7 @@ const removeFile = () => {
     selectedFile.value = null
     previewUrl.value = null
     previewType.value = null
+    isEmailNotif.value = false
 
     if (imageInput.value) imageInput.value.value = ""
     if (fileInput.value) fileInput.value.value = ""
@@ -224,6 +227,7 @@ const sendMessage = async () => {
             image: selectedFile.value,
             message_type: messageType,
             tempId,
+            is_email_notif: isEmailNotif.value,
         })
         removeFile()
         const msg = messagesLocal.value.find((m) => m._tempId === tempId)
@@ -600,7 +604,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 <div v-if="isMenuOpen && !isClosed"
                     class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
                     <ModalConfirmationDelete :routeDelete="{
-                        name: 'grp.org.crm.agents.sessions.close',
+                        name: 'grp.org.chat.agents.sessions.close',
                         parameters: [session?.organisation.id, session?.ulid],
                         method: 'patch',
                     }" :title="trans('Are you sure you want to close this session?')"
@@ -716,6 +720,21 @@ const handleClickOutside = (e: MouseEvent) => {
             " @keydown.enter.exact.prevent="sendMessage" rows="1" placeholder="Type message..."
                 class="flex-1 resize-none border rounded-lg px-3 py-3 text-sm leading-5 focus:outline-none" />
 
+            <Button
+                @click="isEmailNotif = !isEmailNotif"
+                type="transparent"
+                class="transition-all duration-150"
+                :class="isEmailNotif
+                    ? '!bg-green-500 !border-green-600 !text-white'
+                    : '!bg-transparent text-gray-500 hover:!bg-gray-100'"
+                :tooltip="isEmailNotif
+                    ? 'Email notification ON'
+                    : 'Send email notification'"
+            >
+                <template #icon>
+                    <FontAwesomeIcon :icon="faEnvelope" />
+                </template>
+            </Button>
             <Button @click="sendMessage" :icon="faPaperPlane"></Button>
         </footer>
     </div>

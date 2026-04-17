@@ -36,6 +36,7 @@ trait WithProformaInvoicePdf
                 return $transaction;
             });
 
+            $amountToDeduct = (float) ($order->payment_amount ?? 0);
 
             $config = [
                 'title'                  => $order->reference,
@@ -48,11 +49,15 @@ trait WithProformaInvoicePdf
             ];
 
 
-            $filename = $order?->slug.'-'.now()->format('Y-m-d');
+            $filename = $order->slug.'-'.now()->format('Y-m-d');
             $pdf      = PDF::loadView('invoices.templates.pdf.proforma-invoice', [
                 'shop'                 => $order->shop,
                 'order'                => $order,
                 'transactions'         => $transactions,
+                'totalItemsNet'        => $totalItemsNet,
+                'totalShipping'        => $totalShipping,
+                'totalNet'             => $totalNet,
+                'amountToDeduct'       => $amountToDeduct,
                 'pro_mode'             => Arr::get($options, 'pro_mode', false),
                 'country_of_origin'    => Arr::get($options, 'country_of_origin', false),
                 'rrp'                  => Arr::get($options, 'rrp', false),

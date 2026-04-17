@@ -9,20 +9,22 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\AssetTimeSeries\ProcessAssetTimeSeriesRecords;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\Product;
-use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 
 class RedoProductTimeSeries implements ShouldBeUnique
 {
     use WithHydrateCommand;
+    use WithTimeSeriesRedo {
+        WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
+    }
 
-    public string $jobQueue         = 'default-long';
+    public string $jobQueue = 'default-long';
     public string $commandSignature = 'products:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -30,13 +32,25 @@ class RedoProductTimeSeries implements ShouldBeUnique
         $this->model = Product::class;
     }
 
-    public function getJobUniqueId(string $from, string $to): string
+    public function getJobUniqueId(?int $productId, ?string $from, ?string $to): string
     {
-        return "{$from}_{$to}";
+        if ($productId === null) {
+            return 'empty'.'_'.$from.'_'.$to;
+        }
+        return $productId.'_'.$from.'_'.$to;
     }
 
-    public function handle(Product $product, bool $async = false, ?string $from = null, ?string $to = null): void
+    public function handle(?int $productId, ?string $from = null, ?string $to = null, bool $async = false): void
     {
+        if (!$productId) {
+            return;
+        }
+        $product = Product::find($productId);
+        if (!$product) {
+            return;
+        }
+
+
         if ($product->state == ProductStateEnum::IN_PROCESS) {
             return;
         }
@@ -62,57 +76,5 @@ class RedoProductTimeSeries implements ShouldBeUnique
         }
     }
 
-    public function asJob(string $from, string $to): void
-    {
-        $tableName = (new $this->model())->getTable();
-        $query     = DB::table($tableName)->select('id')->orderBy('id', 'desc');
 
-        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($from, $to) {
-            foreach ($modelsData as $modelId) {
-                $model    = (new $this->model());
-                $instance = $this->hasSoftDeletes($model)
-                    ? $model->withTrashed()->find($modelId->id)
-                    : $model->find($modelId->id);
-
-                try {
-                    $this->handle($instance, false, $from, $to);
-                } catch (Throwable $e) {
-                    report($e);
-                }
-            }
-        });
-    }
-
-    public function asCommand(Command $command): int
-    {
-        $command->info($command->getName());
-        $tableName = (new $this->model())->getTable();
-        $query     = $this->prepareQuery($tableName, $command);
-        $count     = $query->count();
-        $bar       = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
-        $bar->start();
-
-        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($bar, $command) {
-            foreach ($modelsData as $modelId) {
-                $model    = (new $this->model());
-                $instance = $this->hasSoftDeletes($model)
-                    ? $model->withTrashed()->find($modelId->id)
-                    : $model->find($modelId->id);
-
-                try {
-                    $this->handle($instance, (bool) $command->option('async'), $command->option('from'), $command->option('to'));
-                } catch (Throwable $e) {
-                    $command->error($e->getMessage());
-                }
-
-                $bar->advance();
-            }
-        });
-
-        $bar->finish();
-        $command->info('');
-
-        return 0;
-    }
 }

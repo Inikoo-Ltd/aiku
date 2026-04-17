@@ -10,6 +10,7 @@ namespace App\Actions\Comms\Unsubscribe;
 
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Comms\DispatchedEmail;
+use Illuminate\Support\Facades\Crypt;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -22,8 +23,10 @@ class ShowUnsubscribeMailshot
         return $dispatchedEmail;
     }
 
-    public function asController(DispatchedEmail $dispatchedEmail): DispatchedEmail
+    public function asController(string $encryptedDispatchedEmailID): DispatchedEmail
     {
+        $dispatchedEmailID = Crypt::decryptString($encryptedDispatchedEmailID);
+        $dispatchedEmail   = DispatchedEmail::findOrFail($dispatchedEmailID);
         return $this->handle($dispatchedEmail);
     }
 

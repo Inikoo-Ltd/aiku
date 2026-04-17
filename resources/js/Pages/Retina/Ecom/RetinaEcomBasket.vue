@@ -109,17 +109,17 @@ const props = defineProps<{
         extra_packing?: ChargeResource
         insurance?: ChargeResource
     }
-    eligible_gifts: {
-        is_customer_eligible: boolean
-        selected_gift: {
+    gr_gifts: {
+        is_eligible: boolean
+        gifts: {
+            id: number
             label: string
-            value: string
-        }
-        available_gifts: {
-            label: string
-            value: string
+            selected: boolean
         }[]
+        status: boolean
+        meter: number[]
     }
+    missed_offers: Record<string, { label: string }>
 }>()
 
 
@@ -576,6 +576,7 @@ const onChangeInsurance = async (val: boolean) => {
         :currency_code="order?.currency_code"
         :isInBasket="true"
         :updateRoute="routes.update_route"
+        :missed_offers
     />
     
     <template v-if="order">
@@ -585,14 +586,14 @@ const onChangeInsurance = async (val: boolean) => {
                 :updateRoute="routes.update_route"
             />
 
-            <div v-if="layout.app.environment === 'local' && eligible_gifts?.is_customer_eligible_for_gift" class="flex justify-end pr-2 md:pr-6 mt-4">
+            <div v-if="layout.app.environment === 'local' && 'gr_gifts.is_eligible' && gr_gifts.status" class="flex justify-end pr-2 md:pr-6 mt-4">
                 <EligibleGift
                     :routeUpdate="{
-                        name: 'retina.models.order.update_eligible_gift',
+                        name: 'retina.models.order.update_gr_gift',
                         parameters: order?.id
                     }"
-                    :selectedGift="eligible_gifts?.selected_gift"
-                    :giftOptions="eligible_gifts?.available_gifts"
+                    :giftOptions="gr_gifts?.gifts"
+                    :meter="gr_gifts.meter"
                 />
             </div>
             
@@ -691,6 +692,7 @@ const onChangeInsurance = async (val: boolean) => {
                             :loading="isLoadingNote.includes('shipping_notes')"
                             :isSuccess="recentlySuccessNote.includes('shipping_notes')"
                             :isError="recentlyErrorNote"
+                            :maxlength="35"
                         />
                     </div>
                     <!-- Input text: Other instructions -->

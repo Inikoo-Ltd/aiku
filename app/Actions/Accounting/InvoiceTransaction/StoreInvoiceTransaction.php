@@ -8,17 +8,11 @@
 
 namespace App\Actions\Accounting\InvoiceTransaction;
 
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicedCustomersIntervals;
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoiceIntervals;
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicesCustomersStats;
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicesStats;
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSalesIntervals;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithOrderExchanges;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Billables\Service;
@@ -60,6 +54,7 @@ class StoreInvoiceTransaction extends OrgAction
             $modelData['order_id']          = $model->order_id;
             $modelData['asset_id']          = $model->asset_id;
             $modelData['historic_asset_id'] = $model->historic_asset_id;
+            $modelData['marketplace_id']    = $model->marketplace_id;
             if ($this->strict) {
                 $historicAsset = $model->historicAsset;
             } else {
@@ -80,6 +75,11 @@ class StoreInvoiceTransaction extends OrgAction
                 $modelData['department_id']     = $product->department_id;
                 $modelData['sub_department_id'] = $product->sub_department_id;
 
+                $brand = $product->brand();
+                if ($brand) {
+                    $modelData['brand_id']         = $brand->id;
+                }
+
                 if ($masterProduct = $product->masterProduct) {
                     $modelData['master_shop_id']           = $masterProduct->master_shop_id;
                     $modelData['master_department_id']     = $masterProduct->master_department_id;
@@ -97,21 +97,12 @@ class StoreInvoiceTransaction extends OrgAction
 
         SyncInvoiceTransactionTradeUnitBridges::dispatch($invoiceTransaction->id);
         SyncInvoiceTransactionOrgStockBridges::dispatch($invoiceTransaction->id);
+        SyncInvoiceTransactionStockBridges::dispatch($invoiceTransaction->id);
 
         if ($invoiceTransaction->order_id && $invoiceTransaction->transaction_id) {
             $invoiceTransaction->transaction->update([
                 'invoice_id' => $invoice->id
             ]);
-        }
-
-        $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
-
-        if ($invoiceTransaction->asset_id) {
-            AssetHydrateSalesIntervals::dispatch($invoiceTransaction->asset_id, $intervalsExceptHistorical, [])->delay(1800);
-            AssetHydrateInvoiceIntervals::dispatch($invoiceTransaction->asset_id, $intervalsExceptHistorical, [])->delay(1800);
-            AssetHydrateInvoicedCustomersIntervals::dispatch($invoiceTransaction->asset_id, $intervalsExceptHistorical, [])->delay(1800);
-            AssetHydrateInvoicesCustomersStats::dispatch($invoiceTransaction->asset_id)->delay(1800);
-            AssetHydrateInvoicesStats::dispatch($invoiceTransaction->asset_id)->delay(1800);
         }
 
         ProcessInvoiceTransactionTimeSeries::run($invoiceTransaction);
@@ -160,6 +151,7 @@ class StoreInvoiceTransaction extends OrgAction
             'handle_date'                   => ['sometimes'],
             'data'                          => ['sometimes', 'array'],
             'recurring_bill_transaction_id' => ['sometimes'],
+            'is_gift'                       => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {

@@ -18,6 +18,7 @@ use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateNumberMismatches;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
@@ -51,6 +52,8 @@ class UpdateMasterAsset extends OrgAction
      */
     public function handle(MasterAsset $masterAsset, array $modelData): MasterAsset
     {
+        $oldMismatchDetected = $masterAsset->mismatch_detected;
+
         if (Arr::has($modelData, 'master_family_id')) {
             $masterFamily = null;
             if ($modelData['master_family_id']) {
@@ -122,14 +125,30 @@ class UpdateMasterAsset extends OrgAction
                 foreach ($masterAsset->products as $product) {
                     SyncProductTradeUnits::run($product, $tradeUnits);
                 }
+
+                data_set($modelData, 'mismatch_detected', false);
             }
 
             $this->update($masterAsset, $modelData);
+            $masterAsset->refresh();
+
 
             return ModelHydrateSingleTradeUnits::run($masterAsset);
         });
 
         CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
+
+
+        if ($oldMismatchDetected != $masterAsset->mismatch_detected) {
+            $masterFamily = $masterAsset->masterFamily;
+            $masterFamily?->update(
+                [
+                    'mismatch_detected' => $masterFamily->masterAssets()->where('mismatch_detected', true)->exists()
+                ]
+            );
+
+            MasterShopHydrateNumberMismatches::run($masterAsset->masterShop);
+        }
 
 
         if ($masterAsset->wasChanged('unit')) {

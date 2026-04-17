@@ -94,6 +94,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_collections_state_inactive
  * @property int $number_pending_master_assets
  * @property int $number_products_status_coming_soon
+ * @property int $number_mismatch_detected Amount of master products related to master product categories that has mismatch trade unit data
+ * @property int $number_master_collections
+ * @property int $number_current_master_collections
  * @method static Builder<static>|MasterProductCategoryStats newModelQuery()
  * @method static Builder<static>|MasterProductCategoryStats newQuery()
  * @method static Builder<static>|MasterProductCategoryStats query()

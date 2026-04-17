@@ -5,6 +5,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faCube, faLink, faChevronCircleLeft, faChevronCircleRight } from '@fortawesome/free-solid-svg-icons'
 import { faStar, faCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { trans } from "laravel-vue-i18n"
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation, Pagination, Autoplay, Thumbs, FreeMode } from 'swiper/modules'
@@ -17,6 +18,7 @@ import Family2Render from './Families2Render.vue'
 import { getStyles } from '@/Composables/styles'
 import { sendMessageToParent } from '@/Composables/Workshop'
 import LinkIris from "@/Components/Iris/LinkIris.vue"
+import Background from "../../Fields/Background.vue"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -185,7 +187,8 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
 </script>
 
 <template>
-  <div  :id="fieldValue?.id ? fieldValue?.id  : 'families-2'"  component="families-2" :key="refreshTrigger" ref="containerRef">
+  <div :id="fieldValue?.id ? fieldValue?.id : 'families-2'" component="families-2" :key="refreshTrigger"
+    ref="containerRef">
     <div v-if="allItems.length" class="px-4 py-10" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(props.fieldValue.container?.properties, props.screenType)
@@ -206,6 +209,36 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
             <Swiper @swiper="(s) => (swiperInstance = s)" :modules="[Autoplay, Thumbs, FreeMode, Navigation]"
               :loop="true" slides-per-view="auto" :space-between="spaceBetween" :freeMode="true" navigation
               class="w-full swiper-inner">
+              <SwiperSlide class="!w-auto flex" v-if="fieldValue?.show_overview_button">
+                <LinkIris :href="fieldValue?.webpage_data?.overview_url" type="internal" class="h-full flex">
+                  <div :style="{
+                    ...getStyles(
+                      props.fieldValue?.chip?.container?.properties,
+                      props.screenType
+
+                    ), background: '#ffff'
+                  }">
+                    <div class="inline-flex items-center rounded-3xl border border-gray/10
+          justify-center h-auto px-3  sm:py-3
+           text-base font-semibold leading-tight text-center
+           overflow-hidden sm:overflow-visible" :style="{
+            background: '#ffff',
+            ...getStyles(
+              props.fieldValue?.button?.view_more?.properties,
+              props.screenType
+
+            ),
+          }">
+                      <span class="whitespace-normal break-words w-full text-center
+             sm:whitespace-normal sm:max-w-full" :class="{
+              '!w-full !text-xs': screenType === 'mobile'
+            }">
+                        {{ trans("View All") }}
+                      </span>
+                    </div>
+                  </div>
+                </LinkIris>
+              </SwiperSlide>
               <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="!w-auto flex">
                 <LinkIris :href="item.url" :style="{ textDecoration: 'none' }" class="h-full flex">
                   <Family2Render class="family-item h-full flex items-center" :data="item" :style="{

@@ -41,14 +41,14 @@ class MailshotHydrateCumulativeDispatchedEmails implements ShouldBeUnique
             $mailshotStats->number_dispatched_emails_state_spam +
             $mailshotStats->number_dispatched_emails_state_unsubscribed;
 
-        $stats['number_try_send_total'] = $stats['number_try_send_failure'] + $stats['number_try_send_success'];
+        $stats['number_try_send_total']     = $stats['number_try_send_failure'] + $stats['number_try_send_success'];
         $stats['number_deliveries_failure'] = $mailshotStats->number_dispatched_emails_state_hard_bounce +
-            $mailshotStats->number_dispatched_emails_state_soft_bounce ;
+            $mailshotStats->number_dispatched_emails_state_soft_bounce;
         $stats['number_deliveries_success'] = $stats['number_try_send_success'] - $stats['number_deliveries_failure'];
 
-        $baseQuery = DB::table('dispatched_emails')
-            ->where('parent_type', 'Mailshot')
-            ->where('parent_id', $mailshot->id);
+        $baseQuery = DB::table('dispatched_emails');
+        $baseQuery->leftJoin('mailshot_has_dispatched_emails', 'mailshot_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
+        $baseQuery->where('mailshot_id', $mailshot->id);
 
         $openedDispatchedEmails = $baseQuery
             ->where('number_reads', '>', 0)->count();

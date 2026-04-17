@@ -8,10 +8,11 @@
 
 use App\Actions\Accounting\Invoice\UI\ShowInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowRefund;
-use App\Actions\Catalogue\Shop\External\Faire\GetFairePackingPdfSlip;
+use App\Actions\Dispatching\DeliveryNote\SetTempPickerToDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\CreateReplacementDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInOrdering;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
+use App\Actions\Dispatching\Shipper\UI\IndexCouriersInShop;
 use App\Actions\Ordering\Order\DownloadOrderTransactionsTemplate;
 use App\Actions\Ordering\Order\PdfProformaInvoice;
 use App\Actions\Ordering\Order\UI\EditOrder;
@@ -21,6 +22,8 @@ use App\Actions\Ordering\Purge\UI\CreatePurge;
 use App\Actions\Ordering\Purge\UI\EditPurge;
 use App\Actions\Ordering\Purge\UI\IndexPurges;
 use App\Actions\Ordering\Purge\UI\ShowPurge;
+use App\Actions\Ordering\UI\IndexWaitingCrmItemsGrouped;
+use App\Actions\Ordering\WaitingCrmItem\SetWaitingCrmItemAsNotPick;
 use App\Actions\Ordering\UI\ShowOrderingDashboard;
 use App\Actions\Ordering\UI\ShowOrdersBacklog;
 use Illuminate\Support\Facades\Route;
@@ -29,14 +32,17 @@ Route::get('', ShowOrderingDashboard::class)->name('dashboard');
 
 
 Route::get('/backlog', ShowOrdersBacklog::class)->name('backlog');
+Route::get('/backlog/waiting_items', IndexWaitingCrmItemsGrouped::class)->name('backlog.waiting_items');
+Route::post('/backlog/waiting_items/{deliveryNoteItem}/set-as-not-pick', SetWaitingCrmItemAsNotPick::class)->name('backlog.waiting_items.set_as_not_pick');
+
 
 Route::get('/orders/', IndexOrders::class)->name('orders.index');
 
 
-
-
 Route::get('/orders/delivery_notes', IndexDeliveryNotesInOrdering::class)->name('delivery-notes.index');
+Route::get('/orders/couriers', IndexCouriersInShop::class)->name('couriers.index');
 Route::get('/orders/delivery_notes/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderingInShop'])->name('delivery-notes.show');
+Route::patch('delivery-note/{deliveryNote}/set-temp-picker', SetTempPickerToDeliveryNote::class)->name('orders.show.delivery-note.temp-picker');
 
 Route::prefix('orders/{order}')->group(function () {
     Route::get('', ShowOrder::class)->name('orders.show');
@@ -50,8 +56,6 @@ Route::prefix('orders/{order}')->group(function () {
     Route::get('replacement', CreateReplacementDeliveryNote::class)->name('orders.show.replacement.create');
     Route::get('order-transaction-templates', DownloadOrderTransactionsTemplate::class)->name('order.uploads.templates');
     Route::get('proforma-invoice', PdfProformaInvoice::class)->name('proforma_invoice.download');
-
-    Route::get('faire-packing-slip', GetFairePackingPdfSlip::class)->name('faire_packing_slip.download');
 });
 
 Route::get('/purges/', IndexPurges::class)->name('purges.index');

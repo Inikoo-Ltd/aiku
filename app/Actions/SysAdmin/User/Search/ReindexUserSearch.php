@@ -2,55 +2,34 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 25 Jul 2024 12:42:03 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Thu, 16 Apr 2026 21:11:17 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
 namespace App\Actions\SysAdmin\User\Search;
 
-use App\Actions\HydrateModel;
 use App\Models\SysAdmin\User;
-use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Artisan;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexUserSearch extends HydrateModel
+class ReindexUserSearch
 {
-    public string $commandSignature = 'search:users {organisations?*} {--s|slugs=}';
+    use AsAction;
 
+    public string $commandSignature = 'reindex_search:users';
 
-    public function handle(User $user): void
+    public function handle(bool $reset = false): void
     {
-        UserRecordSearch::run($user);
+        if ($reset) {
+            Artisan::call('scout:flush', [
+                'model' => User::class
+            ]);
+        }
+
+        Artisan::call('scout:queue-import', [
+            'model'   => User::class,
+            '--chunk' => 1000
+        ]);
     }
 
-
-    protected function getModel(string $slug): User
-    {
-        return User::withTrashed()->where('slug', $slug)->first();
-    }
-
-    protected function getAllModels(): Collection
-    {
-        return User::withTrashed()->get();
-    }
-
-    protected function loopAll(Command $command): void
-    {
-        $command->info("Reindex Users");
-        $count = User::withTrashed()->count();
-
-        $bar = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
-        $bar->start();
-
-        User::withTrashed()->chunk(1000, function (Collection $models) use ($bar) {
-            foreach ($models as $model) {
-                $this->handle($model);
-                $bar->advance();
-            }
-        });
-
-        $bar->finish();
-        $command->info("");
-    }
 }

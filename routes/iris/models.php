@@ -17,7 +17,16 @@ use App\Actions\Iris\CRM\StoreIrisFavourites;
 use App\Actions\Iris\Portfolio\DeleteIrisPortfolioFromMultiChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToAllChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToMultiChannels;
-use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderEligibleGift;
+use App\Actions\Retina\Dropshipping\Bundle\CalculateRetinaBundleItemPriceDetails;
+use App\Actions\Retina\Dropshipping\Bundle\DeleteRetinaBundle;
+use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductBundleDescription;
+use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductBundleTitle;
+use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductImages;
+use App\Actions\Retina\Dropshipping\Bundle\StoreOrUpdateRetinaBundle;
+use App\Actions\Retina\Dropshipping\Bundle\StoreRetinaBundle;
+use App\Actions\Retina\Dropshipping\Bundle\UpdateRetinaBundle;
+use App\Actions\Retina\Dropshipping\Bundle\UploadRetinaBundleProductImages;
+use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderGrGift;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderExtraPacking;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderInsurance;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPremiumDispatch;
@@ -42,8 +51,26 @@ Route::post('remind-back-in-stock/{product:id}', StoreIrisBackInStockReminder::c
 Route::delete('remind-back-in-stock/{product:id}', DeleteIrisBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings();
 
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
-    Route::patch('update-eligible-gift', UpdateRetinaOrderEligibleGift::class)->name('update_eligible_gift');
+    Route::patch('update-gr-gift', UpdateRetinaOrderGrGift::class)->name('update_gr_gift');
     Route::patch('update-premium-dispatch', UpdateRetinaOrderPremiumDispatch::class)->name('update_premium_dispatch');
     Route::patch('update-extra-packing', UpdateRetinaOrderExtraPacking::class)->name('update_extra_packing');
     Route::patch('update-insurance', UpdateRetinaOrderInsurance::class)->name('update_insurance');
+});
+
+Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
+    Route::prefix('bundles')->name('bundles.')->group(function () {
+        Route::post('title-generator', GenerateRetinaProductBundleTitle::class)->name('title.generate');
+        Route::post('description-generator', GenerateRetinaProductBundleDescription::class)->name('description.generate');
+    });
+
+    Route::prefix('{customerSalesChannel:id}/bundles')->name('bundles.')->group(function () {
+        Route::post('/', StoreRetinaBundle::class)->name('store');
+        Route::post('store-or-update', StoreOrUpdateRetinaBundle::class)->name('store_or_update');
+        Route::patch('{bundle:id}', UpdateRetinaBundle::class)->name('update')->withoutScopedBindings();
+        Route::post('products/{product:id}/images-generator', GenerateRetinaProductImages::class)->name('products.images.generate')->withoutScopedBindings();
+        Route::post('products/{product:id}/images', UploadRetinaBundleProductImages::class)->name('products.images.store')->withoutScopedBindings();
+        Route::post('calculate-bundle-product', CalculateRetinaBundleItemPriceDetails::class)->name('products.calculate');
+
+        Route::delete('{bundle:id}', DeleteRetinaBundle::class)->name('delete')->withoutScopedBindings();
+    });
 });

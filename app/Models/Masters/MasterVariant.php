@@ -43,7 +43,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $slug
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterAsset> $allProduct
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \App\Models\Masters\MasterAsset|null $leaderMasterProduct
@@ -55,7 +55,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterAsset> $minionProduct
  * @property-read \App\Models\Masters\MasterVariantOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterVariantOrderingStats|null $orderingStats
- * @property-read \App\Models\Masters\MasterVariantSalesIntervals|null $salesIntervals
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Masters\MasterVariantStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterVariantTimeSeries> $timeSeries
@@ -128,11 +127,6 @@ class MasterVariant extends Model implements Auditable, HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(MasterVariantStats::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(MasterVariantSalesIntervals::class);
     }
 
     public function orderingStats(): HasOne

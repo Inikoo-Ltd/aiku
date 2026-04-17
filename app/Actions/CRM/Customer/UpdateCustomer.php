@@ -9,7 +9,11 @@
 namespace App\Actions\CRM\Customer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
+use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
 use App\Actions\CRM\Customer\Search\CustomerRecordSearch;
+use App\Actions\Dropshipping\Platform\RedoPlatformTimeSeries;
+use App\Actions\Masters\MasterShop\RedoMasterShopTimeSeries;
+use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
@@ -43,6 +47,7 @@ use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -214,6 +219,8 @@ class UpdateCustomer extends OrgAction
         $emailSubscriptionsData = Arr::pull($modelData, 'email_subscriptions', []);
         UpdateCustomerComms::run($customer->comms, $emailSubscriptionsData);
 
+        $oldRegisteredAt = $customer->registered_at;
+
         $customer = $this->update($customer, $modelData, ['data', 'contact_name_components']);
 
         $changes = Arr::except($customer->getChanges(), ['updated_at', 'last_fetched_at']);
@@ -266,6 +273,30 @@ class UpdateCustomer extends OrgAction
             MatchCustomerProspects::run($customer);
         }
 
+        $registeredAtDate = $customer->registered_at ? Carbon::parse($customer->registered_at)->toDateString() : null;
+
+        if (Arr::has($changes, 'registered_at') && $oldRegisteredAt) {
+            $oldRegisteredAtDate = Carbon::parse($oldRegisteredAt)->toDateString();
+            RedoShopTimeSeries::dispatch(shopId: $customer->shop_id, from: $oldRegisteredAtDate, to: $oldRegisteredAtDate)->delay(900);
+            RedoOrganisationTimeSeries::dispatch(organisationId: $customer->organisation_id, from: $oldRegisteredAtDate, to: $oldRegisteredAtDate)->delay(900);
+            if ($customer->master_shop_id) {
+                RedoMasterShopTimeSeries::dispatch(masterShopId: $customer->master_shop_id, from: $oldRegisteredAtDate, to: $oldRegisteredAtDate)->delay(900);
+            }
+            foreach ($customer->customerSalesChannels as $customerSalesChannel) {
+                RedoPlatformTimeSeries::dispatch(platformId: $customerSalesChannel->platform_id, from: $oldRegisteredAtDate, to: $oldRegisteredAtDate)->delay(900);
+            }
+        }
+
+        if ($registeredAtDate) {
+            RedoShopTimeSeries::dispatch(shopId: $customer->shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+            RedoOrganisationTimeSeries::dispatch(organisationId: $customer->organisation_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+            if ($customer->master_shop_id) {
+                RedoMasterShopTimeSeries::dispatch(masterShopId: $customer->master_shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+            }
+            foreach ($customer->customerSalesChannels as $customerSalesChannel) {
+                RedoPlatformTimeSeries::dispatch(platformId: $customerSalesChannel->platform_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+            }
+        }
 
         return $customer;
     }
@@ -317,7 +348,8 @@ class UpdateCustomer extends OrgAction
             'is_re'                                                 => ['sometimes', 'boolean'],
             'is_credit_customer'                                    => ['sometimes', 'boolean'],
             'accounting_reference'                                  => ['sometimes', 'nullable', 'string', 'max:255'],
-            'disable_order_auto_processing'                         => ['sometimes', 'boolean']
+            'disable_order_auto_processing'                         => ['sometimes', 'boolean'],
+            'eori'                                                  => ['sometimes', 'nullable', 'string', 'max:20'],
         ];
 
         if ($this?->asAction) {

@@ -9,9 +9,11 @@
 namespace App\Actions\Inventory\OrgStockMovement;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Inventory\LocationOrgStock\CalculateValueLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateHasBeenInWarehouse;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQuantity;
+use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
@@ -26,6 +28,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreOrgStockMovement extends OrgAction
 {
+    use CalculatesOrgStockHistories;
+
     public function handle(OrgStock $orgStock, Location $location, array $modelData): OrgStockMovement
     {
         data_set($modelData, 'group_id', $location->group_id);
@@ -45,7 +49,11 @@ class StoreOrgStockMovement extends OrgAction
         data_set($modelData, 'grp_amount', Arr::get($modelData, 'org_amount') * GetCurrencyExchange::run($orgStock->organisation->currency, $orgStock->group->currency), overwrite: false);
 
         $class = OrgStockMovementClassEnum::MOVEMENT;
-        if (in_array($modelData['type'], [OrgStockMovementTypeEnum::ASSOCIATE, OrgStockMovementTypeEnum::DISASSOCIATE])) {
+        if (in_array($modelData['type'], [
+            OrgStockMovementTypeEnum::ASSOCIATE,
+            OrgStockMovementTypeEnum::DISASSOCIATE,
+            OrgStockMovementTypeEnum::AUDIT
+        ])) {
             $class = OrgStockMovementClassEnum::HELPER;
         }
 
@@ -71,21 +79,30 @@ class StoreOrgStockMovement extends OrgAction
         $orgStockMovement = $orgStock->orgStockMovements()->create($modelData);
 
 
-        if ($this->strict) {
-            $locationOrgStock = LocationOrgStock::where('location_id', $location->id)->where('org_stock_id', $orgStock->id)->first();
+        $locationOrgStock = LocationOrgStock::where('location_id', $location->id)->where('org_stock_id', $orgStock->id)->first();
 
-            if ($locationOrgStock) {
+        if ($locationOrgStock) {
+            if ($this->strict) {
                 UpdateLocationOrgStock::run(
                     $locationOrgStock,
                     [
                         'quantity' => $locationOrgStock->quantity + $orgStockMovement->quantity,
                     ]
                 );
+            } else {
+                $stock = $this->getStockQuantity($orgStock, $location, now());
+                UpdateLocationOrgStock::run(
+                    $locationOrgStock,
+                    [
+                        'quantity' => $stock
+                    ]
+                );
             }
+            CalculateValueLocationOrgStock::dispatch($locationOrgStock);
         }
-
         OrgStockHydrateMovements::dispatch($orgStock)->delay($this->hydratorsDelay);
-        OrgStockHydrateHasBeenInWarehouse::dispatch($orgStock)->delay($this->hydratorsDelay);
+        OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock)->delay($this->hydratorsDelay);
+        CalculateRunningQuantityOrgStockMovement::dispatch($orgStockMovement, $locationOrgStock)->delay($this->hydratorsDelay);
 
 
         return $orgStockMovement;
@@ -94,13 +111,16 @@ class StoreOrgStockMovement extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'date'         => ['sometimes', 'date'],
-            'quantity'     => ['required', 'numeric'],
-            'org_amount'   => ['sometimes', 'numeric'],
-            'data'         => ['sometimes', 'array'],
-            'type'         => ['required', Rule::enum(OrgStockMovementTypeEnum::class)],
-            'is_delivered' => ['sometimes', 'boolean'],
-            'is_received'  => ['sometimes', 'boolean'],
+            'date'             => ['sometimes', 'date'],
+            'quantity'         => ['sometimes', 'nullable', 'numeric'],
+            'audited_quantity' => ['sometimes', 'nullable', 'numeric'],
+            'org_amount'       => ['sometimes', 'numeric'],
+            'data'             => ['sometimes', 'array'],
+            'type'             => ['required', Rule::enum(OrgStockMovementTypeEnum::class)],
+            'is_delivered'     => ['sometimes', 'boolean'],
+            'is_received'      => ['sometimes', 'boolean'],
+            'fixed'            => ['sometimes', 'boolean'],
+            'user_id'          => ['sometimes', 'nullable', 'numeric']
         ];
         if (!$this->strict) {
             $rules['fetched_at'] = ['sometimes', 'date'];

@@ -14,14 +14,27 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 
-class CalculateOrderTotalAmounts extends OrgAction
+class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
 {
     use WithOrganisationsArgument;
 
+    public string $jobQueue = 'urgent';
+
+    public function getJobUniqueId(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false): string
+    {
+        return $order->id.'_'.
+            ($calculateShipping ? '1' : '0').
+            ($calculateDiscounts ? '1' : '0').
+            ($collectionChanged ? '1' : '0').
+            ($forceRecalculate ? '1' : '0');
+    }
+
     public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false): void
     {
+
         $itemsNet   = $order->transactions()->where('model_type', 'Product')->sum('net_amount');
         $itemsGross = $order->transactions()->where('model_type', 'Product')->sum('gross_amount');
         $tax        = $order->taxCategory->rate;
@@ -109,11 +122,13 @@ class CalculateOrderTotalAmounts extends OrgAction
 
         if (in_array($order->state, [
             OrderStateEnum::IN_WAREHOUSE,
+            OrderStateEnum::HANDLING,
+            OrderStateEnum::HANDLING_BLOCKED,
             OrderStateEnum::PICKED,
             OrderStateEnum::PACKING,
             OrderStateEnum::PACKED,
         ])) {
-            if ($calculateShipping && Arr::hasAny($changes, ['goods_amount', 'estimated_weight']) || $collectionChanged || $forceRecalculate) {
+            if ($collectionChanged || $forceRecalculate) {
                 CalculateOrderShipping::run($order);
             }
 

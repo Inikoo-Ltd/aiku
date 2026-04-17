@@ -65,30 +65,31 @@ class RepairProductCurrentHistoric
     }
 
 
-    public string $commandSignature = 'repair:product_current_historic {product?}';
+    public string $commandSignature = 'repair:product_current_historic {shop?}';
 
     public function asCommand(Command $command): void
     {
-        if ($command->argument('product')) {
-            $product = Product::find($command->argument('product'));
-            $this->handle($product, $command);
+        if ($command->argument('shop')) {
+            $shop     = Shop::find($command->argument('shop'));
+            $shopsIds = [$shop->id];
         } else {
-            $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
-
-            $count = Product::whereIn('shop_id', $aikuShops)->count();
-
-            $bar = $command->getOutput()->createProgressBar($count);
-            $bar->setFormat('debug');
-            $bar->start();
-
-            Product::whereIn('shop_id', $aikuShops)->orderBy('id')
-                ->chunk(100, function (Collection $models) use ($bar, $command) {
-                    foreach ($models as $model) {
-                        $this->handle($model, $command);
-                        $bar->advance();
-                    }
-                });
+            $shopsIds = Shop::where('is_aiku', true)->pluck('id')->toArray();
         }
+
+
+        $count = Product::whereIn('shop_id', $shopsIds)->count();
+
+        $bar = $command->getOutput()->createProgressBar($count);
+        $bar->setFormat('debug');
+        $bar->start();
+
+        Product::whereIn('shop_id', $shopsIds)->orderBy('id')
+            ->chunk(100, function (Collection $models) use ($bar, $command) {
+                foreach ($models as $model) {
+                    $this->handle($model, $command);
+                    $bar->advance();
+                }
+            });
     }
 
 }

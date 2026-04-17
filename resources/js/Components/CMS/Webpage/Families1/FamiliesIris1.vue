@@ -50,46 +50,64 @@ const idxSlideLoading = ref<string | null>(null)
 </script>
 
 <template>
-    <div :id="fieldValue?.id ? fieldValue?.id  : 'families-1'"  component="families-1">
+    <div :id="fieldValue?.id ? fieldValue?.id : 'families-1'" component="families-1">
         <div v-if="props.fieldValue?.families && props.fieldValue.families.length" class="px-4 py-10 mx-[30px]" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             ...getStyles(fieldValue.container?.properties, screenType)
         }">
             <h2 class="text-2xl font-bold mb-6">{{ trans("Browse By Product Lines:") }}</h2>
             <div :class="['grid gap-8', responsiveGridClass]">
-                <LinkIris
-                    v-for="(item, index) in props?.fieldValue?.families || []"
-                    :key="index"
-                    :href="`${item.url}`"
-                    type="internal"
-                    @start="() => idxSlideLoading = `family${index}`"
-                    @finish="() => idxSlideLoading = null"
-                    class="relative"
-                >
+
+                <!-- VIEW ALL CARD -->
+                <!-- <div class="flex !w-full" v-if="fieldValue?.webpage_data?.webpage_type == 'department'">
+                    <LinkIris :href="fieldValue?.webpage_data?.overview_url" type="internal" class="w-full h-full flex">
+                        <div class="family-item w-full h-full cursor-pointer flex flex-col rounded-xl overflow-hidden border bg-white hover:bg-gray-50 transition-all"
+                            :style="{
+                                ...getStyles(props.fieldValue?.chip?.container?.properties, props.screenType),
+                                fontWeight: 600,
+                                minHeight: maxHeight ? maxHeight + 'px' : undefined
+                            }">
+                            
+                            <div class="flex-1 flex items-center justify-center bg-gray-100">
+                                <span class="text-sm font-semibold">
+                                    {{ trans("View All") }}
+                                </span>
+                            </div>
+                        </div>
+                    </LinkIris>
+                </div> -->
+                <template v-if="fieldValue?.show_overview_button">
+                    <LinkIris :href="fieldValue?.webpage_data?.overview_url" type="internal" class="block">
+                        <div class="relative w-full bg-white rounded-md shadow-md overflow-hidden">
+                            <div :style="{
+                                ...getStyles(
+                                    props.fieldValue?.button?.view_more?.properties,
+                                    props.screenType
+                                )
+                            }" class="aspect-[1/1] flex items-center justify-center bg-gray-50 hover:bg-gray-100">
+                                <span class="text-base font-semibold text-center">
+                                    {{ trans("View All") }}
+                                </span>
+                            </div>
+                        </div>
+                    </LinkIris>
+                </template>
+
+
+                <!-- LOOP ITEMS -->
+                <LinkIris v-for="(item, index) in props?.fieldValue?.families || []" :key="index" :href="`${item.url}`"
+                    type="internal" @start="() => idxSlideLoading = `family${index}`"
+                    @finish="() => idxSlideLoading = null" class="relative">
                     <template #default>
                         <Family1Render :data="item" />
-                        <div v-if="idxSlideLoading == `family${index}`" class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl rounded">
+
+                        <div v-if="idxSlideLoading == `family${index}`"
+                            class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl rounded">
                             <LoadingIcon />
                         </div>
                     </template>
                 </LinkIris>
 
-              <!--   <LinkIris
-                    v-for="(item, index) in props?.fieldValue?.collections || []"
-                    :key="index"
-                    :href="`${item.url}`"
-                    type="internal"
-                    @start="() => idxSlideLoading = `collection${index}`"
-                    @finish="() => idxSlideLoading = null"
-                    class="relative"
-                >
-                    <template #default>
-                        <Family1Render :data="item" />
-                        <div v-if="idxSlideLoading == `collection${index}`" class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl rounded">
-                            <LoadingIcon />
-                        </div>
-                    </template>
-                </LinkIris> -->
             </div>
         </div>
     </div>

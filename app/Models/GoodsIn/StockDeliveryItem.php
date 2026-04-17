@@ -32,17 +32,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric $unit_quantity
  * @property numeric $unit_quantity_checked
  * @property numeric $unit_quantity_placed
- * @property string $net_unit_price
- * @property string $gross_unit_price
- * @property string $net_amount
- * @property string|null $grp_net_amount
- * @property string|null $org_net_amount
+ * @property numeric $net_unit_price
+ * @property numeric $gross_unit_price
+ * @property numeric $net_amount
+ * @property numeric|null $grp_net_amount
+ * @property numeric|null $org_net_amount
  * @property bool $is_costed
- * @property string $gross_amount
- * @property string|null $grp_gross_amount
- * @property string|null $org_gross_amount
- * @property string|null $grp_exchange
- * @property string|null $org_exchange
+ * @property numeric $gross_amount
+ * @property numeric|null $grp_gross_amount
+ * @property numeric|null $org_gross_amount
+ * @property numeric|null $grp_exchange
+ * @property numeric|null $org_exchange
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $dispatched_at
@@ -55,9 +55,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $deleted_at
  * @property string|null $source_id
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\GoodsIn\StockDelivery $stockDelivery
+ * @property-read \App\Models\GoodsIn\StockDelivery|null $stockDelivery
  * @property-read SupplierProduct|null $supplierProduct
  * @method static \Database\Factories\GoodsIn\StockDeliveryItemFactory factory($count = null, $state = [])
  * @method static Builder<static>|StockDeliveryItem newModelQuery()

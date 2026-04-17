@@ -33,14 +33,20 @@ class ShowShop extends OrgAction
     use WithDashboardSettings;
     use WithTabsBox;
 
-    public function handle(Shop $shop, ActionRequest $request): Response
+    public function handle(Shop $shop): Shop
+    {
+        return $shop;
+    }
+
+    public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
         $userSettings = $request->user()->settings;
 
-        $currentTab = Arr::get($userSettings, 'shop_dashboard_tab', Arr::first(ShopDashboardSalesTableTabsEnum::values()));
+        $validTabs  = array_keys(ShopDashboardSalesTableTabsEnum::navigation($shop));
+        $currentTab = Arr::get($userSettings, 'shop_dashboard_tab', Arr::first($validTabs));
 
-        if (!in_array($currentTab, ShopDashboardSalesTableTabsEnum::values())) {
-            $currentTab = Arr::first(ShopDashboardSalesTableTabsEnum::values());
+        if (!in_array($currentTab, $validTabs)) {
+            $currentTab = Arr::first($validTabs);
         }
 
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
@@ -60,7 +66,8 @@ class ShowShop extends OrgAction
         $timeSeriesData = GetShopDashboardTimeSeriesData::run($shop, $performanceDates[0], $performanceDates[1]);
         $shopTimeSeriesStats = $timeSeriesData['shops'];
 
-        $tabsBox = $this->getTabsBox($shop);
+        $waitingItemsData = $this->buildWaitingItemsData($shop, $request);
+        $tabsBox          = $this->getTabsBox($shop, $waitingItemsData);
 
         $dashboard = [
             'super_blocks' => [
@@ -90,30 +97,29 @@ class ShowShop extends OrgAction
             ],
         ];
 
-        if ($shop->type->value === 'dropshipping' && isset($timeSeriesData['platforms'])) {
-            $dashboard['super_blocks'][0]['blocks'] = [
-                [
-                    'id'          => 'sales_table',
-                    'type'        => 'table',
-                    'current_tab' => $currentTab,
-                    'tabs'        => ShopDashboardSalesTableTabsEnum::navigation($shop),
-                    'tables'      => ShopDashboardSalesTableTabsEnum::tables($shop, $timeSeriesData),
-                    'charts'      => [],
-                ],
-            ];
-        }
+        $dashboard['super_blocks'][0]['blocks'] = [
+            [
+                'id'          => 'sales_table',
+                'type'        => 'table',
+                'current_tab' => $currentTab,
+                'tabs'        => ShopDashboardSalesTableTabsEnum::navigation($shop),
+                'tables'      => ShopDashboardSalesTableTabsEnum::tables($shop, $timeSeriesData),
+                'charts'      => [],
+            ],
+        ];
 
         return Inertia::render('Org/Catalogue/Shop', [
+            'title'            => __('Shop').' '.$shop->code,
             'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
             'dashboard'   => $dashboard,
         ]);
     }
 
-    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Response
+    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($shop, $request);
+        return $this->handle($shop);
     }
 
     public function getBreadcrumbs(array $routeParameters, $suffix = null): array

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch } from 'vue'
-import { router, usePage  } from '@inertiajs/vue3'
+import { router, usePage } from '@inertiajs/vue3'
 import type { Component } from 'vue'
 
 import TableIrisDepartment from '@/Components/Tables/Iris/TableIrisDepartment.vue'
@@ -11,7 +11,7 @@ import TableIrisProducts from '@/Components/Tables/Iris/TableIrisProducts.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { faArrowLeft, faArrowRight, faWindowClose } from '@far'
 import TableIrisCollection from '@/Components/Tables/Iris/TableIrisCollection.vue'
-
+import { useColorTheme } from "@/Composables/useStockList"
 
 const props = defineProps<{
     tabs: {
@@ -162,6 +162,13 @@ const onSelectParent = (parentType: string, parentId: any) => {
     history.value.push(state)
     navigate(state)
 }
+
+const fallbackTheme = useColorTheme[3]
+
+const safeTheme = computed(() => {
+    const t = layout?.app?.theme
+    return (t && t.length >= 8) ? t : fallbackTheme
+})
 </script>
 
 <template>
@@ -170,17 +177,33 @@ const onSelectParent = (parentType: string, parentId: any) => {
 
             <!-- Top Bar -->
             <div class="flex items-center justify-between px-4 py-4 h-fit border-b border-gray-100">
+
+                <!-- LEFT SIDE -->
                 <div class="flex items-center gap-2">
-                    <Button v-for="tab in tabs.navigation" :key="tab.key + tabs.current"
-                        :type="tab.key === tabs.current ? 'primary' : 'secondary'" :label="tab.label"
-                        @click="changeTab(tab.key)" />
+
+                    <!-- Desktop: Buttons -->
+                    <div class="hidden md:flex items-center gap-2">
+                        <Button v-for="tab in tabs.navigation" :key="tab.key + tabs.current"
+                            :type="tab.key === tabs.current ? 'primary' : 'secondary'" :label="tab.label"
+                            @click="changeTab(tab.key)" />
+                    </div>
+
+                    <!-- Mobile: Select Dropdown -->
+                    <div class="block md:hidden w-full">
+                        <select class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" :value="tabs.current"
+                            @change="changeTab($event.target.value)">
+                            <option v-for="tab in tabs.navigation" :key="tab.key" :value="tab.key">
+                                {{ tab.label }}
+                            </option>
+                        </select>
+                    </div>
+
                 </div>
 
+                <!-- RIGHT SIDE -->
                 <div class="flex items-center gap-2">
                     <Button type="transparent" :disabled="!canBack" :icon="faArrowLeft" @click="goBack" />
-
                     <Button type="transparent" :disabled="!canNext" :icon="faArrowRight" @click="goNext" />
-
                     <Button type="transparent" :disabled="!canClear" :icon="faWindowClose" @click="clearScope" />
                 </div>
             </div>
@@ -191,8 +214,7 @@ const onSelectParent = (parentType: string, parentId: any) => {
                     @select-department="id => onSelectParent('department', id)"
                     @select-sub-department="id => onSelectParent('sub_department', id)"
                     @select-family="id => onSelectParent('family', id)"
-                    @select-collection="id => onSelectParent('collection', id)"
-                 />
+                    @select-collection="id => onSelectParent('collection', id)" />
             </div>
 
         </div>
@@ -201,7 +223,7 @@ const onSelectParent = (parentType: string, parentId: any) => {
 
 
 
-<style scoped>
+<style scoped lang="scss">
 /* Base table */
 /* Reset semua border */
 :deep(.iris-catalouge table) {
@@ -264,6 +286,7 @@ const onSelectParent = (parentType: string, parentId: any) => {
 
 :deep(.iris-catalouge .primaryLink) {
     background: v-bind('`linear-gradient(to top, #fcd34d, #fcd34d)`');
+    cursor: pointer;
 
     &:hover,
     &:focus {
@@ -274,11 +297,11 @@ const onSelectParent = (parentType: string, parentId: any) => {
 }
 
 :deep(.iris-catalouge .secondaryLink) {
-    background: v-bind('`linear-gradient(to top, ${layout.app.theme[6]}, ${layout.app.theme[6] + "AA"})`');
+    background: v-bind('`linear-gradient(to top, #fcd34d}, #fcd34d + "AA"})`');
 
     &:hover,
     &:focus {
-        color: v-bind('`${layout.app.theme[7]}`');
+        color: v-bind('`#fcd34d`');
     }
 
     @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-0.5

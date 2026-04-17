@@ -13,8 +13,8 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property int $manufacture_task_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Production\Artefact $artefact
- * @property-read \App\Models\Production\ManufactureTask $manufactureTask
+ * @property-read \App\Models\Production\Artefact|null $artefact
+ * @property-read \App\Models\Production\ManufactureTask|null $manufactureTask
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ArtefactManufactureTask newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ArtefactManufactureTask newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ArtefactManufactureTask query()

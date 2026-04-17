@@ -10,7 +10,7 @@ import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useTabChange } from "@/Composables/tab-change"
-import { computed, ref } from "vue"
+import { computed, ref, provide } from "vue"
 import type { Component } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 
@@ -32,10 +32,13 @@ const props = defineProps<{
         navigation: {}
     }
     offers: {}
+    gr_gift: {}
+    gr_amnesty: {}
     overview: {
         offerCampaign: {}
         stats: {}
     }
+    data: {}
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -44,18 +47,20 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         overview: CampaignOverview,
-        offers: TableOffers
+        offers: TableOffers,
+        gr_gift: TableOffers,
+        gr_amnesty: TableOffers
     }
 
     return components[currentTab.value]
 })
-
-
 </script>
 
 <template>
+
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
+    <component :is="component" :offerCampaign="props.data" :data="props[currentTab as keyof typeof props]"
+        :tab="currentTab" />
 </template>

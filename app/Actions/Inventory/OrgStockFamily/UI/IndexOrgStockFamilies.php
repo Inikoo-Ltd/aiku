@@ -139,7 +139,14 @@ class IndexOrgStockFamilies extends OrgAction
             'number_current_org_stocks',
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
+            'currencies.code as currency_code',
             'warehouses.slug as warehouse_slug',
+            'org_stock_family_stats.stock_value',
+            'org_stock_family_stats.on_the_way_po_value',
+            'org_stock_family_stats.on_the_way_po_count',
+            'org_stock_family_stats.number_org_stocks_quantity_status_out_of_stock as number_out_of_stock_org_stocks',
+            'org_stock_family_stats.week_of_cover as woc',
+            'org_stock_families.health_rank',
         ];
 
         if ($prefix === OrgStockFamiliesTabsEnum::SALES->value) {
@@ -162,7 +169,7 @@ class IndexOrgStockFamilies extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
-        $allowedSorts = ['code', 'name', 'number_current_org_stocks'];
+        $allowedSorts = ['code', 'name', 'number_current_org_stocks', 'stock_value', 'on_the_way_po_value', 'health_rank'];
 
         if ($prefix === OrgStockFamiliesTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_grp_currency_external';
@@ -173,6 +180,7 @@ class IndexOrgStockFamilies extends OrgAction
             ->defaultSort('code')
             ->select($selects)
             ->leftJoin('organisations', 'org_stock_families.organisation_id', 'organisations.id')
+            ->leftJoin('currencies', 'organisations.currency_id', 'currencies.id')
             ->leftJoin('warehouses', 'warehouses.organisation_id', 'organisations.id')
             ->leftJoin('org_stock_family_stats', 'org_stock_family_stats.org_stock_family_id', 'org_stock_families.id')
             ->allowedSorts($allowedSorts)
@@ -205,12 +213,18 @@ class IndexOrgStockFamilies extends OrgAction
 
             if ($sales) {
                 $table->betweenDates(['date'])
+                    ->column(key: 'stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
+                    ->column(key: 'on_the_way_po_value', label: __("On the way (PO's)"), sortable: true, type: 'currency')
+                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
-                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right');
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
-                $table->column(key: 'number_current_org_stocks', label: 'SKUs', canBeHidden: false, sortable: true)
+                $table
+                    ->column(key: 'number_current_org_stocks', label: 'SKUs', canBeHidden: false, sortable: true)
+                    ->column(key: 'number_out_of_stock_org_stocks', label: __('OOS (SKU)'), canBeHidden: false)
+                    ->column(key: 'woc', label: __('WOC'), canBeHidden: false, align: 'right')
                     ->defaultSort('code');
             }
         };

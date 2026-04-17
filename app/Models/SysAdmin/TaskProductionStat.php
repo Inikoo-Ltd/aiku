@@ -14,18 +14,18 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $task_id
  * @property int $production_id
  * @property int $number_users
- * @property string $task_materials_cost
- * @property string $task_energy_cost
- * @property string $task_other_cost
- * @property string $task_work_cost
+ * @property numeric $task_materials_cost
+ * @property numeric $task_energy_cost
+ * @property numeric $task_other_cost
+ * @property numeric $task_work_cost
  * @property ManufactureTaskOperativeRewardTermsEnum $operative_reward_terms
  * @property ManufactureTaskOperativeRewardAllowanceTypeEnum $operative_reward_allowance_type
  * @property float $operative_reward_amount
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property-read Production $production
- * @property-read \App\Models\SysAdmin\Task $task
+ * @property-read Production|null $production
+ * @property-read \App\Models\SysAdmin\Task|null $task
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskProductionStat newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskProductionStat newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskProductionStat onlyTrashed()

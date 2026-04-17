@@ -313,6 +313,14 @@ class EditProduct extends OrgAction
                     'value'         => $product->description,
                     'reviewed'      => $product->is_description_reviewed,
                     'information'   => __('This show in product webpage'),
+                    'routeGetInternalLink' => [
+                            'name' => 'grp.org.shops.show.web.webpages.index',
+                            'parameters' => [
+                                'shop' => $product->shop->slug,
+                                'organisation' => $product->organisation->slug,
+                                'website' => $product->shop->website?->slug
+                            ]
+                    ],
                     'toogle'        => [
                         'heading2',
                         'heading3',
@@ -342,6 +350,14 @@ class EditProduct extends OrgAction
                     'information' => __('This show in product webpage'),
                     'options'     => [
                         'counter' => true,
+                    ],
+                    'routeGetInternalLink' => [
+                            'name' => 'grp.org.shops.show.web.webpages.index',
+                            'parameters' => [
+                                'shop' => $product->shop->slug,
+                                'organisation' => $product->organisation->slug,
+                                'website' => $product->shop->website?->slug
+                            ]
                     ],
                     'toogle'      => [
                         'heading2',
@@ -379,6 +395,14 @@ class EditProduct extends OrgAction
                     'value'         => $product->description_extra,
                     'reviewed'      => $product->is_description_extra_reviewed,
                     'information'   => __('This above product specification in product webpage'),
+                    'routeGetInternalLink' => [
+                            'name' => 'grp.org.shops.show.web.webpages.index',
+                            'parameters' => [
+                                'shop' => $product->shop->slug,
+                                'organisation' => $product->organisation->slug,
+                                'website' => $product->shop->website?->slug
+                            ]
+                    ],
                     'toogle'        => [
                         'heading2',
                         'heading3',
@@ -411,6 +435,14 @@ class EditProduct extends OrgAction
                         'counter' => true,
                     ],
                     'value'       => $product->description_extra,
+                    'routeGetInternalLink' => [
+                            'name' => 'grp.org.shops.show.web.webpages.index',
+                            'parameters' => [
+                                'shop' => $product->shop->slug,
+                                'organisation' => $product->organisation->slug,
+                                'website' => $product->shop->website?->slug
+                            ]
+                    ],
                     'toogle'      => [
                         'heading2',
                         'heading3',
@@ -510,7 +542,6 @@ class EditProduct extends OrgAction
                     'icon'   => 'fa-light fa-tag',
                     'fields' => $nameFields
                 ],
-
                 [
                     'label'  => __('Pricing'),
                     'icon'   => 'fa-light fa-money-bill',
@@ -604,7 +635,6 @@ class EditProduct extends OrgAction
 
                         ]
                     ],
-
                 $canEditNotForSale
                     ? [
                     'label'  => __('Sale Status'),
@@ -617,7 +647,18 @@ class EditProduct extends OrgAction
                         ],
                     ],
                 ] : [],
-
+                $product->masterProduct ? [
+                    'label'  => __('Trade Unit'),
+                    'icon'   => 'fal fa-atom',
+                    'fields' => [
+                        'not_follow_master_trade_units' => [
+                            'type'  => 'toggle',
+                            'label' => __('Do not follow master trade units'),
+                            'value' => $product->not_follow_master_trade_units,
+                            'information' => __('Would set product to have standalone trade units (Differs from master)')
+                        ],
+                    ],
+                ] : [],
             ]
         );
     }

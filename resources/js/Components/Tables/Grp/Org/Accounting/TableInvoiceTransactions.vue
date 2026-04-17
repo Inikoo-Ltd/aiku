@@ -23,7 +23,7 @@ const locale = inject("locale", aikuLocaleStructure)
 
 
 function assetRedirectRoute(transaction: InvoiceTransaction) {
-    if (route().current() == "retina.fulfilment.billing.invoices.show" || route().current() == "retina.dropshipping.invoices.show" || !transaction.asset_id) {
+    if (route().current() == "retina.fulfilment.billing.invoices.show" || route().current() == "retina.ecom.invoices.show" || route().current() == "retina.dropshipping.invoices.show" || !transaction.asset_id) {
         return ""
     } else {
         return route("grp.helpers.redirect_asset", [transaction.asset_id])
@@ -48,48 +48,59 @@ function assetRedirectRoute(transaction: InvoiceTransaction) {
 
 
             </template>
+
+            <!-- Section: quantity -->
+            <template #cell(quantity)="{ item }">
+                <div>
+                    {{ locale.number(item.quantity) }}
+                    <span v-if="item.is_gift" v-tooltip="ctrans('Quantity of free gift')">
+                        <FontAwesomeIcon icon="fal fa-gift" class="" fixed-width aria-hidden="true" />
+                    </span>
+                </div>
+            </template>
+
             <template #cell(net_amount)="{ item }">
                 <div :class="item.net_amount < 0 ? 'text-red-500' : ''">
                     {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
                 </div>
             </template>
+            
             <template #cell(description)="{ item: transaction }">
-
-
-                <span>{{ transaction.description }}</span>
+                <span>
+                    {{ transaction.description }}
+                </span>
                 <span v-if="transaction.number_grouped_transactions" class="px-3">
-             <FontAwesomeIcon icon="fal fa-stream" /> {{ transaction.number_grouped_transactions }}
-        </span>
+                    <FontAwesomeIcon icon="fal fa-stream" /> {{ transaction.number_grouped_transactions }}
+                </span>
                 <span v-if="transaction.fulfilment_info" class="pl-2">
-            <span v-if="transaction.fulfilment_info.servicePalletInfo">
-              <span class="px-2">{{ trans("Pallet") }}:
-                <Link :href="route(transaction.fulfilment_info.servicePalletInfo.palletRoute?.name, transaction.fulfilment_info.servicePalletInfo.palletRoute?.parameters) as unknown as string" class="primaryLink">
-                  {{ transaction.fulfilment_info.servicePalletInfo.palletReference }}
-                </Link>
-              </span>
-              <span v-if="transaction.fulfilment_info.servicePalletInfo.handling_date" class="text-gray-400 text-xs">
-                {{ trans("Date") }}: {{ transaction.fulfilment_info.servicePalletInfo.handling_date }}
-              </span>
-
-            </span>
-            <span v-if="transaction.fulfilment_info.rentedScopeInfo">
-              <span v-if="transaction.fulfilment_info.rentedScopeInfo.model">{{ transaction.fulfilment_info.rentedScopeInfo.model }}:</span>
-					<Link
-                        v-if="transaction.fulfilment_info.rentedScopeInfo.title && transaction.fulfilment_info.rentedScopeInfo.route?.name"
-                        :href="route(transaction.fulfilment_info.rentedScopeInfo.route?.name, transaction.fulfilment_info.rentedScopeInfo.route?.parameters) as unknown as string"
-                        class="primaryLink">
-						{{ transaction.fulfilment_info.rentedScopeInfo.title }}
-					</Link>
-					<span v-else>&nbsp;{{ transaction.fulfilment_info.rentedScopeInfo.title }}</span>
-
-					<span v-if="transaction.fulfilment_info.rentedScopeInfo.after_title" class="text-gray-400">
-						({{ transaction.fulfilment_info.rentedScopeInfo.after_title }})
-					</span>
-				</span>
-
-        </span>
-
-
+                    <span v-if="transaction.fulfilment_info.servicePalletInfo">
+                        <span class="px-2">{{ trans("Pallet") }}:
+                            <Link :href="route(transaction.fulfilment_info.servicePalletInfo.palletRoute?.name, transaction.fulfilment_info.servicePalletInfo.palletRoute?.parameters) as unknown as string" class="primaryLink">
+                                {{ transaction.fulfilment_info.servicePalletInfo.palletReference }}
+                            </Link>
+                        </span>
+                        <span v-if="transaction.fulfilment_info.servicePalletInfo.handling_date" class="text-gray-400 text-xs">
+                            {{ trans("Date") }}: {{ transaction.fulfilment_info.servicePalletInfo.handling_date }}
+                        </span>
+                    </span>
+                    <span v-if="transaction.fulfilment_info.rentedScopeInfo">
+                        <span v-if="transaction.fulfilment_info.rentedScopeInfo.model">
+                            {{ transaction.fulfilment_info.rentedScopeInfo.model }}:
+                        </span>
+                        <Link
+                            v-if="transaction.fulfilment_info.rentedScopeInfo.title && transaction.fulfilment_info.rentedScopeInfo.route?.name"
+                            :href="route(transaction.fulfilment_info.rentedScopeInfo.route?.name, transaction.fulfilment_info.rentedScopeInfo.route?.parameters) as unknown as string"
+                            class="primaryLink">
+                            {{ transaction.fulfilment_info.rentedScopeInfo.title }}
+                        </Link>
+                        <span v-else>
+                            &nbsp;{{ transaction.fulfilment_info.rentedScopeInfo.title }}
+                        </span>
+                        <span v-if="transaction.fulfilment_info.rentedScopeInfo.after_title" class="text-gray-400">
+                            ({{ transaction.fulfilment_info.rentedScopeInfo.after_title }})
+                        </span>
+                    </span>
+                </span>
             </template>
         </Table>
     </div>

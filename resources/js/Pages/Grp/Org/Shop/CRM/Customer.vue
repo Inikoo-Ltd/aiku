@@ -14,6 +14,7 @@ import type { Component } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 import CustomerShowcase from "@/Components/Showcases/Grp/CustomerShowcase.vue"
+import CustomerTimeline from "@/Components/Showcases/Grp/CustomerTimeline.vue"
 import TableWebUsers from "@/Components/Tables/Grp/Org/CRM/TableWebUsers.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import ModelDetails from "@/Components/ModelDetails.vue"
@@ -67,6 +68,7 @@ const props = defineProps<{
     attachmentRoutes?: {}
     favourites?: {}
     reminders?: {}
+    timeline?: {}
     history?: {}
     credit_transactions?: {}
     payments?: {}
@@ -101,6 +103,7 @@ const submitOrder = () => {
 const component = computed(() => {
     const components: Component = {
         showcase: CustomerShowcase,
+        timeline: CustomerTimeline,
         products: TableProducts,
         orders: TableOrders,
         details: ModelDetails,
@@ -154,6 +157,7 @@ const component = computed(() => {
         :tab="currentTab"
         :gr_data
         :handleTabUpdate
+        :timeline="props.timeline"
         :detachRoute="attachmentRoutes.detachRoute"
     />
 

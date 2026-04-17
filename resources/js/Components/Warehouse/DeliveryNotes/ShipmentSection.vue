@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, inject, nextTick, ref, watch } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router, useForm } from "@inertiajs/vue3"
@@ -71,10 +71,6 @@ const props = defineProps<{
 		email: string
 		address: Address
 	}
-	external_order?: {
-		status: boolean
-		route_view_packing_slip: routeType
-	}
 	currencyCode?: string
 	external_shop?: {
 		engine_value: string
@@ -86,6 +82,19 @@ const emits = defineEmits<{
 	(e: "deleteSuccsess", value: string | number): void
 	(e: "editAddressSuccsess", value: string | number): void
 }>()
+
+const openModalAddShipment = inject<ReturnType<typeof ref<boolean>>>("openModalAddShipment")
+if (openModalAddShipment) {
+	watch(openModalAddShipment, async (val) => {
+		if (val) {
+			isModalShipment.value = true
+			await onOpenModalTrackingNumber()
+			nextTick(() => {
+				openModalAddShipment.value = false
+			})
+		}
+	})
+}
 
 // Shipment deletion
 const isDeleteShipment = ref<number | null>(null)
@@ -610,9 +619,7 @@ const onCopyDataCustomer = (field: string) => {
 							name="select_shipment"
 							value="create_label"
 							size="small" />
-						<label for="create_label" class="ml-1 cursor-pointer"
-							>{{ trans("Create label") }}:</label
-						>
+						<label for="create_label" class="ml-1 cursor-pointer">{{ trans("Create label") }} (API):</label>
 					</div>
 
 					<div v-if="selectedShipment === 'create_label'" class="ml-6 relative">

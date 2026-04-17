@@ -11,6 +11,8 @@
 namespace Tests\Feature;
 
 use App\Actions\Analytics\GetSectionRoute;
+use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNotePercentage;
 use App\Actions\Dispatching\DeliveryNote\DeleteDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
@@ -43,6 +45,7 @@ use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
@@ -52,6 +55,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Catalogue\HistoricAsset;
+use App\Models\Catalogue\Product;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Packing;
@@ -94,6 +98,36 @@ beforeEach(function () {
         $this->product
     ) = createProduct($this->shop);
 
+    $product2 = $this->shop->products()->skip(1)->first();
+
+    if (!$product2) {
+        $productData = array_merge(
+            Product::factory()->definition(),
+            [
+                'trade_units' => [
+                    [
+                        'id'       => $this->tradeUnit[0]->id,
+                        'quantity' => 2
+                    ]
+                ],
+                'price'       => 200,
+            ]
+        );
+        $product2    = StoreProduct::make()->action(
+            $this->product->family,
+            $productData
+        );
+
+        $product2 = UpdateProduct::make()->action(
+            $product2,
+            [
+                'state' => ProductStateEnum::ACTIVE,
+            ]
+        );
+    }
+
+    $this->product2 = $product2;
+
     $this->customer = createCustomer($this->shop);
     $this->order    = createOrder($this->customer, $this->product);
 
@@ -103,7 +137,7 @@ beforeEach(function () {
 
     if (!isset($this->employee)) {
         $employeeData                  = Employee::factory()->definition();
-        $employeeData['alias'] .= Str::random(6);
+        $employeeData['alias']         = Str::random(6);
         $employeeData['worker_number'] .= Str::random(6);
 
         $this->employee = StoreEmployee::make()->action($this->organisation, $employeeData);
@@ -176,12 +210,13 @@ test('create delivery note item', function (DeliveryNote $deliveryNote) {
     /** @var HistoricAsset $historicAsset */
     $historicAsset = HistoricAsset::find(1);
 
-    $stock       = StoreStock::make()->action($this->group, Stock::factory()->definition());
-    $stock       = UpdateStock::make()->action($stock, [
+    $stock    = StoreStock::make()->action($this->group, Stock::factory()->definition());
+    $stock    = UpdateStock::make()->action($stock, [
         'state' => StockStateEnum::ACTIVE
     ]);
-    $orgStock    = StoreOrgStock::make()->action($this->organisation, $stock);
-    $transaction = StoreTransaction::make()->action($this->order, $historicAsset, Transaction::factory()->definition());
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+    /** @var Transaction $transaction */
+    $transaction = $this->order->transactions()->first();
 
     $deliveryNoteData = [
         'delivery_note_id'  => $deliveryNote->id,
@@ -207,34 +242,29 @@ test('remove delivery note', function ($deliveryNote) {
 })->depends('create delivery note', 'create delivery note item');
 
 test('create second delivery note', function () {
-    $arrayData = [
-        'reference'        => 'A234567',
-        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
-        'email'            => 'test@email.com',
-        'phone'            => '+62081353890000',
-        'date'             => date('Y-m-d'),
-        'delivery_address' => new Address(Address::factory()->definition()),
-        'warehouse_id'     => $this->warehouse->id
-    ];
+    expect($this->order->state)->toBe(OrderStateEnum::SUBMITTED);
 
-    $deliveryNote = StoreDeliveryNote::make()->action($this->order, $arrayData);
+
+    $deliveryNote = SendOrderToWarehouse::make()->action($this->order, [
+        'warehouse_id' => $this->warehouse->id,
+    ]);
+    $this->order->refresh();
+
     expect($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
-        ->and($deliveryNote->reference)->toBe($arrayData['reference']);
+        ->and($deliveryNote->state)->toBe(DeliveryNoteStateEnum::UNASSIGNED)
+        ->and($this->order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
 
 
     return $deliveryNote;
 });
 
 test('create second delivery note item', function (DeliveryNote $deliveryNote) {
-    /** @var HistoricAsset $historicAsset */
-    $historicAsset = HistoricAsset::find(1);
-
     $stock       = StoreStock::make()->action($this->group, Stock::factory()->definition());
     $stock       = UpdateStock::make()->action($stock, [
         'state' => StockStateEnum::ACTIVE
     ]);
     $orgStock    = StoreOrgStock::make()->action($this->organisation, $stock);
-    $transaction = StoreTransaction::make()->action($this->order, $historicAsset, Transaction::factory()->definition());
+    $transaction = $this->order->transactions()->first();
 
     $deliveryNoteData = [
         'delivery_note_id'  => $deliveryNote->id,
@@ -252,15 +282,32 @@ test('create second delivery note item', function (DeliveryNote $deliveryNote) {
 })->depends('create second delivery note');
 
 test('create more delivery note item', function (DeliveryNote $deliveryNote) {
-    /** @var HistoricAsset $historicAsset */
-    $historicAsset2 = HistoricAsset::find(1);
+
+    $productData = array_merge(
+        Product::factory()->definition(),
+        [
+            'trade_units' => [
+                [
+                    'id'       => $this->tradeUnit[1]->id,
+                    'quantity' => 2
+                ]
+            ],
+            'price'       => 200,
+        ]
+    );
+    $product    = StoreProduct::make()->action(
+        $this->product->family,
+        $productData
+    );
+
+
 
     $stock       = StoreStock::make()->action($this->group, Stock::factory()->definition());
     $stock       = UpdateStock::make()->action($stock, [
         'state' => StockStateEnum::ACTIVE
     ]);
     $orgStock    = StoreOrgStock::make()->action($this->organisation, $stock);
-    $transaction = StoreTransaction::make()->action($this->order, $historicAsset2, Transaction::factory()->definition());
+    $transaction = StoreTransaction::make()->action($this->order, $product->currentHistoricProduct, Transaction::factory()->definition());
 
     $deliveryNoteData = [
         'delivery_note_id'  => $deliveryNote->id,
@@ -278,6 +325,9 @@ test('create more delivery note item', function (DeliveryNote $deliveryNote) {
 })->depends('create second delivery note');
 
 test('update second delivery note state to in queue', function (DeliveryNote $deliveryNote) {
+    $order = $deliveryNote->orders()->first();
+    expect($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+
     $deliveryNote = UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $this->user);
 
     $deliveryNote->refresh();
@@ -418,7 +468,11 @@ test('set remaining quantity to not picked (2nd picking)', function (Picking $pi
 })->depends('store second picking');
 
 test('Set Delivery Note state to Packed', function (Picking $picking) {
-    $deliveryNote     = $picking->deliveryNote;
+    $deliveryNote = $picking->deliveryNote;
+
+    $order = $deliveryNote->orders()->first();
+    expect($order->state)->toBe(OrderStateEnum::HANDLING);
+
     $deliveryNoteItem = $picking->deliveryNoteItem;
 
     $packedDeliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote, $this->user);
@@ -480,6 +534,30 @@ test("UI Index dispatching delivery-notes", function () {
     });
 });
 
+test("UI Index dispatching waiting items", function () {
+    $this->withoutExceptionHandling();
+
+    $response = get(
+        route("grp.org.warehouses.show.dispatching.waiting_items", [
+            $this->organisation->slug,
+            $this->warehouse->slug,
+        ])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component("Org/Dispatching/WaitingDeliveryNoteItems")
+            ->where("title", 'Waiting items acme')
+            ->has("breadcrumbs", 3)
+            ->has(
+                "pageHead",
+                fn (AssertableInertia $page) => $page
+                    ->where("title", "Waiting items")
+                    ->etc()
+            )
+            ->has("tabs");
+    });
+});
+
 test("UI Index dispatching show delivery-notes", function (DeliveryNote $deliveryNote) {
     $this->withoutExceptionHandling();
     $response = get(
@@ -492,7 +570,7 @@ test("UI Index dispatching show delivery-notes", function (DeliveryNote $deliver
     $response->assertInertia(function (AssertableInertia $page) use ($deliveryNote) {
         $page
             ->component("Org/Dispatching/DeliveryNote")
-            ->where("title", 'delivery note')
+            ->where("title", 'Delivery note 123456')
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
@@ -625,6 +703,7 @@ test('start picking a picking session', function () {
 });
 
 test('picking session calculate picks', function (PickingSession $pickingSession) {
+    /** @var DeliveryNote $deliveryNote */
     $deliveryNote = $pickingSession->deliveryNotes()->first();
     if (!$deliveryNote->deliveryNoteItems()->exists()) {
         $historicAsset = HistoricAsset::find(1);
@@ -652,6 +731,7 @@ test('picking session calculate picks', function (PickingSession $pickingSession
         'quantity_packed'   => 0,
     ]);
 
+    /** @var DeliveryNoteItem $deliveryNoteItem */
     $deliveryNoteItem = $deliveryNote->deliveryNoteItems()->first();
     $deliveryNoteItem->update([
         'picking_session_id' => $pickingSession->id,

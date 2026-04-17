@@ -21,7 +21,7 @@ use Sentry;
 
 trait WithInvoicesExport
 {
-    public function processDataExportPdf(Invoice $invoice): \Symfony\Component\HttpFoundation\Response
+    public function processDataExportPdf(Invoice $invoice, array $options = []): \Symfony\Component\HttpFoundation\Response
     {
         $locale = $invoice->shop->language->code;
         app()->setLocale($locale);
@@ -56,6 +56,24 @@ trait WithInvoicesExport
 
                 return $transaction;
             });
+
+            $orderData = $invoice->order?->data ?? [];
+            $recipientName = null;
+            if (!empty($orderData['shipping_address']['name'])) {
+                $recipientName = $orderData['shipping_address']['name'];
+            } elseif (!empty($orderData['shopify_data']['shipping_address']['firstName']) || !empty($orderData['shopify_data']['shipping_address']['lastName'])) {
+                $recipientName = trim(($orderData['shopify_data']['shipping_address']['firstName'] ?? '') . ' ' . ($orderData['shopify_data']['shipping_address']['lastName'] ?? ''));
+            } elseif (!empty($orderData['delivery_data']['firstName']) || !empty($orderData['delivery_data']['lastName'])) {
+                $recipientName = trim(($orderData['delivery_data']['firstName'] ?? '') . ' ' . ($orderData['delivery_data']['lastName'] ?? ''));
+            } elseif (!empty($orderData['delivery_data']['name'])) {
+                $recipientName = $orderData['delivery_data']['name'];
+            } elseif (!empty($orderData['delivery_data']['contact_name'])) {
+                $recipientName = $orderData['delivery_data']['contact_name'];
+            } elseif ($invoice->order?->customerClient) {
+                $recipientName = $invoice->order->customerClient->contact_name ?? $invoice->order->customerClient->name;
+            } elseif ($invoice->customerClient) {
+                $recipientName = $invoice->customerClient->contact_name ?? $invoice->customerClient->name;
+            }
 
             //$refund = $invoice->type == InvoiceTypeEnum::REFUND;
             $refundData = [];
@@ -106,15 +124,23 @@ trait WithInvoicesExport
                 'invoice'            => $invoice,
                 'deliveryNote'       => $deliveryNote,
                 'deliveryAddress'    => $deliveryNote?->deliveryAddress,
+                'recipientName'      => $recipientName,
                 'invoiceNumberLabel' => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice number') : __('Refund Number'),
                 'dateLabel'          => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice date') : __('Refund Date'),
                 'typeLabel'          => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice') : __('Refund'),
                 'transactions'       => $transactions,
                 'totalNet'           => number_format($totalNet, 2, '.', ''),
                 'refunds'            => $refundData,
-                'country_of_origin'  => true,
-                'weight'             => true,
-                'commodity_codes'    => true,
+                'pro_mode'             => Arr::get($options, 'pro_mode', false),
+                'country_of_origin'   => Arr::get($options, 'country_of_origin', false),
+                'rrp'                  => Arr::get($options, 'rrp', false),
+                'parts'                => Arr::get($options, 'parts', false),
+                'commodity_codes'      => Arr::get($options, 'commodity_codes', false),
+                'weight'               => Arr::get($options, 'weight', false),
+                'barcode'              => Arr::get($options, 'barcode', false),
+                'cpnp'                 => Arr::get($options, 'cpnp', false),
+                'hide_payment_status'  => Arr::get($options, 'hide_payment_status', false),
+                'group_by_tariff_code' => Arr::get($options, 'group_by_tariff_code', false),
             ], [], $config);
 
             $isAttachIsdocToPdf = Arr::get($invoice->organisation->settings, "invoice_export.attach_isdoc_to_pdf", false);

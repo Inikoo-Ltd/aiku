@@ -10,25 +10,47 @@ trait WithCalendarSubNavigation
 
         return [
             [
-                'label'    => __('Calendar'),
-                'route'    => [
-                    'name'       => 'grp.org.hr.calendars.index',
+                'label' => __('Calendar'),
+                'route' => [
+                    'name' => 'grp.org.hr.calendars.index',
                     'parameters' => $request->route()->originalParameters(),
                 ],
                 'leftIcon' => [
-                    'icon'    => ['fal', 'fa-calendar'],
+                    'icon' => ['fal', 'fa-calendar'],
                     'tooltip' => __('Calendar'),
                 ],
             ],
             [
-                'label'    => __('Holiday'),
-                'route'    => [
-                    'name'       => 'grp.org.hr.holidays.index',
+                'label' => __('Holiday'),
+                'route' => [
+                    'name' => 'grp.org.hr.holidays.index',
                     'parameters' => $request->route()->originalParameters(),
                 ],
                 'leftIcon' => [
-                    'icon'    => ['fal', 'fa-umbrella'],
+                    'icon' => ['fal', 'fa-umbrella'],
                     'tooltip' => __('Holiday'),
+                ],
+            ],
+            [
+                'label' => __('Holiday Year'),
+                'route' => [
+                    'name' => 'grp.org.hr.holiday_years.index',
+                    'parameters' => $request->route()->originalParameters(),
+                ],
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-calendar-alt'],
+                    'tooltip' => __('Holiday Year'),
+                ],
+            ],
+            [
+                'label' => __('Restricted Periods'),
+                'route' => [
+                    'name' => 'grp.org.hr.restricted_periods.index',
+                    'parameters' => $request->route()->originalParameters(),
+                ],
+                'leftIcon' => [
+                    'icon' => ['fal', 'fa-ban'],
+                    'tooltip' => __('Restricted Periods'),
                 ],
             ]
         ];

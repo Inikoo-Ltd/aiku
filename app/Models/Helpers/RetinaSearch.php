@@ -9,8 +9,6 @@
 namespace App\Models\Helpers;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
-use Laravel\Scout\Searchable;
 
 /**
  * @property int $id
@@ -40,8 +38,6 @@ use Laravel\Scout\Searchable;
  */
 class RetinaSearch extends Model
 {
-    use Searchable;
-
     protected $casts = [
         'sections'    => 'array',
         'permissions' => 'array',
@@ -58,27 +54,5 @@ class RetinaSearch extends Model
 
     protected $guarded = [];
 
-    public function searchableAs(): string
-    {
-        return config('elasticsearch.index_prefix').'retina_search';
-    }
-
-    public function toSearchableArray(): array
-    {
-        return Arr::only($this->toArray(), [
-            'group_id',
-            'organisation_id',
-            'customer_id',
-            'haystack_tier_1',
-            'haystack_tier_2',
-            'haystack_tier_3',
-            'status',
-            'weight',
-            'date',
-            'sections',
-            'permissions',
-            'model_type',
-        ]);
-    }
 
 }

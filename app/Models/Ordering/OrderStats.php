@@ -19,9 +19,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $id
  * @property int $order_id
  * @property int $number_item_transactions_out_of_stock_in_basket transactions at the time up submission from basket
- * @property string|null $out_of_stock_in_basket_grp_net_amount
- * @property string|null $out_of_stock_in_basket_org_net_amount
- * @property string $out_of_stock_in_basket_net_amount
+ * @property numeric|null $out_of_stock_in_basket_grp_net_amount
+ * @property numeric|null $out_of_stock_in_basket_org_net_amount
+ * @property numeric $out_of_stock_in_basket_net_amount
  * @property int $number_item_transactions_at_submission transactions at the time up submission from basket
  * @property int $number_created_item_transactions_after_submission
  * @property int $number_updated_item_transactions_after_submission
@@ -43,21 +43,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_offers
  * @property int $number_offer_allowances
  * @property int $number_transactions_with_offers
- * @property string $discounts_amount from % offs
- * @property string $giveaways_value_amount Value of goods given for free
- * @property string $cashback_amount
- * @property string|null $org_giveaways_value_amount
- * @property string|null $org_cashback_amount
- * @property string|null $org_discounts_amount
- * @property string|null $grp_discounts_amount
- * @property string|null $grp_giveaways_value_amount
- * @property string|null $grp_cashback_amount
+ * @property numeric $discounts_amount from % offs
+ * @property numeric $giveaways_value_amount Value of goods given for free
+ * @property numeric $cashback_amount
+ * @property numeric|null $org_giveaways_value_amount
+ * @property numeric|null $org_cashback_amount
+ * @property numeric|null $org_discounts_amount
+ * @property numeric|null $grp_discounts_amount
+ * @property numeric|null $grp_giveaways_value_amount
+ * @property numeric|null $grp_cashback_amount
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_item_transactions_state_handling_blocked
  * @property int $number_item_transactions_state_picked
  * @property int $number_item_transactions_state_packing
- * @property-read \App\Models\Ordering\Order $order
+ * @property-read \App\Models\Ordering\Order|null $order
  * @method static Builder<static>|OrderStats newModelQuery()
  * @method static Builder<static>|OrderStats newQuery()
  * @method static Builder<static>|OrderStats query()

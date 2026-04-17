@@ -23,6 +23,7 @@ use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -169,9 +170,9 @@ class ShowOrder extends OrgAction
         return [
             "note_list" => [
                 [
-                    "label"       => __("Delivery Instructions"),
+                    "label"       => __("Shipping label message") . ' ('  . __("Customer") . ')',
                     "note"        => $order->shipping_notes ?? '',
-                    "information" => __("This note is from the customer. Will be printed in the shipping label."),
+                    "information" => __("Note from crm. First 34 char. Will be printed on the shipping label."),
                     "editable"    => true,
                     "bgColor"     => "#38bdf8",
                     "field"       => "shipping_notes"
@@ -189,11 +190,12 @@ class ShowOrder extends OrgAction
                     "note"        => $order->public_notes ?? '',
                     "information" => __("This note will be visible to public, both staff and the customer can see."),
                     "editable"    => true,
+                    "warning"     => __('Customer can see this note'),
                     "bgColor"     => "#94DB84",
                     "field"       => "public_notes"
                 ],
                 [
-                    "label"       => __("Private"),
+                    "label"       => __("Order private note"),
                     "note"        => $order->internal_notes ?? '',
                     "information" => __("This note is only visible to staff members. You can communicate each other about the order."),
                     "editable"    => true,
@@ -282,6 +284,9 @@ class ShowOrder extends OrgAction
 
         $paymentsData = [];
         foreach ($order->payments as $payment) {
+            if ($payment->state === PaymentStateEnum::CANCELLED) {
+                continue;
+            }
             $paymentsData[] = [
                 'id'              => $payment->id,
                 'amount'          => $payment->amount,
@@ -297,7 +302,7 @@ class ShowOrder extends OrgAction
         return Inertia::render(
             'Org/Ordering/Order',
             [
-                'title'       => __('order'),
+                'title'       => __('Order').' '.$order->reference,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $order,
                     $request->route()->getName(),
@@ -529,6 +534,7 @@ class ShowOrder extends OrgAction
                     'name' => $order->salesChannel->name,
                     'icon' => $order->salesChannel->type->icon()
                 ] : null,
+                'is_faire_order'    => $order->shop->engine == ShopEngineEnum::FAIRE,
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))

@@ -56,7 +56,7 @@ class ShowAgentDispatchHub extends OrgAction
                         'icon'  => ['fal', 'fa-conveyor-belt-alt'],
                         'title' => __('Locations')
                     ],
-                    'title' => __('Dispatching backlog'),
+                    'title' => __('Dispatching Backlog'),
                 ],
                 'box_stats'   => $stats
 

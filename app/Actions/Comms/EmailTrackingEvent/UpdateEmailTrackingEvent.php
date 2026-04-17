@@ -49,7 +49,7 @@ class UpdateEmailTrackingEvent extends OrgAction
         $this->strict         = $strict;
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($emailTrackingEvent->organisation, $modelData);
+        $this->initialisation($emailTrackingEvent->dispatchedEmail->outbox->organisation, $modelData);
 
         return $this->handle($emailTrackingEvent, $this->validatedData);
     }

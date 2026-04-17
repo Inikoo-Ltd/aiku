@@ -12,7 +12,7 @@ use App\Actions\GrpAction;
 use App\Actions\SysAdmin\Guest\WithGuestsSubNavigations;
 use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
 use App\Actions\SysAdmin\WithSysAdminAuthorization;
-use App\Http\Resources\SysAdmin\GuestsResource;
+use App\Http\Resources\SysAdmin\Guest\GuestsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Guest;
@@ -89,7 +89,7 @@ class IndexGuests extends GrpAction
         return $queryBuilder
             ->defaultSort('guests.code')
             ->select(['guests.id', 'guests.slug', 'guests.code', 'guests.contact_name', 'guests.email', 'number_logins', 'last_login_at', 'number_failed_logins', 'last_failed_login_at'])
-            ->allowedSorts(['code', 'contact_name', 'email', 'number_logins', 'last_login_at', 'number_failed_logins', 'last_failed_login_at'])
+            ->allowedSorts(['code', 'contact_name', 'slug', 'email', 'number_logins', 'last_login_at', 'number_failed_logins', 'last_failed_login_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -148,8 +148,8 @@ class IndexGuests extends GrpAction
     public function htmlResponse(LengthAwarePaginator $guests, ActionRequest $request): Response
     {
         $subNavigation = $this->getGuestsNavigation($this->group, $request);
-        $title = __('Active');
-        $icon  = [
+        $title         = __('Active');
+        $icon          = [
             'icon'  => ['fal', 'fa-user-alien'],
             'title' => __('Active')
         ];
@@ -166,6 +166,7 @@ class IndexGuests extends GrpAction
                 'title' => __('All guests')
             ];
         }
+
         return Inertia::render(
             'SysAdmin/Guests',
             [
@@ -176,7 +177,7 @@ class IndexGuests extends GrpAction
                     'model'         => __('guests'),
                     'icon'          => $icon,
                     'subNavigation' => $subNavigation,
-                    'actions' => [
+                    'actions'       => [
                         $this->canEdit && $request->route()->getName() == 'grp.sysadmin.guests.index' ? [
                             'type'  => 'button',
                             'style' => 'create',
@@ -192,12 +193,12 @@ class IndexGuests extends GrpAction
                 ],
                 'data'        => GuestsResource::collection($guests),
             ]
-        )->table($this->tableStructure(group:$this->group, scope:$this->scope));
+        )->table($this->tableStructure(group: $this->group, scope: $this->scope));
     }
 
     public function inInactive(ActionRequest $request): LengthAwarePaginator
     {
-        $group = group();
+        $group       = group();
         $this->scope = 'inactive';
         $this->initialisation($group, $request);
 
@@ -206,7 +207,7 @@ class IndexGuests extends GrpAction
 
     public function inActive(ActionRequest $request): LengthAwarePaginator
     {
-        $group = group();
+        $group       = group();
         $this->scope = 'active';
         $this->initialisation($group, $request);
 
@@ -215,7 +216,7 @@ class IndexGuests extends GrpAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $group = group();
+        $group       = group();
         $this->scope = 'all';
         $this->initialisation($group, $request);
 

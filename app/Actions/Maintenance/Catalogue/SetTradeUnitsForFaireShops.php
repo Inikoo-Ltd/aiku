@@ -1,11 +1,10 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 02-06-2025-15h-25m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 04 Apr 2026 18:40:36 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Maintenance\Catalogue;
 
@@ -22,7 +21,7 @@ class SetTradeUnitsForFaireShops
     use WithActionUpdate;
 
 
-    public function handle(Product $product, Command $command): void
+    public function handle(Product $product, ?Command $command = null): void
     {
         $code       = $product->code;
         $seederShop = $product->shop->seederShop;
@@ -30,40 +29,62 @@ class SetTradeUnitsForFaireShops
             return;
         }
 
+
         $seederProduct = Product::whereRaw("lower(code) = lower(?)", [$code])->where('shop_id', $seederShop->id)->first();
 
 
-        if ($seederProduct && $seederProduct->units == $product->units) {
+        if ($seederProduct) {
+            $productTradeUnits = $product->tradeUnits->pluck('pivot.quantity', 'id');
 
-
-
-            $tradeUnitsData = [];
-            foreach ($seederProduct->tradeUnits as $tradeUnit) {
-                $tradeUnitsData[] = [
-                    'id'       => $tradeUnit->id,
-                    'quantity' => $tradeUnit->pivot->quantity
-                ];
+            if ($product->shop->slug == 'awfe') {// Hack to remove unwanted trade unit
+                $masterAssetTradeUnits = $seederProduct->tradeUnits->pluck('pivot.quantity', 'id')->forget(42894);
+            } else {
+                $masterAssetTradeUnits = $seederProduct->tradeUnits->pluck('pivot.quantity', 'id');
             }
 
+            $diffFromMaster  = $masterAssetTradeUnits->diffAssoc($productTradeUnits);
+            $diffFromProduct = $productTradeUnits->diffAssoc($masterAssetTradeUnits);
+
+            if (($diffFromMaster->isNotEmpty() || $diffFromProduct->isNotEmpty()) && $masterAssetTradeUnits->count() == 1) {
+                $getNumberUnits = $masterAssetTradeUnits->first();
 
 
-            if (!empty($tradeUnitsData)) {
-                UpdateTradeUnitsForExternalProduct::make()->action($product, [
-                    'trade_units' => $tradeUnitsData
-                ]);
+                if ($product->units == $seederProduct->units && $product->units == $getNumberUnits) {
+                    $command?->warn("Product  ".$product->slug.' '.$product->units.' Seeder ');
+
+
+                    $tradeUnitsData = [];
+                    foreach ($seederProduct->tradeUnits as $tradeUnit) {
+                        if ($tradeUnit->slug != 'ial01') {
+                            $tradeUnitsData[] = [
+                                'id'       => $tradeUnit->id,
+                                'quantity' => $tradeUnit->pivot->quantity
+                            ];
+                        }
+                    }
+
+
+                    if (!empty($tradeUnitsData)) {
+                        UpdateTradeUnitsForExternalProduct::make()->action($product, [
+                            'trade_units' => $tradeUnitsData
+                        ]);
+                    }
+                }
             }
-        } elseif (!$seederProduct) {
-            $command->error("Product not found in seeder ".$product->code);
-        } else {
-            $command->error("Product units not match ".$product->code.' '.$product->units.'!='.$seederProduct->units);
         }
     }
 
 
-    public string $commandSignature = 'repair:set_trade_units_for_faire_shops {faire_shop}';
+    public string $commandSignature = 'repair:set_trade_units_for_faire_shops {faire_shop?} {--in_process=false} {--product=}';
 
     public function asCommand(Command $command): int
     {
+        if ($command->option('product')) {
+            $product = Product::where('slug', $command->option('product'))->firstOrFail();
+            $this->handle($product, $command);
+            exit;
+        }
+
         $faireShop  = Shop::where('slug', $command->argument('faire_shop'))->firstOrFail();
         $seederShop = $faireShop->seederShop;
         if (!$seederShop) {
@@ -72,7 +93,9 @@ class SetTradeUnitsForFaireShops
             return 1;
         }
 
-        $count = Product::where('shop_id', $faireShop->id)->count();
+        $countQuery = Product::where('shop_id', $faireShop->id);
+
+        $count = $countQuery->count();
 
         ProgressBar::setFormatDefinition(
             'aiku_eta',
@@ -82,8 +105,10 @@ class SetTradeUnitsForFaireShops
         $bar->setFormat('aiku_eta');
         $bar->start();
 
-        Product::where('shop_id', $faireShop->id)
-            ->orderBy('id')
+        $query = Product::where('shop_id', $faireShop->id);
+
+
+        $query->orderBy('id')
             ->chunk(100, function (Collection $products) use ($bar, $command) {
                 foreach ($products as $product) {
                     $this->handle($product, $command);

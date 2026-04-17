@@ -80,45 +80,25 @@ class EditTradeUnit extends OrgAction
         ];
 
         $brandRoute = [
-          'index_brand' => [
-              'name'       => 'grp.json.brands.index',
-              'parameters' => []
-          ],
-          'store_brand' => [
-              'name'       => 'grp.models.trade-unit.brands.store',
-              'parameters' => [
-                  'tradeUnit' => $tradeUnit->id,
-              ]
-          ],
-          'update_brand' => [
-              'name'       => 'grp.models.trade-unit.brands.update',
-              'parameters' => [
-                  'tradeUnit' => $tradeUnit->id,
-              ],
-              'method'    => 'patch'
-          ],
-          'delete_brand' => [
-              'name'       => 'grp.models.trade-unit.brands.delete',
-              'parameters' => [
-                  'tradeUnit' => $tradeUnit->id,
-              ],
-              'method'    => 'delete'
-          ],
-          'attach_brand' => [
-              'name'       => 'grp.models.trade-unit.brands.attach',
-              'parameters' => [
-                  'tradeUnit' => $tradeUnit->id,
-              ],
-              'method'    => 'post'
-          ],
-          'detach_brand' => [
-              'name'       => 'grp.models.trade-unit.brands.detach',
-              'parameters' => [
-                  'tradeUnit' => $tradeUnit->id,
-                  'brand' => $tradeUnit->brand()?->id,
-              ],
-              'method'    => 'delete'
-          ],
+            'index_brand' => [
+                'name'       => 'grp.json.brands.index',
+                'parameters' => []
+            ],
+            'attach_brand' => [
+                'name'       => 'grp.models.trade-unit.brands.attach',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ],
+                'method'     => 'post'
+            ],
+            'detach_brand' => [
+                'name'       => 'grp.models.trade-unit.brands.detach',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                    'brand'     => $tradeUnit->brand()?->id,
+                ],
+                'method'     => 'delete'
+            ],
         ];
 
         return Inertia::render(
@@ -355,6 +335,7 @@ class EditTradeUnit extends OrgAction
                                     'value' => $tradeUnit->origin_country_id,
                                     'options' => GetCountriesOptions::run(),
                                     'valueProp' => 'id',
+                                    'searchable' => true
                                 ],
                                 'tariff_code' => [
                                     'type'  => 'input',

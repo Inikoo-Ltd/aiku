@@ -17,45 +17,46 @@ enum ProfileTabsEnum: string
     use HasTabs;
 
 
-    case DASHBOARD          = 'dashboard';
-    case TODO               = 'todo';
-    case NOTIFICATIONS      = 'notifications';
-    case KPI                = 'kpi';
-
-    case HISTORY    = 'history';
-    case VISIT_LOGS = 'visit_logs';
+    case DASHBOARD = 'dashboard';
+    case NOTIFICATIONS = 'notifications';
+    case CLOCKING = 'clocking';
     case TIMESHEETS = 'timesheets';
 
-    // case MY_DATA = 'my_data';
+    case HISTORY = 'history';
+    case TODO = 'todo';
+    case KPI = 'kpi';
 
 
     public function blueprint(): array
     {
         return match ($this) {
-
             ProfileTabsEnum::DASHBOARD => [
                 'title' => __('Dashboard'),
                 'icon'  => 'fal fa-clipboard-list-check',
             ],
+
+            ProfileTabsEnum::KPI => [
+                'title'   => __('KPIs'),
+                'tooltip' => __('Key Performance Indicator'),
+                'icon'    => 'fal fa-rabbit-fast',
+            ],
+
             ProfileTabsEnum::TODO => [
                 'title' => __('To do'),
                 'icon'  => 'fal fa-clipboard-list-check',
             ],
+
             ProfileTabsEnum::NOTIFICATIONS => [
                 'title' => __('Notifications'),
                 'icon'  => 'fal fa-bell',
             ],
 
-            ProfileTabsEnum::KPI => [
-                'title'   => __('KPIs'),
-                'tooltip' => __('key performance indicators'),
-                'icon'    => 'fal fa-rabbit-fast',
+            ProfileTabsEnum::CLOCKING => [
+                'title' => __('Clocking'),
+                'icon'  => 'fal fa-user',
             ],
 
-            ProfileTabsEnum::VISIT_LOGS => [
-                'title' => __('Visit logs'),
-                'icon'  => 'fal fa-eye',
-            ],
+
             ProfileTabsEnum::TIMESHEETS => [
                 'title' => __('Timesheets'),
                 'icon'  => 'fal fa-stopwatch',
@@ -67,12 +68,6 @@ enum ProfileTabsEnum: string
                 'type'  => 'icon',
                 'align' => 'right',
             ],
-            // ProfileTabsEnum::MY_DATA => [
-            //     'title' => __('My data'),
-            //     'icon'  => 'fas fa-info-circle',
-            //     'type'  => 'icon',
-            //     'align' => 'right',
-            // ],
         };
     }
 }

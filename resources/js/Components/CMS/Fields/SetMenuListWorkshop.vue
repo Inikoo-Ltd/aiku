@@ -37,7 +37,7 @@ const selectedMenu = ref<number | null>(null)
 
 
 const navigation = computed(() => {
-	return dataModel.value?.data.fieldValue.navigation ?? []
+	return dataModel.value?.data?.fieldValue?.navigation ?? []
 })
 
 

@@ -25,8 +25,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property OrderPaymentApiPointStateEnum|null $state
  * @property \Illuminate\Support\Carbon|null $processed_at
- * @property-read \App\Models\SysAdmin\Group $group
- * @property-read Order $order
+ * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read Order|null $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Accounting\PaymentAccountShop|null $paymentAccountShop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderPaymentApiPoint newModelQuery()

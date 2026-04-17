@@ -21,6 +21,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $family_code
  * @property string $name
  * @property string $discontinued_in_organisation_at
+ * @property mixed $unit_cost
  * @property mixed $state
  * @property mixed $quantity
  * @property mixed $organisation_name
@@ -31,12 +32,18 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $id
  * @property mixed $organisation_code
  * @property mixed $value_in_locations
+ * @property mixed $currency_code
+ * @property mixed $stock_value
  * @property mixed $revenue
  * @property mixed $dispatched
  * @property mixed $sales_grp_currency_external
  * @property mixed $sales_grp_currency_external_ly
  * @property mixed $invoices
  * @property mixed $invoices_ly
+ * @property mixed $on_the_way_po_value
+ * @property mixed $on_the_way_po_count
+ * @property mixed $woc
+ * @property mixed $health_rank
  */
 class OrgStocksResource extends JsonResource
 {
@@ -52,6 +59,9 @@ class OrgStocksResource extends JsonResource
             'quantity_available'              => trimDecimalZeros($this->quantity_available),
             'quantity_in_locations'           => trimDecimalZeros($this->quantity_in_locations),
             'unit_value'                      => $this->unit_value,
+            'unit_cost'                       => $this->unit_cost,
+            'currency_code'                   => $this->currency_code,
+            'stock_value'                     => $this->stock_value,
             'number_locations'                => $this->number_location,
             'quantity_locations'              => $this->quantity_in_locations,
             'family_slug'                     => $this->family_slug,
@@ -73,6 +83,11 @@ class OrgStocksResource extends JsonResource
             'invoices'                              => $this->invoices ?? 0,
             'invoices_ly'                           => $this->invoices_ly ?? 0,
             'invoices_delta'                        => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'on_the_way_po_value'                   => $this->on_the_way_po_value ?? 0,
+            'on_the_way_po_count'                   => $this->on_the_way_po_count ?? 0,
+            'woc'                                   => $this->woc !== null ? round((float) $this->woc, 1) : null,
+            'product_count'                         => $this->product_count,
+            'health_rank'                      => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
         ];
     }
 

@@ -3,7 +3,7 @@ import { inject, ref, watch } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus } from "@fal"
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
-import { faLaptopCode } from "@fas"
+import { faLaptopCode, faLayerGroup } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
 import { checkVisible, textReplaceVariables } from "@/Composables/Workshop"
@@ -20,7 +20,7 @@ import GoldReward from "@/Components/Utils/GoldReward.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 
-library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck)
+library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck, faLayerGroup)
 
 const props = defineProps<{
     screenType?: "desktop" | "mobile" | "tablet"
@@ -122,6 +122,14 @@ watch(
   { deep: true }
 )
 
+const goToBundle = () => {
+    const stored = localStorage.getItem('layout_dropshipping')
+    const currentPlatform = stored ? JSON.parse(stored)?.currentPlatform : null
+    const url = currentPlatform
+        ? `/redirect-bundle-to-retina?platform=${encodeURIComponent(currentPlatform)}`
+        : '/redirect-bundle-to-retina'
+    window.location.href = url
+}
 </script>
 
 <template>
@@ -142,43 +150,52 @@ watch(
                     </LinkIris>!
                 </span>
 
-                <!-- Section: GR Amnesty (all users have GR) -->
-                <span v-if="layout.offer_data.amnesty" class="text-yellow-300 text-xs inline-flex items-center gap-x-1">
-                    <span class="">{{ ctrans('Gold Reward Amnesty') }}</span>
-                    <FontAwesomeIcon icon="fas fa-candle-holder" class="" fixed-width aria-hidden="true" />
-                    <span class="text-xs">({{ ctrans('Until :amnestyUntil', { amnestyUntil: useFormatTime(layout.offer_data.amnesty_until, { formatTime: 'MMM do' }) }) }})</span>
-                </span>
+                <div  v-if="layout.retina?.type !== 'b2b'">
+                    <!-- Section: GR Amnesty (all users have GR) -->
+                    <span v-if="layout.offer_data.amnesty"
+                        class="text-yellow-300 text-xs inline-flex items-center gap-x-1">
+                        <span class="">{{ ctrans('Gold Reward Amnesty') }}</span>
+                        <FontAwesomeIcon icon="fas fa-candle-holder" class="" fixed-width aria-hidden="true" />
+                        <span class="text-xs">({{ ctrans('Until :amnestyUntil', {
+                            amnestyUntil:
+                                useFormatTime(layout.offer_data.amnesty_until, { formatTime: 'MMM do' }) }) }})</span>
+                    </span>
 
-                <!-- Section: GR status -->
-                <span v-else-if="layout.offer_data?.type === 'gr'" class="text-yellow-500 inline-flex items-center gap-x-1">
-                    {{ layout.offer_data?.label }}
-                    <GoldReward>
-                        <template #default>
-                            <div>
-                                <FontAwesomeIcon icon="fas fa-medal" class="text-yellow-500" fixed-width aria-hidden="true" />
-                                <div class="ml-1 inline-block align-middle w-20 text-xxs rounded-sm h-3 mt-1.5 bg-gray-200 relative overflow-hidden mb-2">
-                                    <div class="absolute  left-0   top-0 h-full transition-all duration-1000 ease-in-out"
-                                        :class="true ? 'xshimmer bg-green-500' : 'bg-green-500'"
-                                        :style="{
-                                            width: true ? layout.offer_data?.meter?.[0]/layout.offer_data?.meter?.[1] * 100 + '%' : '100%'
-                                        }"
-                                    />
-                                    
-                                    <div class="absolute inset-0 flex items-center justify-center text-xxs font-medium text-black">
-                                        {{ Number(layout.offer_data?.meter?.[0]).toFixed(0) }} / {{ Number(layout.offer_data?.meter?.[1]).toFixed(0) }} days
+                    <!-- Section: GR status -->
+                    <span v-else-if="layout.offer_data?.type === 'gr'"
+                        class="text-yellow-500 inline-flex items-center gap-x-1">
+                        {{ layout.offer_data?.label }}
+                        <GoldReward>
+                            <template #default>
+                                <div>
+                                    <FontAwesomeIcon icon="fas fa-medal" class="text-yellow-500" fixed-width
+                                        aria-hidden="true" />
+                                    <div
+                                        class="ml-1 inline-block align-middle w-20 text-xxs rounded-sm h-3 mt-1.5 bg-gray-200 relative overflow-hidden mb-2">
+                                        <div class="absolute  left-0   top-0 h-full transition-all duration-1000 ease-in-out"
+                                            :class="true ? 'xshimmer bg-green-500' : 'bg-green-500'" :style="{
+                                                width: true ? layout.offer_data?.meter?.[0] / layout.offer_data?.meter?.[1] * 100 + '%' : '100%'
+                                            }" />
+
+                                        <div
+                                            class="absolute inset-0 flex items-center justify-center text-xxs font-medium text-black">
+                                            {{ Number(layout.offer_data?.meter?.[0]).toFixed(0) }} / {{
+                                                Number(layout.offer_data?.meter?.[1]).toFixed(0) }} days
+                                        </div>
+
                                     </div>
-                                    
                                 </div>
-                            </div>
-                        </template>
-                    </GoldReward>
-                </span>
+                            </template>
+                        </GoldReward>
+                    </span>
 
-                <span v-if="layout.offer_data?.type === 'fob'" class="text-yellow-500">
-                    {{ layout.offer_data?.label }}
-                    <FontAwesomeIcon icon="fas fa-sparkles" class="" fixed-width aria-hidden="true" />
-                </span>
+                    <span v-if="layout.offer_data?.type === 'fob'" class="text-yellow-500">
+                        {{ layout.offer_data?.label }}
+                        <FontAwesomeIcon icon="fas fa-sparkles" class="" fixed-width aria-hidden="true" />
+                    </span>
 
+
+                </div>
                 
             </div>
             <div v-else-if="checkVisible(model?.main_title?.visible || null, isLoggedIn) && textReplaceVariables(model?.main_title?.text, layout.iris_variables)"
@@ -190,6 +207,7 @@ watch(
         <div class="hidden md:flex justify-between md:justify-start items-center gap-x-1 flex-wrap md:flex-nowrap">
             <SwitchLanguage
                 v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" />
+
 
             <!-- Section: Profile -->
             <LinkIris v-if="!layout.offer_data" href="/app/dashboard" :type="'internal'" class="flex items-center justify-center">
@@ -231,6 +249,18 @@ watch(
                     </template>
                 </Button>
             </LinkIris>
+
+            <!-- section redirect to bundle -->
+            <Button v-if="isLoggedIn && layout.retina?.type === 'dropshipping' &&  Object.keys(layout.user?.customerSalesChannels || {}).length > 0" v-tooltip="trans('Add Bundles')" type="transparent" class="button"
+                @click="goToBundle">
+                <template #loading>
+                    <span v-show="false" class="button"></span>
+                </template>
+
+                <template #label>
+                    <FontAwesomeIcon icon="fas fa-layer-group" class="button" fixed-width />
+                </template>
+            </Button>
 
             <!-- Section: Favourite -->
             <LinkIris href="/app/favourites" :type="'internal'">

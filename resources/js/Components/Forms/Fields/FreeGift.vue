@@ -23,7 +23,6 @@ library.add(faCircle, faCheckCircle, faTimes, faBoxUp)
 const props = defineProps<{
     form: any
     fieldName: any
-    options: string[] | { label?: string, value: string }[]
     fieldData: {
         fetchRoute: routeType
     }
@@ -156,11 +155,14 @@ const clearAll = () => {
 
 // Method: on handle radio selection
 const onClickRadioProduct = (item) => {
-    props.form[props.fieldName] = props.form[props.fieldName].map(p => ({
-        ...p,
-        default: p.id === item.id
-    }))
-    // props.form[props.fieldName] = props.form[props.fieldName]
+    const willBeChecked = !item.default
+
+    props.form[props.fieldName].forEach(p => {
+        p.default = false
+    })
+
+    item.default = willBeChecked
+
     props.form.isDirty = true
 }
 

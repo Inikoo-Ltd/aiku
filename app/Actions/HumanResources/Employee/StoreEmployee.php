@@ -22,6 +22,7 @@ use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithReorganisePositions;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Workplace;
 use App\Models\SysAdmin\Organisation;
@@ -198,8 +199,13 @@ class StoreEmployee extends OrgAction
             'password'                                => ['exclude_if:username,null', 'required', 'max:255', app()->isLocal() || app()->environment('testing') ? null : Password::min(8)],
             'reset_password'                          => ['exclude_if:username,null', 'sometimes', 'boolean'],
             'user_model_status'                       => ['exclude_if:username,null', 'sometimes', 'boolean'],
-            'emergency_contact'                       => ['sometimes', 'nullable', 'string', 'max:1024'],
+            'emergency_contact'                       => ['sometimes', 'nullable', 'array'],
+            'emergency_contact.contact'               => ['sometimes', 'nullable', 'string', 'max:255'],
+            'emergency_contact.phone_number'          => ['sometimes', 'nullable', 'string', 'max:50'],
+            'emergency_contact.address'               => ['sometimes', 'nullable', 'string', 'max:512'],
+            'emergency_contact.status'                => ['sometimes', 'nullable', 'string', 'max:512'],
             'type'                                    => ['required', Rule::enum(EmployeeTypeEnum::class)],
+            'employment_type'                         => ['required', Rule::enum(EmploymentTypeEnum::class)],
             'contact_address'                         => ['sometimes', 'nullable', new ValidAddress()],
             'notes'                                   => ['sometimes', 'nullable', 'string', 'max:4000'],
             'identity_document_type'                  => ['sometimes', 'nullable', 'string', 'max:256'],

@@ -21,12 +21,12 @@ use Lorisleiva\Actions\ActionRequest;
 class EditMailshotTemplate extends OrgAction
 {
     use WithMarketingEditAuthorisation;
+
     /**
      * @throws Exception
      */
     public function handle(Shop $parent, EmailTemplate $emailTemplate, ActionRequest $request): Response
     {
-
         return Inertia::render(
             'EditModel',
             [
@@ -35,9 +35,9 @@ class EditMailshotTemplate extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('Edit template'),
-                'pageHead' => [
-                    'title' => __('Edit template'),
+                'title'       => __('Edit template'),
+                'pageHead'    => [
+                    'title'   => __('Edit template'),
                     'actions' => [
                         [
                             'type'  => 'button',
@@ -46,35 +46,35 @@ class EditMailshotTemplate extends OrgAction
                             'route' => [
                                 'name'       => 'grp.org.shops.show.marketing.templates.workshop',
                                 'parameters' => [
-                                    'organisation' => $parent->organisation->slug,
-                                    'shop' => $parent->slug,
+                                    'organisation'  => $parent->organisation->slug,
+                                    'shop'          => $parent->slug,
                                     'emailTemplate' => $emailTemplate->slug
                                 ]
                             ]
                         ]
                     ]
                 ],
-                'formData' => [
+                'formData'    => [
                     'fullLayout' => true,
                     'blueprint'  =>
-                    [
                         [
-                            'fields' => [
-                                'name' => [
-                                    'type'        => 'input',
-                                    'label'       => __('Name'),
-                                    'placeholder' => __('name'),
-                                    'required'    => true,
-                                    'value'       => $emailTemplate->name,
-                                ],
+                            [
+                                'fields' => [
+                                    'name' => [
+                                        'type'        => 'input',
+                                        'label'       => __('Name'),
+                                        'placeholder' => __('name'),
+                                        'required'    => true,
+                                        'value'       => $emailTemplate->name,
+                                    ],
+                                ]
                             ]
-                        ]
-                    ],
+                        ],
                     'args'       => [
                         'updateRoute' => [
                             'name'       => 'grp.models.shop.email-template.update',
                             'parameters' => [
-                                'shop' => $parent->id,
+                                'shop'          => $parent->id,
                                 'emailTemplate' => $emailTemplate->id,
                             ]
 
@@ -96,12 +96,12 @@ class EditMailshotTemplate extends OrgAction
         return $this->handle($shop, $emailTemplate, $request);
     }
 
-    public function getBreadcrumbs(EmailTemplate $emailTemplate, string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(EmailTemplate $emailTemplate, string $routeName, array $routeParameters): array
     {
-        $headCrumb = function (EmailTemplate $emailTemplate, array $routeParameters, string $suffix = null) {
+        $headCrumb = function (EmailTemplate $emailTemplate, array $routeParameters) {
             return [
                 [
-                    'type' => 'simple',
+                    'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => $emailTemplate->name,

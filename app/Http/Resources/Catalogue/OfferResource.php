@@ -43,6 +43,11 @@ class OfferResource extends JsonResource
         $customOfferData = [
             'shop_id'           => $this->shop_id,
             'offer_campaign_id' => $this->offer_campaign_id,
+            'offer_campaign'    => $this->offerCampaign ? [
+                'id'        => $this->offerCampaign->id,
+                'slug'      => $this->offerCampaign->slug,
+                'name'      => $this->offerCampaign->name,
+            ] : null,
             'slug'              => $this->slug,
             'type'              => $this->type,
             'code'              => $this->code,
@@ -62,6 +67,8 @@ class OfferResource extends JsonResource
                 ] : null
             ],
         ];
+
+
 
         return array_merge($customOfferData, $basicOfferData ?? []);
     }

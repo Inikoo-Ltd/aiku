@@ -21,10 +21,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $offer_campaign_id
  * @property int $offer_id
  * @property int $offer_allowance_id
- * @property string $discounted_amount
- * @property string $discounted_percentage
- * @property string $free_items_value
- * @property string $number_of_free_items
+ * @property numeric $discounted_amount
+ * @property numeric $discounted_percentage
+ * @property numeric $free_items_value
+ * @property numeric $number_of_free_items
  * @property string|null $info
  * @property bool $is_pinned
  * @property string|null $precursor
@@ -35,9 +35,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
  * @property string|null $source_alt_id
- * @property-read \App\Models\Discounts\Offer $offer
- * @property-read \App\Models\Discounts\OfferAllowance $offerAllowance
- * @property-read \App\Models\Discounts\OfferCampaign $offerCampaign
+ * @property bool $is_gift
+ * @property-read \App\Models\Discounts\Offer|null $offer
+ * @property-read \App\Models\Discounts\OfferAllowance|null $offerAllowance
+ * @property-read \App\Models\Discounts\OfferCampaign|null $offerCampaign
  * @property-read Transaction|null $transaction
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionHasOfferAllowance newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionHasOfferAllowance newQuery()
@@ -51,6 +52,7 @@ class TransactionHasOfferAllowance extends Model
     protected $casts = [
         'data'            => 'array',
         'is_pinned'       => 'boolean',
+        'is_gift'         => 'boolean',
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
     ];

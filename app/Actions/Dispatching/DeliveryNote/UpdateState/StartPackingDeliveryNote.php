@@ -10,6 +10,8 @@ namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePacker;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePickedBays;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNotes;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacking;
@@ -55,7 +57,7 @@ class StartPackingDeliveryNote extends OrgAction
             $deliveryNote = UpdateDeliveryNote::run($deliveryNote, $modelData);
 
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
-                UpdateOrderStateToPacking::make()->action($deliveryNote->orders->first(), true);
+                UpdateOrderStateToPacking::make()->action($deliveryNote->orders->first());
             }
 
             DB::table('delivery_note_items')
@@ -70,7 +72,7 @@ class StartPackingDeliveryNote extends OrgAction
                     ->where('delivery_note_id', $deliveryNote->id)->where('picked_bay_id', $pickedBay->id)->delete();
                 PickedBayHydrateNumberDeliveryNotes::run($pickedBay->id);
             }
-
+            DeliveryNoteHydratePickedBays::dispatch($deliveryNote->id);
 
             return $deliveryNote;
         });
@@ -79,6 +81,7 @@ class StartPackingDeliveryNote extends OrgAction
         $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
         $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::PACKING);
 
+        DeliveryNoteHydratePacker::run($deliveryNote->id);
         return $deliveryNote;
     }
 

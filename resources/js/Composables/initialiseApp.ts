@@ -32,13 +32,13 @@ export const initialiseApp = () => {
         echoPersonal.subscribe(usePage().props.auth.user.id)
 
         router.on('navigate', (event) => {
-            
+
             // To see Vue filename in console (component.vue)
             if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
                 if (window.component.vue !== '') {
                     if (window.component.vue !== usePage().component) {
                         window.component.php = ''
-                    }                    
+                    }
                 }
                 window.component.vue = usePage().component
             }
@@ -211,7 +211,14 @@ export const initialiseApp = () => {
         if (usePage().props.avatar_thumbnail) {
             layout.avatar_thumbnail = usePage().props.avatar_thumbnail
         }
-        
+
+        if (usePage().props.dispatching_waiting_badge !== undefined) {
+            layout.dispatching_waiting_badge = usePage().props.dispatching_waiting_badge
+        }
+
+        if (usePage().props.crm_waiting_badge !== undefined) {
+            layout.crm_waiting_badge = usePage().props.crm_waiting_badge
+        }
 
         layout.app.name = "Aiku"
     })

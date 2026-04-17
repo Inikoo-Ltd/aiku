@@ -196,10 +196,10 @@ class ShowInvoice extends OrgAction
         ];
     }
 
-    public function getDownloadPdfColumns(ActionRequest $request): array
+    public function getDownloadPdfColumns(Invoice $invoice): array
     {
-        $userSettings = $request->user()->settings ?? [];
-        $savedColumns = Arr::get($userSettings, 'download_pdf_column', []);
+        $shopSettings = $invoice->shop->settings ?? [];
+        $savedColumns = Arr::get($shopSettings, 'invoicing.download_pdf_columns', []);
 
         $columns = [
             [
@@ -207,7 +207,7 @@ class ShowInvoice extends OrgAction
                 'value' => 'pro_mode',
             ],
             [
-                'label' => __('Recommended retail prices') . ' ' . __('(RRP)'),
+                'label' => __('Recommended retail prices'),
                 'value' => 'rrp',
             ],
             [
@@ -245,7 +245,8 @@ class ShowInvoice extends OrgAction
         ];
 
         return array_map(function (array $column) use ($savedColumns) {
-            $column['is_checked'] = (bool) Arr::get($savedColumns, $column['value'], false);
+            $column['is_checked'] = (bool)Arr::get($savedColumns, $column['value'], false);
+
             return $column;
         }, $columns);
     }
@@ -261,8 +262,23 @@ class ShowInvoice extends OrgAction
                 'tooltip'    => __('Download PDF'),
                 'name'       => 'grp.org.accounting.invoices.download',
                 'parameters' => [
+                    'organisation'      => $invoice->organisation->slug,
+                    'invoice'           => $invoice->slug,
+                    'country_of_origin' => true,
+                    'weight'            => true,
+                    'commodity_codes'   => true,
+                ]
+            ],
+            [
+                'type'       => 'pdf',
+                'icon'       => 'fal fa-ellipsis-v',
+                'label'      => '',
+                'key'        => 'pdf_filter',
+                'tooltip'    => __('Download PDF with custom columns'),
+                'name'       => 'grp.org.accounting.invoices.download',
+                'parameters' => [
                     'organisation' => $invoice->organisation->slug,
-                    'invoice'      => $invoice->slug
+                    'invoice'      => $invoice->slug,
                 ]
             ]
         ];
@@ -288,15 +304,15 @@ class ShowInvoice extends OrgAction
     {
         if ($invoice->type == InvoiceTypeEnum::REFUND) {
             if (str_ends_with($request->route()->getName(), 'invoices.show')) {
-
                 $parameters = $request->route()->originalParameters();
-                $lastKey = array_key_last($parameters);
+                $lastKey    = array_key_last($parameters);
                 if ($lastKey !== null) {
                     $parameters['refund'] = $parameters[$lastKey];
                     unset($parameters[$lastKey]);
                 }
 
                 $routeName = preg_replace('/invoices.show/', 'refunds.show', $request->route()->getName());
+
                 return Redirect::route($routeName, $parameters);
             }
 
@@ -376,26 +392,26 @@ class ShowInvoice extends OrgAction
 
                 ...$payBoxData,
 
-                'invoiceExportOptions' => $exportInvoiceOptions,
-                'routes'               => [
+                'invoiceExportOptions'          => $exportInvoiceOptions,
+                'routes'                        => [
                     'delivery_note'          => $deliveryNoteRoute,
                     'updateInvoiceDateRoute' => [
                         'name'       => 'grp.models.invoice.update.date',
                         'parameters' => [$invoice->id]
                     ],
                 ],
-                //  Todo: Edit restriction
-                'can'                  => [
-                    'editInvoiceDate' => app()->isLocal() && $request->user()->authTo("accounting.{$this->organisation->id}.edit"),
+                'can'                           => [
+                    'editInvoiceDate' => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
                 ],
-                'box_stats'    => $this->getBoxStats($invoice),
-                'list_refunds' => RefundResource::collection($invoice->refunds),
-                'invoice'      => InvoiceResource::make($invoice),
-                'outbox'       => [
+                'box_stats'                     => $this->getBoxStats($invoice),
+                'list_refunds'                  => RefundResource::collection($invoice->refunds),
+                'invoice'                       => InvoiceResource::make($invoice),
+                'outbox'                        => [
                     'state'          => $invoice->shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER->value)->first()?->state->value,
                     'workshop_route' => $this->getOutboxRoute($invoice)
                 ],
-                'download_pdf_column'    => $this->getDownloadPdfColumns($request),
+                'download_pdf_column'           => $this->getDownloadPdfColumns($invoice),
+                'is_external'                   => $invoice->shop?->type->value == 'external',
                 InvoiceTabsEnum::REFUNDS->value => $this->tab == InvoiceTabsEnum::REFUNDS->value
                     ? fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))
                     : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))),

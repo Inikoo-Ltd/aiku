@@ -1,40 +1,34 @@
 <script setup lang="ts">
-import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 import { faArrowRight } from "@far"
 import { faReceipt, faUser, faBuilding, faEnvelope, faPhone, faExternalLinkSquare } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { Link, router } from '@inertiajs/vue3'
-import { inject, ref } from 'vue'
-import StatsBox from '@/Components/Stats/StatsBox.vue'
-import { trans } from 'laravel-vue-i18n'
-import { Fieldset } from 'primevue'
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import { routeType } from '@/types/route'
-import Modal from '@/Components/Utils/Modal.vue'
-import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
-import { notify } from '@kyvg/vue3-notification'
-import TaxNumberDisplay from '@/Components/UI/TaxNumberDisplay.vue'
-import EmailSubscribetion from '@/Components/EmailSubscribetion.vue'
-import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { Link, router } from "@inertiajs/vue3"
+import { ref, inject } from "vue"
+import StatsBox from "@/Components/Stats/StatsBox.vue"
+import { trans } from "laravel-vue-i18n"
+import { Fieldset } from "primevue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { routeType } from "@/types/route"
+import Modal from "@/Components/Utils/Modal.vue"
+import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
+import { notify } from "@kyvg/vue3-notification"
+import TaxNumberDisplay from "@/Components/UI/TaxNumberDisplay.vue"
+import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
+import { textReplaceVariables } from "@/Composables/Workshop"
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+
 library.add(faReceipt, faArrowRight, faUser, faBuilding, faEnvelope, faPhone, faExternalLinkSquare)
 
 const props = defineProps<{
+    welcome_message : string
     data: {
-        customer: {
-
-        }
-        channels: {
-
-        }[]
-        stats: {
-
-        }[]
-        last_visited_channels: {
-
-        }[]
+        customer: {}
+        channels: {}[]
+        stats: {}[]
+        last_visited_channels: {}[]
         shortcut: {
             order: {
                 is_show_button: boolean
@@ -48,10 +42,7 @@ const props = defineProps<{
         }
     }
 }>()
-
-const locale = inject('locale', aikuLocaleStructure)
-console.log(props);
-
+const layout = inject('layout', retinaLayoutStructure)
 // Section: Modal Create Order (if only 1 Manual channel)
 const isModalCreateOrder = ref(false)
 const selectedCustomerClientId = ref(null)
@@ -59,11 +50,11 @@ const isLoadingSubmit = ref(false)
 const onSubmitCreateOrder = () => {
     // Section: Submit
     router.post(
-        route('retina.models.customer-client.order.store', {
+        route("retina.models.customer-client.order.store", {
             customerClient: selectedCustomerClientId.value
         }),
         {
-            data: 'qqq'
+            data: "qqq"
         },
         {
             preserveScroll: true,
@@ -88,13 +79,12 @@ const onSubmitCreateOrder = () => {
             },
             onFinish: () => {
                 isLoadingSubmit.value = false
-            },
+            }
         }
     )
 }
 
 // Section: Modal Create Manual Order (if have order more than one)
-const isSingleManual = !!props.data?.shortcut?.order?.manual_data
 const isModalCreateManualOrder = ref(false)
 const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.slug ?? null)
 
@@ -104,6 +94,10 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
     <div class="relative isolate overflow-hidden">
         <div class="mx-auto px-6 pb-12 pt-10 lg:flex lg:px-14 ">
             <div v-if="data.channels.length" class="w-full lg:shrink-0">
+                 <div v-if="welcome_message" class="mx-auto my-4 lg:mx-0 ">
+                     <div v-html="textReplaceVariables(welcome_message, layout.iris_variables)"></div>
+                 </div>
+                 
                 <div class="mx-auto xmax-w-2xl lg:mx-0 ">
                     <!-- Section: Customer Contact Information -->
                     <div v-if="data.customer" class="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -116,15 +110,6 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                                 <FontAwesomeIcon icon="fal fa-pencil" class="opacity-80" fixed-width aria-hidden="true" />
                                 {{ trans("Edit information") }}
                             </Link>
-                            <!-- <ButtonWithLink
-                                :label="trans('Edit information')"
-                                :routeTarget="{
-                                    name: 'retina.sysadmin.settings.edit',
-                                    parameters: {
-                                        model: data.customer.id
-                                    }
-                                }"
-                            /> -->
                         </div>
 
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -178,22 +163,12 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                                 <div v-if="data?.customer.tax_number && data.customer.tax_number.number" class="flex items-start w-full flex-none gap-x-1.5">
                                     <dt v-tooltip="trans('Tax Number')" class="flex-none xpt-1">
                                         <span class="sr-only">Tax Number</span>
-                                        <FontAwesomeIcon icon="fas fa-receipt" class="text-gray-600" fixed-width aria-hidden="true"/>
+                                        <FontAwesomeIcon icon="fas fa-receipt" class="text-gray-600" fixed-width aria-hidden="true" />
                                     </dt>
 
                                     <TaxNumberDisplay :tax_number="data.customer.tax_number" :show_view_history_button="true" :view_history_link="'retina.sysadmin.vat-validation-history'" />
                                 </div>
                             </div>
-
-                            <!-- hide email subscription, required by tomas -->
-                            <!-- Right Column: Email Subscriptions -->
-                            <!-- <div class="flex justify-start lg:justify-end">
-                                <EmailSubscribetion
-                                    v-if="data?.customer?.email_subscriptions"
-                                    :emailSubscriptions="data.customer.email_subscriptions"
-                                    containerClass="p-3 bg-white rounded-md border border-gray-200 w-full max-w-sm"
-                                />
-                            </div> -->
                         </div>
 
 
@@ -295,13 +270,6 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
             </div>
 
             <div v-else class="mx-auto max-w-2xl lg:mx-0 lg:shrink-0 lg:pt-8">
-                <!-- <div class="">
-                    <a href="#" class="inline-flex space-x-6">
-                        <span class="rounded-full bg-indigo-600/10 px-3 py-1 text-sm/6 font-semibold text-indigo-600 ring-1 ring-inset ring-indigo-600/10">
-                            What's new?
-                        </span>
-                    </a>
-                </div> -->
 
                 <h1 class="mt-10 text-pretty text-5xl font-semibold tracking-tight sm:text-7xl">
                     {{ trans("Manage your orders and products") }}
@@ -354,7 +322,7 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                         >
                             <template #singlelabel="{ value }">
                                 <div class="w-full text-left pl-4">
-                                    {{ value.name}}
+                                    {{ value.name }}
                                     <span v-if="value.reference" class="text-sm text-gray-400">
                                         (#{{ value.reference }})
                                     </span>
@@ -446,7 +414,7 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                         >
                             <template #singlelabel="{ value }">
                                 <div class="w-full text-left pl-4">
-                                    {{ value.name}}
+                                    {{ value.name }}
                                     <span v-if="value.reference" class="text-sm text-gray-400">
                                         (#{{ value.reference }})
                                     </span>
@@ -472,8 +440,8 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                         <div class="text-sm xmb-2">
                             {{ trans("Select Customer Client") }}
                         </div>
-                        
-                        <PureMultiselect v-if="!selectedManualChannelSlug" disabled/>
+
+                        <PureMultiselect v-if="!selectedManualChannelSlug" disabled />
                         <PureMultiselectInfiniteScroll
                             v-else
                             v-model="selectedCustomerClientId"
@@ -488,7 +456,7 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                         >
                             <template #singlelabel="{ value }">
                                 <div class="w-full text-left pl-4">
-                                    {{ value.name}}
+                                    {{ value.name }}
                                     <span v-if="value.reference" class="text-sm text-gray-400">
                                         (#{{ value.reference }})
                                     </span>
