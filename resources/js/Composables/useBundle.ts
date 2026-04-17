@@ -33,6 +33,9 @@ export function useBundle(routes?: any) {
 
     const isSummaryLoading = ref(false)
 
+    const aiTitleError = ref<string | null>(null)
+    const aiDescError = ref<string | null>(null)
+
     const dedupeProducts = (items: any[] = []) => {
         const map = new Map()
 
@@ -179,7 +182,7 @@ export function useBundle(routes?: any) {
 
         try {
             isGeneratingAI.value = true
-
+            aiTitleError.value = null
             const routeName = bundleRoutes?.ai?.generate_title?.name
 
             if (!routeName) {
@@ -201,6 +204,9 @@ export function useBundle(routes?: any) {
                 type: 'success'
             })
         } catch (e) {
+            aiTitleError.value =
+            'The OpenAI service is currently unreachable, please try again later.'
+
             console.error('[useBundle] generateAITitle failed', e)
             notify({
                 title: trans('Error'),
@@ -215,7 +221,7 @@ export function useBundle(routes?: any) {
     const generateAIDescription = async () => {
         try {
             isGeneratingAI.value = true
-
+            aiDescError.value = null
             const routeName = bundleRoutes?.ai?.generate_description?.name
 
             if (!routeName) {
@@ -238,6 +244,8 @@ export function useBundle(routes?: any) {
                 type: 'success'
             })
         } catch (e) {
+            console.error('[useBundle] generateAIDescription failed', e)
+            aiDescError.value = 'The OpenAI service is currently unreachable, please try again later.'
             notify({
                 title: trans('Error'),
                 text: trans('Failed to generate AI'),
@@ -394,6 +402,8 @@ export function useBundle(routes?: any) {
         bundleRoutes,
         resetBundle,
         isStoringBundle,
+        aiTitleError,
+        aiDescError,
         
         addProduct,
         removeProduct,

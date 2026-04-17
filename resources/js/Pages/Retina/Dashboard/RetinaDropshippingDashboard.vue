@@ -6,7 +6,7 @@ import { faReceipt, faUser, faBuilding, faEnvelope, faPhone, faExternalLinkSquar
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Link, router } from "@inertiajs/vue3"
-import { ref } from "vue"
+import { ref, inject } from "vue"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
 import { trans } from "laravel-vue-i18n"
 import { Fieldset } from "primevue"
@@ -17,10 +17,13 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import { notify } from "@kyvg/vue3-notification"
 import TaxNumberDisplay from "@/Components/UI/TaxNumberDisplay.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
+import { textReplaceVariables } from "@/Composables/Workshop"
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 
 library.add(faReceipt, faArrowRight, faUser, faBuilding, faEnvelope, faPhone, faExternalLinkSquare)
 
 const props = defineProps<{
+    welcome_message : string
     data: {
         customer: {}
         channels: {}[]
@@ -39,7 +42,7 @@ const props = defineProps<{
         }
     }
 }>()
-
+const layout = inject('layout', retinaLayoutStructure)
 // Section: Modal Create Order (if only 1 Manual channel)
 const isModalCreateOrder = ref(false)
 const selectedCustomerClientId = ref(null)
@@ -91,6 +94,10 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
     <div class="relative isolate overflow-hidden">
         <div class="mx-auto px-6 pb-12 pt-10 lg:flex lg:px-14 ">
             <div v-if="data.channels.length" class="w-full lg:shrink-0">
+                 <div v-if="welcome_message" class="mx-auto my-4 lg:mx-0 ">
+                     <div v-html="textReplaceVariables(welcome_message, layout.iris_variables)"></div>
+                 </div>
+                 
                 <div class="mx-auto xmax-w-2xl lg:mx-0 ">
                     <!-- Section: Customer Contact Information -->
                     <div v-if="data.customer" class="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
