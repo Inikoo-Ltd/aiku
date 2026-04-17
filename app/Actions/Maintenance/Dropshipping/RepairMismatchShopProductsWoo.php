@@ -17,7 +17,6 @@ use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RepairMismatchShopProductsWoo

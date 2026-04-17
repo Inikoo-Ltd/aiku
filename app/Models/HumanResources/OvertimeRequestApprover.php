@@ -4,10 +4,8 @@ namespace App\Models\HumanResources;
 
 use App\Enums\HumanResources\Overtime\OvertimeApproverDecisionEnum;
 use App\Enums\HumanResources\Overtime\OvertimeApproverRoleEnum;
-use App\Models\HumanResources\Employee;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\HumanResources\OvertimeRequest;
 
 /**
  * @property int $id
@@ -17,6 +15,14 @@ use App\Models\HumanResources\OvertimeRequest;
  * @property OvertimeApproverDecisionEnum $decision
  * @property string|null $decision_note
  * @property \Illuminate\Support\Carbon|null $decided_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Employee|null $approver
+ * @property-read OvertimeRequest $overtimeRequest
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OvertimeRequestApprover newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OvertimeRequestApprover newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OvertimeRequestApprover query()
+ * @mixin \Eloquent
  */
 class OvertimeRequestApprover extends Model
 {

@@ -9,7 +9,6 @@
 namespace App\Models\Web;
 
 use App\Actions\Utils\Abbreviate;
-
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Enums\Web\Banner\BannerTypeEnum;
 use App\Models\Helpers\Deployment;
