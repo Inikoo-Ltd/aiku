@@ -10,15 +10,6 @@ import { routeType } from "@/types/route";
 
 library.add(faStore, faEnvelope);
 
-interface Template {
-    id: number;
-    name?: string;
-    subject?: string;
-    shop_name?: string;
-    compiled_layout: string;
-    created_at?: string;
-}
-
 interface Props {
     mailshotSlug: string;
     organisationSlug: string;
@@ -82,9 +73,8 @@ const ownShopName = computed(() => {
             <Carousel :value="props.ownShopTemplates" :showIndicators="true" :numVisible="4" :numScroll="4"
                 :options="carouselOptions" class="mb-8">
                 <template #item="slotProps">
-                    <TemplateCarouselItem :template="slotProps.data" :organisation-slug="props.organisationSlug"
-                        :shop-slug="props.shopSlug" :mailshot-slug="props.mailshotSlug" button-type="secondary"
-                        :show-shop-name="false" :show-envelope-icon="true" :workshop-route="props.workshopRoute" />
+                    <TemplateCarouselItem :template="slotProps.data" button-type="secondary" :show-shop-name="false"
+                        :show-envelope-icon="true" :workshop-route="props.workshopRoute" />
                 </template>
             </Carousel>
         </div>
@@ -103,8 +93,8 @@ const ownShopName = computed(() => {
                     :circular="false" :responsiveOptions="carouselOptions" class="mb-8">
                     <template #item="slotProps">
                         <TemplateCarouselItem :template="slotProps.data" :organisation-slug="props.organisationSlug"
-                            :shop-slug="props.shopSlug" :mailshot-slug="props.mailshotSlug" button-type="secondary"
-                            :show-shop-name="true" :show-envelope-icon="false" :workshop-route="props.workshopRoute" />
+                            button-type="secondary" :show-shop-name="true" :show-envelope-icon="false"
+                            :workshop-route="props.workshopRoute" />
                     </template>
                 </Carousel>
             </div>

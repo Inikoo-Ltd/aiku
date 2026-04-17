@@ -21,12 +21,8 @@ interface Template {
 
 interface Props {
     template: Template;
-    organisationSlug: string;
-    shopSlug: string;
-    mailshotSlug: string;
     buttonType: 'primary' | 'secondary';
     showShopName: boolean;
-    mailshotType?: 'mailshots' | 'newsletters';
     workshopRoute?: routeType;
 }
 
