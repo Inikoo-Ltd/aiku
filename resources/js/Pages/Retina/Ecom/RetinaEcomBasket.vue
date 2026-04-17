@@ -119,6 +119,7 @@ const props = defineProps<{
         status: boolean
         meter: number[]
     }
+    missed_offers: Record<string, { label: string }>
 }>()
 
 
@@ -575,6 +576,7 @@ const onChangeInsurance = async (val: boolean) => {
         :currency_code="order?.currency_code"
         :isInBasket="true"
         :updateRoute="routes.update_route"
+        :missed_offers
     />
     
     <template v-if="order">
