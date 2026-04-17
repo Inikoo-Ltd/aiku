@@ -10,9 +10,12 @@ namespace App\Actions\Traits;
 
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Number;
 
 trait HasBasketDetails
 {
@@ -23,6 +26,33 @@ trait HasBasketDetails
             'extra_packing'    => $order->shop->charges()->where('type', ChargeTypeEnum::PACKING)->where('state', ChargeStateEnum::ACTIVE)->first(),
             'insurance'        => $order->shop->charges()->where('type', ChargeTypeEnum::INSURANCE)->where('state', ChargeStateEnum::ACTIVE)->first(),
         ];
+    }
+
+    protected function getMissedOffers(Order $order): array
+    {
+        $missedOffers = [];
+        $shopOffersData = $order->shop->offers_data;
+
+        if (Arr::get($shopOffersData, 'fob.active')) {
+            $numberOrders = DB::table('orders')->where('customer_id', $order->customer_id)
+                ->whereNotIn('state', [
+                    OrderStateEnum::CANCELLED->value,
+                    OrderStateEnum::CREATING->value,
+                ])->count();
+
+            $amountNeededToGetFob = (float) Arr::get($shopOffersData, 'fob.min_amount') - $order->gross_amount;
+
+            if ($numberOrders === 0 && $order->gross_amount < Arr::get($shopOffersData, 'fob.min_amount')) {
+                $label = __(Arr::get($shopOffersData, 'fob.missined_offer_label'), [
+                    'amount'         => Number::currency($amountNeededToGetFob, $order->currency->code),
+                    'percentage_off' => Arr::get($shopOffersData, 'fob.percentage_off').''
+                ]);
+
+                $missedOffers['fob'] = ['label' => $label];
+            }
+        }
+
+        return $missedOffers;
     }
 
     protected function getGrGifts(Order $order): array
