@@ -436,12 +436,13 @@ const submitReplaceProduct = () => {
                         #{{ successContext.replacedItem.order_reference }}
                     </div>
                     <div class="underline font-normal opacity-70 italic text-xs hover:opacity-100">
-                        Click to open ->
+                        {{ ctrans("Click to open") }} ->
                     </div>
                 </a>
                 <span v-else class="font-semibold text-base">{{ successContext.replacedItem.order_reference ?? '-' }}</span>
             </div>
 
+            <!-- Section: Replaced item -->
             <div class="flex flex-col gap-1">
                 <div class="text-xs xfont-semibold xuppercase tracking-wide text-gray-400">{{ ctrans('Replaced items') }}</div>
                 <div class="flex justify-between items-center bg-red-100 border border-red-200 rounded-lg px-4 py-3 text-sm">
@@ -450,9 +451,9 @@ const submitReplaceProduct = () => {
                         <span class="block text-gray-500 italic">{{ successContext.replacedItem.org_stock_name }}</span>
                     </div>
                     <div class="text-right tabular-nums text-gray-500 shrink-0">
-                        <div>{{ successContext.replacedItem.quantity_waiting_crm }} {{ ctrans('items') }}</div>
-                        <div v-if="successContext.replacedItem.revenue_amount" class="text-xs opacity-70 mt-0.5">
-                            {{ locale.currencyFormat(successContext.replacedItem.currency_code, successContext.replacedItem.revenue_amount) }}
+                        <div>{{ Number(successContext.replacedItem.quantity_waiting_crm) }} {{ ctrans('items') }}</div>
+                        <div v-if="successContext.replacedItem.net_amount" class="text-xs opacity-70 mt-0.5">
+                            {{ locale.currencyFormat(successContext.replacedItem.currency_code, successContext.replacedItem.net_amount) }}
                         </div>
                     </div>
                 </div>
