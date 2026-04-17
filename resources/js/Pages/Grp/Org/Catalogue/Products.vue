@@ -160,7 +160,9 @@ const repairTradeUnitToChildren = async () => {
     <PageHeading :data="pageHead">
         <template #other>
             <Button
-                v-if="compSelectedProductsId.length > 0 && editable_table"
+                v-if="editable_table"
+                :disabled="compSelectedProductsId.length <= 0"
+                v-tooltip="compSelectedProductsId.length <= 0 ? ctrans('Select checkbox to edit products') : ''"
                 @click="() => isOpenModalEditProducts = true"
                 type="tertiary"
                 :icon="faPencil"
