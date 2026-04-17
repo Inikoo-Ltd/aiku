@@ -171,7 +171,7 @@ class EditWebsite extends OrgAction
                 'icon'   => 'fa-light fa-browser',
                 'fields' => [
                     'description_has_overview'  => [
-                        'type'          => 'toggle', 
+                        'type'          => 'toggle',
                         'information'   => __('Toggle whether or not Department Pages have a dedicated overview page that lists all of the families under that department'),
                         'label'         => __('Department Pages has Family Overview'),
                         'value'         => data_get($website->settings, 'catalogue_pages.description_has_overview', false),

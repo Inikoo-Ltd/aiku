@@ -16,7 +16,6 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use App\Models\Web\Webpage;
 use Illuminate\Database\Eloquent\Model;
@@ -27,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -85,7 +85,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\CollectionStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\CollectionTimeSeries> $timeSeries
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection newQuery()
@@ -99,10 +98,10 @@ class Collection extends Model implements Auditable, HasMedia
 {
     use HasSlug;
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasHistory;
     use InShop;
     use HasImage;
+    use Searchable;
 
     protected $guarded = [];
 
@@ -121,6 +120,19 @@ class Collection extends Model implements Auditable, HasMedia
         'web_images'  => '{}',
         'offers_data' => '{}',
     ];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'                => (string)$this->id,
+            'shop_id'           => $this->shop_id,
+            'code'              => $this->code,
+            'name'              => (string)$this->name,
+            'description'       => (string)$this->description,
+            'state'             => $this->state->value,
+            'created_at'        => $this->created_at->timestamp,
+        ];
+    }
 
     public function getRouteKeyName(): string
     {

@@ -82,11 +82,11 @@ class ShowGuest extends GrpAction
                     'navigation' => GuestTabsEnum::navigation()
                 ],
                 GuestTabsEnum::SHOWCASE->value => $this->tab == GuestTabsEnum::SHOWCASE->value ?
-                    fn() => GetGuestShowcase::run($guest)
-                    : Inertia::lazy(fn() => GetGuestShowcase::run($guest)),
+                    fn () => GetGuestShowcase::run($guest)
+                    : Inertia::lazy(fn () => GetGuestShowcase::run($guest)),
                 GuestTabsEnum::HISTORY->value  => $this->tab == GuestTabsEnum::HISTORY->value ?
-                    fn() => HistoryResource::collection(IndexHistory::run($guest))
-                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($guest)))
+                    fn () => HistoryResource::collection(IndexHistory::run($guest))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($guest)))
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: GuestTabsEnum::HISTORY->value));
     }
