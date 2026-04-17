@@ -54,7 +54,7 @@ class RepairMismatchShopProductsWoo
                 echo Arr::get($response, 'name')."\n";
             }
 
-            sleep(5);
+            sleep(1);
         }
     }
 
