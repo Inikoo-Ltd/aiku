@@ -28,16 +28,16 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $asset_id
  * @property string $model_type
  * @property int $model_id
- * @property string|null $price unit price
+ * @property numeric|null $price unit price
  * @property string|null $code
  * @property string|null $name
- * @property string|null $units units in outer
+ * @property numeric|null $units units in outer
  * @property string|null $unit mirror of asset model
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
- * @property-read \App\Models\Catalogue\Asset $asset
+ * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Model|\Eloquent $model
  * @property-read \App\Models\Catalogue\HistoricAssetStats|null $stats

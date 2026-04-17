@@ -55,10 +55,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $label
  * @property ShipmentLabelTypeEnum $label_type
  * @property string|null $trade_as
- * @property string|null $cost
+ * @property numeric|null $cost
  * @property-read Customer|null $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\DeliveryNote> $deliveryNotes
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, PalletReturn> $palletReturns
  * @property-read \App\Models\Dispatching\Shipper|null $shipper

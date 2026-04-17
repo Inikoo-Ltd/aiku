@@ -120,7 +120,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
  * @property-read Media|null $favicon
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read Snapshot|null $liveCollectionSnapshot
  * @property-read Snapshot|null $liveDepartmentSnapshot
@@ -140,7 +140,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read Organisation $organisation
  * @property-read Collection<int, \App\Models\Web\Redirect> $redirects
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @property-read Collection<int, Snapshot> $snapshots
  * @property-read \App\Models\Web\Webpage|null $storefront
  * @property-read Collection<int, \App\Models\Web\WebsiteTimeSeries> $timeSeries

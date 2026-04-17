@@ -36,7 +36,9 @@ return [
         'morph_prefix' => 'user',
         'guards'       => [
             'web',
-            'api'
+            'api',
+            'retina',
+            'pupil',
         ],
         'resolver'     => OwenIt\Auditing\Resolvers\UserResolver::class
     ],

@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $location
  * @property int|null $organisation_id
  * @property int|null $webpage_id
- * @property-read WebUser $webUser
+ * @property-read WebUser|null $webUser
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebUserRequest newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebUserRequest newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebUserRequest query()

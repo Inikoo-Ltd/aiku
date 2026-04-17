@@ -22,18 +22,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $currency_id
  * @property AdjustmentTypeEnum $type
  * @property numeric $net_amount
- * @property string|null $org_net_amount
- * @property string|null $grp_net_amount
+ * @property numeric|null $org_net_amount
+ * @property numeric|null $grp_net_amount
  * @property numeric|null $tax_amount
- * @property string|null $org_tax_amount
- * @property string|null $grp_tax_amount
+ * @property numeric|null $org_tax_amount
+ * @property numeric|null $grp_tax_amount
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $fetched_at
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
  * @property-read Currency $currency
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Adjustment newModelQuery()

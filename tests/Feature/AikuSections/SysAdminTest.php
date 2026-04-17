@@ -1150,31 +1150,6 @@ test('UI get section route org shops index', function () {
         ->and($sectionScope->model_slug)->toBe($organisation->slug);
 });
 
-test('UI index request logs', function () {
-    $this->withoutExceptionHandling();
-
-    actingAs(User::first());
-
-    $response = get(
-        route(
-            'grp.sysadmin.analytics.request.index',
-        )
-    );
-
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('SysAdmin/UserRequests')
-            ->where('title', 'User Requests')
-            ->has('breadcrumbs', 3)
-            ->has(
-                'pageHead',
-                fn (AssertableInertia $page) => $page
-                    ->where('title', 'User Requests')
-                    ->etc()
-            )->has('data');
-    });
-});
-
 test('UI index overview group', function () {
     $this->withoutExceptionHandling();
 

@@ -27,16 +27,16 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $asset_id
  * @property int $rental_agreement_id
  * @property int|null $rental_agreement_snapshot_id
- * @property string $percentage_off
+ * @property numeric $percentage_off
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property-read Asset $asset
- * @property-read \App\Models\Fulfilment\Fulfilment $fulfilment
- * @property-read \App\Models\Fulfilment\FulfilmentCustomer $fulfilmentCustomer
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read Asset|null $asset
+ * @property-read \App\Models\Fulfilment\Fulfilment|null $fulfilment
+ * @property-read \App\Models\Fulfilment\FulfilmentCustomer|null $fulfilmentCustomer
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Fulfilment\RentalAgreement $rentalAgreement
+ * @property-read \App\Models\Fulfilment\RentalAgreement|null $rentalAgreement
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementClause newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementClause newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementClause onlyTrashed()

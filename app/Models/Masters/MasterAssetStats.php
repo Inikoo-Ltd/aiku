@@ -37,7 +37,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_assets_including_closed_shops
  * @property int $number_assets_forced_not_for_sale
  * @property int $number_assets_from_closed_shops
- * @property-read \App\Models\Masters\MasterAsset $masterAsset
+ * @property-read \App\Models\Masters\MasterAsset|null $masterAsset
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetStats query()

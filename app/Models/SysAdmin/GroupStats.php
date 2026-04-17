@@ -41,7 +41,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_return_items_state_inspected
  * @property int $number_return_items_state_restocked
  * @property int $number_return_items_state_cancelled
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupStats query()

@@ -43,7 +43,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $slug
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterAsset> $allProduct
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \App\Models\Masters\MasterAsset|null $leaderMasterProduct

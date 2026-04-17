@@ -73,8 +73,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_stocks
  * @property int $number_picks
  * @property bool $has_out_of_stocks
- * @property string $picking_percentage
- * @property string $packing_percentage
+ * @property numeric $picking_percentage
+ * @property numeric $packing_percentage
  * @property int|null $picker_id Main picker
  * @property int|null $packer_id Main packer
  * @property \Illuminate\Support\Carbon $date
@@ -129,8 +129,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $public_notes
  * @property string|null $internal_notes
  * @property string|null $shipping_notes
- * @property string|null $quantity_picked
- * @property string|null $quantity_packed
+ * @property numeric|null $quantity_picked
+ * @property numeric|null $quantity_packed
  * @property int|null $collection_address_id
  * @property bool $is_premium_dispatch
  * @property bool|null $has_extra_packing
@@ -157,14 +157,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Customer $customer
+ * @property-read Customer|null $customer
  * @property-read CustomerClient|null $customerClient
  * @property-read CustomerSalesChannel|null $customerSalesChannel
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, \App\Models\Dispatching\DeliveryNoteItem> $deliveryNoteItems
  * @property-read Collection<int, Feedback> $feedbacks
  * @property-read Collection<int, Address> $fixedAddresses
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Collection<int, Order> $orders
  * @property-read Organisation $organisation
  * @property-read Employee|null $packer
@@ -177,11 +177,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Dispatching\Picking> $pickings
  * @property-read Platform|null $platform
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @property-read Collection<int, Sowing> $sowings
  * @property-read Collection<int, \App\Models\Dispatching\Trolley> $trolleys
  * @property-read UniversalSearch|null $universalSearch
- * @property-read Warehouse $warehouse
+ * @property-read Warehouse|null $warehouse
  * @method static Builder<static>|DeliveryNote newModelQuery()
  * @method static Builder<static>|DeliveryNote newQuery()
  * @method static Builder<static>|DeliveryNote onlyTrashed()

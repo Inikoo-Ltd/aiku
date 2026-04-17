@@ -53,7 +53,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $currency_id
  * @property int|null $units_per_pack units per pack
  * @property int|null $units_per_carton units per carton
- * @property string|null $cbm carton cubic meters
+ * @property numeric|null $cbm carton cubic meters
  * @property array<array-key, mixed> $settings
  * @property array<array-key, mixed> $data
  * @property string|null $activated_at
@@ -69,7 +69,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed> $sources
  * @property-read \App\Models\SupplyChain\Agent|null $agent
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read \App\Models\SupplyChain\HistoricSupplierProduct|null $historicSupplierProduct
  * @property-read Collection<int, \App\Models\SupplyChain\HistoricSupplierProduct> $historicSupplierProducts
  * @property-read Collection<int, OrgSupplierProduct> $orgSupplierProducts
@@ -199,8 +199,4 @@ class SupplierProduct extends Model implements Auditable
         return $this->belongsToMany(Stock::class, 'stock_has_supplier_products');
     }
 
-    //    public function getMainStock(): Stock
-    //    {
-    //        return$this->stocks()->where('available', true)->orderBy('created_at')->first();
-    //    }
 }

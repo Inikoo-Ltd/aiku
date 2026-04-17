@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\StockFamilyTimeSeriesRecord> $records
- * @property-read \App\Models\Goods\StockFamily $stockFamily
+ * @property-read \App\Models\Goods\StockFamily|null $stockFamily
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockFamilyTimeSeries newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockFamilyTimeSeries newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockFamilyTimeSeries query()

@@ -43,7 +43,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $colour
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Currency $currency
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\Invoice> $invoices
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
  * @property-read \App\Models\Accounting\InvoiceCategoryStats|null $stats

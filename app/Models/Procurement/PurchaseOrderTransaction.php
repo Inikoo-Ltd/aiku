@@ -34,15 +34,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $org_stock_id
  * @property PurchaseOrderTransactionStateEnum $state
  * @property PurchaseOrderTransactionDeliveryStateEnum $delivery_state
- * @property string|null $quantity_ordered
- * @property string|null $quantity_dispatched
- * @property string|null $quantity_fail
- * @property string|null $quantity_cancelled
- * @property string $net_amount
- * @property string|null $grp_net_amount
- * @property string|null $org_net_amount
- * @property string|null $grp_exchange
- * @property string|null $org_exchange
+ * @property numeric|null $quantity_ordered
+ * @property numeric|null $quantity_dispatched
+ * @property numeric|null $quantity_fail
+ * @property numeric|null $quantity_cancelled
+ * @property numeric $net_amount
+ * @property numeric|null $grp_net_amount
+ * @property numeric|null $org_net_amount
+ * @property numeric|null $grp_exchange
+ * @property numeric|null $org_exchange
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -50,11 +50,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $last_fetched_at
  * @property string|null $deleted_at
  * @property string|null $source_id
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read HistoricSupplierProduct|null $historicSupplierProduct
- * @property-read OrgStock $orgStock
+ * @property-read OrgStock|null $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Procurement\PurchaseOrder $purchaseOrder
+ * @property-read \App\Models\Procurement\PurchaseOrder|null $purchaseOrder
  * @property-read SupplierProduct|null $supplierProduct
  * @method static \Database\Factories\Procurement\PurchaseOrderTransactionFactory factory($count = null, $state = [])
  * @method static Builder<static>|PurchaseOrderTransaction newModelQuery()

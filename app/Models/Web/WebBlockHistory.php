@@ -25,13 +25,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property object $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Web\WebBlock|null $webBlock
- * @property-read \App\Models\Web\WebBlockType $webBlockType
- * @property-read \App\Models\Web\Webpage $webpage
- * @property-read \App\Models\Web\Website $website
+ * @property-read \App\Models\Web\WebBlockType|null $webBlockType
+ * @property-read \App\Models\Web\Webpage|null $webpage
+ * @property-read \App\Models\Web\Website|null $website
  * @method static Builder<static>|WebBlockHistory newModelQuery()
  * @method static Builder<static>|WebBlockHistory newQuery()
  * @method static Builder<static>|WebBlockHistory query()

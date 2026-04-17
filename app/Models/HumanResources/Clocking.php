@@ -46,7 +46,7 @@ use Spatie\MediaLibrary\HasMedia;
  * @property int|null $work_schedule_id
  * @property bool $is_late
  * @property-read \App\Models\HumanResources\ClockingMachine|null $clockingMachine
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media

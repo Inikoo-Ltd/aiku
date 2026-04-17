@@ -77,11 +77,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_stored_items_state_discontinued
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string $total_volume cbm
- * @property string $total_weight kg
+ * @property numeric $total_volume cbm
+ * @property numeric $total_weight kg
  * @property int $number_pallets_state_request_return_submitted
  * @property int $number_pallets_state_request_return_confirmed
- * @property-read \App\Models\Inventory\Location $location
+ * @property-read \App\Models\Inventory\Location|null $location
  * @method static Builder<static>|LocationStats newModelQuery()
  * @method static Builder<static>|LocationStats newQuery()
  * @method static Builder<static>|LocationStats query()

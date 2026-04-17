@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property string|null $no_fulfilment_reason_notes
  * @property-read \App\Models\Dropshipping\CustomerClient|null $customerClient
  * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $model
- * @property-read \App\Models\Dropshipping\ShopifyUser $shopifyUser
+ * @property-read \App\Models\Dropshipping\ShopifyUser|null $shopifyUser
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopifyUserHasFulfilment newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopifyUserHasFulfilment newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopifyUserHasFulfilment query()

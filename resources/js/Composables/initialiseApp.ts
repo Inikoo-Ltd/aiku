@@ -216,6 +216,10 @@ export const initialiseApp = () => {
             layout.dispatching_waiting_badge = usePage().props.dispatching_waiting_badge
         }
 
+        if (usePage().props.crm_waiting_badge !== undefined) {
+            layout.crm_waiting_badge = usePage().props.crm_waiting_badge
+        }
+
         layout.app.name = "Aiku"
     })
 }

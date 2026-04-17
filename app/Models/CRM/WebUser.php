@@ -73,9 +73,9 @@ use App\Models\Traits\HasHistory;
  * @property string|null $contact_name
  * @property string|null $google_id
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\CRM\Customer $customer
+ * @property-read \App\Models\CRM\Customer|null $customer
  * @property-read Collection<int, DispatchedEmail> $dispatchedEmails
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \App\Models\Helpers\Language $language
@@ -93,7 +93,7 @@ use App\Models\Traits\HasHistory;
  * @property-read Collection<int, WebUserFailedLogin> $webUserFailedLogins
  * @property-read Collection<int, WebUserLogin> $webUserLogins
  * @property-read Collection<int, WebUserRequest> $webUserRequests
- * @property-read Website $website
+ * @property-read Website|null $website
  * @method static \Database\Factories\CRM\WebUserFactory factory($count = null, $state = [])
  * @method static Builder<static>|WebUser newModelQuery()
  * @method static Builder<static>|WebUser newQuery()
