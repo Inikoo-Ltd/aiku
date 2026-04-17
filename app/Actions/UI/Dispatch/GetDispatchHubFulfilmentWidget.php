@@ -8,11 +8,11 @@
 
 namespace App\Actions\UI\Dispatch;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Models\Fulfilment\PalletReturn;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Inventory\Warehouse;
 use Illuminate\Support\Facades\Route;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -23,8 +23,6 @@ class GetDispatchHubFulfilmentWidget
 
     public function handle(Warehouse $warehouse): array
     {
-        $organisation = $warehouse->organisation;
-
         return [
             $this->buildWidget($warehouse, PalletReturnTypeEnum::PALLET, __('Fulfilment Pallet'), 'fulfilment_pallet'),
             $this->buildWidget($warehouse, PalletReturnTypeEnum::STORED_ITEM, __('Fulfilment DS'), 'fulfilment_ds'),
@@ -33,8 +31,10 @@ class GetDispatchHubFulfilmentWidget
 
     private function buildWidget(Warehouse $warehouse, PalletReturnTypeEnum $type, string $label, string $slug): array
     {
+        $organisation = $warehouse->organisation;
+
         $routeParameters = request()->route()?->originalParameters() ?? [
-            'organisation' => $warehouse->organisation->slug,
+            'organisation' => $organisation->slug,
             'warehouse'    => $warehouse->slug,
         ];
 
@@ -55,11 +55,11 @@ class GetDispatchHubFulfilmentWidget
             ->groupBy('state')
             ->pluck('aggregate', 'state');
 
-        $todo = (int) ($counts[PalletReturnStateEnum::CONFIRMED->value] ?? 0);
+        $todo     = (int) ($counts[PalletReturnStateEnum::CONFIRMED->value] ?? 0);
         $handling = (int) ($counts[PalletReturnStateEnum::PICKING->value] ?? 0);
-        $picked = (int) ($counts[PalletReturnStateEnum::PICKED->value] ?? 0);
+        $picked   = (int) ($counts[PalletReturnStateEnum::PICKED->value] ?? 0);
 
-        $routeIndex = 'grp.org.warehouses.show.dispatching.pallet-returns.index';
+        $routeIndex     = 'grp.org.warehouses.show.dispatching.pallet-returns.index';
         $routeConfirmed = $isFulfilmentContext
             ? 'grp.org.fulfilments.show.operations.pallet-returns.new.index'
             : 'grp.org.warehouses.show.dispatching.pallet-returns.confirmed.index';
@@ -70,70 +70,70 @@ class GetDispatchHubFulfilmentWidget
             ? 'grp.org.fulfilments.show.operations.pallet-returns.picked.index'
             : 'grp.org.warehouses.show.dispatching.pallet-returns.picked.index';
 
-        $totalRoute = Route::has($routeIndex) ? [
-            'name'       => $routeIndex,
-            'parameters' => array_merge($routeParameters, $typeFilter),
-        ] : null;
-
         $todoRouteParameters = $isFulfilmentContext
             ? array_merge($routeParameters, ['returns_elements[state]' => 'confirmed'], $typeFilter)
             : array_merge($routeParameters, $typeFilter);
+
+        $shopType = ShopTypeEnum::FULFILMENT->value;
 
         return [
             'slug'        => $slug,
             'label'       => $label,
             'tooltip'     => $label,
-            'total_route' => $totalRoute,
+            'total_route' => Route::has($routeIndex) ? [
+                'name'       => $routeIndex,
+                'parameters' => array_merge($routeParameters, $typeFilter),
+            ] : null,
             'waiting_items_still_picking' => [
                 'count' => $warehouse->deliveryNotes()
                     ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
                     ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
-                    ->where('shops.type', ShopTypeEnum::FULFILMENT->value)
+                    ->where('shops.type', $shopType)
                     ->where('delivery_note_items.has_waiting_warehouse', true)
                     ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING)
                     ->count(),
                 'route' => [
                     'name'       => 'grp.org.warehouses.show.dispatching.waiting_items_still_picking.shop',
-                    'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::FULFILMENT->value],
+                    'parameters' => [$organisation->slug, $warehouse->slug, $shopType],
                 ],
             ],
             'waiting_items' => [
                 'count' => $warehouse->deliveryNotes()
                     ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
                     ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
-                    ->where('shops.type', ShopTypeEnum::FULFILMENT->value)
+                    ->where('shops.type', $shopType)
                     ->where('delivery_note_items.has_waiting_warehouse', true)
                     ->where('delivery_notes.state', '!=', DeliveryNoteStateEnum::HANDLING)
                     ->count(),
                 'route' => [
                     'name'       => 'grp.org.warehouses.show.dispatching.waiting_items.shop',
-                    'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::FULFILMENT->value],
+                    'parameters' => [$organisation->slug, $warehouse->slug, $shopType],
                 ],
             ],
             'waiting_crm_items_still_picking' => [
                 'count' => $warehouse->deliveryNotes()
                     ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
                     ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
-                    ->where('shops.type', ShopTypeEnum::FULFILMENT->value)
+                    ->where('shops.type', $shopType)
                     ->where('delivery_note_items.has_waiting_crm', true)
                     ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING)
                     ->count(),
                 'route' => [
                     'name'       => 'grp.org.warehouses.show.dispatching.waiting_crm_items_still_picking.shop',
-                    'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::FULFILMENT->value],
+                    'parameters' => [$organisation->slug, $warehouse->slug, $shopType],
                 ],
             ],
             'waiting_crm_items' => [
                 'count' => $warehouse->deliveryNotes()
                     ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
                     ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
-                    ->where('shops.type', ShopTypeEnum::FULFILMENT->value)
+                    ->where('shops.type', $shopType)
                     ->where('delivery_note_items.has_waiting_crm', true)
                     ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED)
                     ->count(),
                 'route' => [
                     'name'       => 'grp.org.warehouses.show.dispatching.waiting_crm_items.shop',
-                    'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::FULFILMENT->value],
+                    'parameters' => [$organisation->slug, $warehouse->slug, $shopType],
                 ],
             ],
             'cases'       => [
