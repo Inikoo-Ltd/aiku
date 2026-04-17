@@ -184,18 +184,6 @@ const effectiveShopSlug = computed(() =>
     props.shopSlug || 'demo-shop'
 )
 
-// Pagination handling for other shop templates
-const loadOtherShopTemplates = (page: number) => {
-    // Use Inertia visit to reload the page with new page parameter
-    const url = new URL(window.location.href)
-    url.searchParams.set('other_shop_templates_page', page.toString())
-
-    router.visit(url.toString(), {
-        preserveScroll: true,
-        preserveState: true,
-        only: ['otherShopTemplates']
-    })
-}
 </script>
 
 <template>

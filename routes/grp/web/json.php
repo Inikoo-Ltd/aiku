@@ -47,7 +47,6 @@ use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInWorkshop;
 use App\Actions\Comms\BeeFreeSDK\AuthenticateBeefreeAccount;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplateCompiledLayout;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout;
-use App\Actions\Comms\EmailTemplate\GetOtherShopEmailTemplates;
 use App\Actions\Comms\EmailTemplate\GetOutboxEmailTemplates;
 use App\Actions\Comms\EmailTemplate\GetSeededEmailTemplates;
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
@@ -138,7 +137,6 @@ Route::get('fulfilment-customer/{fulfilmentCustomer}/audit/{storedItemAudit}/sto
 Route::get('email/templates/seeded', GetSeededEmailTemplates::class)->name('email_templates.seeded');
 Route::get('email/templates/outboxes/{outbox:id}', GetOutboxEmailTemplates::class)->name('email_templates.outbox');
 Route::get('email/templates/{emailTemplate:id}/compiled_layout', GetEmailTemplateCompiledLayout::class)->name('email_templates.show.compiled_layout');
-Route::get('organisation/{organisation}/shop/{shop}/email-templates/other-shops', GetOtherShopEmailTemplates::class)->name('organisation.shop.email-templates.other-shops');
 Route::get('/mailshot/{mailshot:id}/merge-tags', GetMailshotMergeTags::class)->name('mailshot.merge-tags');
 
 Route::get('shop/{shop}/payment-accounts', GetShopPaymentAccounts::class)->name('shop.payment-accounts');

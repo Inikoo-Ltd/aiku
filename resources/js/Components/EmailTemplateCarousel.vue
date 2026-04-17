@@ -36,56 +36,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const isLoading = ref(false);
-const currentCarouselPage = ref(0);
-
-const carouselOptions = computed(() => ({
-    responsive: [
-        {
-            breakpoint: '1024px',
-            numVisible: 3,
-            numScroll: 3
-        },
-        {
-            breakpoint: '768px',
-            numVisible: 2,
-            numScroll: 2
-        },
-        {
-            breakpoint: '560px',
-            numVisible: 1,
-            numScroll: 1
-        }
-    ],
-    numVisible: 3,
-    numScroll: 1,
-    circular: false,
-    autoplayInterval: 0,
-    showNavigators: true,
-    showIndicators: false
-}));
-
-const numVisibleOther = ref(4);
-
-const carouselOptionsForOther = [
-    {
-        breakpoint: '1024px',
-        numVisible: 4,
-        numScroll: 4
-    },
-    {
-        breakpoint: '768px',
-        numVisible: 3,
-        numScroll: 3
-    },
-    {
-        breakpoint: '560px',
-        numVisible: 2,
-        numScroll: 2
-    }
-]
-
-const carouselOptionsOwn = [
+const carouselOptions = [
     { breakpoint: '1024px', numVisible: 4, numScroll: 4 },
     { breakpoint: '768px', numVisible: 3, numScroll: 3 },
     { breakpoint: '560px', numVisible: 2, numScroll: 2 }
@@ -99,12 +50,7 @@ const otherShopTemplatesData = computed(() => {
 
 const hasOtherTemplates = computed(() => otherShopTemplatesData.value.length > 0);
 const hasAnyTemplates = computed(() => hasOwnTemplates.value || hasOtherTemplates.value);
-
-const handlePageUpdate = (event: number) => {
-    currentCarouselPage.value = event;
-};
 </script>
-
 
 
 <template>
@@ -139,8 +85,7 @@ const handlePageUpdate = (event: number) => {
 
             <div class="relative">
                 <Carousel :value="otherShopTemplatesData" :showIndicators="true" :numVisible="4" :numScroll="4"
-                    :circular="false" :responsiveOptions="carouselOptionsOwn" @update:page="handlePageUpdate"
-                    class="mb-8">
+                    :circular="false" :responsiveOptions="carouselOptions" class="mb-8">
                     <template #item="slotProps">
                         <TemplateCarouselItem :template="slotProps.data" :organisation-slug="props.organisationSlug"
                             :shop-slug="props.shopSlug" :mailshot-id="props.mailshotId" button-type="secondary"
