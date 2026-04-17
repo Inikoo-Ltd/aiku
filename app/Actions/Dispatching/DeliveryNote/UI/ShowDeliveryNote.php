@@ -369,7 +369,13 @@ class ShowDeliveryNote extends OrgAction
                         (bool)$deliveryNote->collection_address_id => __('Finalise and set as Collected'),
                         default => __('Finalise and Dispatch')
                     },
-                    'key'     => 'action',
+                    'key'     => match (true) {
+                        $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && !$deliveryNote->collection_address_id => 'action',
+                        $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && $deliveryNote->collection_address_id => 'action',
+                        $deliveryNote->type !== DeliveryNoteTypeEnum::REPLACEMENT && !$deliveryNote->collection_address_id => 'finalise-and-dispatch',
+                        (bool)$deliveryNote->collection_address_id => 'action',
+                        default => 'finalise-and-dispatch'
+                    },
                     'route'   => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.delivery_note.state.finalise_and_dispatch',
