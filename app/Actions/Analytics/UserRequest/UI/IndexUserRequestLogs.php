@@ -17,16 +17,21 @@ use App\Actions\SysAdmin\User\WithUsersSubNavigation;
 use App\Enums\Elasticsearch\ElasticsearchUserRequestTypeEnum;
 use App\Http\Resources\SysAdmin\UserRequestLogsResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Analytics\UserRequest;
+use App\Models\SysAdmin\User;
+use App\Services\QueryBuilder;
 use Closure;
 use Elastic\Elasticsearch\Client;
 use Elastic\Elasticsearch\Exception\ClientResponseException;
 use Elastic\Elasticsearch\Exception\ServerResponseException;
 use Exception;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsObject;
+use Spatie\QueryBuilder\AllowedFilter;
 
 // review this
 class IndexUserRequestLogs extends GrpAction
@@ -36,45 +41,60 @@ class IndexUserRequestLogs extends GrpAction
     use WithUsersSubNavigation;
     use WithAnalyticsSubNavigations; //TODO: For analytics dashboard
 
-    public function handle($filter = ElasticsearchUserRequestTypeEnum::VISIT->value): LengthAwarePaginator|bool|array
+    public function handle($prefix = null): LengthAwarePaginator
     {
-        $client = BuildElasticsearchClient::run();
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereAnyWordStartWith('users.contact_name', $value)
+                    ->orWhereStartWith('users.username', $value);
+            });
+        });
 
-        if ($client instanceof Client) {
-            try {
-                $params  = [
-                    'index' => config('elasticsearch.index_prefix') . 'user_requests_' . group()->slug,
-                    'size'  => 10000,
-                    'body'  => [
-                        'query' => [
-                            'bool' => [
-                                'must' => [
-                                    ['match' => ['type' => $filter]],
-                                    ['match' => ['type' => ElasticsearchUserRequestTypeEnum::VISIT->value]],
-                                ],
-                            ],
-                        ],
-                    ],
-                ];
-
-                $res = $this->format($client, $params);
-
-                if ($res) {
-                    return $res;
-                }
-
-                return new LengthAwarePaginator([], 0, 10);
-
-            } catch (ClientResponseException $e) {
-                return new LengthAwarePaginator([], 0, 10);
-            } catch (ServerResponseException $e) {
-                return new LengthAwarePaginator([], 0, 10);
-            } catch (Exception $e) {
-                return new LengthAwarePaginator([], 0, 10);
-            }
+        if ($prefix) {
+            InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        return new LengthAwarePaginator([], 0, 10);
+        $queryBuilder = QueryBuilder::for(UserRequest::class);
+        $queryBuilder->leftJoin('users', 'users.id', '=', 'user_requests.user_id')
+            ->leftJoin('groups', 'groups.id', '=', 'user_requests.group_id')
+            ->leftJoin('aiku_scoped_sections', 'aiku_scoped_sections.id', '=', 'user_requests.aiku_scoped_section_id');
+
+        return $queryBuilder
+            ->defaultSort('username')
+            ->select([
+                'users.username',
+                'users.email',
+                'users.slug',
+                'users.contact_name',
+                'users.image_id',
+                'users.status',
+                'groups.name as group_name',
+                'aiku_scoped_sections.name as section_name',
+                'user_requests.date',
+                'user_requests.route_name',
+                'user_requests.route_params',
+                'user_requests.os',
+                'user_requests.device',
+                'user_requests.browser',
+                'user_requests.ip_address',
+                'user_requests.location'
+            ])
+            ->allowedSorts([
+                'username',
+                'email',
+                'contact_name',
+                'is_two_factor_required',
+                'group_name',
+                'section_name',
+                'date',
+                'os',
+                'device',
+                'browser',
+                'ip_address'
+            ])
+            ->allowedFilters([$globalSearch])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
     }
 
     public function htmlResponse(LengthAwarePaginator $requests, ActionRequest $request): Response
@@ -102,16 +122,19 @@ class IndexUserRequestLogs extends GrpAction
                 ->withGlobalSearch()
                 ->name('vst')
                 ->column(key: 'username', label: __('Username'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'ip_address', label: __('IP Address'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'url', label: __('URL'), canBeHidden: false, sortable: true)
-                ->column(key: 'module', label: __('Module'), canBeHidden: false, sortable: true)
-                ->column(key: 'user_agent', label: __('User Agent'), canBeHidden: false, sortable: true)
-                ->column(key: 'location', label: __('location'), canBeHidden: false)
-                ->column(key: 'datetime', label: __('Date & Time'), canBeHidden: false, sortable: true);
+                ->column(key: 'email', label: __('Email'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'contact_name', label: __('Contact Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'group_name', label: __('Group Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'section_name', label: __('Section Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'os', label: __('OS'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'device', label: __('Device'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'browser', label: __('Browser'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'ip_address', label: __('IP Address'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
-    public function asController(ActionRequest $request)
+    public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $group = group();
         $this->initialisation($group, $request);
