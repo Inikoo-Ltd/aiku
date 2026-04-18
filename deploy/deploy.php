@@ -303,8 +303,8 @@ task('deploy', [
     'deploy:publish',
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
-    'artisan:octane:reload',
-    'deploy:restart-ssr-by-supervisorctl',
-    'deploy:refresh-vue',
-    'deploy:flush-varnish',
+//    'artisan:octane:reload',
+//    'deploy:restart-ssr-by-supervisorctl',
+//    'deploy:refresh-vue',
+//    'deploy:flush-varnish',
 ]);
