@@ -258,9 +258,16 @@ set('shared_files', [
     '.user.ini',
     'restart_varnish.sh'
 ]);
+
+task('debug:writable', function () {
+    $dirs = get('writable_dirs');
+    writeln("Writable directories: " . implode(', ', $dirs));
+});
+
 desc('Deploys your project');
 task('deploy', [
     'deploy:unlock',
+    'debug:writable',
     'deploy:prepare',
     'deploy:vendors',
     'deploy:set-release',
