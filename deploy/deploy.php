@@ -71,7 +71,7 @@ desc('🏗️ Build vue app');
 task('deploy:build', function () {
     $frontEndChanged = get('front_end_changed');
     if ($frontEndChanged) {
-        run("cd {{release_path}} && /home/aiku/.nvm/versions/node/v23.11.1/bin/npm run build");
+        run("cd {{release_path}} && {{bin/npm}} run build");
     } else {
         // No FE changes: reuse built assets from the previous release
         writeln('No front-end changes detected. Reusing built assets from previous release if available.');
