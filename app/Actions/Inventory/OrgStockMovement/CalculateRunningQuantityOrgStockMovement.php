@@ -21,7 +21,7 @@ class CalculateRunningQuantityOrgStockMovement implements ShouldBeUniqueUntilPro
 
     private OrgStockMovement $orgStockMovement;
 
-    public string $jobQueue = 'stock-history';
+    public string $jobQueue = 'default';
 
     public function getJobUniqueId(OrgStockMovement $orgStockMovement): string
     {
