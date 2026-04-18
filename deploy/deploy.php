@@ -50,6 +50,11 @@ task('deploy:check-fe-changes', function () {
 
 desc('🚡 Migrating database');
 task('deploy:migrate', function () {
+    if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
+        writeln('Skipping migrate on production host '.currentHost()->getAlias());
+        return;
+    }
+
     artisan('migrate --force', ['skipIfNoEnv', 'showOutput'])();
 });
 desc('🏗️ Build vue app');
@@ -144,6 +149,11 @@ desc('Flush varnish cache if ssr checksum if different as previous release');
 task(
     'deploy:flush-varnish',
     function () {
+        if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
+            writeln('Skipping flush varnish on production host '.currentHost()->getAlias());
+            return;
+        }
+
         $currentFile  = '{{release_path}}/SSR_CHECKSUM';
         $previousFile = '{{previous_release}}/SSR_CHECKSUM';
 
@@ -259,7 +269,7 @@ task('deploy', [
     'artisan:route:cache',
     'artisan:view:cache',
     'artisan:event:cache',
-    'artisan:migrate',
+    'deploy:migrate',
     'deploy:check-fe-changes',
     'deploy:build',
     'deploy:save-ssr-checksums',

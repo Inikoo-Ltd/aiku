@@ -51,7 +51,7 @@ jobs:
         uses: deployphp/action@v1
         with:
           dep: deploy aiku
-          ssh-config: ${{ secrets.DEPLOY_SSH_CONFIG }}
+          ssh-config: ${{ secrets.DEPLOY_SSH_CONFIG_V2 }}
           private-key: ${{ secrets.DEPLOY_PRIVATE_KEY }}
           known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
           verbosity: -vvv
