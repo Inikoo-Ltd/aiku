@@ -57,7 +57,7 @@ jobs:
           dep: deploy
           ssh-config: ${{ secrets.DEPLOY_SSH_CONFIG_V2 }}
           private-key: ${{ secrets.DEPLOY_PRIVATE_KEY }}
-          known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS_V2 }}
           verbosity: -vvv
           deployer-version: '8.0.0'
       - name: Create Release
