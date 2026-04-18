@@ -50,7 +50,7 @@ jobs:
       - name: Launch 🚀
         uses: deployphp/action@v1
         with:
-          dep: deploy aiku
+          dep: deploy
           ssh-config: ${{ secrets.DEPLOY_SSH_CONFIG_V2 }}
           private-key: ${{ secrets.DEPLOY_PRIVATE_KEY }}
           known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}

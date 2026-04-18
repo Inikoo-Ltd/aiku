@@ -7,7 +7,6 @@ import:
 
 config:
   application: 'aiku'
-  host: 'aiku_helio'
   default_selector: 'env=prod'
   repository: 'https://github.com/inikoo/aiku.git'
 
