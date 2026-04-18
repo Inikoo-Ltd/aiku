@@ -325,7 +325,7 @@ return [
         ],
         'stock-history' => [
             'connection'      => 'redis-long-running',
-            'queue'           => ['stock-history'],
+            'queue'           => ['stock-history', 'stock-history-urgent'],
             'balance'         => 'auto',
             'maxProcesses'    => 12,
             'maxTime'         => 0,
