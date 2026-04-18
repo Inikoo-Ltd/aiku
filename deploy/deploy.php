@@ -108,11 +108,10 @@ task('deploy:refresh-vue', function () {
 
 desc('Reload octane after deployment');
 task('artisan:octane:reload', function () {
-    if (currentHost()->getAlias() === 'aiku_helio') {
-        writeln('Skipping octane reload on host '.currentHost()->getAlias());
-        return;
-    }
-
+//    if (currentHost()->getAlias() === 'aiku_helio') {
+//        writeln('Skipping octane reload on host '.currentHost()->getAlias());
+//        return;
+//    }
     artisan('octane:reload', ['skipIfNoEnv', 'showOutput'])();
 })->select('env=prod');
 
@@ -304,7 +303,7 @@ task('deploy', [
     'deploy:publish',
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
-//    'artisan:octane:reload',
+    'artisan:octane:reload',
     'deploy:restart-ssr-by-supervisorctl',
     'deploy:refresh-vue',
     'deploy:flush-varnish',
