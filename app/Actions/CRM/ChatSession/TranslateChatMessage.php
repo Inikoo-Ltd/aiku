@@ -19,7 +19,6 @@ class TranslateChatMessage
 {
     use AsAction;
 
-    public string $jobQueue = 'analytics';
     public int $jobTimeout = 300;
     public int $jobTries = 1;
 

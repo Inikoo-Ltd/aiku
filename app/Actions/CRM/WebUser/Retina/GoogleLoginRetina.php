@@ -52,7 +52,7 @@ class GoogleLoginRetina extends IrisAction
                 datetime: now(),
                 geoLocation: $geoLocation,
                 source: 'G'
-            );
+            )->delay(now()->addSeconds(5));
 
             return $googleUser;
         }
@@ -108,7 +108,7 @@ class GoogleLoginRetina extends IrisAction
             datetime: now(),
             geoLocation: $geoLocation,
             source: 'G'
-        );
+        )->delay(now()->addSeconds(5));
 
 
         $request->session()->regenerate();

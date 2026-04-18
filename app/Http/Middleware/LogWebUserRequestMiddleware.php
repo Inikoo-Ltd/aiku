@@ -36,7 +36,7 @@ class LogWebUserRequestMiddleware
             $request->header('CF-IPLongitude'),
             $request->header('CF-IPLatitude'),
         ];
-        ProcessRetinaWebUserRequest::run(
+        ProcessRetinaWebUserRequest::dispatch(
             $request->user(),
             now(),
             [
@@ -47,7 +47,7 @@ class LogWebUserRequestMiddleware
             $request->ip(),
             $request->header('User-Agent'),
             $geoLocation
-        );
+        )->delay(now()->addSeconds(5));
 
 
         return $next($request);
