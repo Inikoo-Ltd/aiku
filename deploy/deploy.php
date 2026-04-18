@@ -14,15 +14,6 @@ set('bin/php', function () {
     return '/usr/bin/php8.4';
 });
 
-$defaultNpmBin = get('bin/npm');
-
-set('bin/npm', function () use ($defaultNpmBin) {
-    if (currentHost()->getAlias() === 'aiku_helio') {
-        return '/home/aiku/.nvm/versions/node/v23.11.1/bin/npm';
-    }
-
-    return $defaultNpmBin;
-});
 
 desc('Check for changes in frontend');
 task('deploy:check-fe-changes', function () {
@@ -303,8 +294,8 @@ task('deploy', [
     'deploy:publish',
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
-//    'artisan:octane:reload',
-//    'deploy:restart-ssr-by-supervisorctl',
-//    'deploy:refresh-vue',
-//    'deploy:flush-varnish',
+    'artisan:octane:reload',
+    'deploy:restart-ssr-by-supervisorctl',
+    'deploy:refresh-vue',
+    'deploy:flush-varnish',
 ]);
