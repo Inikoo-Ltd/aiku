@@ -121,24 +121,24 @@ class ReindexSearch extends HydrateModel
     protected function reindexBillables(Command $command): void
     {
         $command->info('Billables section 💸');
-//        $command->call('search:rentals');
-//        $command->call('search:charges');
-//        $command->call('search:services');
+        //        $command->call('search:rentals');
+        //        $command->call('search:charges');
+        //        $command->call('search:services');
     }
 
     protected function reindexDiscount(Command $command): void
     {
         $command->info('Discount section💲');
-//        $command->call('search:offers');
-//        $command->call('search:offer_campaigns');
+        //        $command->call('search:offers');
+        //        $command->call('search:offer_campaigns');
     }
 
     protected function reindexWebsite(Command $command): void
     {
         $command->info('Website section 🌐');
-//        $command->call('search:websites');
-//        $command->call('search:webpages');
-//        $command->call('search:banners');
+        //        $command->call('search:websites');
+        //        $command->call('search:webpages');
+        //        $command->call('search:banners');
     }
 
     protected function reindexComms(Command $command): void
@@ -156,49 +156,49 @@ class ReindexSearch extends HydrateModel
         if ($command->option('reset')) {
             $command->warn('Resetting search indexes');
         }
-//        ReindexUserSearch::run(reset: $command->option('reset'));
-//        ReindexGuestSearch::run(reset: $command->option('reset'));
+        //        ReindexUserSearch::run(reset: $command->option('reset'));
+        //        ReindexGuestSearch::run(reset: $command->option('reset'));
     }
 
     protected function reindexOrdering(Command $command): void
     {
         $command->info('Ordering section 🛒');
-//        $command->call('search:orders');
-//        $command->call('search:invoices');
-//        $command->call('search:delivery_notes');
+        //        $command->call('search:orders');
+        //        $command->call('search:invoices');
+        //        $command->call('search:delivery_notes');
     }
 
     protected function reindexHr(Command $command): void
     {
         $command->info('HR section 👩🏻‍💼');
-//        $command->call('search:employees');
-//        $command->call('search:workplaces');
-//        $command->call('search:job_positions');
-//        $command->call('search:clocking_machines');
+        //        $command->call('search:employees');
+        //        $command->call('search:workplaces');
+        //        $command->call('search:job_positions');
+        //        $command->call('search:clocking_machines');
     }
 
     protected function reindexAccounting(Command $command): void
     {
         $command->info('Accounting section 💰');
-//        $command->call('search:payments');
-//        $command->call('search:payment_accounts');
+        //        $command->call('search:payments');
+        //        $command->call('search:payment_accounts');
     }
 
     protected function reindexProcurement(Command $command): void
     {
         $command->info('Procurement section 🚚');
-//        $command->call('search:org_suppliers');
-//        $command->call('search:org_agents');
-//        $command->call('search:org_partners');
-//        $command->call('search:purchase_orders');
+        //        $command->call('search:org_suppliers');
+        //        $command->call('search:org_agents');
+        //        $command->call('search:org_partners');
+        //        $command->call('search:purchase_orders');
     }
 
     protected function reindexSupplyChain(Command $command): void
     {
         $command->info('Supply Chain section 🚛');
-//        $command->call('search:agents');
-//        $command->call('search:suppliers');
-//        $command->call('search:supplier_products'); // not yet tested
+        //        $command->call('search:agents');
+        //        $command->call('search:suppliers');
+        //        $command->call('search:supplier_products'); // not yet tested
     }
 
     protected function reindexProduction(Command $command): void
@@ -209,30 +209,29 @@ class ReindexSearch extends HydrateModel
     protected function reindexInventory(Command $command): void
     {
         $command->info('Inventory section 📦');
-//        $command->call('search:warehouses');
-//        $command->call('search:warehouse_areas');
-//        $command->call('search:locations');
-//        $command->call('search:org_stocks');
-//        $command->call('search:org_stock_families');
+        //        $command->call('search:warehouse_areas');
+        //        $command->call('search:locations');
+        //        $command->call('search:org_stocks');
+        //        $command->call('search:org_stock_families');
     }
 
     protected function reindexCrm(Command $command): void
     {
         $command->info('CRM section 👸🏻');
-//        $command->call('search:customers');
-//        $command->call('search:prospects');
+        //        $command->call('search:customers');
+        //        $command->call('search:prospects');
     }
 
     protected function reindexFulfilment(Command $command): void
     {
         $command->info('Fulfillment section 🚛');
-//        $command->call('search:rentals');
-//        $command->call('search:fulfilment_customers');
-//        $command->call('search:stored_items'); // not yet tested
-//        $command->call('search:stored_item_audits'); // not yet tested
-//        $command->call('search:pallet_returns'); // not yet tested
-//        $command->call('search:pallet_deliveries'); // not yet tested
-//        $command->call('search:pallets');
+        //        $command->call('search:rentals');
+        //        $command->call('search:fulfilment_customers');
+        //        $command->call('search:stored_items'); // not yet tested
+        //        $command->call('search:stored_item_audits'); // not yet tested
+        //        $command->call('search:pallet_returns'); // not yet tested
+        //        $command->call('search:pallet_deliveries'); // not yet tested
+        //        $command->call('search:pallets');
 
         /** @var Shop $shop */
         foreach (Shop::where('type', ShopTypeEnum::FULFILMENT)->get() as $shop) {
