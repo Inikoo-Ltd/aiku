@@ -62,7 +62,7 @@ beforeEach(function () {
         $this->organisation,
         $this->user,
         $this->shop
-        ) = createShop();
+    ) = createShop();
     Config::set("inertia.testing.page_paths", [resource_path("js/Pages/Grp")]);
     actingAs($this->adminGuest->getUser());
 });
@@ -168,7 +168,7 @@ test('JSON Get Pick Fractional', function () {
     ]));
 
     $response->assertSuccessful();
-    $response->assertJson(fn($json) => $json->etc());
+    $response->assertJson(fn ($json) => $json->etc());
 });
 
 test("UI Index Master Shops", function () {
@@ -193,11 +193,11 @@ test('UI Edit Master Shop', function (MasterShop $masterShop) {
         $page
             ->component('EditModel')
             ->has('breadcrumbs')
-            ->where('title', fn($title) => is_string($title) && $title !== '')
+            ->where('title', fn ($title) => is_string($title) && $title !== '')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $head) => $head
-                    ->where('title', fn($title) => is_string($title) && $title !== '')
+                fn (AssertableInertia $head) => $head
+                    ->where('title', fn ($title) => is_string($title) && $title !== '')
                     ->has('actions', 1)
                     ->where('actions.0.type', 'button')
                     ->where('actions.0.style', 'cancel')
@@ -205,7 +205,7 @@ test('UI Edit Master Shop', function (MasterShop $masterShop) {
             )
             ->has(
                 'formData',
-                fn(AssertableInertia $form) => $form
+                fn (AssertableInertia $form) => $form
                     ->has('blueprint', 2)
                     ->has('blueprint.0.fields.code')
                     ->where('blueprint.0.fields.code.type', 'input')
@@ -233,11 +233,11 @@ test('UI Create Master Department', function (MasterShop $masterShop) {
         $page
             ->component('CreateModel')
             ->has('breadcrumbs')
-            ->where('title', fn($title) => is_string($title) && $title !== '')
+            ->where('title', fn ($title) => is_string($title) && $title !== '')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $head) => $head
-                    ->where('title', fn($t) => is_string($t) && $t !== '')
+                fn (AssertableInertia $head) => $head
+                    ->where('title', fn ($t) => is_string($t) && $t !== '')
                     ->has('actions', 1)
                     ->where('actions.0.type', 'button')
                     ->where('actions.0.style', 'cancel')
@@ -245,7 +245,7 @@ test('UI Create Master Department', function (MasterShop $masterShop) {
             )
             ->has(
                 'formData',
-                fn(AssertableInertia $form) => $form
+                fn (AssertableInertia $form) => $form
                     ->has('blueprint')
                     ->has('route')
                     ->where('route.name', 'grp.models.master_shops.master_department.store')
@@ -313,11 +313,11 @@ test('UI Create Master SubDepartment in Department', function (MasterProductCate
         $page
             ->component('CreateModel')
             ->has('breadcrumbs')
-            ->where('title', fn($title) => is_string($title) && $title !== '')
+            ->where('title', fn ($title) => is_string($title) && $title !== '')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $head) => $head
-                    ->where('title', fn($t) => is_string($t) && $t !== '')
+                fn (AssertableInertia $head) => $head
+                    ->where('title', fn ($t) => is_string($t) && $t !== '')
                     ->has('actions', 1)
                     ->where('actions.0.type', 'button')
                     ->where('actions.0.style', 'cancel')
@@ -325,7 +325,7 @@ test('UI Create Master SubDepartment in Department', function (MasterProductCate
             )
             ->has(
                 'formData',
-                fn(AssertableInertia $form) => $form
+                fn (AssertableInertia $form) => $form
                     ->has('blueprint')
                     ->has('route')
                     ->where('route.name', 'grp.models.master_sub_department.store')
@@ -345,11 +345,11 @@ test('UI Edit Master Department', function (MasterProductCategory $masterDepartm
         $page
             ->component('EditModel')
             ->has('breadcrumbs')
-            ->where('title', fn($title) => is_string($title) && $title !== '')
+            ->where('title', fn ($title) => is_string($title) && $title !== '')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $head) => $head
-                    ->where('title', fn($t) => is_string($t) && $t !== '')
+                fn (AssertableInertia $head) => $head
+                    ->where('title', fn ($t) => is_string($t) && $t !== '')
                     ->has('actions', 1)
                     ->where('actions.0.type', 'button')
                     ->where('actions.0.style', 'cancel')
@@ -357,7 +357,7 @@ test('UI Edit Master Department', function (MasterProductCategory $masterDepartm
             )
             ->has(
                 'formData',
-                fn(AssertableInertia $form) => $form
+                fn (AssertableInertia $form) => $form
                     ->has('blueprint')
                     ->has('blueprint.0.fields.code')
                     ->where('blueprint.0.fields.code.type', 'input')
@@ -403,11 +403,11 @@ test('UI Edit Master SubDepartment', function (MasterProductCategory $masterSubD
         $page
             ->component('EditModel')
             ->has('breadcrumbs')
-            ->where('title', fn($title) => is_string($title) && $title !== '')
+            ->where('title', fn ($title) => is_string($title) && $title !== '')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $head) => $head
-                    ->where('title', fn($t) => is_string($t) && $t !== '')
+                fn (AssertableInertia $head) => $head
+                    ->where('title', fn ($t) => is_string($t) && $t !== '')
                     ->has('actions', 1)
                     ->where('actions.0.type', 'button')
                     ->where('actions.0.style', 'cancel')
@@ -415,7 +415,7 @@ test('UI Edit Master SubDepartment', function (MasterProductCategory $masterSubD
             )
             ->has(
                 'formData',
-                fn(AssertableInertia $form) => $form
+                fn (AssertableInertia $form) => $form
                     ->has('blueprint')
                     ->has('blueprint.0.fields.code')
                     ->where('blueprint.0.fields.code.type', 'input')
@@ -436,7 +436,7 @@ test('UI Show Master Department', function (MasterProductCategory $masterDepartm
             ->component('Masters/MasterDepartment')
             ->has('title')
             ->has('breadcrumbs')
-            ->has('pageHead', fn(AssertableInertia $head) => $head->has('subNavigation')->etc())
+            ->has('pageHead', fn (AssertableInertia $head) => $head->has('subNavigation')->etc())
             ->has('tabs')
             ->has('delete_route')
             ->where('delete_route.name', 'grp.masters.master_departments.delete');
@@ -474,7 +474,7 @@ test('UI Show Master Family in Department', function (MasterProductCategory $mas
             ->component('Masters/MasterFamily')
             ->has('title')
             ->has('breadcrumbs')
-            ->has('pageHead', fn(AssertableInertia $head) => $head->has('subNavigation')->etc())
+            ->has('pageHead', fn (AssertableInertia $head) => $head->has('subNavigation')->etc())
             ->has('tabs');
     });
 })->depends('create master family');
@@ -491,7 +491,7 @@ test("UI Show master shop", function (MasterShop $masterShop) {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", $masterShop->name)
+                fn (AssertableInertia $page) => $page->where("title", $masterShop->name)
                     ->has('subNavigation')
                     ->etc()
             )
@@ -566,7 +566,7 @@ test("UI Index Master Departments", function (MasterShop $masterShop) {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->has('subNavigation')->etc()
+                fn (AssertableInertia $page) => $page->has('subNavigation')->etc()
             );
     });
 })->depends('create master shop');
@@ -582,7 +582,7 @@ test("UI Master Dashboard", function () {
             ->has("breadcrumbs", 2)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->has('title')->etc()
+                fn (AssertableInertia $page) => $page->has('title')->etc()
             );
     });
 });
@@ -598,7 +598,7 @@ test("UI Index Master Families", function (MasterShop $masterShop) {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->has('subNavigation')->etc()
+                fn (AssertableInertia $page) => $page->has('subNavigation')->etc()
             );
     });
 })->depends('create master shop');
@@ -614,7 +614,7 @@ test("UI Index Master SubDepartments", function (MasterShop $masterShop) {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->has('subNavigation')->etc()
+                fn (AssertableInertia $page) => $page->has('subNavigation')->etc()
             );
     });
 })->depends('create master shop');
@@ -741,7 +741,7 @@ test("UI Index Master SubDepartments in Department", function (MasterProductCate
             ->has("title")
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->has('subNavigation')->etc()
+                fn (AssertableInertia $page) => $page->has('subNavigation')->etc()
             );
     });
 })->depends('create master department');
@@ -761,7 +761,7 @@ test("UI Show Master SubDepartment", function (MasterProductCategory $masterSubD
             ->has("title")
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->has('subNavigation')->etc()
+                fn (AssertableInertia $page) => $page->has('subNavigation')->etc()
             )
             ->has("tabs");
     });
@@ -1239,7 +1239,7 @@ test('UI Edit Master Product', function (MasterAsset $masterAsset) {
             ->has('breadcrumbs')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $head) => $head
+                fn (AssertableInertia $head) => $head
                     ->where('model', __('Editing master product'))
                     ->where('title', $masterAsset->code)
                     ->has('actions', 1)
@@ -1249,7 +1249,7 @@ test('UI Edit Master Product', function (MasterAsset $masterAsset) {
             )
             ->has(
                 'formData',
-                fn(AssertableInertia $form) => $form
+                fn (AssertableInertia $form) => $form
                     ->has('blueprint')
                     ->has('blueprint.0.fields.code')
                     ->where('blueprint.0.fields.code.type', 'input')

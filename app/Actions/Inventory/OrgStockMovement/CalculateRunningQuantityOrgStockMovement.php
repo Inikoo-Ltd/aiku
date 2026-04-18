@@ -1,10 +1,10 @@
 <?php
+
 /*
  * Author: Louis Perez
  * Created: Thu, 9 Apr 2026 15:28
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
-
 
 namespace App\Actions\Inventory\OrgStockMovement;
 
