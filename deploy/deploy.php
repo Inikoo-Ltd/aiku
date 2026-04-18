@@ -14,6 +14,16 @@ set('bin/php', function () {
     return '/usr/bin/php8.4';
 });
 
+$defaultNpmBin = get('bin/npm');
+
+set('bin/npm', function () use ($defaultNpmBin) {
+    if (currentHost()->getAlias() === 'aiku_helio') {
+        return '/home/aiku/.nvm/versions/node/v23.11.1/bin/npm';
+    }
+
+    return $defaultNpmBin;
+});
+
 desc('Check for changes in frontend');
 task('deploy:check-fe-changes', function () {
     try {
@@ -264,12 +274,14 @@ task('debug:writable', function () {
     writeln("Writable directories: " . implode(', ', $dirs));
 });
 
-set('writable_dirs', function () {
+$defaultWritableDirs = get('writable_dirs');
+
+set('writable_dirs', function () use ($defaultWritableDirs) {
     if (currentHost()->getAlias() === 'aiku_helio') {
         return ['bootstrap/cache'];
     }
 
-    return [];
+    return $defaultWritableDirs;
 });
 
 desc('Deploys your project');
