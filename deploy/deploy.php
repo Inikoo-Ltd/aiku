@@ -264,6 +264,14 @@ task('debug:writable', function () {
     writeln("Writable directories: " . implode(', ', $dirs));
 });
 
+set('writable_dirs', function () {
+    if (currentHost()->getAlias() === 'aiku_helio') {
+        return ['bootstrap/cache'];
+    }
+
+    return [];
+});
+
 desc('Deploys your project');
 task('deploy', [
     'deploy:unlock',
