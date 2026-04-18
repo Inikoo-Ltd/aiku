@@ -106,6 +106,16 @@ task('deploy:refresh-vue', function () {
     }
 });
 
+desc('Reload octane after deployment');
+task('artisan:octane:reload', function () {
+    if (currentHost()->getAlias() === 'aiku_helio') {
+        writeln('Skipping octane reload on host '.currentHost()->getAlias());
+        return;
+    }
+
+    artisan('octane:reload', ['skipIfNoEnv', 'showOutput'])();
+})->select('env=prod');
+
 desc('Save ssr checksums');
 task('deploy:save-ssr-checksums', function () {
     $manifestPath = '{{release_path}}/bootstrap/ssr/ssr-manifest.json';
