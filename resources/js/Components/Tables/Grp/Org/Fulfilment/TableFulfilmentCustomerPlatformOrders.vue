@@ -3,8 +3,7 @@ import { Link } from "@inertiajs/vue3"
 import Table from '@/Components/Table/Table.vue'
 import type { Table as TableTS } from "@/types/Table"
 
-
-const props = defineProps<{
+defineProps<{
     data: TableTS,
 }>()
 
