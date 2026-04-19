@@ -90,7 +90,7 @@ class StoreOrgStockMovement extends OrgAction
                     ]
                 );
             } else {
-                $stock = $this->getStockQuantity($orgStock, $location, now());
+                $stock = $this->getStockQuantity($orgStock, $location);
                 UpdateLocationOrgStock::run(
                     $locationOrgStock,
                     [
@@ -100,9 +100,9 @@ class StoreOrgStockMovement extends OrgAction
             }
             CalculateValueLocationOrgStock::dispatch($locationOrgStock);
         }
-        OrgStockHydrateMovements::dispatch($orgStock)->delay($this->hydratorsDelay);
-        OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock)->delay($this->hydratorsDelay);
-        CalculateRunningQuantityOrgStockMovement::dispatch($orgStockMovement->id)->delay($this->hydratorsDelay);
+        OrgStockHydrateMovements::dispatch($orgStock)->delay(now()->addMinutes(15));
+        OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock)->delay(now()->addMinutes(15));
+        CalculateRunningQuantityOrgStockMovement::dispatch($orgStockMovement->id)->delay(now()->addMinutes(15));
 
 
         return $orgStockMovement;
