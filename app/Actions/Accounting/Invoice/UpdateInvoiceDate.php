@@ -84,8 +84,8 @@ class UpdateInvoiceDate extends OrgAction
 
 
             foreach ($invoice->invoiceTransactions as $invoiceTransaction) {
-                ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, $oldDateString)->delay($this->hydratorsDelay);
-                ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, $newDateString)->delay($this->hydratorsDelay);
+                ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, $oldDateString)->delay(120);
+                ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, $newDateString)->delay(120);
             }
 
             SendInvoiceDateChangedNotification::dispatch($invoice, $oldDate);

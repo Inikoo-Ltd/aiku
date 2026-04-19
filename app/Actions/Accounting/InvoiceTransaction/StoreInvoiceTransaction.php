@@ -105,7 +105,7 @@ class StoreInvoiceTransaction extends OrgAction
             ]);
         }
 
-        ProcessInvoiceTransactionTimeSeries::run($invoiceTransaction);
+        ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction)->delay(120);
 
         return $invoiceTransaction;
     }

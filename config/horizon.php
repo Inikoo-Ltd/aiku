@@ -247,6 +247,21 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
+        'sales_slave_historic'     => [
+            'connection'      => 'redis',
+            'queue'           => ['sales_slave_historic'],
+            'balance'         => 'auto',
+            'maxProcesses'    => 1,
+            'maxTime'         => 0,
+            'maxJobs'         => 0,
+            'memory'          => 1280,
+            'tries'           => 10,
+            'timeout'         => 3600,
+            'retry_after'     => 120,
+            'nice'            => 0,
+            'balanceMaxShift' => 1,
+            'balanceCooldown' => 3,
+        ],
         'search'          => [
             'connection'      => 'redis',
             'queue'           => ['search'],
@@ -407,6 +422,9 @@ return [
             'sales_slave'     => [
                 'maxProcesses' => env('HORIZON_SALES_SLAVE_WORKERS', 8),
             ],
+            'sales_slave_historic' => [
+                'maxProcesses' => env('HORIZON_SALES_SLAVE_HISTORIC_WORKERS', 2),
+            ],
             'search'          => [
                 'maxProcesses' => env('HORIZON_SEARCH_WORKERS', 4),
             ],
@@ -448,6 +466,9 @@ return [
             ],
             'sales_slave'     => [
                 'maxProcesses' => env('HORIZON_SALES_SLAVE_WORKERS', 1),
+            ],
+            'sales_slave_historic' => [
+                'maxProcesses' => env('HORIZON_SALES_SLAVE_HISTORIC_WORKERS', 1),
             ],
             'search'          => [
                 'maxProcesses' => env('HORIZON_SEARCH_WORKERS', 1),
@@ -494,6 +515,9 @@ return [
             ],
             'sales_slave'     => [
                 'maxProcesses' => env('HORIZON_SALES_SLAVE_WORKERS', 3),
+            ],
+            'sales_slave_historic' => [
+                'maxProcesses' => env('HORIZON_SALES_SLAVE_HISTORIC_WORKERS', 1),
             ],
             'search'          => [
                 'maxProcesses' => env('HORIZON_SEARCH_WORKERS', 5),
