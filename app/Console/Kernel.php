@@ -48,13 +48,12 @@ class Kernel extends ConsoleKernel
 
     protected function schedule(Schedule $schedule): void
     {
-
         $schedule->command('horizon:snapshot')->everyFiveMinutes()->onOneServer();
         $schedule->command('cloudflare:reload')->daily()->onOneServer();
         $schedule->command('domain:check-cloudflare-status')->hourly()->onOneServer();
 
 
-        if (config('app.slave')) {
+        if (config('app.master')) {
             $this->logSchedule(
                 $schedule->job(RunNewsletterScheduled::makeJob())->everyMinute()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'RunNewsletterScheduled',
@@ -381,42 +380,6 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
-            $this->logSchedule(
-                $schedule->command('hydrate:customers-clv')->dailyAt('01:00')->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'HydrateCustomersClv',
-                ),
-                name: 'HydrateCustomersClv',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->command('hydrate:customers-tag')->dailyAt('02:00')->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'HydrateCustomersTag',
-                ),
-                name: 'HydrateCustomersTag',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->command('hydrate:best_seller')->dailyAt('03:00')->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'HydrateBestSellerProduct',
-                ),
-                name: 'HydrateBestSellerProduct',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->command('art hydrate:mismatch_detected')->weeklyOn(1, '03:00')->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'HydrateMismatchDetected',
-                ),
-                name: 'HydrateMismatchDetected',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
-
 
             $this->logSchedule(
                 $schedule->job(RunReorderRemainderEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->onOneServer()->sentryMonitor(
@@ -490,41 +453,6 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
-            $this->logSchedule(
-                $schedule->job(HydrateHealthRank::makeJob())->dailyAt('04:00')->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'HydrateHealthRank',
-                ),
-                name: 'HydrateHealthRank',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->job(PruneCustomerWebActivities::makeJob())->dailyAt('03:30')->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'PruneCustomerWebActivities',
-                ),
-                name: 'PruneCustomerWebActivities',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->job(PruneWebsitePageViews::makeJob())->dailyAt('03:35')->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'PruneWebsitePageViews',
-                ),
-                name: 'PruneWebsitePageViews',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->job(PruneWebsiteConversionEvents::makeJob())->dailyAt('03:40')->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'PruneWebsiteConversionEvents',
-                ),
-                name: 'PruneWebsiteConversionEvents',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
 
             $this->logSchedule(
                 $schedule->command(' offer:update_status_from_dates')->hourly()->timezone('UTC')->onOneServer()->sentryMonitor(
@@ -534,8 +462,6 @@ class Kernel extends ConsoleKernel
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
-
-
         }
 
         if (config('app.slave')) {
@@ -593,11 +519,81 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
+            $this->logSchedule(
+                $schedule->job(HydrateHealthRank::makeJob())->dailyAt('04:00')->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'HydrateHealthRank',
+                ),
+                name: 'HydrateHealthRank',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(PruneCustomerWebActivities::makeJob())->dailyAt('03:30')->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'PruneCustomerWebActivities',
+                ),
+                name: 'PruneCustomerWebActivities',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(PruneWebsitePageViews::makeJob())->dailyAt('03:35')->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'PruneWebsitePageViews',
+                ),
+                name: 'PruneWebsitePageViews',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(PruneWebsiteConversionEvents::makeJob())->dailyAt('03:40')->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'PruneWebsiteConversionEvents',
+                ),
+                name: 'PruneWebsiteConversionEvents',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('hydrate:customers-clv')->dailyAt('01:00')->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'HydrateCustomersClv',
+                ),
+                name: 'HydrateCustomersClv',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('hydrate:customers-tag')->dailyAt('02:00')->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'HydrateCustomersTag',
+                ),
+                name: 'HydrateCustomersTag',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('hydrate:best_seller')->dailyAt('03:00')->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'HydrateBestSellerProduct',
+                ),
+                name: 'HydrateBestSellerProduct',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('art hydrate:mismatch_detected')->weeklyOn(1, '03:00')->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'HydrateMismatchDetected',
+                ),
+                name: 'HydrateMismatchDetected',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
 
             $schedule->command('queue:prune-failed --hours=168')->daily()->onOneServer();
-
         }
-
     }
 
     protected function commands(): void
