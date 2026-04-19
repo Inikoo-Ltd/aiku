@@ -156,8 +156,8 @@ class ReindexSearch extends HydrateModel
         if ($command->option('reset')) {
             $command->warn('Resetting search indexes');
         }
-        //        ReindexUserSearch::run(reset: $command->option('reset'));
-        //        ReindexGuestSearch::run(reset: $command->option('reset'));
+        ReindexUserSearch::run(reset: $command->option('reset'));
+        ReindexGuestSearch::run(reset: $command->option('reset'));
     }
 
     protected function reindexOrdering(Command $command): void
