@@ -338,6 +338,22 @@ return [
             'balanceMaxShift'     => 1,
             'balanceCooldown'     => 3,
         ],
+        'long-running-slave'    => [
+            'connection'          => 'redis-long-running',
+            'queue'               => ['default-long-slave'],
+            'balance'             => 'auto',
+            'autoScalingStrategy' => 'time',
+            'maxProcesses'        => 3,
+            'maxTime'             => 0,
+            'maxJobs'             => 0,
+            'memory'              => 1280,
+            'tries'               => 3,
+            'timeout'             => 7200,
+            'retry_after'         => 600,
+            'nice'                => 0,
+            'balanceMaxShift'     => 1,
+            'balanceCooldown'     => 3,
+        ],
         'ses'             => [
             'connection'      => 'redis',
             'queue'           => ['ses-analytics', 'ses-send', 'ses'],
@@ -404,7 +420,10 @@ return [
                 'maxProcesses' => env('HORIZON_DROPSHIPPING_WORKERS', 16),
             ],
             'long-running'    => [
-                'maxProcesses' => env('HORIZON_LONG_WORKERS', 16),
+                'maxProcesses' => env('HORIZON_LONG_WORKERS', 1),
+            ],
+            'long-running-slave'    => [
+                'maxProcesses' => env('HORIZON_LONG_SLAVE_WORKERS', 1),
             ],
             'ses'             => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
@@ -443,7 +462,10 @@ return [
                 'maxProcesses' => env('HORIZON_DROPSHIPPING_WORKERS', 2),
             ],
             'long-running'    => [
-                'maxProcesses' => env('HORIZON_LONG_WORKERS', 2),
+                'maxProcesses' => env('HORIZON_LONG_WORKERS', 1),
+            ],
+            'long-running-slave'    => [
+                'maxProcesses' => env('HORIZON_LONG_SLAVE_WORKERS', 2),
             ],
             'ses'             => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
@@ -486,7 +508,10 @@ return [
                 'maxProcesses' => env('HORIZON_DROPSHIPPING_WORKERS', 2),
             ],
             'long-running'    => [
-                'maxProcesses' => env('HORIZON_LONG_WORKERS', 10),
+                'maxProcesses' => env('HORIZON_LONG_WORKERS', 1),
+            ],
+            'long-running-slave'    => [
+                'maxProcesses' => env('HORIZON_LONG_SLAVE_WORKERS', 1),
             ],
             'ses'             => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
