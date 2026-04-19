@@ -37,7 +37,7 @@ class GetSupplierSearchSchema
                     ],
                     [
                         'name' => 'name',
-                        'type' => 'name',
+                        'type' => 'string',
                     ],
                     [
                         'name' => 'contact_name',
