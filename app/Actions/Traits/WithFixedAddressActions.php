@@ -63,7 +63,7 @@ trait WithFixedAddressActions
         );
 
 
-        AddressHydrateFixedUsage::dispatch($address);
+        AddressHydrateFixedUsage::dispatch($address)->delay(5);
 
 
         $model->updateQuietly([$addressField => $address->id]);
@@ -79,7 +79,7 @@ trait WithFixedAddressActions
 
             if ($currentAddress) {
                 $model->fixedAddresses()->detach($currentAddress->id);
-                AddressHydrateFixedUsage::dispatch($currentAddress);
+                AddressHydrateFixedUsage::dispatch($currentAddress)->delay(5);
             }
             return $this->createFixedAddress($model, $addressData, $fixedScope, $scope, $addressField);
         }
