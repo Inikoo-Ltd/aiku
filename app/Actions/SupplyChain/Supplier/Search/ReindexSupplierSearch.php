@@ -10,17 +10,20 @@ namespace App\Actions\SupplyChain\Supplier\Search;
 
 use App\Actions\HydrateModel;
 use App\Actions\SupplyChain\Supplier\WithSupplierCommand;
+use App\Actions\Traits\WithScoutReindex;
 use App\Models\SupplyChain\Supplier;
 
 class ReindexSupplierSearch extends HydrateModel
 {
     use WithSupplierCommand;
+    use WithScoutReindex;
 
-    public string $commandSignature = 'search:suppliers {--s|slugs=}';
+    public string $commandSignature = 'reindex_search:suppliers';
 
 
-    public function handle(Supplier $supplier): void
+    public function handle(bool $reindex = true, bool $reset = false): void
     {
+        $this->runScoutReindex(Supplier::class, $reindex, $reset);
     }
 
 

@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Collection\Search\ReindexCollectionSearch;
 use App\Actions\Catalogue\Product\Search\ReindexProductSearch;
 use App\Actions\Catalogue\ProductCategory\Search\ReindexProductCategorySearch;
 use App\Actions\HydrateModel;
+use App\Actions\SupplyChain\Supplier\Search\ReindexSupplierSearch;
 use App\Actions\SysAdmin\Guest\Search\ReindexGuestSearch;
 use App\Actions\SysAdmin\User\Search\ReindexUserSearch;
 use App\Actions\Traits\WithOrganisationsArgument;
@@ -85,7 +86,7 @@ class ReindexSearch extends HydrateModel
             $this->reindexProcurement($command);
         }
 
-        if ($this->checkIfCanReindex(['supply_chain'], $command)) {
+        if ($this->checkIfCanReindex(['supply_chain', 'sup'], $command)) {
             $this->reindexSupplyChain($command);
         }
 
@@ -196,8 +197,13 @@ class ReindexSearch extends HydrateModel
     protected function reindexSupplyChain(Command $command): void
     {
         $command->info('Supply Chain section 🚛');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexSupplierSearch::run(reset: $command->option('reset'));
+
+
         //        $command->call('search:agents');
-        //        $command->call('search:suppliers');
         //        $command->call('search:supplier_products'); // not yet tested
     }
 

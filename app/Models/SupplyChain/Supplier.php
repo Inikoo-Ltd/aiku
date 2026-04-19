@@ -28,6 +28,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
@@ -106,26 +108,45 @@ class Supplier extends Model implements HasMedia, Auditable
     use HasHistory;
     use HasAttachments;
     use InGroup;
+    use Searchable;
 
     protected $casts = [
-        'data'               => 'array',
-        'settings'           => 'array',
-        'location'           => 'array',
-        'sources'           => 'array',
-        'status'             => 'boolean',
-        'archived_at'        => 'datetime',
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'data'            => 'array',
+        'settings'        => 'array',
+        'location'        => 'array',
+        'sources'         => 'array',
+        'status'          => 'boolean',
+        'archived_at'     => 'datetime',
+        'fetched_at'      => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
         'data'     => '{}',
         'settings' => '{}',
         'location' => '{}',
-        'sources' => '{}',
+        'sources'  => '{}',
     ];
 
     protected $guarded = [];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'                       => (string)$this->id,
+            'agent_id'                 => $this->agent_id,
+            'status'                   => $this->status,
+            'code'                     => $this->code,
+            'name'                     => (string)$this->name,
+            'contact_name'             => (string)$this->contact_name,
+            'company_name'             => (string)$this->company_name,
+            'email'                    => (string)$this->email,
+            'phone'                    => (string)$this->phone,
+            'contact_website'          => (string)$this->contact_website,
+            'identity_document_number' => (string)$this->identity_document_number,
+            'created_at'               => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function getRouteKeyName(): string
     {
@@ -141,10 +162,9 @@ class Supplier extends Model implements HasMedia, Auditable
         );
 
         static::updated(function (Supplier $supplier) {
-            if (!$supplier->wasRecentlyCreated  && $supplier->wasChanged(['contact_name', 'company_name'])) {
+            if (!$supplier->wasRecentlyCreated && $supplier->wasChanged(['contact_name', 'company_name'])) {
                 $supplier->name = $supplier->company_name == '' ? $supplier->contact_name : $supplier->company_name;
             }
-
         });
     }
 
