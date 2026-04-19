@@ -114,7 +114,7 @@ trait CalculatesOrgStockHistories
 
     protected function wasLocationValid(OrgStock $orgStock, Location $location, Carbon $date, ?Command $command): bool
     {
-        $lastMarginalHelper = OrgStockMovement::on('aiku_no_sticky')->select(['type', 'date'])
+        $lastMarginalHelper = OrgStockMovement::on('aiku')->select(['type', 'date'])
             ->where('org_stock_id', $orgStock->id)
             ->where('location_id', $location->id)
             ->whereIn('type', [OrgStockMovementTypeEnum::ASSOCIATE, OrgStockMovementTypeEnum::DISASSOCIATE])
