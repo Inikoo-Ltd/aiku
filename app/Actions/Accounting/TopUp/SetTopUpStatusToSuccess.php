@@ -36,9 +36,9 @@ class SetTopUpStatusToSuccess extends OrgAction
         $topUp->refresh();
 
         CustomerHydrateTopUps::dispatch($topUp->customer_id);
-        ShopHydrateTopUps::dispatch($topUp->shop);
-        OrganisationHydrateTopUps::dispatch($topUp->organisation);
-        GroupHydrateTopUps::dispatch($topUp->group);
+        ShopHydrateTopUps::dispatch($topUp->shop)->delay(10);
+        OrganisationHydrateTopUps::dispatch($topUp->organisation)->delay(60);
+        GroupHydrateTopUps::dispatch($topUp->group)->delay(60);
 
         return $topUp;
     }

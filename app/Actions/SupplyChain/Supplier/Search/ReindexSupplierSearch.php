@@ -8,14 +8,13 @@
 
 namespace App\Actions\SupplyChain\Supplier\Search;
 
-use App\Actions\HydrateModel;
-use App\Actions\SupplyChain\Supplier\WithSupplierCommand;
 use App\Actions\Traits\WithScoutReindex;
 use App\Models\SupplyChain\Supplier;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexSupplierSearch extends HydrateModel
+class ReindexSupplierSearch
 {
-    use WithSupplierCommand;
+    use AsAction;
     use WithScoutReindex;
 
     public string $commandSignature = 'reindex_search:suppliers';

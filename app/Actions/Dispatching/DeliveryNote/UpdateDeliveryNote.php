@@ -54,8 +54,8 @@ class UpdateDeliveryNote extends OrgAction
         if (count($changes) > 0) {
 
             if (Arr::has($changes, 'type')) {
-                GroupHydrateDeliveryNotes::dispatch($deliveryNote->group_id, DeliveryNoteTypeEnum::ORDER)->delay($this->hydratorsDelay);
-                GroupHydrateDeliveryNotes::dispatch($deliveryNote->group_id, DeliveryNoteTypeEnum::REPLACEMENT)->delay($this->hydratorsDelay);
+                GroupHydrateDeliveryNotes::dispatch($deliveryNote->group_id, DeliveryNoteTypeEnum::ORDER)->delay(60);
+                GroupHydrateDeliveryNotes::dispatch($deliveryNote->group_id, DeliveryNoteTypeEnum::REPLACEMENT)->delay(60);
                 OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation_id, DeliveryNoteTypeEnum::ORDER)->delay($this->hydratorsDelay);
                 OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation_id, DeliveryNoteTypeEnum::REPLACEMENT)->delay($this->hydratorsDelay);
                 ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop_id, DeliveryNoteTypeEnum::ORDER)->delay($this->hydratorsDelay);

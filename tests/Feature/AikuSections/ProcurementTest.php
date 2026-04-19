@@ -649,9 +649,9 @@ test('agents record search', function () {
 });
 
 test('suppliers record search', function () {
-    $supplier = Supplier::first();
-    ReindexSupplierSearch::run($supplier);
-    $this->artisan('search:suppliers')->assertExitCode(0);
+
+    ReindexSupplierSearch::run();
+    $this->artisan('reindex_search:suppliers')->assertExitCode(0);
 });
 
 test('UI show procurement dashboard', function () {
