@@ -39,7 +39,7 @@ enum OrgAgentTabsEnum: string
                 'align' => 'right',
             ],
             OrgAgentTabsEnum::SYSTEM_USERS => [
-                'title' => __('System user'),
+                'title' => __('System User'),
                 'icon'  => 'fal fa-terminal',
             ],
             OrgAgentTabsEnum::HISTORY => [

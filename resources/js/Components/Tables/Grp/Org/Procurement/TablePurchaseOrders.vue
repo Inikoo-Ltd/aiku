@@ -117,7 +117,7 @@ function AgentRoute(purchaseOrder: PurchaseOrder) {
     </template>
 
     <template #cell(date)="{ item: purchaseOrder }">
-      <div class="text-right">
+      <div>
         {{ useFormatTime(purchaseOrder["date"], { localeCode: locale.language.code, formatTime: "aiku" }) }}
       </div>
     </template>

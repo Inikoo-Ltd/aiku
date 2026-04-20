@@ -32,17 +32,17 @@ class GetOrgPartnerShowcase
             ],
             'stats'       => [
                 [
-                    'label' => __('purchase orders'),
+                    'label' => __('Purchase Orders'),
                     'count' => $partner->procurementStats->number_purchase_orders,
                     'full'  => true
                 ],
                 [
-                    'label' => __('stocks'),
+                    'label' => __('Stocks'),
                     'count' => $partner->inventoryStats->number_org_stocks,
                     'full'  => true
                 ],
                 [
-                    'label' => __('deliveries'),
+                    'label' => __('Deliveries'),
                     'count' => $partner->inventoryStats->number_deliveries,
                     'full'  => true
                 ],
