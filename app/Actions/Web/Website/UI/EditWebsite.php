@@ -307,8 +307,24 @@ class EditWebsite extends OrgAction
                         'label' => __('Marketing opt-in set as checked'),
                         'value' => Arr::get($website->shop->settings, 'registration.marketing_opt_in_default', false),
                     ],
-
-
+                    'company_name_label' => [
+                        'type'  => 'input',
+                        'label' => __('Company name label'),
+                        'information' => __('If enabled, the company field will be shown on the registration form with a custom label.'),
+                        'value' => Arr::get($website->shop->settings, 'registration.company_name_label'),
+                    ],
+                    'company_name_placeholder' => [
+                        'type'  => 'input',
+                        'label' => __('Company name placeholder'),
+                        'information' => __('If enabled, a custom placeholder will be shown in the company field on the registration form.'),
+                        'value' => Arr::get($website->shop->settings, 'registration.company_name_placeholder'),
+                    ],
+                     'tax_number_is_required' => [
+                        'type'  => 'toggle',
+                        'label' => __('Tax number is required'),
+                        'information' => __('If enabled, the tax number field will be required on the registration form.'),
+                        'value' => Arr::get($website->shop->settings, 'registration.tax_number_is_required', false),
+                    ],
                 ]
             ];
             $blueprints[] = [
@@ -338,6 +354,7 @@ class EditWebsite extends OrgAction
                     'accept'      => '.txt,text/plain',
                     'information' => __('This file tells AI crawlers (ChatGPT, Gemini, etc.) how to interact with your website.'),
                 ],
+
             ]
         ];
 

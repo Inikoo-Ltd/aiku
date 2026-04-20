@@ -54,6 +54,19 @@ class UpdateWebsite extends OrgAction
         if (Arr::has($modelData, "required_phone_number")) {
             data_set($shopUpdateData, "settings.registration.require_phone_number", Arr::pull($modelData, 'required_phone_number'));
         }
+
+        if (Arr::has($modelData, "company_name_label")) {
+            data_set($shopUpdateData, "settings.registration.company_name_label", Arr::pull($modelData, "company_name_label"));
+        }
+
+        if (Arr::has($modelData, "company_name_placeholder")) {
+            data_set($shopUpdateData, "settings.registration.company_name_placeholder", Arr::pull($modelData, "company_name_placeholder"));
+        }
+
+        if (Arr::has($modelData, "tax_number_is_required")) {
+            data_set($shopUpdateData, "settings.registration.tax_number_is_required", Arr::pull($modelData, "tax_number_is_required"));
+        }
+
         if (!empty($shopUpdateData)) {
             $shop = $website->shop;
             UpdateShop::run($shop, $shopUpdateData);
@@ -246,6 +259,9 @@ class UpdateWebsite extends OrgAction
             'enable_chat'              => ['sometimes', 'boolean'],
             'description_has_overview' => ['sometimes', 'boolean'],
             'welcome_message' => ['sometimes', 'nullable', 'string'],
+            'company_name_label' => ['sometimes', 'nullable', 'string'],
+            'company_name_placeholder' => ['sometimes', 'nullable', 'string'],
+            'tax_number_is_required' => ['sometimes', 'nullable','boolean'],
         ];
 
         if (!$this->strict) {
