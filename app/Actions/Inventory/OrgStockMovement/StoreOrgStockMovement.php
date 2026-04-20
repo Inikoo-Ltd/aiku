@@ -98,7 +98,7 @@ class StoreOrgStockMovement extends OrgAction
                     ]
                 );
             }
-            CalculateValueLocationOrgStock::dispatch($locationOrgStock);
+            CalculateValueLocationOrgStock::dispatch($locationOrgStock->id);
         }
         OrgStockHydrateMovements::dispatch($orgStock)->delay(now()->addMinutes(15));
         OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock)->delay(now()->addMinutes(15));
