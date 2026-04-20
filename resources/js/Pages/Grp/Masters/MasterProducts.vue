@@ -31,6 +31,7 @@ import TableMasterProductsEdit from "@/Components/Tables/TableMasterProductsEdit
 import { useTabChange } from '@/Composables/tab-change'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import ListSelector from "@/Components/DepartmentAndFamily/ListSelector.vue"
+import MasterFamilySetOrderingPositionOfProduct from "@/Components/Master/MasterFamilySetOrderingPositionOfProduct.vue"
 
 
 library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus)
@@ -72,7 +73,7 @@ const currentData = computed(() => {
 const component = computed(() => {
     const components: any = {
         index: TableMasterProducts,
-        index_ordering: TableMasterProducts,
+        index_ordering: MasterFamilySetOrderingPositionOfProduct,
         sales: TableMasterProducts,
     }
 
