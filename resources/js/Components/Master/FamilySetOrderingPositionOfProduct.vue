@@ -215,7 +215,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                         </span>
                     </div>
 
-                    <Image :src="element.image_thumbnail?.main.original" class="w-10 h-10 object-cover rounded" />
+                    <Image :src="element.image_thumbnail?.main?.original" class="w-10 h-10 object-cover rounded" />
 
                     <div class="flex-1 min-w-0">
                         <div class="text-sm font-medium truncate">

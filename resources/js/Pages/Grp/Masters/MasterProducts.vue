@@ -31,7 +31,7 @@ import TableMasterProductsEdit from "@/Components/Tables/TableMasterProductsEdit
 import { useTabChange } from '@/Composables/tab-change'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import ListSelector from "@/Components/DepartmentAndFamily/ListSelector.vue"
-import MasterFamilySetOrderingPositionOfProduct from "@/Components/Master/MasterFamilySetOrderingPositionOfProduct.vue"
+import MasterFamilySetOrderingPositionOfProduct from "@/Components/Master/FamilySetOrderingPositionOfProduct.vue"
 
 
 library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus)
@@ -179,7 +179,20 @@ const SaveOrder = () => {
         }))
     }, {
         preserveScroll: true,
-        onSuccess: () => {}
+         onSuccess: () => {
+            notify({
+                title: trans("Success!"),
+                text: trans("Successfully reordered the products"),
+                type: "success"
+            })
+        },
+        onError: (errors) => {
+            notify({
+                title: trans("Something went wrong"),
+                text: errors.message || trans("Failed to reorder products"),
+                type: "error"
+            })
+        }
 })}
 
 watch(() => currentTab.value, (tab) => {

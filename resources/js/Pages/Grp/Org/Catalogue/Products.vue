@@ -6,7 +6,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { useTabChange } from "@/Composables/tab-change"
-import { computed, inject, ref } from "vue"
+import { computed, inject, ref, watch } from "vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from '@/types/route'
 import Dialog from 'primevue/dialog'
@@ -24,6 +24,8 @@ import { faAsterisk, faQuestion } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faPencil } from '@far'
 import { faWarning } from '@fortawesome/free-solid-svg-icons'
+import FamilySetOrderingPositionOfProduct from '@/Components/Master/FamilySetOrderingPositionOfProduct.vue'
+import { notify } from '@kyvg/vue3-notification'
 
 library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk, faTools)
 
@@ -32,6 +34,7 @@ const props = defineProps<{
     editable_table: boolean
     title: string
     currencies?: any
+    familyId : number
     tabs: {
         current: string
         navigation: Record<string, string>
@@ -64,6 +67,7 @@ const form = ref({
     unit: ''
 })
 
+const localData = ref({ ...props })
 /* Track field state */
 const formDirty = ref({ price: false, rrp: false, unit: false })
 const formProcessing = ref({ price: false, rrp: false, unit: false })
@@ -73,7 +77,8 @@ const component = computed(() => {
     const mapping: Record<string, any> = {
         index: TableProducts,
         sales: TableProducts,
-        attachments: AttachmentManagement
+        attachments: AttachmentManagement,
+        index_ordering : FamilySetOrderingPositionOfProduct
     }
     return mapping[currentTab.value]
 })
@@ -153,6 +158,43 @@ const repairTradeUnitToChildren = async () => {
     })
 }
 
+const SaveOrder = () => {
+    console.log(localData.value)
+   router.patch(route('grp.models.product_category.reorder_index', {
+        productCategory: props.familyId
+    }), {
+        products: localData.value.data.data.map((product: any, index: number) => ({
+            id: product.id,
+            code : product.code,
+            index_under_master_family: product.index_under_master_family,
+        }))
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            notify({
+                title: trans("Success!"),
+                text: trans("Successfully reordered the products"),
+                type: "success"
+            })
+        },
+        onError: (errors) => {
+            notify({
+                title: trans("Something went wrong"),
+                text: errors.message || trans("Failed to reorder products"),
+                type: "error"
+            })
+        }
+    })
+}
+
+watch(
+    () => props,
+    (newVal) => {
+        localData.value = { ...newVal }
+    },
+    { deep: true }
+)
+
 </script>
 
 <template>
@@ -168,6 +210,17 @@ const repairTradeUnitToChildren = async () => {
                 :icon="faPencil"
                 label="Edit Products"
             />
+        </template>
+
+           <template #button-save-order="{ action }">
+            <Button
+                v-if="currentTab === 'index_ordering'"
+                :icon="action.icon"
+                :label="action.label" 
+                :style="action.style"
+                :onClick="SaveOrder"
+            />
+            <span v-else />
         </template>
         
         <template #afterTitle2>
@@ -194,13 +247,14 @@ const repairTradeUnitToChildren = async () => {
         :is="component"
         :key="currentTab + key"
         :tab="currentTab"
-        :data="props[currentTab]"
+        :data="localData[currentTab]"
         :isCheckboxProducts="props.editable_table"
         :editable_table="props.editable_table"
         :selectedProductsId="selectedProductsId"
         @selectedRow="(ids) => selectedProductsId = { ...selectedProductsId, ...ids }"
         :variantSlugs="variantSlugs"
         :mismatch_trade_unit_with_master="mismatch_trade_unit_with_master"
+      @update:data="(updatedData) => localData[currentTab] = updatedData"
     />
 
     <!-- MODAL -->

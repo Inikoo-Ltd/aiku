@@ -350,6 +350,14 @@ class IndexProductsInProductCategory extends OrgAction
                         'parameters' => $request->route()->originalParameters()
                     ]
                 ];
+
+                 $actions[] = [
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'tooltip' => __('Save Order'),
+                    'key'     => 'save_order',
+                    'label'   => __('Save Ordering'),
+                ];
             }
 
             //to do ini-1241
@@ -394,6 +402,7 @@ class IndexProductsInProductCategory extends OrgAction
                 'shop_id'                      => $this->shop->id,
                 'currencies'                   => $productCategory->shop->currency,
                 'data'                         => ProductsResource::collection($products),
+                'familyId'                      => $productCategory->type === ProductCategoryTypeEnum::FAMILY ? $productCategory->id : null,   
                 'variantSlugs'                 => $products->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]),
                 'tabs'                         => [
                     'current'    => $this->tab,
