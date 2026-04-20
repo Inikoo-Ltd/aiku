@@ -206,7 +206,13 @@ class IndexPalletsInReturnPalletWholePallets extends OrgAction
             $table->column(key: 'stored_items', label: __("Customer's SKUs"), canBeHidden: false);
 
             if (!$request->user() instanceof WebUser) {
-                $table->column(key: 'location', label: __('Location'), canBeHidden: false, searchable: true);
+                if (in_array($palletReturn->state, [PalletReturnStateEnum::PICKED, PalletReturnStateEnum::DISPATCHED], true)) {
+                    $table->column(key: 'pickings', label: 'Pickings', canBeHidden: false, searchable: true);
+                    $table->column(key: 'picked', label: 'Picked', canBeHidden: false, searchable: true);
+                } else {
+                    $table->column(key: 'location', label: __('Location'), canBeHidden: false, searchable: true);
+                }
+
             }
 
 

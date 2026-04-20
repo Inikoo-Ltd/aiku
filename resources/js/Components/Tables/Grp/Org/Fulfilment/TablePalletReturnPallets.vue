@@ -360,6 +360,18 @@ const generateLinkPallet = (pallet: any) => {
             return null
     }
 }
+
+const generateLocationRoute = (item: any, picking: any) => {
+    if (!picking?.location_slug) {
+        return null
+    }
+
+    return route("grp.org.warehouses.show.infrastructure.locations.show", [
+        route().params["organisation"],
+        route().params["warehouse"],
+        picking.location_slug
+    ])
+}
 </script>
 
 <template>
@@ -450,6 +462,48 @@ const generateLinkPallet = (pallet: any) => {
             <Tag v-if="palletDelivery.location_code" :label="palletDelivery.location_code" />
             <div v-else class="text-gray-400">-</div>
 		</template>
+
+        <!-- Column: Pickings -->
+        <template #cell(pickings)="{ item }">
+            <div v-if="item.pickings?.length" class="space-y-1">
+                <div v-for="picking in item.pickings" :key="picking.id" class="flex gap-x-2 w-fit items-center">
+                    <Link v-if="generateLocationRoute(item, picking)" :href="generateLocationRoute(item, picking)" class="secondaryLink">
+                        {{ picking.location_code }}
+                    </Link>
+                    <div v-else class="text-gray-400">
+                        {{ picking.location_code || '-' }}
+                    </div>
+                    <div
+                        v-if="(item.picked?.picked ?? 0) > 0"
+                        v-tooltip="trans('Picked items')"
+                        class="inline-flex items-center justify-center min-w-6 h-6 px-2 rounded-full bg-gray-100 text-gray-700 text-xs font-medium"
+                    >
+                        {{ item.picked?.picked }}
+                    </div>
+                </div>
+            </div>
+            <div v-else-if="item.pivot_state === 'not_picked'" class="text-red-500 italic flex items-center gap-x-1">
+                <FontAwesomeIcon icon="fas fa-skull" fixed-width aria-hidden="true" />
+                <span>{{ trans("Not picked") }}</span>
+            </div>
+            <div v-else class="text-xs text-gray-400 italic">
+                {{ trans("No items picked yet") }}
+            </div>
+        </template>
+
+        <!-- Column: Picked -->
+        <template #cell(picked)="{ item }">
+            <div class="flex items-center justify-center gap-x-2">
+                <span>{{ item.picked?.picked ?? 0 }}</span>
+                <span
+                    v-if="(item.picked?.not_picked ?? 0) > 0"
+                    v-tooltip="trans('Not Picked')"
+                    class="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 border border-red-400 bg-red-50 text-red-500 text-xs font-medium leading-none"
+                >
+                    {{ item.picked?.not_picked }}
+                </span>
+            </div>
+        </template>
 
 
         <!-- Column: Actions -->
