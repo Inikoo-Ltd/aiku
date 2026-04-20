@@ -200,6 +200,7 @@ class GetPalletReturnActions
             ->wherePivotIn('state', [
                 PalletReturnItemStateEnum::PICKED->value,
                 PalletReturnItemStateEnum::NOT_PICKED->value,
+                PalletReturnItemStateEnum::CANCEL->value,
             ])
             ->count();
         $canSetAsPicked = $palletCount > 0 && $palletCount === $completedPickingCount;
