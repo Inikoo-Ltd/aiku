@@ -22,9 +22,11 @@ import {
     faSkull, faDungeon
 } from '@fal';
 import { trans } from 'laravel-vue-i18n';
-import { Link } from "@inertiajs/vue3";
+import { Link, router } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
+import EmailTemplateCarousel from "@/Components/EmailTemplateCarousel.vue"
+import { routeType } from "@/types/route";
 
 library.add(
     faUser, faEnvelope, faSeedling, faShare, faInboxOut, faCheck,
@@ -49,6 +51,23 @@ const props = defineProps<{
         compiled_layout: any
     }
     liveStats?: any[]
+    ownShopTemplates?: Array<{
+        id: number,
+        slug: string,
+        name: string,
+        compiled_layout: string,
+        created_at: string,
+        shop_name: string
+    }>
+    otherShopTemplates?: Array<{
+        id: number,
+        slug: string,
+        name: string,
+        compiled_layout: string,
+        created_at: string,
+        shop_name: string
+    }>
+    workshopRoute?: routeType
 }>()
 
 const previewOpen = ref(false)
@@ -153,6 +172,16 @@ const mailshotState = computed(() => props.data.mailshot.data.state)
 const isInProcess = computed(() => mailshotState.value === "in_process")
 const isReady = computed(() => mailshotState.value === "ready")
 const isLoadingVisit = ref(false)
+
+// Computed properties to use real data when available, otherwise use dummy data
+const effectiveOwnShopTemplates = computed(() =>
+    props.ownShopTemplates
+)
+
+const effectiveOtherShopTemplates = computed(() =>
+    props.otherShopTemplates
+)
+
 </script>
 
 <template>
@@ -206,19 +235,21 @@ const isLoadingVisit = ref(false)
             </Modal>
         </template>
         <div v-if="isInProcess">
-            <EmptyState :data="{
-                title: trans(`:mailshotSubject is still in process`, { mailshotSubject: props.data.mailshot.data.subject ?? '' }),
-            }">
-                <template #button-empty-state>
-                    <Link :href="route('grp.helpers.redirect_mailshot_workshop', {
-                        mailshot: props.data.mailshot.data.id,
-                    })
-                        " @start="() => (isLoadingVisit = true)" class="mt-4 block w-fit mx-auto">
-                        <Button :label="trans('Workshop')" type="secondary" icon="fal fa-drafting-compass"
-                            :loading="isLoadingVisit" />
-                    </Link>
-                </template>
-            </EmptyState>
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-2">
+                    {{ trans(`:mailshotSubject is still in process`, {
+                        mailshotSubject: props.data.mailshot.data.subject
+                            ?? ''
+                    }) }}
+                </h2>
+                <p class="text-gray-600 mb-4">
+                    {{ trans('Choose an email template to get started with your mailshot.') }}
+                </p>
+            </div>
+
+            <!-- Template Carousel -->
+            <EmailTemplateCarousel :own-shop-templates="effectiveOwnShopTemplates"
+                :other-shop-templates="effectiveOtherShopTemplates" :workshop-route="props.workshopRoute" />
         </div>
     </div>
 </template>

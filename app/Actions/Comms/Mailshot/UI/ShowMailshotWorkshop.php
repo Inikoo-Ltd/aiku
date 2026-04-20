@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
+use App\Models\Comms\EmailTemplate;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -54,6 +55,16 @@ class ShowMailshotWorkshop extends OrgAction
     public function htmlResponse(Mailshot $mailshot, ActionRequest $request): Response
     {
         $email = $mailshot->email;
+
+        $templateLayout = null;
+        if ($request->has('template')) {
+            $templateSlug = $request->get('template');
+            $template = EmailTemplate::findBySlug($templateSlug);
+            if ($template) {
+                $templateLayout = $template->layout;
+            }
+        }
+
         return Inertia::render(
             'Org/Web/Workshop/Mailshot/MailshotWorkshop',
             [
@@ -122,7 +133,7 @@ class ShowMailshotWorkshop extends OrgAction
 
 
 
-                'unpublished_layout' => $email->unpublishedSnapshot->layout,
+                'unpublished_layout' => $templateLayout ?? $email->unpublishedSnapshot->layout,
                 'snapshot'    => $email->unpublishedSnapshot,
                 'builder'     => $email->builder,
                 'imagesUploadRoute'   => [
