@@ -250,6 +250,13 @@ class EditShop extends OrgAction
                             'information'   => __('This would force all Products under this shop to follow any updates done on master'),
                             'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
+                        'family_indexing_follow_master' => [
+                            'label'         => 'Family Page Product Index Follow Master',
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'catalog.family_indexing_follow_master', false),
+                            'information'   => __('This would force all Products under this shop to follow the family indexing updates done on master'),
+                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        ],
                     ]
                 ] : [],
                 [
