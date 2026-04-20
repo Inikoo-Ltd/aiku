@@ -17,13 +17,14 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { computed, inject, reactive, ref, onBeforeMount } from 'vue'
 import { trans } from "laravel-vue-i18n"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import Popover from '@/Components/Popover.vue'
+import Modal from "@/Components/Utils/Modal.vue"
 import { debounce, isNull } from 'lodash-es'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTrashAlt, faPaperPlane } from "@far"
 import { faSignOutAlt, faTimes, faShare, faCross, faUndo, faStickyNote, faBackspace, faDebug } from "@fal"
+import { faSkull } from "@fas"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import { routeType } from "@/types/route"
@@ -34,7 +35,7 @@ import axios from "axios"
 const layout = inject('layout', layoutStructure)
 const screenType = inject('screenType', ref('desktop'))
 
-library.add(faTrashAlt, faSignOutAlt, faTimes, faShare, faCross, faUndo, faStickyNote, faPaperPlane, faBackspace, faDebug)
+library.add(faTrashAlt, faSignOutAlt, faTimes, faShare, faCross, faUndo, faStickyNote, faPaperPlane, faBackspace, faDebug, faSkull)
 
 const props = defineProps<{
     data: {}
@@ -67,34 +68,114 @@ const listStatusNotPicked = [
     {
         label: trans('Other incident'),
         value: 'other_incident'
+    },
+    {
+        label: trans('Unlink'),
+        value: 'unlink'
     }
 ]
 const selectedStatusNotPicked = reactive({
-    status: 'other_incident',
+    status: '',
     notes: ''
 })
-const errorNotPicked = reactive({
+const errorNotPicked = reactive<{
+    status: string | null
+    notes: string | null
+}>({
     status: null,
     notes: null
 })
 const isSubmitNotPickedLoading = ref<boolean | number>(false)
+const isModalMarkPalletStatus = ref(false)
+const selectedPalletForMarkStatus = ref<any | null>(null)
 
-const onSubmitNotPicked = async (idPallet: number, closePopup: Function, routeNotPicked: routeType) => {
+const onSubmitNotPicked = async (idPallet: number, routeNotPicked: routeType, closePopup?: () => void) => {
     isSubmitNotPickedLoading.value = idPallet
     router[routeNotPicked.method || 'get'](route(routeNotPicked.name, routeNotPicked.parameters), {
         state: selectedStatusNotPicked.status,
         notes: selectedStatusNotPicked.notes
     }, {
         onSuccess: () => {
-            selectedStatusNotPicked.status = 'other'
+            selectedStatusNotPicked.status = ''
             selectedStatusNotPicked.notes = ''
             errorNotPicked.status = null
             errorNotPicked.notes = null
-            closePopup()
+            closePopup?.()
         },
         onError: (error: {}) => {
             console.error('hehehe', error)
         },
+        onFinish: () => {
+            isSubmitNotPickedLoading.value = false
+        },
+        only: ['pallets', 'pageHead', 'data'],
+        preserveScroll: true
+    })
+}
+
+const onOpenModalMarkPalletStatus = (pallet: any) => {
+    selectedPalletForMarkStatus.value = pallet
+    selectedStatusNotPicked.status = ''
+    selectedStatusNotPicked.notes = ''
+    errorNotPicked.status = null
+    errorNotPicked.notes = null
+    isModalMarkPalletStatus.value = true
+}
+
+const onCloseModalMarkPalletStatus = () => {
+    isModalMarkPalletStatus.value = false
+    selectedPalletForMarkStatus.value = null
+}
+
+const onSubmitMarkPalletStatus = async () => {
+    const pallet = selectedPalletForMarkStatus.value
+    if (!pallet) {
+        return
+    }
+
+    if (!selectedStatusNotPicked.status) {
+        errorNotPicked.status = trans('Please select status')
+        return
+    }
+
+    if (selectedStatusNotPicked.status === 'unlink') {
+        if (!pallet.unlinkRoute?.name) {
+            return
+        }
+
+        isUnlinkLoading.value = pallet.id
+        router.patch(route(pallet.unlinkRoute.name, pallet.unlinkRoute.parameters), {}, {
+            onSuccess: () => {
+                onCloseModalMarkPalletStatus()
+            },
+            onFinish: () => {
+                isUnlinkLoading.value = false
+            },
+            preserveScroll: true,
+            only: ['pallets', 'pageHead', 'data']
+        })
+        return
+    }
+
+    if (!selectedStatusNotPicked.notes) {
+        errorNotPicked.notes = trans('Description is required')
+        return
+    }
+
+    await onSubmitNotPicked(
+        pallet.id,
+        pallet.notPickedRoute,
+        onCloseModalMarkPalletStatus
+    )
+}
+
+const onSetAsNotPickedQuick = async (idPallet: number, routeNotPicked: routeType) => {
+    if (!routeNotPicked?.name) {
+        return
+    }
+
+    isSubmitNotPickedLoading.value = idPallet
+    router[routeNotPicked.method || 'get'](route(routeNotPicked.name, routeNotPicked.parameters), {}, {
         onFinish: () => {
             isSubmitNotPickedLoading.value = false
         },
@@ -155,7 +236,7 @@ const debounceReloadBoxStats = debounce(() => {
 
 const isWarehouseDispatchingPalletReturnPage = computed(() => route().current('grp.org.warehouses.show.dispatching.pallet-returns.show'))
 const isFulfilmentOperationsPalletReturnPage = computed(() => {
-    return route().current('grp.org.fulfilments.show.operations.pallet-returns.show')
+    return route().current('grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.pallet-returns.show')
         || route().current('grp.org.fulfilments.show.crm.customers.show.pallet_returns.show')
 })
 
@@ -397,51 +478,31 @@ const generateLinkPallet = (pallet: any) => {
                         <FontAwesomeIcon icon='fal fa-check' class='flex items-center justify-center text-green-500' fixed-width aria-hidden='true' />
                     </div> -->
                     <Button icon="fal fa-clipboard-list-check" type="secondary"
-                        :size="screenType == 'desktop' ? 'sm' : 'lg'" :loading="isPickingLoading === pallet.id" class="py-0" />
+                        size="sm" :loading="isPickingLoading === pallet.id" class="py-0" />
                 </Link>
+
+                <Button
+                    v-if="pallet.state === 'picking' && isWarehouseDispatchingPalletReturnPage && pallet.notPickedPalletRoute?.name"
+                    icon="fal fa-debug"
+                    v-tooltip="trans('Set as not picked')"
+                    :type="'negative'"
+                    size="sm"
+                    :loading="isSubmitNotPickedLoading == pallet.id"
+                    @click="() => onSetAsNotPickedQuick(pallet.id, pallet.notPickedPalletRoute)"
+                />
                 <!-- Button: Set as not picked -->
-                <Popover v-if="pallet.state === 'picking' && !isFulfilmentOperationsPalletReturnPage">
-                    <template #button="{ open }">
-                        <Button icon="fal fa-debug"
-                            v-tooltip="trans('Set as not picked')"
-                            :type="'negative'"
-                            :size="screenType == 'desktop' ? 'sm' : 'lg'"
-                            :key="pallet.id + open"
-                            :loading="isSubmitNotPickedLoading == pallet.id"
-                        />
-                    </template>
-
-                    <template #content="{ close }">
-                        <div class="w-[250px]">
-                            <!-- Field: Status -->
-                            <div class="mb-3">
-                                <div class="text-xs px-1 mb-1"><span class="text-red-500 text-sm mr-0.5">*</span>Select status: </div>
-                                <PureMultiselect v-model="selectedStatusNotPicked.status" @update:modelValue="() => errorNotPicked.status = null" :options="listStatusNotPicked" required caret :class="errorNotPicked.status ? 'errorShake' : ''" />
-                                <div v-if="errorNotPicked.status" class="mt-1 text-red-500 italic text-xxs">{{ errorNotPicked.status }}</div>
-                            </div>
-
-                            <!-- Field: Description -->
-                            <div class="mb-4 ">
-                                <div class="text-xs px-1 mb-1"><span class="text-red-500 text-sm mr-0.5">*</span>Description:</div>
-                                <PureTextarea v-model="selectedStatusNotPicked.notes" @update:modelValue="() => errorNotPicked.notes = null" placeholder="Enter reason why the pallet is not picked" :class="errorNotPicked.notes ? 'errorShake' : ''" />
-                                <div v-if="errorNotPicked.notes" class="mt-1 text-red-500 italic text-xxs">{{ errorNotPicked.notes }}</div>
-                            </div>
-
-                            <!-- Button: Save -->
-                            <div class="flex justify-end mt-2">
-                                <Button @click="async () => onSubmitNotPicked(pallet.id, close, pallet.notPickedRoute)"
-                                    full
-                                    label="Submit"
-                                    :disabled="!selectedStatusNotPicked.status || !selectedStatusNotPicked.notes"
-                                    :loading="isSubmitNotPickedLoading == pallet.id"
-                                />
-                            </div>
-                        </div>
-                    </template>
-                </Popover>
+                <Button
+                    v-if="pallet.state === 'not_picked' && isFulfilmentOperationsPalletReturnPage"
+                    icon="fal fa-debug"
+                    v-tooltip="trans('Mark pallet status')"
+                    :type="'negative'"
+                    size="sm"
+                    :loading="isSubmitNotPickedLoading == pallet.id || isUnlinkLoading === pallet.id"
+                    @click="() => onOpenModalMarkPalletStatus(pallet)"
+                />
 
                 <!-- Button: Unlink -->
-                <Link v-if="pallet.state === 'picking' && pallet.unlinkRoute && !isWarehouseDispatchingPalletReturnPage" as="div"
+                <Link v-if="pallet.state === 'picking' && pallet.unlinkRoute && !isWarehouseDispatchingPalletReturnPage && !isFulfilmentOperationsPalletReturnPage" as="div"
                     :href="route(pallet.unlinkRoute.name, pallet.unlinkRoute.parameters)"
                     @start="() => isUnlinkLoading = pallet.id"
                     @finish="() => isUnlinkLoading = false"
@@ -458,30 +519,86 @@ const generateLinkPallet = (pallet: any) => {
                 </Link>
 
                 <!-- Button: Undo picking -->
-                <Link v-if="pallet.state === 'picked'" as="div"
-                    :href="route(pallet.undoPickingRoute.name, pallet.undoPickingRoute.parameters)"
-                    @start="() => isUndoLoading = pallet.id"
-                    @finish="() => isUndoLoading = false"
-                    method="patch"
-                    preserveScroll
-                    :only="['pallets', 'pageHead', 'data']"
-                    v-tooltip="`Undo`"
-                >
-                    <Button icon="fal fa-undo" label="Undo picking" type="tertiary" size="xs" :loading="isUndoLoading === pallet.id" class="py-0" />
-                </Link>
+                <div v-if="(pallet.state === 'picked' || pallet.state === 'not_picked') && isWarehouseDispatchingPalletReturnPage" class="flex items-center justify-center gap-x-1">
+                    <FontAwesomeIcon v-if="pallet.state === 'not_picked'"
+                        v-tooltip="trans('Pallet not picked')"
+                        icon="fas fa-skull"
+                        class="text-red-500"
+                        fixed-width
+                        aria-hidden="true"
+                    />
+                    <Link
+                        as="div"
+                        :href="route(pallet.undoPickingRoute.name, pallet.undoPickingRoute.parameters)"
+                        @start="() => isUndoLoading = pallet.id"
+                        @finish="() => isUndoLoading = false"
+                        method="patch"
+                        preserveScroll
+                        :only="['pallets', 'pageHead', 'data']"
+                        v-tooltip="trans('Undo pick')"
+                        class="flex items-center justify-center"
+                    >
+                        <Button icon="fal fa-undo" type="negative" size="xs" :loading="isUndoLoading === pallet.id" class="py-0" />
+                    </Link>
+                </div>
 
                 <div v-else-if="pallet.state === 'lost'" class="text-red-300 italic">
                     {{ trans("Pallet lost") }}
                 </div>
+                <div v-else-if="pallet.state === 'damaged'" class="text-red-300 italic">
+                    {{ trans("Pallet damaged") }}
+                </div>
             </div>
         </template>
 
-        <template #cell(actions)="{ item: pallet }" v-else>
+        <!-- <template #cell(actions)="{ item: pallet }" v-else>
             <div v-if="pallet.pivot_state == 'cancel'" class="text-red-300 italic" >
                 {{ trans("Pallet set back to storing") }}
             </div>
-        </template>
+        </template> -->
 
 
     </Table>
+
+    <Modal :isOpen="isModalMarkPalletStatus" @onClose="onCloseModalMarkPalletStatus" width="w-full max-w-md" closeButton>
+        <div class="text-base font-semibold mb-4">{{ trans('Mark pallet status') }}</div>
+
+        <div class="mb-3">
+            <div class="text-xs px-1 mb-1">
+                <span class="text-red-500 text-sm mr-0.5">*</span>{{ trans('Select status') }}:
+            </div>
+            <PureMultiselect
+                v-model="selectedStatusNotPicked.status"
+                @update:modelValue="() => errorNotPicked.status = null"
+                :options="listStatusNotPicked"
+                required
+                caret
+                :class="errorNotPicked.status ? 'errorShake' : ''"
+            />
+            <div v-if="errorNotPicked.status" class="mt-1 text-red-500 italic text-xxs">{{ errorNotPicked.status }}</div>
+        </div>
+
+        <div v-if="selectedStatusNotPicked.status !== 'unlink'" class="mb-4">
+            <div class="text-xs px-1 mb-1">
+                <span class="text-red-500 text-sm mr-0.5">*</span>{{ trans('Description') }}:
+            </div>
+            <PureTextarea
+                v-model="selectedStatusNotPicked.notes"
+                @update:modelValue="() => errorNotPicked.notes = null"
+                :placeholder="trans('Enter reason why the pallet is not picked')"
+                :class="errorNotPicked.notes ? 'errorShake' : ''"
+            />
+            <div v-if="errorNotPicked.notes" class="mt-1 text-red-500 italic text-xxs">{{ errorNotPicked.notes }}</div>
+        </div>
+
+        <div class="flex justify-end mt-2">
+            <Button
+                @click="onSubmitMarkPalletStatus"
+                full
+                :label="selectedStatusNotPicked.status === 'unlink' ? trans('Unlink') : trans('Submit')"
+                :loading="isSubmitNotPickedLoading == selectedPalletForMarkStatus?.id || isUnlinkLoading === selectedPalletForMarkStatus?.id"
+                :disabled="!selectedStatusNotPicked.status || (selectedStatusNotPicked.status !== 'unlink' && !selectedStatusNotPicked.notes)"
+            />
+        </div>
+    </Modal>
 </template>

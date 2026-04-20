@@ -397,6 +397,7 @@ use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\DeleteClockingMac
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\StoreClockingMachineCoordinatePolicyRule;
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\UpdateClockingMachineCoordinatePolicyRule;
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\DeleteClockingMachineCoordinatePolicyRule;
+use App\Actions\Fulfilment\PalletReturnItem\SetNotPickedPallet;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
@@ -745,6 +746,7 @@ Route::name('pallet-return-item.')->prefix('pallet-return-item/{palletReturnItem
     Route::patch('pick', PickPalletReturnItemInPalletReturnWithStoredItem::class)->name('pick');
     Route::patch('undo-picking-stored-item', UndoStoredItemPick::class)->name('undo-picking-stored-item');
     Route::patch('not-picked', NotPickedPalletFromReturn::class)->name('not-picked');
+    Route::patch('not-picked-pallet', SetNotPickedPallet::class)->name('not-picked-pallet');
     Route::patch('undo-picking', UndoPickingPalletFromReturn::class)->name('undo-picking');
     Route::patch('undo', UndoPalletReturnItem::class)->name('undo-confirmed');
 });

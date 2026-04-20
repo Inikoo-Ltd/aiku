@@ -40,7 +40,9 @@ class UndoPickingPalletFromReturn extends OrgAction
 
             $palletReturnItem = $this->update($palletReturnItem, [
                 'quantity_picked' => 0,
-                'state'           => PalletReturnItemStateEnum::PICKING
+                'state'           => PalletReturnItemStateEnum::PICKING,
+                'quantity_waiting_crm' => 0,
+                'has_waiting_crm'      => false,
             ]);
 
             foreach ($palletReturnItem->pallet->palletStoredItems as $palletStoredItem) {
@@ -66,10 +68,19 @@ class UndoPickingPalletFromReturn extends OrgAction
             foreach ($storedItems as $storedItem) {
                 $palletReturnItem = $this->update($storedItem, [
                     'quantity_picked' => 0,
-                    'state'           => PalletReturnItemStateEnum::PICKING
+                    'state'           => PalletReturnItemStateEnum::PICKING,
+                    'quantity_waiting_crm' => 0,
+                    'has_waiting_crm'      => false,
                 ]);
             }
             SetStoredItemReturnAutoServices::run($palletReturnItem->palletReturn, true);
+        }
+
+        $palletReturn = $palletReturnItem->palletReturn;
+        if ($palletReturn) {
+            $palletReturn->update([
+                'number_items_waiting_crm' => $palletReturn->items()->where('has_waiting_crm', true)->count(),
+            ]);
         }
 
         if ($palletReturnItem->picking_session_id && $palletReturnItem->pickingSession) {

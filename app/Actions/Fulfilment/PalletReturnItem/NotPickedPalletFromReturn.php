@@ -36,6 +36,8 @@ class NotPickedPalletFromReturn extends OrgAction
             $palletReturnItem = $this->update($palletReturnItem, [
                 'state'          => PalletReturnItemStateEnum::NOT_PICKED,
                 'quantity_picked' => 0,
+                'quantity_waiting_crm' => 0,
+                'has_waiting_crm'      => false,
             ], ['data']);
 
             UpdatePallet::run($palletReturnItem->pallet, [
@@ -50,7 +52,9 @@ class NotPickedPalletFromReturn extends OrgAction
             $storedItems = PalletReturnItem::where('pallet_return_id', $palletReturnItem->pallet_return_id)->where('stored_item_id', $palletReturnItem->stored_item_id)->get();
             foreach ($storedItems as $storedItem) {
                 $palletReturnItem = $this->update($storedItem, [
-                    'state' => PalletReturnItemStateEnum::NOT_PICKED
+                    'state' => PalletReturnItemStateEnum::NOT_PICKED,
+                    'quantity_waiting_crm' => 0,
+                    'has_waiting_crm'      => false,
                 ], ['data']);
 
                 UpdatePallet::run($storedItem->pallet, [
@@ -62,6 +66,13 @@ class NotPickedPalletFromReturn extends OrgAction
                     ]
                 ]);
             }
+        }
+
+        $palletReturn = $palletReturnItem->palletReturn;
+        if ($palletReturn) {
+            $palletReturn->update([
+                'number_items_waiting_crm' => $palletReturn->items()->where('has_waiting_crm', true)->count(),
+            ]);
         }
 
         if ($palletReturnItem->picking_session_id && $palletReturnItem->pickingSession) {

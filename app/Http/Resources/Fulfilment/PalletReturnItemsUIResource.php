@@ -134,6 +134,11 @@ class PalletReturnItemsUIResource extends JsonResource
                 'name'       => 'grp.models.pallet-return-item.not-picked',
                 'parameters' => [$this->id]
             ],
+            'notPickedPalletRoute' => [
+                'method'     => 'patch',
+                'name'       => 'grp.models.pallet-return-item.not-picked-pallet',
+                'parameters' => [$this->id]
+            ],
             'deleteRoute' => match (request()->routeIs('retina.*')) {
                 true => [
                     'name'       => 'retina.models.pallet.delete',
