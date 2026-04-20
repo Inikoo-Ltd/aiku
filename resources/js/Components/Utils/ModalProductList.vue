@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Modal from "@/Components/Utils/Modal.vue"
-import { onMounted, onUnmounted, ref, watch } from "vue"
+import { nextTick, onMounted, onUnmounted, ref, watch } from "vue"
 import DataTable from "primevue/datatable"
 import Column from "primevue/column"
 import IconField from "primevue/iconfield"
@@ -88,8 +88,8 @@ const fetchProductList = async (url?: string) => {
 		const response = await axios.get(urlToFetch)
 		const data = response.data
 
-		if (url && optionsLinks.value?.next) {
-			products.value = data.data
+		if (url) {
+			products.value = [...products.value, ...data.data]
 		} else {
 			resetProducts()
 			products.value = data.data
@@ -155,6 +155,28 @@ const notifyFailedProduct = () => {
 		type: "error",
 	})
 }
+const refreshSingleProduct = async (productData: any) => {
+	try {
+		const url = route(props.fetchRoute.name, {
+			...props.fetchRoute.parameters,
+			'filter[global]': productData.code,
+		})
+		const response = await axios.get(url)
+		const updated = response.data.data.find((p: any) => p.id === productData.id)
+		if (updated) {
+			const idx = products.value.findIndex((p: any) => p.id === productData.id)
+			if (idx !== -1) {
+				products.value[idx] = updated
+			}
+			if (updated.purchase_order_id) {
+				addedProductIds.value.add(updated.purchase_order_id)
+			}
+		}
+	} catch (error) {
+		console.error("Error refreshing product:", error)
+	}
+}
+
 const isXxLoading = ref<number | null>(null)
 const onSubmitAddProducts = async (data: any, product: any) => {
 	const productId = product.data.purchase_order_id
@@ -192,8 +214,6 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 						)
 				}
 			} else if (props.typeModel === "purchase_order") {
-				// console.log('1111111bbbb')
-				// Add product ,
 				formProducts
 					.transform(() => ({
 						quantity_ordered: product.data.quantity_ordered,
@@ -205,22 +225,15 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 							orgStock: product.data.org_stock_id,
 						}),
 						{
-							onError: (errors) => {
+							onError: () => {
 								notifyFailedProduct()
 							},
-							onSuccess: () => {
+							onSuccess: async () => {
 								notifySuccessProduct('yyyyy')
+								await refreshSingleProduct(product.data)
 							}
 						}
 					)
-
-				// Refresh list and update addedProductIds
-				await fetchProductList()
-				addedProductIds.value.add(productId)
-				iconStates.value[productId] = {
-					increment: "fal fa-cloud",
-					decrement: "fal fa-undo",
-				}
 			} else if (props.typeModel === "order") {
 				// console.log('1111111cccccccc')
 				formProducts
@@ -305,8 +318,10 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 const debSubmitProducts = debounce(onSubmitAddProducts, 500)
 
 
-const onFetchNext = async () => {
-	if (optionsLinks.value?.next && !isLoading.value) {
+const onFetchNext = async (event: Event) => {
+	const target = event.target as HTMLElement
+	const nearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 150
+	if (nearBottom && optionsLinks.value?.next && !isLoading.value) {
 		await fetchProductList(optionsLinks.value.next)
 	}
 }
@@ -318,30 +333,34 @@ watch(searchQuery, (newValue) => {
 	debouncedFetch(newValue)
 })
 
-onMounted(() => {
-	const tableBody = document.querySelector(".p-datatable-scrollable-body")
-	if (tableBody) {
-		tableBody.addEventListener("scroll", debounce(onFetchNext, 200))
-	}
+const debouncedFetchNext = debounce(onFetchNext, 200)
 
+const attachScrollListener = () => {
+	const tableBody = document.querySelector(".p-datatable-tbody")?.closest(".p-datatable-table-container")
+		?? document.querySelector(".p-datatable-scrollable-body")
+	if (tableBody) {
+		tableBody.removeEventListener("scroll", debouncedFetchNext)
+		tableBody.addEventListener("scroll", debouncedFetchNext)
+	}
+}
+
+onMounted(() => {
 	onSearchQuery(searchQuery.value)
-	// fetchProductList()
 })
 
 onUnmounted(() => {
-	const tableBody = document.querySelector(".p-datatable-scrollable-body")
+	const tableBody = document.querySelector(".p-datatable-tbody")?.closest(".p-datatable-table-container")
+		?? document.querySelector(".p-datatable-scrollable-body")
 	if (tableBody) {
-		tableBody.removeEventListener("scroll", onFetchNext)
+		tableBody.removeEventListener("scroll", debouncedFetchNext)
 	}
 })
 
-watch(() => model.value, (newValue) => {
-	// console.log('vfcvcvc')
+watch(() => model.value, async (newValue) => {
 	if (newValue === true) {
-		// console.log('wwwwwww')
-		// fetchProductList()
 		onSearchQuery(searchQuery.value)
-		
+		await nextTick()
+		attachScrollListener()
 	}
 })
 </script>
