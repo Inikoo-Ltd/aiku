@@ -111,16 +111,14 @@ class GetDispatchHubFulfilmentWidget
                 ],
             ],
             'waiting_crm_items_still_picking' => [
-                'count' => $warehouse->deliveryNotes()
-                    ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
-                    ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
-                    ->where('shops.type', $shopType)
-                    ->where('delivery_note_items.has_waiting_crm', true)
-                    ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING)
-                    ->count(),
+                'count' => (int) PalletReturn::query()
+                    ->where('warehouse_id', $warehouse->id)
+                    ->where('type', $type->value)
+                    ->where('state', PalletReturnStateEnum::PICKING->value)
+                    ->sum('number_items_waiting_crm'),
                 'route' => [
-                    'name'       => 'grp.org.warehouses.show.dispatching.waiting_crm_items_still_picking.shop',
-                    'parameters' => [$organisation->slug, $warehouse->slug, $shopType],
+                    'name'       => '',
+                    'parameters' => [],
                 ],
             ],
             'waiting_crm_items' => [
