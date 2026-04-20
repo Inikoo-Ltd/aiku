@@ -44,6 +44,13 @@ class CreateMailshot extends OrgAction
                     'required'    => true,
                     'value'       => '',
                 ],
+                'preview_text' => [
+                    'type'        => 'input',
+                    'label'       => __('Preview text'),
+                    'placeholder' => __('Email preview text'),
+                    'required'    => false,
+                    'value'       => '',
+                ],
                 // add default value all customers
                 'recipients_recipe' => [
                     'type'        => 'input',
@@ -76,12 +83,12 @@ class CreateMailshot extends OrgAction
                     'fullLayout' => true,
                     'submitLabel' => __('Continue'),
                     'blueprint'  =>
+                    [
                         [
-                            [
-                                'title'  => __('Name'),
-                                'fields' => array_merge(...array_map(fn ($item) => $item['fields'], $fields))
-                            ]
-                        ],
+                            'title'  => __('Name'),
+                            'fields' => array_merge(...array_map(fn ($item) => $item['fields'], $fields))
+                        ]
+                    ],
                     'route' => [
                         'name'       => 'grp.models.outbox.mailshot.store',
                         'parameters' => [

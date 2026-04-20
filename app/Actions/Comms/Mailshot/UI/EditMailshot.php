@@ -36,6 +36,13 @@ class EditMailshot extends OrgAction
                     'required'    => false,
                     'value'       => $mailshot->subject,
                 ],
+                'preview_text'   => [
+                    'type'        => 'input',
+                    'label'       => __('Preview text'),
+                    'placeholder' => __('Email preview text'),
+                    'required'    => false,
+                    'value'       => $mailshot->preview_text,
+                ],
             ]
         ];
 
