@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\Shop;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateUniversalSearch;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
@@ -256,11 +255,6 @@ class UpdateShop extends OrgAction
             if ($oldMasterShop) {
                 MasterShopHydrateShops::dispatch($oldMasterShop)->delay($this->hydratorsDelay);
             }
-        }
-
-
-        if (count($changes) > 0) {
-            ShopHydrateUniversalSearch::dispatch($shop);
         }
 
         return $shop;

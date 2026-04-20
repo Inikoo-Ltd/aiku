@@ -8,7 +8,6 @@
 
 namespace App\Actions\Billables\Charge;
 
-use App\Actions\Billables\Charge\Search\ChargeRecordSearch;
 use App\Actions\Catalogue\Asset\StoreAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCharges;
@@ -141,8 +140,6 @@ class StoreCharge extends OrgAction
         ShopHydrateCharges::dispatch($shop)->delay($this->hydratorsDelay);
         OrganisationHydrateCharges::dispatch($shop->organisation)->delay($this->hydratorsDelay);
         GroupHydrateCharges::dispatch($shop->group)->delay($this->hydratorsDelay);
-        ChargeRecordSearch::dispatch($charge);
-
 
         return $charge;
     }

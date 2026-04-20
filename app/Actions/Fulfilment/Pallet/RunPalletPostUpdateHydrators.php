@@ -10,7 +10,6 @@ namespace App\Actions\Fulfilment\Pallet;
 
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePallets;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
-use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
 use App\Actions\Fulfilment\PalletDelivery\SetPalletDeliveryAutoServices;
 use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePallets;
@@ -49,16 +48,7 @@ class RunPalletPostUpdateHydrators
         if (Arr::get($originalData, 'type') !== $pallet->type) {
             SetPalletDeliveryAutoServices::run($pallet->palletDelivery);
         }
-        if (Arr::hasAny($changes, [
-            'reference',
-            'type',
-            'customer_reference',
-            'state',
-            'status',
-            'slug'
-        ])) {
-            PalletRecordSearch::dispatch($pallet);
-        }
+
     }
 
 }

@@ -30,7 +30,6 @@ import { capitalize } from "@/Composables/capitalize"
 import TableOrgSupplierProducts from '@/Components/Tables/Grp/Org/Procurement/TableOrgSupplierProducts.vue';
 library.add( faInventory, faWarehouse, faMapSigns, faMoneyBill, faHandReceiving, faPoop, faClipboard, faTruck, faCameraRetro, faPaperclip, faPaperPlane, faClock, faPersonDolly );
 
-const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
 const props = defineProps<{
     title: string,

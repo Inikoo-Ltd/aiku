@@ -22,7 +22,6 @@ class ReindexStockFamilySearch extends HydrateModel
 
     public function handle(StockFamily $stockFamily): void
     {
-        StockFamilyRecordSearch::run($stockFamily);
     }
 
 

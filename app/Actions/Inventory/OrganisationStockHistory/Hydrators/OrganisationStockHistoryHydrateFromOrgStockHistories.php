@@ -18,6 +18,8 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
 {
     use AsAction;
 
+    public string $jobQueue = 'hydrators-slave';
+
     public function getJobUniqueId(?int $organisationStockHistory): int
     {
         return $organisationStockHistory ?? 0;
@@ -33,7 +35,7 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
             return;
         }
 
-        $stockData = DB::table('org_stock_histories')
+        $stockData = DB::connection('aiku_no_sticky')->table('org_stock_histories')
             ->selectRaw('sum(non_moving_1y*value_per_sku) as value_dormant_stock_1y')
             ->selectRaw('sum(org_stock_value) as org_stock_values')
             ->selectRaw('sum(grp_stock_value) as grp_stock_values')
@@ -42,12 +44,12 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
             ->where('organisation_stock_history_id', $organisationStockHistory->id)
             ->first();
 
-        $stockNotSold = DB::table('org_stock_histories')
+        $stockNotSold = DB::connection('aiku_no_sticky')->table('org_stock_histories')
             ->where('org_stock_histories.sold_within_1y', false)
             ->where('organisation_stock_history_id', $organisationStockHistory->id)
             ->count();
 
-        $stockLocationData = DB::table('location_org_stock_histories')
+        $stockLocationData = DB::connection('aiku_no_sticky')->table('location_org_stock_histories')
             ->selectRaw('COUNT(DISTINCT location_id) as number_locations')
             ->where('organisation_stock_history_id', $organisationStockHistory->id)
             ->first();

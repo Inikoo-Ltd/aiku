@@ -9,7 +9,6 @@
 
 namespace App\Actions\Fulfilment\Pallet;
 
-use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
 use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsCancelledIfEmpty;
 use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsPickedIfAllItemsPicked;
 use App\Actions\Fulfilment\PalletReturn\Hydrators\PalletReturnHydratePallets;
@@ -50,8 +49,6 @@ class SetPalletBackToStoring extends OrgAction
             PalletReturnHydratePallets::run($currPalletReturn);
 
         });
-
-        PalletRecordSearch::dispatch($pallet);
 
         return $pallet;
     }

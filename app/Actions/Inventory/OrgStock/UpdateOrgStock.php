@@ -12,7 +12,6 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateStatusFromOrgStocks;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateOrgStocks;
-use App\Actions\Inventory\OrgStock\Search\OrgStockRecordSearch;
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStocks;
@@ -52,10 +51,6 @@ class UpdateOrgStock extends OrgAction
             if ($orgStock->orgStockFamily) {
                 OrgStockFamilyHydrateOrgStocks::dispatch($orgStock->orgStockFamily);
             }
-        }
-
-        if (Arr::hasAny($changes, ['code', 'name', 'state'])) {
-            OrgStockRecordSearch::dispatch($orgStock);
         }
 
         if (Arr::hasAny($changes, ['is_on_demand'])) {

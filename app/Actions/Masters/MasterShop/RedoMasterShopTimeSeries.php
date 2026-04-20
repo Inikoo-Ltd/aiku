@@ -22,7 +22,7 @@ class RedoMasterShopTimeSeries implements ShouldBeUnique
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue = 'default-long';
+    public string $jobQueue = 'default-long-slave';
     public string $commandSignature = 'master-shops:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -51,8 +51,8 @@ class RedoMasterShopTimeSeries implements ShouldBeUnique
 
         if (!$from || !$to) {
             $dates = collect([
-                DB::table('invoices')->where('master_shop_id', $masterShop->id)->whereNull('deleted_at')->selectRaw('MIN(date) as min_date, MAX(date) as max_date')->first(),
-                DB::table('customers')->where('master_shop_id', $masterShop->id)->whereNull('deleted_at')->selectRaw('MIN(registered_at) as min_date, MAX(registered_at) as max_date')->first(),
+                DB::connection('aiku_no_sticky')->table('invoices')->where('master_shop_id', $masterShop->id)->whereNull('deleted_at')->selectRaw('MIN(date) as min_date, MAX(date) as max_date')->first(),
+                DB::connection('aiku_no_sticky')->table('customers')->where('master_shop_id', $masterShop->id)->whereNull('deleted_at')->selectRaw('MIN(registered_at) as min_date, MAX(registered_at) as max_date')->first(),
             ]);
 
             $firstActivityDate = $dates->pluck('min_date')->filter()->min();
@@ -68,7 +68,7 @@ class RedoMasterShopTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessMasterShopTimeSeriesRecords::dispatch($masterShop->id, $frequency, $from, $to)->onQueue('low-priority');
+                ProcessMasterShopTimeSeriesRecords::dispatch($masterShop->id, $frequency, $from, $to)->onQueue('sales_slave');
             } else {
                 ProcessMasterShopTimeSeriesRecords::run($masterShop->id, $frequency, $from, $to);
             }

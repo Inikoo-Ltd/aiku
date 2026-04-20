@@ -10,7 +10,6 @@ namespace App\Actions\Fulfilment\Pallet;
 
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePallets;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
-use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
 use App\Actions\Fulfilment\PalletDelivery\Hydrators\PalletDeliveryHydratePallets;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePallets;
 use App\Actions\OrgAction;
@@ -41,7 +40,6 @@ class DeletePalletInDelivery extends OrgAction
         FulfilmentHydratePallets::dispatch($pallet->fulfilment);
         OrganisationHydratePallets::dispatch($pallet->organisation);
         WarehouseHydratePallets::dispatch($pallet->warehouse);
-        PalletRecordSearch::dispatch($pallet);
 
         return true;
     }

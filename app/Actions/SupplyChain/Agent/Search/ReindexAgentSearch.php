@@ -20,7 +20,6 @@ class ReindexAgentSearch
 
     public function handle(Agent $agent): void
     {
-        AgentRecordSearch::run($agent);
     }
 
     public function asCommand(Command $command): int

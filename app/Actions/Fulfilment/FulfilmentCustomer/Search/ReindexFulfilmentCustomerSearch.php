@@ -20,7 +20,7 @@ class ReindexFulfilmentCustomerSearch extends HydrateModel
 
     public function handle(FulfilmentCustomer $fulfilmentCustomer): void
     {
-        FulfilmentCustomerRecordSearch::run($fulfilmentCustomer);
+
     }
 
 

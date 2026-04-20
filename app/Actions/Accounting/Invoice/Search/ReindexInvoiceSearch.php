@@ -24,7 +24,7 @@ class ReindexInvoiceSearch
 
     public function handle(Invoice $invoice): void
     {
-        InvoiceRecordSearch::run($invoice);
+
     }
 
 }

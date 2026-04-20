@@ -230,22 +230,22 @@ const handleSearch = () => {
     page.value = 1;
     isFetchingOutOfStock.value = false;
     updateQueryParams();
-    debFetchProducts(false, true);
+    debFetchProducts(false, false);
 };
 
 
 watch([q, orderBy], () => {
     page.value = 1;
-    isFetchingOutOfStock.value = true;
+    isFetchingOutOfStock.value = false;
     updateQueryParams();
-    debFetchProducts(false, true);
+    debFetchProducts(false, false);
 }, { deep: true });
 
 watch(filter, () => {
     page.value = 1;
     isFetchingOutOfStock.value = false;
     /* updateQueryParams(); */
-    debFetchProducts(false, true);
+    debFetchProducts(false, false);
 }, { deep: true });
 
 

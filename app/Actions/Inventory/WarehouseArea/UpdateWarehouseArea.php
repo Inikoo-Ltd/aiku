@@ -9,14 +9,12 @@
 
 namespace App\Actions\Inventory\WarehouseArea;
 
-use App\Actions\Inventory\WarehouseArea\Search\WarehouseAreaRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Inventory\WarehouseAreaResource;
 use App\Models\Inventory\WarehouseArea;
 use App\Rules\IUnique;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateWarehouseArea extends OrgAction
@@ -33,16 +31,6 @@ class UpdateWarehouseArea extends OrgAction
         $changes = $warehouseArea->getChanges();
         if (isset($changes['code']) || isset($changes['picking_position'])) {
             HydrateWarehouseAreaLocationsSortLocations::dispatch($warehouseArea);
-        }
-
-
-        if (Arr::hasAny($changes, [
-            'name',
-            'code',
-            'state',
-
-        ])) {
-            WarehouseAreaRecordSearch::dispatch($warehouseArea);
         }
 
         return $warehouseArea;

@@ -35,7 +35,7 @@ class TrackWebsiteVisitor
                 $request->fullUrl(),
                 $request->header('referer'),
                 $geoLocation
-            );
+            )->delay(now()->addSeconds(5));
         }
 
         return $next($request);

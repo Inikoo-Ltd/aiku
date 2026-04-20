@@ -5,7 +5,6 @@ namespace App\Models\Production;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
-use App\Models\Traits\HasUniversalSearch;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -41,7 +40,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\JobOrderItem> $jobOrderItems
  * @property-read Organisation $organisation
  * @property-read \App\Models\Production\Production|null $production
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrder newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrder newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrder onlyTrashed()
@@ -55,7 +53,6 @@ class JobOrder extends Model
 {
     use HasSlug;
     use SoftDeletes;
-    use HasUniversalSearch;
 
     protected $guarded = [];
 

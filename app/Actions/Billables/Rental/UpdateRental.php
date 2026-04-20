@@ -8,7 +8,6 @@
 
 namespace App\Actions\Billables\Rental;
 
-use App\Actions\Billables\Rental\Search\RentalRecordSearch;
 use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRentals;
@@ -58,7 +57,6 @@ class UpdateRental extends OrgAction
         if (Arr::hasAny($rental->getChanges(), ['state'])) {
             ShopHydrateRentals::dispatch($rental->shop)->delay($this->hydratorsDelay);
         }
-        RentalRecordSearch::dispatch($rental);
 
         return $rental;
     }

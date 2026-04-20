@@ -49,7 +49,7 @@ class CalculateDayOrgStockHistory implements ShouldBeUnique
         }
 
 
-        $isCurrent = DB::table('location_org_stocks')->where('org_stock_id', $orgStock->id)->exists();
+        $isCurrent = DB::connection('aiku_no_sticky')->table('location_org_stocks')->where('org_stock_id', $orgStock->id)->exists();
         if ($isCurrent) {
             $to = Carbon::now()->endOfDay();
         } else {
@@ -74,7 +74,7 @@ class CalculateDayOrgStockHistory implements ShouldBeUnique
 
     public function getLastDisassociateDate(OrgStock $orgStock): ?Carbon
     {
-        $rawDate = DB::table('org_stock_movements')->select('date')->where('org_stock_id', $orgStock->id)
+        $rawDate = DB::connection('aiku_no_sticky')->table('org_stock_movements')->select('date')->where('org_stock_id', $orgStock->id)
             ->where('type', OrgStockMovementTypeEnum::DISASSOCIATE->value)->orderby('date', 'desc')->first();
         if ($rawDate) {
             return Carbon::parse($rawDate->date);
@@ -85,7 +85,7 @@ class CalculateDayOrgStockHistory implements ShouldBeUnique
 
     public function getFirstAssociateDate(OrgStock $orgStock): ?Carbon
     {
-        $rawDate = DB::table('org_stock_movements')->select('date')->where('org_stock_id', $orgStock->id)
+        $rawDate = DB::connection('aiku_no_sticky')->table('org_stock_movements')->select('date')->where('org_stock_id', $orgStock->id)
             ->where('type', OrgStockMovementTypeEnum::ASSOCIATE->value)->orderby('date')->first();
         if ($rawDate) {
             return Carbon::parse($rawDate->date)->startOfDay();

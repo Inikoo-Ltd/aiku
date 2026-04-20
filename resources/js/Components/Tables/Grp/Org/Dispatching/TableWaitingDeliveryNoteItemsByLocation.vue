@@ -196,156 +196,153 @@ const selectedTransactionToSetAsWaiting = ref(null)
 
         <!-- Column: Actions (location picker + quantity + not-picked + button pass to CS) -->
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
-            <div>
-                <div v-if="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)" class="rounded p-1 flex flex-col gap-2">
-                    <div class="flex justify-between items-center gap-x-4">
-                        <!-- Section: location -->
-                        <div v-if="!isStillPicking" class="">
-                            <Transition name="spin-to-down">
-                                <div :key="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.location_code">
+            <div class="rounded p-1 flex flex-col gap-2">
+                <div class="flex justify-between items-center gap-x-4">
+                    <!-- Section: location -->
+                    <div v-if="!isStillPicking && findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)" class="">
+                        <Transition name="spin-to-down">
+                            <div :key="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.location_code">
 
-                                    <!-- Section: number of locations available to pick -->
-                                    <span v-if="itemValue.locations?.length > 1" @click="() => {
-                                            isModalLocation = true;
-                                            selectedItemValue = itemValue;
-                                            selectedItemProxy = proxyItem;
-                                        }" v-tooltip="`Other ${itemValue.locations?.length - 1} locations`"
-                                        class="mr-1 cursor-pointer hover:bg-orange-50 whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded px-1">
-                                        <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
-                                            aria-hidden="true" />
-                                        {{ itemValue.locations?.length - 1 }}
-                                    </span>
+                                <!-- Section: number of locations available to pick -->
+                                <span v-if="itemValue.locations?.length > 1" @click="() => {
+                                        isModalLocation = true;
+                                        selectedItemValue = itemValue;
+                                        selectedItemProxy = proxyItem;
+                                    }" v-tooltip="`Other ${itemValue.locations?.length - 1} locations`"
+                                    class="mr-1 cursor-pointer hover:bg-orange-50 whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded px-1">
+                                    <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
+                                        aria-hidden="true" />
+                                    {{ itemValue.locations?.length - 1 }}
+                                </span>
 
-                                    <span v-if="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)" class="text-base">
-                                        <Link v-tooltip="`${itemValue.warehouse_area}`"
-                                            :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode))"
-                                            class="secondaryLink">
-                                            {{ findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).location_code }}
-                                        </Link>
+                                <span v-if="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)" class="text-base">
+                                    <Link v-tooltip="`${itemValue.warehouse_area}`"
+                                        :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode))"
+                                        class="secondaryLink">
+                                        {{ findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).location_code }}
+                                    </Link>
+                                </span>
+                                <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">
+                                    ({{ trans("Unknown") }})
+                                </span>
+                                
+                                <!-- Section: number of stocks -->
+                                <span
+                                    v-tooltip="trans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.quantity || 0), stockLocation: findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.location_code || '' })"
+                                    class="align-middle whitespace-nowrap text-base py-0.5 xopacity-70 tabular-nums xborder border-gray-300 rounded xpx-1"
+                                >
+                                    (<span class="text-lg font-bold">
+                                        <FractionDisplay
+                                            v-if="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.quantity_fractional"
+                                            :fractionData="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.quantity_fractional"
+                                        />
+                                        <template v-else>
+                                            {{ locale.number(findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).quantity) }}
+                                        </template>
                                     </span>
-                                    <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">
-                                        ({{ trans("Unknown") }})
-                                    </span>
-                                    
-                                    <!-- Section: number of stocks -->
-                                    <span
-                                        v-tooltip="trans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.quantity || 0), stockLocation: findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.location_code || '' })"
-                                        class="align-middle whitespace-nowrap text-base py-0.5 xopacity-70 tabular-nums xborder border-gray-300 rounded xpx-1"
+                                    <span class="text-sm ml-1">{{ ctrans("stocks") }}</span>)
+                                </span>
+                            </div>
+                        </Transition>
+                    </div>
+
+                    <div class="flex items-center gap-x-2">
+                        <!-- Section: input Quantity-->
+                        <NumberWithButtonSave
+                            v-if="!isStillPicking && findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).quantity > 0"
+                            :key="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).location_code"
+                            noUndoButton
+                            @onError="(error: any) => { proxyItem.errors = Object.values(error || {}) }"
+                            :modelValue="get(itemValue, 'waiting_warehouse_quantity', 0)"
+                            @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
+                            saveOnForm
+                            :routeSubmit="{
+                                name: itemValue.upsert_picking_route.name,
+                                parameters: itemValue.upsert_picking_route.parameters,
+                            }"
+                            :bindToTarget="{
+                                step: 1,
+                                min: 0,
+                                max: Math.min(
+                                    Number(findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.quantity),
+                                    Number(itemValue.quantity_waiting_warehouse) )
+                            }"
+                            :additionalData="{
+                                location_org_stock_id: findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).id,
+                                picking_id: itemValue.pickings?.find(picking => picking.location_id == findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).location_id)?.id,
+                            }"
+                            autoSave
+                            isWithRefreshModel
+                        >
+                            <template #save="{ isProcessing, isDirty, onSaveViaForm }">
+                                <div class="flex gap-x-8 w-fit">
+                                    <ButtonWithLink
+                                        v-tooltip="trans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).location_code || '-' })"
+                                        icon="fal fa-clipboard-list-check"
+                                        :size="twBreakPoint().includes('lg') ? 'xs' : 'lg'"
+                                        type="secondary"
+                                        :loading="isProcessing"
+                                        class="py-0"
+                                        :routeTarget="itemValue.picking_all_route"
+                                        :bind-to-link="{
+                                            preserveScroll: true,
+                                            preserveState: true,
+                                        }"
+                                        :body="{
+                                            location_org_stock_id: findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).id
+                                        }"
+                                        isWithError
                                     >
-                                        (<span class="text-lg font-bold">
-                                            <FractionDisplay
-                                                v-if="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.quantity_fractional"
-                                                :fractionData="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.quantity_fractional"
-                                            />
-                                            <template v-else>
-                                                {{ locale.number(findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).quantity) }}
-                                            </template>
-                                        </span>
-                                        <span class="text-sm ml-1">{{ ctrans("stocks") }}</span>)
-                                    </span>
+                                        <template #label>
+                                            <div>
+                                                <span>{{ locale.number(itemValue.quantity_waiting_warehouse ?? 0) }}</span>
+                                            </div>
+                                        </template>
+                                    </ButtonWithLink>
                                 </div>
-                            </Transition>
-                        </div>
+                            </template>
+                        </NumberWithButtonSave>
+                        
+                        <!-- Button: Not Picked -->
+                        <ButtonWithLink
+                            v-if="allowStockControllerSetNotPicked"
+                            type="negative"
+                            iconRight="fal fa-debug"
+                            :size="twBreakPoint().includes('lg') ? 'xs' : 'lg'"
+                            :routeTarget="{
+                                method: 'post',
+                                name: 'grp.models.delivery_note_item.not_picking_from_waiting_warehouse.store',
+                                parameters: {
+                                    deliveryNoteItem: itemValue.id
+                                }
+                            }"
+                            :bindToLink="{ preserveScroll: true }"
+                            v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(itemValue.quantity_waiting_warehouse ) || '0'})"
+                        >
+                            <template #label>
+                                <div>
+                                    <!-- <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)" :fractionData="GetQuantityToPickFractional(itemValue)" /> -->
+                                    <span vxelse>{{ locale.number(itemValue.quantity_waiting_warehouse ?? 0) }}</span>
+                                </div>
+                            </template>
+                        </ButtonWithLink>
 
-                        <div class="flex items-center gap-x-2">
-                            <!-- Section: input Quantity-->
-                            <NumberWithButtonSave
-                                v-if="!isStillPicking && findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).quantity > 0"
-                                :key="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).location_code"
-                                noUndoButton
-                                @onError="(error: any) => { proxyItem.errors = Object.values(error || {}) }"
-                                :modelValue="get(itemValue, 'waiting_warehouse_quantity', 0)"
-                                @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
-                                saveOnForm
-                                :routeSubmit="{
-                                    name: itemValue.upsert_picking_route.name,
-                                    parameters: itemValue.upsert_picking_route.parameters,
-                                }"
-                                :bindToTarget="{
-                                    step: 1,
-                                    min: 0,
-                                    max: Math.min(
-                                        Number(findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.quantity),
-                                        Number(itemValue.quantity_waiting_warehouse) )
-                                }"
-                                :additionalData="{
-                                    location_org_stock_id: findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).id,
-                                    picking_id: itemValue.pickings?.find(picking => picking.location_id == findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).location_id)?.id,
-                                }"
-                                autoSave
-                                isWithRefreshModel
-                            >
-                                <template #save="{ isProcessing, isDirty, onSaveViaForm }">
-                                    <div class="flex gap-x-8 w-fit">
-                                        <ButtonWithLink
-                                            v-tooltip="trans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).location_code || '-' })"
-                                            icon="fal fa-clipboard-list-check"
-                                            :size="twBreakPoint().includes('lg') ? 'xs' : 'lg'"
-                                            type="secondary"
-                                            :loading="isProcessing"
-                                            class="py-0"
-                                            :routeTarget="itemValue.picking_all_route"
-                                            :bind-to-link="{
-                                                preserveScroll: true,
-                                                preserveState: true,
-                                            }"
-                                            :body="{
-                                                location_org_stock_id: findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).id
-                                            }"
-                                            isWithError
-                                        >
-                                            <template #label>
-                                                <div>
-                                                    <span>{{ locale.number(itemValue.quantity_waiting_warehouse ?? 0) }}</span>
-                                                </div>
-                                            </template>
-                                        </ButtonWithLink>
-                                    </div>
-                                </template>
-                            </NumberWithButtonSave>
-                            
-                            <!-- Button: Not Picked -->
-                            <ButtonWithLink
-                                v-if="allowStockControllerSetNotPicked"
-                                type="negative"
-                                iconRight="fal fa-debug"
-                                :size="twBreakPoint().includes('lg') ? 'xs' : 'lg'"
-                                :routeTarget="{
-                                    method: 'post',
-                                    name: 'grp.models.delivery_note_item.not_picking_from_waiting_warehouse.store',
-                                    parameters: {
-                                        deliveryNoteItem: itemValue.id
-                                    }
-                                }"
-                                :bindToLink="{ preserveScroll: true }"
-                                v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(itemValue.quantity_waiting_warehouse ) || '0'})"
-                            >
-                                <template #label>
-                                    <div>
-                                        <!-- <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)" :fractionData="GetQuantityToPickFractional(itemValue)" /> -->
-                                        <span vxelse>{{ locale.number(itemValue.quantity_waiting_warehouse ?? 0) }}</span>
-                                    </div>
-                                </template>
-                            </ButtonWithLink>
-
-                            <!-- Button: Pass to CS -->
-                            <Button
-                                v-if="Number(itemValue.quantity_waiting_warehouse) > 0"
-                                @click="() => (isOpenModalPassToCs = true, selectedTransactionToSetAsWaiting = itemValue)"
-                                icon="fal fa-user-headset"
-                                :label="Number(itemValue.quantity_waiting_warehouse)"
-                                :tooltip="trans('Pass :qtyInWarehouse to customer services', { qtyInWarehouse: Number(itemValue.quantity_waiting_warehouse) })"
-                                :size="twBreakPoint().includes('lg') ? 'xs' : 'lg'"
-                                type="tertiary"
-                                class="!bg-purple-300 !text-purple-700 !py-2"
-                            />
-                        </div>
+                        <!-- Button: Pass to CS -->
+                        <Button
+                            v-if="Number(itemValue.quantity_waiting_warehouse) > 0"
+                            @click="() => (isOpenModalPassToCs = true, selectedTransactionToSetAsWaiting = itemValue)"
+                            icon="fal fa-user-headset"
+                            :label="trans('Pass :qtyInWarehouse to CS', { qtyInWarehouse: String(Number(itemValue.quantity_waiting_warehouse)) })"
+                            :size="twBreakPoint().includes('lg') ? 'xs' : 'lg'"
+                            type="tertiary"
+                            class="!bg-purple-300 !text-purple-700 !py-2"
+                        />
                     </div>
+                </div>
 
-                    <!-- Error messages -->
-                    <div v-if="proxyItem.errors?.length">
-                        <p v-for="error in proxyItem.errors" class="text-xs text-red-500 italic">*{{ error }}</p>
-                    </div>
+                <!-- Error messages -->
+                <div v-if="proxyItem.errors?.length">
+                    <p v-for="error in proxyItem.errors" class="text-xs text-red-500 italic">*{{ error }}</p>
                 </div>
             </div>
         </template>

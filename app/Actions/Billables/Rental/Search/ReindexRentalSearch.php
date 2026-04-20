@@ -22,7 +22,6 @@ class ReindexRentalSearch extends HydrateModel
 
     public function handle(Rental $rental): void
     {
-        RentalRecordSearch::run($rental);
     }
 
     protected function getModel(string $slug): Rental

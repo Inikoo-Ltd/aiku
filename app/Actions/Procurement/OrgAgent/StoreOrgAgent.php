@@ -9,7 +9,6 @@
 namespace App\Actions\Procurement\OrgAgent;
 
 use App\Actions\OrgAction;
-use App\Actions\Procurement\OrgAgent\Search\OrgAgentRecordSearch;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgAgents;
 use App\Models\Procurement\OrgAgent;
 use App\Models\SupplyChain\Agent;
@@ -30,7 +29,6 @@ class StoreOrgAgent extends OrgAction
         $orgAgent = $agent->orgAgents()->create($modelData);
         $orgAgent->stats()->create();
         OrganisationHydrateOrgAgents::dispatch($orgAgent->organisation);
-        OrgAgentRecordSearch::dispatch($orgAgent);
 
         return $orgAgent;
     }

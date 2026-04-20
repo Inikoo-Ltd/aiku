@@ -11,7 +11,6 @@ namespace App\Models\Goods;
 use App\Enums\Catalogue\HealthRankEnum;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -42,7 +41,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Goods\TradeUnitFamilyStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\TradeUnitFamilyTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\TradeUnit> $tradeUnits
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily onlyTrashed()
@@ -57,7 +55,6 @@ class TradeUnitFamily extends Model implements Auditable, HasMedia
     use SoftDeletes;
     use InGroup;
     use HasHistory;
-    use HasUniversalSearch;
     use HasFactory;
     use HasAttachments;
 

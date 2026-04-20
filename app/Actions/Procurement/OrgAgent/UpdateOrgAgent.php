@@ -9,7 +9,6 @@
 namespace App\Actions\Procurement\OrgAgent;
 
 use App\Actions\OrgAction;
-use App\Actions\Procurement\OrgAgent\Search\OrgAgentRecordSearch;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgAgents;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Procurement\OrgAgent;
@@ -26,7 +25,6 @@ class UpdateOrgAgent extends OrgAction
         $orgAgent = $this->update($orgAgent, $modelData);
 
         OrganisationHydrateOrgAgents::dispatch($orgAgent->organisation);
-        OrgAgentRecordSearch::dispatch($orgAgent);
 
         return $orgAgent;
     }

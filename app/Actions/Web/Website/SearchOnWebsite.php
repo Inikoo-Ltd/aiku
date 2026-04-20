@@ -3,23 +3,18 @@
 namespace App\Actions\Web\Website;
 
 use App\Actions\IrisAction;
-use App\Models\Web\Website;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 
 class SearchOnWebsite extends IrisAction
 {
-    public function handle()
-    {   
-        $webBlockData = [];
-        if ($this->website) {
-            $layout = $this->website->liveProductsSnapshot->layout;
-
-            $webBlockData = data_get($layout, 'data.fieldValue');
-        };
+    public function handle(): array
+    {
+        $layout = $this->website->liveProductsSnapshot->layout;
+        $webBlockData = data_get($layout, 'data.fieldValue');
 
         return [
-            'data'  => $webBlockData,
+            'data' => $webBlockData,
         ];
     }
 

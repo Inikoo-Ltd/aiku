@@ -12,7 +12,6 @@ use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Models\Helpers\SerialReference;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InOrganisation;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -58,7 +57,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Accounting\Payment> $payments
  * @property-read Collection<int, SerialReference> $serialReferences
  * @property-read \App\Models\Accounting\PaymentAccountStats|null $stats
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Accounting\PaymentAccountFactory factory($count = null, $state = [])
  * @method static Builder<static>|PaymentAccount newModelQuery()
  * @method static Builder<static>|PaymentAccount newQuery()
@@ -75,7 +73,6 @@ class PaymentAccount extends Model implements Auditable
     use HasFactory;
     use HasHistory;
     use inOrganisation;
-    use HasUniversalSearch;
 
     protected $casts = [
         'data' => 'array',

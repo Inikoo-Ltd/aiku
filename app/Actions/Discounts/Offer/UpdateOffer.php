@@ -9,7 +9,6 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffers;
-use App\Actions\Discounts\Offer\Search\OfferRecordSearch;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffers;
 use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
 use App\Actions\OrgAction;
@@ -144,10 +143,6 @@ class UpdateOffer extends OrgAction
 
         if ($offer->wasChanged(['name'])) {
             RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop->id);
-        }
-
-        if ($offer->wasChanged(['code', 'name'])) {
-            OfferRecordSearch::dispatch($offer)->delay($this->hydratorsDelay);
         }
 
         if ($offer->wasChanged(['label']) && $this->offer->trigger instanceof ProductCategory) {

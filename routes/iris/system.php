@@ -20,9 +20,7 @@ Route::get('/login', function () {
 Route::get('/search', SearchOnWebsite::class)->name('search');
 Route::post('login', RetinaLogin::class)->name('login.store');
 Route::post('logout', RetinaLogout::class)->name('logout');
-Route::get('/register', function () {
-    return Inertia::render('Register');
-})->name('register');
+//Route::get('/register', function () {return Inertia::render('Register');})->name('register'); // broke the  cuz iris does not have register page
 Route::get('webhooks/{fulfilmentCustomer:webhook_access_key}', IndexFulfilmentCustomerFromWebhook::class)->name('fulfilment-customer.webhook.show');
 Route::prefix("disclosure")->name("disclosure.")->group(__DIR__."/disclosure.php");
 Route::prefix("unsubscribe")->name("unsubscribe.")->group(__DIR__."/unsubscribe.php");

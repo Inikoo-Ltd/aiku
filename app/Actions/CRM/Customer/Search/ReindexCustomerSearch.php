@@ -20,7 +20,7 @@ class ReindexCustomerSearch extends HydrateModel
 
     public function handle(Customer $customer): void
     {
-        CustomerRecordSearch::run($customer);
+
     }
 
     protected function getModel(string $slug): Customer

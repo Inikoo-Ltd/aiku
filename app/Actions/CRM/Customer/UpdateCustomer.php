@@ -10,7 +10,6 @@ namespace App\Actions\CRM\Customer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
-use App\Actions\CRM\Customer\Search\CustomerRecordSearch;
 use App\Actions\Dropshipping\Platform\RedoPlatformTimeSeries;
 use App\Actions\Masters\MasterShop\RedoMasterShopTimeSeries;
 use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
@@ -250,24 +249,6 @@ class UpdateCustomer extends OrgAction
                 ResetOrderTaxCategory::run($order);
             }
         }
-
-        if (Arr::hasAny($changes, [
-            'company_name',
-            'contact_name',
-            'email',
-            'internal_notes',
-            'warehouse_internal_notes',
-            'warehouse_public_notes',
-            'reference',
-            'name',
-            'state',
-            'created_at',
-            'location',
-            'phone'
-        ])) {
-            CustomerRecordSearch::dispatch($customer)->delay($this->hydratorsDelay);
-        }
-
 
         if (Arr::has($changes, 'email') && $customer->shop->is_aiku) {
             MatchCustomerProspects::run($customer);

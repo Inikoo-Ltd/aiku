@@ -80,7 +80,7 @@ import {
 	faTimesCircle as faTimesCircleLight,
 	faUserAlien,
 	faTombstone as faTombstoneLight,
-	faCopyright, faSyncAlt
+	faCopyright, faSyncAlt, faArrowFromLeft
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import { faViruses } from "@fad"
@@ -184,7 +184,7 @@ library.add(
 	faStarLight, faArrowUpLight, faMinusLight, faTimesCircleLight,
 	faUserAlien,
 	faTombstoneLight,
-	faCopyright, faSyncAlt
+	faCopyright, faSyncAlt, faArrowFromLeft
 )
 
 provide("layout", useLayoutStore())

@@ -10,7 +10,6 @@ namespace App\Models\SupplyChain;
 
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Helpers\Currency;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Group;
@@ -19,7 +18,6 @@ use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InGroup;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -30,6 +28,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
@@ -88,7 +88,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, StockDelivery> $stockDeliveries
  * @property-read Collection<int, \App\Models\SupplyChain\SupplierProduct> $supplierProducts
  * @property-read Collection<int, \App\Models\SupplyChain\SupplierTimeSeries> $timeSeries
- * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\SupplyChain\SupplierFactory factory($count = null, $state = [])
  * @method static Builder<static>|Supplier newModelQuery()
  * @method static Builder<static>|Supplier newQuery()
@@ -104,32 +103,50 @@ class Supplier extends Model implements HasMedia, Auditable
     use HasAddress;
     use HasAddresses;
     use HasSlug;
-    use HasUniversalSearch;
     use HasImage;
     use HasFactory;
     use HasHistory;
     use HasAttachments;
     use InGroup;
+    use Searchable;
 
     protected $casts = [
-        'data'               => 'array',
-        'settings'           => 'array',
-        'location'           => 'array',
-        'sources'           => 'array',
-        'status'             => 'boolean',
-        'archived_at'        => 'datetime',
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'data'            => 'array',
+        'settings'        => 'array',
+        'location'        => 'array',
+        'sources'         => 'array',
+        'status'          => 'boolean',
+        'archived_at'     => 'datetime',
+        'fetched_at'      => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
         'data'     => '{}',
         'settings' => '{}',
         'location' => '{}',
-        'sources' => '{}',
+        'sources'  => '{}',
     ];
 
     protected $guarded = [];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'                       => (string)$this->id,
+            'agent_id'                 => $this->agent_id,
+            'status'                   => $this->status,
+            'code'                     => $this->code,
+            'name'                     => (string)$this->name,
+            'contact_name'             => (string)$this->contact_name,
+            'company_name'             => (string)$this->company_name,
+            'email'                    => (string)$this->email,
+            'phone'                    => (string)$this->phone,
+            'contact_website'          => (string)$this->contact_website,
+            'identity_document_number' => (string)$this->identity_document_number,
+            'created_at'               => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function getRouteKeyName(): string
     {
@@ -145,10 +162,9 @@ class Supplier extends Model implements HasMedia, Auditable
         );
 
         static::updated(function (Supplier $supplier) {
-            if (!$supplier->wasRecentlyCreated  && $supplier->wasChanged(['contact_name', 'company_name'])) {
+            if (!$supplier->wasRecentlyCreated && $supplier->wasChanged(['contact_name', 'company_name'])) {
                 $supplier->name = $supplier->company_name == '' ? $supplier->contact_name : $supplier->company_name;
             }
-
         });
     }
 

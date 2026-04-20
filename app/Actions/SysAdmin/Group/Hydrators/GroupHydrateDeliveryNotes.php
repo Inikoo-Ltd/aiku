@@ -22,7 +22,7 @@ class GroupHydrateDeliveryNotes implements ShouldBeUnique
     use WithHydrateDeliveryNotes;
 
 
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'hydrators-slave';
 
     public function getJobUniqueId(int $groupId, DeliveryNoteTypeEnum $type): string
     {

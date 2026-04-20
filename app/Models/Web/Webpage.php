@@ -21,7 +21,6 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InWebsite;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -116,7 +115,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Snapshot> $snapshots
  * @property-read \App\Models\Web\WebpageStats|null $stats
  * @property-read Collection<int, \App\Models\Web\WebpageTimeSeries> $timeSeries
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Snapshot|null $unpublishedSnapshot
  * @property-read Collection<int, \App\Models\Web\WebBlockHistory> $webBlockHistories
  * @property-read Collection<int, \App\Models\Web\WebBlock> $webBlocks
@@ -137,7 +135,6 @@ class Webpage extends Model implements Auditable, HasMedia
 {
     use HasSlug;
     use HasFactory;
-    use HasUniversalSearch;
     use SoftDeletes;
     use InWebsite;
     use HasHistory;

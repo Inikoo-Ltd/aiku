@@ -22,7 +22,6 @@ use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InMasterShop;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Model;
@@ -179,7 +178,6 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $topImage
  * @property-read LaravelCollection<int, TradeUnit> $tradeUnits
  * @property-read mixed $translations
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset onlyTrashed()
@@ -196,7 +194,6 @@ class MasterAsset extends Model implements Auditable, HasMedia
 {
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use HasHistory;
     use HasImage;
     use HasTranslations;

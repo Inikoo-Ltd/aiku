@@ -10,7 +10,6 @@ namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
-use App\Actions\Dispatching\DeliveryNote\Search\DeliveryNoteRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
@@ -117,7 +116,6 @@ class StoreDeliveryNote extends OrgAction
         $deliveryNote->refresh();
         DeliveryNoteHydrateShipments::run($deliveryNote->id);
 
-        DeliveryNoteRecordSearch::dispatch($deliveryNote)->delay($this->hydratorsDelay);
         $this->storeDeliveryNoteHydrators($deliveryNote);
         $this->deliveryNoteHandlingHydrators($deliveryNote, $deliveryNote->state);
 

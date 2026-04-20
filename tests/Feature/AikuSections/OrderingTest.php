@@ -8,7 +8,6 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
-use App\Actions\Accounting\Invoice\Search\ReindexInvoiceSearch;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
 use App\Actions\Billables\ShippingZone\HydrateShippingZones;
@@ -45,14 +44,12 @@ use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\CRM\Customer\StoreCustomer;
-use App\Actions\Dispatching\DeliveryNote\Search\ReindexDeliveryNotesSearch;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Ordering\Adjustment\StoreAdjustment;
 use App\Actions\Ordering\Adjustment\UpdateAdjustment;
 use App\Actions\Ordering\Order\HydrateOrders;
-use App\Actions\Ordering\Order\Search\ReindexOrdersSearch;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateState\FinaliseOrder;
@@ -888,30 +885,6 @@ test('UI get section route index', function () {
         ->and($sectionScope->organisation_id)->toBe($this->organisation->id)
         ->and($sectionScope->code)->toBe(AikuSectionEnum::SHOP_ORDERING->value)
         ->and($sectionScope->model_slug)->toBe($this->shop->slug);
-});
-
-test('orders search', function () {
-    $this->artisan('search:orders')->assertExitCode(0);
-
-    $order = Order::first();
-    ReindexOrdersSearch::run($order);
-    expect($order->universalSearch()->count())->toBe(1);
-});
-
-test('invoices search', function () {
-    $this->artisan('search:invoices')->assertExitCode(0);
-
-    $invoice = Invoice::first();
-    ReindexInvoiceSearch::run($invoice);
-    expect($invoice->universalSearch()->count())->toBe(1);
-});
-
-test('delivery notes search', function () {
-    $this->artisan('search:delivery_notes')->assertExitCode(0);
-
-    $deliveryNote = DeliveryNote::first();
-    ReindexDeliveryNotesSearch::run($deliveryNote);
-    expect($deliveryNote->universalSearch()->count())->toBe(1);
 });
 
 test('test reset intervals', function () {

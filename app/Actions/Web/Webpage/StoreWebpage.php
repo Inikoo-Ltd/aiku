@@ -188,7 +188,6 @@ class StoreWebpage extends OrgAction
             return $webpage;
         });
 
-        $this->refreshWebpageSearch($webpage);
         $this->dispatchWebpageHydrators($webpage);
 
         return $webpage;

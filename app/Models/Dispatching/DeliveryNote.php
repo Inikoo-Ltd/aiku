@@ -20,7 +20,6 @@ use App\Models\Dropshipping\Platform;
 use App\Models\GoodsIn\Sowing;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Feedback;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\HumanResources\Employee;
 use App\Models\Inventory\PickedBay;
 use App\Models\Inventory\PickingSession;
@@ -31,7 +30,6 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InCustomer;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -180,7 +178,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Shop|null $shop
  * @property-read Collection<int, Sowing> $sowings
  * @property-read Collection<int, \App\Models\Dispatching\Trolley> $trolleys
- * @property-read UniversalSearch|null $universalSearch
  * @property-read Warehouse|null $warehouse
  * @method static Builder<static>|DeliveryNote newModelQuery()
  * @method static Builder<static>|DeliveryNote newQuery()
@@ -194,7 +191,6 @@ class DeliveryNote extends Model implements Auditable
 {
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use HasFactory;
     use InCustomer;
     use HasAddresses;

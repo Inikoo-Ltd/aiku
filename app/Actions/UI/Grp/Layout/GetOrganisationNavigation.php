@@ -153,7 +153,7 @@ class GetOrganisationNavigation
                             ]
                         ],
                         [
-                            'label' => __('Purchase orders'),
+                            'label' => __('Purchase Orders'),
                             'icon'  => ['fal', 'fa-clipboard-list'],
                             'root'  => 'grp.org.procurement.purchase_orders.',
                             'route' => [

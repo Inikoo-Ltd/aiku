@@ -12,7 +12,6 @@ use App\Actions\Helpers\Snapshot\StoreWebsiteSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebsites;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebsites;
-use App\Actions\Web\Website\Search\WebsiteRecordSearch;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\Snapshot\SnapshotScopeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -93,7 +92,6 @@ class StoreWebsite extends OrgAction
 
         GroupHydrateWebsites::dispatch($shop->group)->delay($this->hydratorsDelay);
         OrganisationHydrateWebsites::dispatch($shop->organisation)->delay($this->hydratorsDelay);
-        WebsiteRecordSearch::dispatch($website);
 
         if ($website->state != WebsiteStateEnum::CLOSED) {
             $website = SeedWebsiteFixedWebpages::run($website);

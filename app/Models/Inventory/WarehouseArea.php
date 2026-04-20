@@ -9,10 +9,8 @@
 namespace App\Models\Inventory;
 
 use App\Actions\Utils\Abbreviate;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InWarehouse;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,7 +49,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read \App\Models\Inventory\WarehouseAreaStats|null $stats
  * @property-read Collection<int, \App\Models\Inventory\WarehouseAreaTimeSeries> $timeSeries
- * @property-read UniversalSearch|null $universalSearch
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static \Database\Factories\Inventory\WarehouseAreaFactory factory($count = null, $state = [])
  * @method static Builder<static>|WarehouseArea newModelQuery()
@@ -66,7 +63,6 @@ class WarehouseArea extends Model implements Auditable
 {
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use HasFactory;
     use HasHistory;
     use InWarehouse;

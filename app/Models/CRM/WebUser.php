@@ -89,7 +89,6 @@ use App\Models\Traits\HasHistory;
  * @property-read Shop|null $shop
  * @property-read \App\Models\CRM\WebUserStats|null $stats
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Collection<int, WebUserFailedLogin> $webUserFailedLogins
  * @property-read Collection<int, WebUserLogin> $webUserLogins
  * @property-read Collection<int, WebUserRequest> $webUserRequests

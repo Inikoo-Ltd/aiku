@@ -33,7 +33,7 @@ enum SupplierTabsEnum: string
     {
         return match ($this) {
             SupplierTabsEnum::PURCHASES_SALES => [
-                'title' => __('Purchases/sales'),
+                'title' => __('Purchases/Sales'),
                 'icon'  => 'fal fa-money-bill',
             ],
             SupplierTabsEnum::SHOWCASE => [
@@ -61,7 +61,7 @@ enum SupplierTabsEnum: string
                 'align' => 'right',
             ],
             SupplierTabsEnum::SYSTEM_USERS => [
-                'title' => __('System/users'),
+                'title' => __('System Users'),
                 'icon'  => 'fal fa-paper-plane',
                 'type'  => 'icon',
                 'align' => 'right',

@@ -14,6 +14,7 @@ set('bin/php', function () {
     return '/usr/bin/php8.4';
 });
 
+
 desc('Check for changes in frontend');
 task('deploy:check-fe-changes', function () {
     try {
@@ -50,6 +51,11 @@ task('deploy:check-fe-changes', function () {
 
 desc('🚡 Migrating database');
 task('deploy:migrate', function () {
+    if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
+        writeln('Skipping migrate on production host '.currentHost()->getAlias());
+        return;
+    }
+
     artisan('migrate --force', ['skipIfNoEnv', 'showOutput'])();
 });
 desc('🏗️ Build vue app');
@@ -100,6 +106,15 @@ task('deploy:refresh-vue', function () {
     }
 });
 
+desc('Reload octane after deployment');
+task('artisan:octane:reload', function () {
+//    if (currentHost()->getAlias() === 'aiku_helio') {
+//        writeln('Skipping octane reload on host '.currentHost()->getAlias());
+//        return;
+//    }
+    artisan('octane:reload', ['skipIfNoEnv', 'showOutput'])();
+})->select('env=prod');
+
 desc('Save ssr checksums');
 task('deploy:save-ssr-checksums', function () {
     $manifestPath = '{{release_path}}/bootstrap/ssr/ssr-manifest.json';
@@ -144,6 +159,11 @@ desc('Flush varnish cache if ssr checksum if different as previous release');
 task(
     'deploy:flush-varnish',
     function () {
+        if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
+            writeln('Skipping flush varnish on production host '.currentHost()->getAlias());
+            return;
+        }
+
         $currentFile  = '{{release_path}}/SSR_CHECKSUM';
         $previousFile = '{{previous_release}}/SSR_CHECKSUM';
 
@@ -248,9 +268,26 @@ set('shared_files', [
     '.user.ini',
     'restart_varnish.sh'
 ]);
+
+task('debug:writable', function () {
+    $dirs = get('writable_dirs');
+    writeln("Writable directories: " . implode(', ', $dirs));
+});
+
+$defaultWritableDirs = get('writable_dirs');
+
+set('writable_dirs', function () use ($defaultWritableDirs) {
+    if (currentHost()->getAlias() === 'aiku_helio') {
+        return ['bootstrap/cache'];
+    }
+
+    return $defaultWritableDirs;
+});
+
 desc('Deploys your project');
 task('deploy', [
     'deploy:unlock',
+    'debug:writable',
     'deploy:prepare',
     'deploy:vendors',
     'deploy:set-release',
@@ -259,7 +296,7 @@ task('deploy', [
     'artisan:route:cache',
     'artisan:view:cache',
     'artisan:event:cache',
-    'artisan:migrate',
+    'deploy:migrate',
     'deploy:check-fe-changes',
     'deploy:build',
     'deploy:save-ssr-checksums',
