@@ -306,10 +306,59 @@ class Order extends Model implements HasMedia, Auditable
     }
 
     protected array $auditInclude = [
-        'reference',
+        // States & Statuses
+        'state',
+        'status',
+        'pay_status',
+        'pay_detailed_status',
+        
+        // Handling & Locks
         'handing_type',
-        'is_shipping_by_external'.
-        'state'
+        'is_handling_on_hold',
+        'can_dispatch',
+        'customer_locked',
+        'billing_locked',
+        'delivery_locked',
+        
+        // Timestamps
+        'submitted_at',
+        'in_warehouse_at',
+        'handling_at',
+        'picked_at',
+        'packed_at',
+        'finalised_at',
+        'dispatched_at',
+        'cancelled_at',
+        'settled_at',
+        'handling_blocked_at',
+        
+        // Shipping & Delivery
+        'shipping_engine',
+        'charges_engine',
+        'to_be_paid_by',
+        'is_premium_dispatch',
+        'has_extra_packing',
+        'has_insurance',
+        'is_shipping_tbc',
+        'is_shipping_by_external',
+        'with_replacement',
+        'collection_address_id',
+        'delivery_address_id',
+        'billing_address_id',
+        'shipping_zone_id',
+        
+        // Notes
+        'customer_notes',
+        'public_notes',
+        'internal_notes',
+        'shipping_notes',
+        
+        // Totals & Quantities
+        'number_item_transactions',
+        'gross_amount',
+        'net_amount',
+        'total_amount',
+        'weight',
     ];
 
 

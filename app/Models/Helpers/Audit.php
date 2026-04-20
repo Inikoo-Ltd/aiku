@@ -66,6 +66,46 @@ class Audit extends \OwenIt\Auditing\Models\Audit
                 } else {
                     $audit->tags = '[]';
                 }
+
+                if ($audit->event === 'updated') {
+                    $recentAudit = static::where('auditable_type', $audit->auditable_type)
+                        ->where('auditable_id', $audit->auditable_id)
+                        ->where('event', 'updated')
+                        ->where('user_type', $audit->user_type)
+                        ->where('user_id', $audit->user_id)
+                        ->where('created_at', '>=', now()->subSeconds(3))
+                        ->latest('id')
+                        ->first();
+
+                    if ($recentAudit) {
+                        $oldValues = $recentAudit->old_values ?? [];
+                        $newValues = $recentAudit->new_values ?? [];
+
+                        foreach ((array) $audit->new_values as $key => $newValue) {
+                            if (!array_key_exists($key, $oldValues)) {
+                                $oldValues[$key] = $audit->old_values[$key] ?? null;
+                            }
+                            $newValues[$key] = $newValue;
+
+                            if ($oldValues[$key] === $newValues[$key]) {
+                                unset($oldValues[$key], $newValues[$key]);
+                            }
+                        }
+
+                        if (!empty($newValues)) {
+                            static::withoutEvents(function () use ($recentAudit, $oldValues, $newValues) {
+                                $recentAudit->update([
+                                    'old_values' => $oldValues,
+                                    'new_values' => $newValues,
+                                ]);
+                            });
+                        } else {
+                            static::withoutEvents(fn () => $recentAudit->delete());
+                        }
+
+                        return false;
+                    }
+                }
             }
         );
     }

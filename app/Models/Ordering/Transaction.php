@@ -33,6 +33,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Contracts\Auditable;
+use App\Models\Traits\HasHistory;
 
 /**
  * App\Models\Ordering\Transaction
@@ -124,11 +126,31 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static Builder<static>|Transaction withoutTrashed()
  * @mixin Eloquent
  */
-class Transaction extends Model
+class Transaction extends Model implements Auditable
 {
     use SoftDeletes;
     use HasFactory;
     use InCustomer;
+    use HasHistory;
+
+    protected array $auditInclude = [
+        'state',
+        'status',
+        'quantity_ordered',
+        'quantity_bonus',
+        'quantity_dispatched',
+        'quantity_fail',
+        'quantity_cancelled',
+        'quantity_picked',
+        'gross_amount',
+        'net_amount',
+        'commission_amount',
+        'profit_amount',
+        'margin',
+        'dispatched_at',
+        'cancelled_at',
+        'out_of_stock_in_basket',
+    ];
 
     protected $table = 'transactions';
 
