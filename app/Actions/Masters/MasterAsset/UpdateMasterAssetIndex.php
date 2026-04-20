@@ -16,7 +16,7 @@ class UpdateMasterAssetIndex extends GrpAction
             abort(403, "Unable to modify this product index");
         }
 
-        $indexOrders = collect(data_get($modelData, 'indexing', []))->keyBy('id')->toArray();
+        $indexOrders = collect(data_get($modelData, 'products', []))->keyBy('id')->toArray();
         $masterAssets = MasterAsset::whereIn('id', array_keys($indexOrders))->get();
 
 
@@ -32,8 +32,8 @@ class UpdateMasterAssetIndex extends GrpAction
     public function rules(): array
     {
         return [
-            'indexing.*.id'                            => ['required', 'numeric'],
-            'indexing.*.index_under_master_family'     => ['sometimes', 'numeric', "gte:0"],
+            'products.*.id'                            => ['required', 'numeric'],
+            'products.*.index_under_master_family'     => ['sometimes', 'numeric', "gte:0"],
         ];
     }
 

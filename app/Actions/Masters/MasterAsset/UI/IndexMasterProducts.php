@@ -480,6 +480,26 @@ class IndexMasterProducts extends GrpAction
 
         $isFamily = $this->parent instanceof MasterProductCategory && $this->parent->type == MasterProductCategoryTypeEnum::FAMILY;
 
+        $actions = [];
+
+        if ($isFamily ) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'create',
+                'key'     => 'add-family',
+                'tooltip' => __('Add a master product to this family'),
+                'label'   => __('Master product'),
+            ];
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'primary',
+                'key'     => 'save-order',
+                'tooltip' => __('Save product order'),
+                'label'   => __('Save Order'),
+            ];
+        }
+
+
         return Inertia::render(
             'Masters/MasterProducts',
             [
@@ -505,15 +525,7 @@ class IndexMasterProducts extends GrpAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'subNavigation' => $subNavigation,
-                    'actions'       => $isFamily ? [
-                        [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'key'     => 'add-family',
-                            'tooltip' => __('Add a master product to this family'),
-                            'label'   => __('Master product'),
-                        ],
-                    ] : [],
+                    'actions'       =>  $actions,
                 ],
                 'variantSlugs'            => $masterAssets->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]),
                 'masterProductCategoryId' => $this->parent->id,
