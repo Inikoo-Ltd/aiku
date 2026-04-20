@@ -15,6 +15,7 @@ enum MailshotMergeContentsEnum: string
     use EnumHelperTrait;
 
     case UNSUBSCRIBE = 'Unsubscribe';
+    case NEW_IN_PRODUCTS = 'NewInProducts';
 
     public static function contents(): array
     {
@@ -22,6 +23,10 @@ enum MailshotMergeContentsEnum: string
             [
                 'name'  => __('Unsubscribe'),
                 'value' => '[Unsubscribe]'
+            ],
+            [
+                'name'  => __('New In Products'),
+                'value' => '[NewInProducts]'
             ]
         ];
     }

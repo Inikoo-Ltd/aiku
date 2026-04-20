@@ -8,7 +8,9 @@
 
 namespace App\Actions\Comms\Mailshot;
 
+use App\Actions\Catalogue\Product\Json\GetNewestProducts;
 use App\Enums\Comms\Mailshot\MailshotMergeContentsEnum;
+use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -18,9 +20,23 @@ class GetMailshotMergeContents
     use WithAttributes;
 
 
-    public function handle(): array
+    public function handle(?Shop $shop = null): array
     {
-        return MailshotMergeContentsEnum::contents();
+        $contents = MailshotMergeContentsEnum::contents();
+
+        // Fetch newest products if shop is provided
+        if ($shop) {
+            $newestProducts = GetNewestProducts::run($shop, 5);
+
+            // Find and update the New In Products merge content with nested structure
+            foreach ($contents as &$content) {
+                if ($content['value'] === '[NewInProducts]') {
+                    $content['items'] = $newestProducts->toArray();
+                }
+            }
+        }
+
+        return $contents;
     }
 
     public function asController(): array

@@ -178,7 +178,7 @@ class ShowMailshotWorkshop extends OrgAction
                     'method' => 'post'
                 ],
                 'mergeTags' => GetMailshotMergeTags::run(),
-                'mergeContents' => GetMailshotMergeContents::run(),
+                'mergeContents' => GetMailshotMergeContents::run($mailshot->shop),
                 'status' => $email->outbox->state,
                 'organisationSlug' => $this->organisation->slug,
                 'tabs' => [
