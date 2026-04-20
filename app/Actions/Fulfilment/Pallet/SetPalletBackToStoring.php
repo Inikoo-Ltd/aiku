@@ -17,6 +17,7 @@ use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\Pallet;
+use App\Models\Fulfilment\PalletReturnItem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +29,9 @@ class SetPalletBackToStoring extends OrgAction
     {
         DB::transaction(function () use ($pallet) {
             $currPalletReturn = $pallet->palletReturn;
+            if (!$currPalletReturn) {
+                return;
+            }
 
             data_set($modelData, 'state', PalletStateEnum::STORING);
             data_set($modelData, 'status', PalletStatusEnum::STORING);
@@ -40,6 +44,17 @@ class SetPalletBackToStoring extends OrgAction
                 $currPalletReturn->id => ['state' => PalletReturnStateEnum::CANCEL]
             ]); // To declare it as cancelled in the relationship
             $pallet->save();
+
+            PalletReturnItem::where('pallet_return_id', $currPalletReturn->id)
+                ->where('pallet_id', $pallet->id)
+                ->update([
+                    'quantity_waiting_crm' => 0,
+                    'has_waiting_crm'      => false,
+                ]);
+
+            $currPalletReturn->update([
+                'number_items_waiting_crm' => $currPalletReturn->items()->where('has_waiting_crm', true)->count(),
+            ]);
 
             if (!$currPalletReturn->pallets()->whereNot('pallet_id', $pallet->id)->whereNotIn('pallet_return_items.state', [PalletReturnStateEnum::DISPATCHED, PalletReturnStateEnum::CANCEL])->exists()) {
                 AutomaticallySetPalletReturnAsCancelledIfEmpty::run($currPalletReturn);

@@ -548,6 +548,9 @@ const generateLinkPallet = (pallet: any) => {
                 <div v-else-if="pallet.state === 'damaged'" class="text-red-300 italic">
                     {{ trans("Pallet damaged") }}
                 </div>
+                <div v-else-if="pallet.state === 'other_incident'" class="text-red-300 italic">
+                    {{ trans("Other incident") }}
+                </div>
             </div>
         </template>
 
