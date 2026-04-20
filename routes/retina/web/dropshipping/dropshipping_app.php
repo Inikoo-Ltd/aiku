@@ -67,6 +67,7 @@ use App\Actions\Retina\Platform\EditRetinaCustomerSalesChannel;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Accounting\Invoice\ExportDropshippingInvoicesByDate;
+use App\Actions\Retina\Dropshipping\DeliveryNotes\UI\IndexRetinaDropshippingPackingList;
 
 Route::get('select-products-for-empty-basket', IndexRetinaProductsForEmptyBasket::class)->name('select_products_for_empty_basket');
 Route::get('select-products-for-basket/{order:id}', IndexRetinaProductsForBasket::class)->name('select_products_for_basket');
@@ -167,6 +168,11 @@ Route::prefix('invoices')->name('invoices.')->group(function () {
     Route::get('export', ExportDropshippingInvoicesByDate::class)->name('export');
     Route::get('{invoice}', ShowRetinaDropshippingInvoice::class)->name('show');
     Route::get('{invoice}/pdf', RetinaPdfInvoice::class)->name('pdf');
+});
+
+Route::prefix('packing-lists')->name('packing_lists.')->group(function () {
+    Route::get('', IndexRetinaDropshippingPackingList::class)->name('index');
+    Route::get('{deliveryNote}/pdf', \App\Actions\Retina\Dropshipping\DeliveryNotes\UI\PdfRetinaDropshippingPackingList::class)->name('pdf');
 });
 
 Route::prefix('saved-credit-cards')->name('mit_saved_cards.')->group(function () {
