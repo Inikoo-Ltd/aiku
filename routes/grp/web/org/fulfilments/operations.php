@@ -28,7 +28,6 @@ use App\Actions\Fulfilment\PalletDelivery\UI\IndexPalletDeliveries;
 use App\Actions\Fulfilment\PalletDelivery\UI\ShowPalletDelivery;
 use App\Actions\Fulfilment\PalletReturn\ExportPalletDeliveryPallet;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexPalletReturns;
-use App\Actions\Fulfilment\PalletReturn\UI\IndexPalletReturnsBacklog;
 use App\Actions\Fulfilment\PalletReturn\UI\ShowPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UI\ShowStoredItemReturn;
 use App\Actions\Fulfilment\RecurringBill\UI\IndexRecurringBills;
@@ -73,8 +72,6 @@ Route::get('deliveries/{palletDelivery}', ShowPalletDelivery::class)->name('pall
 Route::get('deliveries/{palletDelivery}/edit', EditPalletDelivery::class)->name('pallet-deliveries.edit');
 Route::get('deliveries/{palletDelivery}/pallet-export', ExportPalletDeliveryPallet::class)->name('pallet-deliveries.export');
 
-Route::get('return-backlog/wholesale', IndexPalletReturnsBacklog::class)->name('pallet-returns-backlog.wholesale');
-
 Route::get('returns', IndexPalletReturns::class)->name('pallet-returns.index');
 Route::get('returns/confirmed', [IndexPalletReturns::class, 'inFulfilmentConfirmed'])->name('pallet-returns.confirmed.index');
 Route::get('returns/picking', [IndexPalletReturns::class, 'inFulfilmentPicking'])->name('pallet-returns.picking.index');
@@ -104,7 +101,6 @@ Route::get('accounting-dashboard/accounts/{paymentAccountShop}', [ShowPaymentAcc
 
 Route::get('accounting-dashboard/payments', [IndexPayments::class, 'inFulfilment'])->name('accounting.payments.index');
 Route::get('accounting-dashboard/customer-balances', [IndexCustomerBalances::class, 'inFulfilment'])->name('accounting.customer_balances.index');
-
 
 Route::prefix('statements')->as('invoices')->group(function () {
     Route::get('', [IndexInvoices::class, 'inFulfilment'])->name('.all.index');

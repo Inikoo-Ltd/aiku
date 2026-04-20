@@ -17,8 +17,8 @@ enum PalletReturnsTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case RETURNS        = 'Returns';
-    case UPLOADS       = 'Uploads';
+    case RETURNS        = 'returns';
+    case UPLOADS       = 'uploads';
 
     public function blueprint(): array
     {

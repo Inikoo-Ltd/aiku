@@ -83,6 +83,8 @@ class PalletReturnsResource extends JsonResource
             'type'                     => $this->type,
             'type_label'               => $this->type->labels()[$this->type->value],
             'type_icon'                => $this->type->stateIcon()[$this->type->value],
+            'customer_slug'            => $this->cust_slug,
+            'customer_name'            => $this->cust_name,
             'customer_reference'       => $this->customer_reference,
             'number_pallets'           => $numberPallets,
             'number_stored_items'      => $numberStoredItems,

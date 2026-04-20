@@ -60,6 +60,14 @@ function palletReturnRoute(palletReturn: PalletDelivery) {
                     route().params['fulfilment'],
                     palletReturn.slug
                 ]);
+        case 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.index':
+            return route(
+                'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.pallet-returns.show',
+                [
+                    route().params['organisation'],
+                    route().params['fulfilment'],
+                    palletReturn.slug
+                ]);
         case 'retina.fulfilment.storage.pallet_returns.index':
             return route(
                 'retina.fulfilment.storage.pallet_returns.show',
@@ -75,6 +83,24 @@ function palletReturnRoute(palletReturn: PalletDelivery) {
                     route().params['fulfilmentCustomer'],
                     palletReturn.slug
                 ]);
+    }
+}
+
+function fulfilmentCustomerRoute(palletReturn: PalletDelivery) {
+    switch (route().current()) {
+        case 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.index':
+        case 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.index':
+            return route(
+                'grp.org.fulfilments.show.crm.customers.show',
+                [
+                    route().params['organisation'],
+                    route().params['fulfilment'],
+                    palletReturn.customer_slug,
+
+                ]
+            )
+        default:
+            return ''
     }
 }
 
@@ -100,6 +126,14 @@ function storedItemReturnRoute(palletReturn: PalletDelivery) {
                     (route().params as RouteParams).organisation,
                     (route().params as RouteParams).fulfilment,
                     (route().params as RouteParams).fulfilmentCustomer,
+                    palletReturn.slug
+                ]);
+        case 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.index':
+            return route(
+                'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.pallet-returns.show',
+                [
+                    route().params['organisation'],
+                    route().params['fulfilment'],
                     palletReturn.slug
                 ]);
         case 'grp.org.fulfilments.show.operations.pallet-returns.index':
@@ -196,7 +230,7 @@ const locale = inject('locale', aikuLocaleStructure)
                 <template v-if="pickingSessionRoute(palletReturn)">
                     <Link
                         :href="pickingSessionRoute(palletReturn)"
-                        class="secondaryLink"
+                        class="primaryLink"
                         v-tooltip="`Picking session: ${palletReturn.picking_session_slug}`"
                     >
                         <FontAwesomeIcon icon="fab fa-stack-overflow" class="text-yellow-500" fixed-width aria-hidden="true" />
@@ -257,26 +291,39 @@ const locale = inject('locale', aikuLocaleStructure)
             <div v-else class="text-gray-400">
                 -
             </div>
-
+        </template>
+        
+        <template #cell(cust_name)="{ item: palletReturn }">
+            <Link
+                :href="fulfilmentCustomerRoute(palletReturn)"
+                class="secondaryLink"
+            >
+                {{ palletReturn.customer_name }}
+            </Link>
         </template>
 
         <template #cell(confirmed_at)="{ item: palletReturn }">
             {{ useFormatTime(palletReturn.confirmed_at, { localeCode: locale.language.code, formatTime: "hm" })}}
         </template>
+
         <template #cell(picked_at)="{ item: palletReturn }">
             {{ useFormatTime(palletReturn.picked_at, { localeCode: locale.language.code, formatTime: "hm" })}}
         </template>
+
         <template #cell(picking_at)="{ item: palletReturn }">
             {{ useFormatTime(palletReturn.picking_at, { localeCode: locale.language.code, formatTime: "hm" })}}
         </template>
+
         <template #cell(dispatched_at)="{ item: palletReturn }">
             {{ useFormatTime(palletReturn.dispatched_at, { localeCode: locale.language.code, formatTime: "hm" })}}
         </template>
+
         <template #cell(cancel_at)="{ item: palletReturn }">
             {{ useFormatTime(palletReturn.cancel_at, { localeCode: locale.language.code, formatTime: "hm" })}}
         </template>
+
         <template #cell(date)="{ item: palletReturn }">
-            {{ useFormatTime(palletReturn.date, { localeCode: locale.language.code, formatTime: "hm" })}}
+            {{ useFormatTime(palletReturn.date, { localeCode: locale.language.code, formatTime: "aiku" })}}
         </template>
 
         <template #buttonreturns="{ linkButton: linkButton }">

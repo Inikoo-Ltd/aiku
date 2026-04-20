@@ -76,16 +76,16 @@ class GetFulfilmentNavigation
                                 'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
                             ],
                         ],
-                        [
-                            'label'   => __('Returns'),
-                            'tooltip' => __('Returns'),
-                            'icon'    => ['fal', 'fa-sign-out'],
-                            'root'    => 'grp.org.fulfilments.show.operations.pallet-returns.',
-                            'route'   => [
-                                'name'       => 'grp.org.fulfilments.show.operations.pallet-returns.index',
-                                'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
-                            ],
-                        ],
+                        // [
+                        //     'label'   => __('Returns'),
+                        //     'tooltip' => __('Returns'),
+                        //     'icon'    => ['fal', 'fa-sign-out'],
+                        //     'root'    => 'grp.org.fulfilments.show.operations.pallet-returns.',
+                        //     'route'   => [
+                        //         'name'       => 'grp.org.fulfilments.show.operations.pallet-returns.index',
+                        //         'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
+                        //     ],
+                        // ],
                         [
                             'label'   => __('Next bills'),
                             'tooltip' => __('Next bills'),
@@ -158,32 +158,22 @@ class GetFulfilmentNavigation
             ];
 
             $appendedNavigation['return_backlog_wholesale'] = [
-                'root'  => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale',
-                'label' => __('Pallet Return Wholesale'),
+                'root'  => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.',
+                'label' => __('Return Wholesale'),
                 'icon'  => ['fal', 'fa-sign-out'],
                 'route' => [
-                    'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale',
+                    'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.index',
                     'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
                 ],
                 'topMenu' => [
                     'subSections' => [
                         [
-                            'label'   => __('Returns'),
-                            'tooltip' => __('Returns'),
-                            'icon'    => ['fal', 'fa-sign-out'],
-                            'root'    => 'grp.org.fulfilments.show.operations.pallet-returns.',
-                            'route'   => [
-                                'name'       => 'grp.org.fulfilments.show.operations.pallet-returns.index',
-                                'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
-                            ],
-                        ],
-                        [
                             'label'   => __('Return Wholesale Backlog'),
                             'tooltip' => __('Return Wholesale Backlog'),
                             'icon'    => ['fal', 'fa-sign-out'],
-                            'root'    => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale',
+                            'root'    => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.index',
                             'route'   => [
-                                'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale',
+                                'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.index',
                                 'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
                             ],
                         ],
@@ -191,9 +181,9 @@ class GetFulfilmentNavigation
                             'label'   => __('Return DS Backlog'),
                             'tooltip' => __('Return DS Backlog'),
                             'icon'    => ['fal', 'fa-sign-out'],
-                            'root'    => 'grp.org.fulfilments.show.operations.pallet-returns.',
+                            'root'    => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.index',
                             'route'   => [
-                                'name'       => 'grp.org.fulfilments.show.operations.pallet-returns.index',
+                                'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.index',
                                 'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
                             ],
                         ],
@@ -202,32 +192,22 @@ class GetFulfilmentNavigation
             ];
 
             $appendedNavigation['return_backlog_ds'] = [
-                'root'  => 'grp.org.fulfilments.show.catalogue.',
-                'label' => __('Pallet Return DS'),
+                'root'  => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.',
+                'label' => __('Return DS'),
                 'icon'  => ['fal', 'fa-sign-out'],
                 'route' => [
-                    'name'       => 'grp.org.fulfilments.show.catalogue.index',
+                    'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.index',
                     'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
                 ],
                 'topMenu' => [
                     'subSections' => [
                         [
-                            'label'   => __('Returns'),
-                            'tooltip' => __('Returns'),
-                            'icon'    => ['fal', 'fa-sign-out'],
-                            'root'    => 'grp.org.fulfilments.show.operations.pallet-returns.',
-                            'route'   => [
-                                'name'       => 'grp.org.fulfilments.show.operations.pallet-returns.index',
-                                'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
-                            ],
-                        ],
-                        [
                             'label'   => __('Return Wholesale Backlog'),
                             'tooltip' => __('Return Wholesale Backlog'),
                             'icon'    => ['fal', 'fa-sign-out'],
-                            'root'    => 'grp.org.fulfilments.show.operations.pallet-returns.',
+                            'root'    => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.index',
                             'route'   => [
-                                'name'       => 'grp.org.fulfilments.show.operations.pallet-returns.index',
+                                'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.index',
                                 'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
                             ],
                         ],
@@ -235,9 +215,9 @@ class GetFulfilmentNavigation
                             'label'   => __('Return DS Backlog'),
                             'tooltip' => __('Return DS Backlog'),
                             'icon'    => ['fal', 'fa-sign-out'],
-                            'root'    => 'grp.org.fulfilments.show.operations.pallet-returns.',
+                            'root'    => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.index',
                             'route'   => [
-                                'name'       => 'grp.org.fulfilments.show.operations.pallet-returns.index',
+                                'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.index',
                                 'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
                             ],
                         ],
