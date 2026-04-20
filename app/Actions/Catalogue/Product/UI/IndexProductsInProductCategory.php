@@ -114,7 +114,6 @@ class IndexProductsInProductCategory extends OrgAction
             );
         }
 
-
         $selects = [
             'products.id',
             'products.code',
@@ -389,7 +388,6 @@ class IndexProductsInProductCategory extends OrgAction
                 ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?
                     fn () => ProductsResource::collection($this->handle($productCategory, ProductTabsEnum::SALES->value))
                     : Inertia::lazy(fn () => ProductsResource::collection($this->handle($productCategory, ProductTabsEnum::SALES->value))),
-
 
             ]
         )->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::INDEX->value))

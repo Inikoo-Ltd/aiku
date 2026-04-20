@@ -21,8 +21,14 @@ const items = ref(
 const updateOrder = () => {
   items.value = items.value.map((item, index) => ({
     ...item,
-    order: index + 1,
+    index_under_master_family: index,
   }))
+
+  router.patch(route('grp.models.master_product_category.reorder_index', {
+    masterProductCategory: route().params['masterFamily']
+  }), {
+    indexing: items.value
+  });
 
   // optional: send to backend
   // router.post('/update-order', {

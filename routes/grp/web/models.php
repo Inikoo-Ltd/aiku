@@ -396,6 +396,7 @@ use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\DeleteClockingMac
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\StoreClockingMachineCoordinatePolicyRule;
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\UpdateClockingMachineCoordinatePolicyRule;
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\DeleteClockingMachineCoordinatePolicyRule;
+use App\Actions\Masters\MasterAsset\UpdateMasterAssetIndex;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
@@ -455,6 +456,7 @@ Route::patch('master-product-category/{masterProductCategory:id}', UpdateMasterP
 Route::post('master-product-category/{masterProductCategory:id}/image', UploadImageMasterProductCategory::class)->name('master_product_category_image.upload')->withoutScopedBindings();
 Route::patch('master-product-category/{masterProductCategory:id}/translations', UpdateMasterProductCategoryTranslations::class)->name('master_product_categories.translations.update');
 Route::patch('master-product-category/{masterProductCategory:id}/master-sub-department/parent', UpdateMasterSubDepartmentsMasterDepartment::class)->name('master_product_category.master_sub_department.parent.update');
+Route::patch('master-product-category/{masterProductCategory}/reorder-index', UpdateMasterAssetIndex::class)->name('master_product_category.reorder_index');
 
 Route::prefix('stock-family')->name('stock-family.')->group(function () {
     Route::patch('{stockFamily:id}/update', UpdateStockFamily::class)->name('update');
@@ -509,6 +511,7 @@ Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(fun
     Route::post('upload-images', UploadImagesToMasterProduct::class)->name('upload_images');
     Route::delete('delete-images/{media:id}', DeleteImageFromMasterProduct::class)->name('delete_images')->withoutScopedBindings();
 });
+
 Route::patch('master-asset/bulk-update', UpdateBulkMasterProduct::class)->name('master_asset.bulk_update');
 
 Route::patch('products/{product:id}/repair-trade-units-to-master-product', SyncProductTradeUnitsToMasterAsset::class)->name('products.repair_mismatch_trade_units');

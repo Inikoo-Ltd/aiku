@@ -277,7 +277,8 @@ class IndexMasterProducts extends GrpAction
         $queryBuilder->addSelect('master_assets.mismatch_detected');
 
         $queryBuilder = $queryBuilder
-            ->when($sortByIndex && $parent instanceof MasterProductCategory, 
+            ->when(
+                $sortByIndex && $parent instanceof MasterProductCategory,
                 function ($query) {
                     $query
                         ->orderBy('master_assets.index_under_master_family')
@@ -305,9 +306,11 @@ class IndexMasterProducts extends GrpAction
                 'health_rank',
             ])
             ->allowedFilters([$globalSearch]);
-        
+
         if ($sortByIndex && $parent instanceof MasterProductCategory) {
-            return $queryBuilder->get();
+            return $queryBuilder
+                ->addSelect('master_assets.index_under_master_family')
+                ->get();
         }
 
         return $queryBuilder
@@ -506,6 +509,7 @@ class IndexMasterProducts extends GrpAction
                         [
                             'type'    => 'button',
                             'style'   => 'create',
+                            'key'     => 'add-family',
                             'tooltip' => __('Add a master product to this family'),
                             'label'   => __('Master product'),
                         ],
