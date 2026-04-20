@@ -68,7 +68,7 @@ class ShowWarehousePalletReturn extends OrgAction
                 fn (array $action) => in_array($action['key'] ?? null, [
                     'confirm',
                     'start picking',
-                    'set-to-picked',
+                    'finish-picking',
                     'Dispatching',
                     'revert-to-picking'
                 ], true)

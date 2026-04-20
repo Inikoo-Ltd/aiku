@@ -34,6 +34,9 @@ class DetachPalletFromReturn extends OrgAction
         ]);
 
         $palletReturn->pallets()->detach([$pallet->id]);
+        $palletReturn->update([
+            'number_items_waiting_crm' => $palletReturn->items()->where('has_waiting_crm', true)->count(),
+        ]);
 
         $palletReturn = SetPalletReturnAutoServices::run($palletReturn);
         PalletReturnHydratePallets::dispatch($palletReturn);

@@ -200,29 +200,30 @@ class GetPalletReturnActions
             ->wherePivotIn('state', [
                 PalletReturnItemStateEnum::PICKED->value,
                 PalletReturnItemStateEnum::NOT_PICKED->value,
-                PalletReturnItemStateEnum::CANCEL->value,
             ])
             ->count();
         $canSetAsPicked = $palletCount > 0 && $palletCount === $completedPickingCount;
 
-        $actions[] = [
-            'type'     => 'button',
-            'style'    => 'save',
-            'tooltip'  => $canSetAsPicked ? __('Set as picked') : __('Set all items as picked or not picked first'),
-            'label'    => __('Set as Picked'),
-            'key'      => 'set-to-picked',
-            'route'    => [
-                'method'     => 'post',
-                'name'       => 'grp.models.fulfilment-customer.pallet-return.picked',
-                'parameters' => [
-                    'organisation'       => $palletReturn->organisation->slug,
-                    'fulfilment'         => $palletReturn->fulfilment->slug,
-                    'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->id,
-                    'palletReturn'       => $palletReturn->id
-                ]
-            ],
-            'disabled' => !$canSetAsPicked
-        ];
+        if ($canSetAsPicked) {
+            $actions[] = [
+                'type'      => 'button',
+                'style'     => 'save',
+                'label'     => __('Finish picking'),
+                'key'       => 'finish-picking',
+                'icon'      => 'fas fa-monument',
+                'iconRight' => 'fal fa-arrow-right',
+                'route'     => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.fulfilment-customer.pallet-return.picked',
+                    'parameters' => [
+                        'organisation'       => $palletReturn->organisation->slug,
+                        'fulfilment'         => $palletReturn->fulfilment->slug,
+                        'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->id,
+                        'palletReturn'       => $palletReturn->id
+                    ]
+                ],
+            ];
+        }
 
         if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
             // $actions[] =
