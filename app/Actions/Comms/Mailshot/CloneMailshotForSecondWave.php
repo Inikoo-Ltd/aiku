@@ -35,6 +35,7 @@ class CloneMailshotForSecondWave extends OrgAction
             'ready_at' => $parentMailshot->ready_at,
             'outbox_id' => $parentMailshot->outbox_id,
             'recipients_recipe' => $parentMailshot->recipients_recipe,
+            'preview_text' => $parentMailshot->preview_text,
         ];
 
         $secondWaveMailshot = DB::transaction(function () use ($parentMailshot, $dataModel) {
