@@ -20,7 +20,6 @@ class ReindexPalletReturnSearch extends HydrateModel
 
     public function handle(PalletReturn $palletReturn): void
     {
-        PalletReturnRecordSearch::run($palletReturn);
     }
 
     protected function getModel(string $slug): PalletReturn

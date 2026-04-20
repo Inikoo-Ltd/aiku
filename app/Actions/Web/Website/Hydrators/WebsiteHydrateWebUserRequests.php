@@ -17,7 +17,7 @@ class WebsiteHydrateWebUserRequests implements ShouldBeUnique
     use AsAction;
 
 
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'analytics';
 
     public function getJobUniqueId(int $websiteID): string
     {

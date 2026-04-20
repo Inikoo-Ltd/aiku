@@ -48,6 +48,8 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $shop_name
  * @property mixed $shop_code
  * @property mixed $notes
+ * @property mixed $trolley_names
+ * @property mixed $picked_bay_codes
  */
 class WaitingDeliveryNoteItemsResource extends JsonResource
 {
@@ -119,6 +121,8 @@ class WaitingDeliveryNoteItemsResource extends JsonResource
             'delivery_note_slug'         => $this->delivery_note_slug,
             'delivery_note_reference'    => $this->delivery_note_reference,
             'delivery_note_state'        => $this->delivery_note_state,
+            'trolley_names'   => $this->trolley_names,
+            'picked_bay_codes' => $this->picked_bay_codes,
 
             'delivery_note_customer_notes' => $this->delivery_note_customer_notes,
             'delivery_note_public_notes'   => $this->delivery_note_public_notes,

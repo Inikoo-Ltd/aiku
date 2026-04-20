@@ -8,7 +8,6 @@
 
 namespace App\Actions\Inventory\OrgStockFamily;
 
-use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateUniversalSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStockFamilies;
 use App\Actions\Traits\WithActionUpdate;
@@ -30,7 +29,6 @@ class UpdateOrgStockFamily extends OrgAction
     public function handle(OrgStockFamily $orgStockFamily, array $modelData): OrgStockFamily
     {
         $orgStockFamily = $this->update($orgStockFamily, $modelData, ['data']);
-        OrgStockFamilyHydrateUniversalSearch::dispatch($orgStockFamily);
 
         if (Arr::hasAny($orgStockFamily->getChanges(), ['state'])) {
             OrganisationHydrateOrgStockFamilies::run($orgStockFamily->organisation);

@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\AssetTimeSeries;
 
 use App\Actions\Catalogue\AssetTimeSeries\Hydrators\AssetTimeSeriesHydrateNumberRecords;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Catalogue\Asset;
@@ -24,7 +25,7 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(int $assetId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -33,7 +34,6 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
 
     public function handle(int $assetId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-
         $from .= ' 00:00:00';
         $to   .= ' 23:59:59';
 
@@ -61,7 +61,7 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
     {
         $processedPeriods = [];
 
-        $query = DB::table('invoice_transactions')
+        $query = DB::connection('aiku_no_sticky')->table('invoice_transactions')
             ->where('asset_id', $timeSeries->asset_id)
             ->where('date', '>=', $from)
             ->where('date', '<=', $to)
@@ -139,18 +139,28 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
 
     protected function getPortfolioStats(int $assetId, Carbon $periodFrom, Carbon $periodTo): array
     {
-        $result = DB::table('portfolios')
-            ->selectRaw('COUNT(id) as total_listed, COUNT(DISTINCT customer_id) as total_customers')
-            ->where('item_type', 'Product')
-            ->where('item_id', $assetId)
-            ->where('last_added_at', '>=', $periodFrom)
-            ->where('last_added_at', '<=', $periodTo)
-            ->whereNull('last_removed_at')
-            ->first();
-
-        return [
-            'dropshippers' => $result->total_customers ?? 0,
-            'listings'     => $result->total_listed ?? 0,
+        $portfolioStats = [
+            'dropshippers' => 0,
+            'listings'     => 0,
         ];
+
+        $asset = Asset::on('aiku_no_sticky')->find($assetId);
+        if ($asset && $asset->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            $result = DB::connection('aiku_no_sticky')->table('portfolios')
+                ->selectRaw('COUNT(id) as total_listed, COUNT(DISTINCT customer_id) as total_customers')
+                ->where('item_type', 'Product')
+                ->where('item_id', $asset->product->id)
+                ->where('last_added_at', '>=', $periodFrom)
+                ->where('last_added_at', '<=', $periodTo)
+                ->whereNull('last_removed_at')
+                ->first();
+
+            $portfolioStats = [
+                'dropshippers' => $result->total_customers ?? 0,
+                'listings'     => $result->total_listed ?? 0,
+            ];
+        }
+
+        return $portfolioStats;
     }
 }

@@ -19,7 +19,7 @@ return new class () extends Migration {
             $table->unsignedSmallInteger('website_id')->index();
             $table->string('username')->index();
             $table->foreign('website_id')->references('id')->on('websites')->nullOnDelete();
-            $table->unsignedSmallInteger('web_user_id')->nullable()->index();
+            $table->unsignedInteger('web_user_id')->nullable()->index();
             $table->foreign('web_user_id')->references('id')->on('web_users')->nullOnDelete();
             $table->string('source', 1)->comment('A: aiku login form, G: google login');
             $table->string('os')->nullable();

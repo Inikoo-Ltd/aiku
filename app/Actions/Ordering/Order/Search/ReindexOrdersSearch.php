@@ -19,7 +19,7 @@ class ReindexOrdersSearch extends HydrateModel
 
     public function handle(Order $order): void
     {
-        OrderRecordSearch::run($order);
+
     }
 
     protected function getModel(string $slug): Order

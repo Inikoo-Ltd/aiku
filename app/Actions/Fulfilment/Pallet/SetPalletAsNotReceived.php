@@ -8,7 +8,6 @@
 
 namespace App\Actions\Fulfilment\Pallet;
 
-use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
 use App\Actions\Fulfilment\PalletDelivery\AutomaticallySetPalletDeliveryStateAsNotReceivedIfAllPalletsNotReceived;
 use App\Actions\Fulfilment\PalletDelivery\Hydrators\PalletDeliveryHydratePallets;
 use App\Actions\Fulfilment\PalletDelivery\SetPalletDeliveryAutoServices;
@@ -63,9 +62,7 @@ class SetPalletAsNotReceived extends OrgAction
             DeleteRecurringBillTransaction::make()->action(RecurringBillTransaction::find($recurringBillTransactionData->id));
         }
 
-
         PalletDeliveryHydratePallets::dispatch($pallet->palletDelivery);
-        PalletRecordSearch::dispatch($pallet);
 
         return $pallet;
     }

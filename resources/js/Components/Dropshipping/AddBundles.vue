@@ -248,7 +248,7 @@ const generateAIImages = async () => {
             type: 'success'
         })
     } catch (e) {
-        aiGenerateImagesError.value = 'The OpenAI service is currently unreachable, please try again later.'
+        aiGenerateImagesError.value = trans('The OpenAI service is currently unreachable, please try again later.')
         // notify({
         //     title: trans('Error'),
         //     text: trans('Failed to generate AI'),
@@ -474,8 +474,8 @@ const confirm = useConfirm()
 
 const handleClose = () => {
     confirm.require({
-        message: 'close this modal will discard this bundle. You’ll need to start again.',
-        header: 'Discard bundle?',
+        message: trans('close this modal will discard this bundle. You’ll need to start again.'),
+        header: trans('Discard bundle?'),
         acceptLabel: 'Discard',
         rejectLabel: 'Stay',        
         accept: () => {
@@ -606,13 +606,13 @@ watch(
             <!-- LEFT -->
             <div>
                 <div class="text-xl font-semibold">
-                    Create Your Bundle
+                    {{ trans('Create Your Bundle') }}
                     <FontAwesomeIcon icon="fal fa-layer-group" class="text-xl text-black" fixed-width
                         aria-hidden="true" />
                 </div>
 
                 <div class="text-sm mt-1">
-                    STEP {{ step.current + 1 }}/2
+                    {{ trans('STEP') }} {{ step.current + 1 }}/2
                 </div>
             </div>
 
@@ -634,28 +634,28 @@ watch(
 
                     <template v-else>
                         <div class="flex justify-between border-b pb-1">
-                            <span class="text-gray-500">Cost Price (Individual Purchase)</span>
+                            <span class="text-gray-500">{{trans('Cost Price (Individual Purchase)')}}</span>
                             <span class="font-medium">
                                 {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_price ?? 0) }}
                             </span>
                         </div>
 
                         <div class="flex justify-between border-b pb-1">
-                            <span class="text-gray-500">Bundle Price</span>
+                            <span class="text-gray-500">{{trans('Bundle Price')}}</span>
                             <span class="font-medium text-green-600">
                                  {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_bundle_price ?? 0) }}
                             </span>
                         </div>
 
                         <div class="flex justify-between border-b pb-1">
-                            <span class="text-gray-500">RRP</span>
+                            <span class="text-gray-500">{{trans('RRP')}}</span>
                             <span class="font-medium">
                                 {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_rrp ?? 0) }}
                             </span>
                         </div>
 
                         <div class="flex justify-between pt-1">
-                            <span class="text-gray-500">Profit</span>
+                            <span class="text-gray-500">{{trans('Profit')}}</span>
                             <span class="font-semibold text-green-600"> [{{ bundle.summary.value.profit_percentage }}%] {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.profit ?? 0) }}
                                 </span>
                         </div>
@@ -680,7 +680,7 @@ watch(
                     <div>
                         <div class="mb-4">
                             <label class="text-sm block mb-1">
-                                Bundle Title
+                                {{trans('Bundle Title')}}
                             </label>
 
                             <div class="relative">
@@ -746,7 +746,7 @@ watch(
                             <!-- CENTER: TITLE -->
                             <div class="text-left">
                                 <div class="text-xl font-semibold flex items-center justify-center gap-2">
-                                    Create Your Bundle
+                                    {{trans('Create Your Bundle')}}
 
                                     <FontAwesomeIcon
                                         v-tooltip="trans('Bundle generator')"
@@ -757,7 +757,7 @@ watch(
                                 </div>
 
                                 <div class="text-sm text-gray-400">
-                                    STEP 2 / 2
+                                    {{trans('STEP')}} 2 / 2
                                 </div>
                             </div>
                         </div>
@@ -808,11 +808,11 @@ watch(
                                 aria-hidden='true' />
 
                             <div class="text-sm font-medium">
-                                Upload Media
+                                {{trans('Upload Media')}}
                             </div>
 
                             <div class="text-xs">
-                                Drag & drop images or click
+                                {{trans('Drag & drop images or click')}}
                             </div>
 
                         </div>
@@ -824,13 +824,13 @@ watch(
                         <div class="flex gap-2 mt-3">
                             <Button @click="openExistingMedia" type="secondary">
                                 <FontAwesomeIcon :icon="faImages" class="mr-2" fixed-width />
-                                Select existing media
+                                {{trans('Select existing media')}}
                             </Button>
 
                             <Button @click="showGenerateModal = true" type="primary" icon="fal fa-arrow-left"
                                 :disabled="!selectedMedia.length">
                                 <FontAwesomeIcon :icon="faSparkles" class="mr-2" fixed-width />
-                                Generate Image AI
+                                {{trans('Generate Image AI')}}
                             </Button>
                         </div>
                     </div>
@@ -849,7 +849,7 @@ watch(
                                     @change="setMainImage(img.image_id)" class="absolute top-2 left-2 z-20" />
                                 <div v-if="img.is_main"
                                     class="absolute bottom-1 left-1 text-[10px] bg-black/70 text-white px-1 rounded">
-                                    MAIN IMAGE
+                                    {{trans('MAIN IMAGE')}}
                                 </div>
                                 <button
                                     class="absolute top-1 right-1 bg-black/70 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
@@ -915,7 +915,7 @@ watch(
 
                     <div class="mb-4">
                         <div class="text-sm font-semibold mb-2">
-                            Select images of products you want to include in generated image
+                            {{trans('Select images of products you want to include in generated image')}}
                         </div>
 
                         <div class="grid grid-cols-4 gap-3">
@@ -948,7 +948,7 @@ watch(
 
                     <div class="mb-4">
                         <div class="text-sm font-semibold mb-1">
-                            Describe your image
+                            {{trans('Describe your image')}}
                         </div>
 
                         <Textarea v-model="aiPrompt" rows="3" class="w-full" placeholder="Input description" />

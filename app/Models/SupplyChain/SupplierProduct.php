@@ -12,11 +12,9 @@ use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductTradeUnitCompositionEnum;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InGroup;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -77,7 +75,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Stock> $stocks
  * @property-read \App\Models\SupplyChain\Supplier|null $supplier
  * @property-read Collection<int, TradeUnit> $tradeUnits
- * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\SupplyChain\SupplierProductFactory factory($count = null, $state = [])
  * @method static Builder<static>|SupplierProduct newModelQuery()
  * @method static Builder<static>|SupplierProduct newQuery()
@@ -91,7 +88,6 @@ class SupplierProduct extends Model implements Auditable
 {
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use HasFactory;
     use HasHistory;
     use InGroup;

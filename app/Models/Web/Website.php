@@ -22,7 +22,6 @@ use App\Models\Helpers\Snapshot;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -144,7 +143,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Snapshot> $snapshots
  * @property-read \App\Models\Web\Webpage|null $storefront
  * @property-read Collection<int, \App\Models\Web\WebsiteTimeSeries> $timeSeries
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Snapshot|null $unpublishedCollectionSnapshot
  * @property-read Snapshot|null $unpublishedDepartmentSnapshot
  * @property-read Snapshot|null $unpublishedFamiliesOverviewSnapshot
@@ -176,7 +174,6 @@ class Website extends Model implements Auditable, HasMedia
     use HasSlug;
     use SoftDeletes;
     use HasHistory;
-    use HasUniversalSearch;
     use HasFactory;
     use InShop;
     use InteractsWithMedia;

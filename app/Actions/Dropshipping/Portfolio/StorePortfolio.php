@@ -120,7 +120,7 @@ class StorePortfolio extends OrgAction
         ShopPlatformStatsHydratePortfolios::dispatch($portfolio->shop, $portfolio->platform)->delay($this->hydratorsDelay);
 
         if ($portfolio->shop && $portfolio->platform->id) {
-            ShopHydratePlatformSalesIntervalsNewPortfolios::dispatch($portfolio->shop, $portfolio->platform->id)->delay($this->hydratorsDelay);
+            ShopHydratePlatformSalesIntervalsNewPortfolios::dispatch($portfolio->shop, $portfolio->platform->id)->delay(30);
         }
 
         return $portfolio;

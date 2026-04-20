@@ -8,7 +8,6 @@
 
 namespace App\Actions\Fulfilment\StoredItem;
 
-use App\Actions\Fulfilment\StoredItem\Search\StoredItemRecordSearch;
 use App\Actions\OrgAction;
 use App\Http\Resources\Fulfilment\StoredItemResource;
 use App\Models\CRM\WebUser;
@@ -53,7 +52,7 @@ class MoveStoredItem extends OrgAction
                     'quantity' => $currentQuantity - $quantity
                 ]
             ]);
-            StoredItemRecordSearch::dispatch($storedItem);
+
             // TODO: Fix this action and call store stored item movement here (in and out)
         }
     }

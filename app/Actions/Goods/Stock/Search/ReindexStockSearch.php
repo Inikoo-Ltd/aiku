@@ -22,7 +22,6 @@ class ReindexStockSearch extends HydrateModel
 
     public function handle(Stock $stock): void
     {
-        StockRecordSearch::run($stock);
     }
 
 

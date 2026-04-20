@@ -677,9 +677,7 @@ const generateAITitle = async () => {
 			type: 'success'
 		})
 	} catch (e) {
-		aiTitleError.value =
-			
-			'The OpenAI service is currently unreachable, please try again later.'
+		aiTitleError.value = trans('The OpenAI service is currently unreachable, please try again later.')
 		// notify({
 		// 	title: trans('Error'),
 		// 	text: trans('Failed to generate AI'),
@@ -720,9 +718,7 @@ const generateAIDescription = async () => {
 			type: 'success'
 		})
 	} catch (e) {
-		aiDescError.value =
-			
-			'The OpenAI service is currently unreachable, please try again later.'
+		aiDescError.value = trans('The OpenAI service is currently unreachable, please try again later.')
 		notify({
 			title: trans('Error'),
 			text: trans('Failed to generate AI'),
@@ -819,7 +815,7 @@ const generateAIImages = async () => {
 			type: 'success'
 		})
 	} catch (e) {
-		aiGenerateImagesError.value = 'The OpenAI service is currently unreachable, please try again later.'
+		aiGenerateImagesError.value = trans('The OpenAI service is currently unreachable, please try again later.')
 		notify({
 			title: trans('Error'),
 			text: trans('Failed to generate AI'),
@@ -872,11 +868,11 @@ const submitBundle = async () => {
 					bundle.resetBundle()
 				},
 				onError: errors => {
-								notify({
-									title: trans("Something went wrong"),
-									text: trans("Failed to submit the data, please try again"),
-									type: "error"
-								})
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to submit the data, please try again"),
+						type: "error"
+					})
 				},
 				 onFinish: () => {
 					isSubmitBundle.value = false

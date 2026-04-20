@@ -2,10 +2,8 @@
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import { trans } from 'laravel-vue-i18n'
-import {inject, ref} from 'vue'
-import { router } from '@inertiajs/vue3'
+import { ref} from 'vue'
 
-const layout = inject("layout", {});
 
 const props = defineProps<{
     shops: {
@@ -22,21 +20,6 @@ const onClickGetStarted = (domain: string) => {
     isModalGetStarted.value = false
 
     window.open(domain)
-
-    /*router[props.routes.get_started.method || 'post'](route(props.routes.get_started.name, props.routes.get_started.parameters), {
-        shop: id
-    }, {
-        headers: {
-            Authorization: `Bearer ${window.sessionToken}`
-        },
-        preserveState: true,
-        onSuccess: () => {
-            router.reload()
-        },
-        onError: (error) => {
-            console.error('error get started: ', error)
-        }
-    })*/
 }
 </script>
 

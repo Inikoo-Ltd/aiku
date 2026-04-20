@@ -33,10 +33,12 @@ console.log(layout)
 <template>
     <!-- Avatar Group -->
     <div class="flex justify-between items-center gap-x-4">
-            <button @click="showSearchDialog = !showSearchDialog" id="search"
-                class="h-8 w-fit flex items-center justify-center gap-x-3 ring-1 ring-gray-300 rounded-md px-3 text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                :class="showSearchDialog ? 'bg-gray-700/20' : 'hover:bg-gray-200 hover:text-gray-500'"
-            >
+        <!-- Todo: remove  v-if="false  when new search ready (Typesense) -->
+        <button v-if="false" @click="showSearchDialog = !showSearchDialog" id="search"
+            class="h-8 w-fit flex items-center justify-center gap-x-3 ring-1 ring-gray-300 rounded-md px-3 text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500"
+            :class="showSearchDialog ? 'bg-gray-700/20' : 'hover:bg-gray-200 hover:text-gray-500'"
+        >
+            <!-- Search Section Retina -->
                 <span class="sr-only">{{ trans("Search") }}</span>
                 <FontAwesomeIcon aria-hidden="true" size="sm" icon="fa-regular fa-search" />
                 <div class="hidden whitespace-nowrap md:flex items-center justify-end text-gray-500/80 tracking-tight space-x-1">

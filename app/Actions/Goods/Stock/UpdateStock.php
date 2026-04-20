@@ -8,7 +8,6 @@
 
 namespace App\Actions\Goods\Stock;
 
-use App\Actions\Goods\Stock\Search\StockRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -67,12 +66,6 @@ class UpdateStock extends OrgAction
                 }
             }
         }
-
-
-        if (count($changes) > 0) {
-            StockRecordSearch::dispatch($stock);
-        }
-
 
         $stock->refresh();
 

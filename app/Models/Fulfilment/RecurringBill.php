@@ -15,8 +15,6 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasRetinaSearch;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InFulfilmentCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -68,11 +66,9 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\PalletDelivery> $palletDeliveries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\PalletReturn> $palletReturns
  * @property-read \App\Models\Fulfilment\RentalAgreement|null $rentalAgreement
- * @property-read \App\Models\Helpers\RetinaSearch|null $retinaSearch
  * @property-read \App\Models\Fulfilment\RecurringBillStats|null $stats
  * @property-read TaxCategory $taxCategory
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\RecurringBillTransaction> $transactions
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBill newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBill newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBill onlyTrashed()
@@ -84,8 +80,6 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 class RecurringBill extends Model implements Auditable
 {
     use SoftDeletes;
-    use HasUniversalSearch;
-    use HasRetinaSearch;
     use HasSlug;
     use InFulfilmentCustomer;
     use HasHistory;

@@ -17,7 +17,7 @@ class PreprocessMasterCollectionTimeSeries implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(int|null $masterAssetID, ?string $date = null): string
     {

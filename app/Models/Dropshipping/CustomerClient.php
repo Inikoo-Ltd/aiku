@@ -12,14 +12,12 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClients;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Address;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InCustomer;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -74,7 +72,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $salesChannel
  * @property-read Shop|null $shop
  * @property-read \App\Models\Dropshipping\CustomerClientStats|null $stats
- * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Dropshipping\CustomerClientFactory factory($count = null, $state = [])
  * @method static Builder<static>|CustomerClient newModelQuery()
  * @method static Builder<static>|CustomerClient newQuery()
@@ -89,7 +86,6 @@ class CustomerClient extends Model implements Auditable
     use SoftDeletes;
     use HasAddress;
     use HasAddresses;
-    use HasUniversalSearch;
     use HasFactory;
     use InCustomer;
     use HasHistory;

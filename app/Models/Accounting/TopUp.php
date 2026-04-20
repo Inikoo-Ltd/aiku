@@ -11,7 +11,6 @@ namespace App\Models\Accounting;
 use App\Enums\Accounting\TopUp\TopUpStatusEnum;
 use App\Models\Helpers\Currency;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -48,7 +47,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Accounting\Payment|null $payment
  * @property-read \App\Models\Catalogue\Shop|null $shop
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TopUp newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TopUp newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TopUp query()
@@ -57,7 +55,6 @@ use Spatie\Sluggable\SlugOptions;
 class TopUp extends Model implements Auditable
 {
     use HasSlug;
-    use HasUniversalSearch;
     use InCustomer;
     use HasHistory;
 

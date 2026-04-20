@@ -45,8 +45,8 @@ class StoreCustomerSalesChannel extends OrgAction
         ShopPlatformStatsHydrateCustomerSalesChannel::dispatch($customer->shop, $platform)->delay($this->hydratorsDelay);
 
         if ($customer->shop && $platform->id) {
-            ShopHydratePlatformSalesIntervalsNewChannels::dispatch($customer->shop, $platform->id)->delay($this->hydratorsDelay);
-            ShopHydratePlatformSalesIntervalsNewCustomers::dispatch($customer->shop, $platform->id)->delay($this->hydratorsDelay);
+            ShopHydratePlatformSalesIntervalsNewChannels::dispatch($customer->shop, $platform->id)->delay(30);
+            ShopHydratePlatformSalesIntervalsNewCustomers::dispatch($customer->shop, $platform->id)->delay(30);
         }
 
         return $customerSalesChannel;

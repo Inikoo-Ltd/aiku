@@ -2,7 +2,6 @@
 
 namespace App\Actions\Production\ManufactureTask;
 
-use App\Actions\Production\ManufactureTask\Hydrators\ManufactureTaskHydrateUniversalSearch;
 use App\Actions\Production\Production\Hydrators\ProductionHydrateManufactureTasks;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateManufactureTasks;
@@ -31,7 +30,6 @@ class UpdateManufactureTask extends OrgAction
             OrganisationHydrateManufactureTasks::dispatch($manufactureTask->organisation);
             ProductionHydrateManufactureTasks::dispatch($manufactureTask->production);
         }
-        ManufactureTaskHydrateUniversalSearch::dispatch($manufactureTask);
         return $manufactureTask;
     }
 

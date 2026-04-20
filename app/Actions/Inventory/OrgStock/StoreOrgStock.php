@@ -9,7 +9,6 @@
 namespace App\Actions\Inventory\OrgStock;
 
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateStatusFromOrgStocks;
-use App\Actions\Inventory\OrgStock\Search\OrgStockRecordSearch;
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStocks;
@@ -79,9 +78,6 @@ class StoreOrgStock extends OrgAction
         if ($orgStock->orgStockFamily) {
             OrgStockFamilyHydrateOrgStocks::dispatch($orgStock->orgStockFamily)->delay($this->hydratorsDelay);
         }
-
-        OrgStockRecordSearch::dispatch($orgStock);
-
 
         return $orgStock;
     }

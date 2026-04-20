@@ -12,7 +12,6 @@ use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Goods\Stock\StockTradeUnitCompositionEnum;
 use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Media;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\StockIntervals;
 use App\Models\StockSalesInterval;
@@ -20,7 +19,6 @@ use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -88,7 +86,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, SupplierProduct> $supplierProducts
  * @property-read Collection<int, \App\Models\Goods\StockTimeSeries> $timeSeries
  * @property-read Collection<int, \App\Models\Goods\TradeUnit> $tradeUnits
- * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Goods\StockFactory factory($count = null, $state = [])
  * @method static Builder<static>|Stock newModelQuery()
  * @method static Builder<static>|Stock newQuery()
@@ -102,7 +99,6 @@ class Stock extends Model implements HasMedia, Auditable
 {
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use HasImage;
     use HasFactory;
     use HasHistory;

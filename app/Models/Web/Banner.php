@@ -9,14 +9,12 @@
 namespace App\Models\Web;
 
 use App\Actions\Utils\Abbreviate;
-
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Enums\Web\Banner\BannerTypeEnum;
 use App\Models\Helpers\Deployment;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Snapshot;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InWebsite;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -67,7 +65,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Snapshot> $snapshots
  * @property-read \App\Models\Web\BannerStats|null $stats
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Snapshot|null $unpublishedSnapshot
  * @property-read \App\Models\Web\Website|null $website
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Banner newModelQuery()
@@ -84,7 +81,6 @@ class Banner extends Model implements HasMedia, Auditable
     use HasSlug;
     use HasFactory;
     use InWebsite;
-    use HasUniversalSearch;
     use InteractsWithMedia;
     use HasHistory;
 

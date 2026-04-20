@@ -593,7 +593,7 @@ test('show pallet return (stored item tab)', function () {
             )
             ->has('tabs');
     });
-})->todo();
+});
 
 test('show pallet return (services tab)', function () {
     // $this->withoutExceptionHandling();

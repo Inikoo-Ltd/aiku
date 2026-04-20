@@ -11,7 +11,6 @@ namespace App\Models\HumanResources;
 use App\Enums\HumanResources\JobPosition\JobPositionScopeEnum;
 use App\Models\SysAdmin\Role;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InOrganisation;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -43,7 +42,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Role> $roles
  * @property-read \App\Models\HumanResources\JobPositionStats|null $stats
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static Builder<static>|JobPosition newModelQuery()
  * @method static Builder<static>|JobPosition newQuery()
  * @method static Builder<static>|JobPosition query()
@@ -53,9 +51,7 @@ class JobPosition extends Model implements Auditable
 {
     use HasSlug;
     use HasHistory;
-    use HasUniversalSearch;
     use inOrganisation;
-
 
     protected $casts = [
         'data'  => 'array',

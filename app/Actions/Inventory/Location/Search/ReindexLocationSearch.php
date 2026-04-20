@@ -20,7 +20,7 @@ class ReindexLocationSearch extends HydrateModel
 
     public function handle(Location $location): void
     {
-        LocationRecordSearch::run($location);
+
     }
 
 

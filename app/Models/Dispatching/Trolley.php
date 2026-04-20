@@ -11,7 +11,6 @@ namespace App\Models\Dispatching;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InWarehouse;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -40,7 +39,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\DeliveryNote> $deliveryNotes
  * @property-read Group|null $group
  * @property-read Organisation $organisation
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Trolley newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Trolley newQuery()
@@ -51,7 +49,6 @@ class Trolley extends Model implements Auditable
 {
     use HasFactory;
     use HasSlug;
-    use HasUniversalSearch;
     use HasHistory;
     use InWarehouse;
 

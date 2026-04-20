@@ -580,9 +580,18 @@ watch(
             <template v-if="bundle.step.value === 1">
                 <!-- HEADER -->
                 <div class="p-4 border-b flex justify-between items-center">
-                    <div class="font-semibold text-lg">
-                        Create Your Bundle
+                    <div class="flex items-center gap-2">
+                        <div class="font-semibold text-lg">
+                            Create Your Bundle
+                        </div>
+
+                        <!-- BETA BADGE -->
+                        <span class="text-[10px] px-2 py-[2px] rounded-full 
+                                    bg-red-500 text-white font-semibold tracking-wide">
+                            {{trans('BETA VERSION')}}
+                        </span>
                     </div>
+
                     <button @click="bundle.close()">✕</button>
                 </div>
 

@@ -13,7 +13,6 @@ use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
 use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Enums\Miscellaneous\GenderEnum;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Task;
@@ -23,7 +22,6 @@ use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InOrganisation;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -115,7 +113,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Task> $tasks
  * @property-read Collection<int, \App\Models\HumanResources\TimeTracker> $timeTrackers
  * @property-read Collection<int, \App\Models\HumanResources\Timesheet> $timesheets
- * @property-read UniversalSearch|null $universalSearch
  * @property-read User|null $user
  * @property-read Collection<int, User> $users
  * @property-read Collection<int, \App\Models\HumanResources\Workplace> $workplaces
@@ -134,7 +131,6 @@ class Employee extends Model implements HasMedia, Auditable
     use HasAddress;
     use HasAddresses;
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasImage;
     use HasAttachments;
     use HasFactory;

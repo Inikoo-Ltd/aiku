@@ -10,7 +10,7 @@ import Table from "@/Components/Table/Table.vue"
 import type { Table as TableTS } from "@/types/Table"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faInventory, faListOl, faHandHoldingBox, faClipboardListCheck, faUndoAlt, faDebug } from "@fal"
+import { faInventory, faListOl, faHandHoldingBox, faClipboardListCheck, faUndoAlt, faDebug, faDolly, faMapMarkerAlt } from "@fal"
 import { faSkull, faHeadset } from "@fas"
 import Icon from "@/Components/Icon.vue"
 import { reactive, ref } from "vue"
@@ -31,7 +31,7 @@ import { inject } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import PassWaitingItemsToCs from "@/Components/Warehouse/DeliveryNotes/PassWaitingItemsToCs.vue"
 
-library.add(faInventory, faListOl, faHandHoldingBox, faClipboardListCheck, faUndoAlt, faDebug, faSkull, faHeadset)
+library.add(faInventory, faListOl, faHandHoldingBox, faClipboardListCheck, faUndoAlt, faDebug, faSkull, faHeadset, faDolly, faMapMarkerAlt)
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -109,6 +109,16 @@ const selectedTransactionToSetAsWaiting = ref(null)
                     internal: 'delivery_note_internal_notes',
                     public:   'delivery_note_public_notes',
                 }" />
+            </div>
+            <div class="flex gap-x-2 mt-1 flex-wrap">
+                <span v-if="item.trolley_names" v-tooltip="trans('Trolley')" class="inline-flex items-center gap-x-1 text-xs text-gray-500 bg-gray-100 rounded px-1.5 py-0.5">
+                    <FontAwesomeIcon icon="fal fa-dolly" fixed-width aria-hidden="true" />
+                    {{ item.trolley_names }}
+                </span>
+                <span v-if="item.picked_bay_codes" v-tooltip="trans('Picked Bay')" class="inline-flex items-center gap-x-1 text-xs text-gray-500 bg-gray-100 rounded px-1.5 py-0.5">
+                    <FontAwesomeIcon icon="fal fa-map-marker-alt" fixed-width aria-hidden="true" />
+                    {{ item.picked_bay_codes }}
+                </span>
             </div>
         </template>
 

@@ -16,8 +16,6 @@ use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAttachments;
-use App\Models\Traits\HasRetinaSearch;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InFulfilmentCustomer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -92,11 +90,9 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @property-read Organisation $organisation
  * @property-read Collection<int, \App\Models\Fulfilment\Pallet> $pallets
  * @property-read \App\Models\Fulfilment\RecurringBill|null $recurringBill
- * @property-read \App\Models\Helpers\RetinaSearch|null $retinaSearch
  * @property-read \App\Models\Fulfilment\PalletDeliveryStats|null $stats
  * @property-read TaxCategory $taxCategory
  * @property-read Collection<int, \App\Models\Fulfilment\FulfilmentTransaction> $transactions
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Warehouse|null $warehouse
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDelivery newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDelivery newQuery()
@@ -110,8 +106,6 @@ class PalletDelivery extends Model implements HasMedia
 {
     use HasSlug;
     use SoftDeletes;
-    use HasUniversalSearch;
-    use HasRetinaSearch;
     use InFulfilmentCustomer;
     use HasAttachments;
 

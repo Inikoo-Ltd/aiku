@@ -10,7 +10,6 @@ namespace App\Models\Catalogue;
 
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -47,7 +46,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\HistoricAsset> $historicAssets
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop|null $shop
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Subscription newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Subscription newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Subscription onlyTrashed()
@@ -59,7 +57,6 @@ use OwenIt\Auditing\Contracts\Auditable;
 class Subscription extends Model implements Auditable
 {
     use SoftDeletes;
-    use HasUniversalSearch;
     use InAssetModel;
     use HasHistory;
 

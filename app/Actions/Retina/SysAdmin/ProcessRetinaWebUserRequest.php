@@ -27,7 +27,7 @@ class ProcessRetinaWebUserRequest
      */
     public function handle(?WebUser $webUser, Carbon $datetime, array $routeData, string $ip, string $userAgent, array $geoLocation): WebUserRequest|null
     {
-        if(!$webUser){
+        if (!$webUser) {
             return null;
         }
 

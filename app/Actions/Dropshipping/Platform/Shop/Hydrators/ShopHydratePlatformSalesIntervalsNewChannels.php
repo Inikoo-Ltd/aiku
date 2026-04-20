@@ -19,6 +19,8 @@ class ShopHydratePlatformSalesIntervalsNewChannels implements ShouldBeUnique
     use WithIntervalUniqueJob;
     use WithIntervalsAggregators;
 
+    public string $jobQueue = 'hydrators-slave';
+
     public function getJobUniqueId(Shop $shop, int $platformId, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
         return $this->getUniqueJobWithIntervalFromId($shop->id.'-'.$platformId, $intervals, $doPreviousPeriods);
@@ -32,7 +34,7 @@ class ShopHydratePlatformSalesIntervalsNewChannels implements ShouldBeUnique
             return;
         }
 
-        $queryBase = CustomerSalesChannel::where('platform_id', $platformId)
+        $queryBase = CustomerSalesChannel::on('aiku_no_sticky')->where('platform_id', $platformId)
             ->where('status', CustomerSalesChannelStatusEnum::OPEN)
             ->whereHas('customer', function ($query) use ($shop) {
                 $query->where('shop_id', $shop->id);

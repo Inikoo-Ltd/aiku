@@ -63,7 +63,6 @@ use App\Models\Helpers\SerialReference;
 use App\Models\Helpers\Tag;
 use App\Models\Helpers\TaxNumber;
 use App\Models\Helpers\Timezone;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\Helpers\Upload;
 use App\Models\Masters\MasterShop;
 use App\Models\Ordering\Adjustment;
@@ -79,7 +78,6 @@ use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InOrganisation;
 use App\Models\Web\Redirect;
 use App\Models\Web\Website;
@@ -256,7 +254,6 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, TopUp> $topUps
  * @property-read LaravelCollection<int, TrafficSource> $trafficSources
  * @property-read LaravelCollection<int, Transaction> $transactions
- * @property-read UniversalSearch|null $universalSearch
  * @property-read LaravelCollection<int, Upload> $uploads
  * @property-read LaravelCollection<int, WebUser> $webUsers
  * @property-read Website|null $website
@@ -276,7 +273,6 @@ class Shop extends Model implements HasMedia, Auditable
     use HasAddresses;
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use HasFactory;
     use InOrganisation;
     use HasHistory;

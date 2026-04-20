@@ -11,7 +11,6 @@ namespace App\Actions\Fulfilment\StoredItemAudit;
 use App\Actions\Catalogue\HasRentalAgreement;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydrateStoredItemAudits;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydrateStoredItemAudits;
-use App\Actions\Fulfilment\StoredItemAudit\Search\StoredItemAuditRecordSearch;
 use App\Actions\Fulfilment\WithDeliverableStoreProcessing;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateStoredItemAudits;
 use App\Actions\OrgAction;
@@ -64,9 +63,6 @@ class StoreStoredItemAudit extends OrgAction
         WarehouseHydrateStoredItemAudits::dispatch($storedItemAudit->warehouse);
         FulfilmentHydrateStoredItemAudits::dispatch($storedItemAudit->fulfilment);
         FulfilmentCustomerHydrateStoredItemAudits::dispatch($storedItemAudit->fulfilmentCustomer);
-
-        StoredItemAuditRecordSearch::dispatch($storedItemAudit);
-
 
         return $storedItemAudit;
     }

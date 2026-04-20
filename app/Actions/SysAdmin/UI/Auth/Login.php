@@ -75,7 +75,7 @@ class Login
                 userAgent: $request->header('User-Agent'),
                 datetime: now(),
                 geoLocation: $geoLocation
-            );
+            )->delay(now()->addSeconds(5));
 
             throw ValidationException::withMessages([
                 'username' => trans('auth.failed'),
@@ -103,7 +103,7 @@ class Login
             userAgent: $request->header('User-Agent'),
             datetime: now(),
             geoLocation: $geoLocation
-        );
+        )->delay(now()->addSeconds(5));
 
         if ($user) {
             UpdateAgent::make()->setOnline($user->id);

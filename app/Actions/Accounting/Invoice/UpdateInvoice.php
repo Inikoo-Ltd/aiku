@@ -8,7 +8,6 @@
 
 namespace App\Actions\Accounting\Invoice;
 
-use App\Actions\Accounting\Invoice\Search\InvoiceRecordSearch;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
 use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
@@ -121,21 +120,6 @@ class UpdateInvoice extends OrgAction
             OrganisationHydrateInvoices::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
             GroupHydrateInvoices::dispatch($invoice->group)->delay($this->hydratorsDelay);
 
-            if (Arr::hasAny($changes, [
-                'reference',
-                'total_amount',
-                'type',
-                'date',
-                'currency_id',
-                'in_process',
-                'slug',
-                'customer_name',
-                'tax_number',
-                'tax_number_valid'
-
-            ])) {
-                InvoiceRecordSearch::dispatch($invoice);
-            }
         }
 
 

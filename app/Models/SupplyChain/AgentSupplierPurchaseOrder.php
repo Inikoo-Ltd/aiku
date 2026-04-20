@@ -12,14 +12,12 @@ namespace App\Models\SupplyChain;
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderDeliveryStateEnum;
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Models\Helpers\Currency;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InGroup;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -92,7 +90,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read PurchaseOrder|null $purchaseOrder
  * @property-read \App\Models\SupplyChain\Supplier|null $supplier
- * @property-read UniversalSearch|null $universalSearch
  * @method static Builder<static>|AgentSupplierPurchaseOrder newModelQuery()
  * @method static Builder<static>|AgentSupplierPurchaseOrder newQuery()
  * @method static Builder<static>|AgentSupplierPurchaseOrder onlyTrashed()
@@ -110,7 +107,6 @@ class AgentSupplierPurchaseOrder extends Model implements HasMedia, Auditable
     use HasHistory;
     use InGroup;
     use HasAttachments;
-    use HasUniversalSearch;
 
     protected $casts = [
         'data'            => 'array',

@@ -12,7 +12,6 @@ use App\Models\GoodsIn\StockDelivery;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -42,7 +41,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Procurement\PurchaseOrder> $purchaseOrders
  * @property-read \App\Models\Procurement\OrgAgentStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, StockDelivery> $stockDeliveries
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgAgent newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgAgent newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgAgent query()
@@ -52,7 +50,6 @@ class OrgAgent extends Model
 {
     use InOrganisation;
     use HasSlug;
-    use HasUniversalSearch;
 
     protected $guarded = [];
 

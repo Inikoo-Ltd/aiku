@@ -104,7 +104,7 @@ class RetinaLogin
                 userAgent: $request->header('User-Agent'),
                 datetime: now(),
                 geoLocation: $geoLocation
-            );
+            )->delay(now()->addSeconds(5));
 
             throw ValidationException::withMessages([
                 'username' => __('The provided credentials do not match our records.'),
@@ -138,7 +138,7 @@ class RetinaLogin
             userAgent: $request->header('User-Agent'),
             datetime: now(),
             geoLocation: $geoLocation
-        );
+        )->delay(now()->addSeconds(5));
 
         if ($tiktokCode = $request->input('tiktok_code')) {
             ProcessUnregisterCustomerTiktokUser::run($webUser->customer, [

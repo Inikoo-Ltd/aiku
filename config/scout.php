@@ -9,11 +9,13 @@
 use App\Actions\Catalogue\Collection\Search\GetCollectionSearchSchema;
 use App\Actions\Catalogue\Product\Search\GetProductSearchSchema;
 use App\Actions\Catalogue\ProductCategory\Search\GetProductCategorySearchSchema;
+use App\Actions\SupplyChain\Supplier\Search\GetSupplierSearchSchema;
 use App\Actions\SysAdmin\Guest\Search\GetGuestSearchSchema;
 use App\Actions\SysAdmin\User\Search\GetUserSearchSchema;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\User;
 
@@ -59,7 +61,9 @@ return [
     |
     */
 
-    'queue' => env('SCOUT_QUEUE', false),
+    'queue' => [
+        'queue' => 'search'
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -86,8 +90,8 @@ return [
     */
 
     'chunk' => [
-        'searchable'   => 500,
-        'unsearchable' => 500,
+        'searchable'   => 1000,
+        'unsearchable' => 1000,
     ],
 
     /*
@@ -159,6 +163,7 @@ return [
             Product::class         => GetProductSearchSchema::run(),
             ProductCategory::class => GetProductCategorySearchSchema::run(),
             Collection::class      => GetCollectionSearchSchema::run(),
+            Supplier::class        => GetSupplierSearchSchema::run(),
 
         ],
     ],

@@ -9,7 +9,6 @@
 namespace App\Actions\Dropshipping\CustomerClient;
 
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClients;
-use App\Actions\Dropshipping\CustomerClient\Search\CustomerClientRecordSearch;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateCustomerClients;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewCustomerClient;
 use App\Actions\OrgAction;
@@ -64,13 +63,11 @@ class StoreCustomerClient extends OrgAction
             );
         });
 
-
-        CustomerClientRecordSearch::dispatch($customerClient)->delay($this->hydratorsDelay);
         CustomerHydrateClients::dispatch($customerSalesChannel->customer_id)->delay($this->hydratorsDelay);
         CustomerSalesChannelsHydrateCustomerClients::dispatch($customerSalesChannel);
 
         if ($customerSalesChannel->shop && $customerSalesChannel->platform) {
-            ShopHydratePlatformSalesIntervalsNewCustomerClient::dispatch($customerSalesChannel->shop, $customerSalesChannel->platform->id)->delay($this->hydratorsDelay);
+            ShopHydratePlatformSalesIntervalsNewCustomerClient::dispatch($customerSalesChannel->shop, $customerSalesChannel->platform->id)->delay(5);
         }
 
         return $customerClient;

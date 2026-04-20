@@ -42,10 +42,18 @@ return [
     'connections' => [
 
 
-
-        'aiku' => [
+        'aiku'           => [
             'driver'         => 'pgsql',
             'url'            => env('DATABASE_URL'),
+            'read'           => [
+                'host' => explode(',', env('DB_READ_HOSTS', env('DB_HOST', '127.0.0.1'))),
+            ],
+            'write'          => [
+                'host' => [
+                    env('DB_HOST', '127.0.0.1'),
+                ],
+            ],
+            'sticky'         => true,
             'host'           => env('DB_HOST', '127.0.0.1'),
             'port'           => env('DB_PORT', '5432'),
             'database'       => env('DB_DATABASE'),
@@ -57,7 +65,30 @@ return [
             'search_path'    => env('DB_SEARCH_PATH', 'public'),
             'sslmode'        => 'prefer',
         ],
-        'aurora' => [
+        'aiku_no_sticky' => [
+            'driver'         => 'pgsql',
+            'url'            => env('DATABASE_URL'),
+            'read'           => [
+                'host' => explode(',', env('DB_READ_HOSTS', env('DB_HOST', '127.0.0.1'))),
+            ],
+            'write'          => [
+                'host' => [
+                    env('DB_HOST', '127.0.0.1'),
+                ],
+            ],
+            'sticky'         => false,
+            'host'           => env('DB_HOST', '127.0.0.1'),
+            'port'           => env('DB_PORT', '5432'),
+            'database'       => env('DB_DATABASE'),
+            'username'       => env('DB_USERNAME'),
+            'password'       => env('DB_PASSWORD'),
+            'charset'        => 'utf8',
+            'prefix'         => '',
+            'prefix_indexes' => true,
+            'search_path'    => env('DB_SEARCH_PATH', 'public'),
+            'sslmode'        => 'prefer',
+        ],
+        'aurora'         => [
             'driver'         => 'mysql',
             'host'           => env('AURORA_DB_HOST', '127.0.0.1'),
             'port'           => env('AURORA_DB_PORT', 3306),
@@ -73,8 +104,8 @@ return [
             'engine'         => null,
             'options'        => extension_loaded('pdo_mysql')
                 ? array_filter([
-                                   PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-                               ]) : [],
+                    PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                ]) : [],
         ],
 
         'aurora_1' => [

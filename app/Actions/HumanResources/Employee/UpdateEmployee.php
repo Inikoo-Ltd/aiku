@@ -9,7 +9,6 @@
 namespace App\Actions\HumanResources\Employee;
 
 use App\Actions\Helpers\Address\UpdateAddress;
-use App\Actions\HumanResources\Employee\Search\EmployeeRecordSearch;
 use App\Actions\HumanResources\JobPosition\SyncEmployeeJobPositions;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateEmployees;
@@ -131,10 +130,6 @@ class UpdateEmployee extends OrgAction
         data_forget($modelData, 'user_model_status');
 
         $employee = $this->update($employee, $modelData, ['data', 'salary']);
-
-        if (Arr::hasAny($employee->getChanges(), ['worker_number', 'worker_number', 'contact_name', 'work_email', 'job_title', 'email'])) {
-            EmployeeRecordSearch::dispatch($employee);
-        }
 
         if (Arr::hasAny($employee->getChanges(), ['state'])) {
             GroupHydrateEmployees::dispatch($employee->group)->delay($this->hydratorsDelay);

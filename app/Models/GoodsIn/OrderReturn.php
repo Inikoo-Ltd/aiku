@@ -15,7 +15,6 @@ use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
@@ -23,7 +22,6 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InCustomer;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -87,7 +85,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\GoodsIn\ReturnItem> $returnItems
  * @property-read Shop|null $shop
  * @property-read \App\Models\GoodsIn\ReturnStats|null $stats
- * @property-read UniversalSearch|null $universalSearch
  * @property-read Warehouse|null $warehouse
  * @method static Builder<static>|OrderReturn newModelQuery()
  * @method static Builder<static>|OrderReturn newQuery()
@@ -101,7 +98,6 @@ class OrderReturn extends Model implements Auditable
 {
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use HasFactory;
     use InCustomer;
     use HasAddresses;

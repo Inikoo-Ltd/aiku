@@ -11,7 +11,6 @@ namespace App\Models\Catalogue;
 use App\Models\Masters\MasterVariant;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -64,7 +63,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductCategory|null $subDepartment
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\VariantTimeSeries> $timeSeries
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Variant newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Variant newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Variant onlyTrashed()
@@ -77,7 +75,6 @@ class Variant extends Model implements Auditable, HasMedia
 {
     use HasSlug;
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasHistory;
     use HasImage;
     use InShop;
