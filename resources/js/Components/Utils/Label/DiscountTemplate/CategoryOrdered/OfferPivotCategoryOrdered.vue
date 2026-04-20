@@ -9,6 +9,7 @@ type Offer = {
 
 const props = defineProps<{
     template : string
+    use_duration : boolean
     offer: {
         offers: Offer[]
     }
@@ -35,5 +36,6 @@ const resolvedComponent = computed(() => {
     <component
         :is="resolvedComponent"
         :offer="offer"
+        :use_duration="use_duration"
     />
 </template>

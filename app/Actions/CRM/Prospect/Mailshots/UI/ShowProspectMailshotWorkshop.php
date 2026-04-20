@@ -26,6 +26,7 @@ use App\Http\Resources\Mail\EmailTemplateResource;
 use App\Actions\Comms\Mailshot\UI\IndexPreviousMailshotTemplates;
 use App\Actions\Comms\Mailshot\UI\IndexMailshotFromOtherStoreTemplates;
 use App\Actions\Traits\WithProspectsSubNavigation;
+use App\Models\Comms\EmailTemplate;
 
 class ShowProspectMailshotWorkshop extends OrgAction
 {
@@ -55,6 +56,16 @@ class ShowProspectMailshotWorkshop extends OrgAction
     public function htmlResponse(Mailshot $mailshot, ActionRequest $request): Response
     {
         $email = $mailshot->email;
+
+        $templateLayout = null;
+        if ($request->has('template')) {
+            $templateSlug = $request->get('template');
+            $template = EmailTemplate::findBySlug($templateSlug);
+            if ($template) {
+                $templateLayout = $template->layout;
+            }
+        }
+
         return Inertia::render(
             'Org/Web/Workshop/Mailshot/ProspectMailshotWorkshop',
             [
@@ -116,7 +127,7 @@ class ShowProspectMailshotWorkshop extends OrgAction
 
 
 
-                'unpublished_layout' => $email->unpublishedSnapshot->layout,
+                'unpublished_layout' => $templateLayout ?? $email->unpublishedSnapshot->layout,
                 'snapshot'    => $email->unpublishedSnapshot,
                 'builder'     => $email->builder,
                 'imagesUploadRoute'   => [

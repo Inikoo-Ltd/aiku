@@ -180,7 +180,7 @@ trait WithRetinaRegistration
             'contact_address' => ['required', new ValidAddress()],
             'is_opt_in'       => ['required', 'boolean'],
             'poll_replies'    => ['sometimes', 'array'],
-            'tax_number'               => ['sometimes', 'nullable', 'array'],
+            'tax_number' => [ Arr::get($this->shop->settings, 'registration.tax_number_is_required', false) ? 'required' : 'nullable',  'array'],
             'password'        =>
                 [
                     'required',
