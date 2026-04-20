@@ -18,7 +18,7 @@ enum WaitingItemsTabsEnum: string
     use HasTabs;
 
     case ITEMIZED = 'itemized';
-    case GROUPED = 'grouped';
+    case GROUPED_BY_DELIVERY_NOTE = 'grouped_by_delivery_note';
 
     public function blueprint(): array
     {
@@ -27,8 +27,8 @@ enum WaitingItemsTabsEnum: string
                 'title' => __('Waiting items'),
                 'icon'  => 'fal fa-inventory',
             ],
-            WaitingItemsTabsEnum::GROUPED => [
-                'title' => __('Group by delivery note'),
+            WaitingItemsTabsEnum::GROUPED_BY_DELIVERY_NOTE => [
+                'title' => __('Grouping by delivery note'),
                 'icon'  => 'fal fa-truck',
             ],
         };
