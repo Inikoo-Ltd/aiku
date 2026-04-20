@@ -175,6 +175,12 @@ class User extends Authenticatable implements HasMedia, Auditable
         ];
     }
 
+    public function shouldBeSearchable(): bool
+    {
+        $searchableFields = ['username', 'email', 'contact_name','status','created_at'];
+        return $this->isDirty($searchableFields);
+    }
+
     public function generateTags(): array
     {
         return [
