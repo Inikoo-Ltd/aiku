@@ -43,6 +43,7 @@ const props = defineProps<{
         navigation: {}
     }
     index?: {}
+    index_ordering?: {}
     sales?: {}
     data: {}
     routes?: {
@@ -60,8 +61,9 @@ const props = defineProps<{
 
 const currentTab = ref<string>(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
 const currentData = computed(() => {
-    if (currentTab.value === 'index' || currentTab.value === 'sales') {
+    if (currentTab.value === 'index' || currentTab.value === 'index_ordering' || currentTab.value === 'sales') {
         return (props as any)[currentTab.value] || props.data
     }
     return props.data
@@ -70,6 +72,7 @@ const currentData = computed(() => {
 const component = computed(() => {
     const components: any = {
         index: TableMasterProducts,
+        index_ordering: TableMasterProducts,
         sales: TableMasterProducts,
     }
 

@@ -15,8 +15,17 @@ enum MasterProductsTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case INDEX     = 'index';
-    case SALES     = 'sales';
+    case INDEX              = 'index';
+    case INDEX_ORDERING     = 'index_ordering';
+    case SALES              = 'sales';
+
+    public static function navigation(): array
+    {
+        if (request()->route()->parameter('masterFamily')) {
+            return SELF::navigationExcept([]);
+        }
+        return SELF::navigationExcept([SELF::INDEX_ORDERING]);
+    }
 
     public function blueprint(): array
     {
@@ -24,6 +33,10 @@ enum MasterProductsTabsEnum: string
             MasterProductsTabsEnum::INDEX => [
                 'title' => __('Index'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            MasterProductsTabsEnum::INDEX_ORDERING => [
+                'title' => __('Index Ordering'),
+                'icon'  => 'fal fa-sort-shapes-up-alt',
             ],
             MasterProductsTabsEnum::SALES => [
                 'title' => __('Sales'),
