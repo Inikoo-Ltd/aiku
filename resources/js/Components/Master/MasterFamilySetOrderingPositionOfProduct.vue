@@ -269,7 +269,14 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                     </div>
 
                     <div class="text-xs text-gray-400">
-                        {{ element.code }}
+                        <div class="flex gap-4">
+                            <FontAwesomeIcon v-if="element.status" :icon="faCheck" :class="'text-green-500'"
+                                v-tooltip="trans('Active')" />
+                            <FontAwesomeIcon v-else :icon="faTimes" :class="'text-red-500'"
+                                v-tooltip="trans('Inactive')" />
+
+                            {{ element.code }}
+                        </div>
                     </div>
                 </div>
             </template>
