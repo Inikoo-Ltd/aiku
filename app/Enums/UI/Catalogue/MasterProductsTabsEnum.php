@@ -19,14 +19,6 @@ enum MasterProductsTabsEnum: string
     case INDEX_ORDERING     = 'index_ordering';
     case SALES              = 'sales';
 
-    public static function navigation(): array
-    {
-        if (request()->route()->parameter('masterFamily')) {
-            return SELF::navigationExcept([]);
-        }
-        return SELF::navigationExcept([SELF::INDEX_ORDERING]);
-    }
-
     public function blueprint(): array
     {
         return match ($this) {

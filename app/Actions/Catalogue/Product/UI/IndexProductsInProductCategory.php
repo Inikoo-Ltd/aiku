@@ -254,16 +254,19 @@ class IndexProductsInProductCategory extends OrgAction
     {
         $productCategory = $this->parent;
 
-        $navigation = ProductsTabsEnum::navigation();
+        $exception  = [ProductsTabsEnum::INDEX_ORDERING];
 
         $subNavigation = null;
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $subNavigation = $this->getDepartmentSubNavigation($productCategory);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
+            $exception     = [];
             $subNavigation = $this->getFamilySubNavigation($productCategory, $this->grandParent ?? $productCategory->shop, $request);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $subNavigation = $this->getSubDepartmentSubNavigation($productCategory);
         }
+
+        $navigation = ProductsTabsEnum::navigationExcept($exception);
 
 
         $title           = __('Products');
@@ -377,6 +380,10 @@ class IndexProductsInProductCategory extends OrgAction
                 ],
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                     fn () => ProductsResource::collection($products)
+                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
+
+                ProductsTabsEnum::INDEX_ORDERING->value => $this->tab == ProductsTabsEnum::INDEX_ORDERING->value ?
+                    fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::INDEX_ORDERING))
                     : Inertia::lazy(fn () => ProductsResource::collection($products)),
 
                 ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?

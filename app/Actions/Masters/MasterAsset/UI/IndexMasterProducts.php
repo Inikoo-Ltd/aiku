@@ -38,6 +38,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
+use Illuminate\Support\Collection;
 
 class IndexMasterProducts extends GrpAction
 {
@@ -87,7 +88,7 @@ class IndexMasterProducts extends GrpAction
         ];
     }
 
-    public function handle(Group|MasterShop|MasterProductCategory $parent, $prefix = null, $filterInVariant = null, $sortByIndex = false): LengthAwarePaginator
+    public function handle(Group|MasterShop|MasterProductCategory $parent, $prefix = null, $filterInVariant = null, $sortByIndex = false): Collection|LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -275,7 +276,7 @@ class IndexMasterProducts extends GrpAction
 
         $queryBuilder->addSelect('master_assets.mismatch_detected');
 
-        $queryBuilder
+        $queryBuilder = $queryBuilder
             ->when($sortByIndex && $parent instanceof MasterProductCategory, 
                 function ($query) {
                     $query
@@ -286,9 +287,7 @@ class IndexMasterProducts extends GrpAction
                     $query
                         ->orderBy('master_assets.code');
                 }
-            );
-
-        return $queryBuilder
+            )
             ->allowedSorts([
                 'code',
                 'name',
@@ -305,7 +304,13 @@ class IndexMasterProducts extends GrpAction
                 'used_in',
                 'health_rank',
             ])
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([$globalSearch]);
+        
+        if ($sortByIndex && $parent instanceof MasterProductCategory) {
+            return $queryBuilder->get();
+        }
+
+        return $queryBuilder
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -400,6 +405,8 @@ class IndexMasterProducts extends GrpAction
         $shopsData       = null;
         $modelNavigation = [];
         $hideBulkEdit    = false;
+        $exception       = [MasterProductsTabsEnum::INDEX_ORDERING];
+
         if ($this->parent instanceof Group) {
             $model      = '';
             $icon       = [
@@ -463,6 +470,7 @@ class IndexMasterProducts extends GrpAction
                     'icon' => 'fal fa-cube',
                 ];
                 $modelNavigation = GetMasterFamilyNavigation::run($this->parent, $request);
+                $exception       = [];
             }
             $shopsData = OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops'));
         }
@@ -510,7 +518,7 @@ class IndexMasterProducts extends GrpAction
                 'hide_bulk_edit'          => $hideBulkEdit,
                 'tabs' => [
                     'current'    => $this->tab,
-                    'navigation' => MasterProductsTabsEnum::navigation(),
+                    'navigation' => MasterProductsTabsEnum::navigationExcept($exception),
                 ],
                 MasterProductsTabsEnum::INDEX->value => $this->tab == MasterProductsTabsEnum::INDEX->value ?
                     fn () => MasterProductsResource::collection($masterAssets)
