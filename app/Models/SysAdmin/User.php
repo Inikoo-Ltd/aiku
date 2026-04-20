@@ -335,7 +335,9 @@ class User extends Authenticatable implements HasMedia, Auditable
 
     public function getOrganisation(): ?Organisation
     {
-        return $this->getOrganisations()->first();
+        /** @var Organisation $organisation */
+        $organisation= $this->getOrganisations()->first();
+        return $organisation;
     }
 
 
