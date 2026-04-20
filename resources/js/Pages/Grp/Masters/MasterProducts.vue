@@ -175,7 +175,7 @@ const SaveOrder = () => {
         products: localData.value.map((product: any, index: number) => ({
             id: product.id,
             code : product.code,
-            order: product.index_under_master_family,
+            index_under_master_family: product.index_under_master_family,
         }))
     }, {
         preserveScroll: true,

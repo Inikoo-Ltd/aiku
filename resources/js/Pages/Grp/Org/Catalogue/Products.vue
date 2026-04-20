@@ -38,6 +38,7 @@ const props = defineProps<{
     },
     data: Record<string, any>
     index?: Record<string, any>
+    index_ordering?: Record<string, any>
     sales?: Record<string, any>
     routes: {
         families_route: routeType
@@ -156,7 +157,6 @@ const repairTradeUnitToChildren = async () => {
 
 <template>
     <Head :title="capitalize(title)" />
-
     <PageHeading :data="pageHead">
         <template #other>
             <Button

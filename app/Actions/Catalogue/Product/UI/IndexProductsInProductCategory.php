@@ -35,6 +35,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -72,7 +73,7 @@ class IndexProductsInProductCategory extends OrgAction
         ];
     }
 
-    public function handle(ProductCategory $productCategory, $prefix = null): LengthAwarePaginator
+    public function handle(ProductCategory $productCategory, $prefix = null): Collection|LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -84,6 +85,8 @@ class IndexProductsInProductCategory extends OrgAction
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
+
+        $sortByIndex = $prefix === ProductsTabsEnum::INDEX_ORDERING->value;
 
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->orderBy('products.state');
@@ -166,25 +169,44 @@ class IndexProductsInProductCategory extends OrgAction
         }
 
         $queryBuilder
-            ->defaultSort('products.code')
             ->select($selects)
-            ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
-
-        return $queryBuilder->allowedSorts([
-            'code',
-            'name',
-            'shop_slug',
-            'department_slug',
-            'family_slug',
-            'customers_invoiced',
-            'sales_grp_currency_external',
-            'invoices',
-            'health_rank',
-            'price',
-            'rrp_per_unit',
-            'available_quantity'
-        ])
-            ->allowedFilters([$globalSearch])
+            ->leftJoin('product_stats', 'products.id', 'product_stats.product_id')
+            ->when(
+                $sortByIndex,
+                function ($query) {
+                    $query
+                        ->orderBy('products.index_under_family')
+                        ->orderBy('products.code');
+                },
+                function ($query) {
+                    $query
+                        ->orderBy('products.code');
+                }
+            )
+            ->allowedSorts([
+                'code',
+                'name',
+                'shop_slug',
+                'department_slug',
+                'family_slug',
+                'customers_invoiced',
+                'sales_grp_currency_external',
+                'invoices',
+                'health_rank',
+                'price',
+                'rrp_per_unit',
+                'available_quantity'
+            ])
+            ->allowedFilters([$globalSearch]);
+        
+        if ($sortByIndex) {
+            return $queryBuilder
+                ->addSelect('products.index_under_family')
+                ->get();
+        }
+            
+        return $queryBuilder
+            ->defaultSort('products.code')
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -382,7 +404,7 @@ class IndexProductsInProductCategory extends OrgAction
                     : Inertia::lazy(fn () => ProductsResource::collection($products)),
 
                 ProductsTabsEnum::INDEX_ORDERING->value => $this->tab == ProductsTabsEnum::INDEX_ORDERING->value ?
-                    fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::INDEX_ORDERING))
+                    fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::INDEX_ORDERING->value))
                     : Inertia::lazy(fn () => ProductsResource::collection($products)),
 
                 ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?
@@ -390,8 +412,9 @@ class IndexProductsInProductCategory extends OrgAction
                     : Inertia::lazy(fn () => ProductsResource::collection($this->handle($productCategory, ProductTabsEnum::SALES->value))),
 
             ]
-        )->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::INDEX->value))
-            ->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::SALES->value));
+        )
+        ->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::INDEX->value))
+        ->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::SALES->value));
     }
 
 
