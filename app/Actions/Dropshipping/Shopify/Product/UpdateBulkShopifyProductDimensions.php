@@ -18,7 +18,7 @@ class UpdateBulkShopifyProductDimensions
     use AsAction;
     use WithShopifyApi;
 
-    public function handle(CustomerSalesChannel $customerSalesChannel, Portfolio $portfolio): void
+    public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
         $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
             ->where('status', true)
@@ -30,7 +30,7 @@ class UpdateBulkShopifyProductDimensions
 
         foreach ($portfolios as $portfoliosChunk) {
             foreach ($portfoliosChunk as $portfolio) {
-                UpdateShopifyProductDimensions::dispatch($customerSalesChannel, $portfolio);
+                UpdateShopifyProductDimensions::run($customerSalesChannel, $portfolio);
             }
         }
     }
