@@ -560,10 +560,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
 
             <Link
                 v-if="Number(item.quantity_waiting_crm) > 0"
-                :href="route('grp.org.shops.show.ordering.backlog.waiting_items', {
-                    organisation: route().params.organisation,
-                    shop: route().params.shop,
-                })"
+                :href="routeItemsWaitingCrm(item)"
             >
                 <span v-tooltip="ctrans('Waiting for customer services')"  class="text-purple-500 rounded-sm border-purple-400 bg-purple-100  border px-1.5 ml-2">
                     {{ Number(item.quantity_waiting_crm) }}
