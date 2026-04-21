@@ -467,15 +467,19 @@ const generateLocationRoute = (item: any, picking: any) => {
         <template #cell(pickings)="{ item }">
             <div v-if="item.pickings?.length" class="space-y-1">
                 <div v-for="picking in item.pickings" :key="picking.id" class="flex gap-x-2 w-fit items-center">
-                    <Link v-if="generateLocationRoute(item, picking)" :href="generateLocationRoute(item, picking)" class="secondaryLink">
-                        {{ picking.location_code }}
-                    </Link>
-                    <div v-else class="text-gray-400">
-                        {{ picking.location_code || '-' }}
-                    </div>
+                    <template v-if="isWarehouseDispatchingPalletReturnPage">
+                        <Link v-if="generateLocationRoute(item, picking)" :href="generateLocationRoute(item, picking)" class="secondaryLink">
+                            {{ picking.location_code }}
+                        </Link>
+                        <div v-else class="text-gray-400">
+                            {{ picking.location_code || '-' }}
+                        </div>
+                    </template>
+                    <Tag v-else-if="picking.location_code" :label="picking.location_code" />
+                    <div v-else class="text-gray-400">-</div>
                     <div
                         v-if="(item.picked?.picked ?? 0) > 0"
-                        v-tooltip="trans('Picked items')"
+                        v-tooltip="trans('Picked pallet')"
                         class="inline-flex items-center justify-center min-w-6 h-6 px-2 rounded-full bg-gray-100 text-gray-700 text-xs font-medium"
                     >
                         {{ item.picked?.picked }}

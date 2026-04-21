@@ -9,11 +9,8 @@ import Modal from "@/Components/Utils/Modal.vue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faStickyNote, faUndo, faCheck, faDebug, faSave, faArrowAltLeft } from "@fal"
-import { ref, reactive, computed, watch } from "vue"
-import Popover from "@/Components/Popover.vue"
-import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
-import PureTextarea from "@/Components/Pure/PureTextarea.vue"
+import { faStickyNote, faUndo, faCheck, faDebug, faSave, faArrowAltLeft, faSkull } from "@fal"
+import { ref, computed, watch } from "vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import InputNumber from "primevue/inputnumber"
 import Fieldset from "primevue/fieldset"
@@ -24,7 +21,7 @@ import { trans } from "laravel-vue-i18n"
 import type { routeType } from "@/types/route"
 import "@/Composables/Icon/PalletStateEnum"
 
-library.add(faStickyNote, faUndo, faCheck, faDebug, faSave, faArrowAltLeft)
+library.add(faStickyNote, faUndo, faCheck, faDebug, faSave, faArrowAltLeft, faSkull)
 
 const props = defineProps<{
     data: TableTS
@@ -53,28 +50,15 @@ const formTrackingNumber = useForm<{ shipping_id: any; tracking_number: string }
     tracking_number: "",
 })
 
-const listStatusNotPicked = [
-    { label: trans("Damaged"), value: "damaged" },
-    { label: trans("Lost"), value: "lost" },
-    { label: trans("Other incident"), value: "other_incident" },
-]
-
-const selectedStatusNotPicked = reactive({
-    status: "other_incident",
-    notes: "",
-})
-
-const errorNotPicked = reactive<{
-    status: string | null
-    notes: string | null
-}>({
-    status: null,
-    notes: null,
-})
-
 const isPickingFinished = () => props.pickingSession?.state === "picking_finished"
 const isPackingFinished = () => props.pickingSession?.state === "packing_finished"
 const buildUrl = (name: any, parameters?: any) => String(route(name, parameters))
+const partialReloadKeys = computed(() => [
+    props.tab ?? "items",
+    "data",
+    "pageHead",
+    "dispatchableReturns",
+])
 
 const getDispatchableReturn = (item: any) => {
     if (!props.dispatchableReturns?.length) {
@@ -125,7 +109,7 @@ const canSubmitModalPrimaryButton = computed(() => {
 })
 const modalPrimaryLabel = computed(() => {
     if (selectedDispatchableReturn.value?.state === "picking") {
-        return trans("Set as Picked")
+        return trans("Finish Picking")
     }
 
     return selectedDispatchableReturn.value?.isCollection ? trans("Set as Collected") : trans("Dispatch")
@@ -432,31 +416,21 @@ const onSubmitParcels = () => {
     )
 }
 
-const onSubmitNotPicked = async (id: number, closePopup: () => void, routeNotPicked: routeType) => {
-    isSubmitNotPickedLoading.value = id
-    errorNotPicked.status = null
-    errorNotPicked.notes = null
+const onSetAsNotPickedQuick = (idPallet: number, routeNotPicked: routeType) => {
+    if (!routeNotPicked?.name) {
+        return
+    }
 
+    isSubmitNotPickedLoading.value = idPallet
     router[routeNotPicked.method || "get"](
         route(routeNotPicked.name, routeNotPicked.parameters),
+        {},
         {
-            state: selectedStatusNotPicked.status,
-            notes: selectedStatusNotPicked.notes,
-        },
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                selectedStatusNotPicked.status = "other_incident"
-                selectedStatusNotPicked.notes = ""
-                closePopup()
-            },
-            onError: (errors: any) => {
-                errorNotPicked.status = errors?.status ?? null
-                errorNotPicked.notes = errors?.notes ?? null
-            },
             onFinish: () => {
                 isSubmitNotPickedLoading.value = false
             },
+            only: partialReloadKeys.value,
+            preserveScroll: true,
         }
     )
 }
@@ -493,6 +467,19 @@ const palletRoute = (item: any) => {
         item.fulfilment_slug,
         item.fulfilment_customer_slug,
         item.slug,
+    ])
+}
+
+const locationRoute = (item: any) => {
+    const locationSlug = item?.location_slug ?? item?.location
+    if (!locationSlug) {
+        return null
+    }
+
+    return route("grp.org.warehouses.show.infrastructure.locations.show", [
+        route().params["organisation"],
+        route().params["warehouse"],
+        locationSlug,
     ])
 }
 </script>
@@ -563,12 +550,16 @@ const palletRoute = (item: any) => {
 
                         <div class="flex items-center gap-x-3 ml-auto">
                             <div>
-                                <Tag v-if="pallet.location_code" :label="pallet.location_code" />
-                                <div v-else class="text-gray-400 text-xs">-</div>
+                                <Link v-if="locationRoute(pallet)" :href="locationRoute(pallet)" class="secondaryLink">
+                                    {{ pallet.location_code }}
+                                </Link>
+                                <div v-else class="text-gray-400 text-xs">
+                                    {{ pallet.location_code || "-" }}
+                                </div>
                             </div>
 
                             <div class="flex gap-x-2">
-                                <template v-if="pallet.updateRoute?.name && (pallet.state === 'picking' || pallet.pivot_state === 'picking')">
+                                <template v-if="pallet.updateRoute?.name && pallet.state === 'picking'">
                                     <Link
                                         as="div"
                                         :href="route(pallet.updateRoute.name, pallet.updateRoute.parameters)"
@@ -581,89 +572,73 @@ const palletRoute = (item: any) => {
                                         <Button icon="fal fa-clipboard-list-check" type="secondary" size="sm" :loading="isPickingLoading === pallet.id" class="py-0" />
                                     </Link>
 
-                                    <Popover v-if="pallet.notPickedRoute?.name">
-                                        <template #button="{ open }">
-                                            <Button
-                                                icon="fal fa-debug"
-                                                :type="'negative'"
-                                                size="sm"
-                                                :key="pallet.id + open"
-                                                :loading="isSubmitNotPickedLoading === pallet.id"
-                                                v-tooltip="trans('Set as not picked')"
-                                            />
-                                        </template>
-                                        <template #content="{ close }">
-                                            <div class="w-[250px]">
-                                                <div class="mb-3">
-                                                    <div class="text-xs px-1 mb-1">
-                                                        <span class="text-red-500 text-sm mr-0.5">*</span>{{ trans("Select status:") }}
-                                                    </div>
-                                                    <PureMultiselect
-                                                        v-model="selectedStatusNotPicked.status"
-                                                        @update:modelValue="() => (errorNotPicked.status = null)"
-                                                        :options="listStatusNotPicked"
-                                                        required
-                                                        caret
-                                                        :class="errorNotPicked.status ? 'errorShake' : ''"
-                                                    />
-                                                    <div v-if="errorNotPicked.status" class="mt-1 text-red-500 italic text-xxs">
-                                                        {{ errorNotPicked.status }}
-                                                    </div>
-                                                </div>
-
-                                                <div class="mb-4">
-                                                    <div class="text-xs px-1 mb-1">
-                                                        <span class="text-red-500 text-sm mr-0.5">*</span>{{ trans("Description:") }}
-                                                    </div>
-                                                    <PureTextarea
-                                                        v-model="selectedStatusNotPicked.notes"
-                                                        @update:modelValue="() => (errorNotPicked.notes = null)"
-                                                        :placeholder="trans('Enter reason why the pallet is not picked')"
-                                                        :class="errorNotPicked.notes ? 'errorShake' : ''"
-                                                    />
-                                                    <div v-if="errorNotPicked.notes" class="mt-1 text-red-500 italic text-xxs">
-                                                        {{ errorNotPicked.notes }}
-                                                    </div>
-                                                </div>
-
-                                                <div class="flex justify-end mt-2">
-                                                    <Button
-                                                        @click="async () => onSubmitNotPicked(pallet.id, close, pallet.notPickedRoute)"
-                                                        full
-                                                        :label="trans('Submit')"
-                                                        :disabled="!selectedStatusNotPicked.status || !selectedStatusNotPicked.notes"
-                                                        :loading="isSubmitNotPickedLoading === pallet.id"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </template>
-                                    </Popover>
+                                    <Button
+                                        v-if="pallet.notPickedPalletRoute?.name"
+                                        icon="fal fa-debug"
+                                        :type="'negative'"
+                                        size="sm"
+                                        :loading="isSubmitNotPickedLoading === pallet.id"
+                                        v-tooltip="trans('Set as not picked')"
+                                        @click="() => onSetAsNotPickedQuick(pallet.id, pallet.notPickedPalletRoute)"
+                                    />
 
                                 </template>
 
-                                <Link
-                                    v-else-if="isPickingFinished() && pallet.undoPickingRoute?.name && (pallet.state === 'picked' || pallet.pivot_state === 'picked')"
-                                    as="div"
-                                    :href="route(pallet.undoPickingRoute.name, pallet.undoPickingRoute.parameters)"
-                                    method="patch"
-                                    preserveScroll
-                                    @start="() => (isPickingLoading = pallet.id)"
-                                    @finish="() => (isPickingLoading = false)"
-                                    v-tooltip="trans('Undo picking')"
-                                >
-                                    <Button icon="fal fa-undo" label="Undo picking" type="tertiary" size="xs" :loading="isPickingLoading === pallet.id" class="py-0" />
-                                </Link>
-
-                                <div v-else-if="pallet.status === 'incident' && pallet.state === 'lost'" class="text-red-300 italic">
+                                <div v-else-if="pallet.undoPickingRoute?.name && (pallet.state === 'picked' || pallet.state === 'not_picked')" class="flex items-center justify-center gap-x-1">
+                                    <FontAwesomeIcon
+                                        v-if="pallet.state === 'not_picked'"
+                                        :icon="faSkull"
+                                        v-tooltip="trans('Pallet not picked')"
+                                        class="text-red-500"
+                                        fixed-width
+                                        aria-hidden="true"
+                                    />
+                                    <Link v-if="isPickingFinished()"
+                                        as="div"
+                                        :href="route(pallet.undoPickingRoute.name, pallet.undoPickingRoute.parameters)"
+                                        method="patch"
+                                        preserveScroll
+                                    :only="partialReloadKeys"
+                                        @start="() => (isPickingLoading = pallet.id)"
+                                        @finish="() => (isPickingLoading = false)"
+                                        v-tooltip="trans('Undo pick')"
+                                        class="flex items-center justify-center"
+                                    >
+                                        <Button icon="fal fa-undo" type="negative" size="xs" :loading="isPickingLoading === pallet.id" class="py-0" />
+                                    </Link>
+                                </div>
+                                <div v-else-if="pallet.state === 'lost'" class="text-red-300 italic">
+                                    <FontAwesomeIcon
+                                        :icon="faSkull"
+                                        v-tooltip="trans('Pallet not picked')"
+                                        class="text-red-500"
+                                        fixed-width
+                                        aria-hidden="true"
+                                    />
                                     {{ trans("Pallet lost") }}
                                 </div>
-                                <div v-else-if="pallet.status === 'incident' && pallet.state === 'damaged'" class="text-red-300 italic">
+                                <div v-else-if="pallet.state === 'damaged'" class="text-red-300 italic">
+                                    <FontAwesomeIcon
+                                        :icon="faSkull"
+                                        v-tooltip="trans('Pallet not picked')"
+                                        class="text-red-500"
+                                        fixed-width
+                                        aria-hidden="true"
+                                    />
                                     {{ trans("Pallet damaged") }}
                                 </div>
-                                <div v-else-if="pallet.pivot_state === 'cancel'" class="text-red-300 italic">
-                                    {{ trans("Pallet set back to storing") }}
+                                <div v-else-if="pallet.state === 'other_incident'" class="text-red-300 italic">
+                                    <FontAwesomeIcon :icon="faSkull"
+                                        v-tooltip="trans('Pallet not picked')" class="text-red-500" fixed-width
+                                        aria-hidden="true" />
+                                    {{ trans("Other incident") }}
                                 </div>
                                 <div v-else class="text-gray-400"></div>
+                                 <div v-if="(pallet.state === 'picked' || pallet.state === 'dispatched') && isPackingFinished()" class="text-gray-500">
+                                    <FontAwesomeIcon icon="fal fa-hand-holding-box"
+                                        class="mr text-gray-500" fixed-width aria-hidden="true" />
+                                        {{ trans("Picked") }}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -677,21 +652,11 @@ const palletRoute = (item: any) => {
                     <Button
                         v-if="canRowSetAsPicked(item)"
                         icon="fal fa-save"
-                        :label="trans('Set as Picked')"
+                        :label="trans('Finish Picking')"
                         type="secondary"
                         size="xs"
                         class="py-0"
                         @click="onOpenSetAsPickedModal(item)"
-                    />
-                    <Button
-                        v-else
-                        icon="fal fa-save"
-                        :label="trans('Set as Picked')"
-                        type="secondary"
-                        size="xs"
-                        class="py-0"
-                        :disabled="true"
-                        v-tooltip="trans('Set all items as picked or not picked first')"
                     />
                 </template>
                 <Button
@@ -777,14 +742,18 @@ const palletRoute = (item: any) => {
         </template>
 
         <template #cell(location)="{ item }">
-            <Tag v-if="item.location_code" :label="item.location_code" />
-            <div v-else class="text-gray-400">-</div>
+            <Link v-if="locationRoute(item)" :href="locationRoute(item)" class="secondaryLink">
+                {{ item.location_code }}
+            </Link>
+            <div v-else class="text-gray-400">
+                {{ item.location_code || "-" }}
+            </div>
         </template>
 
         <template #cell(actions)="{ item }">
             <div class="flex flex-col items-end gap-y-1">
                 <div class="flex gap-x-2">
-                    <template v-if="item.updateRoute?.name && (item.state === 'picking' || item.pivot_state === 'picking')">
+                    <template v-if="item.updateRoute?.name && item.state === 'picking'">
                         <Link
                             as="div"
                             :href="route(item.updateRoute.name, item.updateRoute.parameters)"
@@ -797,84 +766,49 @@ const palletRoute = (item: any) => {
                             <Button icon="fal fa-clipboard-list-check" type="secondary" size="sm" :loading="isPickingLoading === item.id" class="py-0" />
                         </Link>
 
-                        <Popover v-if="item.notPickedRoute?.name">
-                            <template #button="{ open }">
-                                <Button
-                                    icon="fal fa-debug"
-                                    :type="'negative'"
-                                    size="sm"
-                                    :key="item.id + open"
-                                    :loading="isSubmitNotPickedLoading === item.id"
-                                    v-tooltip="trans('Set as not picked')"
-                                />
-                            </template>
-                            <template #content="{ close }">
-                                <div class="w-[250px]">
-                                    <div class="mb-3">
-                                        <div class="text-xs px-1 mb-1">
-                                            <span class="text-red-500 text-sm mr-0.5">*</span>{{ trans("Select status:") }}
-                                        </div>
-                                        <PureMultiselect
-                                            v-model="selectedStatusNotPicked.status"
-                                            @update:modelValue="() => (errorNotPicked.status = null)"
-                                            :options="listStatusNotPicked"
-                                            required
-                                            caret
-                                            :class="errorNotPicked.status ? 'errorShake' : ''"
-                                        />
-                                        <div v-if="errorNotPicked.status" class="mt-1 text-red-500 italic text-xxs">
-                                            {{ errorNotPicked.status }}
-                                        </div>
-                                    </div>
-
-                                    <div class="mb-4">
-                                        <div class="text-xs px-1 mb-1">
-                                            <span class="text-red-500 text-sm mr-0.5">*</span>{{ trans("Description:") }}
-                                        </div>
-                                        <PureTextarea
-                                            v-model="selectedStatusNotPicked.notes"
-                                            @update:modelValue="() => (errorNotPicked.notes = null)"
-                                            :placeholder="trans('Enter reason why the pallet is not picked')"
-                                            :class="errorNotPicked.notes ? 'errorShake' : ''"
-                                        />
-                                        <div v-if="errorNotPicked.notes" class="mt-1 text-red-500 italic text-xxs">
-                                            {{ errorNotPicked.notes }}
-                                        </div>
-                                    </div>
-
-                                    <div class="flex justify-end mt-2">
-                                        <Button
-                                            @click="async () => onSubmitNotPicked(item.id, close, item.notPickedRoute)"
-                                            full
-                                            :label="trans('Submit')"
-                                            :disabled="!selectedStatusNotPicked.status || !selectedStatusNotPicked.notes"
-                                            :loading="isSubmitNotPickedLoading === item.id"
-                                        />
-                                    </div>
-                                </div>
-                            </template>
-                        </Popover>
+                        <Button
+                            v-if="item.notPickedPalletRoute?.name"
+                            icon="fal fa-debug"
+                            :type="'negative'"
+                            size="sm"
+                            :loading="isSubmitNotPickedLoading === item.id"
+                            v-tooltip="trans('Set as not picked')"
+                            @click="() => onSetAsNotPickedQuick(item.id, item.notPickedPalletRoute)"
+                        />
 
                     </template>
 
-                    <Link
-                        v-else-if="isPickingFinished() && item.undoPickingRoute?.name && (item.state === 'picked' || item.pivot_state === 'picked')"
-                        as="div"
-                        :href="route(item.undoPickingRoute.name, item.undoPickingRoute.parameters)"
-                        method="patch"
-                        preserveScroll
-                        @start="() => (isPickingLoading = item.id)"
-                        @finish="() => (isPickingLoading = false)"
-                        v-tooltip="trans('Undo picking')"
-                    >
-                        <Button icon="fal fa-undo" label="Undo picking" type="tertiary" size="xs" :loading="isPickingLoading === item.id" class="py-0" />
-                    </Link>
-
-                    <div v-else-if="item.status === 'incident' && item.state === 'lost'" class="text-red-300 italic">
+                    <div v-else-if="item.undoPickingRoute?.name && (item.state === 'picked' || item.state === 'not_picked')" class="flex items-center justify-center gap-x-1">
+                        <FontAwesomeIcon
+                            v-if="item.state === 'not_picked'"
+                            :icon="faSkull"
+                            v-tooltip="trans('Pallet not picked')"
+                            class="text-red-500"
+                            fixed-width
+                            aria-hidden="true"
+                        />
+                        <Link
+                            as="div"
+                            :href="route(item.undoPickingRoute.name, item.undoPickingRoute.parameters)"
+                            method="patch"
+                            preserveScroll
+                            :only="partialReloadKeys"
+                            @start="() => (isPickingLoading = item.id)"
+                            @finish="() => (isPickingLoading = false)"
+                            v-tooltip="trans('Undo pick')"
+                            class="flex items-center justify-center"
+                        >
+                            <Button icon="fal fa-undo" label="Undo picking" type="tertiary" size="xs" :loading="isPickingLoading === item.id" class="py-0" />
+                        </Link>
+                    </div>
+                    <div v-else-if="item.state === 'lost'" class="text-red-300 italic">
                         {{ trans("Pallet lost") }}
                     </div>
-                    <div v-else-if="item.status === 'incident' && item.state === 'damaged'" class="text-red-300 italic">
+                    <div v-else-if="item.state === 'damaged'" class="text-red-300 italic">
                         {{ trans("Pallet damaged") }}
+                    </div>
+                    <div v-else-if="item.state === 'other_incident'" class="text-red-300 italic">
+                        {{ trans("Other incident") }}
                     </div>
                     <div v-else-if="item.pivot_state === 'cancel'" class="text-red-300 italic">
                         {{ trans("Pallet set back to storing") }}
@@ -886,8 +820,9 @@ const palletRoute = (item: any) => {
                     <template v-if="getDispatchableReturn(item)?.state === 'picking'">
                         <Button
                             v-if="canRowSetAsPicked(item)"
-                            icon="fal fa-save"
-                            :label="trans('Set as Picked')"
+                            icon="fas fa-monument"
+                            iconRight="fal fa-arrow-right"
+                            :label="trans('Finish picking')"
                             type="secondary"
                             size="xs"
                             class="py-0"
@@ -895,8 +830,9 @@ const palletRoute = (item: any) => {
                         />
                         <Button
                             v-else
-                            icon="fal fa-save"
-                            :label="trans('Set as Picked')"
+                            icon="fas fa-monument"
+                            iconRight="fal fa-arrow-right"
+                            :label="trans('Finish picking')"
                             type="secondary"
                             size="xs"
                             class="py-0"
