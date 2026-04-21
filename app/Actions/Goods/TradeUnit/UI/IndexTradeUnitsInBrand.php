@@ -113,6 +113,7 @@ class IndexTradeUnitsInBrand extends GrpAction
                             'style'   => 'create',
                             'tooltip' => __('Add Trade Units under this Brand'),
                             'label'   => __('Add Trade Units'),
+                            'key'     => 'add_trade_units',
                             'route'   => [
                                 // 'name'       => 'grp.org.shops.show.billables.charges.create',
                                 // 'parameters' => $request->route()->originalParameters()
