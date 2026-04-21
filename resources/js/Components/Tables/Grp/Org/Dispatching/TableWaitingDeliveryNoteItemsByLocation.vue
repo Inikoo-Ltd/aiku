@@ -265,7 +265,7 @@ const selectedTransactionToSetAsWaiting = ref(null)
                                 min: 0,
                                 max: Math.min(
                                     Number(findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.quantity),
-                                    Number(itemValue.quantity_waiting_warehouse) )
+                                    Number(get(itemValue, 'waiting_warehouse_quantity', 0)) + Number(itemValue.quantity_waiting_warehouse) )
                             }"
                             :additionalData="{
                                 location_org_stock_id: findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).id,

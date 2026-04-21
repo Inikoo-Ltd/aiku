@@ -146,6 +146,8 @@ class Employee extends Model implements HasMedia, Auditable
         'salary' => 'array',
         'working_hours' => 'array',
         'migration_data' => 'array',
+        'employment_start_at' => 'datetime:Y-m-d',
+        'employment_end_at' => 'datetime:Y-m-d',
         'date_of_birth' => 'datetime:Y-m-d',
         'gender' => GenderEnum::class,
         'state' => EmployeeStateEnum::class,
