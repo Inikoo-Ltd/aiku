@@ -64,7 +64,7 @@ const generateLocationRoute = (location: any) => {
 }
 
 const findLocation = (locationsList: any[], selectedCode: string) => {
-    return locationsList?.find(x => x.location_code === selectedCode) || locationsList?.[0]
+    return locationsList?.find(x => x.location_code === selectedCode) || locationsList?.find(x => Number(x.quantity)) || locationsList?.[0]
 }
 
 const isModalLocation = ref(false)
@@ -164,10 +164,10 @@ const selectedTransactionToSetAsWaiting = ref(null)
                             <div class="flex justify-end w-full items-center gap-x-3">
 
                                 <!-- Actions: Locations, input Quantity -->
-                                <div v-if="!isStillPicking && findLocation(deliveryItem.locations, proxyItem.org_stock_id)" class="flex items-center gap-x-2">
+                                <div v-if="!isStillPicking && findLocation(deliveryItem.locations, proxyItem.selectedRadioLocationCode)" class="flex items-center gap-x-2">
                                     <!-- Section: Location -->
                                     <Transition name="spin-to-down">
-                                        <div :key="findLocation(deliveryItem.locations, proxyItem.org_stock_id)?.location_code">
+                                        <div :key="findLocation(deliveryItem.locations, proxyItem.selectedRadioLocationCode)?.location_code">
                                             <!-- Section: number of locations available to pick -->
                                             <span v-if="deliveryItem.locations?.length > 1" @click="() => {
                                                     isModalLocation = true;
@@ -178,11 +178,11 @@ const selectedTransactionToSetAsWaiting = ref(null)
                                                     <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
                                                     {{ deliveryItem.locations?.length - 1 }}
                                                 </span>
-                                            <span v-if="findLocation(deliveryItem.locations, proxyItem.org_stock_id)" class="text-base">
+                                            <span v-if="findLocation(deliveryItem.locations, proxyItem.selectedRadioLocationCode)" class="text-base">
                                                     <Link v-tooltip="`${deliveryItem.warehouse_area}`"
-                                                        :href="generateLocationRoute(findLocation(deliveryItem.locations, proxyItem.org_stock_id))"
+                                                        :href="generateLocationRoute(findLocation(deliveryItem.locations, proxyItem.selectedRadioLocationCode))"
                                                         class="secondaryLink">
-                                                        {{ findLocation(deliveryItem.locations, proxyItem.org_stock_id).location_code }}
+                                                        {{ findLocation(deliveryItem.locations, proxyItem.selectedRadioLocationCode).location_code }}
                                                     </Link>
                                                 </span>
                                             <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">
@@ -191,16 +191,16 @@ const selectedTransactionToSetAsWaiting = ref(null)
     
                                             <!-- Section: number of stocks -->
                                             <span
-                                                v-tooltip="trans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(findLocation(deliveryItem.locations, proxyItem.org_stock_id)?.quantity || 0), stockLocation: findLocation(deliveryItem.locations, proxyItem.org_stock_id)?.location_code || '' })"
+                                                v-tooltip="trans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(findLocation(deliveryItem.locations, proxyItem.selectedRadioLocationCode)?.quantity || 0), stockLocation: findLocation(deliveryItem.locations, proxyItem.selectedRadioLocationCode)?.location_code || '' })"
                                                 class="align-middle whitespace-nowrap text-base py-0.5 xopacity-70 tabular-nums xborder border-gray-300 rounded xpx-1"
                                             >
                                                     (<span class="text-lg font-bold">
                                                         <FractionDisplay
-                                                            v-if="findLocation(deliveryItem.locations, proxyItem.org_stock_id)?.quantity_fractional"
-                                                            :fractionData="findLocation(deliveryItem.locations, proxyItem.org_stock_id)?.quantity_fractional"
+                                                            v-if="findLocation(deliveryItem.locations, proxyItem.selectedRadioLocationCode)?.quantity_fractional"
+                                                            :fractionData="findLocation(deliveryItem.locations, proxyItem.selectedRadioLocationCode)?.quantity_fractional"
                                                         />
                                                         <template v-else>
-                                                            {{ locale.number(findLocation(deliveryItem.locations, proxyItem.org_stock_id)?.quantity || 0) }}
+                                                            {{ locale.number(findLocation(deliveryItem.locations, proxyItem.selectedRadioLocationCode)?.quantity || 0) }}
                                                         </template>
                                                     </span>
                                                     <span class="text-sm ml-1">{{ ctrans("stocks") }}</span>)
