@@ -40,6 +40,7 @@ import { faOctopusDeploy } from '@fortawesome/free-brands-svg-icons'
 import ImagesManagement from '@/Components/Goods/ImagesManagement.vue'
 import ProductCategoryTimeSeriesTable from '@/Components/Product/ProductCategoryTimeSeriesTable.vue'
 import Breadcrumb from 'primevue/breadcrumb'
+import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOffers.vue'
 
 library.add(
     faFolder,
@@ -82,6 +83,12 @@ const props = defineProps<{
     images?: object
     sales?: object
     salesData?: object
+    product_category_id?: number
+    shop_data: {
+        id:number
+        slug: string
+        currency_code: string
+    }
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -150,6 +157,13 @@ const onSubmitAddItem = async (idProduct: number[]) => {
                 />
             </Link>
             </div>
+        </template>
+         <template #otherBefore>
+            <ModalCreateCategoryOffers
+                v-if="currentTab === 'offers'"
+                :shop_data="props.shop_data"
+                :product_category_id="props.product_category_id"
+            />
         </template>
     </PageHeading>
 

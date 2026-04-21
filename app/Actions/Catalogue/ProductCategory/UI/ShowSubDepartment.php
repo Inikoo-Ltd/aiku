@@ -208,6 +208,13 @@ class ShowSubDepartment extends OrgAction
                     'method'     => 'post'
                 ] : [],
 
+                'shop_data'                            => [
+                    'id'            => $subDepartment->shop->id,
+                    'slug'          => $subDepartment->shop->slug,
+                    'currency_code' => $subDepartment->shop->currency->code,
+                ],
+                'product_category_id'                  => $subDepartment->id,
+
                 DepartmentTabsEnum::SHOWCASE->value => $this->tab == DepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryShowcase::run($subDepartment)
                     : Inertia::lazy(fn () => GetProductCategoryShowcase::run($subDepartment)),

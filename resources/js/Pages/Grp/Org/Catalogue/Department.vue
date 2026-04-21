@@ -36,6 +36,7 @@ import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons";
 import ImagesManagement from "@/Components/Goods/ImagesManagement.vue";
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue";
 import Breadcrumb from 'primevue/breadcrumb'
+import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOffers.vue'
 
 library.add(
     faFolder,
@@ -74,6 +75,12 @@ const props = defineProps<{
     images?:object
     sales?: object
     salesData?: object
+    product_category_id?: number
+    shop_data: {
+        id: number
+        slug: string
+        currency_code: string
+    }
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -131,6 +138,14 @@ const component = computed(() => {
             </Link>
             </div>
         </template>
+
+        <template #otherBefore>
+            <ModalCreateCategoryOffers
+                v-if="currentTab === 'offers'"
+                :shop_data="props.shop_data"
+                :product_category_id="props.product_category_id"
+            />
+        </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
      <div v-if="mini_breadcrumbs.length != 0" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
@@ -166,4 +181,3 @@ const component = computed(() => {
     display: none !important;
 }
 </style>
-
