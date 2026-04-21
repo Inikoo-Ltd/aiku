@@ -464,23 +464,25 @@ const onSetItemToUndoWaitingWarehouse = () => {
         <!-- Column: Name -->
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
             <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span></div>
-            <div>
+            <div class="flex items-center flex-wrap">
+                <!-- Label: expired date -->
                 <ExpiryDateLabel v-if="(deliveryNoteItem.expiry_date || deliveryNoteItem.batch_code) && (deliveryNoteItem.is_picked && !deliveryNoteItem.is_packed)" :expiry_date="deliveryNoteItem.expiry_date" :batch_code="deliveryNoteItem.batch_code" />
-                <template v-if="deliveryNoteItem.is_picked && !deliveryNoteItem.is_packed">
+
+                <!-- Button: add/edit expiry date and batch code -->
+                <div v-if="deliveryNoteItem.is_picked && state !== 'cancelled'">
                     <Button
                         v-if="deliveryNoteItem.expiry_date || deliveryNoteItem.batch_code"
                         @click="() => (isModalEditExpiryDate = true, selectedItemToEditExpiryDate = deliveryNoteItem)"
                         type="transparent"
-                        v-tooltip="trans('Edit expiry date and batch code')"
+                        v-tooltip="ctrans('Edit expiry date and batch code')"
                         size="xs"
                         icon="fal fa-pencil"
                     />
                     <Button v-else
                         @click="() => (isModalEditExpiryDate = true, selectedItemToEditExpiryDate = deliveryNoteItem)"
                         type="tertiary"
-                        vxtooltip="trans('Add expiry date and batch code')"
                         size="xs"
-                        :label="trans('Add expiry date and batch code')"
+                        :label="ctrans('Add expiry date and batch code')"
                         icon="fas fa-plus"
                         key="1"
                     >
@@ -488,7 +490,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                             <FontAwesomeIcon icon="fad fa-viruses" class="text-red-500" fixed-width aria-hidden="true" />
                         </template>
                     </Button>
-                </template>
+                </div>
             </div>
         </template>
 
@@ -1093,6 +1095,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     fluid
                     dateFormat="dd M yy"
                     :disabled="isLoadingSubmitExpiryDate"
+                    :showClear="true"
                 />
             </div>
 
