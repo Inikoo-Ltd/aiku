@@ -9,7 +9,6 @@
 namespace App\Models\Inventory;
 
 use App\Enums\Inventory\Location\LocationStatusEnum;
-use App\Models\Dispatching\PickingRoute;
 use App\Models\Fulfilment\Pallet;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
@@ -20,10 +19,11 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -52,12 +52,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $has_fulfilment
  * @property string|null $barcode
  * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $audited_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $audited_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $source_id
  * @property string|null $sort_code
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -66,7 +66,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Inventory\LostAndFoundStock> $lostAndFoundStocks
  * @property-read Organisation $organisation
  * @property-read Collection<int, Pallet> $pallets
- * @property-read Collection<int, PickingRoute> $pickingRoutes
  * @property-read \App\Models\Inventory\LocationStats|null $stats
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @property-read \App\Models\Inventory\WarehouseArea|null $warehouseArea
@@ -86,16 +85,17 @@ class Location extends Model implements Auditable
     use HasFactory;
     use HasHistory;
     use InWarehouse;
+    use Searchable;
 
     protected $casts = [
-        'data'               => 'array',
-        'audited_at'         => 'datetime',
-        'status'             => LocationStatusEnum::class,
-        'stock_value'        => 'decimal:2',
-        'max_weight'         => 'decimal:3',
-        'max_volume'         => 'decimal:4',
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'data'            => 'array',
+        'audited_at'      => 'datetime',
+        'status'          => LocationStatusEnum::class,
+        'stock_value'     => 'decimal:2',
+        'max_weight'      => 'decimal:3',
+        'max_volume'      => 'decimal:4',
+        'fetched_at'      => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
@@ -103,6 +103,25 @@ class Location extends Model implements Auditable
     ];
 
     protected $guarded = [];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'                => (string)$this->id,
+            'warehouse_id'      => $this->warehouse_id,
+            'warehouse_area_id' => $this->warehouse_area_id,
+            'code'              => $this->code,
+            'status'            => $this->status->value,
+            'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
+
+    public function shouldBeSearchable(): bool
+    {
+        $searchableFields = ['code', 'status', 'created_at', 'warehouse_area_id', 'warehouse_id'];
+
+        return $this->isDirty($searchableFields);
+    }
 
     public function generateTags(): array
     {
@@ -158,11 +177,5 @@ class Location extends Model implements Auditable
     {
         return $this->hasMany(Pallet::class);
     }
-
-    public function pickingRoutes(): BelongsToMany
-    {
-        return $this->belongsToMany(PickingRoute::class, 'picking_route_has_locations');
-    }
-
 
 }

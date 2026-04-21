@@ -60,8 +60,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $job_title
  * @property EmployeeTypeEnum $type
  * @property EmployeeStateEnum $state
- * @property string|null $employment_start_at
- * @property string|null $employment_end_at
+ * @property \Illuminate\Support\Carbon|null $employment_start_at
+ * @property \Illuminate\Support\Carbon|null $employment_end_at
  * @property array<array-key, mixed>|null $emergency_contact
  * @property array<array-key, mixed>|null $salary
  * @property array<array-key, mixed>|null $working_hours
@@ -146,6 +146,8 @@ class Employee extends Model implements HasMedia, Auditable
         'salary' => 'array',
         'working_hours' => 'array',
         'migration_data' => 'array',
+        'employment_start_at' => 'datetime:Y-m-d',
+        'employment_end_at' => 'datetime:Y-m-d',
         'date_of_birth' => 'datetime:Y-m-d',
         'gender' => GenderEnum::class,
         'state' => EmployeeStateEnum::class,

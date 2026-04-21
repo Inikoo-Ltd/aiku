@@ -62,11 +62,11 @@ class IndexPurchaseOrderTransactions extends OrgAction
                 ->withModelOperations()
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'supplier', label: __('supplier'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'unit_cost', label: __('unit price'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'quantity_ordered', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'total_cost', label: __('cost'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'state', label: __('state'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'supplier', label: __('Supplier'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'unit_cost', label: __('Unit Price'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'quantity_ordered', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'total_cost', label: __('Cost'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
     }

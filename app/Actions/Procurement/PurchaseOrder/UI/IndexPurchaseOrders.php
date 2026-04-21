@@ -301,7 +301,7 @@ class IndexPurchaseOrders extends OrgAction
                             ],
                             'method'     => 'post'
                         ],
-                        'label' => __('purchase order')
+                        'label' => __('Purchase Order')
                     ]
                 ];
             $title         = $this->parent->supplier->name;
