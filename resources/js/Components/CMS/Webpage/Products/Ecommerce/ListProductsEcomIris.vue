@@ -265,7 +265,7 @@ const sortOptions = computed(() => {
     return baseOptions
 })
 
-const sortKey = ref("created_at")
+const sortKey = ref(null)
 const isAscending = ref(true)
 
 
