@@ -47,6 +47,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -201,6 +203,7 @@ class Order extends Model implements HasMedia, Auditable
     use HasAddresses;
     use HasAttachments;
     use HasHistory;
+    use Searchable;
 
 
     protected $casts = [
@@ -269,6 +272,35 @@ class Order extends Model implements HasMedia, Auditable
     ];
 
     protected $guarded = [];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'                 => (string)$this->id,
+            'organisation_id'    => $this->organisation_id,
+            'shop_id'            => $this->shop_id,
+            'customer_id'        => $this->customer_id,
+            'state'              => $this->state->value,
+            'reference'          => $this->reference,
+            'customer_reference' => $this->customer_reference,
+            'date'               => is_string($this->date) ? Carbon::parse($this->date)->timestamp : $this->date->timestamp,
+        ];
+    }
+
+    public function shouldBeSearchable(): bool
+    {
+        $searchableFields = [
+            'organisation_id',
+            'shop_id',
+            'customer_id',
+            'state',
+            'reference',
+            'customer_reference',
+            'date'
+        ];
+
+        return $this->isDirty($searchableFields);
+    }
 
     public function generateTags(): array
     {

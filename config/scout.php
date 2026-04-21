@@ -11,6 +11,7 @@ use App\Actions\Catalogue\Product\Search\GetProductSearchSchema;
 use App\Actions\Catalogue\ProductCategory\Search\GetProductCategorySearchSchema;
 use App\Actions\CRM\Customer\Search\GetCustomerSearchSchema;
 use App\Actions\Inventory\Location\Search\GetLocationSearchSchema;
+use App\Actions\Ordering\Order\Search\GetOrderSearchSchema;
 use App\Actions\SupplyChain\Supplier\Search\GetSupplierSearchSchema;
 use App\Actions\SysAdmin\Guest\Search\GetGuestSearchSchema;
 use App\Actions\SysAdmin\User\Search\GetUserSearchSchema;
@@ -19,6 +20,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
 use App\Models\Inventory\Location;
+use App\Models\Ordering\Order;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\User;
@@ -170,6 +172,7 @@ return [
             Supplier::class        => GetSupplierSearchSchema::run(),
             Location::class        => GetLocationSearchSchema::run(),
             Customer::class        => GetCustomerSearchSchema::run(),
+            Order::class           => GetOrderSearchSchema::run(),
 
         ],
     ],
