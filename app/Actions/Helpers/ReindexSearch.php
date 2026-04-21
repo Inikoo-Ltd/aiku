@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Collection\Search\ReindexCollectionSearch;
 use App\Actions\Catalogue\Product\Search\ReindexProductSearch;
 use App\Actions\Catalogue\ProductCategory\Search\ReindexProductCategorySearch;
 use App\Actions\HydrateModel;
+use App\Actions\Inventory\Location\Search\ReindexLocationSearch;
 use App\Actions\SupplyChain\Supplier\Search\ReindexSupplierSearch;
 use App\Actions\SysAdmin\Guest\Search\ReindexGuestSearch;
 use App\Actions\SysAdmin\User\Search\ReindexUserSearch;
@@ -215,8 +216,12 @@ class ReindexSearch extends HydrateModel
     protected function reindexInventory(Command $command): void
     {
         $command->info('Inventory section 📦');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
         //        $command->call('search:warehouse_areas');
-        //        $command->call('search:locations');
+        ReindexLocationSearch::run(reset: $command->option('reset'));
+
         //        $command->call('search:org_stocks');
         //        $command->call('search:org_stock_families');
     }

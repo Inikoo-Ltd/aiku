@@ -14,6 +14,7 @@ use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class CalculateOrgStockCurrentStockHistories implements ShouldBeUnique
@@ -46,7 +47,7 @@ class CalculateOrgStockCurrentStockHistories implements ShouldBeUnique
         }
 
 
-        $date         = now();
+        $date         = Carbon::now();
         $exchangeRate = GetCurrencyExchange::run($orgStock->organisation->currency, $orgStock->group->currency);
 
         $orgStockLocationData  = [];

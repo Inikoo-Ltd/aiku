@@ -39,7 +39,8 @@ class WebsiteHydrateWebpages implements ShouldBeUnique
             enum: WebpageStateEnum::class,
             models: Webpage::class,
             where: function ($q) use ($website) {
-                $q->where('website_id', $website->id);
+                $q->where('website_id', $website->id)
+                    ->where('layout_style', 'main_page');
             }
         ));
 
@@ -49,7 +50,8 @@ class WebsiteHydrateWebpages implements ShouldBeUnique
             enum: WebpageTypeEnum::class,
             models: Webpage::class,
             where: function ($q) use ($website) {
-                $q->where('website_id', $website->id);
+                $q->where('website_id', $website->id)
+                    ->where('layout_style', 'main_page');
             }
         ));
 
@@ -59,9 +61,17 @@ class WebsiteHydrateWebpages implements ShouldBeUnique
             enum: WebpageSubTypeEnum::class,
             models: Webpage::class,
             where: function ($q) use ($website) {
-                $q->where('website_id', $website->id);
+                $q->where('website_id', $website->id)
+                    ->where('layout_style', 'main_page');
             }
         ));
+
+        $stats = array_merge($stats, [
+            'number_webpages_families_overview' => 
+                Webpage::where('website_id', $website->id)
+                    ->where('layout_style', 'families-overview')
+                    ->count()
+        ]);
 
         $website->webStats()->update($stats);
     }
