@@ -37,6 +37,7 @@ import ImagesManagement from "@/Components/Goods/ImagesManagement.vue";
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue";
 import Breadcrumb from 'primevue/breadcrumb'
 import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOffers.vue'
+import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 
 library.add(
     faFolder,
@@ -81,6 +82,7 @@ const props = defineProps<{
         slug: string
         currency_code: string
     }
+    offers?: {}
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -96,7 +98,8 @@ const component = computed(() => {
         details: ModelDetails,
         history: TableHistories,
         images: ImagesManagement,
-        sales: ProductCategoryTimeSeriesTable
+        sales: ProductCategoryTimeSeriesTable,
+        offers: TableOffers
     };
     return components[currentTab.value];
 
