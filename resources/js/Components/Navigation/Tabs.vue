@@ -34,6 +34,7 @@ import {
 	faPenAlt,
 	faShapes,
 	faLayerGroup,
+	faSortShapesUpAlt,
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -66,7 +67,8 @@ library.add(
 	faAlbumCollection,
 	faUndo,
 	faPenAlt,
-	faLayerGroup
+	faLayerGroup,
+	faSortShapesUpAlt
 )
 
 const layoutStore = inject("layout", layoutStructure)

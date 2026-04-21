@@ -9,7 +9,6 @@
 namespace App\Models\Inventory;
 
 use App\Enums\Inventory\Location\LocationStatusEnum;
-use App\Models\Dispatching\PickingRoute;
 use App\Models\Fulfilment\Pallet;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
@@ -53,12 +52,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $has_fulfilment
  * @property string|null $barcode
  * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $audited_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $audited_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $source_id
  * @property string|null $sort_code
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -67,7 +66,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Inventory\LostAndFoundStock> $lostAndFoundStocks
  * @property-read Organisation $organisation
  * @property-read Collection<int, Pallet> $pallets
- * @property-read Collection<int, PickingRoute> $pickingRoutes
  * @property-read \App\Models\Inventory\LocationStats|null $stats
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @property-read \App\Models\Inventory\WarehouseArea|null $warehouseArea

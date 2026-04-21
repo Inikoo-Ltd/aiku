@@ -76,6 +76,7 @@ class ShowOrgStock extends OrgAction
                     ],
                     'model'         => __('SKU'),
                     'title'         => $orgStock->code,
+                    'iconRight'          => $orgStock->state->stateIcon()[$orgStock->state->value],
                     'actions'       => [
                         [
                             'type'  => 'button',

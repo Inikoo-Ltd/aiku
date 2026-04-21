@@ -135,6 +135,15 @@ const formatEmergencyContact = (value: any): string => {
 						</div>
 					</div>
 
+					<div v-if="data?.employee?.data?.employment_end_at" class="grid grid-cols-2 xl:grid-cols-3 gap-x-5 text-sm">
+						<div class="text-gray-400">
+							{{ trans("End Working") }}
+						</div>
+						<div class="xl:col-span-2 font-medium text-right lg:text-left">
+							{{ useFormatTime(data?.employee?.data.employment_end_at) }}
+						</div>
+					</div>
+
 					<div class="grid grid-cols-2 xl:grid-cols-3 gap-x-5 text-sm">
 						<div class="text-gray-400">
 							{{ trans("State") }}

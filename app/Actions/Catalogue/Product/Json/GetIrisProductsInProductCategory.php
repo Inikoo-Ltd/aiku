@@ -74,9 +74,22 @@ class GetIrisProductsInProductCategory extends IrisAction
             if (in_array($column, $allowedColumnsToOrder)) {
                 $queryBuilder->orderBy($column, $direction);
             }
+        } else {
+            if ($productCategory->type === ProductCategoryTypeEnum::FAMILY) {
+                $queryBuilder->orderBy("index_under_{$productCategory->type->value}");
+            }
+            $queryBuilder->orderBy("name");
         }
 
-        return $this->getData($queryBuilder, $perPage);
+        $products = null;
+
+        if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
+            $products = $this->getUnsortedData($queryBuilder, $perPage);
+        } else {
+            $products = $this->getData($queryBuilder, $perPage);
+        }
+
+        return $products;
     }
 
 

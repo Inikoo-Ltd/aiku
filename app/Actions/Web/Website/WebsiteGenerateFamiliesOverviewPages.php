@@ -6,6 +6,7 @@ use App\Actions\Maintenance\Web\WithRepairWebpages;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\StoreWebpage;
+use App\Actions\Web\Website\Hydrators\WebsiteHydrateWebpages;
 use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -65,5 +66,7 @@ class WebsiteGenerateFamiliesOverviewPages
             }
 
         }
+
+        WebsiteHydrateWebpages::run($website);
     }
 }

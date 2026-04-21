@@ -76,6 +76,19 @@ class ShowWebsite extends OrgAction
                 'icon'  => 'fal fa-folder-tree',
                 "color" => "#b45309",
                 'value' => $website->webStats->number_webpages_sub_type_department,
+                'metaRight'  => [
+                    'route'     => [
+                        'name'       => 'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview',
+                        'parameters' => [
+                            'organisation' => $shop->organisation->slug,
+                            'shop'         => $shop->slug,
+                            'website'      => $website->slug
+                        ]
+                    ],
+                    'icon'      => 'fal fa-window-frame',
+                    'tooltip'   => 'Family overview pages under department',
+                    'count'     => $website->webStats->number_webpages_families_overview
+                ]
             ],
             [
                 'label' => __('Sub Departments'),

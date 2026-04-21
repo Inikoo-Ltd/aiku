@@ -106,6 +106,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
 
     Route::get('/type/operations', [IndexWebpages::class, 'operations'])->name('index.type.operations');
     Route::get('/sub-type/department', IndexDepartmentWebpages::class)->name('index.sub_type.department');
+    Route::get('/sub-type/department/families-overview', [IndexDepartmentWebpages::class, 'familiesOverviewPages'])->name('index.sub_type.department.families_overview');
     Route::get('/sub-type/department/{scope}/sub-departments', [IndexSubDepartmentWebpages::class, 'inDepartmentWebpages'])->name('index.sub_type.department.sub_departments');
     Route::get('/sub-type/department/{scope}/families', [IndexFamilyWebpages::class, 'inDepartmentWebpages'])->name('index.sub_type.department.families');
     Route::get('/sub-type/department/{scope}/products', [IndexProductWebpages::class, 'inDepartmentWebpages'])->name('index.sub_type.department.products');

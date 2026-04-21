@@ -13,14 +13,14 @@ namespace App\Actions\Helpers;
 use App\Actions\Catalogue\Collection\Search\ReindexCollectionSearch;
 use App\Actions\Catalogue\Product\Search\ReindexProductSearch;
 use App\Actions\Catalogue\ProductCategory\Search\ReindexProductCategorySearch;
+use App\Actions\CRM\Customer\Search\ReindexCustomerSearch;
 use App\Actions\HydrateModel;
 use App\Actions\Inventory\Location\Search\ReindexLocationSearch;
+use App\Actions\Ordering\Order\Search\ReindexOrdersSearch;
 use App\Actions\SupplyChain\Supplier\Search\ReindexSupplierSearch;
 use App\Actions\SysAdmin\Guest\Search\ReindexGuestSearch;
 use App\Actions\SysAdmin\User\Search\ReindexUserSearch;
 use App\Actions\Traits\WithOrganisationsArgument;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 
 class ReindexSearch extends HydrateModel
@@ -31,7 +31,7 @@ class ReindexSearch extends HydrateModel
 
     public function asCommand(Command $command): int
     {
-        if ($this->checkIfCanReindex(['crm'], $command)) {
+        if ($this->checkIfCanReindex(['crm', 'cus', 'customers'], $command)) {
             $this->reindexCrm($command);
         }
 
@@ -71,7 +71,7 @@ class ReindexSearch extends HydrateModel
             $this->reindexSysadmin($command);
         }
 
-        if ($this->checkIfCanReindex(['ordering'], $command)) {
+        if ($this->checkIfCanReindex(['ordering', 'o'], $command)) {
             $this->reindexOrdering($command);
         }
 
@@ -165,7 +165,12 @@ class ReindexSearch extends HydrateModel
     protected function reindexOrdering(Command $command): void
     {
         $command->info('Ordering section 🛒');
-        //        $command->call('search:orders');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexOrdersSearch::run(reset: $command->option('reset'));
+
+
         //        $command->call('search:invoices');
         //        $command->call('search:delivery_notes');
     }
@@ -229,7 +234,10 @@ class ReindexSearch extends HydrateModel
     protected function reindexCrm(Command $command): void
     {
         $command->info('CRM section 👸🏻');
-        //        $command->call('search:customers');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexCustomerSearch::run(reset: $command->option('reset'));
         //        $command->call('search:prospects');
     }
 
@@ -244,12 +252,6 @@ class ReindexSearch extends HydrateModel
         //        $command->call('search:pallet_deliveries'); // not yet tested
         //        $command->call('search:pallets');
 
-        /** @var Shop $shop */
-        foreach (Shop::where('type', ShopTypeEnum::FULFILMENT)->get() as $shop) {
-            $command->call('search:invoices', [
-                '-S' => $shop->slug
-            ]);
-        }
     }
 
     private function checkIfCanReindex(array $keys, $command): bool

@@ -195,7 +195,7 @@ class IndexProductsInMasterProduct extends OrgAction
                     'mismatch_trade_unit_with_master'   => $hasMismatch,
                     'tabs'                         => [
                         'current'    => $this->tab,
-                        'navigation' => ProductsTabsEnum::navigationExcept([ProductsTabsEnum::SALES]),
+                        'navigation' => ProductsTabsEnum::navigationExcept([ProductsTabsEnum::SALES, ProductsTabsEnum::INDEX_ORDERING]),
                     ],
                     ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                         fn () => ProductsResource::collection($products)

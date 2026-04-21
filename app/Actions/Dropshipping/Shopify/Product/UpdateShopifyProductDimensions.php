@@ -40,7 +40,7 @@ class UpdateShopifyProductDimensions
 
             $inventoryItemId = $this->getInventoryItemId($shopifyUser, $variantId);
 
-            if(! $inventoryItemId) {
+            if (! $inventoryItemId) {
                 return;
             }
 

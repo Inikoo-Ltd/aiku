@@ -122,7 +122,7 @@ class IndexEmployees extends OrgAction
             );
         }
 
-        $queryBuilder->select(['employees.slug', 'employees.job_title', 'employees.contact_name', 'employees.state', 'employees.date_of_birth', 'organisations.name as organisation_name', 'organisations.slug as organisation_slug', 'employees.probation_period_days', 'employees.employment_start_at',]);
+        $queryBuilder->select(['employees.slug', 'employees.job_title', 'employees.contact_name', 'employees.state', 'employees.date_of_birth', 'organisations.name as organisation_name', 'organisations.slug as organisation_slug', 'employees.probation_period_days', 'employees.employment_start_at', 'employees.employment_end_at']);
 
         if (class_basename($parent) == 'Organisation') {
             $jobPositions = DB::table('employee_has_job_positions')
@@ -141,7 +141,7 @@ class IndexEmployees extends OrgAction
         return $queryBuilder
             ->defaultSort('slug')
             ->allowedSorts(['slug', 'state', 'contact_name', 'job_title', 'worker_number', 'date_of_birth'])
-            ->allowedFilters([$globalSearch, 'slug', 'contact_name', 'state', 'birthday_month'])
+            ->allowedFilters([$globalSearch, 'slug', 'contact_name', 'state', 'birthday_month', 'employment_start_at', 'employment_end_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -190,11 +190,18 @@ class IndexEmployees extends OrgAction
                 );
             }
             $table->withLabelRecord([__('employee'), __('employees')]);
-            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
+            $table
+                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'slug', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'contact_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'job_title', label: __('Job Title'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'date_of_birth', label: __('Birthday'), canBeHidden: true, sortable: true)
+                ->column(key: 'employment_start_at', label: __('Employment Start Date'), canBeHidden: true, sortable: false);
+
+            if ($this->hasLeftStateFilter($prefix)) {
+                $table->column(key: 'employment_end_at', label: __('Employment End Date'), canBeHidden: true, sortable: false);
+            }
+
+            $table
                 ->column(key: 'is_on_probation', label: __('Probation'), canBeHidden: false)
                 ->column(key: 'length_of_service', label: __('Length of Service'), canBeHidden: true);
             if ($parent instanceof Group) {
@@ -304,6 +311,32 @@ class IndexEmployees extends OrgAction
         $argumentName = ($prefix ? $prefix . '_' : '') . 'elements.state';
 
         return request()->filled($argumentName);
+    }
+
+    protected function hasLeftStateFilter(?string $prefix = null): bool
+    {
+        $argumentName = ($prefix ? $prefix . '_' : '') . 'elements.state';
+        $stateFilter = request()->input($argumentName);
+        $rawStateFilter = request()->query(($prefix ? $prefix . '_' : '') . 'elements[state]');
+        $sort = (string) request()->query(($prefix ? $prefix . '_' : '') . 'sort', request()->query('sort', ''));
+
+        if ($stateFilter === null && $rawStateFilter !== null) {
+            $stateFilter = $rawStateFilter;
+        }
+
+        if (is_array($stateFilter)) {
+            return in_array(EmployeeStateEnum::LEFT->value, $stateFilter, true);
+        }
+
+        if (is_string($stateFilter) && str_contains($stateFilter, ',')) {
+            return in_array(EmployeeStateEnum::LEFT->value, explode(',', $stateFilter), true);
+        }
+
+        if ($stateFilter === EmployeeStateEnum::LEFT->value) {
+            return true;
+        }
+
+        return $sort === 'employment_end_at' || $sort === '-employment_end_at';
     }
 
 

@@ -61,12 +61,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $currency_id
  * @property array<array-key, mixed> $settings
  * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $archived_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $archived_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $source_slug
  * @property string|null $source_id
  * @property array<array-key, mixed> $sources
@@ -146,6 +146,12 @@ class Supplier extends Model implements HasMedia, Auditable
             'identity_document_number' => (string)$this->identity_document_number,
             'created_at'               => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
+    }
+
+    public function shouldBeSearchable(): bool
+    {
+        $searchableFields = ['agent_id', 'status', 'code', 'name', 'contact_name', 'company_name', 'email', 'phone', 'contact_website', 'identity_document_number', 'created_at'];
+        return $this->isDirty($searchableFields);
     }
 
     public function getRouteKeyName(): string

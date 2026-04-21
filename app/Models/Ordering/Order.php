@@ -47,6 +47,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -77,15 +79,15 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $collection_address_id
  * @property int|null $billing_country_id
  * @property int|null $delivery_country_id
- * @property \Illuminate\Support\Carbon $date
- * @property \Illuminate\Support\Carbon|null $submitted_at
- * @property \Illuminate\Support\Carbon|null $in_warehouse_at
- * @property \Illuminate\Support\Carbon|null $handling_at
- * @property \Illuminate\Support\Carbon|null $packed_at
- * @property \Illuminate\Support\Carbon|null $finalised_at
- * @property \Illuminate\Support\Carbon|null $dispatched_at
- * @property \Illuminate\Support\Carbon|null $cancelled_at
- * @property \Illuminate\Support\Carbon|null $settled_at dispatched_at|cancelled_at
+ * @property Carbon $date
+ * @property Carbon|null $submitted_at
+ * @property Carbon|null $in_warehouse_at
+ * @property Carbon|null $handling_at
+ * @property Carbon|null $packed_at
+ * @property Carbon|null $finalised_at
+ * @property Carbon|null $dispatched_at
+ * @property Carbon|null $cancelled_at
+ * @property Carbon|null $settled_at dispatched_at|cancelled_at
  * @property bool $is_invoiced
  * @property bool|null $is_handling_on_hold
  * @property bool|null $can_dispatch
@@ -109,18 +111,18 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $total_amount
  * @property numeric $payment_amount
  * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  * @property string|null $source_id
  * @property bool $is_vip Indicate if an order is for a VIP customer
  * @property int|null $as_organisation_id Indicate if an order is for an organisation in this group
  * @property int|null $as_employee_id Indicate if an order is for an employee
  * @property int|null $platform_id
  * @property OrderPayStatusEnum|null $pay_status
- * @property \Illuminate\Support\Carbon|null $updated_by_customer_at
+ * @property Carbon|null $updated_by_customer_at
  * @property OrderShippingEngineEnum $shipping_engine
  * @property OrderChargesEngineEnum $charges_engine
  * @property int|null $customer_sales_channel_id
@@ -152,7 +154,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $profit_amount
  * @property numeric|null $margin
  * @property bool $is_shipping_by_external
- * @property \Illuminate\Support\Carbon|null $picked_at
+ * @property Carbon|null $picked_at
  * @property string|null $packing_at
  * @property numeric $amount_off
  * @property string|null $handling_blocked_at
@@ -201,6 +203,7 @@ class Order extends Model implements HasMedia, Auditable
     use HasAddresses;
     use HasAttachments;
     use HasHistory;
+    use Searchable;
 
 
     protected $casts = [
@@ -269,6 +272,35 @@ class Order extends Model implements HasMedia, Auditable
     ];
 
     protected $guarded = [];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'                 => (string)$this->id,
+            'organisation_id'    => $this->organisation_id,
+            'shop_id'            => $this->shop_id,
+            'customer_id'        => $this->customer_id,
+            'state'              => $this->state->value,
+            'reference'          => $this->reference,
+            'customer_reference' => $this->customer_reference,
+            'date'               => is_string($this->date) ? Carbon::parse($this->date)->timestamp : $this->date->timestamp,
+        ];
+    }
+
+    public function shouldBeSearchable(): bool
+    {
+        $searchableFields = [
+            'organisation_id',
+            'shop_id',
+            'customer_id',
+            'state',
+            'reference',
+            'customer_reference',
+            'date'
+        ];
+
+        return $this->isDirty($searchableFields);
+    }
 
     public function generateTags(): array
     {

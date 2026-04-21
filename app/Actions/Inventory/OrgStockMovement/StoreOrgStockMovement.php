@@ -13,6 +13,7 @@ use App\Actions\Inventory\LocationOrgStock\CalculateValueLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQuantity;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
@@ -100,6 +101,11 @@ class StoreOrgStockMovement extends OrgAction
             }
             CalculateValueLocationOrgStock::dispatch($locationOrgStock->id);
         }
+
+        if($orgStockMovement->type == OrgStockMovementTypeEnum::PURCHASE){
+            OrgStockHydrateStockValue::dispatch($orgStock);
+        }
+
         OrgStockHydrateMovements::dispatch($orgStock)->delay(now()->addMinutes(15));
         OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock)->delay(now()->addMinutes(15));
         CalculateRunningQuantityOrgStockMovement::dispatch($orgStockMovement->id)->delay(now()->addMinutes(15));
