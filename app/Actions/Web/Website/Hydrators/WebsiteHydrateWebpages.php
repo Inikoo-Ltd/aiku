@@ -67,7 +67,7 @@ class WebsiteHydrateWebpages implements ShouldBeUnique
         ));
 
         $stats = array_merge($stats, [
-            'number_webpages_families_overview' => 
+            'number_webpages_families_overview' =>
                 Webpage::where('website_id', $website->id)
                     ->where('layout_style', 'families-overview')
                     ->count()

@@ -60,8 +60,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $job_title
  * @property EmployeeTypeEnum $type
  * @property EmployeeStateEnum $state
- * @property string|null $employment_start_at
- * @property string|null $employment_end_at
+ * @property \Illuminate\Support\Carbon|null $employment_start_at
+ * @property \Illuminate\Support\Carbon|null $employment_end_at
  * @property array<array-key, mixed>|null $emergency_contact
  * @property array<array-key, mixed>|null $salary
  * @property array<array-key, mixed>|null $working_hours
