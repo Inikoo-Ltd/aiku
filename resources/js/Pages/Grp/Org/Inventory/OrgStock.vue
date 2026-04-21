@@ -117,7 +117,7 @@ const component = computed(() => {
             </Link>
         </template>
     </PageHeading>
-    <div>
+    <!-- <div>
         <Message :severity="'warn'">
             <FontAwesomeIcon 
                 :icon="faExclamationCircle" 
@@ -125,7 +125,7 @@ const component = computed(() => {
             />
             {{ trans("Stock location changes for this Org SKU may be overwritten during Aurora imports.") }}
         </Message>
-    </div>
+    </div> -->
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
 </template>
