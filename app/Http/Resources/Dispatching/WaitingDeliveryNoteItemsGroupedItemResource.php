@@ -44,10 +44,10 @@ class WaitingDeliveryNoteItemsGroupedItemResource extends JsonResource
 
         $deliveryNoteItem = DeliveryNoteItem::find($this->id);
 
-        $waitingWarehouseQuantity = $deliveryNoteItem->quantity_required
-            - $deliveryNoteItem->quantity_waiting_warehouse
-            - $deliveryNoteItem->quantity_waiting_crm
-            - $deliveryNoteItem->quantity_not_picked;
+        // $waitingWarehouseQuantity = $deliveryNoteItem->quantity_required
+        //     - $deliveryNoteItem->quantity_waiting_warehouse
+        //     - $deliveryNoteItem->quantity_waiting_crm
+        //     - $deliveryNoteItem->quantity_not_picked;
 
         $pickingLocations = DB::table('location_org_stocks')
             ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
@@ -94,7 +94,7 @@ class WaitingDeliveryNoteItemsGroupedItemResource extends JsonResource
         }
 
         return [
-            'waiting_warehouse_quantity' => $waitingWarehouseQuantity,
+            // 'waiting_warehouse_quantity' => $waitingWarehouseQuantity,
             'id'                         => $this->id,
             'state'                      => $this->state,
             'state_icon'                 => $this->state->stateIcon()[$this->state->value],
@@ -105,13 +105,15 @@ class WaitingDeliveryNoteItemsGroupedItemResource extends JsonResource
             'org_stock_image_thumbnail'  => $deliveryNoteItem->orgStock?->tradeUnits->first()?->imageSources(64, 64),
             'packed_in'                  => $packedIn,
             'packed_in_message'          => $packedInMessage,
+
             'quantity_required'          => $this->quantity_required,
             'quantity_picked'            => $this->quantity_picked,
             'quantity_not_picked'        => $this->quantity_not_picked,
             'quantity_packed'            => $this->quantity_packed,
             'quantity_dispatched'        => $this->quantity_dispatched,
-            'quantity_waiting_warehouse' => $this->quantity_waiting_warehouse,  // TODO: RAUL -- wrong quantity if multiple pickings location (Index Waiting Warehouse Group)
+            'quantity_waiting_warehouse' => $this->quantity_waiting_warehouse,  // TODO: RAUL -- wrong quantity if multiple pickings location (case in page Index Waiting Warehouse Group)
             'quantity_waiting_crm'       => $this->quantity_waiting_crm,
+
             'is_handled'                 => $this->is_handled,
             'notes'                      => $this->notes,
             'picking_position'           => $this->picking_position,

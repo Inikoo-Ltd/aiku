@@ -100,7 +100,7 @@ const selectedTransactionToSetAsWaiting = ref(null)
 // Helper: to avoid reset location on update quantity
 const selectedLocationCodes = reactive<Record<number, string>>({})
 const getSelectedLocationCode = (deliveryItem: any): string => {
-    return selectedLocationCodes[deliveryItem.id] ?? deliveryItem.selectedRadioLocationCode ?? ''
+    return selectedLocationCodes[deliveryItem.id] ?? ''
 }
 </script>
 
@@ -232,7 +232,9 @@ const getSelectedLocationCode = (deliveryItem: any): string => {
                                             min: 0,
                                             max: Math.min(
                                                 Number(findLocation(deliveryItem.locations, getSelectedLocationCode(deliveryItem))?.quantity),
-                                                Number(get(deliveryItem, 'waiting_warehouse_quantity', 0)) + Number(deliveryItem.quantity_waiting_warehouse) )
+                                                Number(deliveryItem.quantity_waiting_warehouse)
+                                                    + Number(findLocation(deliveryItem.locations, getSelectedLocationCode(deliveryItem)).quantity)
+                                            )
                                         }"
                                         :additionalData="{
                                             location_org_stock_id: findLocation(deliveryItem.locations, getSelectedLocationCode(deliveryItem)).id,
@@ -321,7 +323,7 @@ const getSelectedLocationCode = (deliveryItem: any): string => {
 
 
     <!-- Location list modal -->
-    <Modal :isOpen="isModalLocation" @onClose="onCloseModal" width="w-full max-w-2xl" :dialogStyle="{ background: '#ffffffcc' }">
+    <Modal :isOpen="isModalLocation" @onClose="onCloseModal" width="w-full max-w-3xl" :dialogStyle="{ background: '#ffffffcc' }">
         <div class="text-center font-semibold mb-4 text-2xl">
             {{ trans("Location list for") }} {{ selectedItemValue?.org_stock_code }}
         </div>
@@ -331,7 +333,7 @@ const getSelectedLocationCode = (deliveryItem: any): string => {
                 :key="location.location_code"
                 class="bg-white rounded w-full flex justify-between gap-x-3 items-center px-2 py-1"
             >
-                <label :for="location.location_code">
+                <label :for="location.location_code" class="flex flex-wrap">
                     <span v-if="location.location_code" v-tooltip="location.quantity <= 0 ? trans('Location has no stock') : ''" :class="location.quantity <= 0 ? 'text-gray-400' : ''">
                         <Link :href="generateLocationRoute(location)" class="bg-gradient-to-t from-yellow-300/50 to-yellow-200/50 px-1">
                             {{ location.location_code }}
@@ -339,8 +341,8 @@ const getSelectedLocationCode = (deliveryItem: any): string => {
                     </span>
                     <span v-else class="text-gray-400 italic">({{ trans("Unknown") }})</span>
                     <span v-tooltip="trans('Total stock in this location')" class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border border-gray-300 rounded px-1 text-xs">
-                        <FontAwesomeIcon icon="fal fa-inventory" fixed-width aria-hidden="true" />
-                        {{ Number(location.quantity ?? 0) }}
+                        <!-- <FontAwesomeIcon icon="fal fa-inventory" fixed-width aria-hidden="true" /> -->
+                        ({{ Number(location.quantity ?? 0) }} {{ trans("stocks") }})
                     </span>
                 </label>
                 <RadioButton

@@ -108,13 +108,14 @@ class WaitingDeliveryNoteItemsResource extends JsonResource
 
         $deliveryNoteItem = DeliveryNoteItem::find($this->id);
 
-        $waitingWarehouseQuantity = $deliveryNoteItem->quantity_required
-            - $deliveryNoteItem->quantity_waiting_warehouse
-            - $deliveryNoteItem->quantity_waiting_crm
-            - $deliveryNoteItem->quantity_not_picked;
+        // $waitingWarehouseQuantity = $deliveryNoteItem->quantity_required
+        //     - $deliveryNoteItem->quantity_waiting_warehouse
+        //     - $deliveryNoteItem->quantity_waiting_crm
+        //     - $deliveryNoteItem->quantity_not_picked
+        //     - $deliveryNoteItem->quantity_picked;
 
         return [
-            'waiting_warehouse_quantity' => $waitingWarehouseQuantity,
+            // 'waiting_warehouse_quantity' => $waitingWarehouseQuantity,
             'id'                         => $this->id,
             'state'                      => $this->state,
             'state_icon'                 => $this->state->stateIcon()[$this->state->value],
