@@ -13,6 +13,7 @@ namespace App\Actions\Helpers;
 use App\Actions\Catalogue\Collection\Search\ReindexCollectionSearch;
 use App\Actions\Catalogue\Product\Search\ReindexProductSearch;
 use App\Actions\Catalogue\ProductCategory\Search\ReindexProductCategorySearch;
+use App\Actions\CRM\Customer\Search\ReindexCustomerSearch;
 use App\Actions\HydrateModel;
 use App\Actions\Inventory\Location\Search\ReindexLocationSearch;
 use App\Actions\SupplyChain\Supplier\Search\ReindexSupplierSearch;
@@ -31,7 +32,7 @@ class ReindexSearch extends HydrateModel
 
     public function asCommand(Command $command): int
     {
-        if ($this->checkIfCanReindex(['crm'], $command)) {
+        if ($this->checkIfCanReindex(['crm','cus','customers'], $command)) {
             $this->reindexCrm($command);
         }
 
@@ -229,7 +230,10 @@ class ReindexSearch extends HydrateModel
     protected function reindexCrm(Command $command): void
     {
         $command->info('CRM section 👸🏻');
-        //        $command->call('search:customers');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexCustomerSearch::run(reset: $command->option('reset'));
         //        $command->call('search:prospects');
     }
 
@@ -244,12 +248,6 @@ class ReindexSearch extends HydrateModel
         //        $command->call('search:pallet_deliveries'); // not yet tested
         //        $command->call('search:pallets');
 
-        /** @var Shop $shop */
-        foreach (Shop::where('type', ShopTypeEnum::FULFILMENT)->get() as $shop) {
-            $command->call('search:invoices', [
-                '-S' => $shop->slug
-            ]);
-        }
     }
 
     private function checkIfCanReindex(array $keys, $command): bool

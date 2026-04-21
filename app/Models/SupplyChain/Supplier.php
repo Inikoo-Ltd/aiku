@@ -148,6 +148,12 @@ class Supplier extends Model implements HasMedia, Auditable
         ];
     }
 
+    public function shouldBeSearchable(): bool
+    {
+        $searchableFields = ['agent_id', 'status', 'code', 'name', 'contact_name', 'company_name', 'email', 'phone', 'contact_website', 'identity_document_number', 'created_at'];
+        return $this->isDirty($searchableFields);
+    }
+
     public function getRouteKeyName(): string
     {
         return 'slug';
