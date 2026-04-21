@@ -3,6 +3,7 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -25,6 +26,8 @@ class UpdateProductIndex extends OrgAction
                 "index_under_{$productCategory->type->value}"    => data_get($indexOrders, "{$product->code}.index_under_{$productCategory->type->value}", null)
             ]);
         };
+
+        BreakWebpageCache::run($productCategory->webpage);
     }
 
     public function rules(): array
