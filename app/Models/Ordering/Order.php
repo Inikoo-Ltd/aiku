@@ -36,6 +36,7 @@ use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InCustomer;
+use App\Observers\OrderOnlySearchableModelObserver;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -273,6 +274,11 @@ class Order extends Model implements HasMedia, Auditable
 
     protected $guarded = [];
 
+    public static function bootSearchable(): void
+    {
+        static::observe(new OrderOnlySearchableModelObserver());
+    }
+
     public function toSearchableArray(): array
     {
         return [
@@ -285,21 +291,6 @@ class Order extends Model implements HasMedia, Auditable
             'customer_reference' => $this->customer_reference,
             'date'               => is_string($this->date) ? Carbon::parse($this->date)->timestamp : $this->date->timestamp,
         ];
-    }
-
-    public function shouldBeSearchable(): bool
-    {
-        $searchableFields = [
-            'organisation_id',
-            'shop_id',
-            'customer_id',
-            'state',
-            'reference',
-            'customer_reference',
-            'date'
-        ];
-
-        return $this->isDirty($searchableFields);
     }
 
     public function generateTags(): array

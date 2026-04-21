@@ -19,6 +19,7 @@ use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\InGroup;
+use App\Observers\SupplierOnlySearchableModelObserver;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -130,6 +131,11 @@ class Supplier extends Model implements HasMedia, Auditable
 
     protected $guarded = [];
 
+    public static function bootSearchable(): void
+    {
+        static::observe(new SupplierOnlySearchableModelObserver());
+    }
+
     public function toSearchableArray(): array
     {
         return [
@@ -146,12 +152,6 @@ class Supplier extends Model implements HasMedia, Auditable
             'identity_document_number' => (string)$this->identity_document_number,
             'created_at'               => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
-    }
-
-    public function shouldBeSearchable(): bool
-    {
-        $searchableFields = ['agent_id', 'status', 'code', 'name', 'contact_name', 'company_name', 'email', 'phone', 'contact_website', 'identity_document_number', 'created_at'];
-        return $this->isDirty($searchableFields);
     }
 
     public function getRouteKeyName(): string

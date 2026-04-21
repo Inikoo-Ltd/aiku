@@ -16,6 +16,7 @@ use App\Models\Traits\HasRoles;
 use App\Models\Traits\IsUserable;
 use App\Models\UserFailedLogIn;
 use App\Models\UserLogin;
+use App\Observers\UserOnlySearchableModelObserver;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 use Laravel\Scout\Searchable;
@@ -163,6 +164,11 @@ class User extends Authenticatable implements HasMedia, Auditable
         'sources'  => '{}',
     ];
 
+    public static function bootSearchable(): void
+    {
+        static::observe(new UserOnlySearchableModelObserver());
+    }
+
     public function toSearchableArray(): array
     {
         return [
@@ -174,13 +180,6 @@ class User extends Authenticatable implements HasMedia, Auditable
             'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }
-
-    public function shouldBeSearchable(): bool
-    {
-        $searchableFields = ['username', 'email', 'contact_name','status','created_at'];
-        return $this->isDirty($searchableFields);
-    }
-
     public function generateTags(): array
     {
         return [
