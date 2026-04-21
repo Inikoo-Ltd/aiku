@@ -20,6 +20,7 @@ use App\Actions\Catalogue\Product\Json\GetOrderCharges;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
 use App\Actions\Catalogue\Product\Json\GetOutOfStockProductsInProductCategory;
+use App\Actions\Catalogue\Product\Json\GetProductsForBeefreeSearch;
 use App\Actions\Catalogue\Product\Json\GetProductsForVolGrGift;
 use App\Actions\Catalogue\Product\Json\GetProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetProductsInProductCategory;
@@ -142,6 +143,7 @@ Route::get('/mailshot/{mailshot:id}/merge-tags', GetMailshotMergeTags::class)->n
 Route::get('shop/{shop}/payment-accounts', GetShopPaymentAccounts::class)->name('shop.payment-accounts');
 Route::get('shop/{shop}/products-for-website-workshop', GetProductsInWorkshop::class)->name('shop.products_for_website_workshop');
 Route::get('shop/{shop}/products', GetProductsInShop::class)->name('shop.products');
+Route::get('shop/{shop}/products-beefree-search', GetProductsForBeefreeSearch::class)->name('shop.products_beefree_search');
 Route::get('shop/{shop:id}/products-for-vol-gr-gift', GetProductsForVolGrGift::class)->name('shop.products_for_vol_gr_gift');
 
 

@@ -6,6 +6,9 @@ import { routeType } from "@/types/route";
 import EmptyState from "@/Components/Utils/EmptyState.vue";
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import Modal from '@/Components/Utils/Modal.vue'
+import PureInput from '@/Components/Pure/PureInput.vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
 
 const props = withDefaults(defineProps<{
     updateRoute: routeType;
@@ -15,12 +18,22 @@ const props = withDefaults(defineProps<{
     mergeTags: Array<any>
     mergeContents: Array<any> | null
     organisationSlug: string
+    shopSlug?: string
 }>(), {});
 
 const locale = inject('locale', aikuLocaleStructure)
 const showBee = ref(false)
 const isLoading = ref(false)
 const beeInstance = ref<BeefreeSDK | null>(null)
+
+// Product search dialog state
+const productSearchModalOpen = ref(false)
+const productSearchQuery = ref('')
+const productSearchResults = ref<Array<any>>([])
+const productSearchLoading = ref(false)
+let productSearchResolve: ((value: any) => void) | null = null
+let productSearchReject: (() => void) | null = null
+let searchDebounceTimeout: ReturnType<typeof setTimeout> | null = null
 
 
 const emits = defineEmits<{
@@ -91,6 +104,29 @@ const initializeBeefree = async () => {
                 ]
             },
             autosave: 20,
+            contentDialog: {
+                specialLinks: props.shopSlug ? [{
+                    label: 'Search Product by SKU',
+                    handler: (resolve: (value: any) => void, reject: () => void) => {
+                        productSearchResolve = resolve
+                        productSearchReject = reject
+                        productSearchModalOpen.value = true
+                        productSearchQuery.value = ''
+                        productSearchResults.value = []
+                    }
+                }] : undefined,
+
+                mergeContents: {
+                    label: 'Custom text for merge contents',
+                    handler: function (resolve: (value: any) => void, reject: () => void) {
+                        productSearchResolve = resolve
+                        productSearchReject = reject
+                        productSearchModalOpen.value = true
+                        productSearchQuery.value = ''
+                        productSearchResults.value = []
+                    }
+                },
+            },
             onSend: (htmlFile: string, jsonFile: string) => {
                 emits('sendTest', { jsonFile, htmlFile })
             },
@@ -145,6 +181,79 @@ defineExpose({
     beeInstance,
 })
 
+// Product search functions
+const searchProducts = async () => {
+    if (!props.shopSlug || !productSearchQuery.value.trim()) {
+        productSearchResults.value = []
+        return
+    }
+
+    productSearchLoading.value = true
+    try {
+        const response = await axios.get(
+            route('grp.json.shop.products_beefree_search', {
+                shop: props.shopSlug,
+            }), {
+            params: {
+                search: productSearchQuery.value.trim(),
+                per_page: 20
+            }
+        }
+        )
+        productSearchResults.value = response.data.data || []
+    } catch (error) {
+        console.error('Product search error:', error)
+        productSearchResults.value = []
+    } finally {
+        productSearchLoading.value = false
+    }
+}
+
+const onSearchInput = () => {
+    if (searchDebounceTimeout) {
+        clearTimeout(searchDebounceTimeout)
+    }
+    searchDebounceTimeout = setTimeout(() => {
+        searchProducts()
+    }, 300)
+}
+
+const selectProduct = (product: any) => {
+    if (productSearchResolve) {
+        const productLink = {
+            type: 'product_link',
+            label: product.name || product.code,
+            link: product.url || `/shop/${props.shopSlug}/product/${product.slug || product.id}`,
+            value: {
+                id: product.id,
+                code: product.code,
+                name: product.name,
+                description: product.description || '',
+                image: product.web_images?.[0] || null,
+                price: product.price,
+                url: product.url || `/shop/${props.shopSlug}/product/${product.slug || product.id}`
+            }
+        }
+        productSearchResolve(productLink)
+        productSearchResolve = null
+        productSearchReject = null
+    }
+    productSearchModalOpen.value = false
+    productSearchQuery.value = ''
+    productSearchResults.value = []
+}
+
+const closeProductSearchModal = () => {
+    if (productSearchReject) {
+        productSearchReject()
+        productSearchReject = null
+        productSearchResolve = null
+    }
+    productSearchModalOpen.value = false
+    productSearchQuery.value = ''
+    productSearchResults.value = []
+}
+
 </script>
 
 <template>
@@ -175,6 +284,67 @@ defineExpose({
             }
         }" />
     </div>
+
+    <!-- Product Search Modal -->
+    <Modal :isOpen="productSearchModalOpen" @onClose="closeProductSearchModal" width="w-full max-w-2xl"
+        :closeButton="true">
+        <div class="p-4">
+            <h3 class="text-lg font-semibold mb-4">Search Product by SKU</h3>
+
+            <!-- Search Input -->
+            <div class="mb-4">
+                <PureInput v-model="productSearchQuery" placeholder="Type SKU or product code..." @input="onSearchInput"
+                    :autofocus="true" />
+            </div>
+
+            <!-- Loading State -->
+            <div v-if="productSearchLoading" class="flex justify-center py-4">
+                <LoadingIcon class="text-3xl" />
+            </div>
+
+            <!-- Results List -->
+            <div v-else-if="productSearchResults.length > 0" class="max-h-96 overflow-y-auto">
+                <div v-for="product in productSearchResults" :key="product.id" @click="selectProduct(product)"
+                    class="flex items-center gap-4 p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors">
+                    <!-- Product Image -->
+                    <div class="w-16 h-16 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
+                        <img v-if="product.web_images && product.web_images.length > 0" :src="product.web_images[0]"
+                            :alt="product.name" class="w-full h-full object-cover" />
+                        <div v-else class="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                            No Image
+                        </div>
+                    </div>
+
+                    <!-- Product Info -->
+                    <div class="flex-1 min-w-0">
+                        <div class="font-medium text-gray-900 truncate">{{ product.name }}</div>
+                        <div class="text-sm text-gray-500">SKU: {{ product.code }}</div>
+                        <div v-if="product.price" class="text-sm text-gray-600 mt-1">
+                            Price: {{ product.price }}
+                        </div>
+                    </div>
+
+                    <!-- Select Button -->
+                    <Button type="secondary" label="Select" size="sm" @click.stop="selectProduct(product)" />
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else-if="productSearchQuery.trim() && !productSearchLoading" class="text-center py-8 text-gray-500">
+                No products found matching "{{ productSearchQuery }}"
+            </div>
+
+            <!-- Initial State -->
+            <div v-else class="text-center py-8 text-gray-400">
+                Type a SKU or product code to search
+            </div>
+
+            <!-- Cancel Button -->
+            <div class="mt-4 flex justify-end">
+                <Button type="tertiary" label="Cancel" @click="closeProductSearchModal" />
+            </div>
+        </div>
+    </Modal>
 </template>
 
 <style scoped>
