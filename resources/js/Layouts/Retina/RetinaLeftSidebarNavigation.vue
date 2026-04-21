@@ -18,7 +18,6 @@ import { generateNavigationName, generateCurrentString } from '@/Composables/use
 import { get } from 'lodash-es'
 import RetinaNavigationGroup from "@/Layouts/Retina/RetinaNavigationGroup.vue"
 import RetinaNavigationHorizontalNew from "./RetinaNavigationHorizontalNew.vue"
-import { trans } from "laravel-vue-i18n"
 library.add(faBoxUsd, faParking, faUsersCog, faLightbulb, faUserHardHat, faUser, faUsersCog, faInventory, faConveyorBeltAlt, faChevronDown, faPalletAlt, faUserFriends, faKey, faFolderTree, faBooks)
 
 const layout = inject('layout', {})

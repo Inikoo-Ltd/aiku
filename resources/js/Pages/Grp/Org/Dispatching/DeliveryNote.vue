@@ -405,50 +405,19 @@ onMounted(() => {
 			</div>
 			<!-- Button: Download PDF -->
 			<div class="relative" v-if="route().params.deliveryNote">
-				<div @click="showDropdown = !showDropdown"
-					 class="cursor-pointer flex items-center"
-					 v-tooltip="trans('Download Documents')">
-						<Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
-				</div>
-
-				<div v-if="showDropdown"
-					 @click="showDropdown = false"
-					 class="fixed inset-0 z-40">
-				</div>
-
-				<div v-if="showDropdown"
-					 class="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-gray-200 z-50 overflow-hidden">
-						<div class="py-1">
-							<a :href="route('grp.pdfs.delivery-notes', { deliveryNote: route().params.deliveryNote })"
-								target="_blank"
-								@click="showDropdown = false"
-								class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-								<i class="fal fa-file-invoice text-gray-400 w-5 text-center"></i>
-								<span>{{ trans('Download PDF of this Delivery Note') }}</span>
-							</a>
-							<a :href="route('grp.pdfs.packing-lists', { deliveryNote: route().params.deliveryNote })"
-                        	   target="_blank"
-                        	   @click="showDropdown = false"
-                        	   class="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                        	    <i class="fal fa-box-open text-gray-400 w-5 text-center"></i>
-                        	    <span>{{ trans('Packing List (Customer)') }}</span>
-                        	</a>
-						</div>
-				</div>
+				<a	v-if="route().params.deliveryNote"
+					:href="
+						route('grp.pdfs.delivery-notes', {
+							deliveryNote: route().params.deliveryNote,
+						})
+					"
+					as="a"
+					target="_blank"
+					class="flex items-center"
+					v-tooltip="trans('Download PDF of this Delivery Note')">
+					<Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
+				</a>
 			</div>
-			<!-- <a
-				v-if="route().params.deliveryNote"
-				:href="
-					route('grp.pdfs.delivery-notes', {
-						deliveryNote: route().params.deliveryNote,
-					})
-				"
-				as="a"
-				target="_blank"
-				class="flex items-center"
-				v-tooltip="trans('Download PDF of this Delivery Note')">
-				<Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
-			</a> -->
 		</template>
 
 		<template #button-to-queue="{ action }">
