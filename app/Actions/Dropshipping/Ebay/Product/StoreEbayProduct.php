@@ -121,13 +121,19 @@ class StoreEbayProduct extends RetinaAction
                 $descriptions = $portfolio->item->name;
             }
 
-            $categories = $ebayUser->getCategorySuggestions($product->family->name);
+            $family = $product->family?->name;
+
+            if(!$family){
+                $family = $product->name;
+            }
+
+            $categories = $ebayUser->getCategorySuggestions($family);
 
             $categoryId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
             $categoryName = Arr::get($categories, 'categorySuggestions.0.category.categoryName');
 
             if (!$categoryId) {
-                $categories = $ebayUser->searchAvailableProducts($product->family->name);
+                $categories = $ebayUser->searchAvailableProducts($family);
 
                 if ($handleError($categories)) {
                     return $portfolio;
