@@ -78,7 +78,6 @@ console.log(props)
                     <thead class="bg-gray-100 text-gray-600">
                         <tr>
                             <th class="px-3 py-2 text-left">Image</th>
-                            <th class="px-3 py-2 text-left">Code</th>
                             <th class="px-3 py-2 text-left">Name</th>
                         </tr>
                     </thead>
@@ -87,10 +86,7 @@ console.log(props)
                         <tr v-for="tradeUnit in data.trade_units" :key="tradeUnit.id" class="hover:bg-gray-50">
                             <td class="px-3 py-2">
                                 <Image v-if="tradeUnit.images?.[0]?.images" :src="tradeUnit.images[0].images"
-                                    class="w-10 h-10 object-cover rounded" />
-                            </td>
-                            <td class="px-3 py-2 font-medium">
-                                {{ tradeUnit.code }}
+                                    class="w-16 h-16 object-cover rounded" />
                             </td>
                             <td class="px-3 py-2">
                                 {{ tradeUnit.name }}
@@ -108,15 +104,15 @@ console.log(props)
             </div> -->
 
             <!-- Stock Value Section -->
-            <div class="space-y-2">
+            <div class="space-y-2 pr-10">
                 <div class="grid grid-cols-5 gap-x-3 items-center">
 
                     <div class="col-span-3 xtext-right">
                         {{ ctrans("Outer cost") }}
                     </div>
 
-                    <div class="col-span-2 xtext-right">
-                        {{ ctrans("Total stocks value") }}
+                    <div class="col-span-2 text-right">
+                        {{ ctrans("Total stock value") }}
                     </div>
                 </div>
 
@@ -126,7 +122,7 @@ console.log(props)
                         {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.outer_cost || 0) }}
                     </div>
 
-                    <div class="col-span-2 xtext-right text-2xl font-semibold">
+                    <div class="col-span-2 text-right text-2xl font-semibold">
                         {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.total_stock_value || 0) }}
                     </div>
                 </div>

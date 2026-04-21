@@ -103,7 +103,7 @@ const component = computed(() => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #afterTitle>
+        <template #afterTitle2>
             <Link
                 v-if="master"
                 :href="masterRoute?.name ? route(masterRoute.name, masterRoute.parameters) : ''"
