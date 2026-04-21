@@ -3,7 +3,6 @@
 namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Actions\GrpAction;
-use App\Actions\Helpers\Brand\UI\IndexBrands;
 use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitIndex;
 use App\Actions\Helpers\Brand\UI\ShowBrand;
 use App\Actions\Helpers\Brand\WithBrandSubNavigation;

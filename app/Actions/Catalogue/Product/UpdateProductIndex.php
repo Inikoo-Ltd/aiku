@@ -24,7 +24,7 @@ class UpdateProductIndex extends OrgAction
             $product->updateQuietly([
                 "index_under_{$productCategory->type->value}"    => data_get($indexOrders, "{$product->code}.index_under_{$productCategory->type->value}", null)
             ]);
-        };
+        }
 
         BreakWebpageCache::run($productCategory->webpage);
     }
