@@ -24,7 +24,7 @@ import { faAsterisk, faQuestion } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faPencil } from '@far'
 import { faWarning } from '@fortawesome/free-solid-svg-icons'
-import FamilySetOrderingPositionOfProduct from '@/Components/Master/FamilySetOrderingPositionOfProduct.vue'
+import FamilySetOrderingPositionOfProduct from '@/Components/Product/OrderProduct.vue'
 import { notify } from '@kyvg/vue3-notification'
 
 library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk, faTools)
@@ -207,7 +207,7 @@ const replaceProps = (updatedData) => {
     <PageHeading :data="pageHead">
         <template #other>
             <Button
-                v-if="editable_table"
+                v-if="editable_table && currentTab !== 'index_ordering'"
                 :disabled="compSelectedProductsId.length <= 0"
                 v-tooltip="compSelectedProductsId.length <= 0 ? ctrans('Select checkbox to edit products') : ''"
                 @click="() => isOpenModalEditProducts = true"
@@ -228,6 +228,15 @@ const replaceProps = (updatedData) => {
             <span v-else />
         </template>
         
+        <template #button-create="{ action }">
+            <div  v-if="currentTab === 'index_ordering'"></div>
+        </template>
+
+         <template #button-repair-image="{ action }">
+            <div  v-if="currentTab === 'index_ordering'"></div>
+        </template>
+
+
         <template #afterTitle2>
             <FontAwesomeIcon 
                 v-if="mismatch_trade_unit_with_master" 
@@ -238,7 +247,7 @@ const replaceProps = (updatedData) => {
         </template>
 
         <template #button-repair-mismatch="{ action }">
-            <Button v-if="mismatch_trade_unit_with_master" :icon="faTools" :label="trans('Repair trade units')" v-tooltip="trans('Will force child to follow master products trade units')" @click="repairTradeUnitToChildren()" :style="'warning'" />
+            <Button v-if="mismatch_trade_unit_with_master && currentTab !== 'index_ordering'" :icon="faTools" :label="trans('Repair trade units')" v-tooltip="trans('Will force child to follow master products trade units')" @click="repairTradeUnitToChildren()" :style="'warning'" />
         </template>
     </PageHeading>
 

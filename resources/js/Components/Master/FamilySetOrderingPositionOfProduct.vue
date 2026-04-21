@@ -55,17 +55,7 @@ const updateOrder = () => {
         order: index + 1,
         index_under_family: index
     }))
-    
-
-    // console.log("New order:", items.value)
-
     emits("update:data", items.value);
-
-    /*       router.patch(route('grp.models.master_product_category.reorder_index', {
-        masterProductCategory: route().params['masterFamily']
-      }), {
-        indexing: items.value
-      }); */
 }
 
 const editingId = ref<number | null>(null)
@@ -172,9 +162,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                                 {{ getArrow('code') }}
                             </span>
                         </button>
-
                     </div>
-
                 </div>
             </div>
             <div class="inline-flex rounded-lg border bg-gray-100 p-1">
@@ -216,25 +204,23 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                         </span>
                     </div>
 
-                    <Image :src="element.image_thumbnail?.main?.original" class="w-10 h-10 object-cover rounded" />
-
-                    <div class="flex-1 min-w-0">
-                        <div class="text-sm font-medium truncate">
-                            {{ element.name }}
-                        </div>
-                        <div class="flex gap-4 text-xs text-gray-400 truncate">
-
-
-                            <div class="flex gap-4">
-                                <FontAwesomeIcon v-if="element.status" :icon="faCheck" :class="'text-green-500'"
-                                    v-tooltip="trans('Active')" />
-                                <FontAwesomeIcon v-else :icon="faTimes" :class="'text-red-500'"
-                                    v-tooltip="trans('Inactive')" />
-
+                    <slot name="list-content" :item="element">
+                        <Image :src="element.image_thumbnail?.main?.original" class="w-10 h-10 object-cover rounded" />
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-medium truncate">
                                 {{ element.code }}
                             </div>
+                            <div class="flex gap-4 text-xs text-gray-400 truncate">
+                                <div class="flex gap-2">
+                                    <FontAwesomeIcon v-if="element.status" :icon="faCheck" :class="'text-green-500'"
+                                        v-tooltip="trans('Active')" />
+                                    <FontAwesomeIcon v-else :icon="faTimes" :class="'text-red-500'"
+                                        v-tooltip="trans('Inactive')" />
+                                    {{ element.name }}
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    </slot>
                 </div>
             </template>
         </draggable>
@@ -245,44 +231,40 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
             class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <template #item="{ element, index }">
                 <div class="border rounded p-2 bg-white hover:shadow-sm">
-
                     <div class="drag-handle cursor-move text-xs text-gray-400 mb-1">
-                        ☰ Drag
-                    </div>
+                        <div class="text-xs text-gray-400 mb-1">
+                            <input v-if="editingId === element.id" v-model.number="tempIndex" type="number" :min="1"
+                                :max="items.length"
+                                @input="tempIndex = Math.max(1, Math.min(tempIndex || 1, items.length))"
+                                class="index-input w-12 border rounded px-1 text-xs" @blur="applyNewIndex(element)"
+                                @keyup.enter="applyNewIndex(element)" />
 
-                    <Image :src="element.image_thumbnail?.main?.original"
-                        class="w-full h-24 object-cover rounded mb-2 flex justify-center" />
-
-                    <div class="text-xs text-gray-400 mb-1">
-                        <input v-if="editingId === element.id" v-model.number="tempIndex" type="number" :min="1"
-                            :max="items.length" @input="tempIndex = Math.max(1, Math.min(tempIndex || 1, items.length))"
-                            class="index-input w-12 border rounded px-1 text-xs" @blur="applyNewIndex(element)"
-                            @keyup.enter="applyNewIndex(element)" />
-
-                        <span v-else @dblclick="startEditIndex(element, index)"
-                            class="cursor-pointer hover:text-gray-700">
-                            #{{ index + 1 }}
-                        </span>
-                    </div>
-
-                    <div class="text-sm font-medium line-clamp-2">
-                        {{ element.name }}
-                    </div>
-
-                    <div class="text-xs text-gray-400">
-                        <div class="flex gap-4">
-                            <FontAwesomeIcon v-if="element.status" :icon="faCheck" :class="'text-green-500'"
-                                v-tooltip="trans('Active')" />
-                            <FontAwesomeIcon v-else :icon="faTimes" :class="'text-red-500'"
-                                v-tooltip="trans('Inactive')" />
-
-                            {{ element.code }}
+                            <span v-else @dblclick="startEditIndex(element, index)"
+                                class="cursor-pointer hover:text-gray-700">
+                                ☰ {{ index + 1 }}
+                            </span>
                         </div>
                     </div>
+                    <slot name="card-content" :item="element">
+                        <Image :src="element.image_thumbnail"
+                            class="w-full h-24 object-cover rounded mb-2 flex justify-center" />
+                        <div class="text-sm font-medium line-clamp-2">
+                            {{ element.name }}
+
+                        </div>
+                        <div class="text-xs text-gray-400">
+                            <div class="flex gap-2">
+                                <FontAwesomeIcon v-if="element.status" :icon="faCheck" :class="'text-green-500'"
+                                    v-tooltip="trans('Active')" />
+                                <FontAwesomeIcon v-else :icon="faTimes" :class="'text-red-500'"
+                                    v-tooltip="trans('Inactive')" />
+                                {{ element.code }}
+                            </div>
+                        </div>
+                    </slot>
                 </div>
             </template>
         </draggable>
-
     </div>
 </template>
 

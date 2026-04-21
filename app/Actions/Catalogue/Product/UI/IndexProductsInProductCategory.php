@@ -330,6 +330,7 @@ class IndexProductsInProductCategory extends OrgAction
                 'tooltip' => __('Sync Product Images from Trade Units'),
                 'label'   => __('Repair Images'),
                 'icon'    => 'fal fa-tools',
+                'key'     => 'repair-image',
                 'route'   => [
                     'name'          => 'grp.models.product_category.repair_product_images',
                     'method'        => 'patch',
@@ -345,6 +346,7 @@ class IndexProductsInProductCategory extends OrgAction
                     'style'   => 'create',
                     'tooltip' => __('New product'),
                     'label'   => __('Product'),
+                    'key'     => 'create',  
                     'route'   => [
                         'name'       => str_replace('index', 'create', $request->route()->getName()),
                         'parameters' => $request->route()->originalParameters()
