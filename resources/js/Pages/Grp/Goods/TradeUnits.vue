@@ -107,43 +107,28 @@ const removeTradeUnit = (id: number) => {
                 :showClear="false" :required="true">
             </PureMultiselectInfiniteScroll>
 
-            <div class="max-h-[200px] overflow-y-auto flex flex-col gap-1 border rounded p-1">
-    <div
-        v-for="item in valueTradeUnit"
-        :key="item.id"
-        class="flex items-center justify-between py-1 px-2 border rounded"
-    >
-        <!-- Left: Image + Info -->
-        <div class="flex items-center gap-2">
-            <Image
-                :src="item?.image?.thumbnail"
-                class="w-10 h-10 object-cover rounded border border-gray-200"
-            />
+            <div v-if="valueTradeUnit.length" class="max-h-[200px] overflow-y-auto flex flex-col gap-1 border rounded p-1">
+                <div v-for="item in valueTradeUnit" :key="item.id"
+                    class="flex items-center justify-between py-1 px-2 border rounded">
+                    <!-- Left: Image + Info -->
+                    <div class="flex items-center gap-2">
+                        <Image :src="item?.image?.thumbnail"
+                            class="w-10 h-10 object-cover rounded border border-gray-200" />
 
-            <div class="flex flex-col leading-tight">
-                <div class="text-sm font-semibold text-gray-800">
-                    {{ item.code }}
-                </div>
-                <div class="text-xs text-gray-500">
-                    {{ item.name }}
+                        <div class="flex flex-col leading-tight">
+                            <div class="text-sm font-semibold text-gray-800">
+                                {{ item.code }}
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                {{ item.name }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Delete -->
+                    <Button :icon="faTrash" type="negative" size="xs" @click="removeTradeUnit(item.id)" />
                 </div>
             </div>
-        </div>
-
-        <!-- Right: Delete -->
-        <Button
-            :icon="faTrash"
-            type="negative"
-            size="xs"
-            @click="removeTradeUnit(item.id)"
-        />
-    </div>
-
-    <!-- Empty state -->
-    <div v-if="!valueTradeUnit.length" class="text-xs text-gray-400 text-center py-2">
-        No trade units selected
-    </div>
-</div>
 
             <div class="flex justify-end gap-2 mt-4">
                 <Button label="Cancel" type="gray" @click="closeModal" />
