@@ -30,6 +30,7 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 
 class EditEmployee extends OrgAction
 {
@@ -84,16 +85,37 @@ class EditEmployee extends OrgAction
                 ],
 
                 'state' => [
-                    'type' => 'select',
-                    'label' => 'Employee Status',
+                    'type' => 'employeeState',
+                    'mode' => 'card',
+                    'label' => 'Employee status',
                     'required' => true,
                     'options' => [
-                        ['value' => 'hired', 'label' => __('Hired'), 'description' => __('Employee has been hired and awaiting onboarding')],
-                        ['value' => 'working', 'label' => __('Working'), 'description' => __('Employee is actively working')],
-                        ['value' => 'leaving', 'label' => __('Leaving'), 'description' => __('Employee has resigned and is in notice period')],
-                        ['value' => 'left', 'label' => __('Left'), 'description' => __('Employee has left the organization')],
+                        [
+                            'title' => __('Hired'),
+                            'description' => __('Will start in future date'),
+                            'value' => EmployeeStateEnum::HIRED->value
+                        ],
+                        [
+                            'title' => __('Working'),
+                            'description' => __('Employee already working'),
+                            'value' => EmployeeStateEnum::WORKING->value
+                        ],
+                        [
+                            'title' => __('Leaving'),
+                            'description' => __('Employee will leave'),
+                            'value' => EmployeeStateEnum::LEAVING->value
+                        ],
+                        [
+                            'title' => __('Left'),
+                            'description' => __('Employee already left the office'),
+                            'value' => EmployeeStateEnum::LEFT->value
+                        ],
                     ],
-                    'value' => $employee->state?->value ?? 'working',
+                    'value' => [
+                        'state' => $employee->state,
+                        'employment_start_at' => $employee->contract_start_date ?? $employee->employment_start_at ?? '',
+                        'employment_end_at' => $employee->employment_end_at ?? '',
+                    ]
                 ],
 
                 'job_title' => [
@@ -143,22 +165,7 @@ class EditEmployee extends OrgAction
                     'label' => __('Probation Period (Days)'),
                     'placeholder' => __('90'),
                     'value' => $employee->probation_period_days ?? 90,
-                ],
-
-                'employment_start_at' => [
-                    'type' => 'date',
-                    'label' => __('Employment Start Date'),
-                    'value' => $employee->employment_start_at ?? '',
-                ],
-
-                'employment_end_at' => [
-                    'type' => 'date',
-                    'label' => __('Employment End Date'),
-                    'value' => $employee->employment_end_at ?? '',
-                ],
-
-
-
+                ]
 
             ]
         ];
