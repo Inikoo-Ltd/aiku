@@ -19,6 +19,8 @@ import InputText from "primevue/inputtext";
 import PickList from 'primevue/picklist';
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
+import Image from "@/Components/Image.vue";
+import { faTrash } from "@fas";
 
 const props = defineProps<{
     title: string;
@@ -70,7 +72,11 @@ const addTradeUnit = () => {
       ); */
 };
 
-
+const removeTradeUnit = (id: number) => {
+    valueTradeUnit.value = valueTradeUnit.value.filter(
+        (item: any) => item.id !== id
+    );
+};
 
 
 </script>
@@ -90,12 +96,54 @@ const addTradeUnit = () => {
     <component :is="component" :key="currentTab" :tab="currentTab" :data="props[currentTab]" />
 
     <!-- PrimeVue Dialog -->
-    <Dialog v-model:visible="modalVisible" modal header="Add Trade Unit" :style="{ width: '400px' }">
+    <Dialog v-model:visible="modalVisible" modal header="Add Trade Unit" :style="{ width: '400px' }"
+        :contentStyle="{ maxHeight: '500px', overflowY: 'visible' }">
         <div class="flex flex-col gap-3">
             <label class="text-sm font-medium">Trade Unit</label>
+
             <PureMultiselectInfiniteScroll v-model="valueTradeUnit"
                 :fetch-route="{ name: 'grp.json.master_product_category.all_trade_units', parameters: {} }"
-                :object="true" labelProp="name" value-prop="id" ref="_pureMultiselectInfiniteScroll" mode="tags" />
+                :object="true" labelProp="name" value-prop="id" ref="_pureMultiselectInfiniteScroll" mode="multiple"
+                :showClear="false" :required="true">
+            </PureMultiselectInfiniteScroll>
+
+            <div class="max-h-[200px] overflow-y-auto flex flex-col gap-1 border rounded p-1">
+    <div
+        v-for="item in valueTradeUnit"
+        :key="item.id"
+        class="flex items-center justify-between py-1 px-2 border rounded"
+    >
+        <!-- Left: Image + Info -->
+        <div class="flex items-center gap-2">
+            <Image
+                :src="item?.image?.thumbnail"
+                class="w-10 h-10 object-cover rounded border border-gray-200"
+            />
+
+            <div class="flex flex-col leading-tight">
+                <div class="text-sm font-semibold text-gray-800">
+                    {{ item.code }}
+                </div>
+                <div class="text-xs text-gray-500">
+                    {{ item.name }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Delete -->
+        <Button
+            :icon="faTrash"
+            type="negative"
+            size="xs"
+            @click="removeTradeUnit(item.id)"
+        />
+    </div>
+
+    <!-- Empty state -->
+    <div v-if="!valueTradeUnit.length" class="text-xs text-gray-400 text-center py-2">
+        No trade units selected
+    </div>
+</div>
 
             <div class="flex justify-end gap-2 mt-4">
                 <Button label="Cancel" type="gray" @click="closeModal" />
