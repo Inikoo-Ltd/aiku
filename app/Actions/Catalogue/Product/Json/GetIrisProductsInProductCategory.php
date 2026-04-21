@@ -61,7 +61,9 @@ class GetIrisProductsInProductCategory extends IrisAction
 
         // Section: Sort
         $orderBy = request()->query('order_by');
-        if ($orderBy && $orderBy === 'recommended') {
+        if (!$orderBy) $orderBy = 'recommended';
+
+        if ($orderBy === 'recommended') {
             if ($productCategory->type === ProductCategoryTypeEnum::FAMILY) {
                 $queryBuilder->orderBy("index_under_{$productCategory->type->value}");    
             }
