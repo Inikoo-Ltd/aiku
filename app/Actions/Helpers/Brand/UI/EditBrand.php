@@ -36,8 +36,10 @@ class EditBrand extends GrpAction
                             'style' => 'cancel',
                             'label' => __('Exit edit'),
                             'route' => [
-                                'name'       => 'grp.trade_units.brands.index',
-                                'parameters' => []
+                                'name'       => 'grp.trade_units.brands.show',
+                                'parameters' => [
+                                    'brand' => $brand->slug
+                                ]
                             ],
                         ]
                     ]

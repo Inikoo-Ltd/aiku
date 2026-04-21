@@ -5,6 +5,8 @@ namespace App\Actions\Goods\TradeUnit\UI;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\Brand\UI\IndexBrands;
 use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitIndex;
+use App\Actions\Helpers\Brand\UI\ShowBrand;
+use App\Actions\Helpers\Brand\WithBrandSubNavigation;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\Goods\TradeUnitsTabsEnum;
 use App\Http\Resources\Goods\TradeUnitsResource;
@@ -21,6 +23,7 @@ class IndexTradeUnitsInBrand extends GrpAction
 {
     use WithGoodsAuthorisation;
     use WithTradeUnitIndex;
+    use WithBrandSubNavigation;
 
     private Brand $brand;
 
@@ -104,12 +107,25 @@ class IndexTradeUnitsInBrand extends GrpAction
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => $title,
                 'pageHead'    => [
-                    'title'     => $this->brand->name,
-                    'model'     => __('Trade Units'),
-                    'iconRight' => [
-                        'icon'  => ['fal', 'fa-atom'],
-                        'title' => $title,
+                    'actions' => [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('Add Trade Units under this Brand'),
+                            'label'   => __('Add Trade Units'),
+                            'route'   => [
+                                // 'name'       => 'grp.org.shops.show.billables.charges.create',
+                                // 'parameters' => $request->route()->originalParameters()
+                            ]
+                        ]
                     ],
+                    'title'         => $this->brand->name,
+                    'model'         => __('Trade Units'),
+                    'iconRight'     => [
+                        'icon'      => ['fal', 'fa-atom'],
+                        'title'     => $title,
+                    ],
+                    'subNavigation' => $this->getBrandSubNavigation($this->brand),
                 ],
                 'tabs' => [
                     'current'    => $this->tab,
@@ -126,7 +142,7 @@ class IndexTradeUnitsInBrand extends GrpAction
     public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         return array_merge(
-            IndexBrands::make()->getBreadcrumbs($routeName, $routeParameters),
+            ShowBrand::make()->getBreadcrumbs($this->brand, 'grp.trade_units.brands.show', $routeParameters),
             [
                 [
                     'type'   => 'simple',

@@ -7,8 +7,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import Icon from "@/Components/Icon.vue"
 import { inject } from "vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faToolbox, faTools } from "@fal"
+import { faTriangle, faEquals, faMinus, faShapes, faStar, faThumbtack, faRunning} from "@fas"
 
-library.add(faCircle, faCheckCircle, faQuestionCircle);
+
+library.add(faConciergeBell, faGarage, faExclamationTriangle, faPencil, faThumbtack, faCircle, faCheckCircle, faQuestionCircle)
 
 const props = defineProps<{
     data: Record<string, any>;
@@ -52,12 +55,12 @@ const locale = inject("locale", aikuLocaleStructure)
                     <div class="text-[10px] text-gray-400">
                         RRP {{ locale.currencyFormat(item.currency_code, item.rrp) }}
                     </div>
-                    <div class="text-[10px] flex items-center justify-end gap-1">
+                    <!-- <div class="text-[10px] flex items-center justify-end gap-1">
                         <span class="text-gray-400">Stk</span>
                         <span :class="item.stock > 0 ? 'text-green-600' : 'text-red-500'">
                             {{ item.stock ?? 0 }}
                         </span>
-                    </div>
+                    </div> -->
                 </div>
             </div>
         </template>
@@ -80,8 +83,6 @@ const locale = inject("locale", aikuLocaleStructure)
                         <span class="truncate">{{ item.name }}</span>
                     </div>
 
-                    <!-- Stock -->
-
                 </div>
 
                 <!-- Price -->
@@ -93,9 +94,9 @@ const locale = inject("locale", aikuLocaleStructure)
                         </span>
                     </div>
 
-                    <span :class="item.stock > 0 ? 'text-green-600' : 'text-red-500'">
+                    <!-- <span :class="item.stock > 0 ? 'text-green-600' : 'text-red-500'">
                         {{ item.stock ?? 0 }}
-                    </span>
+                    </span> -->
                 </div>
             </div>
         </template>
