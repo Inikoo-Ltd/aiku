@@ -112,7 +112,7 @@ class EditEmployee extends OrgAction
                         ],
                     ],
                     'value' => [
-                        'state' => $employee->state,
+                        'state' => $employee->state?->value,
                         'employment_start_at' => $employee->contract_start_date ?? $employee->employment_start_at ?? '',
                         'employment_end_at' => $employee->employment_end_at ?? '',
                     ]

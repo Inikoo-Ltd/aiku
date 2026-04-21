@@ -6,7 +6,6 @@
 
 <script setup lang="ts">
 import { RadioGroup, RadioGroupLabel, RadioGroupOption, RadioGroupDescription } from '@headlessui/vue'
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faCopy } from '@fal'
 import { faSpinnerThird } from '@fad'
@@ -14,16 +13,11 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { get } from 'lodash-es'
 import PureDatePicker from '@/Components/Pure/PureDatePicker.vue'
 import { trans } from 'laravel-vue-i18n'
+import { computed, watch } from 'vue'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 
 const props = defineProps<{
-    form: {
-        [key: string]: {
-            state: string
-            employment_start_at: string
-            employment_end_at: string
-        } | string
-    }
+    form: Record<string, any>
     fieldName: string
     options?: any
     fieldData: {
@@ -35,6 +29,16 @@ const props = defineProps<{
     }
 }>()
 
+const selectedState = computed(() => props.form?.[props.fieldName]?.state)
+const showEmploymentStartAt = computed(() => ['hired', 'working', 'leaving', 'left'].includes(selectedState.value))
+const showEmploymentEndAt = computed(() => ['leaving', 'left'].includes(selectedState.value))
+
+watch(selectedState, (state) => {
+    if (!['leaving', 'left'].includes(state) && props.form?.[props.fieldName]) {
+        props.form[props.fieldName].employment_end_at = null
+    }
+}, { immediate: true })
+
 </script>
 
 <template>
@@ -42,7 +46,7 @@ const props = defineProps<{
         <RadioGroup v-model="form[fieldName].state">
             <RadioGroupLabel class="text-base font-semibold leading-6 sr-only">Select the employee state</RadioGroupLabel>
             <div class="grid grid-cols-2 gap-x-3 gap-y-4 justify-around flex-wrap">
-                <RadioGroupOption as="template" v-for="(option, index) in fieldData.options" :key="option.value" :value="option.value" v-slot="{ active, checked }">
+                <RadioGroupOption as="template" v-for="option in fieldData.options" :key="option.value" :value="option.value" v-slot="{ checked }">
                     <div :class="[
                         'relative flex cursor-pointer rounded-lg py-2 px-3 shadow-sm focus:outline-none',
                         checked ? 'bg-gray-100 ring-2 ring-indigo-600' : 'ring-1 ring-gray-300'
@@ -60,8 +64,12 @@ const props = defineProps<{
             </div>
         </RadioGroup>
 
-        <!-- Employment End At -->
-        <div v-if="form[fieldName].state === 'leaving' || form[fieldName].state === 'left'" class="space-y-1">
+        <div v-if="showEmploymentStartAt" class="space-y-1">
+            <div class="text-gray-500">{{ trans('Employee start date:')}}</div>
+            <PureDatePicker v-model="form[fieldName].employment_start_at" placeholder="Enter employee start date" />
+        </div>
+
+        <div v-if="showEmploymentEndAt" class="space-y-1">
             <div class="text-gray-500">{{ trans('Employee end date:')}}</div>
             <PureDatePicker v-model="form[fieldName].employment_end_at" placeholder="Enter employee date end" />
         </div>
