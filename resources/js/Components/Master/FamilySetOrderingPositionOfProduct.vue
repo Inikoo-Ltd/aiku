@@ -53,10 +53,11 @@ const updateOrder = () => {
     items.value = items.value.map((item, index) => ({
         ...item,
         order: index + 1,
-        index_under_master_family: index
+        index_under_family: index
     }))
+    
 
-    console.log("New order:", items.value)
+    // console.log("New order:", items.value)
 
     emits("update:data", items.value);
 

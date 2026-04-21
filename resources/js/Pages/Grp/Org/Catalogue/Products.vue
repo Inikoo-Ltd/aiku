@@ -159,14 +159,14 @@ const repairTradeUnitToChildren = async () => {
 }
 
 const SaveOrder = () => {
-    console.log(localData.value)
-   router.patch(route('grp.models.product_category.reorder_index', {
+    // console.log(localData.value.index_ordering);
+    router.patch(route('grp.models.product_category.reorder_index', {
         productCategory: props.familyId
     }), {
-        products: localData.value.data.data.map((product: any, index: number) => ({
+        products: localData.value.index_ordering.map((product: any, index: number) => ({
             id: product.id,
             code : product.code,
-            index_under_master_family: product.index_under_master_family,
+            index_under_family: product.index_under_family,
         }))
     }, {
         preserveScroll: true,
@@ -178,6 +178,7 @@ const SaveOrder = () => {
             })
         },
         onError: (errors) => {
+            // console.log(errors);
             notify({
                 title: trans("Something went wrong"),
                 text: errors.message || trans("Failed to reorder products"),
@@ -194,6 +195,10 @@ watch(
     },
     { deep: true }
 )
+
+const replaceProps = (updatedData) => {
+    localData.value[currentTab.value] = updatedData
+}
 
 </script>
 
@@ -254,7 +259,7 @@ watch(
         @selectedRow="(ids) => selectedProductsId = { ...selectedProductsId, ...ids }"
         :variantSlugs="variantSlugs"
         :mismatch_trade_unit_with_master="mismatch_trade_unit_with_master"
-      @update:data="(updatedData) => localData[currentTab] = updatedData"
+        @update:data="(updatedData) => replaceProps(updatedData)"
     />
 
     <!-- MODAL -->
