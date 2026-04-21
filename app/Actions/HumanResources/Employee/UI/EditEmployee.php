@@ -145,6 +145,20 @@ class EditEmployee extends OrgAction
                     'value' => $employee->probation_period_days ?? 90,
                 ],
 
+                'employment_start_at' => [
+                    'type' => 'date',
+                    'label' => __('Employment Start Date'),
+                    'value' => $employee->employment_start_at ?? '',
+                ],
+
+                'employment_end_at' => [
+                    'type' => 'date',
+                    'label' => __('Employment End Date'),
+                    'value' => $employee->employment_end_at ?? '',
+                ],
+
+
+
 
             ]
         ];
