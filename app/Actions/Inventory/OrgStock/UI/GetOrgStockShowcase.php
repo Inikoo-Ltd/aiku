@@ -75,9 +75,8 @@ class GetOrgStockShowcase
                         'add_parts_location_note'                => [],  // TODO
                     ],
                     'stock_cost'      => [
-                        'unit_cost'         => $orgStock->unit_cost,
-                        'outer_cost'        => $orgStock->unit_cost * $orgStock->packed_in,
-                        'total_stock_value' => $orgStock->unit_cost * $orgStock->packed_in * $orgStock->quantity_available,
+                        'sku_value'        => $orgStock->sku_value,
+                        'total_stock_value' => $orgStock->sku_value * $orgStock->quantity_available,
                     ],
                     'summary'         => [
                         'quantity_in_submitted_orders' => [
