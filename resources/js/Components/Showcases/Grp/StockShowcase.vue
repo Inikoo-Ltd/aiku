@@ -42,6 +42,7 @@ const props = defineProps<{
             tags_selected_id: number[]
         }[]
         stocks_management: StocksManagementTS
+        currency_code: string
     }
 }>()
 
@@ -110,32 +111,32 @@ console.log(props)
             <div class="space-y-2">
                 <div class="grid grid-cols-7 gap-x-3 items-center">
                     <div class="col-span-2 font-semibold text-gray-600">
-                        Stock value:
+                        {{ ctrans("Stock value") }}:
                     </div>
 
                     <div class="col-span-3 text-right">
-                        {{ locale.currencyFormat(currency_code, data.stocks_management?.stock_cost?.cost_stock_price_outer || 0) }}
+                        {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.cost_stock_price_outer || 0) }}
                         <span class="text-gray-500 text-xs">total</span>
                     </div>
 
                     <div class="col-span-2 text-right">
-                        {{ locale.currencyFormat(currency_code, data.stocks_management?.stock_cost?.cost_stock_price_per_unit || 0) }}
+                        {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.cost_stock_price_per_unit || 0) }}
                         <span class="text-gray-500 text-xs">/ SKO</span>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-7 gap-x-3 items-center">
                     <div class="col-span-2 font-semibold text-gray-600">
-                        Current cost:
+                        {{ ctrans("Current cost") }}:
                     </div>
 
                     <div class="col-span-3 text-right">
-                        {{ locale.currencyFormat(currency_code, data.stocks_management?.stock_cost?.cost_current_price_outer || 0) }}
+                        {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.cost_current_price_outer || 0) }}
                         <span class="text-gray-500 text-xs">total</span>
                     </div>
 
                     <div class="col-span-2 text-right">
-                        {{ locale.currencyFormat(currency_code, data.stocks_management?.stock_cost?.cost_current_price_per_unit || 0) }}
+                        {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.cost_current_price_per_unit || 0) }}
                         <span class="text-gray-500 text-xs">/ Unit</span>
                     </div>
                 </div>
