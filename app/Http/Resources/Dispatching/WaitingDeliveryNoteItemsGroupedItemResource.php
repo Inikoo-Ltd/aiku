@@ -110,7 +110,7 @@ class WaitingDeliveryNoteItemsGroupedItemResource extends JsonResource
             'quantity_not_picked'        => $this->quantity_not_picked,
             'quantity_packed'            => $this->quantity_packed,
             'quantity_dispatched'        => $this->quantity_dispatched,
-            'quantity_waiting_warehouse' => $this->quantity_waiting_warehouse,
+            'quantity_waiting_warehouse' => $this->quantity_waiting_warehouse,  // TODO: RAUL -- wrong quantity if multiple pickings location (Index Waiting Warehouse Group)
             'quantity_waiting_crm'       => $this->quantity_waiting_crm,
             'is_handled'                 => $this->is_handled,
             'notes'                      => $this->notes,
