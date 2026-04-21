@@ -340,7 +340,7 @@ class IndexProductsInCatalogue extends OrgAction
         /** @var Shop $shop */
         $shop = $request->route('shop');
 
-        $navigation    = ProductsTabsEnum::navigation();
+        $navigation    = ProductsTabsEnum::navigationExcept([ProductsTabsEnum::INDEX_ORDERING]);
         $subNavigation = $this->getShopProductsSubNavigation($shop);
 
         $title = __('Products');

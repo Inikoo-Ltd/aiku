@@ -134,6 +134,7 @@ class ProductsResource extends JsonResource
             'iris_url'                          => $this->webpage?->canonical_url,
             'is_for_sale'                       => $this->is_for_sale,
             'health_rank'                       => $this->health_rank ? HealthRankEnum::from($this->health_rank)->stateIcon()[HealthRankEnum::from($this->health_rank)->value] : null,
+            'index_under_family'                => $product->index_under_family ?? null,
             ...$extraField
         ];
     }

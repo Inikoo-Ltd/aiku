@@ -150,7 +150,7 @@ class IndexProductsInGroup extends OrgAction
     {
         $group = group();
 
-        $navigation = ProductsTabsEnum::navigation();
+        $navigation = ProductsTabsEnum::navigationExcept([ProductsTabsEnum::INDEX_ORDERING]);
 
         unset($navigation[ProductsTabsEnum::SALES->value]);
 
