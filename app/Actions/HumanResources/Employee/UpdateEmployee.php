@@ -311,7 +311,7 @@ class UpdateEmployee extends OrgAction
         }
 
         if ($this->has('contract_start_date')) {
-            $this->set('employment_start_at', $this->get('contract_start_date'));
+            $this->set('contract_start_date', $this->get('contract_start_date'));
         }
 
         if ($this->has('cluster.employment_end_at')) {
