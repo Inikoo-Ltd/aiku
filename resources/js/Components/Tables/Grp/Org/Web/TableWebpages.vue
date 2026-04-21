@@ -66,6 +66,7 @@ function webpageRoute(webpage: Webpage) {
         case 'grp.org.shops.show.web.webpages.index.sub_type.sub_department':
         case 'grp.org.shops.show.web.webpages.index.sub_type.product':
         case 'grp.org.shops.show.web.webpages.index.sub_type.department':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview':
         case 'grp.org.shops.show.web.webpages.index':
             return route(
                 'grp.org.shops.show.web.webpages.show',
