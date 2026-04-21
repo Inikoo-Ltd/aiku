@@ -116,6 +116,7 @@ class GetDispatchHubFulfilmentWidget
                     ->where('type', $type->value)
                     ->where('state', PalletReturnStateEnum::PICKING->value)
                     ->sum('number_items_waiting_crm'),
+                'tooltip' => __('Waiting for CRM action'),
                 'route' => [
                     'name'       => '',
                     'parameters' => [],

@@ -130,7 +130,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                 if ($caseKey === 'handling' && ($widget['waiting_crm_items_still_picking']['count'] ?? 0) > 0) {
                     $entry['crm_warning'] = [
                         'route_target' => $widget['waiting_crm_items_still_picking']['route'],
-                        'tooltip' => __('CRM waiting items in delivery notes still picking'),
+                        'tooltip' => $widget['waiting_crm_items_still_picking']['tooltip'] ?? __('CRM waiting items in delivery notes still picking'),
                         'value' => $widget['waiting_crm_items_still_picking']['count'],
                     ];
                 }
@@ -197,7 +197,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
             if ($caseKey === 'handling' && $waitingCrmItemsStillPicking['count'] > 0) {
                 $totals[$caseKey]['crm_warning'] = [
                     'route_target' => $waitingCrmItemsStillPicking['route'],
-                    'tooltip'      => __('CRM waiting items in delivery notes still picking'),
+                    'tooltip'      => $waitingCrmItemsStillPicking['tooltip'] ?? __('CRM waiting items in delivery notes still picking'),
                     'value'        => $waitingCrmItemsStillPicking['count'],
                 ];
             }
