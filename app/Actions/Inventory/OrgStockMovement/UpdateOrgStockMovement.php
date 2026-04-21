@@ -29,6 +29,7 @@ class UpdateOrgStockMovement extends OrgAction
 
         if (!$this->strict) {
             $rules['last_fetched_at'] = ['sometimes', 'date'];
+            $rules['note']            = ['sometimes', 'nullable', 'string', 'max:1024'];
         }
 
         return $rules;
