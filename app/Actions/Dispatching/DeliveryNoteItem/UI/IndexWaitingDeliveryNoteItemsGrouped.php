@@ -33,7 +33,10 @@ class IndexWaitingDeliveryNoteItemsGrouped extends OrgAction
         }
 
         $query = QueryBuilder::for(DeliveryNote::class);
-        $query->leftjoin('shops', 'delivery_notes.shop_id', '=', 'shops.id');
+        $query->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id');
+        $query->leftJoin('organisations', 'delivery_notes.organisation_id', '=', 'organisations.id');
+        $query->leftJoin('delivery_note_order', 'delivery_note_order.delivery_note_id', '=', 'delivery_notes.id');
+        $query->leftJoin('orders', 'orders.id', '=', 'delivery_note_order.order_id');
 
         $query->where('delivery_notes.warehouse_id', $warehouse->id)
             ->whereHas('deliveryNoteItems', function ($q) use ($waitingType) {
@@ -47,11 +50,11 @@ class IndexWaitingDeliveryNoteItemsGrouped extends OrgAction
         $query->where('delivery_notes.state', $state);
 
         if ($shopType != 'all') {
-            // Get directly from shop.type because some deliveryNote has no shop_type somehow (null), probably old order_data
             $query->where('shops.type', $shopType);
         }
 
         return $query->defaultSort('delivery_notes.id')
+            ->distinct()
             ->select([
                 'delivery_notes.id as delivery_note_id',
                 'delivery_notes.slug as delivery_note_slug',
@@ -63,6 +66,13 @@ class IndexWaitingDeliveryNoteItemsGrouped extends OrgAction
                 'delivery_notes.shipping_notes as delivery_note_shipping_notes',
                 'delivery_notes.is_premium_dispatch as delivery_note_is_premium_dispatch',
                 'delivery_notes.has_extra_packing as delivery_note_has_extra_packing',
+                'orders.id as order_id',
+                'orders.slug as order_slug',
+                'orders.reference as order_reference',
+                'shops.slug as shop_slug',
+                'shops.type as shop_type',
+                'shops.engine as shop_engine',
+                'organisations.slug as organisation_slug',
             ])
             ->allowedSorts(['delivery_note_reference'])
             ->allowedFilters([$globalSearch])

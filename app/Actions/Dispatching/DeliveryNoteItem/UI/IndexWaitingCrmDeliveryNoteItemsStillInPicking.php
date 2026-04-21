@@ -9,6 +9,8 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\UI\Dispatch\WaitingItemsTabsEnum;
+use Illuminate\Support\Arr;
 
 class IndexWaitingCrmDeliveryNoteItemsStillInPicking extends BaseIndexWaitingDeliveryNoteItems
 {
@@ -27,5 +29,10 @@ class IndexWaitingCrmDeliveryNoteItemsStillInPicking extends BaseIndexWaitingDel
     protected function getRouteName(): string
     {
         return 'grp.org.warehouses.show.dispatching.waiting_crm_items_still_picking';
+    }
+
+    protected function getTabNavigation(): array
+    {
+        return Arr::only(WaitingItemsTabsEnum::navigation(), WaitingItemsTabsEnum::ITEMIZED->value);
     }
 }
