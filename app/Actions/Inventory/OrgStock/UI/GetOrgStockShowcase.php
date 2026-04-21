@@ -15,6 +15,7 @@ use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Traits\HasBucketImages;
+use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 
 class GetOrgStockShowcase
 {
@@ -39,6 +40,7 @@ class GetOrgStockShowcase
             [
                 'trade_units'       => $dataTradeUnits,
                 'currency_code'     => $orgStock->organisation->currency->code,
+                'is_quantity_excess' => $orgStock->quantity_status === OrgStockQuantityStatusEnum::EXCESS,
                 'stocks_management' => [
                     'routes'          => [
                         'location_route'                         => [
@@ -93,14 +95,14 @@ class GetOrgStockShowcase
                             ],
                             'value'      => $orgStock->quantity_to_be_picked
                         ],
-                        'quantity_available'           => [
-                            'icon_state' => [
-                                'icon'    => 'fal fa-dot-circle',
-                                'class'   => 'animate-pulse text-green-500',
-                                'tooltip' => __("Stock available for sale"),
-                            ],
-                            'value'      => $orgStock->quantity_available
-                        ],
+                        // 'quantity_available'           => [
+                        //     'icon_state' => [
+                        //         'icon'    => 'fal fa-dot-circle',
+                        //         'class'   => 'animate-pulse text-green-500',
+                        //         'tooltip' => __("Stock available for sale"),
+                        //     ],
+                        //     'value'      => $orgStock->quantity_available
+                        // ],
                     ],
                     'locations'       => $locations,
                     'qty_in_location' => $orgStock->quantity_in_locations

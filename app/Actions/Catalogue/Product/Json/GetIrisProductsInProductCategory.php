@@ -61,7 +61,16 @@ class GetIrisProductsInProductCategory extends IrisAction
 
         // Section: Sort
         $orderBy = request()->query('order_by');
-        if ($orderBy) {
+        if (!$orderBy) {
+            $orderBy = $productCategory->type === ProductCategoryTypeEnum::FAMILY ? 'recommended' : 'code';
+        };
+
+        if ($orderBy == 'recommended') {
+            if ($productCategory->type === ProductCategoryTypeEnum::FAMILY) {
+                $queryBuilder->orderBy("index_under_{$productCategory->type->value}");    
+            }
+            $queryBuilder->orderBy("name");
+        } else {
             if (str_starts_with($orderBy, '-')) {
                 $column    = ltrim($orderBy, '-');
                 $direction = 'desc';
@@ -70,15 +79,10 @@ class GetIrisProductsInProductCategory extends IrisAction
                 $direction = 'asc';
             }
 
-            $allowedColumnsToOrder = ['name', 'rrp', 'price', 'code'];
+            $allowedColumnsToOrder = ['name', 'rrp', 'price', 'code', 'created_at'];
             if (in_array($column, $allowedColumnsToOrder)) {
                 $queryBuilder->orderBy($column, $direction);
             }
-        } else {
-            if ($productCategory->type === ProductCategoryTypeEnum::FAMILY) {
-                $queryBuilder->orderBy("index_under_{$productCategory->type->value}");
-            }
-            $queryBuilder->orderBy("name");
         }
 
         $products = null;

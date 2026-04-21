@@ -141,6 +141,12 @@ class ShowDepartment extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => DepartmentTabsEnum::navigation()
                 ],
+                'shop_data' => [
+                    'id'            => $department->shop->id,
+                    'slug'          => $department->shop->slug,
+                    'currency_code' => $department->shop->currency->code,
+                ],
+                'product_category_id' => $department->id,
 
                 DepartmentTabsEnum::SHOWCASE->value => $this->tab == DepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryShowcase::run($department)

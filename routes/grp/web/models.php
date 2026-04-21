@@ -233,6 +233,7 @@ use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UpdateTradeUnitFamily;
 use App\Actions\Helpers\AwsEmail\SendIdentityEmailVerification;
 use App\Actions\Helpers\Brand\AttachBrandToModel;
+use App\Actions\Helpers\Brand\AttachBrandToMultipleModel;
 use App\Actions\Helpers\Brand\DeleteBrand;
 use App\Actions\Helpers\Brand\DetachBrandFromModel;
 use App\Actions\Helpers\Brand\StoreBrand;
@@ -1181,6 +1182,7 @@ Route::name('brand.')->prefix('brand')->group(function () {
     Route::post('store', StoreBrand::class)->name('store')->withoutScopedBindings();
     Route::patch('{brand:id}/update', UpdateBrand::class)->name('update')->withoutScopedBindings();
     Route::delete('{brand:id}/delete', DeleteBrand::class)->name('delete')->withoutScopedBindings();
+    Route::patch('{brand:id}/attach-multiple', AttachBrandToMultipleModel::class)->name('brands.attach-multiple')->withoutScopedBindings();
 });
 
 Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function () {
