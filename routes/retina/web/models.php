@@ -364,7 +364,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('{customerSalesChannel:id}/shopify-batch-upload', CreateRetinaNewBulkPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
     Route::post('{customerSalesChannel:id}/shopify-batch-match', MatchRetinaBulkPortfoliosToCurrentShopifyProduct::class)->name('shopify.batch_match')->withoutScopedBindings();
     Route::post('{customerSalesChannel:id}/shopify-batch-all', CreateRetinaNewAllPortfoliosToShopify::class)->name('shopify.batch_all')->withoutScopedBindings();
-    Route::post('{customerSalesChannel:id}/shopify-batch-all', UpdateRetinaAllPortfoliosDimensionsToShopify::class)->name('shopify.batch_all_dimensions_update')->withoutScopedBindings();
+    Route::post('{customerSalesChannel:id}/shopify-dimensions-all', UpdateRetinaAllPortfoliosDimensionsToShopify::class)->name('shopify.batch_all_dimensions_update')->withoutScopedBindings();
 
     Route::post('{customerSalesChannel:id}/woo-batch-upload', CreateRetinaNewBulkPortfoliosToWoo::class)->name('woo.batch_upload')->withoutScopedBindings();
     Route::post('{customerSalesChannel:id}/woo-batch-match', MatchRetinaBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_match')->withoutScopedBindings();
