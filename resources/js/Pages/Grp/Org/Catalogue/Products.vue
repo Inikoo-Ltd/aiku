@@ -157,7 +157,7 @@ const repairTradeUnitToChildren = async () => {
         })
     })
 }
-
+const loadingOrder = ref(false)
 const SaveOrder = () => {
     // console.log(localData.value.index_ordering);
     router.patch(route('grp.models.product_category.reorder_index', {
@@ -170,6 +170,9 @@ const SaveOrder = () => {
         }))
     }, {
         preserveScroll: true,
+        onStart : () => {
+            loadingOrder.value = true
+        },
         onSuccess: () => {
             notify({
                 title: trans("Success!"),
@@ -184,6 +187,9 @@ const SaveOrder = () => {
                 text: errors.message || trans("Failed to reorder products"),
                 type: "error"
             })
+        },
+        onFinish : () => {
+            loadingOrder.value = false
         }
     })
 }
@@ -224,6 +230,7 @@ const replaceProps = (updatedData) => {
                 :label="action.label" 
                 :style="action.style"
                 :onClick="SaveOrder"
+                :loading="loadingOrder"
             />
             <span v-else />
         </template>

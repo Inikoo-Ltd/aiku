@@ -167,7 +167,7 @@ const resetSelectionByScope = {
     products: () => (selectedProductsForAttachId.value = []),
 }
 
-
+const loadingOrder = ref(false)
 const SaveOrder = () => {
     router.patch(route('grp.models.master_product_category.reorder_index', {
         masterProductCategory: props.familyId
@@ -179,6 +179,9 @@ const SaveOrder = () => {
         }))
     }, {
         preserveScroll: true,
+        onStart : () => {
+            loadingOrder.value = true
+        },
          onSuccess: () => {
             notify({
                 title: trans("Success!"),
@@ -192,6 +195,9 @@ const SaveOrder = () => {
                 text: errors.message || trans("Failed to reorder products"),
                 type: "error"
             })
+        },
+        onFinish : ()=> {
+             loadingOrder.value = false
         }
 })}
 
@@ -228,6 +234,7 @@ watch(() => currentTab.value, (tab) => {
                 :label="action.label" 
                 :style="action.style"
                 :onClick="SaveOrder"
+                :loading="loadingOrder"
             />
             <span v-else />
         </template>
