@@ -75,8 +75,10 @@ class GetIrisProductsInProductCategory extends IrisAction
                 $queryBuilder->orderBy($column, $direction);
             }
         } else {
-            $queryBuilder->orderBy("index_under_{$productCategory->type->value}")
-                ->orderBy("name");
+            if ($productCategory->type === ProductCategoryTypeEnum::FAMILY) {
+                $queryBuilder->orderBy("index_under_{$productCategory->type->value}");
+            }
+            $queryBuilder->orderBy("name");
         }
 
         $products = null;
