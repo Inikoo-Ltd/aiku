@@ -11,7 +11,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class HydrateIndexFromMasterShopToShops
 {
     use AsAction;
-    
+
     public function getJobUniqueId(MasterShop $masterShop, MasterProductCategory $masterProductCategory): string
     {
         return "{$masterShop->code}_{$masterProductCategory->code}";
@@ -20,12 +20,12 @@ class HydrateIndexFromMasterShopToShops
     public function handle(MasterShop $masterShop, MasterProductCategory $masterProductCategory, array $indexOrders): void
     {
         $productCategories = $masterProductCategory->productCategories->keyBy('shop_id');
-        foreach($masterShop->shops as $shop) {
+        foreach ($masterShop->shops as $shop) {
             if (!data_get($shop->settings, 'catalog.family_indexing_follow_master', true)) {
                 continue;
             }
 
-            if($productCategory = $productCategories[$shop->id]) {
+            if ($productCategory = $productCategories[$shop->id]) {
 
                 $indexOrderProduct = Product::whereIn('code', array_keys($indexOrders))
                     ->where('shop_id', $shop->id)

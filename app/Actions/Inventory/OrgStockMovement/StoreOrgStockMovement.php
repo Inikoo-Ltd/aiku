@@ -102,7 +102,7 @@ class StoreOrgStockMovement extends OrgAction
             CalculateValueLocationOrgStock::dispatch($locationOrgStock->id);
         }
 
-        if($orgStockMovement->type == OrgStockMovementTypeEnum::PURCHASE){
+        if ($orgStockMovement->type == OrgStockMovementTypeEnum::PURCHASE) {
             OrgStockHydrateStockValue::dispatch($orgStock);
         }
 

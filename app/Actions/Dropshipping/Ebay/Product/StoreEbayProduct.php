@@ -123,7 +123,7 @@ class StoreEbayProduct extends RetinaAction
 
             $family = $product->family?->name;
 
-            if(!$family){
+            if (!$family) {
                 $family = $product->name;
             }
 

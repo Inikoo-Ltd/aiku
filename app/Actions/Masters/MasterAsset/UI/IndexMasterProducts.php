@@ -482,7 +482,7 @@ class IndexMasterProducts extends GrpAction
 
         $actions = [];
 
-        if ($isFamily ) {
+        if ($isFamily) {
             $actions[] = [
                 'type'    => 'button',
                 'style'   => 'create',
