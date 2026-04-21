@@ -37,13 +37,24 @@ class IndexDepartmentWebpages extends OrgAction
     use WithWebpageSubNavigation;
 
     private Website $website;
+    private string $scope;
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): LengthAwarePaginator
     {
+        $this->scope = 'main_page';
         $this->website = $website;
         $this->initialisationFromShop($website->shop, $request);
 
-        return $this->handle(parent: $website, bucket: $this->bucket);
+        return $this->handle($website, bucket: $this->bucket);
+    }
+
+    public function familiesOverviewPages(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->scope = 'families-overview';
+        $this->website = $website;
+        $this->initialisationFromShop($website->shop, $request);
+
+        return $this->handle($website, bucket: $this->bucket);
     }
 
     protected function getElementGroups(Website $parent): array
@@ -95,6 +106,7 @@ class IndexDepartmentWebpages extends OrgAction
 
         $queryBuilder->where('webpages.website_id', $parent->id);
         $queryBuilder->where('webpages.sub_type', WebpageSubTypeEnum::DEPARTMENT);
+        $queryBuilder->where('webpages.layout_style', $this->scope);
         $queryBuilder->leftJoin('organisations', 'webpages.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('shops', 'webpages.shop_id', '=', 'shops.id');
         $queryBuilder->leftJoin('websites', 'webpages.website_id', '=', 'websites.id');
@@ -186,6 +198,12 @@ class IndexDepartmentWebpages extends OrgAction
 
         $routeCreate = '';
 
+        $pageTitle = __('Department Webpages');
+
+        if ($this->scope === 'families-overview') {
+            $pageTitle = __('Families Overview Webpages');
+        }
+
         return Inertia::render(
             'Org/Web/Webpages',
             [
@@ -195,7 +213,7 @@ class IndexDepartmentWebpages extends OrgAction
                 ),
                 'title'       => __('Webpages'),
                 'pageHead'    => [
-                    'title'         => __('department webpages'),
+                    'title'         => $pageTitle,
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
                         'title' => __('Webpage')
@@ -238,6 +256,7 @@ class IndexDepartmentWebpages extends OrgAction
         $website = request()->route()->parameter('website');
 
         return match ($routeName) {
+            'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview',
             'grp.org.shops.show.web.webpages.index.sub_type.department' =>
             array_merge(
                 ShowWebsite::make()->getBreadcrumbs(
@@ -250,7 +269,7 @@ class IndexDepartmentWebpages extends OrgAction
                         'name'       => 'grp.org.shops.show.web.webpages.index.sub_type.department',
                         'parameters' => $routeParameters
                     ],
-                    $suffix
+                    $routeName === 'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview' ? '(Families Overview)' :$suffix
                 )
             ),
             default => []

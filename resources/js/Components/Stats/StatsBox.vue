@@ -9,13 +9,13 @@ import Icon from '../Icon.vue'
 import BackgroundBox from '../BackgroundBox.vue'
 import CountUp from 'vue-countup-v3'
 
-import { faCubes, faSeedling, faRulerCombined } from "@fal"
+import { faCubes, faSeedling, faRulerCombined, faWindowFrame } from "@fal"
 import { faFireAlt } from "@fad"
 import { faCheckCircle, faTimesCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { StatsBoxTS } from '@/types/Components/StatsBox'
 
-library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faRulerCombined, faFireAlt)
+library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faRulerCombined, faFireAlt, faWindowFrame)
 
 const props = defineProps<{
     stat: StatsBoxTS
@@ -77,9 +77,10 @@ const isLoadingMetaRight = ref(false)
             @finish="isLoadingMetaRight = false"
         >
             <LoadingIcon v-if="isLoadingMetaRight" />
+            <FontAwesomeIcon v-else-if="typeof stat.metaRight?.icon === 'string'" :icon='stat.metaRight?.icon' fixed-width aria-hidden='true' />
             <Icon v-else :data="stat.metaRight?.icon" class="opacity-100" />
             <div class="group-hover/sub:text-gray-700">
-                {{ locale.number(stat.metaRight?.count) }}
+                {{ locale.number(stat.metaRight?.count ?? 0) }}
             </div>
         </component>
 
