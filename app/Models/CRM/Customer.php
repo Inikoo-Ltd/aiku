@@ -13,7 +13,6 @@ use App\Enums\CRM\Customer\CustomerRejectReasonEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\CRM\Customer\CustomerTradeStateEnum;
-use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\MitSavedCard;
@@ -69,7 +68,9 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
@@ -102,9 +103,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property CustomerTradeStateEnum $trade_state number of invoices
  * @property bool $is_fulfilment
  * @property bool $is_dropshipping
- * @property \Illuminate\Support\Carbon|null $last_submitted_order_at
- * @property \Illuminate\Support\Carbon|null $last_dispatched_delivery_at
- * @property \Illuminate\Support\Carbon|null $last_invoiced_at
+ * @property Carbon|null $last_submitted_order_at
+ * @property Carbon|null $last_dispatched_delivery_at
+ * @property Carbon|null $last_invoiced_at
  * @property array<array-key, mixed> $data
  * @property array<array-key, mixed> $settings
  * @property string|null $internal_notes
@@ -112,18 +113,18 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $warehouse_public_notes
  * @property int|null $prospects_sender_email_id
  * @property int|null $image_id
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $delete_comment
  * @property string|null $source_id
  * @property array<array-key, mixed> $migration_data
  * @property string|null $registered_at
  * @property CustomerRejectReasonEnum|null $rejected_reason
  * @property string|null $rejected_notes
- * @property \Illuminate\Support\Carbon|null $rejected_at
+ * @property Carbon|null $rejected_at
  * @property bool $is_vip VIP customer
  * @property int|null $as_organisation_id Indicate customer is an organisation in this group
  * @property int|null $as_employee_id Indicate customer is an employee
@@ -161,7 +162,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Product> $exclusiveProducts
  * @property-read Collection<int, \App\Models\CRM\Favourite> $favourites
  * @property-read FulfilmentCustomer|null $fulfilmentCustomer
- * @property-read bool $has_closed_channels
  * @property-read Group|null $group
  * @property-read Media|null $image
  * @property-read MediaCollection<int, Media> $images
@@ -194,7 +194,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, TopUp> $topUps
  * @property-read \App\Models\CRM\TrafficSource|null $trafficSource
  * @property-read Collection<int, Transaction> $transactions
- * @property-read Collection<int, \App\Models\CRM\CustomerWebActivity> $webActivities
  * @property-read Collection<int, \App\Models\CRM\WebUser> $webUsers
  * @property-read WooCommerceUser|null $wooCommerceUser
  * @method static \Database\Factories\CRM\CustomerFactory factory($count = null, $state = [])
@@ -221,6 +220,7 @@ class Customer extends Model implements HasMedia, Auditable
     use HasApiTokens;
     use Notifiable;
     use HasSearchableText;
+    use Searchable;
 
     protected $casts = [
         'data'                        => 'array',
@@ -252,6 +252,51 @@ class Customer extends Model implements HasMedia, Auditable
     ];
 
     protected $guarded = [];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'                       => (string)$this->id,
+            'shop_id'                  => $this->shop_id,
+            'status'                   => $this->status->value,
+            'state'                    => $this->state->value,
+            'reference'                => $this->reference,
+            'name'                     => (string)$this->name,
+            'contact_name'             => (string)$this->contact_name,
+            'company_name'             => (string)$this->company_name,
+            'email'                    => (string)$this->email,
+            'phone'                    => (string)$this->phone,
+            'contact_website'          => (string)$this->contact_website,
+            'identity_document_number' => (string)$this->identity_document_number,
+            'notes'                    => preg_replace('/\s+/', ' ', trim($this->internal_notes.' '.$this->warehouse_internal_notes.' '.$this->warehouse_public_notes)),
+            'created_at'               => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
+
+    public function shouldBeSearchable(): bool
+    {
+        $searchableFields = [
+            'shop_id',
+            'status',
+            'state',
+            'reference',
+            'name',
+            'contact_name',
+            'company_name',
+            'eori',
+            'email',
+            'phone',
+            'contact_website',
+            'identity_document_number',
+            'internal_notes',
+            'warehouse_internal_notes',
+            'warehouse_public_notes',
+            'created_at'
+        ];
+
+        return $this->isDirty($searchableFields);
+    }
+
 
     public function generateTags(): array
     {
@@ -289,7 +334,7 @@ class Customer extends Model implements HasMedia, Auditable
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return $this->reference . '-' . $this->shop->slug;
+                return $this->reference.'-'.$this->shop->slug;
             })
             ->saveSlugsTo('slug')
             ->slugsShouldBeNoLongerThan(128)
@@ -299,11 +344,6 @@ class Customer extends Model implements HasMedia, Auditable
     public function getRouteKeyName(): string
     {
         return 'slug';
-    }
-
-    public function getHasClosedChannelsAttribute(): bool
-    {
-        return $this->customerSalesChannels()->where('status', CustomerSalesChannelStatusEnum::CLOSED)->exists();
     }
 
     protected static function booted(): void
@@ -374,11 +414,6 @@ class Customer extends Model implements HasMedia, Auditable
     public function webUsers(): HasMany
     {
         return $this->hasMany(WebUser::class);
-    }
-
-    public function webActivities(): HasMany
-    {
-        return $this->hasMany(CustomerWebActivity::class);
     }
 
 

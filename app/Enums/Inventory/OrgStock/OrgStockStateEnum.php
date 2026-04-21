@@ -40,27 +40,27 @@ enum OrgStockStateEnum: string
     {
         return [
             'active'        => [
-                'tooltip' => __('active'),
+                'tooltip' => __('Active'),
                 'icon'    => 'fas fa-check-circle',
                 'class'   => 'text-green-500'
             ],
             'discontinuing' => [
-                'tooltip' => __('discontinuing'),
+                'tooltip' => __('Discontinuing'),
                 'icon'    => 'fas fa-times-circle',
                 'class'   => 'text-amber-500'
             ],
             'discontinued'  => [
-                'tooltip' => __('discontinued'),
+                'tooltip' => __('Discontinued'),
                 'icon'    => 'fas fa-times-circle',
                 'class'   => 'text-red-500'
             ],
             'suspended'     => [
-                'tooltip' => __('suspended'),
+                'tooltip' => __('Suspended'),
                 'icon'    => 'fas fa-pause-circle',
                 'class'   => 'text-slate-300'
             ],
             'abnormality'   => [
-                'tooltip' => __('abnormality'),
+                'tooltip' => __('Abnormality'),
                 'icon'    => 'fas fa-exclamation-circle',
                 'class'   => 'text-red-500'
             ]

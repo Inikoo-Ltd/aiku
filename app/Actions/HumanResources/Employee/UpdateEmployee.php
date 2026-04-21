@@ -32,6 +32,7 @@ use App\Rules\IUnique;
 use App\Rules\PinRule;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Rules\Password;
@@ -298,27 +299,90 @@ class UpdateEmployee extends OrgAction
             }
         }
 
-        if ($this->has('cluster.state')) {
-            {
-                $this->set('state', $this->get('cluster.state'));
-            }
-        }
-
-        if ($this->has('cluster.employment_start_at')) {
-            {
-                $this->set('employment_start_at', $this->get('cluster.employment_start_at'));
-            }
-        }
+        $this->normaliseEmploymentDate('employment_start_at');
 
         if ($this->has('contract_start_date')) {
-            $this->set('employment_start_at', $this->get('contract_start_date'));
+            $this->set('contract_start_date', $this->get('contract_start_date'));
         }
 
-        if ($this->has('cluster.employment_end_at')) {
-            {
-                $this->set('employment_end_at', $this->get('cluster.employment_end_at'));
+        $this->normaliseEmploymentDate('employment_end_at');
+
+        if ($this->has('cluster.state')) {
+            $this->set('state', $this->normaliseEmployeeState($this->get('cluster.state')));
+        }
+
+        if ($this->has('state')) {
+            $this->set('state', $this->normaliseEmployeeState($this->get('state')));
+        }
+    }
+
+    private function normaliseEmployeeState(mixed $state): mixed
+    {
+        if (is_object($state) && method_exists($state, 'toArray')) {
+            $state = $state->toArray();
+        }
+
+        if (is_object($state) && !($state instanceof EmployeeStateEnum)) {
+            $state = (array) $state;
+        }
+
+        if (is_array($state)) {
+            return Arr::get($state, 'value', Arr::get($state, 'state'));
+        }
+
+        if ($state instanceof EmployeeStateEnum) {
+            return $state->value;
+        }
+
+        if (is_string($state)) {
+            $normalisedState = Str::of($state)->trim()->toString();
+            if (str_contains($normalisedState, '::')) {
+                $normalisedState = Str::afterLast($normalisedState, '::');
+            }
+
+            foreach (EmployeeStateEnum::cases() as $case) {
+                if (Str::lower($normalisedState) === Str::lower($case->value) || Str::lower($normalisedState) === Str::lower($case->name)) {
+                    return $case->value;
+                }
             }
         }
+
+        return $state;
+    }
+
+    private function normaliseEmploymentDate(string $field): void
+    {
+
+        foreach (["cluster.$field", "state.$field", $field] as $source) {
+            if (!$this->has($source)) {
+                continue;
+            }
+
+            $this->set($field, $this->normaliseDateValue($this->get($source)));
+
+            return;
+        }
+    }
+
+    private function normaliseDateValue(mixed $value): mixed
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d');
+        }
+
+        if (is_object($value) && method_exists($value, 'toArray')) {
+            $value = $value->toArray();
+        }
+
+        if (is_object($value)) {
+            $value = (array) $value;
+        }
+
+        if (is_array($value)) {
+            $value = Arr::get($value, 'value', Arr::get($value, 'date', Arr::get($value, 'formatted')));
+        }
+
+        return blank($value) ? null : $value;
     }
 
     public function asController(Employee $employee, ActionRequest $request): Employee

@@ -198,107 +198,14 @@ const fallbackColor = "#374151"
 	<PageHeading :data="pageHead" v-if="currentTab != 'products'">
 		<template #button-add-products="{ action }" >
 			<div class="relative">
-				<Popover>
-					<template #button="{ open }">
-						<Button
-							:style="action.style"
-							:label="action.label"
-							:icon="action.icon"
-							@click="() => openModal(action)"
-							:key="`ActionButton${action.label}${action.style}`"
-							:tooltip="action.tooltip" />
-					</template>
-
-					<!-- <template #content="{ close: closed }">
-						<div class="w-[350px]">
-							<div class="text-xs px-1 my-2">{{ trans("Products") }}:</div>
-							<div class="">
-								<PureMultiselectInfiniteScroll
-									v-model="formProducts.historic_id"
-									:fetchRoute="routes.products_list"
-									:placeholder="trans('Select Products')"
-									>
-									<template #singlelabel="{ value }">
-										<div class="w-full text-left pl-4">
-											{{ value.name }}
-											
-										</div>
-									</template>
-
-									<template #option="{ option, isSelected, isPointed }">
-										<div
-											class="w-full flex items-center justify-between gap-x-3">
-											<div
-												:class="
-													isSelected(option)
-														? option.stock
-															? ''
-															: 'text-indigo-200'
-														: option.stock
-														? ''
-														: 'text-gray-400'
-												">
-												{{ option.name }}
-											
-											</div>
-
-											<FontAwesomeIcon
-												v-if="option.stock === 0"
-												v-tooltip="trans('No stock')"
-												icon="fas fa-exclamation-triangle"
-												class="text-red-500"
-												fixed-width
-												aria-hidden="true" />
-											<FontAwesomeIcon
-												v-else-if="option.stock < 10"
-												icon="fas fa-exclamation"
-												class="text-yellow-500"
-												fixed-width
-												aria-hidden="true" />
-										</div>
-									</template>
-								</PureMultiselectInfiniteScroll>
-
-								<p
-									v-if="get(formProducts, ['errors', 'historic_id'])"
-									class="mt-2 text-sm text-red-500">
-									{{ formProducts.errors.historic_id }}
-								</p>
-							</div>
-
-							<div class="mt-4">
-								<div class="text-xs px-1 my-2">{{ trans("Quantity") }}:</div>
-								<PureInput
-									v-model="formProducts.quantity_ordered"
-									:placeholder="trans('Quantity')"
-									@keydown.enter="() => onSubmitAddProducts(action, closed)" />
-								<p
-									v-if="get(formProducts, ['errors', 'quantity_ordered'])"
-									class="mt-2 text-sm text-red-600">
-									{{ formProducts.errors.quantity_ordered }}
-								</p>
-							</div>
-
-							<div class="flex justify-end mt-4">
-								<Button
-									@click="() => onSubmitAddProducts(action, closed)"
-									:style="'save'"
-									:loading="isLoadingButton == 'addProducts'"
-									:disabled="
-										!formProducts.historic_id ||
-										formProducts.quantity_ordered < 1
-									"
-									label="Save"
-									full />
-							</div> -->
-
-					<!-- Loading: fetching service list -->
-					<!-- <div v-if="isLoadingData === 'addProducts'" class="bg-white/50 absolute inset-0 flex place-content-center items-center">
-                                <FontAwesomeIcon icon='fad fa-spinner-third' class='animate-spin text-5xl' fixed-width aria-hidden='true' />
-                            </div> -->
-					<!-- </div>
-					</template> -->
-				</Popover>
+				<Button
+					:style="action.style"
+					:label="action.label"
+					:icon="action.icon"
+					@click="() => openModal(action)"
+					:key="`ActionButton${action.label}${action.style}`"
+					:tooltip="action.tooltip"
+				/>
 			</div>
 		</template>
 	</PageHeading>

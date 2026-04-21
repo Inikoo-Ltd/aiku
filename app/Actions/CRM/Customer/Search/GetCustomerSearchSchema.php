@@ -2,15 +2,15 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sun, 19 Apr 2026 15:50:41 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Tue, 21 Apr 2026 10:23:50 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\SupplyChain\Supplier\Search;
+namespace App\Actions\CRM\Customer\Search;
 
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetSupplierSearchSchema
+class GetCustomerSearchSchema
 {
     use AsObject;
 
@@ -24,7 +24,7 @@ class GetSupplierSearchSchema
                         'type' => 'string',
                     ],
                     [
-                        'name'     => 'agent_id',
+                        'name'     => 'shop_id',
                         'type'     => 'int32',
                         'optional' => true,
                     ],
@@ -33,7 +33,11 @@ class GetSupplierSearchSchema
                         'type' => 'bool',
                     ],
                     [
-                        'name' => 'code',
+                        'name' => 'state',
+                        'type' => 'bool',
+                    ],
+                    [
+                        'name' => 'reference',
                         'type' => 'string',
                     ],
                     [
@@ -65,6 +69,10 @@ class GetSupplierSearchSchema
                         'type' => 'string',
                     ],
                     [
+                        'name' => 'notes',
+                        'type' => 'string',
+                    ],
+                    [
                         'name' => 'created_at',
                         'type' => 'int64',
                     ],
@@ -77,7 +85,7 @@ class GetSupplierSearchSchema
                 'default_sorting_field' => 'created_at',
             ],
             'search-parameters' => [
-                'query_by' => 'code,name.contact_name,email,phone,company_name,contact_website,identity_document_number'
+                'query_by' => 'reference,name.contact_name,email,phone,company_name,notes,contact_website,identity_document_number'
             ],
         ];
     }

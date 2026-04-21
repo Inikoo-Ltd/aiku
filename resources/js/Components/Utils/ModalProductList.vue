@@ -267,8 +267,8 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 					}
 				}
 			}
-			
-			
+
+
 		} else if (product.data.quantity_ordered === 0) {
 			// console.log('1111111dddddd')
 			// Handle delete
@@ -411,7 +411,7 @@ watch(() => model.value, async (newValue) => {
 										</div>
 									</div>
 								</template>
-								
+
 								<template #empty> {{ trans("No Product found") }}. </template>
 
 								<!-- Loading Icon -->
@@ -432,10 +432,8 @@ watch(() => model.value, async (newValue) => {
 								<Column field="name" header="Name">
 									<template #body="slotProps">
 										<div>
-											<div>
-												{{ slotProps.data?.name }}
-											</div>
-											<div class="opacity-60 text-sm italic" :class="slotProps.data?.available_quantity ? '' : 'text-red-500'">
+											<div>{{ slotProps.data?.name }}</div>
+											<div v-if="typeModel !== 'purchase_order'" class="opacity-60 text-sm italic" :class="slotProps.data?.available_quantity ? '' : 'text-red-500'">
 												{{ trans("Available quantity") }}: {{ slotProps.data?.available_quantity }}
 											</div>
 										</div>

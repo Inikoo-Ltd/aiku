@@ -1308,7 +1308,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                 v-if="data?.data?.state === 'submitted'"
                 :description="trans('This will move the order back to basket, allowing customer to edit the order again. Are you sure?')"
                 :title="trans('Undo Order back to basket?')"
-                :noLabel="trans('Yes, sned back to basket')"
+                :noLabel="trans('Yes, send back to basket')"
                 noIcon="fal fa-undo-alt"
                 class="w-full"
                 :routeDelete="{
