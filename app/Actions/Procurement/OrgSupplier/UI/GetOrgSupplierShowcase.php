@@ -35,15 +35,15 @@ class GetOrgSupplierShowcase
             ],
             'stats'       => [
                 [
-                    'label' => __('products'),
+                    'label' => __('Products'),
                     'count' => $supplier->stats->number_supplier_products
                 ],
                 [
-                    'label' => __('purchase orders'),
+                    'label' => __('Purchase Orders'),
                     'count' => $supplier->stats->number_purchase_orders
                 ],
                 [
-                    'label' => __('deliveries'),
+                    'label' => __('Deliveries'),
                     'count' => $supplier->stats->number_stock_deliveries
                 ],
 

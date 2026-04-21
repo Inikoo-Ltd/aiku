@@ -309,8 +309,15 @@ class Product extends Model implements Auditable, HasMedia
             'description_extra' => (string)$this->description_extra,
             'state'             => $this->state->value,
             'is_for_sale'       => $this->is_for_sale,
-            'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+            'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
+    }
+
+    public function shouldBeSearchable(): bool
+    {
+        $searchableFields = ['code', 'name', 'description', 'description_extra', 'state', 'is_for_sale', 'created_at'];
+
+        return $this->isDirty($searchableFields);
     }
 
     public function generateTags(): array

@@ -109,7 +109,7 @@ class ShowSupplier extends GrpAction
                                 'name'       => 'grp.supply-chain.suppliers.show.purchase_orders.create',
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
-                            'label' => __('Purchase order')
+                            'label' => __('Purchase Order')
                         ] : false,
                     ],
                     'meta'    => [

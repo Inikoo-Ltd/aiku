@@ -151,8 +151,8 @@ class ShowPurchaseOrder extends OrgAction
                         'style'   => 'secondary',
                         'icon'    => 'fal fa-plus',
                         'key'     => 'add-products',
-                        'label'   => __('Add products'),
-                        'tooltip' => __('Add products'),
+                        'label'   => __('Add Products'),
+                        'tooltip' => __('Add Products'),
                         'route'   => [
                             'name'       => 'grp.models.purchase-order.transaction.store',
                             'parameters' => [

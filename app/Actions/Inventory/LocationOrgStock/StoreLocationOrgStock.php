@@ -25,6 +25,7 @@ use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStock;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -50,7 +51,7 @@ class StoreLocationOrgStock extends OrgAction
         data_set($modelData, 'warehouse_id', $location->warehouse_id);
         data_set($modelData, 'warehouse_area_id', $location->warehouse_area_id);
         data_set($modelData, 'org_stock_id', $orgStock->id);
-        $costPerSku = $this->getCostPerSku($orgStock, now());
+        $costPerSku = $this->getCostPerSku($orgStock, Carbon::now());
 
         if (!Arr::has($modelData, 'quantity')) {
             data_set($modelData, 'quantity', 0);

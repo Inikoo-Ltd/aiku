@@ -354,6 +354,12 @@ class IndexRetinaPortfolios extends RetinaAction
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ]
                     ],
+                    'batch_all_dimensions_update'  => [
+                        'name' => 'retina.models.dropshipping.shopify.batch_all_dimensions_update',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
                     'batch_all'                 => $bulkAllRoute,
                     'fetch_products'            => match ($this->customerSalesChannel->platform->type) {
                         PlatformTypeEnum::WOOCOMMERCE => [

@@ -20,10 +20,11 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -86,16 +87,17 @@ class Location extends Model implements Auditable
     use HasFactory;
     use HasHistory;
     use InWarehouse;
+    use Searchable;
 
     protected $casts = [
-        'data'               => 'array',
-        'audited_at'         => 'datetime',
-        'status'             => LocationStatusEnum::class,
-        'stock_value'        => 'decimal:2',
-        'max_weight'         => 'decimal:3',
-        'max_volume'         => 'decimal:4',
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'data'            => 'array',
+        'audited_at'      => 'datetime',
+        'status'          => LocationStatusEnum::class,
+        'stock_value'     => 'decimal:2',
+        'max_weight'      => 'decimal:3',
+        'max_volume'      => 'decimal:4',
+        'fetched_at'      => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
@@ -103,6 +105,25 @@ class Location extends Model implements Auditable
     ];
 
     protected $guarded = [];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'                => (string)$this->id,
+            'warehouse_id'      => $this->warehouse_id,
+            'warehouse_area_id' => $this->warehouse_area_id,
+            'code'              => $this->code,
+            'status'            => $this->status->value,
+            'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
+
+    public function shouldBeSearchable(): bool
+    {
+        $searchableFields = ['code', 'status', 'created_at', 'warehouse_area_id', 'warehouse_id'];
+
+        return $this->isDirty($searchableFields);
+    }
 
     public function generateTags(): array
     {
@@ -158,11 +179,5 @@ class Location extends Model implements Auditable
     {
         return $this->hasMany(Pallet::class);
     }
-
-    public function pickingRoutes(): BelongsToMany
-    {
-        return $this->belongsToMany(PickingRoute::class, 'picking_route_has_locations');
-    }
-
 
 }

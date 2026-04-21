@@ -120,7 +120,7 @@ class StoreWebpage extends OrgAction
                     'webpage_id' => $webpage->id,
                     'url'        => $webpage->url,
                 ]);
-            } elseif ($model instanceof ProductCategory) {
+            } elseif ($model instanceof ProductCategory && data_get($modelData, 'layout_style') !== 'families-overview') {
                 UpdateProductCategory::make()->action($model, [
                     'webpage_id' => $webpage->id,
                     'url'        => $webpage->url,
