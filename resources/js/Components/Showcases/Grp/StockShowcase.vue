@@ -100,44 +100,34 @@ console.log(props)
                 </table>
             </div>
 
-             <!-- Card: Stock Summary -->
-        <div class="border rounded-lg mt-4 p-4 bg-white">
+            <!-- Card: Stock Summary -->
+        <div class="border rounded mt-4 p-4 bg-white">
             <!-- Out of Stock -->
-            <div class="border-b pb-2 mb-2">
+            <!-- <div class="border-b pb-2 mb-2">
                 <p class="font-semibold text-gray-600">Out of stock</p>
-            </div>
+            </div> -->
 
             <!-- Stock Value Section -->
             <div class="space-y-2">
-                <div class="grid grid-cols-7 gap-x-3 items-center">
-                    <div class="col-span-2 font-semibold text-gray-600">
-                        {{ ctrans("Stock value") }}:
+                <div class="grid grid-cols-5 gap-x-3 items-center">
+
+                    <div class="col-span-3 xtext-right">
+                        {{ ctrans("Outer cost") }}
                     </div>
 
-                    <div class="col-span-3 text-right">
-                        {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.cost_stock_price_outer || 0) }}
-                        <span class="text-gray-500 text-xs">total</span>
-                    </div>
-
-                    <div class="col-span-2 text-right">
-                        {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.cost_stock_price_per_unit || 0) }}
-                        <span class="text-gray-500 text-xs">/ SKO</span>
+                    <div class="col-span-2 xtext-right">
+                        {{ ctrans("Total stocks value") }}
                     </div>
                 </div>
 
-                <div class="grid grid-cols-7 gap-x-3 items-center">
-                    <div class="col-span-2 font-semibold text-gray-600">
-                        {{ ctrans("Current cost") }}:
+                <div class="grid grid-cols-5 gap-x-3 items-center">
+
+                    <div class="col-span-3 xtext-right text-2xl font-semibold">
+                        {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.outer_cost || 0) }}
                     </div>
 
-                    <div class="col-span-3 text-right">
-                        {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.cost_current_price_outer || 0) }}
-                        <span class="text-gray-500 text-xs">total</span>
-                    </div>
-
-                    <div class="col-span-2 text-right">
-                        {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.cost_current_price_per_unit || 0) }}
-                        <span class="text-gray-500 text-xs">/ Unit</span>
+                    <div class="col-span-2 xtext-right text-2xl font-semibold">
+                        {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.total_stock_value || 0) }}
                     </div>
                 </div>
             </div>
