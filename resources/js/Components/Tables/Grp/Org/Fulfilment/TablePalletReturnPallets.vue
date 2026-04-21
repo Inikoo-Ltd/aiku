@@ -488,7 +488,10 @@ const generateLocationRoute = (item: any, picking: any) => {
             </div>
             <div v-else-if="item.pivot_state === 'not_picked'" class="text-red-500 italic flex items-center gap-x-1">
                 <FontAwesomeIcon icon="fas fa-skull" fixed-width aria-hidden="true" />
-                <span>{{ trans("Not picked") }}</span>
+                <span v-if="item.state === 'lost'">{{ trans("Pallet lost") }}</span>
+                <span v-else-if="item.state === 'damaged'">{{ trans("Pallet damaged") }}</span>
+                <span v-else-if="item.state === 'other_incident'">{{ trans("Other incident") }}</span>
+                <span v-else>{{ trans("Not picked") }}</span>
             </div>
             <div v-else class="text-xs text-gray-400 italic">
                 {{ trans("No items picked yet") }}
