@@ -103,9 +103,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property CustomerTradeStateEnum $trade_state number of invoices
  * @property bool $is_fulfilment
  * @property bool $is_dropshipping
- * @property \Illuminate\Support\Carbon|null $last_submitted_order_at
- * @property \Illuminate\Support\Carbon|null $last_dispatched_delivery_at
- * @property \Illuminate\Support\Carbon|null $last_invoiced_at
+ * @property Carbon|null $last_submitted_order_at
+ * @property Carbon|null $last_dispatched_delivery_at
+ * @property Carbon|null $last_invoiced_at
  * @property array<array-key, mixed> $data
  * @property array<array-key, mixed> $settings
  * @property string|null $internal_notes
@@ -113,18 +113,18 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $warehouse_public_notes
  * @property int|null $prospects_sender_email_id
  * @property int|null $image_id
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $delete_comment
  * @property string|null $source_id
  * @property array<array-key, mixed> $migration_data
  * @property string|null $registered_at
  * @property CustomerRejectReasonEnum|null $rejected_reason
  * @property string|null $rejected_notes
- * @property \Illuminate\Support\Carbon|null $rejected_at
+ * @property Carbon|null $rejected_at
  * @property bool $is_vip VIP customer
  * @property int|null $as_organisation_id Indicate customer is an organisation in this group
  * @property int|null $as_employee_id Indicate customer is an employee
@@ -162,7 +162,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Product> $exclusiveProducts
  * @property-read Collection<int, \App\Models\CRM\Favourite> $favourites
  * @property-read FulfilmentCustomer|null $fulfilmentCustomer
- * @property-read bool $has_closed_channels
  * @property-read Group|null $group
  * @property-read Media|null $image
  * @property-read MediaCollection<int, Media> $images

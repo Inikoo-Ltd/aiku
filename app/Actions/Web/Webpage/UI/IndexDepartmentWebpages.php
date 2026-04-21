@@ -269,7 +269,7 @@ class IndexDepartmentWebpages extends OrgAction
                         'name'       => 'grp.org.shops.show.web.webpages.index.sub_type.department',
                         'parameters' => $routeParameters
                     ],
-                    $routeName === 'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview' ? '(Families Overview)' :$suffix
+                    $routeName === 'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview' ? '(Families Overview)' : $suffix
                 )
             ),
             default => []
