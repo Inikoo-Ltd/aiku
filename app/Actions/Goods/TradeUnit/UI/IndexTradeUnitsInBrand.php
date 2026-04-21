@@ -132,6 +132,10 @@ class IndexTradeUnitsInBrand extends GrpAction
                     'current'    => $this->tab,
                     'navigation' => TradeUnitsTabsEnum::navigationExcept([TradeUnitsTabsEnum::SALES]),
                 ],
+                'currentBrand'  => [
+                    'slug'  => $this->brand->slug,
+                    'id'    => $this->brand->id
+                ],
 
                 TradeUnitsTabsEnum::INDEX->value => $this->tab == TradeUnitsTabsEnum::INDEX->value
                     ? fn () => TradeUnitsResource::collection($tradeUnits)

@@ -248,6 +248,8 @@ Route::get('master-product-category/{masterProductCategory:id}/recommended-trade
 Route::get('master-product-category/{masterProductCategory:id}/taken-trade-units', GetTakenTradeUnits::class)->name('master-product-category.taken-trade-units')->withoutScopedBindings();
 Route::get('master-product-category/all-trade-units', GetAllTradeUnitsInGroup::class)->name('master_product_category.all_trade_units');
 
+Route::get('brand/{brand:id}/all-trade-units/', [GetAllTradeUnitsInGroup::class, 'inBrand'])->name('brand.all_trade_units');
+
 Route::get('product/{product:id}/trade-units/all', GetAllTradeUnitsInProduct::class)->name('trade-units.all.under-product')->withoutScopedBindings();
 Route::get('product/{product:id}/trade-units/recommended', [GetRecommendedTradeUnits::class, 'inExternal'])->name('trade-units.recommended.under-product')->withoutScopedBindings();
 

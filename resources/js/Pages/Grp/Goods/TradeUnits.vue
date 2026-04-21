@@ -31,6 +31,10 @@ const props = defineProps<{
     };
     index?: {};
     sales?: {};
+    currentBrand?: {
+        slug: string
+        id: number
+    }
 }>();
 
 const currentTab = ref<string>(props?.tabs?.current ?? "index");
@@ -56,20 +60,22 @@ const component = computed(() => {
 });
 
 const addTradeUnit = () => {
-    /*   router.patch(
-          route("trade-units.update"), // adjust to your actual route name
-           { data : valueTradeUnit.value},
-          {
-              onStart : () => {loading.value = true},
-              onSuccess: () => {
-                  modalVisible.value = false;
-              },
-              onError: (errors) => {
-                  console.log(errors);
-              },
-              onFinish : () => {loading.value = false}
-          }
-      ); */
+    router.patch(
+        route("grp.models.brand.brands.attach-multiple", {
+            brand: props.currentBrand.id
+        }), // adjust to your actual route name
+        { trade_units : valueTradeUnit.value},
+        {
+            onStart : () => {loading.value = true},
+            onSuccess: () => {
+                modalVisible.value = false;
+            },
+            onError: (errors) => {
+                console.log(errors);
+            },
+            onFinish : () => {loading.value = false}
+        }
+    ); 
 };
 
 const removeTradeUnit = (id: number) => {
@@ -96,18 +102,27 @@ const removeTradeUnit = (id: number) => {
     <component :is="component" :key="currentTab" :tab="currentTab" :data="props[currentTab]" />
 
     <!-- PrimeVue Dialog -->
-    <Dialog v-model:visible="modalVisible" modal header="Add Trade Unit" :style="{ width: '400px' }"
-        :contentStyle="{ maxHeight: '500px', overflowY: 'visible' }">
-        <div class="flex flex-col gap-3">
+    <Dialog 
+        v-if="currentBrand"
+        v-model:visible="modalVisible" 
+        modal 
+        header="Add Trade Unit" 
+        :style="{ width: '60vw', height: '80vh'}"
+        :contentStyle="{ maxHeight: '80vh', overflowY: 'visible' }"
+        :on-close="valueTradeUnit = []"
+    >
+        <div class="flex flex-col gap-3 h-full">
             <label class="text-sm font-medium">Trade Unit</label>
 
             <PureMultiselectInfiniteScroll v-model="valueTradeUnit"
-                :fetch-route="{ name: 'grp.json.master_product_category.all_trade_units', parameters: {} }"
+                :fetch-route="{ name: 'grp.json.brand.all_trade_units', parameters: {
+                    brand: currentBrand?.id
+                } }"
                 :object="true" labelProp="name" value-prop="id" ref="_pureMultiselectInfiniteScroll" mode="multiple"
                 :showClear="false" :required="true">
             </PureMultiselectInfiniteScroll>
 
-            <div v-if="valueTradeUnit.length" class="max-h-[200px] overflow-y-auto flex flex-col gap-1 border rounded p-1">
+            <div class="max-h-[50vh] h-[50vh] overflow-y-auto flex flex-col border rounded p-1">
                 <div v-for="item in valueTradeUnit" :key="item.id"
                     class="flex items-center justify-between py-1 px-2 border rounded">
                     <!-- Left: Image + Info -->
