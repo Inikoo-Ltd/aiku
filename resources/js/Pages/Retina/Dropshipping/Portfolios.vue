@@ -1363,7 +1363,7 @@ const layout = inject("layout", layoutStructure)
 				size="xs" />
 		</div>
 	</div>
-	<div v-if="platform_data.type === 'shopify'" class="pt-2 grid justify-items-end mr-4">
+	<div v-if="platform_data.type === 'shopify' && currentTab === 'products'" class="pt-2 grid justify-items-end mr-4">
 		<div class="gap-x-3 flex">
 			<Button
 				v-tooltip="trans('Update all dimensions ')"
@@ -2309,7 +2309,7 @@ const layout = inject("layout", layoutStructure)
 
 		<div class="mt-4 text-center text-sm text-gray-600">
 			{{
-				`This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?`
+				trans(`This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?`)
 			}}
 		</div>
 
@@ -2324,7 +2324,7 @@ const layout = inject("layout", layoutStructure)
 				@click="submitBatchAllDimensionsUpdate()"
 				:label="trans('Submit')"
 				full
-				:disabled="totalProductsForDimensionUpdate === 0"
+				:disabled="totalProductsForDimensionUpdate === 0 || isLoadingUpdateDimension"
 				:loading="isLoadingUpdateDimension" />
 		</div>
 	</Modal>
