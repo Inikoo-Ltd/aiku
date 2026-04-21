@@ -198,13 +198,13 @@ class IndexProductsInProductCategory extends OrgAction
                 'available_quantity'
             ])
             ->allowedFilters([$globalSearch]);
-        
+
         if ($sortByIndex) {
             return $queryBuilder
                 ->addSelect('products.index_under_family')
                 ->get();
         }
-            
+
         return $queryBuilder
             ->defaultSort('products.code')
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -346,19 +346,19 @@ class IndexProductsInProductCategory extends OrgAction
                     'style'   => 'create',
                     'tooltip' => __('New product'),
                     'label'   => __('Product'),
-                    'key'     => 'create',  
+                    'key'     => 'create',
                     'route'   => [
                         'name'       => str_replace('index', 'create', $request->route()->getName()),
                         'parameters' => $request->route()->originalParameters()
                     ]
                 ];
 
-                 $actions[] = [
-                    'type'    => 'button',
-                    'style'   => 'save',
-                    'tooltip' => __('Save Order'),
-                    'key'     => 'save_order',
-                    'label'   => __('Save Ordering'),
+                $actions[] = [
+                   'type'    => 'button',
+                   'style'   => 'save',
+                   'tooltip' => __('Save Order'),
+                   'key'     => 'save_order',
+                   'label'   => __('Save Ordering'),
                 ];
             }
 
@@ -404,7 +404,7 @@ class IndexProductsInProductCategory extends OrgAction
                 'shop_id'                      => $this->shop->id,
                 'currencies'                   => $productCategory->shop->currency,
                 'data'                         => ProductsResource::collection($products),
-                'familyId'                      => $productCategory->type === ProductCategoryTypeEnum::FAMILY ? $productCategory->id : null,   
+                'familyId'                      => $productCategory->type === ProductCategoryTypeEnum::FAMILY ? $productCategory->id : null,
                 'variantSlugs'                 => $products->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]),
                 'tabs'                         => [
                     'current'    => $this->tab,

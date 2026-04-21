@@ -11,7 +11,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class AttachBrandToMultipleModel extends GrpAction
 {
-
     public function handle(Brand $brand, array $modelData): void
     {
         $tradeUnits = TradeUnit::whereIn('id', data_get($modelData, 'trade_units.*.id', []))->get();
@@ -27,7 +26,7 @@ class AttachBrandToMultipleModel extends GrpAction
             $affectedBrandIds = array_merge($affectedBrandIds, $previousBrandIds);
         }
 
-        
+
         $brands = Brand::whereIn('id', $affectedBrandIds)->get();
 
         foreach ($brands as $brand) {
@@ -35,7 +34,7 @@ class AttachBrandToMultipleModel extends GrpAction
             BrandHydrateProducts::dispatch($brand);
         }
     }
-    
+
     public function rules(): array
     {
         return [

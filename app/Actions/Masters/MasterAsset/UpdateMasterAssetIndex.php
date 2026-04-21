@@ -7,7 +7,6 @@ use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterAssetIndex extends GrpAction
@@ -25,9 +24,9 @@ class UpdateMasterAssetIndex extends GrpAction
 
         foreach ($masterAssets as $masterAsset) {
             $masterAsset->updateQuietly([
-                "index_under_master_{$masterProductCategory->type->value}"    => data_get($indexOrders, "{$masterAsset->code}.index_under_master_{$masterProductCategory->type->value}", null)
+                "index_under_master_{$masterProductCategory->type->value}"    => data_get($indexOrders, "$masterAsset->code.index_under_master_{$masterProductCategory->type->value}", null)
             ]);
-        };
+        }
 
         HydrateIndexFromMasterShopToShops::dispatch($this->masterShop, $masterProductCategory, $indexOrders);
     }

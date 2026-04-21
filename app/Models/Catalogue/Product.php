@@ -181,6 +181,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $is_bundle
  * @property bool|null $mismatch_with_master_detected
  * @property bool $not_follow_master_trade_units
+ * @property int|null $index_under_family
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
