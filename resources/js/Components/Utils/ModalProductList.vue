@@ -80,7 +80,7 @@ const getUrlFetch = (additionalParams: {}) => {
 	})
 }
 
-const fetchProductList = async (url?: string) => {
+const fetchProductList = async (url?: string, append = false) => {
 	isLoading.value = "fetchProduct"
 	const urlToFetch = url || route(props.fetchRoute.name, props.fetchRoute.parameters)
 
@@ -88,7 +88,7 @@ const fetchProductList = async (url?: string) => {
 		const response = await axios.get(urlToFetch)
 		const data = response.data
 
-		if (url) {
+		if (append) {
 			products.value = [...products.value, ...data.data]
 		} else {
 			resetProducts()
@@ -322,7 +322,7 @@ const onFetchNext = async (event: Event) => {
 	const target = event.target as HTMLElement
 	const nearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 150
 	if (nearBottom && optionsLinks.value?.next && !isLoading.value) {
-		await fetchProductList(optionsLinks.value.next)
+		await fetchProductList(optionsLinks.value.next, true)
 	}
 }
 
