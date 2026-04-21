@@ -221,7 +221,7 @@ class Customer extends Model implements HasMedia, Auditable
     use HasApiTokens;
     use Notifiable;
     use HasSearchableText;
-    use Searchable;
+   // use Searchable;
 
     protected $casts = [
         'data'                        => 'array',
@@ -254,30 +254,30 @@ class Customer extends Model implements HasMedia, Auditable
 
     protected $guarded = [];
 
-    public static function bootSearchable(): void
-    {
-        static::observe(new CustomerOnlySearchableModelObserver());
-    }
-
-    public function toSearchableArray(): array
-    {
-        return [
-            'id'                       => (string)$this->id,
-            'shop_id'                  => $this->shop_id,
-            'status'                   => $this->status->value,
-            'state'                    => $this->state->value,
-            'reference'                => $this->reference,
-            'name'                     => (string)$this->name,
-            'contact_name'             => (string)$this->contact_name,
-            'company_name'             => (string)$this->company_name,
-            'email'                    => (string)$this->email,
-            'phone'                    => (string)$this->phone,
-            'contact_website'          => (string)$this->contact_website,
-            'identity_document_number' => (string)$this->identity_document_number,
-            'notes'                    => preg_replace('/\s+/', ' ', trim($this->internal_notes.' '.$this->warehouse_internal_notes.' '.$this->warehouse_public_notes)),
-            'created_at'               => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
-        ];
-    }
+//    public static function bootSearchable(): void
+//    {
+//        static::observe(new CustomerOnlySearchableModelObserver());
+//    }
+//
+//    public function toSearchableArray(): array
+//    {
+//        return [
+//            'id'                       => (string)$this->id,
+//            'shop_id'                  => $this->shop_id,
+//            'status'                   => $this->status->value,
+//            'state'                    => $this->state->value,
+//            'reference'                => $this->reference,
+//            'name'                     => (string)$this->name,
+//            'contact_name'             => (string)$this->contact_name,
+//            'company_name'             => (string)$this->company_name,
+//            'email'                    => (string)$this->email,
+//            'phone'                    => (string)$this->phone,
+//            'contact_website'          => (string)$this->contact_website,
+//            'identity_document_number' => (string)$this->identity_document_number,
+//            'notes'                    => preg_replace('/\s+/', ' ', trim($this->internal_notes.' '.$this->warehouse_internal_notes.' '.$this->warehouse_public_notes)),
+//            'created_at'               => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+//        ];
+//    }
 
     public function generateTags(): array
     {

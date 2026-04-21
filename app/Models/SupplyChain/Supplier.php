@@ -109,7 +109,7 @@ class Supplier extends Model implements HasMedia, Auditable
     use HasHistory;
     use HasAttachments;
     use InGroup;
-    use Searchable;
+   // use Searchable;
 
     protected $casts = [
         'data'            => 'array',
@@ -131,28 +131,28 @@ class Supplier extends Model implements HasMedia, Auditable
 
     protected $guarded = [];
 
-    public static function bootSearchable(): void
-    {
-        static::observe(new SupplierOnlySearchableModelObserver());
-    }
-
-    public function toSearchableArray(): array
-    {
-        return [
-            'id'                       => (string)$this->id,
-            'agent_id'                 => $this->agent_id,
-            'status'                   => $this->status,
-            'code'                     => $this->code,
-            'name'                     => (string)$this->name,
-            'contact_name'             => (string)$this->contact_name,
-            'company_name'             => (string)$this->company_name,
-            'email'                    => (string)$this->email,
-            'phone'                    => (string)$this->phone,
-            'contact_website'          => (string)$this->contact_website,
-            'identity_document_number' => (string)$this->identity_document_number,
-            'created_at'               => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
-        ];
-    }
+//    public static function bootSearchable(): void
+//    {
+//        static::observe(new SupplierOnlySearchableModelObserver());
+//    }
+//
+//    public function toSearchableArray(): array
+//    {
+//        return [
+//            'id'                       => (string)$this->id,
+//            'agent_id'                 => $this->agent_id,
+//            'status'                   => $this->status,
+//            'code'                     => $this->code,
+//            'name'                     => (string)$this->name,
+//            'contact_name'             => (string)$this->contact_name,
+//            'company_name'             => (string)$this->company_name,
+//            'email'                    => (string)$this->email,
+//            'phone'                    => (string)$this->phone,
+//            'contact_website'          => (string)$this->contact_website,
+//            'identity_document_number' => (string)$this->identity_document_number,
+//            'created_at'               => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+//        ];
+//    }
 
     public function getRouteKeyName(): string
     {
