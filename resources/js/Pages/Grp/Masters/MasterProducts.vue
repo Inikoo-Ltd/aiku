@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
 import { Head, useForm } from "@inertiajs/vue3"
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TableMasterProducts from "@/Components/Tables/Grp/Goods/TableMasterProducts.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -31,6 +31,7 @@ import TableMasterProductsEdit from "@/Components/Tables/TableMasterProductsEdit
 import { useTabChange } from '@/Composables/tab-change'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import ListSelector from "@/Components/DepartmentAndFamily/ListSelector.vue"
+import MasterFamilySetOrderingPositionOfProduct from "@/Components/Master/FamilySetOrderingPositionOfProduct.vue"
 
 
 library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus)
@@ -43,6 +44,7 @@ const props = defineProps<{
         navigation: {}
     }
     index?: {}
+    index_ordering?: {}
     sales?: {}
     data: {}
     routes?: {
@@ -60,8 +62,9 @@ const props = defineProps<{
 
 const currentTab = ref<string>(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
 const currentData = computed(() => {
-    if (currentTab.value === 'index' || currentTab.value === 'sales') {
+    if (currentTab.value === 'index' || currentTab.value === 'index_ordering' || currentTab.value === 'sales') {
         return (props as any)[currentTab.value] || props.data
     }
     return props.data
@@ -70,6 +73,7 @@ const currentData = computed(() => {
 const component = computed(() => {
     const components: any = {
         index: TableMasterProducts,
+        index_ordering: MasterFamilySetOrderingPositionOfProduct,
         sales: TableMasterProducts,
     }
 
@@ -85,7 +89,7 @@ const selectedProductsForAttachId = ref<number[]>([])
 
 const isLoading = ref<string | boolean>(false)
 const errorMessage = ref<string>('')
-
+const localData = ref<any>(props.data)
 
 const isModalOpen = {
     products: ref(false),
@@ -162,6 +166,49 @@ const onSubmitAttach = async ({
 const resetSelectionByScope = {
     products: () => (selectedProductsForAttachId.value = []),
 }
+
+const loadingOrder = ref(false)
+const SaveOrder = () => {
+    router.patch(route('grp.models.master_product_category.reorder_index', {
+        masterProductCategory: props.familyId
+    }), {
+        products: localData.value.map((product: any, index: number) => ({
+            id: product.id,
+            code : product.code,
+            index_under_master_family: product.index_under_master_family,
+        }))
+    }, {
+        preserveScroll: true,
+        onStart : () => {
+            loadingOrder.value = true
+        },
+         onSuccess: () => {
+            notify({
+                title: trans("Success!"),
+                text: trans("Successfully reordered the products"),
+                type: "success"
+            })
+        },
+        onError: (errors) => {
+            notify({
+                title: trans("Something went wrong"),
+                text: errors.message || trans("Failed to reorder products"),
+                type: "error"
+            })
+        },
+        onFinish : ()=> {
+             loadingOrder.value = false
+        }
+})}
+
+watch(() => currentTab.value, (tab) => {
+    if (tab === 'index' || tab === 'index_ordering' || tab === 'sales') {
+        localData.value = (props as any)[tab] || props.data
+    } else {
+        localData.value = props.data
+    }
+}, { immediate: true })
+
 </script>
 
 <template>
@@ -170,12 +217,26 @@ const resetSelectionByScope = {
 
     <!-- Page Heading with slot button -->
     <PageHeading :data="pageHead">
-        <template #button-master-product="{ action }">
+        <template #button-add-family="{ action }">
             <Button
+                v-if="currentTab === 'index'"
                 :icon="action.icon"
                 :label="action.label" @click="showDialog = true"
                 :style="action.style"
             />
+            <span v-else />
+        </template>
+
+        <template #button-save-order="{ action }">
+            <Button
+                v-if="currentTab === 'index_ordering'"
+                :icon="action.icon"
+                :label="action.label" 
+                :style="action.style"
+                :onClick="SaveOrder"
+                :loading="loadingOrder"
+            />
+            <span v-else />
         </template>
 
         <template #other>
@@ -228,11 +289,12 @@ const resetSelectionByScope = {
         :is="component"
         :key="currentTab"
         :tab="currentTab"
-        :data="currentData"
+        :data="localData"
         :variant-slugs="variantSlugs"
         :isCheckBox="!hide_bulk_edit"
         :routes="routes"
         @selectedRow="(productsId: Record<string, boolean>) => selectedProductsId = productsId"
+        @update:data="(updatedData) => localData = updatedData"
     ></component>
 
     <!-- Dialog Create Product -->

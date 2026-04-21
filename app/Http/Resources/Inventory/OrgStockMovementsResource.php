@@ -46,7 +46,8 @@ class OrgStockMovementsResource extends JsonResource
             'class'                         => $orgStockMovement->class,
             'type'                          => $orgStockMovement->type,
             'flow'                          => $orgStockMovement->flow,
-            'quantity'                      => $orgStockMovement->quantity,
+            'quantity'                      => trimDecimalZeros($orgStockMovement->quantity),
+            'is_negative'                   => ($orgStockMovement->quantity ?? 0) < 0,
             'org_stock_name'                => $orgStockMovement->org_stock_name,
             'org_stock_slug'                => $orgStockMovement->org_stock_slug,
             'org_amount'                    => $orgStockMovement->org_amount,
@@ -60,8 +61,8 @@ class OrgStockMovementsResource extends JsonResource
             'operation_id'                  => $orgStockMovement->operation_id,
             'currency_code'                 => $orgStockMovement->currency_code,
             'user'                          => $orgStockMovement->user,
-            'running_quantity'              => $orgStockMovement->running_quantity,
-            'running_quantity_org_stock'    => $orgStockMovement->running_quantity_org_stock
+            'running_quantity'              => trimDecimalZeros($orgStockMovement->running_quantity),
+            'running_quantity_org_stock'    => trimDecimalZeros($orgStockMovement->running_quantity_org_stock),
         ];
     }
 }

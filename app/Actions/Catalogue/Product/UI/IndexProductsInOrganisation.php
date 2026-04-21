@@ -152,7 +152,7 @@ class IndexProductsInOrganisation extends OrgAction
         /** @var Organisation $organisation */
         $organisation = $request->route('organisation');
 
-        $navigation = ProductsTabsEnum::navigation();
+        $navigation = ProductsTabsEnum::navigationExcept([ProductsTabsEnum::INDEX_ORDERING]);
 
 
 
