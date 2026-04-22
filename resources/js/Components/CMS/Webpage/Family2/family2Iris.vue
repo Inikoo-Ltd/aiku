@@ -3,6 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed, inject } from "vue"
 import { get, isPlainObject } from "lodash-es"
+import { ref, onMounted, nextTick } from "vue"
 
 import Image from "@/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -67,7 +68,7 @@ const gridClass = computed(() =>
 
 const imageOrder = computed(() => (isImageLeft.value ? "order-1" : "order-2"))
 const textOrder = computed(() => (isImageLeft.value ? "order-2" : "order-1"))
-
+const isExpanded = ref(false)
 const images = computed(() => {
   const src = props.fieldValue?.family?.web_images?.all
   if (!src) return []
@@ -100,12 +101,10 @@ const images = computed(() => {
             :navigation="{ prevEl: '.swiper-btn-prev', nextEl: '.swiper-btn-next' }" class="w-full h-full">
             <SwiperSlide v-for="(img, i) in images" :key="i">
               <div class="img-wrapper">
-                <Image 
-                  :src="img.original" :alt="fieldValue?.image?.alt || 'Image preview'"
-                  :imgAttributes="fieldValue?.image?.attributes" 
-                  :imageCover="false" 
-                  height="700px" width="95%" 
-                />
+                <Image :src="img.original" :alt="fieldValue?.image?.alt || 'Image preview'" :imgAttributes="{
+                  ...fieldValue?.image?.attributes,
+                  class: 'w-full h-full object-cover'
+                }" />
               </div>
             </SwiperSlide>
           </Swiper>
@@ -145,7 +144,23 @@ const images = computed(() => {
               {{ fieldValue.family.name }}
             </h1>
 
-            <div v-html="cleanedDescription"></div>
+            <div class="relative w-full">
+              <div class="overflow-hidden transition-all duration-300"
+                :class="isExpanded ? 'max-h-none' : 'max-h-[160px]'">
+                <div v-html="cleanedDescription"></div>
+              </div>
+
+
+              <!-- fade effect when collapsed -->
+              <div v-if="!isExpanded"
+                class="absolute bottom-0 left-0 w-full h-10 bg-gradient-to-t from-white to-transparent"></div>
+            </div>
+
+            <div class="mt-2">
+              <button class="text-sm text-gray-800 hover:underline" @click="isExpanded = !isExpanded">
+                {{ isExpanded ? 'Show less' : 'Show more' }}
+              </button>
+            </div>
 
             <div class="btn-wrapper">
               <LinkIris :href="fieldValue?.button?.link?.href" :canonical_url="fieldValue?.button?.link?.canonical_url"
