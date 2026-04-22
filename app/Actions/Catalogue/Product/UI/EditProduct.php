@@ -189,21 +189,7 @@ class EditProduct extends OrgAction
 
     public function getBlueprintExternal(Product $product): array
     {
-        $packedIn = DB::table('model_has_trade_units')
-            ->where('model_type', 'Stock')
-            ->whereIn('trade_unit_id', $product->tradeUnits->pluck('id'))
-            ->pluck('quantity', 'trade_unit_id')
-            ->toArray();
-
-        $tradeUnits = $product->tradeUnits->map(function ($t) use ($packedIn) {
-            return array_merge(
-                ['quantity' => (int)$t->pivot->quantity],
-                ['fraction' => $t->pivot->quantity / $packedIn[$t->id]],
-                ['packed_in' => $packedIn[$t->id]],
-                ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($t->pivot->quantity / $packedIn[$t->id])), $packedIn[$t->id])],
-                $t->toArray()
-            );
-        });
+        $tradeUnits = $this->getTradeUnitsWithPackingData($product);
 
         return array_filter([
             [
@@ -278,21 +264,7 @@ class EditProduct extends OrgAction
             }
         }
         
-        $packedIn = DB::table('model_has_trade_units')
-        ->where('model_type', 'Stock')
-            ->whereIn('trade_unit_id', $product->tradeUnits->pluck('id'))
-            ->pluck('quantity', 'trade_unit_id')
-            ->toArray();
-
-        $tradeUnits = $product->tradeUnits->map(function ($t) use ($packedIn) {
-            return array_merge(
-                ['quantity' => (int)$t->pivot->quantity],
-                ['fraction' => $t->pivot->quantity / $packedIn[$t->id]],
-                ['packed_in' => $packedIn[$t->id]],
-                ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($t->pivot->quantity / $packedIn[$t->id])), $packedIn[$t->id])],
-                $t->toArray()
-            );
-        });
+        $tradeUnits = $this->getTradeUnitsWithPackingData($product);
 
         $nameFields = [
             'name'              => $product->masterProduct
@@ -644,7 +616,7 @@ class EditProduct extends OrgAction
                                 'value'    => $product->barcode,
                                 'readonly' => $product->tradeUnits->count() == 1,
                                 'options'  => $barcodes->mapWithKeys(function ($barcode) {
-                                    return [$barcode => $barcode];
+                                    return [(string)$barcode => $barcode];
                                 })->toArray()
                             ],
 
@@ -715,6 +687,27 @@ class EditProduct extends OrgAction
                 ],
             ]
         );
+    }
+
+    private function getTradeUnitsWithPackingData(Product $product)
+    {
+        $packedIn = DB::table('model_has_trade_units')
+            ->where('model_type', 'Stock')
+            ->whereIn('trade_unit_id', $product->tradeUnits->pluck('id'))
+            ->pluck('quantity', 'trade_unit_id')
+            ->toArray();
+
+        return $product->tradeUnits->map(function ($tradeUnit) use ($packedIn) {
+            $packedQuantity = max(1, (int)($packedIn[$tradeUnit->id] ?? 0));
+
+            return array_merge(
+                ['quantity' => (int)$tradeUnit->pivot->quantity],
+                ['fraction' => $tradeUnit->pivot->quantity / $packedQuantity],
+                ['packed_in' => $packedQuantity],
+                ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit->pivot->quantity / $packedQuantity)), $packedQuantity)],
+                $tradeUnit->toArray()
+            );
+        });
     }
 
     public function getBreadcrumbs(Product $product, string $routeName, array $routeParameters): array
