@@ -40,7 +40,7 @@ function offerRoute(offer: {}) {
                     shop: (route().params as RouteParams).shop,
                     offerCampaign: props.offerCampaign?.slug ?? offer.offer_campaign_slug,
                     offer: offer.slug
-                })
+                })                
         case "grp.org.shops.show.catalogue.departments.show":
             return route(
                 "grp.org.shops.show.discounts.offers.show",
@@ -48,7 +48,7 @@ function offerRoute(offer: {}) {
                     (route().params as RouteParams).organisation,
                     (route().params as RouteParams).shop,
                     offer.slug])
-        case "grp.org.shops.show.catalogue.departments.show.sub_departments.show":
+        case "grp.org.shops.show.catalogue.sub_departments.show":
             return route(
                 "grp.org.shops.show.discounts.offers.show",
                 [
