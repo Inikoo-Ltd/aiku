@@ -16,6 +16,7 @@ use App\Actions\Traits\WithLogin;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\CRM\WebUser;
 use App\Models\Web\Webpage;
 use Illuminate\Http\RedirectResponse;
@@ -164,6 +165,9 @@ class RetinaLogin
             if ($webpage) {
                 $retinaHome = ShowIrisWebpage::make()->getEnvironmentUrl($webpage->canonical_url);
             }
+        } else {
+            $webpage = Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('state', WebpageStateEnum::LIVE)->where('website_id', $request->input('website')->id)->first();
+            if ($webpage) $retinaHome = ShowIrisWebpage::make()->getEnvironmentUrl($webpage->canonical_url);
         }
 
         return [$retinaHome];
