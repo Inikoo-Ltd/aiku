@@ -272,7 +272,6 @@ watch(() => currentTab.value, (tab) => {
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
-    {{ currentTab }}
     <!-- Products Table -->
     <component
         :is="component"
