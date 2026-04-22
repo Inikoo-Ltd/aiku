@@ -34,7 +34,7 @@ class GetOrderSearchSchema
                         'optional' => true,
                     ],
                     [
-                        'name'     => 'organisation_id',
+                        'name'     => 'customer_id',
                         'type'     => 'int32',
                         'optional' => true,
                     ],
