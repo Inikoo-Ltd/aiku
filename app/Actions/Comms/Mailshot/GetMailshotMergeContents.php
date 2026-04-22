@@ -25,16 +25,16 @@ class GetMailshotMergeContents
         $contents = MailshotMergeContentsEnum::contents();
 
         // Fetch newest products if shop is provided
-        if ($shop) {
-            $newestProducts = GetNewestProducts::run($shop, 5);
+        // if ($shop) {
+        //     $newestProducts = GetNewestProducts::run($shop, 5);
 
-            // Find and update the New In Products merge content with nested structure
-            foreach ($contents as &$content) {
-                if ($content['value'] === '[NewInProducts]') {
-                    $content['items'] = $newestProducts->toArray();
-                }
-            }
-        }
+        //     // Find and update the New In Products merge content with nested structure
+        //     foreach ($contents as &$content) {
+        //         if ($content['value'] === '[NewInProducts]') {
+        //             $content['items'] = $newestProducts->toArray();
+        //         }
+        //     }
+        // }
 
         return $contents;
     }

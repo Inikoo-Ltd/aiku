@@ -24,10 +24,10 @@ enum MailshotMergeContentsEnum: string
                 'name'  => __('Unsubscribe'),
                 'value' => '[Unsubscribe]'
             ],
-            [
-                'name'  => __('New In Products'),
-                'value' => '[NewInProducts]'
-            ]
+            // [
+            //     'name'  => __('New In Products'),
+            //     'value' => '[NewInProducts]'
+            // ]
         ];
     }
 }

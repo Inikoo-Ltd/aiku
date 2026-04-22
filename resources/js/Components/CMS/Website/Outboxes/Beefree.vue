@@ -10,6 +10,21 @@ import Modal from '@/Components/Utils/Modal.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
+// Tab types for product search modal
+const PRODUCT_TABS = {
+    PRODUCTS: 'products',
+    NEW_IN: 'new_in',
+    TRENDING: 'trending',
+    COLLECTION_FAMILY: 'collection_family'
+}
+
+// Time filter options
+const TIME_FILTERS = {
+    WEEK: 'week',
+    MONTH: 'month',
+    YEAR: 'year'
+}
+
 const props = withDefaults(defineProps<{
     updateRoute: routeType;
     imagesUploadRoute: routeType
@@ -19,9 +34,13 @@ const props = withDefaults(defineProps<{
     mergeContents: Array<any> | null
     organisationSlug: string
     shopSlug?: string
-}>(), {});
+    isEditMailshot?: boolean
+}>(), {
+    isEditMailshot: false
+});
 
 const locale = inject('locale', aikuLocaleStructure)
+
 const showBee = ref(false)
 const isLoading = ref(false)
 const beeInstance = ref<BeefreeSDK | null>(null)
@@ -31,6 +50,10 @@ const productSearchModalOpen = ref(false)
 const productSearchQuery = ref('')
 const productSearchResults = ref<Array<any>>([])
 const productSearchLoading = ref(false)
+const activeTab = ref(PRODUCT_TABS.PRODUCTS)
+const timeFilter = ref(TIME_FILTERS.WEEK)
+
+// Resolve/reject handlers for product selection
 let productSearchResolve: ((value: any) => void) | null = null
 let productSearchReject: (() => void) | null = null
 let searchDebounceTimeout: ReturnType<typeof setTimeout> | null = null
@@ -109,16 +132,10 @@ const initializeBeefree = async () => {
                     label: 'Custom text for merge contents',
                     handler: function (resolve: (value: any) => void, reject: () => void) {
                         console.log('mergeContents clicked');
-                        productSearchResolve = resolve
-                        productSearchReject = reject
-                        productSearchModalOpen.value = true
-                        productSearchQuery.value = ''
-                        productSearchResults.value = []
-                        searchProducts()
+                        setupProductSearchHandlers(resolve, reject)
                     }
                 },
             },
-
             onSend: (htmlFile: string, jsonFile: string) => {
                 emits('sendTest', { jsonFile, htmlFile })
             },
@@ -175,24 +192,32 @@ defineExpose({
 
 // Product search functions
 const searchProducts = async () => {
-    console.log('searchProducts', props.shopSlug)
-    // if (!props.shopSlug) {
-    //     productSearchResults.value = []
-    //     return
-    // }
+    if (!props.shopSlug) {
+        productSearchResults.value = []
+        return
+    }
 
     productSearchLoading.value = true
     try {
-        const response = await axios.get(
-            route('grp.json.shop.products_beefree_search', {
-                shop: "ua",
-            }), {
-            params: {
-                search: productSearchQuery.value.trim(),
-                per_page: 10
-            }
+        let response
+
+        switch (activeTab.value) {
+            case PRODUCT_TABS.PRODUCTS:
+                response = await searchProductsAPI()
+                break
+            case PRODUCT_TABS.NEW_IN:
+                response = await searchNewInProductsAPI()
+                break
+            case PRODUCT_TABS.TRENDING:
+                response = await searchTrendingProductsAPI()
+                break
+            case PRODUCT_TABS.COLLECTION_FAMILY:
+                response = await searchCollectionFamilyProductsAPI()
+                break
+            default:
+                response = await searchProductsAPI()
         }
-        )
+
         productSearchResults.value = response.data.data || []
     } catch (error) {
         console.error('Product search error:', error)
@@ -200,6 +225,34 @@ const searchProducts = async () => {
     } finally {
         productSearchLoading.value = false
     }
+}
+
+const searchProductsAPI = async () => {
+    return await axios.get(
+        route('grp.json.shop.products_beefree_search', {
+            shop: props.shopSlug,
+        }), {
+        params: {
+            search: productSearchQuery.value.trim(),
+            per_page: 10
+        }
+    }
+    )
+}
+
+const searchNewInProductsAPI = async () => {
+    // TODO: Implement new products API with time filter
+    return await searchProductsAPI() // Fallback to regular search for now
+}
+
+const searchTrendingProductsAPI = async () => {
+    // TODO: Implement trending products API with time filter
+    return await searchProductsAPI() // Fallback to regular search for now
+}
+
+const searchCollectionFamilyProductsAPI = async () => {
+    // TODO: Implement collection/family products API
+    return await searchProductsAPI() // Fallback to regular search for now
 }
 
 const onSearchInput = () => {
@@ -212,10 +265,11 @@ const onSearchInput = () => {
 }
 
 const selectProduct = (product: any) => {
+    console.log("Selected Product", product)
     if (productSearchResolve) {
         const productLink = {
             name: product.name || product.code,
-            value: `[product_${product.id}]`,
+            value: `<div><h3>${product.name}</h3><p>${product.description || ''}</p><a href="${product.url || `/shop/${props.shopSlug}/product/${product.slug || product.id}`}">View Product</a></div>`,
             items: [{
                 id: product.id,
                 code: product.code,
@@ -245,6 +299,31 @@ const closeProductSearchModal = () => {
     productSearchQuery.value = ''
     productSearchResults.value = []
 }
+
+const switchTab = (tab: string) => {
+    activeTab.value = tab
+    productSearchQuery.value = ''
+    searchProducts()
+}
+
+const changeTimeFilter = (filter: string) => {
+    timeFilter.value = filter
+    if (activeTab.value === PRODUCT_TABS.NEW_IN || activeTab.value === PRODUCT_TABS.TRENDING) {
+        searchProducts()
+    }
+}
+
+const setupProductSearchHandlers = (resolve: (value: any) => void, reject: () => void) => {
+    productSearchResolve = resolve
+    productSearchReject = reject
+    // Open product search modal
+    productSearchModalOpen.value = true
+    productSearchQuery.value = ''
+    productSearchResults.value = []
+    activeTab.value = PRODUCT_TABS.PRODUCTS
+    searchProducts()
+}
+
 
 </script>
 
@@ -278,46 +357,80 @@ const closeProductSearchModal = () => {
     </div>
 
     <!-- Product Search Modal -->
-    <Modal :isOpen="productSearchModalOpen" @onClose="closeProductSearchModal" width="w-full max-w-2xl"
+    <Modal :isOpen="productSearchModalOpen" @onClose="closeProductSearchModal" width="w-full max-w-4xl"
         :closeButton="true">
         <div class="p-4">
-            <h3 class="text-lg font-semibold mb-4">Search Product by SKU</h3>
+            <h3 class="text-lg font-semibold mb-4">Search Products</h3>
 
-            <!-- Search Input -->
-            <div class="mb-4">
-                <PureInput v-model="productSearchQuery" placeholder="Type SKU or product code..." @input="onSearchInput"
-                    :autofocus="true" />
+            <!-- Tabs -->
+            <div class="border-b border-gray-200 mb-4">
+                <nav class="flex space-x-8" aria-label="Tabs">
+                    <button v-for="tab in [
+                        { key: PRODUCT_TABS.PRODUCTS, label: 'Products' },
+                        { key: PRODUCT_TABS.NEW_IN, label: 'New In' },
+                        { key: PRODUCT_TABS.TRENDING, label: 'Trending Products' },
+                        { key: PRODUCT_TABS.COLLECTION_FAMILY, label: 'Collection/Family' }
+                    ]" :key="tab.key" @click="switchTab(tab.key)" :class="[
+                        activeTab === tab.key
+                            ? 'border-indigo-500 text-indigo-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                        'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm cursor-pointer transition-colors'
+                    ]">
+                        {{ tab.label }}
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Filters Section -->
+            <div class="mb-4 flex flex-col sm:flex-row gap-4">
+                <!-- Search Input -->
+                <div class="flex-1">
+                    <PureInput v-model="productSearchQuery" placeholder="Type SKU or product name..."
+                        @input="onSearchInput" :autofocus="true" />
+                </div>
+
+                <!-- Time Filter (for New In and Trending) -->
+                <div v-if="activeTab === PRODUCT_TABS.NEW_IN || activeTab === PRODUCT_TABS.TRENDING" class="sm:w-32">
+                    <select v-model="timeFilter" @change="changeTimeFilter(timeFilter)"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <option :value="TIME_FILTERS.WEEK">Week</option>
+                        <option :value="TIME_FILTERS.MONTH">Month</option>
+                        <option :value="TIME_FILTERS.YEAR">Year</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Loading State -->
-            <div v-if="productSearchLoading" class="flex justify-center py-4">
+            <div v-if="productSearchLoading" class="flex justify-center py-8">
                 <LoadingIcon class="text-3xl" />
             </div>
 
             <!-- Results List -->
             <div v-else-if="productSearchResults.length > 0" class="max-h-96 overflow-y-auto">
-                <div v-for="product in productSearchResults" :key="product.id" @click="selectProduct(product)"
-                    class="flex items-center gap-4 p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors">
-                    <!-- Product Image -->
-                    <div class="w-16 h-16 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
-                        <img v-if="product.web_images && product.web_images.length > 0" :src="product.web_images[0]"
-                            :alt="product.name" class="w-full h-full object-cover" />
-                        <div v-else class="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                            No Image
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div v-for="product in productSearchResults" :key="product.id" @click="selectProduct(product)"
+                        class="flex items-center gap-4 p-4 hover:bg-gray-50 cursor-pointer border border-gray-200 rounded-lg transition-colors">
+                        <!-- Product Image -->
+                        <div class="w-16 h-16 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
+                            <img v-if="product.web_images && product.web_images.length > 0" :src="product.web_images[0]"
+                                :alt="product.name" class="w-full h-full object-cover" />
+                            <div v-else class="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                                No Image
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Product Info -->
-                    <div class="flex-1 min-w-0">
-                        <div class="font-medium text-gray-900 truncate">{{ product.name }}</div>
-                        <div class="text-sm text-gray-500">SKU: {{ product.code }}</div>
-                        <div v-if="product.price" class="text-sm text-gray-600 mt-1">
-                            Price: {{ product.price }}
+                        <!-- Product Info -->
+                        <div class="flex-1 min-w-0">
+                            <div class="font-medium text-gray-900 truncate">{{ product.name }}</div>
+                            <div class="text-sm text-gray-500">SKU: {{ product.code }}</div>
+                            <div v-if="product.price" class="text-sm text-gray-600 mt-1">
+                                Price: {{ product.price }}
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Select Button -->
-                    <Button type="secondary" label="Select" size="sm" @click.stop="selectProduct(product)" />
+                        <!-- Select Button -->
+                        <Button type="secondary" label="Select" size="sm" @click.stop="selectProduct(product)" />
+                    </div>
                 </div>
             </div>
 
@@ -328,11 +441,22 @@ const closeProductSearchModal = () => {
 
             <!-- Initial State -->
             <div v-else class="text-center py-8 text-gray-400">
-                Type a SKU or product code to search
+                <div v-if="activeTab === PRODUCT_TABS.PRODUCTS">
+                    Type a SKU or product name to search
+                </div>
+                <div v-else-if="activeTab === PRODUCT_TABS.NEW_IN">
+                    Showing new products for selected time period
+                </div>
+                <div v-else-if="activeTab === PRODUCT_TABS.TRENDING">
+                    Showing trending products for selected time period
+                </div>
+                <div v-else-if="activeTab === PRODUCT_TABS.COLLECTION_FAMILY">
+                    Browse products by collection and family
+                </div>
             </div>
 
             <!-- Cancel Button -->
-            <div class="mt-4 flex justify-end">
+            <div class="mt-6 flex justify-end">
                 <Button type="tertiary" label="Cancel" @click="closeProductSearchModal" />
             </div>
         </div>
