@@ -48,7 +48,7 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
 
     public function htmlResponse(Warehouse $warehouse, ActionRequest $request): Response
     {
-        $groupedByDeliveryNote = IndexWaitingDeliveryNoteItemsGrouped::make()->handle(
+        $groupedByDeliveryNote = IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote::make()->handle(
             warehouse: $warehouse,
             waitingType: $this->waitingType,
             state: $this->getDeliveryNoteState(),
@@ -101,7 +101,7 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
 
         return Inertia::render('Org/Dispatching/WaitingDeliveryNoteItems', $props)
             ->table(IndexWaitingDeliveryNoteItemsItemized::make()->tableStructure(WaitingItemsTabsEnum::ITEMIZED->value))
-            ->table(IndexWaitingDeliveryNoteItemsGrouped::make()->tableStructure(WaitingItemsTabsEnum::GROUPED_BY_DELIVERY_NOTE->value))
+            ->table(IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote::make()->tableStructure(WaitingItemsTabsEnum::GROUPED_BY_DELIVERY_NOTE->value))
             ->table(IndexWaitingDeliveryNoteItemsGroupedByItem::make()->tableStructure(WaitingItemsTabsEnum::GROUPED_BY_ITEM->value));
     }
 
