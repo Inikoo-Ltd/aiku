@@ -204,7 +204,7 @@ class Order extends Model implements HasMedia, Auditable
     use HasAddresses;
     use HasAttachments;
     use HasHistory;
- //   use Searchable;
+    use Searchable;
 
 
     protected $casts = [
@@ -274,24 +274,32 @@ class Order extends Model implements HasMedia, Auditable
 
     protected $guarded = [];
 
-//    public static function bootSearchable(): void
-//    {
-//        static::observe(new OrderOnlySearchableModelObserver());
-//    }
-//
-//    public function toSearchableArray(): array
-//    {
-//        return [
-//            'id'                 => (string)$this->id,
-//            'organisation_id'    => $this->organisation_id,
-//            'shop_id'            => $this->shop_id,
-//            'customer_id'        => $this->customer_id,
-//            'state'              => $this->state->value,
-//            'reference'          => $this->reference,
-//            'customer_reference' => $this->customer_reference,
-//            'date'               => is_string($this->date) ? Carbon::parse($this->date)->timestamp : $this->date->timestamp,
-//        ];
-//    }
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated || $this->wasChanged([
+                'organisation_id',
+                'shop_id',
+                'customer_id',
+                'state',
+                'reference',
+                'customer_reference',
+                'date',
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'                 => (string)$this->id,
+            'organisation_id'    => $this->organisation_id,
+            'shop_id'            => $this->shop_id,
+            'customer_id'        => $this->customer_id,
+            'state'              => $this->state->value,
+            'reference'          => $this->reference,
+            'customer_reference' => $this->customer_reference,
+            'date'               => is_string($this->date) ? Carbon::parse($this->date)->timestamp : $this->date->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {
