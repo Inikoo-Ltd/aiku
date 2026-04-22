@@ -86,7 +86,7 @@ const images = computed(() => {
       <div class="grid w-full min-h-[250px] md:min-h-[400px] grid-cols-1" :class="gridClass">
 
         <!-- IMAGE -->
-        <div v-if="showImage" class="relative w-full overflow-hidden aspect-[3/2]" :class="imageOrder"
+        <div v-if="showImage" class="relative w-full overflow-hidden aspect-[3/2] xl:aspect-[3/2] 2xl:aspect-[3/1]" :class="imageOrder"
           :style="getStyles(fieldValue?.image?.container?.properties, screenType)">
 
           <div v-if="images.length > 1" class="swiper-btn-prev nav-btn left-3">
