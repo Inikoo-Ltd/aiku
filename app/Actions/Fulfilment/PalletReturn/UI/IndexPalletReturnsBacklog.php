@@ -12,6 +12,7 @@ namespace App\Actions\Fulfilment\PalletReturn\UI;
 use App\Actions\OrgAction;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
+use App\Enums\UI\Fulfilment\PalletReturnsBacklogTabsEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -55,7 +56,12 @@ class IndexPalletReturnsBacklog extends OrgAction
             $queryBuilder->where('pallet_returns.fulfilment_customer_id', $parent->id);
         }
 
-        if ($stateFilter) {
+        $isWaitingTab = $prefix === PalletReturnsBacklogTabsEnum::WAITING->value;
+        if ($isWaitingTab) {
+            $queryBuilder
+                ->where('pallet_returns.state', PalletReturnStateEnum::PICKING->value)
+                ->where('pallet_returns.number_items_waiting_crm', '>', 0);
+        } elseif ($stateFilter) {
             $queryBuilder->where('pallet_returns.state', $stateFilter->value);
         }
 

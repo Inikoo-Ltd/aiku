@@ -19,6 +19,7 @@ use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\UI\Fulfilment\PalletReturnsBacklogTabsEnum;
 use App\Http\Resources\Fulfilment\PalletReturnsResource;
 use App\Models\Fulfilment\Fulfilment;
+use App\Models\Fulfilment\PalletReturn;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -136,6 +137,10 @@ class ShowPalletReturnsBacklog extends OrgAction
                     fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::PICKED, $this->typeScope, PalletReturnStateEnum::PICKED->value))
                     : Inertia::lazy(fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::PICKED, $this->typeScope, PalletReturnStateEnum::PICKED->value))),
 
+                PalletReturnsBacklogTabsEnum::WAITING->value => $this->tab == PalletReturnsBacklogTabsEnum::WAITING->value ?
+                    fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::PICKING, $this->typeScope, PalletReturnsBacklogTabsEnum::WAITING->value))
+                    : Inertia::lazy(fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::PICKING, $this->typeScope, PalletReturnsBacklogTabsEnum::WAITING->value))),
+
                 PalletReturnsBacklogTabsEnum::DISPATCHED->value => $this->tab == PalletReturnsBacklogTabsEnum::DISPATCHED->value ?
                     fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::DISPATCHED, $this->typeScope, PalletReturnStateEnum::DISPATCHED->value))
                     : Inertia::lazy(fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::DISPATCHED, $this->typeScope, PalletReturnStateEnum::DISPATCHED->value))),
@@ -147,6 +152,7 @@ class ShowPalletReturnsBacklog extends OrgAction
         ->table(IndexPalletReturnsBacklog::make()->tableStructure(parent: $this->parent, typeFilter: $this->typeScope, prefix: PalletReturnsBacklogTabsEnum::CONFIRMED->value))
         ->table(IndexPalletReturnsBacklog::make()->tableStructure(parent: $this->parent, typeFilter: $this->typeScope, prefix: PalletReturnsBacklogTabsEnum::PICKING->value))
         ->table(IndexPalletReturnsBacklog::make()->tableStructure(parent: $this->parent, typeFilter: $this->typeScope, prefix: PalletReturnsBacklogTabsEnum::PICKED->value))
+        ->table(IndexPalletReturnsBacklog::make()->tableStructure(parent: $this->parent, typeFilter: $this->typeScope, prefix: PalletReturnsBacklogTabsEnum::WAITING->value))
         ->table(IndexPalletReturnsBacklog::make()->tableStructure(parent: $this->parent, typeFilter: $this->typeScope, prefix: PalletReturnsBacklogTabsEnum::DISPATCHED->value));
     }
 
@@ -207,6 +213,22 @@ class ShowPalletReturnsBacklog extends OrgAction
                             'tooltip' => __('Picking'),
                             'icon'    => 'fal fa-truck',
                             'class'   => 'text-orange-500',
+                        ],
+                    ],
+                    [
+                        'tab_slug'    => 'waiting',
+                        'label'       => __('Waiting'),
+                        'value'       => PalletReturn::query()
+                            ->where('fulfilment_id', $parent->id)
+                            ->where('type', $this->typeScope->value)
+                            ->where('state', PalletReturnStateEnum::PICKING->value)
+                            ->where('number_items_waiting_crm', '>', 0)
+                            ->count(),
+                        'type'        => 'number',
+                        'icon_data'   => [
+                            'tooltip' => __('Waiting'),
+                            'icon'    => 'fal fa-hourglass-start',
+                            'class'   => 'text-amber-500',
                         ],
                     ],
                     [

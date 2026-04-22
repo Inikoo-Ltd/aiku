@@ -21,6 +21,7 @@ enum PalletReturnsBacklogTabsEnum: string
     case SUBMITTED    = 'submitted';
     case CONFIRMED    = 'confirmed';
     case PICKING      = 'picking';
+    case WAITING      = 'waiting';
     case PICKED       = 'picked';
     case DISPATCHED   = 'dispatched';
 }

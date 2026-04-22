@@ -14,10 +14,10 @@ import TablePalletReturnItemUploads from "@/Components/Tables/TablePalletReturnI
 import HasPickTablePalletReturns from "@/Components/Tables/Grp/Org/Fulfilment/HasPickTablePalletReturns.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { PageHeadingTypes } from '@/types/PageHeading'
+import { Tabs as TSTabs } from '@/types/Tabs'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, ref } from "vue"
 import type { Component } from "vue"
-import type { Navigation } from "@/types/Tabs"
 import { useTabChange } from "@/Composables/tab-change"
 import { faSeedling } from '@fal'
 import {library} from "@fortawesome/fontawesome-svg-core";
@@ -32,22 +32,25 @@ const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
     data: {}
-    tabs: {
-        current: string
-        navigation: Navigation
-    }
+    tabs: TSTabs
     todo?: boolean
     picking_session_route?: routeType
     in_process: {}
     submitted: {}
     confirmed: {}
     picking: {}
+    waiting: {}
     picked: {}
     dispatched: {}
 }>()
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+const tabsNavigation = props.tabs.navigation as unknown as any[]
+const propsMap = props as unknown as Record<string, any>
+const currentTableData = computed(() => {
+    return propsMap[currentTab.value] ?? {}
+})
 
 const selectedPalletReturns = ref<number[]>([])
 const loading = ref(false)
@@ -107,11 +110,11 @@ function createPickingSession() {
         </template>
     </PageHeading>
     <KeepAlive>
-        <TabsBox :tabs_box="tabs.navigation" :current="currentTab" @update:tab="handleTabUpdate" />
+        <TabsBox :tabs_box="tabsNavigation" :current="currentTab" @update:tab="handleTabUpdate" />
     </KeepAlive>
     <TablePalletReturns
-        :key="tabs.current"
-        :tab="tabs.current"
-        :data="props[currentTab]"
+        :key="currentTab"
+        :tab="currentTab"
+        :data="currentTableData"
     />
 </template>
