@@ -87,9 +87,13 @@ class IndexWaitingDeliveryNoteItemsGrouped extends OrgAction
                 $table->name($prefix)->pageName($prefix.'Page');
             }
 
-            $table->withEmptyState([
-                'title' => __('No waiting items found'),
-            ]);
+            $emptyStateData = [
+                'icons'  => ['fal', 'fa-hourglass-start'],
+                'title'  => __('No waiting items found'),
+                'count'  => 0,
+            ];
+
+            $table->withEmptyState($emptyStateData);
 
             $table->column(key: 'delivery_note_reference', label: __('Delivery Note'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'items', label: __('Items'), canBeHidden: false);
