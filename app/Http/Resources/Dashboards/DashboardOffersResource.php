@@ -69,7 +69,7 @@ class DashboardOffersResource extends JsonResource
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => '['.($data['code'] ?? 'Unknown').'] '.($data['name'] ?? 'Unknown'),
+                    'formatted_value' => '['.($data['code'] ?? 'Unknown').'] '.OfferCampaignTypeEnum::from($data['type'])->labels()[$data['type']],
                     'align'           => 'left',
                     'icon_left'       => OfferCampaignTypeEnum::from($data['type'])->icons()[$data['type']],
                     ...$routeTargets['label']
