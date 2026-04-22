@@ -989,7 +989,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     </div>
                 </template>
 
-                <div v-else-if="props.shop_type !== 'dropshipping' && !(item.quantity_picked > 0)" class="italic text-xs opacity-70">
+                <div v-else-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && !(item.quantity_picked > 0)" class="italic text-xs opacity-70">
                     {{ ctrans("Nothing to pack") }}
                 </div>
         </template>
