@@ -148,6 +148,7 @@ const props = defineProps<{
 const layout = inject('layout', layoutStructure)
 const currentTab = ref(props.tabs?.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
+const showDropdown = ref(false);
 const component = computed(() => {
     const components: Component = {
         items: TableDeliveryNoteItems,
@@ -403,19 +404,20 @@ onMounted(() => {
 				</div>
 			</div>
 			<!-- Button: Download PDF -->
-			<a
-				v-if="route().params.deliveryNote"
-				:href="
-					route('grp.pdfs.delivery-notes', {
-						deliveryNote: route().params.deliveryNote,
-					})
-				"
-				as="a"
-				target="_blank"
-				class="flex items-center"
-				v-tooltip="trans('Download PDF of this Delivery Note')">
-				<Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
-			</a>
+			<div class="relative" v-if="route().params.deliveryNote">
+				<a	v-if="route().params.deliveryNote"
+					:href="
+						route('grp.pdfs.delivery-notes', {
+							deliveryNote: route().params.deliveryNote,
+						})
+					"
+					as="a"
+					target="_blank"
+					class="flex items-center"
+					v-tooltip="trans('Download PDF of this Delivery Note')">
+					<Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
+				</a>
+			</div>
 		</template>
 
 		<template #button-to-queue="{ action }">

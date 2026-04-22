@@ -75,6 +75,8 @@ const component = computed(() => {
   return mapping[currentTab.value]
 })
 
+const emits = defineEmits()
+
 const onPublish = () => {
   const action = props.publishRoute[currentTab.value]
   const payload = props[currentTab.value]?.layout
@@ -158,11 +160,11 @@ onUnmounted(() => {
 <template>
   <PageHeading :data="pageHead">
     <template #button-publish="{ action }">
-      <Button v-if="currentTab !== 'website_layout' && currentTab !== 'history'" v-bind="action" @click="onPublish" :loading="loadingPublish">
+      <Button v-if="currentTab !== 'website_layout' && currentTab !== 'history'" v-bind="action" @click="onPublish" >
       <!-- <Button v-if="currentTab !== 'website_layout'" v-bind="action" @click="onPublish" :disabled="loadingPublish" :loading="loadingPublish"> -->
-        <template #loading v-if="loadingPublish" >
+       <!--  <template #loading v-if="loadingPublish" >
             <FontAwesomeIcon  :icon="faSpinnerThird" class="animate-spin" fixed-width aria-hidden="true" /> {{ progress }}%
-        </template>
+        </template> -->
       </Button>
       <div v-else></div>
     </template>
@@ -172,7 +174,7 @@ onUnmounted(() => {
   <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
   <KeepAlive>
-    <component :is="component" :tab="currentTab" :data="props[currentTab]" :currency="props.currency" :layout_theme/>
+    <component :is="component" :tab="currentTab" :data="props[currentTab]" :currency="props.currency" :layout_theme @update:layout="(data)=> props[currentTab].layout = data"/>
   </KeepAlive>
 
   <!-- INI-1362 | Just enable them to scroll through and stuff. Don't softblock it using UI -->

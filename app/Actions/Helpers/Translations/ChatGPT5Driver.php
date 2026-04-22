@@ -10,6 +10,7 @@ namespace App\Actions\Helpers\Translations;
 
 use Exception;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Arr;
 use Throwable;
 use TikToken\Encoder;
 use VildanBina\LaravelAutoTranslation\Contracts\TranslationDriver;
@@ -125,10 +126,14 @@ EOL
             ]);
 
         if (! $response->successful()) {
-            throw new Exception('ChatGPT API error: '.$response->json()['error']['message']);
+            $json = $response->json();
+            $errorMessage = is_array($json) ? Arr::get($json, 'error.message') : null;
+
+            throw new Exception('ChatGPT API error: '.($errorMessage ?? $response->body()));
         }
 
-        $content = $response->json()['choices'][0]['message']['content'] ?? '';
+        $json = $response->json();
+        $content = is_array($json) ? Arr::get($json, 'choices.0.message.content', '') : '';
         if (! json_validate($content)) {
             throw new Exception('Invalid JSON returned by ChatGPT: '.json_last_error_msg());
         }

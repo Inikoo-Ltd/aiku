@@ -31,7 +31,6 @@ use App\Models\Traits\HasImage;
 use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
 use App\Models\Web\WebpageHasProduct;
-use App\Observers\ProductOnlySearchableModelObserver;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -256,7 +255,7 @@ class Product extends Model implements Auditable, HasMedia
     use HasImage;
     use HasTranslations;
     use HasAttachments;
-   // use Searchable;
+    use Searchable;
 
     protected $guarded = [];
 
@@ -300,25 +299,35 @@ class Product extends Model implements Auditable, HasMedia
         'offers_data'          => '{}',
     ];
 
-//    public static function bootSearchable(): void
-//    {
-//        static::observe(new ProductOnlySearchableModelObserver());
-//    }
-//
-//    public function toSearchableArray(): array
-//    {
-//        return [
-//            'id'                => (string)$this->id,
-//            'shop_id'           => $this->shop_id,
-//            'code'              => $this->code,
-//            'name'              => (string)$this->name,
-//            'description'       => (string)$this->description,
-//            'description_extra' => (string)$this->description_extra,
-//            'state'             => $this->state->value,
-//            'is_for_sale'       => $this->is_for_sale,
-//            'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
-//        ];
-//    }
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'code',
+                'name',
+                'description',
+                'description_extra',
+                'state',
+                'is_for_sale',
+                'created_at'
+            ]);
+    }
+
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'                => (string)$this->id,
+            'shop_id'           => $this->shop_id,
+            'code'              => $this->code,
+            'name'              => (string)$this->name,
+            'description'       => (string)$this->description,
+            'description_extra' => (string)$this->description_extra,
+            'state'             => $this->state->value,
+            'is_for_sale'       => $this->is_for_sale,
+            'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {
