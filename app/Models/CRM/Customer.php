@@ -55,7 +55,6 @@ use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasSearchableText;
 use App\Models\Traits\InShop;
-use App\Observers\CustomerOnlySearchableModelObserver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -254,9 +253,26 @@ class Customer extends Model implements HasMedia, Auditable
 
     protected $guarded = [];
 
-    public static function bootSearchable(): void
+    public function searchIndexShouldBeUpdated(): bool
     {
-        static::observe(new CustomerOnlySearchableModelObserver());
+        return $this->wasRecentlyCreated || $this->wasChanged([
+                'shop_id',
+                'status',
+                'state',
+                'reference',
+                'name',
+                'contact_name',
+                'company_name',
+                'eori',
+                'email',
+                'phone',
+                'contact_website',
+                'identity_document_number',
+                'internal_notes',
+                'warehouse_internal_notes',
+                'warehouse_public_notes',
+                'created_at'
+            ]);
     }
 
     public function toSearchableArray(): array

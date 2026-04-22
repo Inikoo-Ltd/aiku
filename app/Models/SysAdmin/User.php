@@ -138,7 +138,7 @@ class User extends Authenticatable implements HasMedia, Auditable
     use IsUserable;
     use HasImage;
     use HasApiTokens;
-    use Searchable;
+   // use Searchable;
 
     protected $guarded = [
     ];
@@ -164,22 +164,22 @@ class User extends Authenticatable implements HasMedia, Auditable
         'sources'  => '{}',
     ];
 
-    public static function bootSearchable(): void
-    {
-        static::observe(new UserOnlySearchableModelObserver());
-    }
-
-    public function toSearchableArray(): array
-    {
-        return [
-            'id'           => (string)$this->id,
-            'username'     => $this->username,
-            'email'        => (string)$this->email,
-            'contact_name' => (string)$this->contact_name,
-            'status'       => $this->status,
-            'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
-        ];
-    }
+//    public static function bootSearchable(): void
+//    {
+//        static::observe(new UserOnlySearchableModelObserver());
+//    }
+//
+//    public function toSearchableArray(): array
+//    {
+//        return [
+//            'id'           => (string)$this->id,
+//            'username'     => $this->username,
+//            'email'        => (string)$this->email,
+//            'contact_name' => (string)$this->contact_name,
+//            'status'       => $this->status,
+//            'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+//        ];
+//    }
     public function generateTags(): array
     {
         return [

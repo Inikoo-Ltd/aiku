@@ -86,7 +86,7 @@ class Location extends Model implements Auditable
     use HasFactory;
     use HasHistory;
     use InWarehouse;
-    use Searchable;
+  //  use Searchable;
 
     protected $casts = [
         'data'            => 'array',
@@ -105,22 +105,22 @@ class Location extends Model implements Auditable
 
     protected $guarded = [];
 
-    public static function bootSearchable(): void
-    {
-        static::observe(new LocationOnlySearchableModelObserver());
-    }
-
-    public function toSearchableArray(): array
-    {
-        return [
-            'id'                => (string)$this->id,
-            'warehouse_id'      => $this->warehouse_id,
-            'warehouse_area_id' => $this->warehouse_area_id,
-            'code'              => $this->code,
-            'status'            => $this->status->value,
-            'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
-        ];
-    }
+//    public static function bootSearchable(): void
+//    {
+//        static::observe(new LocationOnlySearchableModelObserver());
+//    }
+//
+//    public function toSearchableArray(): array
+//    {
+//        return [
+//            'id'                => (string)$this->id,
+//            'warehouse_id'      => $this->warehouse_id,
+//            'warehouse_area_id' => $this->warehouse_area_id,
+//            'code'              => $this->code,
+//            'status'            => $this->status->value,
+//            'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+//        ];
+//    }
 
     public function generateTags(): array
     {
