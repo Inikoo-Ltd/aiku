@@ -209,7 +209,6 @@ trait WithIrisProductsInWebpage
     public function getUnsortedData($queryBuilder, ?int $numberOfRecords = null): LengthAwarePaginator
     {
         return $queryBuilder
-            ->allowedSorts($this->getAllowedSorts())
             ->allowedFilters($this->getAllowedFilters())
             ->withIrisPaginator($numberOfRecords)
             ->withQueryString();
