@@ -53,7 +53,7 @@ const props = defineProps<{
   }
   layout_theme: Array<any>
 }>()
-
+const emits = defineEmits()
 // STATE
 const layoutState = ref(toRaw(props.data.layout))
 const layoutTheme = inject("layout", layoutStructure)
@@ -105,6 +105,7 @@ const onPickTemplate = async (template: any) => {
 
     if (response.data) {
       layoutState.value = response.data
+      emits("update:layout", response.data);
     }
   } catch (error) {
     console.error("Failed to fetch template", error)
