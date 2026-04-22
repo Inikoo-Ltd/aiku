@@ -62,7 +62,7 @@ class WaitingDeliveryNoteItemsGroupedResource extends JsonResource
                     IndexDeliveryNoteItemsStateHandling::run(
                         $deliveryNote,
                         ignoreParentPagination: true,
-                        stateFilter: DeliveryNoteItemStateEnum::HANDLING_BLOCKED
+                        stateFilter: [DeliveryNoteItemStateEnum::HANDLING_BLOCKED, DeliveryNoteItemStateEnum::QUEUED]
                     )
                 )->resolve())->filter(fn ($item) => ($item['quantity_waiting_warehouse'] ?? 0) > 0)->values()->toArray()
                 : [],
