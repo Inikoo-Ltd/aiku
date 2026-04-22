@@ -24,8 +24,8 @@ class GetLocationSearchSchema
                         'type' => 'string',
                     ],
                     [
-                        'name'     => 'warehouse_id',
-                        'type'     => 'int32',
+                        'name' => 'warehouse_id',
+                        'type' => 'int32',
                     ],
                     [
                         'name'     => 'warehouse_area_id',
@@ -34,7 +34,7 @@ class GetLocationSearchSchema
                     ],
                     [
                         'name' => 'status',
-                        'type' => 'bool',
+                        'type' => 'string',
                     ],
                     [
                         'name' => 'code',
