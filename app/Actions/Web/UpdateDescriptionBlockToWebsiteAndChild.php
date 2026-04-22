@@ -6,6 +6,7 @@ use App\Actions\Maintenance\Web\WithRepairWebpages;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Events\BroadcastUpdateWeblocks;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
@@ -55,7 +56,7 @@ class UpdateDescriptionBlockToWebsiteAndChild
             }
 
             $webpage->refresh();
-            if ($webpage->sub_type == 'family') {
+            if ($webpage->sub_type === WebpageSubTypeEnum::FAMILY) {
                 $this->setFamilyDescriptionIndex($webpage, collect(array_keys($layouts))->first(fn ($key) => !str_ends_with($key, '-extra-description')));
             }
 
