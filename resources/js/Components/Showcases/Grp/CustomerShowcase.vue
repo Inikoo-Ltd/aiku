@@ -54,6 +54,8 @@ import { notify } from "@kyvg/vue3-notification"
 import CustomerSalesVsRefunds from "@/Components/CustomerSalesVsRefunds.vue"
 import GoldReward from "@/Components/Utils/GoldReward.vue"
 import CustomerMiniTimeline from "@/Components/Showcases/Grp/CustomerMiniTimeline.vue"
+import BoxNote from "@/Components/Pallet/BoxNote.vue"
+import { PDRNotes } from "@/types/Pallet"
 
 library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight)
 
@@ -136,6 +138,8 @@ const props = defineProps<{
         tag_routes: Record<string, routeType>
         tags: {}[]
         tags_selected_id: number[]
+        internal_note: PDRNotes
+        update_route: routeType
         orders_route: routeType | null
         last_order: {
             reference: string
@@ -321,6 +325,12 @@ function tagColorClass(scope?: string) {
 
     <!-- Quick Actions Bar -->
     <div class="px-4 pt-6 md:px-6 lg:px-8 flex flex-wrap gap-3">
+        <BoxNote :noteData="data.internal_note" :updateRoute="data.update_route" :alternativeStyle="true">
+            <template #mainIcon>
+                <FontAwesomeIcon icon="fal fa-sticky-note" class="text-amber-500 text-xs" />
+                {{ trans("Add Note") }}
+            </template>
+        </BoxNote>
         <Link
             v-if="data.orders_route"
             :href="route(data.orders_route.name, data.orders_route.parameters)"
