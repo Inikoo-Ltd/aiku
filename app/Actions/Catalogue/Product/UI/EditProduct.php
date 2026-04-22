@@ -263,7 +263,7 @@ class EditProduct extends OrgAction
                 }
             }
         }
-        
+
         $tradeUnits = $this->getTradeUnitsWithPackingData($product);
 
         $nameFields = [

@@ -17,8 +17,6 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use Carbon\Carbon;
 
-use function Laravel\Prompts\search;
-
 class IndexRetinaDropshippingPackingList extends RetinaAction
 {
     public function handle(Customer $customer, ?string $startDate = null, ?string $endDate = null, $prefix = null): LengthAwarePaginator

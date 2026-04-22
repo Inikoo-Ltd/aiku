@@ -167,7 +167,9 @@ class RetinaLogin
             }
         } else {
             $webpage = Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('state', WebpageStateEnum::LIVE)->where('website_id', $request->input('website')->id)->first();
-            if ($webpage) $retinaHome = ShowIrisWebpage::make()->getEnvironmentUrl($webpage->canonical_url);
+            if ($webpage) {
+                $retinaHome = ShowIrisWebpage::make()->getEnvironmentUrl($webpage->canonical_url);
+            }
         }
 
         return [$retinaHome];

@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Actions\Dispatching\DeliveryNote;
+
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
 use App\Actions\Traits\WithExportData;
@@ -9,7 +10,7 @@ use Carbon\Carbon;
 use Symfony\Component\HttpFoundation\Response;
 
 class PdfPackingList extends OrgAction
-{   
+{
     use WithExportData;
     /**
      * @throws \Mpdf\MpdfException
@@ -23,13 +24,13 @@ class PdfPackingList extends OrgAction
         ]);
 
         $filename = 'packing-list-'.$deliveryNote->slug.'-'.Carbon::now()->format('Y-m-d');
-        
+
         $pdf = PDF::loadView('deliveryNote.templates.pdf.packing-list', [
             'deliveryNote' => $deliveryNote,
             'order'        => $deliveryNote->orders->first(),
             'items'        => $deliveryNote->deliveryNoteItems,
         ]);
-        
+
         return response($pdf->stream($filename), 200)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'inline; filename="'.$filename.'.pdf"');

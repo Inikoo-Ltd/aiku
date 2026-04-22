@@ -25,8 +25,11 @@ if (!function_exists('escapeSQLSearch')) {
 }
 
 if (!function_exists('cleanCapitalize')) {
-    function cleanCapitalize(?string $value): ?string {
-        if ($value === null) return null;
+    function cleanCapitalize(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
 
         $value = preg_replace('/[^a-zA-Z0-9\s]/', ' ', $value);
 
