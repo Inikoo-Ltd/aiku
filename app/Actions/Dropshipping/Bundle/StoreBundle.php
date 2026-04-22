@@ -149,7 +149,7 @@ class StoreBundle extends OrgAction
             'id' => ['nullable'],
             'name'        => ['sometimes', 'nullable', 'string', 'max:255'],
             'code'        => ['nullable', 'string', 'max:64'],
-            'description' => ['sometimes', 'nullable', 'string', 'max:65535'],
+            'description' => ['sometimes', 'nullable', 'string', 'max:255'],
             'price'       => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'rrp'         => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'products'    => ['required', 'array', 'min:1'],
