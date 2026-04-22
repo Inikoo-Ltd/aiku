@@ -32,7 +32,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $shop_engine
  * @property mixed $organisation_slug
  */
-class WaitingDeliveryNoteItemsGroupedResource extends JsonResource
+class WaitingDNItemsGroupedByDeliveryNoteResource extends JsonResource
 {
     public function toArray($request): array
     {
@@ -58,7 +58,7 @@ class WaitingDeliveryNoteItemsGroupedResource extends JsonResource
             'organisation_slug'                 => $this->organisation_slug,
             'notes'                             => $this->notes,
             'items'                             => $deliveryNote
-                ? collect(WaitingDeliveryNoteItemsGroupedItemResource::collection(
+                ? collect(WaitingDNItemsGroupedByDeliveryNoteForItemsResource::collection(
                     IndexDeliveryNoteItemsStateHandling::run(
                         $deliveryNote,
                         ignoreParentPagination: true,

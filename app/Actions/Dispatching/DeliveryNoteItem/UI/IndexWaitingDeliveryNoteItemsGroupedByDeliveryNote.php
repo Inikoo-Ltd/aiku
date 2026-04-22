@@ -18,7 +18,7 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexWaitingDeliveryNoteItemsGrouped extends OrgAction
+class IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote extends OrgAction
 {
     public function handle(Warehouse $warehouse, string $waitingType, DeliveryNoteStateEnum $state, string $shopType = 'all', ?string $prefix = null): LengthAwarePaginator
     {

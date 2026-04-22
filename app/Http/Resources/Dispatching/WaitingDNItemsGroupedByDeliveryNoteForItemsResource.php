@@ -36,7 +36,7 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $warehouse_area_code
  * @property mixed $warehouse_area_picking_position
  */
-class WaitingDeliveryNoteItemsGroupedItemResource extends JsonResource
+class WaitingDNItemsGroupedByDeliveryNoteForItemsResource extends JsonResource
 {
     public function toArray($request): array
     {
