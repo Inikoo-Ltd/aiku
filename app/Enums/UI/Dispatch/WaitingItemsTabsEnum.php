@@ -25,8 +25,8 @@ enum WaitingItemsTabsEnum: string
     {
         return match ($this) {
             WaitingItemsTabsEnum::ITEMIZED => [
-                'title' => __('Waiting items'),
-                'icon'  => 'fal fa-inventory',
+                'title' => __('Item by item'),
+                'icon'  => 'fal fa-box',
             ],
             WaitingItemsTabsEnum::GROUPED_BY_DELIVERY_NOTE => [
                 'title' => __('Grouping by delivery note'),
@@ -34,7 +34,7 @@ enum WaitingItemsTabsEnum: string
             ],
             WaitingItemsTabsEnum::GROUPED_BY_ITEM => [
                 'title' => __('Grouping by item'),
-                'icon'  => 'fal fa-box',
+                'icon'  => 'fal fa-boxes',
             ],
         };
     }
