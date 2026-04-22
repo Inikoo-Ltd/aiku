@@ -14,7 +14,7 @@ use App\Actions\UI\Dispatch\ShowDispatchHub;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\UI\Dispatch\WaitingItemsTabsEnum;
 use App\Http\Resources\Dispatching\WaitingDeliveryNoteItemsGroupedByItemResource;
-use App\Http\Resources\Dispatching\WaitingDeliveryNoteItemsGroupedResource;
+use App\Http\Resources\Dispatching\WaitingDNItemsGroupedByDeliveryNoteResource;
 use App\Http\Resources\Dispatching\WaitingDNItemsTabsItemizedResource;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -92,8 +92,8 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
                 ? fn () => WaitingDNItemsTabsItemizedResource::collection($itemized)
                 : Inertia::lazy(fn () => WaitingDNItemsTabsItemizedResource::collection($itemized)),
             WaitingItemsTabsEnum::GROUPED_BY_DELIVERY_NOTE->value   => $this->tab == WaitingItemsTabsEnum::GROUPED_BY_DELIVERY_NOTE->value
-                ? fn () => WaitingDeliveryNoteItemsGroupedResource::collection($groupedByDeliveryNote)
-                : Inertia::lazy(fn () => WaitingDeliveryNoteItemsGroupedResource::collection($groupedByDeliveryNote)),
+                ? fn () => WaitingDNItemsGroupedByDeliveryNoteResource::collection($groupedByDeliveryNote)
+                : Inertia::lazy(fn () => WaitingDNItemsGroupedByDeliveryNoteResource::collection($groupedByDeliveryNote)),
             WaitingItemsTabsEnum::GROUPED_BY_ITEM->value            => $this->tab == WaitingItemsTabsEnum::GROUPED_BY_ITEM->value
                 ? fn () => WaitingDeliveryNoteItemsGroupedByItemResource::collection($groupedByItem)
                 : Inertia::lazy(fn () => WaitingDeliveryNoteItemsGroupedByItemResource::collection($groupedByItem)),
