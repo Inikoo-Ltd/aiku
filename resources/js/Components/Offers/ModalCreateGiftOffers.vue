@@ -11,6 +11,7 @@ import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
+import Image from '../Image.vue'
 
 const props = defineProps<{
     shop_data: {
@@ -27,6 +28,7 @@ const offerLabel = ref('')
 const offerAmount = ref<number | null>(0)
 const quantity = ref<number | null>(1)
 const productId = ref<number | null>(0)
+const selectedProduct = ref<any | null>(null)
 const dateType = ref<'permanent' | 'interval'>('permanent')
 const startDate = ref<Date | null>(null)
 const endDate = ref<Date | null>(null)
@@ -94,10 +96,15 @@ const productFetchRoute = {
     }
 }
 
+const selectedProductImage = computed(() =>
+    selectedProduct.value?.web_images?.main?.original || null
+)
+
 const resetForm = () => {
     offerLabel.value = ''
     offerAmount.value = 0
     productId.value = props.product_id || null
+    selectedProduct.value = null
     quantity.value = 1
     dateType.value = 'permanent'
     startDate.value = null
@@ -140,30 +147,36 @@ resetForm()
                         {{ trans('Select product') }}:
                     </label>
                     <PureMultiselectInfiniteScroll v-model="productId" :fetchRoute="productFetchRoute"
-                        labelProp="name" placeholder="Select product" valueProp="id" :required="true" mode="single" />
+                        labelProp="name" placeholder="Select product" valueProp="id" :required="true" mode="single"
+                        @selectedObject="(product) => selectedProduct = product" />
+                </div>
+                <div class="space-y-2" v-if="selectedProductImage">
+                    <!-- Product Image -->
+                    <div class="h-24 rounded-lg border border-gray-200 shadow-sm flex items-center justify-center ">
+                        <Image :src="selectedProductImage" alt="Product image" object-cover />
+                    </div>
                 </div>
                  <div>
-                        <div class="font-medium mb-2 flex items-center gap-x-1">
-                            <FontAwesomeIcon icon="fas fa-asterisk"
-                                class="font-light text-xs text-red-400 align-middle" />
-                            {{ trans('Quantity') }}:
-                        </div>
-
-
-                        <InputNumber v-model="quantity" inputId="offer_discount"
-                            :placeholder="trans('Enter quantity')" :min="1" class="w-full" />
-
+                    <div class="font-medium mb-2 flex items-center gap-x-1">
+                        <FontAwesomeIcon icon="fas fa-asterisk"
+                            class="font-light text-xs text-red-400 align-middle" />
+                        {{ trans('Quantity') }}:
                     </div>
 
+                    <InputNumber v-model="quantity" inputId="offer_discount"
+                        :placeholder="trans('Enter quantity')" :min="1" class="w-full" />
+
+                </div>
+
                 <div class="space-y-2">
-                        <label class="font-medium flex items-center gap-x-1">
-                            <FontAwesomeIcon icon="fas fa-asterisk"
-                                class="font-light text-xs text-red-400 align-middle" />
-                            {{ trans('Minimum purchase amount') }}:
-                        </label>
-                        <InputNumber v-model="offerAmount" inputId="offer_amount" class="w-full" mode="currency"
-                            :currency="props.shop_data.currency_code" locale="en-US"
-                            :placeholder="trans('Enter minimum amount')" />
+                    <label class="font-medium flex items-center gap-x-1">
+                        <FontAwesomeIcon icon="fas fa-asterisk"
+                            class="font-light text-xs text-red-400 align-middle" />
+                        {{ trans('Minimum purchase amount') }}:
+                    </label>
+                    <InputNumber v-model="offerAmount" inputId="offer_amount" class="w-full" mode="currency"
+                        :currency="props.shop_data.currency_code" locale="en-US"
+                        :placeholder="trans('Enter minimum amount')" />
                 </div>
              
                 <!-- Section: Offer Duration -->
@@ -219,8 +232,8 @@ resetForm()
 
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />
-                    <Button full icon="fad fa-save" :label="trans('Save')" @click="submitCategoryOffer"
-                        :isLoading="isLoadingSubmit" :disabled="isFormInvalid">
+                    <Button full icon="fad fa-save" :label="isLoadingSubmit ? trans('Loading') : trans('Save')" @click="submitCategoryOffer"
+                        :loading="isLoadingSubmit" :disabled="isFormInvalid || isLoadingSubmit">
                     </Button>
                 </div>
             </div>

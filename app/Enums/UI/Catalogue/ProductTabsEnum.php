@@ -21,7 +21,7 @@ enum ProductTabsEnum: string
     case IMAGES = 'images';
     case SALES = 'sales';
     case CUSTOMERS = 'customers';
-    case OFFER = 'offers';
+    case OFFERS = 'offers';
 
 
     case HISTORY = 'history';
@@ -99,7 +99,7 @@ enum ProductTabsEnum: string
                 'title' => __('Customers'),
                 'icon'  => 'fal fa-user',
             ],
-            ProductTabsEnum::OFFER => [
+            ProductTabsEnum::OFFERS => [
                 'title' => __('Offers'),
                 'icon'  => 'fal fa-badge-percent',
             ],
