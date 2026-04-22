@@ -19,7 +19,6 @@ use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\InGroup;
-use App\Observers\SupplierOnlySearchableModelObserver;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -109,7 +108,7 @@ class Supplier extends Model implements HasMedia, Auditable
     use HasHistory;
     use HasAttachments;
     use InGroup;
-   // use Searchable;
+    use Searchable;
 
     protected $casts = [
         'data'            => 'array',
@@ -131,28 +130,40 @@ class Supplier extends Model implements HasMedia, Auditable
 
     protected $guarded = [];
 
-//    public static function bootSearchable(): void
-//    {
-//        static::observe(new SupplierOnlySearchableModelObserver());
-//    }
-//
-//    public function toSearchableArray(): array
-//    {
-//        return [
-//            'id'                       => (string)$this->id,
-//            'agent_id'                 => $this->agent_id,
-//            'status'                   => $this->status,
-//            'code'                     => $this->code,
-//            'name'                     => (string)$this->name,
-//            'contact_name'             => (string)$this->contact_name,
-//            'company_name'             => (string)$this->company_name,
-//            'email'                    => (string)$this->email,
-//            'phone'                    => (string)$this->phone,
-//            'contact_website'          => (string)$this->contact_website,
-//            'identity_document_number' => (string)$this->identity_document_number,
-//            'created_at'               => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
-//        ];
-//    }
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated || $this->wasChanged([
+                'agent_id',
+                'status',
+                'code',
+                'name',
+                'contact_name',
+                'company_name',
+                'email',
+                'phone',
+                'contact_website',
+                'identity_document_number',
+                'created_at'
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'                       => (string)$this->id,
+            'agent_id'                 => $this->agent_id,
+            'status'                   => $this->status,
+            'code'                     => $this->code,
+            'name'                     => (string)$this->name,
+            'contact_name'             => (string)$this->contact_name,
+            'company_name'             => (string)$this->company_name,
+            'email'                    => (string)$this->email,
+            'phone'                    => (string)$this->phone,
+            'contact_website'          => (string)$this->contact_website,
+            'identity_document_number' => (string)$this->identity_document_number,
+            'created_at'               => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function getRouteKeyName(): string
     {

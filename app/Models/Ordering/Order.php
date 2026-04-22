@@ -36,7 +36,6 @@ use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InCustomer;
-use App\Observers\OrderOnlySearchableModelObserver;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
