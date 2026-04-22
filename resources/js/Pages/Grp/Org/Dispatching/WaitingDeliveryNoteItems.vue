@@ -22,8 +22,8 @@ const props = defineProps<{
         current: string
         navigation: Record<string, any>
     }
-    grouped?: object
     itemized?: object
+    grouped_by_delivery_note?: object
     allow_stock_controller_set_not_picked: boolean
     is_still_picking: boolean
 }>()
@@ -34,7 +34,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Record<string, any> = {
         itemized: TableWaitingDeliveryNoteItemsByLocation,
-        grouped: TableWaitingDeliveryNoteItemsGrouped,
+        grouped_by_delivery_note: TableWaitingDeliveryNoteItemsGrouped,
     }
     return components[currentTab.value]
 })

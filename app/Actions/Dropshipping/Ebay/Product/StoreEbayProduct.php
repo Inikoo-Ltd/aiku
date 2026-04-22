@@ -41,8 +41,6 @@ class StoreEbayProduct extends RetinaAction
         try {
             /** @var Product $product */
             $product = $portfolio->item;
-            // $includeVat = Arr::get($ebayUser->customerSalesChannel->settings, 'tax_category.checked', false);
-            // $customerPrice = $includeVat ? $portfolio->customer_price : $portfolio->customer_price * 0.8;
             $customerPrice = $portfolio->customer_price;
 
             $customerSalesChannel = $ebayUser->customerSalesChannel;
@@ -110,12 +108,7 @@ class StoreEbayProduct extends RetinaAction
             ];
 
             $descriptions = mb_substr($portfolio->customer_description, 0, 4000);
-            /* $descriptions = mb_substr(strip_tags($portfolio->customer_description), 0, 4000);
-            $decoded = html_entity_decode($descriptions, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            $noTags = strip_tags($decoded);
-            $clean = preg_replace('/[^A-Za-z0-9.,;\'"!? \n-]/', ' ', $noTags);
-            $clean = preg_replace('/\s+/', ' ', trim($clean));
-            $descriptions = str_replace('(', '', str_replace(')', '', str_replace('.', ' ', $clean)));*/
+
 
             if (!$descriptions) {
                 $descriptions = $portfolio->item->name;
@@ -227,7 +220,7 @@ class StoreEbayProduct extends RetinaAction
                 'sku' => Arr::get($inventoryItem, 'sku')
             ]);
 
-            $productResult = $ebayUser->storeProduct($inventoryItem);
+            $ebayUser->storeProduct($inventoryItem);
 
             if (Arr::get($offerExist, 'offers.0')) {
                 $offer = Arr::get($offerExist, 'offers.0');
@@ -282,10 +275,9 @@ class StoreEbayProduct extends RetinaAction
             }
 
             return $portfolio;
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             return $portfolio;
 
-            // throw $e;
         }
     }
 }

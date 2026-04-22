@@ -129,6 +129,7 @@ class StoreOrgStockMovement extends OrgAction
             'user_id'          => ['sometimes', 'nullable', 'numeric']
         ];
         if (!$this->strict) {
+            $rules['note']       = ['sometimes', 'nullable', 'string', 'max:1024'];
             $rules['fetched_at'] = ['sometimes', 'date'];
             $rules['source_id']  = ['sometimes', 'string'];
         }

@@ -24,14 +24,14 @@ enum BrandTabsEnum: string
     public function blueprint(): array
     {
         return match ($this) {
-            SELF::HISTORY => [
+            self::HISTORY => [
                 'type'  => 'icon',
                 'align' => 'right',
                 'title' => __('History'),
                 'icon'  => 'fal fa-clock',
 
             ],
-            SELF::SHOWCASE => [
+            self::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],

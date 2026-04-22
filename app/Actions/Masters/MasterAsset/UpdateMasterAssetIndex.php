@@ -24,9 +24,9 @@ class UpdateMasterAssetIndex extends GrpAction
 
         foreach ($masterAssets as $masterAsset) {
             $masterAsset->updateQuietly([
-                "index_under_master_{$masterProductCategory->type->value}"    => data_get($indexOrders, "{$masterAsset->code}.index_under_master_{$masterProductCategory->type->value}", null)
+                "index_under_master_{$masterProductCategory->type->value}"    => data_get($indexOrders, "$masterAsset->code.index_under_master_{$masterProductCategory->type->value}", null)
             ]);
-        };
+        }
 
         HydrateIndexFromMasterShopToShops::dispatch($this->masterShop, $masterProductCategory, $indexOrders);
     }

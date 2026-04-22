@@ -107,9 +107,13 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
                 $table->name($prefix)->pageName($prefix.'Page');
             }
 
-            $table->withEmptyState([
-                'title' => __('No waiting items found'),
-            ])->defaultSort('picking_position');
+            $emptyStateData = [
+                'icons'  => ['fal', 'fa-hourglass-start'],
+                'title'  => __('No waiting items found'),
+                'count'  => 0,
+            ];
+
+            $table->withEmptyState($emptyStateData)->defaultSort('picking_position');
 
             $table->column(key: 'delivery_note_reference', label: __('Delivery Note'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);

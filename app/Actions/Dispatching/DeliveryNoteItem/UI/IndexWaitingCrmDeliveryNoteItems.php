@@ -9,13 +9,8 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Http\Resources\Dispatching\WaitingDeliveryNoteItemsResource;
-use App\InertiaTable\InertiaTable;
-use App\Models\Inventory\Warehouse;
-use Closure;
-use Inertia\Inertia;
-use Inertia\Response;
-use Lorisleiva\Actions\ActionRequest;
+use App\Enums\UI\Dispatch\WaitingItemsTabsEnum;
+use Illuminate\Support\Arr;
 
 class IndexWaitingCrmDeliveryNoteItems extends BaseIndexWaitingDeliveryNoteItems
 {
@@ -36,39 +31,8 @@ class IndexWaitingCrmDeliveryNoteItems extends BaseIndexWaitingDeliveryNoteItems
         return 'grp.org.warehouses.show.dispatching.waiting_crm_items';
     }
 
-    public function htmlResponse(Warehouse $warehouse, ActionRequest $request): Response
+    protected function getTabNavigation(): array
     {
-        $items = IndexWaitingDeliveryNoteItemsItemized::make()->handle(
-            warehouse: $warehouse,
-            waitingType: 'crm',
-            state: $this->getDeliveryNoteState(),
-            shopType: $this->shopType,
-        );
-
-        return Inertia::render('Org/Dispatching/WaitingCrmDeliveryNoteItems', [
-            'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-            'title'       => $this->getPageTitle(),
-            'pageHead'    => [
-                'title' => $this->getPageTitle(),
-                'icon'  => [
-                    'icon'  => ['fal', 'fa-hourglass-start'],
-                    'title' => __('CRM Waiting Items'),
-                ],
-            ],
-            'items' => WaitingDeliveryNoteItemsResource::collection($items),
-        ])->table($this->tableStructure());
-    }
-
-    public function tableStructure(): Closure
-    {
-        return function (InertiaTable $table) {
-            $table->withEmptyState([
-                'title' => __('No CRM waiting items found'),
-            ])->defaultSort('org_stock_code');
-
-            $table->column(key: 'delivery_note_reference', label: __('Delivery Note'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity_waiting_crm', label: __('Qty Waiting'), canBeHidden: false, sortable: true);
-        };
+        return Arr::only(WaitingItemsTabsEnum::navigation(), WaitingItemsTabsEnum::ITEMIZED->value);
     }
 }

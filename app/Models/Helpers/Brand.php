@@ -31,6 +31,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $group_id
  * @property int $number_trade_units
  * @property int $number_products
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media

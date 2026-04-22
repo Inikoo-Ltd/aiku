@@ -60,7 +60,7 @@ const generateLocationRoute = (location: any) => {
 }
 
 const findLocation = (locationsList: any[], selectedCode: string) => {
-    return locationsList?.find(x => x.location_code === selectedCode) || locationsList?.[0]
+    return locationsList?.find(x => x.location_code === selectedCode) || locationsList?.find(x => Number(x.quantity)) || locationsList?.[0]
 }
 
 const isModalLocation = ref(false)
@@ -90,6 +90,12 @@ const onUndoPick = async (routeTarget: routeType, loadingKey: string) => {
 // Section: method Pass to CS
 const isOpenModalPassToCs = ref(false)
 const selectedTransactionToSetAsWaiting = ref(null)
+
+// Helper: to avoid reset location on update quantity
+const selectedLocationCodes = reactive<Record<number, string>>({})
+const getSelectedLocationCode = (itemValue: any): string => {
+    return selectedLocationCodes[itemValue.id] ?? itemValue.selectedRadioLocationCode ?? ''
+}
 </script>
 
 <template>
@@ -199,9 +205,9 @@ const selectedTransactionToSetAsWaiting = ref(null)
             <div class="rounded p-1 flex flex-col gap-2">
                 <div class="flex justify-between items-center gap-x-4">
                     <!-- Section: location -->
-                    <div v-if="!isStillPicking && findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)" class="">
+                    <div v-if="!isStillPicking && findLocation(itemValue.locations, getSelectedLocationCode(itemValue))" class="">
                         <Transition name="spin-to-down">
-                            <div :key="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.location_code">
+                            <div :key="findLocation(itemValue.locations, getSelectedLocationCode(itemValue))?.location_code">
 
                                 <!-- Section: number of locations available to pick -->
                                 <span v-if="itemValue.locations?.length > 1" @click="() => {
@@ -215,11 +221,11 @@ const selectedTransactionToSetAsWaiting = ref(null)
                                     {{ itemValue.locations?.length - 1 }}
                                 </span>
 
-                                <span v-if="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)" class="text-base">
+                                <span v-if="findLocation(itemValue.locations, getSelectedLocationCode(itemValue))" class="text-base">
                                     <Link v-tooltip="`${itemValue.warehouse_area}`"
-                                        :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode))"
+                                        :href="generateLocationRoute(findLocation(itemValue.locations, getSelectedLocationCode(itemValue)))"
                                         class="secondaryLink">
-                                        {{ findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).location_code }}
+                                        {{ findLocation(itemValue.locations, getSelectedLocationCode(itemValue)).location_code }}
                                     </Link>
                                 </span>
                                 <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">
@@ -228,16 +234,16 @@ const selectedTransactionToSetAsWaiting = ref(null)
                                 
                                 <!-- Section: number of stocks -->
                                 <span
-                                    v-tooltip="trans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.quantity || 0), stockLocation: findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.location_code || '' })"
+                                    v-tooltip="trans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(findLocation(itemValue.locations, getSelectedLocationCode(itemValue))?.quantity || 0), stockLocation: findLocation(itemValue.locations, getSelectedLocationCode(itemValue))?.location_code || '' })"
                                     class="align-middle whitespace-nowrap text-base py-0.5 xopacity-70 tabular-nums xborder border-gray-300 rounded xpx-1"
                                 >
                                     (<span class="text-lg font-bold">
                                         <FractionDisplay
-                                            v-if="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.quantity_fractional"
-                                            :fractionData="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.quantity_fractional"
+                                            v-if="findLocation(itemValue.locations, getSelectedLocationCode(itemValue))?.quantity_fractional"
+                                            :fractionData="findLocation(itemValue.locations, getSelectedLocationCode(itemValue))?.quantity_fractional"
                                         />
                                         <template v-else>
-                                            {{ locale.number(findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).quantity) }}
+                                            {{ locale.number(findLocation(itemValue.locations, getSelectedLocationCode(itemValue)).quantity) }}
                                         </template>
                                     </span>
                                     <span class="text-sm ml-1">{{ ctrans("stocks") }}</span>)
@@ -249,11 +255,11 @@ const selectedTransactionToSetAsWaiting = ref(null)
                     <div class="flex items-center gap-x-2">
                         <!-- Section: input Quantity-->
                         <NumberWithButtonSave
-                            v-if="!isStillPicking && findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).quantity > 0"
-                            :key="findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).location_code"
+                            v-if="!isStillPicking && findLocation(itemValue.locations, getSelectedLocationCode(itemValue)).quantity > 0"
+                            :key="findLocation(itemValue.locations, getSelectedLocationCode(itemValue)).location_code"
                             noUndoButton
                             @onError="(error: any) => { proxyItem.errors = Object.values(error || {}) }"
-                            :modelValue="get(itemValue, 'waiting_warehouse_quantity', 0)"
+                            :modelValue="itemValue.pickings?.find((p: any) => p.type === 'pick' && p.location_id == findLocation(itemValue.locations, getSelectedLocationCode(itemValue))?.location_id)?.quantity_picked ?? 0"
                             @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
                             saveOnForm
                             :routeSubmit="{
@@ -264,12 +270,14 @@ const selectedTransactionToSetAsWaiting = ref(null)
                                 step: 1,
                                 min: 0,
                                 max: Math.min(
-                                    Number(findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode)?.quantity),
-                                    Number(get(itemValue, 'waiting_warehouse_quantity', 0)) + Number(itemValue.quantity_waiting_warehouse) )
+                                    Number(findLocation(itemValue.locations, getSelectedLocationCode(itemValue))?.quantity),
+                                    Number(itemValue.quantity_waiting_warehouse)
+                                        + Number(findLocation(itemValue.locations, getSelectedLocationCode(itemValue)).quantity)
+                                )
                             }"
                             :additionalData="{
-                                location_org_stock_id: findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).id,
-                                picking_id: itemValue.pickings?.find(picking => picking.location_id == findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).location_id)?.id,
+                                location_org_stock_id: findLocation(itemValue.locations, getSelectedLocationCode(itemValue)).id,
+                                picking_id: itemValue.pickings?.find(picking => picking.location_id == findLocation(itemValue.locations, getSelectedLocationCode(itemValue)).location_id)?.id,
                             }"
                             autoSave
                             isWithRefreshModel
@@ -277,7 +285,7 @@ const selectedTransactionToSetAsWaiting = ref(null)
                             <template #save="{ isProcessing, isDirty, onSaveViaForm }">
                                 <div class="flex gap-x-8 w-fit">
                                     <ButtonWithLink
-                                        v-tooltip="trans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).location_code || '-' })"
+                                        v-tooltip="trans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, getSelectedLocationCode(itemValue)).location_code || '-' })"
                                         icon="fal fa-clipboard-list-check"
                                         :size="twBreakPoint().includes('lg') ? 'xs' : 'lg'"
                                         type="secondary"
@@ -289,7 +297,7 @@ const selectedTransactionToSetAsWaiting = ref(null)
                                             preserveState: true,
                                         }"
                                         :body="{
-                                            location_org_stock_id: findLocation(itemValue.locations, proxyItem.selectedRadioLocationCode).id
+                                            location_org_stock_id: findLocation(itemValue.locations, getSelectedLocationCode(itemValue)).id
                                         }"
                                         isWithError
                                     >
@@ -349,7 +357,7 @@ const selectedTransactionToSetAsWaiting = ref(null)
     </Table>
 
     <!-- Modal: Locations -->
-    <Modal :isOpen="isModalLocation" @onClose="onCloseModal" width="w-full max-w-2xl" :dialogStyle="{ background: '#ffffffcc' }">
+    <Modal :isOpen="isModalLocation" @onClose="onCloseModal" width="w-full max-w-3xl" :dialogStyle="{ background: '#ffffffcc' }">
         <div class="text-center font-semibold mb-4 text-2xl">
             {{ trans('Location list for') }} {{ selectedItemValue?.org_stock_code }}
         </div>
@@ -359,7 +367,7 @@ const selectedTransactionToSetAsWaiting = ref(null)
                 :key="location.location_code"
                 class="bg-white rounded w-full flex justify-between gap-x-3 items-center px-2 py-1"
             >
-                <label :for="location.location_code">
+                <label :for="location.location_code" class="flex flex-wrap">
                     <span v-if="location.location_code" v-tooltip="location.quantity <= 0 ? trans('Location has no stock') : ''" :class="location.quantity <= 0 ? 'text-gray-400' : ''">
                         <Link :href="generateLocationRoute(location)" class="bg-gradient-to-t from-yellow-300/50 to-yellow-200/50 px-1">
                             {{ location.location_code }}
@@ -367,15 +375,14 @@ const selectedTransactionToSetAsWaiting = ref(null)
                     </span>
                     <span v-else class="text-gray-400 italic">({{ trans('Unknown') }})</span>
                     <span v-tooltip="trans('Total stock in this location')" class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border border-gray-300 rounded px-1 text-xs">
-                        <FontAwesomeIcon icon="fal fa-inventory" fixed-width aria-hidden="true" />
-                        {{ Number(location.quantity ?? 0) }}
+                        <!-- <FontAwesomeIcon icon="fal fa-inventory" fixed-width aria-hidden="true" /> -->
+                        ({{ Number(location.quantity ?? 0) }} {{ trans("stocks") }})
                     </span>
                 </label>
                 <RadioButton
-                    v-if="selectedItemProxy"
-                    vxmodel="selectedItemProxy.org_stock_id"
-                    :modelValue="get(selectedItemProxy, 'selectedRadioLocationCode', selectedItemValue?.locations?.[0]?.location_code)"
-                    @update:modelValue="(e) => (selectedItemProxy.selectedRadioLocationCode = e, onCloseModal())"
+                    v-if="selectedItemProxy && selectedItemValue"
+                    :modelValue="getSelectedLocationCode(selectedItemValue)"
+                    @update:modelValue="(e: string) => { selectedLocationCodes[selectedItemValue.id] = e; onCloseModal() }"
                     :size="twBreakPoint().includes('lg') ? undefined : 'large'"
                     :inputId="location.location_code"
                     :disabled="location.quantity <= 0"

@@ -555,8 +555,10 @@ const onSetItemToUndoWaitingWarehouse = () => {
             {{ Number(item.quantity_not_picked) }}
             </span>
 
-            <span v-tooltip="ctrans('Waiting for warehouse')"  v-if="item.quantity_waiting_warehouse!=0" class="text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
-            {{ Number(item.quantity_waiting_warehouse) }}
+            <span v-tooltip="ctrans('Waiting for warehouse')"  v-if="item.quantity_waiting_warehouse!=0" class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
+                {{ Number(item.quantity_waiting_warehouse) }}
+                <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px]" fixed-width aria-hidden="true" />
             </span>
 
 

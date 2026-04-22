@@ -33,16 +33,36 @@ const props = defineProps<{
 
 const locale = inject('locale', aikuLocaleStructure)
 
+type ProductCategoryLink = {
+    name: string
+    slug: string
+    type: 'department' | 'sub_department' | 'family'
+}
 
-const getCategoryLink = (productCategory: {}) => {
-    if (productCategory) {
-        return route('grp.org.shops.show.catalogue.families.show', {
+const getCategoryLink = (productCategory?: ProductCategoryLink | null) => {
+    if (!productCategory) return '#'
+
+    if (productCategory.type === 'department') {
+        return route('grp.org.shops.show.catalogue.departments.show', {
             organisation: route().params.organisation,
             shop: route().params.shop,
-            family: productCategory.slug,
+            department: productCategory.slug,
         })
     }
-    return '#'
+
+    if (productCategory.type === 'sub_department') {
+        return route('grp.org.shops.show.catalogue.sub_departments.show', {
+            organisation: route().params.organisation,
+            shop: route().params.shop,
+            subDepartment: productCategory.slug,
+        })
+    }
+
+    return route('grp.org.shops.show.catalogue.families.show', {
+        organisation: route().params.organisation,
+        shop: route().params.shop,
+        family: productCategory.slug,
+    })
 }
 
 const getOfferCampaignLink = (offerCampaign: {}) => {
