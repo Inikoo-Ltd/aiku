@@ -13,6 +13,7 @@ use App\Actions\Utils\Abbreviate;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Models\Dispatching\Trolley;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -44,16 +45,19 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $end_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $quantity_picked
- * @property string|null $quantity_packed
- * @property string $picking_percentage
- * @property string $packing_percentage
+ * @property numeric|null $quantity_picked
+ * @property numeric|null $quantity_packed
+ * @property numeric $picking_percentage
+ * @property numeric $packing_percentage
+ * @property string $type
+ * @property int $number_pallet_returns
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNote> $deliveryNotes
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNoteItem> $deliveryNotesItems
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Organisation $organisation
- * @property-read User $user
- * @property-read \App\Models\Inventory\Warehouse $warehouse
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Trolley> $trolleys
+ * @property-read User|null $user
+ * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingSession newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingSession newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingSession query()

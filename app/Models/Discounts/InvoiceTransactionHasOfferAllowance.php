@@ -21,8 +21,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $offer_campaign_id
  * @property int $offer_id
  * @property int $offer_allowance_id
- * @property string $discounted_amount
- * @property string $discounted_percentage
+ * @property numeric $discounted_amount
+ * @property numeric $discounted_percentage
  * @property string|null $info
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -31,10 +31,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
  * @property string|null $source_alt_id
- * @property-read InvoiceTransaction $invoiceTransaction
- * @property-read \App\Models\Discounts\Offer $offer
- * @property-read \App\Models\Discounts\OfferAllowance $offerAllowance
- * @property-read \App\Models\Discounts\OfferCampaign $offerCampaign
+ * @property-read InvoiceTransaction|null $invoiceTransaction
+ * @property-read \App\Models\Discounts\Offer|null $offer
+ * @property-read \App\Models\Discounts\OfferAllowance|null $offerAllowance
+ * @property-read \App\Models\Discounts\OfferCampaign|null $offerCampaign
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceTransactionHasOfferAllowance newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceTransactionHasOfferAllowance newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceTransactionHasOfferAllowance query()

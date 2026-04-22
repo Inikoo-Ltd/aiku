@@ -32,7 +32,7 @@ use Illuminate\Support\Carbon;
  * @property int $number_records
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Country $country
+ * @property-read Country|null $country
  * @property-read Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\IntrastatImportTimeSeriesRecord> $records
  * @property-read TaxCategory|null $taxCategory

@@ -230,7 +230,7 @@ const handleSearch = () => {
     page.value = 1;
     isFetchingOutOfStock.value = false;
     updateQueryParams();
-    debFetchProducts(false, true);
+    debFetchProducts(false, false);
 };
 
 
@@ -238,14 +238,14 @@ watch([q, orderBy], () => {
     page.value = 1;
     isFetchingOutOfStock.value = false;
     updateQueryParams();
-    debFetchProducts(false, true);
+    debFetchProducts(false, false);
 }, { deep: true });
 
 watch(filter, () => {
     page.value = 1;
     isFetchingOutOfStock.value = false;
     /* updateQueryParams(); */
-    debFetchProducts(false, true);
+    debFetchProducts(false, false);
 }, { deep: true });
 
 
@@ -266,6 +266,9 @@ const sortOptions = computed(() => {
         baseOptions.splice(1, 0, { label: "Price", value: "price" });
         baseOptions.splice(1, 0, { label: "Rrp", value: "rrp" });
     }
+     if (props.fieldValue?.sub_type == 'family') {
+        baseOptions.splice(1, 0, { label: trans("Recommended"), value: "recommended" })
+    }
     return baseOptions;
 });
 
@@ -275,6 +278,7 @@ const isAscending = ref(true);
 
 const getArrow = (key: typeof sortKey.value) => {
     if (sortKey.value !== key) return "";
+    if(sortKey.value == 'recommended') return ""
     return isAscending.value ? "↑" : "↓";
 };
 
@@ -327,8 +331,8 @@ const toggleSort = (key: string) => {
         sortKey.value = key;
         isAscending.value = true;
     }
-
-    orderBy.value = isAscending.value ? key : `-${key}`;
+    if(props.fieldValue?.sub_type == 'family' && key == 'recommended') orderBy.value = key
+    else orderBy.value = isAscending.value ? key : `-${key}`;
     updateQueryParams();
     handleSearch();
 };

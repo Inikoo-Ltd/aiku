@@ -37,6 +37,8 @@ class IndexDeliveryNoteItems extends OrgAction
 
         $query->where('delivery_note_items.delivery_note_id', $parent->id);
 
+        $query->with(['pickings.location.warehouse']);
+
         $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
 
         $query->leftJoin('packings', function ($join) use ($parent) {
@@ -77,6 +79,9 @@ class IndexDeliveryNoteItems extends OrgAction
                 'org_stocks.slug as org_stock_slug',
                 'org_stocks.packed_in as packed_in',
                 'packings.id as packing_id',
+                'delivery_note_items.quantity_waiting_crm',
+                'delivery_note_items.quantity_waiting_warehouse',
+
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state'])
             ->allowedFilters([$globalSearch])
@@ -120,6 +125,7 @@ class IndexDeliveryNoteItems extends OrgAction
                 $table->column(key: 'quantity_picked_readonly', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_packed_readonly', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             } else {
+                $table->column(key: 'picking_locations', label: __('Pickings'), canBeHidden: false, sortable: false, searchable: false);
                 $table->column(key: 'quantity_required', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_picked', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_packed', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');

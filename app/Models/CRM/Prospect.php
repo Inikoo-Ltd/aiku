@@ -18,13 +18,11 @@ use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\SubscriptionEvent;
 use App\Models\Helpers\Address;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InCustomer;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -86,16 +84,16 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_opt_in
  * @property array<array-key, mixed>|null $contact_name_components
  * @property string|null $post_source_id
+ * @property int $number_dispatched_emails
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\CRM\Customer|null $customer
  * @property-read Collection<int, DispatchedEmail> $dispatchedEmails
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Organisation $organisation
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @property-read Collection<int, SubscriptionEvent> $subscriptionEvents
- * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\CRM\ProspectFactory factory($count = null, $state = [])
  * @method static Builder<static>|Prospect newModelQuery()
  * @method static Builder<static>|Prospect newQuery()
@@ -109,7 +107,6 @@ class Prospect extends Model implements Auditable
 {
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use HasFactory;
     use InCustomer;
     use HasAddress;

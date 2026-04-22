@@ -16,8 +16,6 @@ HOST="${3:-$HOST}"
 DB_PORT="${4:-$DB_PORT}"
 DB_COLLATE="${5:-$DB_COLLATE}"
 
-echo -e "✨ Resetting elasticsearch"
-${PHP} artisan es:refresh --env=testing
 echo -e "✨ Resetting database ${ITALIC}${DB}${NONE}"
 dropdb --if-exists -p "${DB_PORT}" -U "${USER}" -h "${HOST}" -f -w ${DB}
 createdb -p "${DB_PORT}" -U "${USER}" -h "${HOST}"  --template=template0 --lc-collate="${DB_COLLATE}" --lc-ctype="${DB_COLLATE}" ${DB}

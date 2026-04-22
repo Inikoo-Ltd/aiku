@@ -24,8 +24,6 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
-use App\Models\Traits\HasRetinaSearch;
-use App\Models\Traits\HasUniversalSearch;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -71,18 +69,18 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $delivery_address_id
  * @property int|null $collection_address_id
  * @property int $currency_id
- * @property string|null $grp_exchange
- * @property string|null $org_exchange
- * @property string $gross_amount Total asserts amount (excluding charges and shipping) before discounts
- * @property string $goods_amount
- * @property string $services_amount
- * @property string $net_amount
- * @property string|null $grp_net_amount
- * @property string|null $org_net_amount
+ * @property numeric|null $grp_exchange
+ * @property numeric|null $org_exchange
+ * @property numeric $gross_amount Total asserts amount (excluding charges and shipping) before discounts
+ * @property numeric $goods_amount
+ * @property numeric $services_amount
+ * @property numeric $net_amount
+ * @property numeric|null $grp_net_amount
+ * @property numeric|null $org_net_amount
  * @property int $tax_category_id
- * @property string $tax_amount
- * @property string $total_amount
- * @property string $payment_amount
+ * @property numeric $tax_amount
+ * @property numeric $total_amount
+ * @property numeric $payment_amount
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
@@ -100,6 +98,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $shipping_zone_schema_id
  * @property int|null $shipping_zone_id
  * @property string|null $platform_order_id
+ * @property int|null $picker_user_id
+ * @property int|null $packer_user_id
  * @property PalletReturnItemNoSetReasonStateEnum $not_setup_reason
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
@@ -109,23 +109,21 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Address|null $deliveryAddress
  * @property-read mixed $discount_amount
  * @property-read Collection<int, Address> $fixedAddresses
- * @property-read \App\Models\Fulfilment\Fulfilment $fulfilment
- * @property-read \App\Models\Fulfilment\FulfilmentCustomer $fulfilmentCustomer
- * @property-read Group $group
+ * @property-read \App\Models\Fulfilment\Fulfilment|null $fulfilment
+ * @property-read \App\Models\Fulfilment\FulfilmentCustomer|null $fulfilmentCustomer
+ * @property-read Group|null $group
  * @property-read Collection<int, \App\Models\Fulfilment\PalletReturnItem> $items
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Organisation $organisation
  * @property-read Collection<int, \App\Models\Fulfilment\Pallet> $pallets
  * @property-read Platform|null $platform
  * @property-read \App\Models\Fulfilment\RecurringBill|null $recurringBill
- * @property-read \App\Models\Helpers\RetinaSearch|null $retinaSearch
  * @property-read SalesChannel|null $salesChannel
  * @property-read Collection<int, Shipment> $shipments
  * @property-read \App\Models\Fulfilment\PalletReturnStats|null $stats
  * @property-read Collection<int, \App\Models\Fulfilment\StoredItem> $storedItems
  * @property-read TaxCategory $taxCategory
  * @property-read Collection<int, \App\Models\Fulfilment\FulfilmentTransaction> $transactions
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Warehouse|null $warehouse
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturn newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturn newQuery()
@@ -139,8 +137,6 @@ class PalletReturn extends Model implements HasMedia
 {
     use HasSlug;
     use SoftDeletes;
-    use HasUniversalSearch;
-    use HasRetinaSearch;
     use HasAddress;
     use HasAddresses;
     use HasAttachments;

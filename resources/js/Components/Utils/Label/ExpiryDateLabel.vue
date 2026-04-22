@@ -13,7 +13,7 @@ const props = defineProps<{
 </script>
 
 <template>
-    <span class="bg-slate-100 w-fit py-[1px] text-right">
+    <span class="bg-slate-100 w-fit py-[1px] text-left">
         [
         <span v-if="props.expiry_date" v-tooltip="trans('Expired date')" class="text-right text-red-700">
             <FontAwesomeIcon icon="fad fa-viruses" class="text-red-500" fixed-width aria-hidden="true" />

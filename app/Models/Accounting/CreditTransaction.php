@@ -41,11 +41,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $source_id
  * @property CreditTransactionReasonEnum|null $reason
  * @property-read Currency $currency
- * @property-read \App\Models\CRM\Customer $customer
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\CRM\Customer|null $customer
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Accounting\Payment|null $payment
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Accounting\TopUp|null $topUp
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditTransaction newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditTransaction newQuery()

@@ -21,8 +21,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property WebpageHasProductTypeEnum $type
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read Product $product
- * @property-read \App\Models\Web\Webpage $webpage
+ * @property-read Product|null $product
+ * @property-read \App\Models\Web\Webpage|null $webpage
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebpageHasProduct newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebpageHasProduct newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebpageHasProduct query()

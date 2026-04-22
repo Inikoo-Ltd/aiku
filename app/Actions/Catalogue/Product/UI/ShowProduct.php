@@ -223,6 +223,21 @@ class ShowProduct extends OrgAction
 
         $actions = [];
 
+        $actions[] = [
+            'type'    => 'button',
+            'style'   => 'edit',
+            'tooltip' => __('Sync Product Images from Trade Units'),
+            'label'   => __('Repair Images'),
+            'icon'    => 'fal fa-tools',
+            'route'   => [
+                'name'          => 'grp.models.product.repair_product_images',
+                'method'        => 'patch',
+                'parameters'    => [
+                    'product' => $product->id
+                ],
+            ]
+        ];
+
         if ($this->canEdit) {
             $actions[] = [
                 'type'  => 'button',
@@ -391,6 +406,12 @@ class ShowProduct extends OrgAction
                 'tabs'                  => [
                     'current'    => $this->tab,
                     'navigation' => $isExternalShop ? ProductInExternalTabsEnum::navigation() : ProductTabsEnum::navigation()
+                ],
+                'product_id'           => $product->id,
+                'shop_data'            => [
+                    'id'            => $product->shop_id,
+                    'slug'          => $product->shop->slug,
+                    'currency_code' => $product->shop->currency->code,
                 ],
                 'is_external_shop'      => $isExternalShop,
                 'family_slug'           => $product->family->slug ?? null,

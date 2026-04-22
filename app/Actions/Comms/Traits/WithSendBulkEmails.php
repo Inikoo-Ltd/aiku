@@ -179,6 +179,7 @@ trait WithSendBulkEmails
             'platform' => Arr::get($additionalData, 'platform'),
             'balance' => Arr::get($additionalData, 'balance'),
             'products' => Arr::get($additionalData, 'products'),
+            'low-stock-items-in-basket' => Arr::get($additionalData, 'low_stock_items_in_basket'),
             'payment-reason' => Arr::get($additionalData, 'payment_reason'),
             'payment-note' => Arr::get($additionalData, 'payment_note'),
             'payment-balance-preview' => Arr::get($additionalData, 'payment_balance_preview'),

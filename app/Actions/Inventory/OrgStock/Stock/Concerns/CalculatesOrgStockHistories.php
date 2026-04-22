@@ -25,7 +25,7 @@ trait CalculatesOrgStockHistories
 {
     public function getCostPerSku(OrgStock $orgStock, Carbon $date): float
     {
-        $lastPurchase = OrgStockMovement::select(['cost_per_sku'])
+        $lastPurchase = OrgStockMovement::on('aiku_no_sticky')->select(['cost_per_sku'])
             ->where('org_stock_id', $orgStock->id)
             ->where('type', OrgStockMovementTypeEnum::PURCHASE->value)
             ->whereNotNull('cost_per_sku')
@@ -35,7 +35,7 @@ trait CalculatesOrgStockHistories
             return $lastPurchase->cost_per_sku;
         }
 
-        $closestPurchase = OrgStockMovement::select(['cost_per_sku'])
+        $closestPurchase = OrgStockMovement::on('aiku_no_sticky')->select(['cost_per_sku'])
             ->where('org_stock_id', $orgStock->id)
             ->where('type', OrgStockMovementTypeEnum::PURCHASE->value)
             ->whereNotNull('cost_per_sku')
@@ -47,9 +47,13 @@ trait CalculatesOrgStockHistories
         return $orgStock->unit_cost * $orgStock->packed_in;
     }
 
-    public function getStockQuantity(OrgStock $orgStock, Location $location, Carbon $date): float
+    public function getStockQuantity(OrgStock $orgStock, Location $location, ?Carbon $date = null): float
     {
-        $lastHelper = OrgStockMovement::select(['audited_quantity', 'date'])
+        if (!$date) {
+            $date = now();
+        }
+
+        $lastHelper = OrgStockMovement::on('aiku_no_sticky')->select(['audited_quantity', 'date'])
             ->where('org_stock_id', $orgStock->id)
             ->where('location_id', $location->id)
             ->where('class', OrgStockMovementClassEnum::HELPER)
@@ -57,7 +61,7 @@ trait CalculatesOrgStockHistories
 
         $seedQuantity = $lastHelper?->audited_quantity ?? 0;
 
-        $query = OrgStockMovement::where('org_stock_id', $orgStock->id)
+        $query = OrgStockMovement::on('aiku_no_sticky')->where('org_stock_id', $orgStock->id)
             ->where('location_id', $location->id)
             ->where('class', OrgStockMovementClassEnum::MOVEMENT)
             ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'));
@@ -73,7 +77,7 @@ trait CalculatesOrgStockHistories
 
     public function lastSoldDate(OrgStock $orgStock, Carbon $date): ?Carbon
     {
-        $lastSoldData = OrgStockMovement::select('date')->where('org_stock_id', $orgStock->id)
+        $lastSoldData = OrgStockMovement::on('aiku_no_sticky')->select('date')->where('org_stock_id', $orgStock->id)
             ->where('type', OrgStockMovementTypeEnum::PICKED->value)
             ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))
             ->orderBy('date', 'desc')->first();
@@ -86,7 +90,7 @@ trait CalculatesOrgStockHistories
 
     public function nonMovingOneYear(OrgStock $orgStock, Carbon $date, float $quantityOnDate): float
     {
-        $firstAssociate = OrgStockMovement::select('date')->where('org_stock_id', $orgStock->id)
+        $firstAssociate = OrgStockMovement::on('aiku_no_sticky')->select('date')->where('org_stock_id', $orgStock->id)
             ->where('type', OrgStockMovementTypeEnum::ASSOCIATE->value)
             ->orderBy('date')->first();
 
@@ -94,7 +98,7 @@ trait CalculatesOrgStockHistories
             return 0;
         }
 
-        $sumPickedQuantity = OrgStockMovement::where('org_stock_id', $orgStock->id)
+        $sumPickedQuantity = OrgStockMovement::on('aiku_no_sticky')->where('org_stock_id', $orgStock->id)
             ->where('type', OrgStockMovementTypeEnum::PICKED->value)
             ->where('date', '>=', $date->copy()->subYear()->startOfDay()->format('Y-m-d H:i:s.u'))
             ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))
@@ -110,7 +114,7 @@ trait CalculatesOrgStockHistories
 
     protected function wasLocationValid(OrgStock $orgStock, Location $location, Carbon $date, ?Command $command): bool
     {
-        $lastMarginalHelper = OrgStockMovement::select(['type', 'date'])
+        $lastMarginalHelper = OrgStockMovement::on('aiku')->select(['type', 'date'])
             ->where('org_stock_id', $orgStock->id)
             ->where('location_id', $location->id)
             ->whereIn('type', [OrgStockMovementTypeEnum::ASSOCIATE, OrgStockMovementTypeEnum::DISASSOCIATE])
@@ -144,7 +148,7 @@ trait CalculatesOrgStockHistories
 
     protected function getLocationsIds(OrgStock $orgStock, Carbon $date): array
     {
-        return OrgStockMovement::where('org_stock_id', $orgStock->id)
+        return OrgStockMovement::on('aiku_no_sticky')->where('org_stock_id', $orgStock->id)
             ->where('class', OrgStockMovementClassEnum::HELPER)
             ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))
             ->distinct('location_id')

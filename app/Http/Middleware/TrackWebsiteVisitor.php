@@ -17,22 +17,36 @@ class TrackWebsiteVisitor
     {
 
         if ($this->shouldTrack($request)) {
+
+            $geoLocation = [
+                $request->header('CF-IPCountry') ?? 'XX',
+                $request->header('CF-Region'),
+                $request->header('CF-IPCity'),
+                $request->header('CF-IPLongitude'),
+                $request->header('CF-IPLatitude'),
+            ];
+
             ProcessWebsiteVisitorTracking::dispatch(
-                sessionId: $request->session()->getId(),
-                website: $request->input('website'),
-                webUser: $request->user('retina'),
-                userAgent: $request->userAgent(),
-                ips: $request->ips(),
-                currentUrl: $request->fullUrl(),
-                referrer: $request->header('referer'),
-            );
+                $request->session()->getId(),
+                $request->input('website'),
+                $request->user('retina'),
+                $request->userAgent(),
+                request()->ip(),
+                $request->fullUrl(),
+                $request->header('referer'),
+                $geoLocation
+            )->delay(now()->addSeconds(5));
         }
+
         return $next($request);
     }
 
 
     protected function shouldTrack(Request $request): bool
     {
+        if (app()->isLocal()) {
+            return false;
+        }
 
         if (!$request->input('website')) {
             return false;
@@ -42,11 +56,12 @@ class TrackWebsiteVisitor
             return false;
         }
 
-
         $routeName = $request->route()?->getName();
+
         if (!$routeName) {
             return false;
         }
+
         $excludedRoutes = [
             'iris.models',
             'retina.models',
@@ -58,6 +73,4 @@ class TrackWebsiteVisitor
 
         return array_all($excludedRoutes, fn ($excluded) => !str_starts_with($routeName, $excluded));
     }
-
-
 }

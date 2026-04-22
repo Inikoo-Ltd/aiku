@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from "vue"
+import { onMounted, computed } from "vue"
 import { router } from "@inertiajs/vue3"
 import { Head } from "@inertiajs/vue3"
 import { Link } from "@inertiajs/vue3"
@@ -17,10 +17,25 @@ const props = defineProps<{
 	title: string
 	pageHeading: []
 	data: any
+	organisationSlug?: string
 }>()
 
+const orgSlug = computed(() =>
+	props.organisationSlug ??
+	(route().params as any)?.organisation ??
+	(route().params as any)?.org ??
+	(route().params as any)?.organisationSlug
+)
+
 function editRoute(id: number) {
-	return route("grp.org.crm.agents.edit", [route().params.organisation, id])
+	if (!orgSlug.value) {
+		return "#"
+	}
+
+	return route("grp.org.chat.agents.edit", {
+		organisation: orgSlug.value,
+		agentId: id,
+	})
 }
 
 const waitEchoReady = (callback: Function) => {
@@ -50,7 +65,7 @@ onMounted(() => {
 
 <template>
 	<Head :title="title" />
-	<PageHeading :data="pageHeading" />
+	<PageHeading v-if="pageHeading?.title" :data="pageHeading" />
 
 	<Table :resource="props.data" :name="'agents'">
 		<template #cell(specialization)="{ item }">
@@ -101,7 +116,7 @@ onMounted(() => {
 
 		<template #cell(action)="{ item }">
 			<div class="flex items-center gap-2">
-				<Link :href="editRoute(item.id)">
+				<Link v-if="orgSlug" :href="editRoute(item.id)">
 					<Button
 						v-tooltip="trans('Edit Agent')"
 						type="secondary"
@@ -109,9 +124,10 @@ onMounted(() => {
 						size="s" />
 				</Link>
 				<ModalConfirmationDelete
+					v-if="orgSlug"
 					:routeDelete="{
-						name: 'grp.org.crm.agents.delete',
-						parameters: [route().params.organisation, item.id],
+						name: 'grp.org.chat.agents.delete',
+						parameters: [orgSlug, item.id],
 					}"
 					:title="trans('Are you sure you want to delete this agent?')"
 					:noLabel="trans('Delete')"

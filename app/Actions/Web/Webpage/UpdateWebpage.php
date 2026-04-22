@@ -13,7 +13,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageSeo;
 use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Web\Webpage\Search\WebpageRecordSearch;
 use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
@@ -23,7 +22,6 @@ use App\Http\Resources\Web\WebpageResource;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashSlash;
-use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
@@ -54,8 +52,6 @@ class UpdateWebpage extends OrgAction
         if (Arr::has($modelData, 'product_description_extra')) {
             $productData['description_extra'] = Arr::pull($modelData, 'product_description_extra');
         }
-
-
         // Prepare new SEO data
         $newData = [];
 
@@ -116,16 +112,6 @@ class UpdateWebpage extends OrgAction
             $this->dispatchWebpageHydrators($webpage);
         }
 
-        if (Arr::hasAny($changes, [
-            'code',
-            'url',
-            'state',
-            'type',
-            'state',
-        ])) {
-            WebpageRecordSearch::dispatch($webpage);
-        }
-
         BreakProductInWebpagesCache::make()->breakCache($webpage);
         return $webpage;
     }
@@ -140,20 +126,13 @@ class UpdateWebpage extends OrgAction
                 'lowercase',
                 'max:255',
                 new AlphaDashSlash(),
-                new IUnique(
-                    table: 'webpages',
-                    extraConditions: [
-                        [
-                            'column' => 'website_id',
-                            'value'  => $this->webpage->website->id
-                        ],
-                        [
-                            'column'   => 'id',
-                            'operator' => '!=',
-                            'value'    => $this->webpage->id
-                        ],
-                    ]
-                ),
+                Rule::unique('webpages', 'url')
+                    ->where(function ($query) {
+                        return $query
+                            ->where('website_id', $this->webpage->website_id)
+                            ->whereNull('deleted_at');
+                    })
+                    ->ignore($this->webpage->id),
             ],
             'code'                           => [
                 'sometimes',
@@ -161,19 +140,13 @@ class UpdateWebpage extends OrgAction
                 'ascii',
                 'max:64',
                 'alpha_dash',
-                new IUnique(
-                    table: 'webpages',
-                    extraConditions: [
-
-                        ['column' => 'website_id', 'value' => $this->webpage->website_id],
-                        [
-                            'column'   => 'id',
-                            'operator' => '!=',
-                            'value'    => $this->webpage->id
-                        ],
-                    ]
-                ),
-
+                Rule::unique('webpages', 'code')
+                    ->where(function ($query) {
+                        return $query
+                            ->where('website_id', $this->webpage->website_id)
+                            ->whereNull('deleted_at');
+                    })
+                    ->ignore($this->webpage->id),
             ],
             'seo_image'                      => [
                 'sometimes',
@@ -202,6 +175,8 @@ class UpdateWebpage extends OrgAction
             'product_description'       => ['sometimes', 'required', 'max:1500'],
             'product_description_extra' => ['sometimes', 'nullable', 'max:65500'],
             'breadcrumb_label'          => ['sometimes', 'string', 'max:40'],
+            'index_page' => ['sometimes', 'nullable', 'boolean'],
+            'follow_link' => ['sometimes', 'nullable', 'boolean'],
         ];
 
         if (!$this->strict) {

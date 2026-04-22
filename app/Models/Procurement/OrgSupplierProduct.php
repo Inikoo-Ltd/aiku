@@ -36,13 +36,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $source_id
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read \App\Models\Procurement\OrgAgent|null $orgAgent
  * @property-read OrgStock|null $orgStock
  * @property-read \App\Models\Procurement\OrgSupplier|null $orgSupplier
  * @property-read Organisation $organisation
  * @property-read \App\Models\Procurement\OrgSupplierProductStats|null $stats
- * @property-read SupplierProduct $supplierProduct
+ * @property-read SupplierProduct|null $supplierProduct
  * @method static Builder<static>|OrgSupplierProduct newModelQuery()
  * @method static Builder<static>|OrgSupplierProduct newQuery()
  * @method static Builder<static>|OrgSupplierProduct query()

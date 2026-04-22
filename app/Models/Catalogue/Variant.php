@@ -11,7 +11,6 @@ namespace App\Models\Catalogue;
 use App\Models\Masters\MasterVariant;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -48,7 +47,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Catalogue\ProductCategory|null $department
  * @property-read \App\Models\Catalogue\ProductCategory|null $family
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \App\Models\Catalogue\Product|null $leaderProduct
@@ -64,7 +63,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductCategory|null $subDepartment
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\VariantTimeSeries> $timeSeries
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Variant newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Variant newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Variant onlyTrashed()
@@ -77,7 +75,6 @@ class Variant extends Model implements Auditable, HasMedia
 {
     use HasSlug;
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasHistory;
     use HasImage;
     use InShop;

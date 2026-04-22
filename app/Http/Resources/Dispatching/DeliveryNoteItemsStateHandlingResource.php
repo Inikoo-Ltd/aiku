@@ -32,6 +32,10 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $warehouse_area_code
  * @property mixed $batch_code
  * @property mixed $expiry_date
+ * @property mixed $quantity_waiting_warehouse
+ * @property mixed $quantity_waiting_crm
+ * @property mixed $notes
+ * @property mixed $shop_slug
  */
 class DeliveryNoteItemsStateHandlingResource extends JsonResource
 {
@@ -61,6 +65,9 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
                 'message'  => __('The required quantity has already been fully picked.')
             ];
         }
+
+        $shopType = $request->shop?->type;
+
         $pickingLocations = DB::table('location_org_stocks')
             ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
             ->where('org_stock_id', $this->org_stock_id)
@@ -71,6 +78,8 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
                 'locations.id as location_id',
                 'locations.code as location_code',
                 'locations.slug as location_slug',
+                'location_org_stocks.default_wholesale_picking_location',
+                'location_org_stocks.default_dropshipping_picking_location',
             ])
             ->selectRaw('\''.$this->packed_in.'\' as org_stock_packed_in')
             ->selectRaw(
@@ -82,10 +91,23 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
     ) as pickings_data',
                 ['pick', $this->id]
             )
-            ->orderBy('picking_priority')->get();
+            ->when(
+                $shopType,
+                function ($q) use ($shopType) {
+                    if ($shopType->value == 'b2b') {
+                        $q->orderBy('location_org_stocks.default_wholesale_picking_location', 'desc');
+                    } elseif ($shopType->value == 'dropshipping') {
+                        $q->orderBy('location_org_stocks.default_dropshipping_picking_location', 'desc');
+                    }
+                    $q->orderBy('picking_priority');
+                },
+                function ($q) {
+                    $q->orderBy('picking_priority');
+                }
+            )
+            ->get();
 
-
-        $quantityToPick = max(0, $this->quantity_required - $this->quantity_picked - $this->quantity_not_picked);
+        $quantityToPick = max(0, $this->quantity_required - $this->quantity_picked - $this->quantity_not_picked - $this->quantity_waiting_warehouse - $this->quantity_waiting_crm);
 
 
         $isPicked = $quantityToPick == 0;
@@ -135,21 +157,27 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'quantity_not_picked'            => $this->quantity_not_picked,
             'quantity_packed'                => $this->quantity_packed,
             'quantity_dispatched'            => $this->quantity_dispatched,
-            'org_stock_id'                   => $this->org_stock_id,
-            'org_stock_code'                 => $this->org_stock_code,
-            'org_stock_slug'                 => $this->org_stock_slug,
-            'org_stock_name'                 => $this->org_stock_name,
-            'locations'                      => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
-            'pickings'                       => PickingResource::collection($pickings),
-            'packings'                       => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
-            'warning'                        => $fullWarning,
-            'is_handled'                     => $this->is_handled,
-            'is_packed'                      => $isPacked,
-            'quantity_required_fractional'   => $requiredFactionalData,
-            'warehouse_area'                 => $warehouseArea,
-            'batch_code'                     => $this->batch_code,
-            'expiry_date'                    => $this->expiry_date,
-            'packed_in_message'              => $packedInMessage,
+            'quantity_waiting_warehouse'     => $this->quantity_waiting_warehouse,
+            'quantity_waiting_crm'           => $this->quantity_waiting_crm,
+
+            'org_stock_id'                 => $this->org_stock_id,
+            'org_stock_code'               => $this->org_stock_code,
+            'org_stock_slug'               => $this->org_stock_slug,
+            'org_stock_name'               => $this->org_stock_name,
+            'org_stock_image_thumbnail'    => $deliveryNoteItem->orgStock?->tradeUnits->first()?->imageSources(64, 64),
+            'locations'                    => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
+            'pickings'                     => PickingResource::collection($pickings),
+            'packings'                     => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
+            'warning'                      => $fullWarning,
+            'is_handled'                   => $this->is_handled,
+            'is_packed'                    => $isPacked,
+            'quantity_required_fractional' => $requiredFactionalData,
+            'warehouse_area'               => $warehouseArea,
+            'batch_code'                   => $this->batch_code,
+            'expiry_date'                  => $this->expiry_date,
+            'packed_in_message'            => $packedInMessage,
+            'notes'                        => $this->notes,
+            'shop_slug'                    => $this->shop_slug,
 
 
             'upsert_picking_route' => [

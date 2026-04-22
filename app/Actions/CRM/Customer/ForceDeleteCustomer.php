@@ -42,8 +42,6 @@ class ForceDeleteCustomer extends OrgAction
         DB::table('universal_searches')->where('customer_id', $customer->id)->delete();
         DB::table('universal_searches')->where('model_type', 'Customer')->where('model_id', $customer->id)->delete();
 
-        DB::table('retina_searches')->where('customer_id', $customer->id)->delete();
-
         foreach ($customer->invoices as $invoice) {
             ForceDeleteInvoice::run($invoice);
         }

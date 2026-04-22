@@ -12,11 +12,14 @@ import { Head } from '@inertiajs/vue3'
 import LayoutIris from '@/Layouts/Iris.vue'
 import { getIrisComponent } from '@/Composables/getIrisComponents'
 import { usePage } from '@inertiajs/vue3'
+import ReviewByStore from "@/Components/CMS/Reviews/ReviewByStore.vue"
 
 const props = defineProps<{
   webpage_data : any
   web_blocks: any,
   webpage_img : any,
+  index_page: boolean,
+  follow_link: boolean
 }>()
 
 defineOptions({ layout: LayoutIris })
@@ -34,29 +37,12 @@ const checkScreenType = () => {
   else screenType.value = 'desktop'
 }
 
-
-const ReviewIframeUrl = computed(() => {
-  const config = review.value
-  const provider = config?.provider
-
-  if (provider === 'reviews.io') {
-    const store = config?.data?.store
-    if (!store) return null
-
-    return `https://widget.reviews.io/carousel-inline/widget?store=${store}&primaryClr=%23f47e27&neutralClr=%23f4f4f4&ratingTextClr=%232f2f2f&reviewTextClr=%232f2f2f&layout=fullWidth&numReviews=21`
-  }
-
-  if (provider === 'trust_pilot') {
-    const data = config?.data
-    if (!data?.template_id || !data?.business_unit_id) return null
-
-    const locale = layout.iris.locale || 'en-us'
-
-    return `https://widget.trustpilot.com/trustboxes/${data.template_id}/index.html?businessunitId=${data.business_unit_id}&locale=${locale}`
-  }
-
-  return null
+const robotsContent = computed(() => {
+  const index = props.index_page ? 'index' : 'noindex'
+  const follow = props.follow_link ? 'follow' : 'nofollow'
+  return `${index}, ${follow}`
 })
+
 
 onMounted(() => {
   currentUrl.value = window.location.href
@@ -94,14 +80,15 @@ onBeforeUnmount(() => {
 })
 
 
-console.log('webpage_data',  props)
-console.log('ReviewIframeUrl : ', ReviewIframeUrl.value, review.value )
-
 </script>
 
 <template>
     <Head>
         <title>{{ webpage_data.title }}</title>
+        <meta
+          name="robots"
+          :content="robotsContent"
+        />
         <meta name="description" :content="webpage_data.description" />
         <meta property="og:type" content="website" />
         <meta property="og:title" :content="webpage_data.title" />
@@ -129,16 +116,8 @@ console.log('ReviewIframeUrl : ', ReviewIframeUrl.value, review.value )
 
        
       </div>
-        <div v-if="webpage_data.type == 'storefront'" class="my-10">
-          <iframe
-            v-if="ReviewIframeUrl"
-            :src="ReviewIframeUrl"
-            class="w-full border-0 h-[400px] md:h-[200px] lg:h-[200px]"
-            frameborder="0"
-            scrolling="no"
-            title="Customer Reviews"
-            loading="lazy"
-          />
-        </div>
+      <div v-if="(webpage_data.type == 'storefront' || webpage_data.model_type == 'ProductCategory') && (review?.enabled ?? true)" class="my-10">
+          <ReviewByStore :code="'review-by-store'" />
+      </div>
   </div>
 </template>

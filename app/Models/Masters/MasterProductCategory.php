@@ -16,7 +16,6 @@ use App\Models\Helpers\Media;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Model;
@@ -64,7 +63,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $mark_for_discontinued
  * @property string|null $mark_for_discontinued_at
  * @property \Illuminate\Support\Carbon|null $discontinued_at
- * @property string|null $cost_price_ratio
+ * @property numeric|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
  * @property array<array-key, mixed>|null $offers_data
@@ -89,13 +88,13 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $descArt4Image
  * @property-read Media|null $descArt5Image
  * @property-read Media|null $extraDescArt1Image
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterCollection> $masterCollections
  * @property-read MasterProductCategory|null $masterDepartment
  * @property-read LaravelCollection<int, MasterProductCategory> $masterProductCategories
- * @property-read \App\Models\Masters\MasterShop $masterShop
+ * @property-read \App\Models\Masters\MasterShop|null $masterShop
  * @property-read MasterProductCategory|null $masterSubDepartment
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterVariant> $masterVariant
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
@@ -105,7 +104,6 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Masters\MasterProductCategoryStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategoryTimeSeries> $timeSeries
  * @property-read mixed $translations
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory onlyTrashed()
@@ -122,7 +120,6 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
 {
     use HasSlug;
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasHistory;
     use HasImage;
     use InGroup;

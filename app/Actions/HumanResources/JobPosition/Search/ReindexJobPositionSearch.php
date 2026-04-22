@@ -22,7 +22,6 @@ class ReindexJobPositionSearch extends HydrateModel
 
     public function handle(JobPosition $jobPosition): void
     {
-        JobPositionRecordSearch::run($jobPosition);
     }
 
 

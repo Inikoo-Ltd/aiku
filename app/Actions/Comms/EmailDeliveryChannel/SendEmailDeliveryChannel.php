@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\EmailDeliveryChannel;
 
+use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateProspect;
 use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateCumulativeDispatchedEmails;
 use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateDispatchedEmails;
 use App\Actions\Comms\EmailBulkRun\UpdateEmailBulkRunSentState;
@@ -15,6 +16,7 @@ use App\Actions\Comms\Mailshot\GetHtmlLayout;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
 use App\Actions\Comms\Mailshot\UpdateMailshotSentState;
 use App\Actions\Comms\Traits\WithSendBulkEmails;
+use App\Actions\CRM\Prospect\Mailshots\ProspectHydrateDispatchedEmails;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
 use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
@@ -26,6 +28,7 @@ use App\Models\Comms\EmailBulkRunRecipient;
 use App\Models\Comms\EmailDeliveryChannel;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\MailshotRecipient;
+use App\Models\CRM\Prospect;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Crypt;
@@ -111,6 +114,17 @@ class SendEmailDeliveryChannel
             // Send redirect URL
             $unsubscribeUrl = route('grp.redirect_unsubscribe', $encryptedDispatchedEmailID);
 
+            // Add tag parameter based on recipient type
+            $tag = match ($recipient->recipient_type) {
+                'Customer' => 'customer',
+                'Prospect' => 'prospect',
+                default => null
+            };
+
+            if ($tag) {
+                $unsubscribeUrl .= '?tag=' . $tag;
+            }
+
             $subject = ($model instanceof EmailBulkRun) ? $model->outbox->emailOngoingRun->email->subject : $model->subject;
 
 
@@ -123,10 +137,15 @@ class SendEmailDeliveryChannel
                 if ($recipientData) {
                     $additionalData['customer_name'] = $recipientData->name;
                 }
+            } elseif ($recipient->recipient_type == 'Prospect') {
+                $recipientData = DB::table('prospects')->select('name')->where('id', $recipient->recipient_id)->first();
+                if ($recipientData) {
+                    $additionalData['customer_name'] = $recipientData->name;
+                }
             }
 
 
-            $this->sendEmailWithMergeTags(
+            $dispatchedEmail = $this->sendEmailWithMergeTags(
                 $dispatchedEmail,
                 $model->sender(),
                 $subject,
@@ -135,6 +154,11 @@ class SendEmailDeliveryChannel
                 additionalData: $additionalData,
                 senderName: $model->senderName()
             );
+
+            if ($recipient->recipient_type === class_basename(Prospect::class)) {
+                DispatchedEmailHydrateProspect::dispatch($dispatchedEmail->id)->delay(now()->addSeconds());
+                ProspectHydrateDispatchedEmails::dispatch($recipient->recipient_id)->delay(now()->addSeconds());
+            }
         }
 
 
@@ -148,11 +172,11 @@ class SendEmailDeliveryChannel
         $model->refresh();
 
         if ($model instanceof Mailshot) {
-            MailshotHydrateDispatchedEmails::dispatch($model->id)->delay(now()->addSeconds());
+            MailshotHydrateDispatchedEmails::dispatch($model->id)->delay(now()->addSeconds(5));
             UpdateMailshotSentState::run($model);
         } elseif ($model instanceof EmailBulkRun) {
             EmailBulkRunHydrateCumulativeDispatchedEmails::run($model, DispatchedEmailStateEnum::SENT);
-            EmailBulkRunHydrateDispatchedEmails::dispatch($model->id);
+            EmailBulkRunHydrateDispatchedEmails::dispatch($model->id)->delay(now()->addSeconds(5));
             UpdateEmailBulkRunSentState::run($model);
         }
     }

@@ -42,6 +42,7 @@ import {
 	faBan,
 	faDollarSign,
 	faCube,
+	faUnlink,
 } from "@fal"
 import { faStar, faFilter, faImages, faSparkles } from "@fas"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
@@ -61,6 +62,7 @@ import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { useBundle } from "@/Composables/useBundle"
 
 library.add(
+	faUnlink,
 	faSparkles,
 	faImages,
 	faHandshake,
@@ -584,7 +586,7 @@ const fetchMediaGallery = async () => {
 		const url = route(
 			props.bundle_routes.images.get.name,
 			{
-				product_ids: [selectedEditProduct.value.bundle_id]
+				product_ids: [selectedEditProduct.value.product_id]
 			}
 		)
 		const response = await axios.get(url)
@@ -653,10 +655,13 @@ const toggleSelect = (img: any) => {
 	}
 }
 
+const aiTitleError = ref<string | null>(null)
+const aiDescError = ref<string | null>(null)
+const aiGenerateImagesError = ref<string | null>(null)
 const generateAITitle = async () => {
 	try {
 		isGeneratingAI.value = true
-		
+		aiTitleError.value = null
 		const { data } = await axios.post(
 			route(
 				props.bundle_routes.ai.generate_title.name
@@ -672,20 +677,23 @@ const generateAITitle = async () => {
 			type: 'success'
 		})
 	} catch (e) {
-		notify({
-			title: trans('Error'),
-			text: trans('Failed to generate AI'),
-			type: 'error'
-		})
+		aiTitleError.value = trans('The OpenAI service is currently unreachable, please try again later.')
+		// notify({
+		// 	title: trans('Error'),
+		// 	text: trans('Failed to generate AI'),
+		// 	type: 'error'
+		// })
 	} finally {
 		isGeneratingAI.value = false
 	}
 }
 
+const editorKey = ref(0)
+
 const generateAIDescription = async () => {
 	try {
 		isGeneratingAI.value = true
-		
+		aiDescError.value = null
 		const { data } = await axios.post(
 			route(
 				props.bundle_routes.ai.generate_description.name
@@ -694,14 +702,23 @@ const generateAIDescription = async () => {
 				products: bundleItems.value.map(item => item.product_id)
 			}
 		)
-		selectedEditProduct.value.description = data
+		const html = data
+					.split('\n')
+					.map(line => `<p>${line}</p>`)
+					.join('')
+		
+		selectedEditProduct.value.description = html
 
+		editorKey.value++ 
+		await nextTick()
+		
 		notify({
 			title: trans('Success'),
 			text: trans('Success generate AI'),
 			type: 'success'
 		})
 	} catch (e) {
+		aiDescError.value = trans('The OpenAI service is currently unreachable, please try again later.')
 		notify({
 			title: trans('Error'),
 			text: trans('Failed to generate AI'),
@@ -754,7 +771,7 @@ const toggleSelectAI = (media: any) => {
 const generateAIImages = async () => {
 	try {
 		isGeneratingAI.value = true
-
+		aiGenerateImagesError.value = null
 		const payload = {
 			images: selectedMediaForAI.value.map(m => m.image_id),
 			prompt: aiPrompt.value
@@ -798,6 +815,7 @@ const generateAIImages = async () => {
 			type: 'success'
 		})
 	} catch (e) {
+		aiGenerateImagesError.value = trans('The OpenAI service is currently unreachable, please try again later.')
 		notify({
 			title: trans('Error'),
 			text: trans('Failed to generate AI'),
@@ -850,11 +868,11 @@ const submitBundle = async () => {
 					bundle.resetBundle()
 				},
 				onError: errors => {
-								notify({
-									title: trans("Something went wrong"),
-									text: trans("Failed to submit the data, please try again"),
-									type: "error"
-								})
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to submit the data, please try again"),
+						type: "error"
+					})
 				},
 				 onFinish: () => {
 					isSubmitBundle.value = false
@@ -1194,10 +1212,9 @@ const submitBundle = async () => {
 			<div class="flex gap-2">
 				<Button v-tooltip="trans('Edit Bundle')" type="tertiary" :style="'white-w-outline'" size="xs"
 				icon="fal fa-pencil" @click="openEditModal(item)" />
-				
-				<ButtonWithLink v-tooltip="trans('Delete Bundle', {
+				<ButtonWithLink v-tooltip="trans('Unlink Bundle', {
 					platform: props.platform_data.name,
-				})" type="negative" icon="fal fa-trash-alt" size="xs" :style="'white-r-outline'" :method="'delete'"
+				})" type="negative" icon="fal fa-unlink" size="xs" :style="'white-r-outline'" :method="'delete'"
 					:bindToLink="{ preserveScroll: true }" :routeTarget="{
 						...props.bundle_routes.delete,
 						parameters: {
@@ -1355,6 +1372,9 @@ const submitBundle = async () => {
 				}}</label>
 				<InputText v-model="selectedEditProduct.name" fluid inputId="edit-product-title" size="small"
 					:disabled="isLoadingSubmitErrorTitle" />
+					 <div v-if="aiTitleError" class="text-xs text-red-500 mt-1">
+                        {{ aiTitleError }}
+                    </div>
 				<Button icon="fal fa-sparkles" type="button" @click="generateAITitle" :loading="isGeneratingAI" :disabled="isGeneratingAI"
 					v-tooltip="trans('Generate AI')"
 					class="absolute right-2 top-10 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded-md border bg-white hover:bg-gray-100 transition shadow-sm" />
@@ -1365,7 +1385,42 @@ const submitBundle = async () => {
 				<label for="edit-product-description" class="block text-sm font-semibold">{{
 					trans("Description")
 				}}</label>
-				<Textarea v-model="selectedEditProduct.description" rows="6" autoResize class="w-full mt-1" placeholder="Input your description" />
+				<Editor2
+					:key="editorKey"
+					v-model="selectedEditProduct.description"
+					class="w-full"
+					:placeholder="trans('Input your description')"
+					:toogle="[
+					'heading1',
+					'heading2',
+					'heading3',
+					'fontSize',
+					'bold',
+					'italic',
+					'underline',
+					'bulletList',
+					'orderedList',
+					'blockquote',
+					'alignLeft',
+					'alignCenter',
+					'alignRight',
+					'link',
+					'undo',
+					'redo',
+					'color',
+					'highlight',
+					'clear'
+					]"
+				>
+					<template #editor-content="{ editor }">
+					<div class="editor-wrapper border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus-within:border-gray-400">
+						<EditorContent :editor="editor" class="focus:outline-none min-h-[120px]" />
+					</div>
+					</template>
+				</Editor2>
+				 <div v-if="aiDescError" class="text-xs text-red-500 mt-1">
+                        {{ aiDescError }}
+                    </div>
 				<Button icon="fal fa-sparkles" @click="generateAIDescription" :loading="isGeneratingAI" type="primary"
 				:label="trans('Generate with AI')"
 			:disabled="!selectedEditProduct?.description.length" />
@@ -1376,9 +1431,9 @@ const submitBundle = async () => {
 					{{ trans('Bundle media') }}
 				</label>
 
-				<div class="bg-gray-100 rounded-xl p-3 mt-1 grid grid-cols-3 gap-3 min-h-[110px]">
-					<div v-for="img in selectedMedia" class="relative group">
-						<Image :key="img.id" :src="img.image" class="h-24 w-full rounded-lg" imageCover />
+				<div class="bg-gray-100 rounded-xl p-4 mt-2 grid grid-cols-2 md:grid-cols-3 gap-4 min-h-[140px]">
+					<div v-for="img in selectedMedia" class="relative group rounded-xl border bg-white flex items-center justify-center h-36 md:h-44">
+						<Image :key="img.id" :src="img.image"  class="h-36 md:h-40 object-contain rounded-xl" />
 						<input type="radio" name="main_image" :checked="img.is_main"
 							@change="setMainImage(img.image_id)" class="absolute top-2 left-2 z-20" />
 						<div v-if="img.is_main"
@@ -1388,7 +1443,7 @@ const submitBundle = async () => {
 						<button
 							class="absolute top-1 right-1 bg-black/70 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
 							@click="removeMedia(img)">
-							✕
+							<FontAwesomeIcon icon="fal fa-times" class="text-lg text-red-500" />
 						</button>
 					</div>
 				</div>
@@ -1517,6 +1572,9 @@ const submitBundle = async () => {
 			<Textarea v-model="aiPrompt" rows="3" class="w-full" placeholder="Input description" />
 		</div>
 
+		 <div v-if="aiGenerateImagesError" class="text-xs text-red-500 mt-1">
+                        {{ aiGenerateImagesError }}
+                    </div>
 		<template #footer>
 			<Button label="Generate" @click="generateAIImages" :loading="isGeneratingAI"
 				:disabled="!selectedMediaForAI.length || !aiPrompt" />

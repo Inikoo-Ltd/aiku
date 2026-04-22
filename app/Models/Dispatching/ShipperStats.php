@@ -28,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_active_shipper_accounts
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Dispatching\Shipper $shipper
+ * @property-read \App\Models\Dispatching\Shipper|null $shipper
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShipperStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShipperStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShipperStats query()

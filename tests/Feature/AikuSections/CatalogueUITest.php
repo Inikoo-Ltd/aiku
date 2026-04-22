@@ -228,6 +228,7 @@ test('UI show family in department', function () {
 });
 
 test('UI edit family in department', function () {
+    $this->withoutExceptionHandling();
     $response = get(route('grp.org.shops.show.catalogue.departments.show.families.edit', [$this->organisation->slug, $this->shop->slug, $this->department->slug, $this->family->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page

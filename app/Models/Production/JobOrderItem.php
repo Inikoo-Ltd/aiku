@@ -6,7 +6,6 @@ use App\Enums\Production\JobOrderItem\JobOrderItemStateEnum;
 use App\Enums\Production\JobOrderItem\JobOrderItemStatusEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
-use App\Models\Traits\HasUniversalSearch;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -30,11 +29,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $delete_comment
- * @property-read \App\Models\Production\Artefact $artefact
- * @property-read Group $group
- * @property-read \App\Models\Production\JobOrder $jobOrder
+ * @property-read \App\Models\Production\Artefact|null $artefact
+ * @property-read Group|null $group
+ * @property-read \App\Models\Production\JobOrder|null $jobOrder
  * @property-read Organisation $organisation
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItem newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItem newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItem onlyTrashed()
@@ -48,7 +46,6 @@ class JobOrderItem extends Model
 {
     use HasSlug;
     use SoftDeletes;
-    use HasUniversalSearch;
 
     protected $guarded = [];
     protected $casts   = [

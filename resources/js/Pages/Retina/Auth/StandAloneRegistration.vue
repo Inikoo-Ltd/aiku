@@ -39,6 +39,9 @@ const props = defineProps<{
 	registration_settings: {
 		marketing_opt_in_label: string
 		marketing_opt_in_default: boolean
+		company_name_label: string,
+        company_name_placeholder: string,
+        tax_number_is_required: boolean
 	}
 }>()
 
@@ -271,6 +274,7 @@ const isUserInputPassed = (dataToCheck: {}) => {
 								:polls
 								:form
 								:requiresPhoneNumber="props.requiresPhoneNumber"
+								:registration_settings
 							/>
 							
 							<!-- Opt in newsletter -->

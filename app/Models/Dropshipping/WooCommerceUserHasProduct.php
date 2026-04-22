@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property int $woo_commerce_product_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Dropshipping\WooCommerceUser $wooCommerceUser
+ * @property-read \App\Models\Dropshipping\WooCommerceUser|null $wooCommerceUser
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUserHasProduct newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUserHasProduct newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WooCommerceUserHasProduct query()

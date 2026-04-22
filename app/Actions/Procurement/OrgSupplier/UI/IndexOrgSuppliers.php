@@ -43,10 +43,10 @@ class IndexOrgSuppliers extends OrgAction
         return
             [
                 'status' => [
-                    'label'    => __('status'),
+                    'label'    => __('Status'),
                     'elements' => [
                         'active'   => [
-                            __('active'),
+                            __('Active'),
                             $stats->number_active_org_suppliers,
                             null,
                             [
@@ -55,7 +55,7 @@ class IndexOrgSuppliers extends OrgAction
                             ]
                         ],
                         'archived' => [
-                            __('archived'),
+                            __('Archived'),
                             $stats->number_archived_org_suppliers,
                             null,
                             [
@@ -163,7 +163,7 @@ class IndexOrgSuppliers extends OrgAction
 
                     ]
                 )
-                ->column(key: 'status', label: '', canBeHidden: false, sortable: true, searchable: true, type: 'icon')
+                ->column(key: 'status', label: '', canBeHidden: false, searchable: true, type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'location', label: __('Location'), canBeHidden: false, sortable: true)

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\Collection;
 
-use App\Actions\Catalogue\Collection\Search\CollectionRecordSearch;
 use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -78,7 +77,6 @@ class UpdateCollection extends OrgAction
         }
 
         if (Arr::hasAny($changes, ['code', 'name'])) {
-            CollectionRecordSearch::dispatch($collection);
             if ($collection->webpage) {
                 ClearCacheByWildcard::run("irisData:website:{$collection->webpage->website_id}:*");
             }

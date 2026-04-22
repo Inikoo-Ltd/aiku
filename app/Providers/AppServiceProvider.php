@@ -195,7 +195,6 @@ class AppServiceProvider extends ServiceProvider
                 'Upload'                           => 'App\Models\Helpers\Upload',
                 'UploadRecord'                     => 'App\Models\Helpers\UploadRecord',
                 'Media'                            => 'App\Models\Helpers\Media',
-                'UniversalSearch'                  => 'App\Models\Helpers\UniversalSearch',
 
                 // Human Resources
                 'JobPosition'                      => 'App\Models\HumanResources\JobPosition',

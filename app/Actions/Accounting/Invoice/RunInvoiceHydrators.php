@@ -8,7 +8,6 @@
 
 namespace App\Actions\Accounting\Invoice;
 
-use App\Actions\Accounting\Invoice\Search\InvoiceRecordSearch;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Accounting\InvoiceCategory\ProcessInvoiceCategoryTimeSeriesRecords;
 use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
@@ -211,7 +210,6 @@ class RunInvoiceHydrators
         CustomerHydrateClv::dispatch($invoice->customer_id)->delay($hydratorsDelay);
         CustomerHydrateRevenue::dispatch($invoice->customer_id)->delay($hydratorsDelay);
 
-        InvoiceRecordSearch::dispatch($invoice);
     }
 
     public function getCommandSignature(): string

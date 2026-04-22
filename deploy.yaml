@@ -7,11 +7,17 @@ import:
 
 config:
   application: 'aiku'
-  host: 'aiku'
+  default_selector: 'env=prod'
   repository: 'https://github.com/inikoo/aiku.git'
 
 hosts:
   aiku:
+    environment: 'production'
+    deploy_path: '~/aiku'
+    branch: production
+    labels:
+      env: prod
+  aiku_helio:
     environment: 'production'
     deploy_path: '~/aiku'
     branch: production

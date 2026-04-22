@@ -26,6 +26,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $org_stock_slug
  * @property mixed $batch_code
  * @property mixed $expiry_date
+ * @property mixed $quantity_waiting_warehouse
+ * @property mixed $quantity_waiting_crm
  */
 class DeliveryNoteItemsResource extends JsonResource
 {
@@ -79,8 +81,31 @@ class DeliveryNoteItemsResource extends JsonResource
             'batch_code'                     => $this->batch_code,
             'expiry_date'                    => $this->expiry_date,
             'packed_in_message'              => $packedInMessage,
-            'is_done_packing'                => (bool) $this->packing_id,
-            'not_picking_route'  => [
+            'is_done_packing'                => (bool)$this->packing_id,
+            'is_picked'                      => $this->is_picked,
+            'is_packed'                      => $this->is_packed,
+            'quantity_waiting_warehouse'     => $this->quantity_waiting_warehouse,
+            'quantity_waiting_crm'           => $this->quantity_waiting_crm,
+
+
+            'picking_locations' => $this->pickings
+                ->where('type', '!=', \App\Enums\Dispatching\Picking\PickingTypeEnum::NOT_PICK)
+                ->where('quantity', '!=', 0)
+                ->groupBy('location_id')
+                ->map(function ($pickingGroup) {
+                    $firstPicking = $pickingGroup->first();
+                    $location     = $firstPicking->location;
+
+                    return [
+                        'id'             => ('loc_'.($location ? $location->id : 'none')),
+                        'quantity'       => $pickingGroup->sum('quantity'),
+                        'location_slug'  => $location ? $location->slug : null,
+                        'location_code'  => $location ? $location->code : null,
+                        'warehouse_slug' => $location ? $location->warehouse->slug : null,
+                        'warehouse_code' => $location ? $location->warehouse->code : null,
+                    ];
+                })->values()->toArray(),
+            'not_picking_route' => [
                 'name'       => 'grp.models.delivery_note_item.not_picking.store',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id

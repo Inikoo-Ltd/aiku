@@ -212,6 +212,14 @@ class EditFamily extends OrgAction
                                             'mode'                  => 'single',
                                             'value'                 => $family->description,
                                             'reviewed'              => $family->is_description_reviewed,
+                                            'routeGetInternalLink' => [
+                                                    'name' => 'grp.org.shops.show.web.webpages.index',
+                                                    'parameters' => [
+                                                        'shop' => $family->shop->slug,
+                                                        'organisation' => $family->organisation->slug,
+                                                        'website' => $family->shop->website?->slug
+                                                    ]
+                                            ],
                                             'toogle'  => [
                                                     'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                     'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
@@ -224,6 +232,14 @@ class EditFamily extends OrgAction
                                             'value' => $family->description,
                                             'options' => [
                                                 'counter' => true,
+                                            ],
+                                            'routeGetInternalLink' => [
+                                                    'name' => 'grp.org.shops.show.web.webpages.index',
+                                                    'parameters' => [
+                                                        'shop' => $family->shop->slug,
+                                                        'organisation' => $family->organisation->slug,
+                                                        'website' => $family->shop->website?->slug
+                                                    ]
                                             ],
                                             'toogle'  => [
                                                     'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
@@ -242,6 +258,14 @@ class EditFamily extends OrgAction
                                             'mode'          => 'single',
                                             'value'         => $family->description_extra,
                                             'reviewed'      => $family->is_description_extra_reviewed,
+                                            'routeGetInternalLink' => [
+                                                    'name' => 'grp.org.shops.show.web.webpages.index',
+                                                    'parameters' => [
+                                                        'shop' => $family->shop->slug,
+                                                        'organisation' => $family->organisation->slug,
+                                                        'website' => $family->shop->website?->slug
+                                                    ]
+                                            ],
                                             'toogle'  => [
                                                     'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                     'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
@@ -254,6 +278,14 @@ class EditFamily extends OrgAction
                                             'value' => $family->description_extra,
                                             'options' => [
                                                 'counter' => true,
+                                            ],
+                                            'routeGetInternalLink' => [
+                                                    'name' => 'grp.org.shops.show.web.webpages.index',
+                                                    'parameters' => [
+                                                        'shop' => $family->shop->slug,
+                                                        'organisation' => $family->organisation->slug,
+                                                        'website' => $family->shop->website?->slug
+                                                    ]
                                             ],
                                             'toogle'  => [
                                                     'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",

@@ -2,124 +2,145 @@
 import { ref, computed } from "vue"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { TabGroup, Tab, TabPanels, TabPanel } from '@headlessui/vue'
+import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "@headlessui/vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+
 import WebBlockListDnd from "@/Components/CMS/Fields/WebBlockListDnd.vue"
-import {
-	faChevronRight,
-	faSignOutAlt,
-	faShoppingCart,
-	faSearch,
-	faChevronDown,
-	faTimes,
-	faPlusCircle,
-	faBars,
-	faThLarge,
-	faPaintBrushAlt,
-} from "@fas"
-import { faHeart, faLowVision } from "@far"
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
 import { getBlueprint } from "@/Composables/getBlueprintWorkshop"
 
+import {
+  faChevronRight,
+  faSignOutAlt,
+  faShoppingCart,
+  faSearch,
+  faChevronDown,
+  faTimes,
+  faPlusCircle,
+  faBars,
+  faThLarge,
+  faPaintBrushAlt,
+} from "@fas"
+import { faHeart, faLowVision } from "@far"
 
 library.add(
-	faChevronRight,
-	faSignOutAlt,
-	faShoppingCart,
-	faHeart,
-	faSearch,
-	faChevronDown,
-	faTimes,
-	faPlusCircle,
-	faBars,
-	faLowVision
+  faChevronRight,
+  faSignOutAlt,
+  faShoppingCart,
+  faHeart,
+  faSearch,
+  faChevronDown,
+  faTimes,
+  faPlusCircle,
+  faBars,
+  faLowVision,
+  faThLarge,
+  faPaintBrushAlt
 )
 
 const props = defineProps<{
-	data: {
-		data: {
-			component: string,
-			fieldValue: Object
-		}
-	}
+  data: {
+    code?: string
+    data?: {
+      component: string
+      fieldValue: Record<string, any>
+    }
+  }
   dataList: Array<any>
-	autosaveRoute: routeType
-	webBlockTypes: {
-		data: Array<any>
-	}
+  autosaveRoute: routeType
+  webBlockTypes: {
+    data: Array<any>
+  }
 }>()
 
 const emits = defineEmits<{
-    (e: 'setUpTemplate', value: string | number): void
-    (e: 'onChangeDepartment', value: object): void
-    (e: 'autoSave'): void
+  (e: "setUpTemplate", value: string | number): void
+  (e: "onChangeDepartment", value: object): void
+  (e: "autoSave"): void
 }>()
 
 const selectedTab = ref(props.data?.data ? 1 : 0)
 
 const tabs = [
-	{ label: 'Templates', icon: faThLarge, tooltip: 'template' },
-/* 	{ label: 'Menu', icon: faList, tooltip: 'menu' }, */
-	{ label: 'Settings', icon: faPaintBrushAlt, tooltip: 'setting' }
+  { label: "Templates", icon: faThLarge },
+  { label: "Settings", icon: faPaintBrushAlt },
 ]
 
-function changeTab(index: number) {
-	selectedTab.value = index
-}
-
 const computedTabs = computed(() => {
-	return props.data?.data
-		? tabs
-		: [tabs[0]]
+  return props.data?.data ? tabs : [tabs[0]]
 })
 
-const onPickBlock = (value: object) => {
-	emits('setUpTemplate', value)
+function changeTab(index: number) {
+  selectedTab.value = index
 }
 
-
-
-
+function onPickBlock(value: any) {
+  emits("setUpTemplate", value)
+}
 </script>
 
 <template>
-  <div class="h-full flex flex-col">
-    <TabGroup :selectedIndex="selectedTab" @change="changeTab" as="div" class="flex flex-col h-full">
-      <!-- Sticky Tabs -->
+  <div class="">
+    <TabGroup
+      :selectedIndex="selectedTab"
+      @change="changeTab"
+      as="div"
+      class="flex flex-col h-full"
+    >
+      <!-- Tabs -->
       <TabList
-        class="flex border-b border-gray-300 bg-white sticky top-0 z-10 shadow-sm"
+        class="flex items-center gap-1 px-2 py-1 bg-white border-b border-gray-200 sticky top-0 z-10"
       >
         <Tab
           v-for="(tab, index) in computedTabs"
           :key="index"
-          class="flex items-center gap-2 px-4 py-2 font-medium text-gray-600 hover:bg-gray-100 focus:outline-none"
-          :class="{
-            'bg-white text-indigo-600 border-b-2 border-indigo-600':
-              selectedTab === index,
-          }"
+          v-slot="{ selected }"
+          class="relative flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-all duration-200 focus:outline-none"
+          :class="
+            selected
+              ? 'text-indigo-600 bg-indigo-50'
+              : 'text-gray-500 hover:bg-gray-100'
+          "
         >
-          <FontAwesomeIcon :icon="tab.icon" fixed-width v-tooltip="tab.tooltip" />
+          <FontAwesomeIcon :icon="tab.icon" class="text-xs" />
+          <span class="hidden sm:inline">{{ tab.label }}</span>
+
+          <!-- active indicator -->
+          <span
+            v-if="selected"
+            class="absolute bottom-0 left-1/2 w-full -translate-x-1/2 w-4 h-[2px] bg-indigo-500 rounded-full"
+          />
         </Tab>
       </TabList>
 
-      <!-- Scrollable Panels -->
-      <TabPanels class="overflow-auto flex-grow bg-gray-50">
-        <TabPanel class="xp-4">
-          <WebBlockListDnd
-            :webBlockTypes="webBlockTypes"
-            @pick-block="onPickBlock"
-            :selectedWeblock="data?.code"
-          />
+      <!-- Panels -->
+      <TabPanels class="flex-1 overflow-auto p-2 space-y-2">
+        <!-- Templates -->
+        <TabPanel>
+         
+            <WebBlockListDnd
+              :webBlockTypes="webBlockTypes"
+              @pick-block="onPickBlock"
+              :selectedWeblock="data?.code"
+            />
+      
         </TabPanel>
 
-
-        <TabPanel v-if="data?.data?.fieldValue" class="xp-4">
-          <SideEditor 
-            v-model="data.data.fieldValue" 
-            :blueprint="getBlueprint(data.code)"
-            @update:modelValue="(e) => { data.data.fieldValue = e, emits('autoSave') }"
-            :uploadImageRoute="null" 
-          />
+        <!-- Settings -->
+        <TabPanel v-if="data?.data?.fieldValue">
+          <div
+            class="bg-white rounded-lg border border-gray-200 shadow-sm p-3 hover:shadow-md transition-shadow"
+          >
+            <SideEditor
+              v-model="data.data.fieldValue"
+              :blueprint="getBlueprint(data.code)"
+              @update:modelValue="(e) => {
+                data.fieldValue = e
+                emits('autoSave')
+              }"
+              :uploadImageRoute="null"
+            />
+          </div>
         </TabPanel>
       </TabPanels>
     </TabGroup>
@@ -127,8 +148,19 @@ const onPickBlock = (value: object) => {
 </template>
 
 <style scoped>
-html, body, .h-full {
+html,
+body,
+.h-full {
   height: 100%;
 }
-</style>
 
+/* smooth scroll */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 999px;
+}
+</style>

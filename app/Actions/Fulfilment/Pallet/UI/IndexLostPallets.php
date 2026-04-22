@@ -9,7 +9,6 @@
 namespace App\Actions\Fulfilment\Pallet\UI;
 
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
-use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
@@ -17,8 +16,6 @@ use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Http\Resources\Fulfilment\PalletsResource;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\Pallet;
-use App\Models\Inventory\Location;
-use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -37,10 +34,8 @@ class IndexLostPallets extends OrgAction
 
     private bool $selectStoredPallets = false;
 
-    private Warehouse|Location|Fulfilment $parent;
 
-
-    public function handle(Warehouse|Location|Fulfilment $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Fulfilment $fulfilment, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -56,17 +51,7 @@ class IndexLostPallets extends OrgAction
 
         $query = QueryBuilder::for(Pallet::class);
 
-        switch (class_basename($parent)) {
-            case "Fulfilment":
-                $query->where('fulfilment_id', $parent->id);
-                break;
-            case "Location":
-                $query->where('location_id', $parent->id);
-                break;
-            default:
-                $query->where('pallets.warehouse_id', $parent->id);
-                break;
-        }
+        $query->where('fulfilment_id', $fulfilment->id);
 
         $query->where('pallets.status', PalletStatusEnum::INCIDENT);
         $query->where('pallets.state', PalletStateEnum::LOST);
@@ -90,25 +75,15 @@ class IndexLostPallets extends OrgAction
                 'pallets.pallet_return_id'
             );
 
-        if (!$parent instanceof Location) {
-            $query->leftJoin('locations', 'locations.id', 'pallets.location_id');
-            $query->addSelect('locations.code as location_code', 'locations.slug as location_slug', 'locations.id as location_id');
-        }
-        if ($parent instanceof Warehouse) {
-            $query->leftJoin('fulfilment_customers', 'fulfilment_customers.id', 'pallets.fulfilment_customer_id');
-            $query->leftJoin('customers', 'customers.id', 'fulfilment_customers.customer_id');
-            $query->addSelect('customers.name as fulfilment_customer_name', 'customers.slug as fulfilment_customer_slug');
-        }
-
         return $query->allowedSorts(['customer_reference', 'reference', 'fulfilment_customer_name'])
             ->allowedFilters([$globalSearch, 'customer_reference', 'reference'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(Warehouse|Location|Fulfilment $parent, $prefix = null, $modelOperations = []): Closure
+    public function tableStructure(Fulfilment $fulfilment, $prefix = null, $modelOperations = []): Closure
     {
-        return function (InertiaTable $table) use ($prefix, $modelOperations, $parent) {
+        return function (InertiaTable $table) use ($prefix, $modelOperations, $fulfilment) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -116,28 +91,17 @@ class IndexLostPallets extends OrgAction
             }
 
 
-            $emptyStateData = [
+            $emptyStateData                = [
                 'icons' => ['fal fa-pallet'],
                 'title' => '',
-                'count' => $parent->stats->number_pallets
+                'count' => $fulfilment->stats->number_pallets
             ];
-
-            if ($parent instanceof Warehouse) {
-                $emptyStateData['description'] = __("There isn't any fulfilment pallet in this warehouse");
-            } else {
-                $emptyStateData['description'] = __("This location don't have any pallets");
-            }
-
+            $emptyStateData['description'] = __("This shop don't have any lost pallets");
 
             $table->withGlobalSearch();
 
             $table->withEmptyState($emptyStateData)
                 ->withModelOperations($modelOperations);
-
-            if ($parent instanceof Warehouse) {
-                $table->column(key: 'fulfilment_customer_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true);
-            }
-
             $table->column(key: 'customer_reference', label: __("Pallet reference (customer's), notes"), canBeHidden: false, sortable: true, searchable: true);
 
 
@@ -152,6 +116,9 @@ class IndexLostPallets extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $pallets, ActionRequest $request): Response
     {
+        /** @var Fulfilment $fulfilment */
+        $fulfilment = $request->route()->parameter('fulfilment');
+
         return Inertia::render(
             'Org/Fulfilment/Pallets',
             [
@@ -163,40 +130,22 @@ class IndexLostPallets extends OrgAction
                 'pageHead'    => [
                     'title'         => __('Lost pallets'),
                     'icon'          => ['fal', 'fa-pallet'],
-                    'subNavigation' => $this->getPalletsInWarehouseSubNavigation($this->parent, $request)
+                    'subNavigation' => $this->getPalletsInWarehouseSubNavigation($fulfilment, $request)
 
                 ],
                 'data'        => PalletsResource::collection($pallets),
             ]
-        )->table($this->tableStructure($this->parent, 'pallets'));
+        )->table($this->tableStructure($fulfilment, 'pallets'));
     }
 
-    public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $warehouse;
-        $this->initialisationFromWarehouse($warehouse, $request);
 
-        return $this->handle($warehouse, 'pallets');
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $this->handle($fulfilment);
     }
 
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inLocation(Organisation $organisation, Warehouse $warehouse, Location $location, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $location;
-        $this->initialisationFromWarehouse($warehouse, $request);
-
-        return $this->handle($location);
-    }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
@@ -213,27 +162,6 @@ class IndexLostPallets extends OrgAction
                                 'parameters' => [
                                     'organisation' => $routeParameters['organisation'],
                                     'fulfilment'   => $routeParameters['fulfilment'],
-                                ]
-                            ],
-                            'label' => __('Lost pallets'),
-                            'icon'  => 'fal fa-bars',
-                        ],
-
-                    ]
-                ]
-            ),
-            'grp.org.warehouses.show.inventory.pallets.lost.index', 'grp.org.warehouses.show.inventory.pallets.returned.show' =>
-            array_merge(
-                ShowWarehouse::make()->getBreadcrumbs($routeParameters),
-                [
-                    [
-                        'type'   => 'simple',
-                        'simple' => [
-                            'route' => [
-                                'name'       => 'grp.org.warehouses.show.inventory.pallets.current.index',
-                                'parameters' => [
-                                    'organisation' => $routeParameters['organisation'],
-                                    'warehouse'    => $routeParameters['warehouse'],
                                 ]
                             ],
                             'label' => __('Lost pallets'),

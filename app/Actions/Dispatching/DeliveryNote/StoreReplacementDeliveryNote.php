@@ -9,7 +9,6 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
-use App\Actions\Dispatching\DeliveryNote\Search\DeliveryNoteRecordSearch;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\OrgAction;
@@ -66,6 +65,11 @@ class StoreReplacementDeliveryNote extends OrgAction
         data_set($modelData, 'company_name', SendOrderToWarehouse::make()->getCompanyName($order));
         data_set($modelData, 'contact_name', SendOrderToWarehouse::make()->getContactName($order));
 
+        data_set($modelData, 'customer_notes', $order->customer_notes);
+        data_set($modelData, 'internal_notes', $order->internal_notes);
+        data_set($modelData, 'public_notes', $order->public_notes);
+        data_set($modelData, 'shipping_notes', $order->shipping_notes);
+
 
         $items = Arr::pull($modelData, 'delivery_note_items');
 
@@ -115,7 +119,6 @@ class StoreReplacementDeliveryNote extends OrgAction
             return $replacement;
         });
         $deliveryNote->refresh();
-        DeliveryNoteRecordSearch::dispatch($deliveryNote)->delay($this->hydratorsDelay);
         $this->storeDeliveryNoteHydrators($deliveryNote);
         $this->deliveryNoteHandlingHydrators($deliveryNote, $deliveryNote->state);
 

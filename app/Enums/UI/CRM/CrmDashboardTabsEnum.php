@@ -19,6 +19,8 @@ enum CrmDashboardTabsEnum: string
 
     case CUSTOMERS = 'customers';
     case PROSPECTS = 'prospects';
+    case COUNTRIES = 'countries';
+    case CHATS = 'chats';
 
     public function blueprint(): array
     {
@@ -30,7 +32,15 @@ enum CrmDashboardTabsEnum: string
             CrmDashboardTabsEnum::PROSPECTS => [
                 'title' => __('Prospects'),
                 'icon'  => 'fal fa-transporter',
-            ]
+            ],
+            CrmDashboardTabsEnum::COUNTRIES => [
+                'title' => __('Countries'),
+                'icon'  => 'fal fa-globe-europe',
+            ],
+            CrmDashboardTabsEnum::CHATS => [
+                'title' => __('Chats'),
+                'icon'  => 'fal fa-comments',
+            ],
         };
     }
 }

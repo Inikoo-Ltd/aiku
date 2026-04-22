@@ -22,7 +22,6 @@ class ReindexOrgPartnerSearch extends HydrateModel
 
     public function handle(OrgPartner $orgPartner): void
     {
-        OrgPartnerRecordSearch::run($orgPartner);
     }
 
     protected function getModel(string $slug): OrgPartner

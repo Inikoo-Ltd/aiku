@@ -13,7 +13,6 @@ use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Models\Catalogue\InAssetModel;
 use App\Models\Fulfilment\RecurringBill;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -42,7 +41,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $name
  * @property string|null $description
  * @property numeric|null $price
- * @property string $units
+ * @property numeric $units
  * @property string $unit
  * @property array<array-key, mixed> $data
  * @property array<array-key, mixed> $settings
@@ -59,13 +58,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Helpers\Currency $currency
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Catalogue\HistoricAsset|null $historicAsset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\HistoricAsset> $historicAssets
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, RecurringBill> $recurringBills
  * @property-read \App\Models\Catalogue\Shop|null $shop
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Billables\ServiceFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Service newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Service newQuery()
@@ -78,7 +76,6 @@ use Spatie\Sluggable\SlugOptions;
 class Service extends Model implements Auditable
 {
     use SoftDeletes;
-    use HasUniversalSearch;
     use InAssetModel;
     use HasHistory;
     use HasFactory;

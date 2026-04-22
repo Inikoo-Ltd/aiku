@@ -17,6 +17,8 @@ class GroupStockHistoryHydrateFromOrgStockHistories implements ShouldBeUnique
 {
     use AsAction;
 
+    public string $jobQueue = 'hydrators-slave';
+
     public function getJobUniqueId(?int $groupStockHistoryId): int
     {
         return $groupStockHistoryId ?? 'empty';
@@ -32,7 +34,7 @@ class GroupStockHistoryHydrateFromOrgStockHistories implements ShouldBeUnique
             return;
         }
 
-        $stockData = DB::table('organisation_stock_histories')
+        $stockData = DB::connection('aiku_no_sticky')->table('organisation_stock_histories')
             ->selectRaw('sum(grp_stock_value) as grp_stock_values')
             ->selectRaw('sum(number_org_stocks) as number_org_stocks')
             ->selectRaw('sum(number_locations) as number_locations')

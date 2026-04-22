@@ -1,9 +1,8 @@
 <?php
 
-namespace App\Models\HumanResources\Overtime;
+namespace App\Models\HumanResources;
 
 use App\Enums\HumanResources\Overtime\OvertimeAllowanceUnitEnum;
-use App\Models\HumanResources\Employee;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,6 +19,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $remaining_minutes
  * @property OvertimeAllowanceUnitEnum $unit
  * @property string|null $notes
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\HumanResources\Employee|null $employee
+ * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeOvertimeAllowance newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeOvertimeAllowance newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeOvertimeAllowance query()
+ * @mixin \Eloquent
  */
 class EmployeeOvertimeAllowance extends Model
 {

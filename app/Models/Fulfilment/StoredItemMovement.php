@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $stored_item_id
  * @property int|null $location_id
  * @property StoredItemMovementTypeEnum $type
- * @property string $quantity
+ * @property numeric $quantity
  * @property string $moved_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -28,8 +28,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int|null $pallet_delivery_id
  * @property int|null $pallet_return_id
  * @property int|null $pallet_return_item_id
- * @property string|null $running_quantity
- * @property string|null $running_in_pallet_quantity
+ * @property numeric|null $running_quantity
+ * @property numeric|null $running_in_pallet_quantity
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StoredItemMovement newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StoredItemMovement newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StoredItemMovement query()

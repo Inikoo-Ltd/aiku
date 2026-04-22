@@ -13,7 +13,6 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomerInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
 use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
-use App\Actions\CRM\Customer\Search\CustomerRecordSearch;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomerFromCustomer;
 use App\Actions\Helpers\Address\ParseCountryID;
@@ -179,7 +178,6 @@ class StoreCustomer extends OrgAction
             }
         }
 
-        CustomerRecordSearch::dispatch($customer);
         if ($customer?->trafficSource) {
             TrafficSourceHydrateCustomers::dispatch($customer->trafficSource);
         }

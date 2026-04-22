@@ -73,9 +73,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_transactions
  * @property int $number_services
  * @property int $number_physical_goods
- * @property string $total_physical_goods_price
- * @property string $total_services_price
- * @property string $total_price
+ * @property numeric $total_physical_goods_price
+ * @property numeric $total_services_price
+ * @property numeric $total_price
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_pallets_state_request_return_submitted

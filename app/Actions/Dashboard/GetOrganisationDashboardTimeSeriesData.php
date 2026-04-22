@@ -10,6 +10,7 @@ namespace App\Actions\Dashboard;
 use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryTimeSeriesStats;
 use App\Actions\Catalogue\Shop\GetShopTimeSeriesStats;
 use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
+use App\Actions\Helpers\Brand\GetBrandTimeSeriesStats;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -46,9 +47,10 @@ class GetOrganisationDashboardTimeSeriesData
     protected function fetchData(Organisation $organisation, $fromDate, $toDate): array
     {
         return [
-            'shops' => GetShopTimeSeriesStats::run($organisation, $fromDate, $toDate),
+            'shops'             => GetShopTimeSeriesStats::run($organisation, $fromDate, $toDate),
             'invoiceCategories' => GetInvoiceCategoryTimeSeriesStats::run($organisation, $fromDate, $toDate),
-            'platforms' => GetPlatformTimeSeriesStats::run($organisation, $fromDate, $toDate),
+            'platforms'         => GetPlatformTimeSeriesStats::run($organisation, $fromDate, $toDate),
+            'brands'            => GetBrandTimeSeriesStats::run($organisation, $fromDate, $toDate),
         ];
     }
 

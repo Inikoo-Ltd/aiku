@@ -10,7 +10,6 @@ namespace App\Models\Dispatching;
 
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -54,7 +53,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
  * @property-read \App\Models\Dispatching\ShipperStats|null $stats
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Dispatch\ShipperFactory factory($count = null, $state = [])
  * @method static Builder<static>|Shipper newModelQuery()
  * @method static Builder<static>|Shipper newQuery()
@@ -68,7 +66,6 @@ class Shipper extends Model implements Auditable
 {
     use HasSlug;
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasHistory;
     use HasFactory;
 

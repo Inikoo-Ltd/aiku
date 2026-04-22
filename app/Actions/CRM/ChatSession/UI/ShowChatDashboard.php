@@ -31,7 +31,7 @@ class ShowChatDashboard extends OrgAction
 
     public function htmlResponse(Organisation $organisation, ActionRequest $request): Response
     {
-        $title = __('Chat Dashboard');
+        $title         = __('Chat Dashboard');
         $dashboardData = GetChatDashboardData::run($organisation);
 
         return Inertia::render(
@@ -64,7 +64,7 @@ class ShowChatDashboard extends OrgAction
                         'simple' => [
                             'icon'  => 'fal fa-comment-alt',
                             'route' => [
-                                'name'       => 'grp.org.crm.chat.dashboard',
+                                'name'       => 'grp.org.chat.dashboard',
                                 'parameters' => $routeParameters,
                             ],
                             'label' => __('Chat Dashboard'),

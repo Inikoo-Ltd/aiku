@@ -93,6 +93,7 @@ const props = withDefaults(defineProps<{
     editable?: boolean
     placeholder?: any | String
     uploadImageRoute?: routeType
+    routeGetInternalLink?: routeType
 }>(), {
     editable: true,
     type: 'Bubble',
@@ -427,7 +428,8 @@ const onEditorClick = () => {
 }
 
 const setVariabel = (value) => {
-    const content = `<span class="mention" data-type="mention" data-id="username" contenteditable="false">{{ ${value} }}</span>`;
+    console.log(value)
+    const content = `<span class="mention" data-type="mention" data-id="${value}" contenteditable="false">${value}</span>`;
     editorInstance.value?.chain().focus().insertContent(content).run();
 };
 
@@ -984,6 +986,7 @@ onMounted(async () => {
             v-if="showLinkDialogCustom"
             :show="showLinkDialogCustom"
             :attribut="currentLinkInDialog"
+            :route-get-internal-link="routeGetInternalLink"
             :key="keyLinkCustomDialog"
             @close="() => { showLinkDialogCustom = false; showDialog = false; }"
             @update="updateLinkCustom"

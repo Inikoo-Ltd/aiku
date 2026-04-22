@@ -62,7 +62,7 @@ trait HasOrderHydrators
 
 
         if ($order->master_shop_id) {
-            MasterShopHydrateOrders::dispatch($order->master_shop_id)->delay($this->hydratorsDelay);
+            MasterShopHydrateOrders::dispatch($order->master_shop_id)->delay(30);
         }
         if ($order->customer_id) {
             CustomerHydrateOrders::dispatch($order->customer_id)->delay($this->hydratorsDelay);
@@ -79,7 +79,7 @@ trait HasOrderHydrators
         }
     }
 
-    public function orderHandlingHydrators(Order $order, OrderStateEnum $orderState, $delay=0): void
+    public function orderHandlingHydrators(Order $order, OrderStateEnum $orderState, $delay = 0): void
     {
         if ($orderState == OrderStateEnum::CREATING) {
             GroupHydrateOrderStateCreating::dispatch($order->group_id)->delay($delay);

@@ -20,8 +20,10 @@ import {
     faAllergies,
     faChartLine,
 } from "@fal"
+import { faExclamationSquare} from "@fas"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faClock, faList, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine)
+library.add(faClock, faList, faExclamationSquare, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine)
 
 interface RouteTarget {
     name: string
@@ -69,7 +71,7 @@ interface DashboardData {
         [rowKey: string]: { value: number; route_target?: RouteTarget }
     }
     totals: {
-        [metricKey: string]: { value: number; route_target?: RouteTarget }
+        [metricKey: string]: { value: number; route_target?: RouteTarget; queued_prefix?: QueuedPrefix }
     }
     grand_total: {
         value: number
@@ -105,10 +107,12 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
 const isWeakValue = (value: number | null | undefined) => {
     return value === null || value === 0
 }
+
 </script>
 
 <template>
     <div class="bg-white px-1 sm:px-2 md:px-4 overflow-x-auto pb-4">
+
         <div class="flex gap-1 md:gap-3 w-full pt-3">
 
             <!-- ================= DIMENSION COLUMN ================= -->
@@ -217,18 +221,77 @@ const isWeakValue = (value: number | null | undefined) => {
                                         getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
                                     ]"
                                 >{{ data.data[row.key]?.[item.key]?.value ?? '-' }}</component>
+
+                                <!-- Section: Warning -->
+                                <Link v-if="data.data[row.key]?.[item.key]?.warning"
+                                    :href="data.data[row.key]?.[item.key]?.warning?.route_target?.name ? route(data.data[row.key]?.[item.key]?.warning?.route_target?.name, data.data[row.key]?.[item.key]?.warning?.route_target.parameters) : '#'"
+                                    class="relative bg-amber-300 text-amber-700 rounded px-2.5  ml-2 opacity-70 hover:opacity-100"
+                                    v-tooltip="data.data[row.key]?.[item.key]?.warning?.tooltip"
+                                >
+                                    {{ data.data[row.key]?.[item.key]?.warning?.value }}
+
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
+                                </Link>
+
+                                <!-- Section: CRM Warning -->
+                                <component
+                                    v-if="data.data[row.key]?.[item.key]?.crm_warning"
+                                    :is="getSafeRoute(data.data[row.key]?.[item.key]?.crm_warning?.route_target) ? Link : 'span'"
+                                    :href="getSafeRoute(data.data[row.key]?.[item.key]?.crm_warning?.route_target) ?? undefined"
+                                    class="relative bg-purple-300 text-purple-700 rounded px-2.5 ml-2 opacity-70 hover:opacity-100"
+                                    v-tooltip="data.data[row.key]?.[item.key]?.crm_warning?.tooltip"
+                                >
+                                    {{ data.data[row.key]?.[item.key]?.crm_warning?.value }}
+
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
+                                </component>
                             </div>
                         </template>
 
-                        <component v-if="data?.dimension"
-                            :is="getSafeRoute(data.totals[item.key]?.route_target) ? Link : 'div'"
-                            :href="getSafeRoute(data.totals[item.key]?.route_target) ?? undefined"
-                            :class="[
-                                'h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200',
-                                getSafeRoute(data.totals[item.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
-                            ]">
-                            {{ data.totals[item.key]?.value ?? '-' }}
-                        </component>
+                        <div v-if="data?.dimension"
+                            class="h-10 md:h-12 flex items-center justify-center gap-2 text-xs md:text-lg border-t border-gray-200">
+                            <template v-if="data.totals[item.key]?.queued_prefix?.value">
+                                <component
+                                    :is="getSafeRoute(data.totals[item.key]?.queued_prefix?.route_target) ? Link : 'span'"
+                                    :href="getSafeRoute(data.totals[item.key]?.queued_prefix?.route_target) ?? undefined"
+                                    v-tooltip="'Queued: ' + data.totals[item.key]?.queued_prefix?.value"
+                                    class="opacity-80 hover:underline cursor-pointer tabular-nums"
+                                >{{ data.totals[item.key]?.queued_prefix?.value }}</component><span class="opacity-60">+</span>
+                            </template>
+                            <component
+                                :is="getSafeRoute(data.totals[item.key]?.route_target) ? Link : 'span'"
+                                :href="getSafeRoute(data.totals[item.key]?.route_target) ?? undefined"
+                                :class="getSafeRoute(data.totals[item.key]?.route_target) ? 'hover:underline cursor-pointer' : ''"
+                            >{{ data.totals[item.key]?.value ?? '-' }}</component>
+
+                            <!-- Section: Warning -->
+                            <Link v-if="data.totals[item.key]?.warning"
+                                :href="data.totals[item.key]?.warning?.route_target?.name ? route(data.totals[item.key]?.warning?.route_target?.name, data.totals[item.key]?.warning?.route_target.parameters) : '#'"
+                                class="relative bg-amber-300 text-amber-700 rounded px-2.5  ml-2 opacity-70 hover:opacity-100"
+                                v-tooltip="data.totals[item.key]?.warning?.tooltip"
+                            >
+                                {{ data.totals[item.key]?.warning?.value }}
+
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
+                            </Link>
+
+                            <!-- Section: CRM Warning -->
+                            <component
+                                v-if="data.totals[item.key]?.crm_warning"
+                                :is="getSafeRoute(data.totals[item.key]?.crm_warning?.route_target) ? Link : 'span'"
+                                :href="getSafeRoute(data.totals[item.key]?.crm_warning?.route_target) ?? undefined"
+                                class="relative bg-purple-300 text-purple-700 rounded px-2.5 ml-2 opacity-70 hover:opacity-100"
+                                v-tooltip="data.totals[item.key]?.crm_warning?.tooltip"
+                            >
+                                {{ data.totals[item.key]?.crm_warning?.value }}
+
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
+                            </component>
+                        </div>
                     </div>
                 </div>
             </template>

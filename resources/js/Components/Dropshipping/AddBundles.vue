@@ -2,22 +2,23 @@
 import { trans } from 'laravel-vue-i18n'
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { notify } from '@kyvg/vue3-notification'
-import { onMounted, ref, watch, computed } from 'vue'
+import { onMounted, ref, watch, computed, inject } from 'vue'
 import { routeType } from '@/types/route'
 import { set } from 'lodash-es'
 import axios from 'axios'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
 import BundlesSelector from './BundlesSelector.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { Textarea, Dialog, Checkbox, InputText } from "primevue"
+import { Textarea, Dialog, Checkbox, InputText, Skeleton } from "primevue"
 import { debounce } from 'lodash-es'
 import { route } from 'ziggy-js'
 import Image from '../Image.vue'
-import { faLayerGroup, faSparkles, faTrash, faImages } from '@fas'
+import { faLayerGroup, faSparkles, faTrash, faImages, faUpload } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { router } from '@inertiajs/vue3';
 import { useBundle } from '@/Composables/useBundle';
-library.add(faLayerGroup, faSparkles, faTrash, faImages)
+import { useConfirm, ConfirmDialog } from "primevue"
+library.add(faLayerGroup, faSparkles, faTrash, faImages, faUpload)
 
 const props = defineProps<{
     step: {
@@ -26,6 +27,7 @@ const props = defineProps<{
     bundle_routes: {
         store: routeType
         update: routeType
+        delete: routeType
         images: routeType
         calculate: routeType
         ai: any
@@ -52,10 +54,16 @@ const props = defineProps<{
     onClickReconnect: Function
     shop_data: {
         currency_code: string
+        currency_symbol: string
     }
 }>()
 
-const emits = defineEmits<(e: "onDone") => void>()
+const locale = inject('locale', null)
+
+const emits = defineEmits<{
+  (e: "onDone"): void
+  (e: "onClose"): void
+}>()
 
 // Section: Add portfolios
 const isLoadingSubmit = ref(false)
@@ -112,6 +120,7 @@ watch(() => props.step.current, async (newStep, oldStep) => {
 const selectedPortfoliosToSync = ref([])
 
 const bundle = useBundle(props.bundle_routes)
+const preselectedProducts = ref<any[]>([])
 
 const isGeneratingAI = ref(false)
 const showMediaModal = ref(false)
@@ -190,11 +199,12 @@ const removeMedia = (media: any) => {
 const showGenerateModal = ref(false)
 const aiPrompt = ref('')
 const selectedMediaForAI = ref<any[]>([])
+const aiGenerateImagesError = ref<string | null>(null)
 
 const generateAIImages = async () => {
     try {
         isGeneratingAI.value = true
-
+        aiGenerateImagesError.value = null
         const payload = {
             images: selectedMediaForAI.value.map(m => m.image_id),
             prompt: aiPrompt.value
@@ -238,11 +248,12 @@ const generateAIImages = async () => {
             type: 'success'
         })
     } catch (e) {
-        notify({
-            title: trans('Error'),
-            text: trans('Failed to generate AI'),
-            type: 'error'
-        })
+        aiGenerateImagesError.value = trans('The OpenAI service is currently unreachable, please try again later.')
+        // notify({
+        //     title: trans('Error'),
+        //     text: trans('Failed to generate AI'),
+        //     type: 'error'
+        // })
     } finally {
         isGeneratingAI.value = false
     }
@@ -277,6 +288,7 @@ const fetchMediaGallery = async () => {
     }
 }
 
+
 const onUpdateSelectedProducts = (products: any[]) => {
     bundle.products.value = products.map(p => ({
         ...p,
@@ -307,53 +319,54 @@ const handleStoreBundle = async () => {
 
 const submitBundle = async () => {
 
-        const payload = {
-            description: bundle.description.value,
-            images: selectedMedia.value.map(img => ({
-                id: img.image_id,
-                is_main: img.is_main
-            }))
+    const payload = {
+        description: bundle.description.value,
+        images: selectedMedia.value.map(img => ({
+            id: img.image_id,
+            is_main: img.is_main
+        }))
+    }
+
+    const routeParams = {
+        ...props.bundle_routes.update.parameters,
+        bundle: bundle.bundle_id.value
+    }
+
+    router.patch(
+        route(props.bundle_routes.update.name, routeParams),
+        payload,
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isSubmitBundle.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans('Success'),
+                    text: trans('Success submit bundle'),
+                    type: 'success'
+                })
+                bundle.resetBundle()
+                selectedMedia.value = []
+                selectedMediaIds.value = []
+                selectedMediaForAI.value = []
+                props.step.current = 0
+                localStorage.removeItem('iris_bundle_products')
+                emits('onDone')
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to submit the data, please try again"),
+                    type: "error"
+                })
+            },
+                onFinish: () => {
+                isSubmitBundle.value = false
+            },
         }
-
-        const routeParams = {
-            ...props.bundle_routes.update.parameters,
-            bundle: bundle.bundle_id.value
-        }
-
-        router.patch(
-            route(props.bundle_routes.update.name, routeParams),
-            payload,
-            {
-                preserveScroll: true,
-                preserveState: true,
-                 onStart: () => {
-					isSubmitBundle.value = true
-				},
-                onSuccess: () => {
-                    notify({
-                        title: trans('Success'),
-                        text: trans('Success submit bundle'),
-                        type: 'success'
-                    })
-                    bundle.resetBundle()
-
-                    props.step.current = 0
-                    emits('onDone')
-                },
-                onError: errors => {
-                                                notify({
-                                                    title: trans("Something went wrong"),
-                                                    text: trans("Failed to submit the data, please try again"),
-                                                    type: "error"
-                                                })
-                                },
-                                 onFinish: () => {
-                                    isSubmitBundle.value = false
-                                },
-            }
-        )
-
-   
+    )
 }
 
 const selectedMediaAIIds = ref<any[]>([])
@@ -457,6 +470,80 @@ const onFileChange = (e: Event) => {
     uploadFilesLocal(target.files)
 }
 
+const confirm = useConfirm()
+
+const handleClose = () => {
+    confirm.require({
+        message: trans('close this modal will discard this bundle. You’ll need to start again.'),
+        header: trans('Discard bundle?'),
+        acceptLabel: 'Discard',
+        rejectLabel: 'Stay',        
+        accept: () => {
+            handleDelete()
+        },
+    })
+    
+}
+
+const handleDelete = () => {
+    router.delete(route(props.bundle_routes.delete.name, {
+        ...props.bundle_routes.delete.parameters,
+        bundle: bundle.bundle_id.value
+    }), {
+        preserveScroll: true,
+
+        onSuccess: () => {
+            bundle.resetBundle()
+            bundle.products.value = []
+            selectedMedia.value = []
+            selectedMediaIds.value = []
+            selectedMediaForAI.value = []
+            idxSubmitSuccess.value++
+            emits('onClose')
+            props.step.current = 0
+        },
+
+        onError: () => {
+            notify({
+                title: trans('Error'),
+                text: trans('Failed to delete bundle'),
+                type: 'error'
+            })
+        }
+    })
+}
+
+
+const handleBack = () => {
+    props.step.current = 0
+    fetchGetBundle()
+}
+
+const fetchGetBundle = async () => {
+    if (!bundle.bundle_id.value && !props.bundle_routes?.images) return
+
+    try {
+        await bundle.loadBundle({
+            routeConfig: props.bundle_routes.images.edit,
+            bundleId: bundle.bundle_id.value,
+            bundleParamOverride: {
+                ...props.bundle_routes.images.edit.parameters,
+                bundle: [bundle.bundle_id.value]
+            },
+            onProductsLoaded: (products) => {
+                preselectedProducts.value = products
+            }
+        })
+    } catch (e) {
+        console.error('[AddBundles] fetchGetBundle failed', e)
+        notify({
+            title: trans('Error'),
+            text: trans('Failed to load bundle'),
+            type: 'error'
+        })
+    }
+}
+
 watch(bundle.products.value, () => {
     if (bundle.products.value.length) {
         bundle.addProduct(bundle.products.value)
@@ -474,14 +561,42 @@ watch(bundle.products.value, () => {
 const debouncedCalculate = debounce(bundle.calculateBundle, 400)
 
 watch(bundle.products.value, () => {
-    debouncedCalculate()
+debouncedCalculate()
 }, { deep: true })
 
 onMounted(() => {
+    try {
+        localStorage.removeItem('iris_bundle_products')
+    } catch (e) {
+        console.warn('[AddBundles] unable to clear cached bundle products', e)
+    }
+    bundle.resetBundle()
+
     if (props.step.current > 0) {
         fetchIndexUnuploadedPortfolios()
     }
 })
+watch(
+    selectedMedia,
+    (val) => {
+        if (!val.length) return
+
+        let found = false
+
+        val.forEach((img, i) => {
+            if (img.is_main && !found) {
+                found = true
+            } else {
+                img.is_main = false
+            }
+        })
+
+        if (!found) {
+            val[0].is_main = true
+        }
+    },
+    { deep: true }
+)
 </script>
 
 <template>
@@ -491,42 +606,62 @@ onMounted(() => {
             <!-- LEFT -->
             <div>
                 <div class="text-xl font-semibold">
-                    Create Your Bundle
+                    {{ trans('Create Your Bundle') }}
                     <FontAwesomeIcon icon="fal fa-layer-group" class="text-xl text-black" fixed-width
                         aria-hidden="true" />
                 </div>
 
                 <div class="text-sm mt-1">
-                    STEP {{ step.current + 1 }}/2
+                    {{ trans('STEP') }} {{ step.current + 1 }}/2
                 </div>
             </div>
 
             <!-- RIGHT SUMMARY -->
-            <div class="w-[320px] text-sm space-y-2">
-                <div class="flex justify-between border-b pb-1">
-                    <span class="text-gray-500">Cost Price (Individual Purchase)</span>
-                    <span class="font-medium">{{ bundle.summary.value.total_price }} {{ props.shop_data.currency_code
-                        }}</span>
-                </div>
+             <div class="relative">
+                <!-- <button
+                    @click="handleClose"
+                    class="absolute -top-4 -right-4 text-gray-500 hover:text-red-500"
+                    >
+                    <FontAwesomeIcon icon="fal fa-times" class="text-lg" />
+                </button> -->
+                <div class="w-[320px] text-sm space-y-2">
+                    <template v-if="bundle.isSummaryLoading.value">
+                        <div v-for="idx in 4" :key="idx" class="flex items-center justify-between border-b pb-1 last:border-b-0">
+                            <Skeleton width="9rem" height="0.9rem" />
+                            <Skeleton width="6rem" height="0.9rem" />
+                        </div>
+                    </template>
 
-                <div class="flex justify-between border-b pb-1">
-                    <span class="text-gray-500">Bundle Price</span>
-                    <span class="font-medium text-green-600">{{ bundle.summary.value.total_bundle_price }} {{
-                        props.shop_data.currency_code }}</span>
-                </div>
+                    <template v-else>
+                        <div class="flex justify-between border-b pb-1">
+                            <span class="text-gray-500">{{trans('Cost Price (Individual Purchase)')}}</span>
+                            <span class="font-medium">
+                                {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_price ?? 0) }}
+                            </span>
+                        </div>
 
-                <div class="flex justify-between border-b pb-1">
-                    <span class="text-gray-500">RRP</span>
-                    <span class="font-medium">{{ bundle.summary.value.total_rrp }} {{ props.shop_data.currency_code
-                    }}</span>
-                </div>
+                        <div class="flex justify-between border-b pb-1">
+                            <span class="text-gray-500">{{trans('Bundle Price')}}</span>
+                            <span class="font-medium text-green-600">
+                                 {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_bundle_price ?? 0) }}
+                            </span>
+                        </div>
 
-                <div class="flex justify-between pt-1">
-                    <span class="text-gray-500">Profit</span>
-                    <span class="font-semibold text-green-600"> [{{ bundle.summary.value.profit_percentage }}%] {{
-                        bundle.summary.value.profit }}
-                        {{ props.shop_data.currency_code }}</span>
+                        <div class="flex justify-between border-b pb-1">
+                            <span class="text-gray-500">{{trans('RRP')}}</span>
+                            <span class="font-medium">
+                                {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_rrp ?? 0) }}
+                            </span>
+                        </div>
+
+                        <div class="flex justify-between pt-1">
+                            <span class="text-gray-500">{{trans('Profit')}}</span>
+                            <span class="font-semibold text-green-600"> [{{ bundle.summary.value.profit_percentage }}%] {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.profit ?? 0) }}
+                                </span>
+                        </div>
+                    </template>
                 </div>
+                
             </div>
         </div>
 
@@ -540,19 +675,21 @@ onMounted(() => {
                         'filter[type]': selectedList.value,
                     },
                 }" :valueToRefetch="selectedList.value" :label_result="selectedList.label" :isLoadingSubmit
-                :idxSubmitSuccess class="px-4" withQuantity>
+                :idxSubmitSuccess :preselected="preselectedProducts" class="px-4" withQuantity>
                 <template #header>
                     <div>
                         <div class="mb-4">
                             <label class="text-sm block mb-1">
-                                Bundle Title
+                                {{trans('Bundle Title')}}
                             </label>
 
                             <div class="relative">
 
                                 <InputText v-model="bundle.title.value" type="text" class="w-full pr-10 text-base p-2"
                                     :placeholder="ctrans('Bundle Title')" required />
-
+                                <div v-if="bundle.aiTitleError" class="text-xs text-red-500 mt-1">
+                                    {{ bundle.aiTitleError }}
+                                </div>
                                 <Button type="button" @click="bundle.generateAITitle"
                                     :loading="bundle.isGeneratingAI.value"
                                     :disabled="!bundle.productIds.value.length || bundle.isGeneratingAI.value"
@@ -582,7 +719,7 @@ onMounted(() => {
                         <!-- NEXT BUTTON -->
                         <Button @click="handleStoreBundle" :loading="bundle.isStoringBundle.value" label="Next"
                             iconRight="fal fa-arrow-right" :disabled="!bundle.products.value.length" />
-
+                        
                     </div>
                 </template>
             </BundlesSelector>
@@ -594,17 +731,45 @@ onMounted(() => {
 
                 <div class="w-full">
                     <!-- HEADER -->
-                    <div class="mb-5">
-                        <div class="text-xl font-semibold flex items-center gap-2">
-                            Create Your Bundle
+                     <div class="mb-5 flex items-start justify-between">
 
-                            <FontAwesomeIcon v-tooltip="trans('Bundle generator')" icon="fal fa-layer-group"
-                                class="text-gray-500" fixed-width />
+                        <!-- LEFT: BACK BUTTON -->
+                         <div class="flex flex-col gap-2">
+                            <button
+                                @click="handleBack"
+                                class="flex items-center gap-2 text-gray-600 hover:text-black"
+                            >
+                                <FontAwesomeIcon icon="fal fa-arrow-left" />
+                                <span class="text-sm">Back</span>
+                            </button>
+
+                            <!-- CENTER: TITLE -->
+                            <div class="text-left">
+                                <div class="text-xl font-semibold flex items-center justify-center gap-2">
+                                    {{trans('Create Your Bundle')}}
+
+                                    <FontAwesomeIcon
+                                        v-tooltip="trans('Bundle generator')"
+                                        icon="fal fa-layer-group"
+                                        class="text-gray-500"
+                                        fixed-width
+                                    />
+                                </div>
+
+                                <div class="text-sm text-gray-400">
+                                    {{trans('STEP')}} 2 / 2
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="text-sm text-gray-400">
-                            STEP 2 / 2
-                        </div>
+                        <!-- RIGHT: CLOSE BUTTON -->
+                        <button
+                            @click="handleClose"
+                            class="text-gray-500 hover:text-red-500"
+                        >
+                            <FontAwesomeIcon icon="fal fa-times" class="text-lg" />
+                        </button>
+
                     </div>
 
                     <!-- DESCRIPTION -->
@@ -615,7 +780,9 @@ onMounted(() => {
 
                         <Textarea v-model="bundle.description.value" rows="6" autoResize class="w-full mt-1"
                             placeholder="Input your description" />
-
+                        <div v-if="bundle.aiDescError" class="text-xs text-red-500 mt-1">
+                            {{ bundle.aiDescError }}
+                        </div>
                         <div class="flex justify-between items-center mt-2">
 
                             <div class="text-xs text-gray-400">
@@ -636,16 +803,16 @@ onMounted(() => {
                                 text-gray-400 cursor-pointer hover:bg-gray-50 transition" @dragover.prevent
                             @drop.prevent="onDrop" @click="openFilePicker">
 
-                            <FontAwesomeIcon icon='fal fa-upload'
+                            <FontAwesomeIcon icon='fas fa-upload'
                                 class='!border-2 !rounded-full !p-2 !text-xl !text-muted-color' fixed-width
                                 aria-hidden='true' />
 
                             <div class="text-sm font-medium">
-                                Upload Media
+                                {{trans('Upload Media')}}
                             </div>
 
                             <div class="text-xs">
-                                Drag & drop images or click
+                                {{trans('Drag & drop images or click')}}
                             </div>
 
                         </div>
@@ -657,13 +824,13 @@ onMounted(() => {
                         <div class="flex gap-2 mt-3">
                             <Button @click="openExistingMedia" type="secondary">
                                 <FontAwesomeIcon :icon="faImages" class="mr-2" fixed-width />
-                                Select existing media
+                                {{trans('Select existing media')}}
                             </Button>
 
                             <Button @click="showGenerateModal = true" type="primary" icon="fal fa-arrow-left"
                                 :disabled="!selectedMedia.length">
                                 <FontAwesomeIcon :icon="faSparkles" class="mr-2" fixed-width />
-                                Generate Image AI
+                                {{trans('Generate Image AI')}}
                             </Button>
                         </div>
                     </div>
@@ -674,20 +841,20 @@ onMounted(() => {
                             {{ trans('Bundle media') }}
                         </label>
 
-                        <div class="bg-gray-100 rounded-xl p-3 mt-1 grid grid-cols-3 gap-3 min-h-[110px]">
-                            <div v-for="img in selectedMedia" class="relative group">
-                                <Image :key="img.id" :src="img.image" class="h-24 w-full rounded-lg" imageCover />
+                        <div class="bg-gray-100 rounded-xl p-4 mt-2 grid grid-cols-2 md:grid-cols-3 gap-4 min-h-[140px]">
+                            <div v-for="img in selectedMedia" class="relative group rounded-xl border bg-white flex items-center justify-center h-36 md:h-44">
+                                <Image :key="img.id" :src="img.image" class="h-36 md:h-40 object-contain rounded-xl" />
 
                                 <input type="radio" name="main_image" :checked="img.is_main"
                                     @change="setMainImage(img.image_id)" class="absolute top-2 left-2 z-20" />
                                 <div v-if="img.is_main"
                                     class="absolute bottom-1 left-1 text-[10px] bg-black/70 text-white px-1 rounded">
-                                    MAIN IMAGE
+                                    {{trans('MAIN IMAGE')}}
                                 </div>
                                 <button
                                     class="absolute top-1 right-1 bg-black/70 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
                                     @click="removeMedia(img)">
-                                    ✕
+                                    <FontAwesomeIcon icon="fal fa-times" class="text-lg text-red-500" />
                                 </button>
                             </div>
                         </div>
@@ -702,6 +869,7 @@ onMounted(() => {
                   
 
                 </div>
+                
                 <!-- Modal Existing media -->
                 <Dialog v-model:visible="showMediaModal" modal header="Select Images" :style="{ width: '600px' }">
                     <div v-if="isLoadingMedia" class="py-10 text-center">
@@ -747,7 +915,7 @@ onMounted(() => {
 
                     <div class="mb-4">
                         <div class="text-sm font-semibold mb-2">
-                            Select images of products you want to include in generated image
+                            {{trans('Select images of products you want to include in generated image')}}
                         </div>
 
                         <div class="grid grid-cols-4 gap-3">
@@ -780,10 +948,14 @@ onMounted(() => {
 
                     <div class="mb-4">
                         <div class="text-sm font-semibold mb-1">
-                            Describe your image
+                            {{trans('Describe your image')}}
                         </div>
 
                         <Textarea v-model="aiPrompt" rows="3" class="w-full" placeholder="Input description" />
+                    </div>
+
+                    <div v-if="aiGenerateImagesError" class="text-xs text-red-500 mt-1">
+                        {{ aiGenerateImagesError }}
                     </div>
 
                     <template #footer>
@@ -792,6 +964,56 @@ onMounted(() => {
                     </template>
 
                 </Dialog>
+                <ConfirmDialog>
+                    <template #container="{ message, acceptCallback, rejectCallback }">
+                        <div class="p-5 w-[360px]">
+
+                            <!-- ICON -->
+                            <div class="flex justify-center mb-3">
+                               <FontAwesomeIcon
+                                    :icon="message.data?.type === 'danger'
+                                        ? 'fas fa-exclamation-triangle'
+                                        : 'fas fa-question-circle'"
+                                    class="text-3xl text-red-500"
+                                />
+                            </div>
+
+                            <!-- TITLE -->
+                            <div class="text-center font-semibold text-lg mb-2">
+                                {{ message.header }}
+                            </div>
+
+                            <!-- MESSAGE -->
+                            <div class="text-center text-sm text-gray-500 mb-5 leading-relaxed">
+                                {{ message.message }}
+                            </div>
+
+                            <!-- ACTIONS -->
+                            <div class="flex justify-center gap-3">
+
+                                <!-- CANCEL -->
+                                <button
+                                    @click="rejectCallback"
+                                    class="px-4 py-2 text-sm border rounded-md hover:bg-gray-100"
+                                >
+                                    {{ message.rejectLabel || 'Cancel' }}
+                                </button>
+
+                                <!-- ACCEPT -->
+                                <button
+                                    @click="acceptCallback"
+                                    :class="[
+                                        'px-4 py-2 text-sm text-white rounded-md bg-red-500 hover:bg-red-600'
+                                    ]"
+                                >
+                                    {{ message.acceptLabel || 'Yes' }}
+                                </button>
+
+                            </div>
+
+                        </div>
+                    </template>
+                </ConfirmDialog>
             </div>
 
         </KeepAlive>

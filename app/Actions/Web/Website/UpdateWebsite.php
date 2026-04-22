@@ -15,7 +15,6 @@ use App\Actions\Traits\UI\WithFavicon;
 use App\Actions\Traits\UI\WithLogo;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Website\LlmsTxt\StoreLlmsTxt;
-use App\Actions\Web\Website\Search\WebsiteRecordSearch;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Http\Resources\Web\WebsiteResource;
 use App\Models\Fulfilment\Fulfilment;
@@ -55,9 +54,28 @@ class UpdateWebsite extends OrgAction
         if (Arr::has($modelData, "required_phone_number")) {
             data_set($shopUpdateData, "settings.registration.require_phone_number", Arr::pull($modelData, 'required_phone_number'));
         }
+
+        if (Arr::has($modelData, "company_name_label")) {
+            data_set($shopUpdateData, "settings.registration.company_name_label", Arr::pull($modelData, "company_name_label"));
+        }
+
+        if (Arr::has($modelData, "company_name_placeholder")) {
+            data_set($shopUpdateData, "settings.registration.company_name_placeholder", Arr::pull($modelData, "company_name_placeholder"));
+        }
+
+        if (Arr::has($modelData, "tax_number_is_required")) {
+            data_set($shopUpdateData, "settings.registration.tax_number_is_required", Arr::pull($modelData, "tax_number_is_required"));
+        }
+
         if (!empty($shopUpdateData)) {
             $shop = $website->shop;
             UpdateShop::run($shop, $shopUpdateData);
+        }
+
+        $hydrateDescriptionOverview = false;
+        if (Arr::has($modelData, 'description_has_overview')) {
+            data_set($modelData, 'settings.catalogue_pages.description_has_overview', Arr::pull($modelData, 'description_has_overview'));
+            $hydrateDescriptionOverview = true;
         }
 
         if (Arr::has($modelData, "jira_help_desk_widget")) {
@@ -104,6 +122,10 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.script_website.header", Arr::pull($modelData, "script_website"));
         }
 
+        if (Arr::has($modelData, "welcome_message")) {
+            data_set($modelData, "settings.welcome_message", Arr::pull($modelData, "welcome_message"));
+        }
+
         // Handle LLMs.txt file upload
         if (Arr::has($modelData, 'llms_txt') && $modelData['llms_txt'] instanceof \Illuminate\Http\UploadedFile) {
             $file = Arr::pull($modelData, 'llms_txt');
@@ -115,14 +137,8 @@ class UpdateWebsite extends OrgAction
 
         $changes = Arr::except($website->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        if (Arr::hasAny($changes, [
-            'code',
-            'name',
-            'domain',
-            'type',
-            'state',
-        ])) {
-            WebsiteRecordSearch::run($website);
+        if ($hydrateDescriptionOverview) {
+            WebsiteGenerateFamiliesOverviewPages::dispatch($website);
         }
 
         if (Arr::hasAny($changes, ['domain', 'settings'])) {
@@ -241,6 +257,11 @@ class UpdateWebsite extends OrgAction
                     ->max(50) // 50KB max
             ],
             'enable_chat'              => ['sometimes', 'boolean'],
+            'description_has_overview' => ['sometimes', 'boolean'],
+            'welcome_message' => ['sometimes', 'nullable', 'string'],
+            'company_name_label' => ['sometimes', 'nullable', 'string'],
+            'company_name_placeholder' => ['sometimes', 'nullable', 'string'],
+            'tax_number_is_required' => ['sometimes', 'nullable','boolean'],
         ];
 
         if (!$this->strict) {

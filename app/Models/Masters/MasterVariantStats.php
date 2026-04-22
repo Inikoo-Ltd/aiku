@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $master_variant_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Masters\MasterVariant $masterVariant
+ * @property-read \App\Models\Masters\MasterVariant|null $masterVariant
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterVariantStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterVariantStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterVariantStats query()

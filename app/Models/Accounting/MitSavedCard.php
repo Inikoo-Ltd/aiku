@@ -27,11 +27,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $deleted_at
  * @property string|null $failure_status
- * @property-read \App\Models\CRM\Customer $customer
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\CRM\Customer|null $customer
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Accounting\PaymentAccountShop $paymentAccountShop
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MitSavedCard newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MitSavedCard newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MitSavedCard query()

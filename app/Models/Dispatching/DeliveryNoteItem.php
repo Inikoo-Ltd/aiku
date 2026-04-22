@@ -37,17 +37,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $invoice_transaction_id
  * @property string|null $notes
  * @property DeliveryNoteItemStateEnum $state
- * @property string|null $weight
- * @property string $quantity_required
- * @property string|null $quantity_picked
- * @property string|null $quantity_packed
- * @property string|null $quantity_dispatched
+ * @property numeric|null $weight
+ * @property numeric $quantity_required
+ * @property numeric|null $quantity_picked
+ * @property numeric|null $quantity_packed
+ * @property numeric|null $quantity_dispatched
  * @property numeric $revenue_amount
  * @property numeric $org_revenue_amount
  * @property numeric $grp_revenue_amount
- * @property string|null $profit_amount
- * @property string|null $org_profit_amount
- * @property string|null $grp_profit_amount
+ * @property numeric|null $profit_amount
+ * @property numeric|null $org_profit_amount
+ * @property numeric|null $grp_profit_amount
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -72,24 +72,28 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $invoice_id
  * @property int $estimated_required_weight grams
  * @property int $estimated_picked_weight grams
- * @property string|null $quantity_not_picked
+ * @property numeric|null $quantity_not_picked
  * @property bool $is_handled
  * @property bool|null $need_packing
  * @property bool|null $is_packed
  * @property bool $is_done
  * @property DeliveryNoteItemCancelStateEnum|null $cancel_state
  * @property int|null $picking_session_id
- * @property string|null $original_quantity_required
+ * @property numeric|null $original_quantity_required
  * @property string|null $batch_code
  * @property \Illuminate\Support\Carbon|null $expiry_date
  * @property string|null $locked_at
- * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property numeric $quantity_waiting_warehouse
+ * @property numeric $quantity_waiting_crm
+ * @property bool $has_waiting_warehouse
+ * @property bool $has_waiting_crm
+ * @property-read \App\Models\Dispatching\DeliveryNote|null $deliveryNote
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read OrgStock|null $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\Packing> $packings
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\Picking> $pickings
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Sowing> $sowings
  * @property-read Transaction|null $transaction
  * @method static Builder<static>|DeliveryNoteItem newModelQuery()
@@ -121,9 +125,14 @@ class DeliveryNoteItem extends Model
         'fetched_at'         => 'datetime',
         'last_fetched_at'    => 'datetime',
         'expiry_date'        => 'date',
-        'revenue_amount'     => 'decimal:2',
-        'org_revenue_amount' => 'decimal:2',
-        'grp_revenue_amount' => 'decimal:2',
+        'is_handled'                 => 'boolean',
+        'is_packed'                  => 'boolean',
+        'is_done'                    => 'boolean',
+        'need_packing'               => 'boolean',
+        'has_waiting_warehouse'      => 'boolean',
+        'has_waiting_crm'            => 'boolean',
+        'quantity_waiting_warehouse' => 'decimal:6',
+        'quantity_waiting_crm'       => 'decimal:6',
     ];
 
     protected $attributes = [

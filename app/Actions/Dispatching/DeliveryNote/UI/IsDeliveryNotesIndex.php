@@ -374,6 +374,15 @@ trait IsDeliveryNotesIndex
             }
 
             $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($bucket == 'handling' || $bucket == 'handling_blocked' || $bucket == 'picked' || $bucket == 'packing') {
+                $table->column(key: 'sort_trolleys', label: __('Trolleys'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
+            if ($bucket == 'picked' || $bucket == 'packing') {
+                $table->column(key: 'sort_picked_bays', label: __('Picked bays'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
             $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             if (!$parent instanceof Customer) {
                 $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true);
@@ -389,15 +398,6 @@ trait IsDeliveryNotesIndex
             if ($bucket == 'handling' || $bucket == 'handling_blocked' || $bucket == 'picked' || $bucket == 'packing' || $bucket == 'packed' || $bucket == 'finalised') {
                 $table->column(key: 'sort_picker', label: __('Picker'), canBeHidden: false, sortable: true, searchable: true);
             }
-
-            if ($bucket == 'handling' || $bucket == 'handling_blocked' || $bucket == 'picked') {
-                $table->column(key: 'sort_trolleys', label: __('Trolleys'), canBeHidden: false, sortable: true, searchable: true);
-            }
-
-            if ($bucket == 'picked') {
-                $table->column(key: 'sort_picked_bays', label: __('Picked bays'), canBeHidden: false, sortable: true, searchable: true);
-            }
-
 
             if ($bucket == 'packing' || $bucket == 'packed' || $bucket == 'finalised') {
                 $table->column(key: 'sort_packer', label: __('Packer'), canBeHidden: false, sortable: true, searchable: true);

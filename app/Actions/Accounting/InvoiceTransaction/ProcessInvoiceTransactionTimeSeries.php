@@ -24,7 +24,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ProcessInvoiceTransactionTimeSeries
 {
     use AsAction;
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
 
     public function handle(
         InvoiceTransaction $invoiceTransaction,

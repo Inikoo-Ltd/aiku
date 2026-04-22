@@ -159,6 +159,15 @@ class GetRetinaDropshippingNavigation
             ],
         ];
 
+        // $groupNavigation['packing-list'] = [
+        //     'label' => __('Packing Lists'),
+        //     'icon'  => ['fal', 'fa-truck'],
+        //     'root'  => 'retina.dropshipping.packing_lists.',
+        //     'route' => [
+        //         'name' => 'retina.dropshipping.packing_lists.index'
+        //     ],
+        // ];
+
         $groupNavigation['top_up'] = [
             'label'   => __('Top Up'),
             'icon'    => ['fal', 'fa-money-bill-wave'],

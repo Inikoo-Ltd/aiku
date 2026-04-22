@@ -13,7 +13,6 @@ use App\Enums\Fulfilment\RentalAgreement\RentalAgreementStateEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InFulfilmentCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -42,15 +41,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\RentalAgreementClause> $clauses
- * @property-read \App\Models\Fulfilment\Fulfilment $fulfilment
- * @property-read \App\Models\Fulfilment\FulfilmentCustomer $fulfilmentCustomer
- * @property-read Group $group
+ * @property-read \App\Models\Fulfilment\Fulfilment|null $fulfilment
+ * @property-read \App\Models\Fulfilment\FulfilmentCustomer|null $fulfilmentCustomer
+ * @property-read Group|null $group
  * @property-read Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\RecurringBill> $recurringBills
  * @property-read \App\Models\Fulfilment\RentalAgreementSnapshot|null $snapshot
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\RentalAgreementSnapshot> $snapshots
  * @property-read \App\Models\Fulfilment\RentalAgreementStats|null $stats
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreement newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreement newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreement onlyTrashed()
@@ -62,7 +60,6 @@ use Spatie\Sluggable\SlugOptions;
 class RentalAgreement extends Model implements Auditable
 {
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasSlug;
     use InFulfilmentCustomer;
     use HasHistory;

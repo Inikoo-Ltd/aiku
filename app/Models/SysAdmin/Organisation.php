@@ -163,7 +163,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, ClockingMachine> $clockingMachines
  * @property-read LaravelCollection<int, Collection> $collections
  * @property-read \App\Models\SysAdmin\OrganisationCommsStats|null $commsStats
- * @property-read Country $country
+ * @property-read Country|null $country
  * @property-read LaravelCollection<int, CreditTransaction> $creditTransactions
  * @property-read \App\Models\SysAdmin\OrganisationCRMStats|null $crmStats
  * @property-read Currency $currency
@@ -177,7 +177,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, FulfilmentCustomer> $fulfilmentCustomers
  * @property-read \App\Models\SysAdmin\OrganisationFulfilmentStats|null $fulfilmentStats
  * @property-read LaravelCollection<int, Fulfilment> $fulfilments
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read LaravelCollection<int, HolidayYear> $holidayYears
  * @property-read LaravelCollection<int, Holiday> $holidays
  * @property-read \App\Models\SysAdmin\OrganisationHumanResourcesStats|null $humanResourcesStats

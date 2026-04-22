@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read User|null $approvedBy
- * @property-read \App\Models\HumanResources\Employee $employee
+ * @property-read \App\Models\HumanResources\Employee|null $employee
  * @property-read Organisation $organisation
  * @property-read \App\Models\HumanResources\RestrictedPeriod|null $restrictedPeriod
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RestrictedException newModelQuery()

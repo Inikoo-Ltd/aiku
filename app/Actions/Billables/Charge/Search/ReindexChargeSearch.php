@@ -22,7 +22,7 @@ class ReindexChargeSearch extends HydrateModel
 
     public function handle(Charge $charge): void
     {
-        ChargeRecordSearch::run($charge);
+
     }
 
     protected function getModel(string $slug): Charge

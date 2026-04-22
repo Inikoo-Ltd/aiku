@@ -118,11 +118,11 @@ class IndexOrgPartners extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('partners'),
+                'title'       => __('Partners'),
                 'pageHead'    => [
-                    'model'       => __('procurement'),
+                    'model'       => __('Procurement'),
                     'icon'        => ['fal', 'fa-users-class'],
-                    'title'       => __('partners'),
+                    'title'       => __('Partners'),
                 ],
                 'data'        => OrgPartnersResource::collection($partners),
 

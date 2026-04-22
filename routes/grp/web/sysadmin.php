@@ -6,7 +6,6 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-use App\Actions\Analytics\UserRequest\UI\IndexUserRequestLogs;
 use App\Actions\SysAdmin\Group\UI\EditGroupSettings;
 use App\Actions\SysAdmin\Guest\ExportGuests;
 use App\Actions\SysAdmin\Guest\UI\CreateGuest;
@@ -29,7 +28,6 @@ Route::get('/settings', EditGroupSettings::class)->name('settings.edit');
 
 Route::prefix('analytics')->as('analytics.')->group(function () {
     Route::get('', ShowSysAdminAnalyticsDashboard::class)->name('dashboard');
-    Route::get('requests', IndexUserRequestLogs::class)->name('request.index');
 });
 
 Route::prefix('users')->as('users.')->group(function () {

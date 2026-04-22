@@ -41,7 +41,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property array<array-key, mixed>|null $sources
  * @property bool $show_in_dashboard
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Shop> $shops
  * @property-read \App\Models\Ordering\SalesChannelStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Ordering\SalesChannelTimeSeries> $timeSeries

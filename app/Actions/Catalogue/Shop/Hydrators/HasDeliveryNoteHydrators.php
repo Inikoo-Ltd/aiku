@@ -21,7 +21,7 @@ trait HasDeliveryNoteHydrators
 {
     public function storeDeliveryNoteHydrators(DeliveryNote $deliveryNote): void
     {
-        GroupHydrateDeliveryNotes::dispatch($deliveryNote->group_id, $deliveryNote->type)->delay($this->hydratorsDelay);
+        GroupHydrateDeliveryNotes::dispatch($deliveryNote->group_id, $deliveryNote->type)->delay(60);
         OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation_id, $deliveryNote->type)->delay($this->hydratorsDelay);
         ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop_id, $deliveryNote->type)->delay($this->hydratorsDelay);
         CustomerHydrateDeliveryNotes::dispatch($deliveryNote->customer_id, $deliveryNote->type)->delay($this->hydratorsDelay);

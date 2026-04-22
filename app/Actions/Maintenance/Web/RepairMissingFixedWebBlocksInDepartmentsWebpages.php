@@ -52,7 +52,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
             ->where('layout_style', 'families-overview')
             ->exists();
 
-        if (!$hasOverviewPage) {
+        if (!$hasOverviewPage && $command->option('build-overview-page')) {
             $webpageData = [
                 'title'         => $department->name,
                 'code'          => $department->code . '-overview',
@@ -152,16 +152,6 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
             if (count($countDepartmentDescriptionBlock) == 0) {
                 $this->createWebBlock($webpage, 'department-description-1');
             }
-
-            $webpage->refresh();
-
-            if (count($countDepartmentDescriptionBlock) == 0) {
-                $this->setDescriptionWebBlockOnTop($webpage);
-            }
-            if ($command->option('hide-description')) {
-                $this->setDescriptionWebBlockHidden($webpage);
-            }
-            $webpage->refresh();
         } else {
             $this->deleteWebBlocksByCode($webpage, 'families-2');
             // Layout for Overview Page
@@ -174,26 +164,25 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
             if (count($countDepartmentDescriptionBlock) == 0) {
                 $this->createWebBlock($webpage, 'families-1-overview');
             }
-
-            $webpage->refresh();
-
-            if (count($countDepartmentDescriptionBlock) == 0) {
-                $this->setDescriptionWebBlockOnTop($webpage);
-            }
-            if ($command->option('hide-description')) {
-                $this->setDescriptionWebBlockHidden($webpage);
-            }
-            $webpage->refresh();
-
         }
 
+        $webpage->refresh();
+
+        $this->reorderDepartmentPageBlocks($webpage, (bool) $command->option('set-description-top'));
+
+        if ($command->option('hide-description')) {
+            $this->setDescriptionWebBlockHidden($webpage);
+        }
+
+        $webpage->refresh();
 
         UpdateWebpageContent::run($webpage);
+
         foreach ($webpage->webBlocks as $webBlock) {
             print $webBlock->webBlockType->code."\n";
         }
-        print "=========\n";
 
+        print "=========\n";
 
         if ($webpage->is_dirty) {
             if (in_array($department->state, [
@@ -211,29 +200,6 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         }
     }
 
-    public function setDescriptionWebBlockOnTop(Webpage $webpage): void
-    {
-        $departmentDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1')->first()->model_has_web_blocks_id;
-        $webBlocks                     = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
-
-        $runningPosition = 2;
-        foreach ($webBlocks as $key => $position) {
-            if ($key == $departmentDescriptionWebBlock) {
-                $webBlocks[$key] = 1;
-            } else {
-                $webBlocks[$key] = $runningPosition;
-                $runningPosition++;
-            }
-        }
-
-        foreach ($webBlocks as $key => $position) {
-            DB::table('model_has_web_blocks')
-                ->where('id', $key)
-                ->update(['position' => $position]);
-        }
-        UpdateWebpageContent::run($webpage);
-    }
-
     public function setDescriptionWebBlockHidden(Webpage $webpage): void
     {
         $departmentDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1')->first();
@@ -247,16 +213,14 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         UpdateWebpageContent::run($webpage);
     }
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_departments_webpages {website?} {--hide-description}';
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_departments_webpages {--website_id=} {--hide-description} {--set-description-top} {--build-overview-page}';
 
     public function asCommand(Command $command): void
     {
         $shop = null;
-        if ($command->argument('website')) {
-            $website   = Website::where('slug', $command->argument('website'))->first();
+        if ($command->option('website_id')) {
+            $website   = Website::where('id', $command->option('website_id'))->first();
             $shop = $website->shop;
-        } else {
-
         }
 
         $departmentIds = DB::table('product_categories')
@@ -270,8 +234,6 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
             )
             ->whereNull('product_categories.deleted_at')
             ->get();
-
-
 
         foreach ($departmentIds as $departmentId) {
             $department = ProductCategory::find($departmentId->id);

@@ -61,6 +61,7 @@ use App\Actions\Retina\Dropshipping\Bundle\DeleteRetinaBundle;
 use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductImages;
 use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductBundleDescription;
 use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductBundleTitle;
+use App\Actions\Retina\Dropshipping\Bundle\StoreOrUpdateRetinaBundle;
 use App\Actions\Retina\Dropshipping\Bundle\StoreRetinaBundle;
 use App\Actions\Retina\Dropshipping\Bundle\UpdateRetinaBundle;
 use App\Actions\Retina\Dropshipping\Bundle\UploadRetinaBundleProductImages;
@@ -157,6 +158,7 @@ use App\Actions\Retina\Shopify\MatchRetinaBulkPortfoliosToCurrentShopifyProduct;
 use App\Actions\Retina\Shopify\MatchRetinaPortfolioToCurrentShopifyProduct;
 use App\Actions\Retina\Shopify\StoreRetinaNewProductToCurrentShopify;
 use App\Actions\Retina\Shopify\StoreRetinaProductShopify;
+use App\Actions\Retina\Shopify\UpdateRetinaAllPortfoliosDimensionsToShopify;
 use App\Actions\Retina\SysAdmin\AddRetinaDeliveryAddressToCustomer;
 use App\Actions\Retina\SysAdmin\AddRetinaDeliveryAddressToFulfilmentCustomer;
 use App\Actions\Retina\SysAdmin\DeleteRetinaWebUser;
@@ -347,6 +349,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
 
     Route::prefix('{customerSalesChannel:id}/bundles')->name('bundles.')->group(function () {
         Route::post('/', StoreRetinaBundle::class)->name('store');
+        Route::post('store-or-update', StoreOrUpdateRetinaBundle::class)->name('store_or_update');
         Route::patch('{bundle:id}', UpdateRetinaBundle::class)->name('update')->withoutScopedBindings();
         Route::delete('{bundle:id}', DeleteRetinaBundle::class)->name('delete')->withoutScopedBindings();
         Route::post('products/{product:id}/images-generator', GenerateRetinaProductImages::class)->name('products.images.generate')->withoutScopedBindings();
@@ -361,6 +364,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('{customerSalesChannel:id}/shopify-batch-upload', CreateRetinaNewBulkPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
     Route::post('{customerSalesChannel:id}/shopify-batch-match', MatchRetinaBulkPortfoliosToCurrentShopifyProduct::class)->name('shopify.batch_match')->withoutScopedBindings();
     Route::post('{customerSalesChannel:id}/shopify-batch-all', CreateRetinaNewAllPortfoliosToShopify::class)->name('shopify.batch_all')->withoutScopedBindings();
+    Route::post('{customerSalesChannel:id}/shopify-dimensions-all', UpdateRetinaAllPortfoliosDimensionsToShopify::class)->name('shopify.batch_all_dimensions_update')->withoutScopedBindings();
 
     Route::post('{customerSalesChannel:id}/woo-batch-upload', CreateRetinaNewBulkPortfoliosToWoo::class)->name('woo.batch_upload')->withoutScopedBindings();
     Route::post('{customerSalesChannel:id}/woo-batch-match', MatchRetinaBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_match')->withoutScopedBindings();

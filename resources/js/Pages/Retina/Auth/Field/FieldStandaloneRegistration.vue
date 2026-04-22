@@ -22,6 +22,11 @@ const props = defineProps<{
     polls: []
     form: {}
     requiresPhoneNumber: boolean,
+    registration_settings : {
+        company_name_label: string,
+        company_name_placeholder: string,
+        tax_number_is_required: boolean
+    }
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -69,6 +74,8 @@ const toggleInterest = (interestValue: string) => {
     }
     props.form.clearErrors('interest');
 };
+
+console.log('form', props)
 </script>
 
 <template>
@@ -129,7 +136,7 @@ const toggleInterest = (interestValue: string) => {
             class="capitalize block text-sm font-medium text-gray-700"
         >
             <!-- <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" /> -->
-            {{ trans("Business Name") }}
+            {{  registration_settings.company_name_label ??  trans("Business Name") }}
         </label>
         <div class="mt-2">
             <IconField class="w-full" :class="form.errors.company_name ? 'errorShake' : ''">
@@ -142,7 +149,8 @@ const toggleInterest = (interestValue: string) => {
                     type="text"
                     id="business-name"
                     name="company_name"
-                    class="w-full" />
+                    class="w-full"
+                    :placeholder="registration_settings.company_name_placeholder" />
             </IconField>
             <p
                 v-if="form.errors.company_name"
@@ -194,6 +202,7 @@ const toggleInterest = (interestValue: string) => {
     <!-- Field: Tax Number -->
     <div class="sm:col-span-6">
         <label for="tax_number" class="block text-sm font-medium text-gray-700" >
+            <FontAwesomeIcon v-if="registration_settings.tax_number_is_required" icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
             {{ trans("Tax number") }}
         </label >
         <TaxNumber
@@ -222,7 +231,7 @@ const toggleInterest = (interestValue: string) => {
         
         <div class="mt-2" :class="form.errors?.[`poll_replies.${idx}`] ? 'errorShake' : ''">
             <Select
-                v-if="pollReply.type === 'option'"
+                v-if="pollReply.type === 'option' || pollReply.type === 'Multiple Choice' "
                 v-model="form.poll_replies[idx].answer"
                 @update:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
                 :options="props.polls[idx].options"

@@ -9,7 +9,7 @@ import  PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 
-const props = defineProps <{
+defineProps <{
     data: object
     title: string
     pageHead: object

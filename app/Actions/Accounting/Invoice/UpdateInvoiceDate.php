@@ -2,7 +2,6 @@
 
 namespace App\Actions\Accounting\Invoice;
 
-use App\Actions\Accounting\Invoice\Search\InvoiceRecordSearch;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
 use App\Actions\Accounting\InvoiceTransaction\ProcessInvoiceTransactionTimeSeries;
@@ -85,11 +84,9 @@ class UpdateInvoiceDate extends OrgAction
 
 
             foreach ($invoice->invoiceTransactions as $invoiceTransaction) {
-                ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, $oldDateString)->delay($this->hydratorsDelay);
-                ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, $newDateString)->delay($this->hydratorsDelay);
+                ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, $oldDateString)->delay(120);
+                ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, $newDateString)->delay(120);
             }
-
-            InvoiceRecordSearch::dispatch($invoice);
 
             SendInvoiceDateChangedNotification::dispatch($invoice, $oldDate);
         }

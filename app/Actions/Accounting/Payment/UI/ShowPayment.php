@@ -127,6 +127,13 @@ class ShowPayment extends OrgAction
                         'payment' => $payment->id
                     ]
                 ],
+                'cancel_route'  => [
+                    'name'          => 'grp.models.org.payment.cancel',
+                    'parameters'    => [
+                        'organisation'  => $payment->organisation_id,
+                        'payment'       => $payment->id,
+                    ]
+                ],
                 // Only enable receipt download if user has accounting authorization
                 'topup_receipt_route' => [
                     'show' => $this->authorize($request) && $payment->topUp,
@@ -135,6 +142,7 @@ class ShowPayment extends OrgAction
                         'topUp' => $payment->topUp ? $payment->topUp->reference : null,
                     ]
                 ],
+                'payment_account_type' => $payment->paymentAccount?->type,
                 'is_cancelled' => $payment->state === PaymentStateEnum::CANCELLED,
 
                 PaymentTabsEnum::SHOWCASE->value => $this->tab == PaymentTabsEnum::SHOWCASE->value ?

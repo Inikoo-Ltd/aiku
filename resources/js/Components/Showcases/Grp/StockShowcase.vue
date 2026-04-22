@@ -42,6 +42,8 @@ const props = defineProps<{
             tags_selected_id: number[]
         }[]
         stocks_management: StocksManagementTS
+        currency_code: string
+        is_quantity_excess: boolean
     }
 }>()
 
@@ -77,9 +79,7 @@ console.log(props)
                     <thead class="bg-gray-100 text-gray-600">
                         <tr>
                             <th class="px-3 py-2 text-left">Image</th>
-                            <th class="px-3 py-2 text-left">Code</th>
                             <th class="px-3 py-2 text-left">Name</th>
-                            <th class="px-3 py-2 text-left">Stock</th>
                         </tr>
                     </thead>
 
@@ -87,27 +87,60 @@ console.log(props)
                         <tr v-for="tradeUnit in data.trade_units" :key="tradeUnit.id" class="hover:bg-gray-50">
                             <td class="px-3 py-2">
                                 <Image v-if="tradeUnit.images?.[0]?.images" :src="tradeUnit.images[0].images"
-                                    class="w-10 h-10 object-cover rounded" />
-                            </td>
-                            <td class="px-3 py-2 font-medium">
-                                {{ tradeUnit.code }}
+                                    class="w-16 h-16 object-cover rounded" />
                             </td>
                             <td class="px-3 py-2">
                                 {{ tradeUnit.name }}
-                            </td>
-                            <td class="px-3 py-2">
-                                {{ tradeUnit.stock }}
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+
+            <!-- Card: Stock Summary -->
+        <div class="border rounded mt-4 p-4 bg-white">
+            <!-- Out of Stock -->
+            <!-- <div class="border-b pb-2 mb-2">
+                <p class="font-semibold text-gray-600">Out of stock</p>
+            </div> -->
+
+            <!-- Stock Value Section -->
+            <div class="space-y-2 pr-10">
+                <div class="grid grid-cols-5 gap-x-3 items-center">
+
+                    <div class="col-span-3 xtext-right">
+                        {{ ctrans("SKU cost") }}
+                    </div>
+
+                    <div class="col-span-2 text-right">
+                        {{ ctrans("Total stock value") }}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-5 gap-x-3 items-center">
+
+                    <div class="col-span-3 xtext-right text-2xl font-semibold">
+                        {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.sku_value || 0) }}
+                    </div>
+
+                    <div class="col-span-2 text-right text-2xl font-semibold">
+                        {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.total_stock_value || 0) }}
+                    </div>
+                </div>
+            </div>
+        </div>
         </div>
 
+       
         <!-- Section: Stocks Management -->
         <div class="md:col-span-2">
-            <StocksManagement v-if="data.stocks_management" :stocks_management="data.stocks_management" />
-            <pre v-if="layout.app.environment === 'local'">{{ data.stocks_management?.locations }}</pre>
+            <StocksManagement
+                v-if="data.stocks_management"
+                :data
+                :stocks_management="data.stocks_management"
+                :trade_units="data.trade_units"
+            />
+            <!-- <pre v-if="layout.app.environment === 'local'">{{ data.stocks_management?.locations }}</pre> -->
         </div>
     </div>
 </template>

@@ -116,12 +116,12 @@ class ShowTradeUnit extends GrpAction
 
             ]
         )
-            ->table(IndexMasterProductsInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::MASTER_PRODUCTS->value))
-            ->table(IndexProductsInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::PRODUCTS->value))
-            ->table(IndexStocksInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::STOCKS->value))
-            ->table(IndexOrgStocksInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::ORG_STOCKS->value))
-            ->table(IndexAttachments::make()->tableStructure(TradeUnitTabsEnum::ATTACHMENTS->value))
-            ->table(IndexTradeUnitImages::make()->tableStructure($tradeUnit, TradeUnitTabsEnum::IMAGES->value));
+        ->table(IndexMasterProductsInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::MASTER_PRODUCTS->value))
+        ->table(IndexProductsInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::PRODUCTS->value))
+        ->table(IndexStocksInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::STOCKS->value))
+        ->table(IndexOrgStocksInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::ORG_STOCKS->value))
+        ->table(IndexAttachments::make()->tableStructure(TradeUnitTabsEnum::ATTACHMENTS->value))
+        ->table(IndexTradeUnitImages::make()->tableStructure($tradeUnit, TradeUnitTabsEnum::IMAGES->value));
     }
 
 

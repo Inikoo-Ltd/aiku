@@ -14,6 +14,7 @@ use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Web\UpdateWebBlockToWebsiteAndChild;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\UpdateDescriptionBlockToWebsiteAndChild;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use Illuminate\Support\Facades\Event;
 use App\Models\Helpers\Snapshot;
@@ -62,6 +63,10 @@ class PublishWebsiteMarginal extends OrgAction
             $customAudit = true;
             $oldLayout   = $website->liveFamiliesOverviewSnapshot?->layout[$marginal] ?? Arr::get($website->unpublishedFamiliesOverviewSnapshot?->layout, $marginal);
             $layout      = Arr::get($modelData, 'layout') ?? Arr::get($website->unpublishedFamiliesOverviewSnapshot?->layout, $marginal);
+        } elseif ($marginal == 'family_description') {
+            $customAudit = true;
+            $oldLayout   = $website->liveFamilyDescriptionSnapshot?->layout ?? $website->unpublishedFamilyDescriptionSnapshot?->layout;
+            $layout      = Arr::get($modelData, 'layout') ?? Arr::get($website->unpublishedFamilyDescriptionSnapshot?->layout, $marginal);
         } elseif ($marginal == 'product') {
             $customAudit = true;
             $oldLayout   = $website->liveProductSnapshot?->layout[$marginal] ?? Arr::get($website->unpublishedProductSnapshot?->layout, $marginal);
@@ -110,7 +115,7 @@ class PublishWebsiteMarginal extends OrgAction
             ]
         );
 
-        if (in_array($marginal, ['header', 'footer', 'menu', 'sidebar', 'department', 'sub_department', 'family', 'families_overview', 'product', 'products', 'collection'])) {
+        if (in_array($marginal, ['header', 'footer', 'menu', 'sidebar', 'department', 'sub_department', 'family', 'families_overview', 'family_description', 'product', 'products', 'collection'])) {
             $updateData = [
                 "live_{$marginal}_snapshot_id"   => $snapshot->id,
                 "published_layout->$marginal"    => $snapshot->layout,
@@ -123,9 +128,12 @@ class PublishWebsiteMarginal extends OrgAction
         }
 
         $website->update($updateData);
+        // todo family_description
         if (in_array($marginal, ['department', 'sub_department', 'family', 'product', 'products', 'families_overview'])) {
             // Update webpage, web_blocks & their snapshots (unpublished/published)
             UpdateWebBlockToWebsiteAndChild::dispatch($website, WebBlockType::find(data_get($layout, "id")), $marginal, data_get($layout, 'data.fieldValue'))->onQueue('low-priority');
+        } elseif (in_array($marginal, ['family_description'])) {
+            UpdateDescriptionBlockToWebsiteAndChild::dispatch($website, $layout, $marginal)->onQueue('low-priority');
         }
 
         BreakWebsiteCache::run($website);
@@ -135,8 +143,13 @@ class PublishWebsiteMarginal extends OrgAction
             $website->auditEvent    = "{$marginal}_published";
             $website->isCustomEvent = true;
 
-            $layoutFormatted    = Arr::except(data_get($snapshot->layout, 'data.fieldValue'), ['product']);
-            $oldLayoutFormatted = Arr::only(data_get($oldLayout, 'data.fieldValue'), array_keys($layoutFormatted));
+            if (Arr::has($snapshot->layout, 'data')) {
+                $layoutFormatted    = Arr::except(data_get($snapshot->layout, 'data.fieldValue'), ['product']);
+                $oldLayoutFormatted = Arr::only(data_get($oldLayout, 'data.fieldValue'), array_keys($layoutFormatted));
+            } else {
+                $layoutFormatted    = Arr::except(data_get($snapshot->layout, '*.fieldValue'), ['product']);
+                $oldLayoutFormatted = Arr::only(data_get($oldLayout, '*.fieldValue'), array_keys($layoutFormatted));
+            }
 
             $website->auditCustomOld = [
                 ...array_filter(Arr::dot($oldLayoutFormatted), mode: ARRAY_FILTER_USE_BOTH)
@@ -210,6 +223,18 @@ class PublishWebsiteMarginal extends OrgAction
     {
         $this->initialisationFromShop($website->shop, $request);
         $this->handle($website, 'family', $this->validatedData);
+    }
+
+    public function familiesOverview(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'families_overview', $this->validatedData);
+    }
+
+    public function familyDescription(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'family_description', $this->validatedData);
     }
 
     public function product(Website $website, ActionRequest $request): void

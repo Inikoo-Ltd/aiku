@@ -62,6 +62,7 @@ import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
 import ButtonSetAsWaiting from "@/Components/DeliveryNote/ButtonSetAsWaiting.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ButtonSelectBaysAndWaiting from "@/Components/DeliveryNote/ButtonSelectBaysAndWaiting.vue"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 
 library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes, faClipboardCheck, faClipboardListCheck);
@@ -102,6 +103,8 @@ const props = defineProps<{
         [key: string]: TSTimeline
     }
 	allowActions: boolean
+	allow_waiting: boolean
+	allow_picker_set_not_picked: boolean
     box_stats: {}
     quick_pickers: {}
     routes: {
@@ -145,6 +148,7 @@ const props = defineProps<{
 const layout = inject('layout', layoutStructure)
 const currentTab = ref(props.tabs?.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
+const showDropdown = ref(false);
 const component = computed(() => {
     const components: Component = {
         items: TableDeliveryNoteItems,
@@ -284,6 +288,10 @@ const listError = ref({
 });
 provide("listError", listError.value);
 
+// Section: to show Modal 'Add Shipment' if failed Dispatch (because no shipment yet)
+const openModalAddShipment = ref(false);
+provide("openModalAddShipment", openModalAddShipment);
+
 // const isModalEditAddress = ref(false)
 const xxxCopyAddress = ref({...props.address.delivery})
 
@@ -353,6 +361,23 @@ onMounted(() => {
 				fixed-width
 				aria-hidden="true" />
 		</template>
+		
+		<template #button-finalise-and-dispatch="{ action }">
+			<ButtonWithLink
+				:label="action.label"
+				:style="action.style"
+				v-tooltip="action.tooltip"
+				:routeTarget="action.route"
+				@error="(e) => {
+					notify({
+						title: ctrans('Something went wrong'),
+						text: e.message || 'Please try again later or contact administrator.',
+						type: 'error',
+					}),
+					openModalAddShipment = true
+				}"
+			/>
+		</template>
 
 		<template #otherBefore v-if="!box_stats.is_replacement">
 			<!-- toggle picking view -->
@@ -379,19 +404,20 @@ onMounted(() => {
 				</div>
 			</div>
 			<!-- Button: Download PDF -->
-			<a
-				v-if="route().params.deliveryNote"
-				:href="
-					route('grp.pdfs.delivery-notes', {
-						deliveryNote: route().params.deliveryNote,
-					})
-				"
-				as="a"
-				target="_blank"
-				class="flex items-center"
-				v-tooltip="trans('Download PDF of this Delivery Note')">
-				<Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
-			</a>
+			<div class="relative" v-if="route().params.deliveryNote">
+				<a	v-if="route().params.deliveryNote"
+					:href="
+						route('grp.pdfs.delivery-notes', {
+							deliveryNote: route().params.deliveryNote,
+						})
+					"
+					as="a"
+					target="_blank"
+					class="flex items-center"
+					v-tooltip="trans('Download PDF of this Delivery Note')">
+					<Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
+				</a>
+			</div>
 		</template>
 
 		<template #button-to-queue="{ action }">
@@ -461,7 +487,7 @@ onMounted(() => {
 		</template>
 
 		<!-- Button: Select picked bays (only for Ecom) -->
-		<template v-if="props.shop.type !== 'dropshipping'"  #button-set-as-packed="{ action }">
+		<template v-if="props.shop.type !== 'dropshipping'"  #button-trigger-set-as-picked-or-packed="{ action }">
 			<ButtonSelectBays
 				:warehouse="warehouse"
 				:deliveryNote="delivery_note"
@@ -523,7 +549,7 @@ onMounted(() => {
 	<!-- Section: Box Note -->
 	<div
 		v-if="
-			(pickingView && !box_stats.is_replacement) ||
+			pickingView ||
 			delivery_note_state.value === 'dispatched' ||
 			delivery_note_state.value === 'cancelled'
 		"
@@ -580,6 +606,8 @@ onMounted(() => {
 			:routes
 			:state="delivery_note.state"
 			:shop_type="shop_type"
+			:allowWaiting="allow_waiting"
+			:allowPickerSetNotPicked="allow_picker_set_not_picked"
 			@update:quantity-to-resend="handleQuantityToResendUpdate"
 			@validation-error="handleValidationError" />
 	</div>

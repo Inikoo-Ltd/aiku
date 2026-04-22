@@ -13,7 +13,6 @@ use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
 use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Enums\Miscellaneous\GenderEnum;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Task;
@@ -23,7 +22,6 @@ use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InOrganisation;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -62,8 +60,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $job_title
  * @property EmployeeTypeEnum $type
  * @property EmployeeStateEnum $state
- * @property string|null $employment_start_at
- * @property string|null $employment_end_at
+ * @property \Illuminate\Support\Carbon|null $employment_start_at
+ * @property \Illuminate\Support\Carbon|null $employment_end_at
  * @property array<array-key, mixed>|null $emergency_contact
  * @property array<array-key, mixed>|null $salary
  * @property array<array-key, mixed>|null $working_hours
@@ -100,7 +98,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\HumanResources\Clocking> $clockings
  * @property-read string|null $department
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Collection<int, \App\Models\HumanResources\HRAnnouncement> $hrAnnouncements
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $images
@@ -115,7 +113,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Task> $tasks
  * @property-read Collection<int, \App\Models\HumanResources\TimeTracker> $timeTrackers
  * @property-read Collection<int, \App\Models\HumanResources\Timesheet> $timesheets
- * @property-read UniversalSearch|null $universalSearch
  * @property-read User|null $user
  * @property-read Collection<int, User> $users
  * @property-read Collection<int, \App\Models\HumanResources\Workplace> $workplaces
@@ -134,7 +131,6 @@ class Employee extends Model implements HasMedia, Auditable
     use HasAddress;
     use HasAddresses;
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasImage;
     use HasAttachments;
     use HasFactory;
@@ -150,6 +146,8 @@ class Employee extends Model implements HasMedia, Auditable
         'salary' => 'array',
         'working_hours' => 'array',
         'migration_data' => 'array',
+        'employment_start_at' => 'datetime:Y-m-d',
+        'employment_end_at' => 'datetime:Y-m-d',
         'date_of_birth' => 'datetime:Y-m-d',
         'gender' => GenderEnum::class,
         'state' => EmployeeStateEnum::class,

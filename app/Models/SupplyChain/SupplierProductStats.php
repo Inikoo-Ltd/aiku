@@ -83,7 +83,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_stock_delivery_items_state_not_received
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\SupplyChain\SupplierProduct $supplierProduct
+ * @property-read \App\Models\SupplyChain\SupplierProduct|null $supplierProduct
  * @method static Builder<static>|SupplierProductStats newModelQuery()
  * @method static Builder<static>|SupplierProductStats newQuery()
  * @method static Builder<static>|SupplierProductStats query()

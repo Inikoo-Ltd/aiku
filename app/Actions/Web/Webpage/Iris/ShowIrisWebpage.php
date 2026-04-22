@@ -66,9 +66,12 @@ class ShowIrisWebpage
                 'description'   => $webpage->description,
                 'canonical_url' => $webpage->canonical_url,
                 'type'          => $webpage->type,
-
+                'sub_type'      => $webpage->sub_type,
+                'model_type'    => $webpage->model_type
             ],
             'webpage_img'  => $webpageImg,
+            'index_page'    => $webpage->index_page,
+            'follow_link'   => $webpage->follow_link
         ];
 
         return array_merge($baseWebpageData, [
@@ -212,8 +215,9 @@ class ShowIrisWebpage
 
             return redirect()->to($webpageData, 301)
                 ->withHeaders([
-                    'x-original-referer' => request()->headers->get('referer', '')
-                ]);
+                    'x-original-referer' => request()->headers->get('referer', ''),
+                ])
+                ->with('from-iris-redirect', true);
         }
 
         $browserTitle = Arr::get($webpageData, 'webpage_data.title', '');

@@ -63,7 +63,8 @@ import {
     faCartArrowDown,
     faWeight,
     faShapes,
-    faCommentAlt
+    faCommentAlt,
+    faDollyFlatbedAlt
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from "@fas"
@@ -124,7 +125,8 @@ library.add(
     faCartArrowDown,
     faWeight,
     faCommentAlt,
-    faUserLock
+    faUserLock,
+    faDollyFlatbedAlt
 )
 
 const props = defineProps<{

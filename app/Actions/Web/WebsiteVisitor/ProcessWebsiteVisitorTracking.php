@@ -25,17 +25,21 @@ class ProcessWebsiteVisitorTracking implements ShouldBeUnique
     public int $jobTimeout = 120;
     public int $jobTries = 1;
 
+    public function getJobUniqueId(string $sessionId, Website $website): string
+    {
+        return "$sessionId:$website->id";
+    }
+
     public function handle(
         string $sessionId,
         Website $website,
         ?WebUser $webUser,
         string $userAgent,
-        array $ips,
+        string $ip,
         string $currentUrl,
-        ?string $referrer
+        ?string $referrer,
+        array $geoLocation
     ): void {
-
-
         if (IsBot::run($userAgent)) {
             return;
         }
@@ -50,30 +54,30 @@ class ProcessWebsiteVisitorTracking implements ShouldBeUnique
         if ($visitor) {
             $visitor = UpdateWebsiteVisitor::run($visitor, $currentUrl);
         } else {
-
             $browserData = GetBrowserInfo::run($userAgent);
 
             $visitor = StoreWebsiteVisitor::run(
                 website: $website,
                 sessionId: $sessionId,
                 webUser: $webUser,
-                ips: $ips,
+                ip: $ip,
                 device: $browserData['device'],
                 browser: $browserData['browser'],
                 os: $browserData['os'],
                 userAgent: $userAgent,
                 currentUrl: $currentUrl,
                 referrer: $referrer,
+                geoLocation: $geoLocation
             );
         }
 
-        StoreWebsitePageView::dispatch($visitor, $website, $currentUrl);
+        StoreWebsitePageView::dispatch($visitor, $website, $currentUrl)->delay(5);
 
         if ($visitor->web_user_id) {
             $customer = $visitor->webUser?->customer;
 
             if ($customer) {
-                SyncCustomerWebActivities::dispatch($customer, now()->startOfDay());
+                SyncCustomerWebActivities::dispatch($customer, now()->startOfDay())->delay(10);
             }
         }
     }

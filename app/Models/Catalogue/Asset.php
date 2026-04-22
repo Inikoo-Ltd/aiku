@@ -51,7 +51,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $status
  * @property string $code mirror of the asset model
  * @property string|null $name mirror of the asset model
- * @property string|null $price mirror of the asset model
+ * @property numeric|null $price mirror of the asset model
  * @property numeric $units mirror of the asset model
  * @property string|null $unit mirror of the asset model
  * @property int $currency_id
@@ -67,7 +67,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Barcode> $barcode
  * @property-read Charge|null $charge
  * @property-read Currency $currency
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Catalogue\HistoricAsset|null $historicAsset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\HistoricAsset> $historicAssets
  * @property-read \App\Models\Helpers\Media|null $image

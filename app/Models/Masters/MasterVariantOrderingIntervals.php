@@ -201,7 +201,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $customers_invoiced_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Masters\MasterVariant $masterVariant
+ * @property-read \App\Models\Masters\MasterVariant|null $masterVariant
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterVariantOrderingIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterVariantOrderingIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterVariantOrderingIntervals query()

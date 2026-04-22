@@ -20,7 +20,7 @@ class ReindexProspectSearch extends HydrateModel
 
     public function handle(Prospect $prospect): void
     {
-        ProspectRecordSearch::run($prospect);
+
     }
 
 

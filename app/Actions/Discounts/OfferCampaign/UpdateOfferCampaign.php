@@ -9,7 +9,6 @@
 namespace App\Actions\Discounts\OfferCampaign;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOfferCampaigns;
-use App\Actions\Discounts\OfferCampaign\Search\OfferCampaignRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOfferCampaigns;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOfferCampaigns;
@@ -28,8 +27,6 @@ class UpdateOfferCampaign extends OrgAction
     public function handle(OfferCampaign $offerCampaign, array $modelData): OfferCampaign
     {
         $offerCampaign = $this->update($offerCampaign, $modelData);
-
-        OfferCampaignRecordSearch::dispatch($offerCampaign)->delay($this->hydratorsDelay);
 
         if ($offerCampaign->wasChanged(['state', 'status'])) {
             GroupHydrateOfferCampaigns::dispatch($offerCampaign->group)->delay($this->hydratorsDelay);

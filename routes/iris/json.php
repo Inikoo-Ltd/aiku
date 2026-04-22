@@ -10,7 +10,7 @@
 
 use App\Actions\Iris\Basket\GetIrisBasketTransactionProductData;
 use Illuminate\Support\Facades\Route;
-use App\Actions\Iris\IrisLogWebUserRequest;
+use App\Actions\Iris\IrisCollectTrafficSources;
 use App\Actions\Helpers\Tag\Json\GetIrisTags;
 use App\Actions\Iris\Json\GetIrisSidebarData;
 use App\Actions\Iris\Json\GetIrisFirstHitData;
@@ -37,9 +37,11 @@ use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProductCategor
 use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsOfVariant;
 use App\Actions\Catalogue\Product\Json\GetVariantAndProducts;
+use App\Actions\Catalogue\Shop\Json\FetchProductReviewThirdParty;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerCollectionSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductCategorySalesChannelIds;
+use App\Actions\Iris\Catalogue\FetchFamilyListCustomSorted;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
 use App\Actions\Web\Luigi\LuigiBoxGetProductDetail;
 use App\Actions\Web\Luigi\LuigiBoxRecommendation;
@@ -66,7 +68,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     Route::get('first-hit', GetIrisFirstHitData::class)->name('first_hit');
     Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');
-    Route::get('hit', IrisLogWebUserRequest::class)->name('hit');
+    Route::get('hit', IrisCollectTrafficSources::class)->name('hit');
 
     Route::get('collection/{collection:id}/portfolio-data', GetIrisPortfoliosInCollection::class)->name('collection.portfolio_data');
     Route::get('tags', GetIrisTags::class)->name('tags.index');
@@ -99,4 +101,10 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('luigi-product-details', LuigiBoxGetProductDetail::class)->name('luigi.product_details');
 
     Route::get('banner/{banner:id}', GetBanner::class)->name('get_banner');
+
+    // Reviews
+    Route::get('product/{product:slug}/reviews-third-party', FetchProductReviewThirdParty::class)->name('reviews.third_party.product_review');
+
+    // Families Custom Sort
+    Route::get('{webpage:slug}/{productCategory}/families', FetchFamilyListCustomSorted::class)->name('website.category.family_list_sorted');
 });

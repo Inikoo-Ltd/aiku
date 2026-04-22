@@ -9,7 +9,6 @@
 namespace App\Actions\Fulfilment\PalletReturn;
 
 use App\Actions\Fulfilment\PalletReturn\Notifications\SendPalletReturnNotification;
-use App\Actions\Fulfilment\PalletReturn\Search\PalletReturnRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
@@ -29,7 +28,6 @@ class SubmitPalletReturn extends OrgAction
         if ($sendNotifications) {
             SendPalletReturnNotification::run($palletReturn);
         }
-        PalletReturnRecordSearch::dispatch($palletReturn);
 
         return $palletReturn;
     }

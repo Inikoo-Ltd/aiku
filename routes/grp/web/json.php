@@ -106,6 +106,7 @@ use App\Actions\Web\WebBlockHistory\GetWebBlockHistories;
 use App\Actions\Web\WebBlockType\GetWebBlockTypes;
 use App\Actions\Web\Webpage\Json\GetWebpagesForCollection;
 use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
+use App\Actions\Web\Website\UI\Json\FetchFamilyDescriptionBlockLayout;
 use Illuminate\Support\Facades\Route;
 
 Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
@@ -198,6 +199,8 @@ Route::get('workshop/product-category/{productCategory}/collections', GetCollect
 Route::get('workshop/collection/{collection:id}/products', GetProductsInCollection::class)->name('collection.products.index');
 Route::get('workshop/collection/{collection}/families', GetFamiliesInCollection::class)->name('collection.families.index');
 
+Route::get('workshop/{website}/{webBlockType:slug}', FetchFamilyDescriptionBlockLayout::class)->name('workshop.fetch_descriptions_layout')->withoutScopedBindings();
+
 Route::get('parent/collection/{collection}/departments', GetDepartmentsInCollection::class)->name('collection.parent.departments.index');
 Route::get('parent/collection/{collection}/sub-departments', GetSubDepartmentsInCollection::class)->name('collection.parent.sub_departments.index');
 
@@ -244,6 +247,8 @@ Route::get('webpage/{webpage:id}/web-block-type/{webBlockType:id}/web-block-hist
 Route::get('master-product-category/{masterProductCategory:id}/recommended-trade-units', GetRecommendedTradeUnits::class)->name('master-product-category.recommended-trade-units')->withoutScopedBindings();
 Route::get('master-product-category/{masterProductCategory:id}/taken-trade-units', GetTakenTradeUnits::class)->name('master-product-category.taken-trade-units')->withoutScopedBindings();
 Route::get('master-product-category/all-trade-units', GetAllTradeUnitsInGroup::class)->name('master_product_category.all_trade_units');
+
+Route::get('brand/{brand:id}/all-trade-units/', [GetAllTradeUnitsInGroup::class, 'inBrand'])->name('brand.all_trade_units');
 
 Route::get('product/{product:id}/trade-units/all', GetAllTradeUnitsInProduct::class)->name('trade-units.all.under-product')->withoutScopedBindings();
 Route::get('product/{product:id}/trade-units/recommended', [GetRecommendedTradeUnits::class, 'inExternal'])->name('trade-units.recommended.under-product')->withoutScopedBindings();

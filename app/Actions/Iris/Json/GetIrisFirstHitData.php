@@ -9,7 +9,6 @@
 namespace App\Actions\Iris\Json;
 
 use App\Actions\Iris\CaptureTrafficSource;
-use App\Actions\Iris\RetinaLogWebUserRequest;
 use App\Actions\IrisAction;
 use App\Actions\Traits\HasIrisUserData;
 use App\Models\Catalogue\Collection;
@@ -19,8 +18,6 @@ use Lorisleiva\Actions\ActionRequest;
 class GetIrisFirstHitData extends IrisAction
 {
     use HasIrisUserData;
-
-
 
     private ?\App\Models\Fulfilment\Fulfilment $fulfilment;
     private null $fulfilmentCustomer;
@@ -45,8 +42,6 @@ class GetIrisFirstHitData extends IrisAction
             $this->customer = $this->webUser?->customer;
             $this->shop = $this->customer?->shop;
 
-
-            RetinaLogWebUserRequest::run();
             Cookie::queue('iris_vua', true, config('session.lifetime') * 60);
             return $this->getIrisUserData();
         } else {

@@ -35,9 +35,9 @@ class StoreWebUserRequest extends GrpAction
         OrganisationHydrateWebUserRequests::dispatch($webUser->organisation_id)->delay(600);
         WebsiteHydrateWebUserRequests::dispatch($webUser->website_id)->delay(300);
         if ($webUserRequest->webpage_id) {
-            WebpageHydrateWebUserRequests::dispatch($webUserRequest->webpage_id);
+            WebpageHydrateWebUserRequests::dispatch($webUserRequest->webpage_id)->delay(300);
         }
-        WebUserHydrateWebUserRequests::dispatch($webUserRequest->web_user_id);
+        WebUserHydrateWebUserRequests::dispatch($webUserRequest->web_user_id)->delay(30);
 
         return $webUserRequest;
     }

@@ -27,6 +27,8 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Http\Resources\Catalogue\OffersResource;
+use App\Actions\Discounts\Offer\UI\IndexOffers;
 
 class ShowSubDepartment extends OrgAction
 {
@@ -208,6 +210,13 @@ class ShowSubDepartment extends OrgAction
                     'method'     => 'post'
                 ] : [],
 
+                'shop_data'                            => [
+                    'id'            => $subDepartment->shop->id,
+                    'slug'          => $subDepartment->shop->slug,
+                    'currency_code' => $subDepartment->shop->currency->code,
+                ],
+                'product_category_id'                  => $subDepartment->id,
+
                 DepartmentTabsEnum::SHOWCASE->value => $this->tab == DepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryShowcase::run($subDepartment)
                     : Inertia::lazy(fn () => GetProductCategoryShowcase::run($subDepartment)),
@@ -244,6 +253,9 @@ class ShowSubDepartment extends OrgAction
                     fn () => GetProductCategoryImages::run($subDepartment)
                     : Inertia::lazy(fn () => GetProductCategoryImages::run($subDepartment)),
 
+                DepartmentTabsEnum::OFFERS->value => $this->tab == DepartmentTabsEnum::OFFERS->value ?
+                fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $subDepartment, prefix: DepartmentTabsEnum::OFFERS->value))
+                : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $subDepartment, prefix: DepartmentTabsEnum::OFFERS->value))),
             ]
         )->table(
             IndexCustomers::make()->tableStructure(
@@ -252,7 +264,8 @@ class ShowSubDepartment extends OrgAction
             )
         )
             ->table(IndexHistory::make()->tableStructure(prefix: DepartmentTabsEnum::HISTORY->value))
-            ->table(IndexProductCategoryTimeSeries::make()->tableStructure(prefix: DepartmentTabsEnum::SALES->value));
+            ->table(IndexProductCategoryTimeSeries::make()->tableStructure(prefix: DepartmentTabsEnum::SALES->value))
+            ->table(IndexOffers::make()->tableStructure(parent: $subDepartment, prefix: DepartmentTabsEnum::OFFERS->value));
     }
 
 

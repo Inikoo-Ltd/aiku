@@ -13,31 +13,21 @@ use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\Product;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
-class RedoProductTimeSeries implements ShouldBeUnique
+class RedoProductTimeSeries
 {
     use WithHydrateCommand;
     use WithTimeSeriesRedo {
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue = 'default-long';
     public string $commandSignature = 'products:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
     {
         $this->model = Product::class;
-    }
-
-    public function getJobUniqueId(?int $productId, ?string $from, ?string $to): string
-    {
-        if ($productId === null) {
-            return 'empty'.'_'.$from.'_'.$to;
-        }
-        return $productId.'_'.$from.'_'.$to;
     }
 
     public function handle(?int $productId, ?string $from = null, ?string $to = null, bool $async = false): void
@@ -69,7 +59,7 @@ class RedoProductTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessAssetTimeSeriesRecords::dispatch($product->asset_id, $frequency, $from, $to)->onQueue('low-priority');
+                ProcessAssetTimeSeriesRecords::dispatch($product->asset_id, $frequency, $from, $to)->onQueue('sales_slave_historic');
             } else {
                 ProcessAssetTimeSeriesRecords::run($product->asset_id, $frequency, $from, $to);
             }

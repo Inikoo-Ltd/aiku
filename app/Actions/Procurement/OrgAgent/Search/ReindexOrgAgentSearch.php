@@ -22,7 +22,6 @@ class ReindexOrgAgentSearch extends HydrateModel
 
     public function handle(OrgAgent $orgAgent): void
     {
-        OrgAgentRecordSearch::run($orgAgent);
     }
 
     protected function getModel(string $slug): OrgAgent

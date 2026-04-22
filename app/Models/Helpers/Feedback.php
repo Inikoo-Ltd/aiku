@@ -13,7 +13,6 @@ use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -49,12 +48,11 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read Model|\Eloquent $origin
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Transaction> $transaction
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read User|null $user
  * @property-read Warehouse|null $warehouse
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback newModelQuery()
@@ -68,7 +66,6 @@ use OwenIt\Auditing\Contracts\Auditable;
 class Feedback extends Model implements Auditable
 {
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasHistory;
     use InShop;
 

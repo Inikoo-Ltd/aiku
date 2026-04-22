@@ -95,7 +95,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $org_stock_movements_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read Stock $stock
+ * @property-read Stock|null $stock
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockIntervals query()

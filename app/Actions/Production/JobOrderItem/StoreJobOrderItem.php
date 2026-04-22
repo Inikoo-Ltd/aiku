@@ -49,18 +49,6 @@ class StoreJobOrderItem extends OrgAction
         }
         $jobOrderItem->refresh();
 
-
-        // if ($this->parent instanceof PalletDelivery) {
-        // }
-        // FulfilmentCustomerHydratePallets::dispatch($fulfilmentCustomer);
-        // FulfilmentHydratePallets::dispatch($fulfilmentCustomer->fulfilment);
-        // OrganisationHydratePallets::dispatch($fulfilmentCustomer->organisation);
-        // WarehouseHydratePallets::dispatch($pallet->warehouse);
-        // if ($pallet->location && $pallet->location->warehouseArea) {
-        //     WarehouseAreaHydratePallets::dispatch($pallet->location->warehouseArea);
-        // }
-        // PalletRecordSearch::dispatch($pallet);
-
         return $jobOrderItem;
     }
 
@@ -111,25 +99,4 @@ class StoreJobOrderItem extends OrgAction
     }
 
 
-
-    // public function htmlResponse(Pallet $pallet, ActionRequest $request): RedirectResponse
-    // {
-    //     if ($this->parent instanceof PalletDelivery) {
-    //         return Redirect::route('grp.org.fulfilments.show.crm.customers.show.pallet_deliveries.show', [
-    //             'organisation'       => $pallet->organisation->slug,
-    //             'fulfilment'         => $pallet->fulfilment->slug,
-    //             'fulfilmentCustomer' => $pallet->fulfilmentCustomer->slug,
-    //             'palletDelivery'     => $this->parent->slug
-    //         ]);
-    //     }
-
-    //     return Redirect::route(
-    //         'grp.org.fulfilments.show.crm.customers.show',
-    //         [
-    //             'organisation'       => $pallet->organisation->slug,
-    //             'fulfilment'         => $pallet->fulfilment->slug,
-    //             'fulfilmentCustomer' => $pallet->fulfilmentCustomer->slug,
-    //         ]
-    //     );
-    // }
 }

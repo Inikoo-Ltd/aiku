@@ -21,7 +21,6 @@ trait IsUserable
     use SoftDeletes;
     use HasSlug;
     use HasFactory;
-    use HasUniversalSearch;
     use HasHistory;
 
     public function getRouteKeyName(): string

@@ -20,7 +20,7 @@ class ReindexServiceSearch extends HydrateModel
 
     public function handle(Service $service): void
     {
-        ServiceRecordSearch::run($service);
+
     }
 
     protected function getModel(string $slug): Service

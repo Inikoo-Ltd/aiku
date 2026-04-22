@@ -17,7 +17,9 @@ import {
     faPaperclip,
     faCube,
     faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign,
-    faExclamationCircle
+    faExclamationCircle,
+    faMoneyCheckEditAlt,
+    faChartLine
 } from "@fal"
 import {
 faCloudRainbow
@@ -41,6 +43,7 @@ import { Tabs as TSTabs } from "@/types/Tabs"
 import TableTradeUnits from "@/Components/Tables/Grp/Goods/TableTradeUnits.vue"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
 import { Message } from "primevue"
+import StockIssues from "@/Components/Warehouse/Inventory/StockIssues.vue"
 
 library.add(
     faInventory,
@@ -54,7 +57,9 @@ library.add(
     faPoop,
     faScanner,
     faDollarSign,
-    faCloudRainbow
+    faCloudRainbow,
+    faMoneyCheckEditAlt,
+    faChartLine
 )
 
 
@@ -71,6 +76,7 @@ const props = defineProps<{
     products?: {}
     trade_units?: {}
     stock_history?: {}
+    purchase_history?: {}
     master: {}
     masterRoute: routeType | null
 }>()
@@ -82,11 +88,13 @@ const component = computed(() => {
 
     const components = {
         showcase: StockShowcase,
+        feedbacks: StockIssues,
         locations: TableLocations,
         supplier_products: TableSupplierProducts,
         products: TableProducts,
         trade_units: TableTradeUnits,
         stock_history: TableOrgStockMovements,
+        purchase_history: TableOrgStockMovements,
         details: ModelDetails,
         history: ModelChangelog,
         purchase_orders: TablePurchaseOrders
@@ -101,7 +109,7 @@ const component = computed(() => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #afterTitle>
+        <template #afterTitle2>
             <Link
                 v-if="master"
                 :href="masterRoute?.name ? route(masterRoute.name, masterRoute.parameters) : ''"
@@ -115,7 +123,7 @@ const component = computed(() => {
             </Link>
         </template>
     </PageHeading>
-    <div>
+    <!-- <div>
         <Message :severity="'warn'">
             <FontAwesomeIcon 
                 :icon="faExclamationCircle" 
@@ -123,7 +131,7 @@ const component = computed(() => {
             />
             {{ trans("Stock location changes for this Org SKU may be overwritten during Aurora imports.") }}
         </Message>
-    </div>
+    </div> -->
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
 </template>

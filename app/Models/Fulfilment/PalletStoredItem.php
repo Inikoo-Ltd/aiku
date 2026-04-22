@@ -19,8 +19,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $id
  * @property int $pallet_id
  * @property int $stored_item_id
- * @property string $quantity
- * @property string $damaged_quantity
+ * @property numeric $quantity
+ * @property numeric $damaged_quantity
  * @property string $source
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -30,8 +30,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $last_stored_item_audit_id
  * @property bool $in_process
  * @property PalletStoredItemStateEnum $state
- * @property string|null $delivered_quantity
- * @property-read \App\Models\Fulfilment\Pallet $pallet
+ * @property numeric|null $delivered_quantity
+ * @property-read \App\Models\Fulfilment\Pallet|null $pallet
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\PalletReturnItem> $palletReturnItems
  * @property-read \App\Models\Fulfilment\StoredItem $storedItem
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletStoredItem newModelQuery()

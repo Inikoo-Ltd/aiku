@@ -16,7 +16,6 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePacker;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePicker;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
-use App\Actions\Dispatching\DeliveryNote\Search\DeliveryNoteRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
@@ -53,11 +52,10 @@ class UpdateDeliveryNote extends OrgAction
         $deliveryNote->refresh();
 
         if (count($changes) > 0) {
-            DeliveryNoteRecordSearch::dispatch($deliveryNote)->delay($this->hydratorsDelay);
 
             if (Arr::has($changes, 'type')) {
-                GroupHydrateDeliveryNotes::dispatch($deliveryNote->group_id, DeliveryNoteTypeEnum::ORDER)->delay($this->hydratorsDelay);
-                GroupHydrateDeliveryNotes::dispatch($deliveryNote->group_id, DeliveryNoteTypeEnum::REPLACEMENT)->delay($this->hydratorsDelay);
+                GroupHydrateDeliveryNotes::dispatch($deliveryNote->group_id, DeliveryNoteTypeEnum::ORDER)->delay(60);
+                GroupHydrateDeliveryNotes::dispatch($deliveryNote->group_id, DeliveryNoteTypeEnum::REPLACEMENT)->delay(60);
                 OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation_id, DeliveryNoteTypeEnum::ORDER)->delay($this->hydratorsDelay);
                 OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation_id, DeliveryNoteTypeEnum::REPLACEMENT)->delay($this->hydratorsDelay);
                 ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop_id, DeliveryNoteTypeEnum::ORDER)->delay($this->hydratorsDelay);

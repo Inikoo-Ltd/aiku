@@ -64,7 +64,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_current_api_tokens
  * @property int $number_expired_api_tokens
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupSysAdminStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupSysAdminStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupSysAdminStats query()

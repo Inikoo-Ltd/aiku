@@ -604,7 +604,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 <div v-if="isMenuOpen && !isClosed"
                     class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
                     <ModalConfirmationDelete :routeDelete="{
-                        name: 'grp.org.crm.agents.sessions.close',
+                        name: 'grp.org.chat.agents.sessions.close',
                         parameters: [session?.organisation.id, session?.ulid],
                         method: 'patch',
                     }" :title="trans('Are you sure you want to close this session?')"

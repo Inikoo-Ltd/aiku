@@ -178,6 +178,14 @@ class EditSubDepartment extends OrgAction
                                             'mode'          => 'single',
                                             'value'         => $subDepartment->description,
                                             'reviewed'      => $subDepartment->is_description_reviewed,
+                                            'routeGetInternalLink' => [
+                                                    'name' => 'grp.org.shops.show.web.webpages.index',
+                                                    'parameters' => [
+                                                        'shop' => $subDepartment->shop->slug,
+                                                        'organisation' => $subDepartment->organisation->slug,
+                                                        'website' => $subDepartment->shop->website?->slug
+                                                    ]
+                                            ],
                                             'toogle'  => [
                                                 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                 'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
@@ -190,6 +198,14 @@ class EditSubDepartment extends OrgAction
                                             'value' => $subDepartment->description,
                                             'options' => [
                                                 'counter' => true,
+                                            ],
+                                            'routeGetInternalLink' => [
+                                                    'name' => 'grp.org.shops.show.web.webpages.index',
+                                                    'parameters' => [
+                                                        'shop' => $subDepartment->shop->slug,
+                                                        'organisation' => $subDepartment->organisation->slug,
+                                                        'website' => $subDepartment->shop->website?->slug
+                                                    ]
                                             ],
                                             'toogle'  => [
                                                     'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
@@ -208,6 +224,14 @@ class EditSubDepartment extends OrgAction
                                             'mode'          => 'single',
                                             'value'         => $subDepartment->description_extra,
                                             'reviewed'      => $subDepartment->is_description_extra_reviewed,
+                                            'routeGetInternalLink' => [
+                                                    'name' => 'grp.org.shops.show.web.webpages.index',
+                                                    'parameters' => [
+                                                        'shop' => $subDepartment->shop->slug,
+                                                        'organisation' => $subDepartment->organisation->slug,
+                                                        'website' => $subDepartment->shop->website?->slug
+                                                    ]
+                                            ],
                                             'toogle'  => [
                                                 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                 'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
@@ -220,6 +244,14 @@ class EditSubDepartment extends OrgAction
                                             'value' => $subDepartment->description_extra,
                                             'options' => [
                                                 'counter' => true,
+                                            ],
+                                            'routeGetInternalLink' => [
+                                                    'name' => 'grp.org.shops.show.web.webpages.index',
+                                                    'parameters' => [
+                                                        'shop' => $subDepartment->shop->slug,
+                                                        'organisation' => $subDepartment->organisation->slug,
+                                                        'website' => $subDepartment->shop->website?->slug
+                                                    ]
                                             ],
                                             'toogle'  => [
                                                     'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",

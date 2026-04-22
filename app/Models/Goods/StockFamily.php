@@ -9,12 +9,10 @@
 namespace App\Models\Goods;
 
 use App\Enums\Goods\StockFamily\StockFamilyStateEnum;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\Inventory\OrgStockFamily;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InGroup;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,7 +49,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_slug
  * @property string|null $source_id
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \App\Models\Goods\StockFamilyIntervals|null $intervals
@@ -62,7 +60,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Goods\StockFamilyStats|null $stats
  * @property-read Collection<int, \App\Models\Goods\Stock> $stocks
  * @property-read Collection<int, \App\Models\Goods\StockFamilyTimeSeries> $timeSeries
- * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Goods\StockFamilyFactory factory($count = null, $state = [])
  * @method static Builder<static>|StockFamily newModelQuery()
  * @method static Builder<static>|StockFamily newQuery()
@@ -79,7 +76,6 @@ class StockFamily extends Model implements HasMedia, Auditable
     use HasImage;
     use InGroup;
     use HasHistory;
-    use HasUniversalSearch;
     use HasFactory;
 
     protected $casts = [

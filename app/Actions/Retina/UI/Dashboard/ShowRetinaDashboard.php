@@ -14,6 +14,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Illuminate\Support\Arr;
 
 class ShowRetinaDashboard extends RetinaAction
 {
@@ -43,6 +44,7 @@ class ShowRetinaDashboard extends RetinaAction
                     ShopTypeEnum::B2B => GetRetinaB2BHomeData::run($this->customer),
                     default => []
                 },
+                'welcome_message' => Arr::get($this->website->settings, 'welcome_message'),
             ]
         );
     }

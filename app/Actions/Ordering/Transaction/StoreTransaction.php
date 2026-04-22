@@ -131,7 +131,7 @@ class StoreTransaction extends OrgAction
                 url: request()->header('referer') ?? request()->fullUrl(),
                 productId: $transaction->asset_id,
                 quantity: 1
-            );
+            )->delay(now()->addSeconds(2));
         }
 
         return $transaction;

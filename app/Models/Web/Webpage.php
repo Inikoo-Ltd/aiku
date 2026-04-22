@@ -21,7 +21,6 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InWebsite;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -92,10 +91,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $llms_description
  * @property array<array-key, mixed>|null $structured_data
  * @property string $layout_style
+ * @property bool $index_page
+ * @property bool $follow_link
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read Collection<int, \App\Models\Web\Redirect> $incomingRedirects
@@ -110,18 +111,17 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Webpage|null $redirectWebpage
  * @property-read \App\Models\Web\Redirect|null $redirectedTo
  * @property-read \App\Models\Helpers\Media|null $seoImage
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @property-read Collection<int, Snapshot> $snapshots
  * @property-read \App\Models\Web\WebpageStats|null $stats
  * @property-read Collection<int, \App\Models\Web\WebpageTimeSeries> $timeSeries
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Snapshot|null $unpublishedSnapshot
  * @property-read Collection<int, \App\Models\Web\WebBlockHistory> $webBlockHistories
  * @property-read Collection<int, \App\Models\Web\WebBlock> $webBlocks
  * @property-read Collection<int, WebUserRequest> $webUserRequests
  * @property-read Collection<int, \App\Models\Web\WebpageHasProduct> $webpageHasProducts
  * @property-read Collection<int, Webpage> $webpages
- * @property-read \App\Models\Web\Website $website
+ * @property-read \App\Models\Web\Website|null $website
  * @method static \Database\Factories\Web\WebpageFactory factory($count = null, $state = [])
  * @method static Builder<static>|Webpage newModelQuery()
  * @method static Builder<static>|Webpage newQuery()
@@ -135,7 +135,6 @@ class Webpage extends Model implements Auditable, HasMedia
 {
     use HasSlug;
     use HasFactory;
-    use HasUniversalSearch;
     use SoftDeletes;
     use InWebsite;
     use HasHistory;

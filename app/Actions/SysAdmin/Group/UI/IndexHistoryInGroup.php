@@ -12,7 +12,6 @@ namespace App\Actions\SysAdmin\Group\UI;
 
 use App\Actions\GrpAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
-use App\Actions\SysAdmin\User\Traits\WithFormattedUserHistories;
 use App\Http\Resources\History\HistoryResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\SysAdmin\Group;
@@ -22,17 +21,11 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 use OwenIt\Auditing\Models\Audit;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexHistoryInGroup extends GrpAction
 {
-    use AsAction;
-    use WithAttributes;
-    use WithFormattedUserHistories;
-
     public function handle(Group $group, $prefix = null): LengthAwarePaginator|array|bool
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -54,7 +47,7 @@ class IndexHistoryInGroup extends GrpAction
 
         return $queryBuilder
             ->defaultSort('audits.created_at')
-            ->allowedSorts(['ip_address','auditable_id', 'auditable_type', 'user_type', 'url','created_at'])
+            ->allowedSorts(['ip_address', 'auditable_id', 'auditable_type', 'user_type', 'url', 'created_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -63,13 +56,13 @@ class IndexHistoryInGroup extends GrpAction
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation(app('group'), $request);
+
         return $this->handle($this->group);
     }
 
     public function tableStructure($prefix = null, ?array $exportLinks = null): Closure
     {
         return function (InertiaTable $table) use ($exportLinks, $prefix) {
-
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -100,11 +93,11 @@ class IndexHistoryInGroup extends GrpAction
                 ),
                 'title'       => __('Changelog'),
                 'pageHead'    => [
-                    'icon'      => [
+                    'icon'  => [
                         'icon'  => ['fal', 'fa-history'],
                         'title' => __('Changelog')
                     ],
-                    'title'     => __('Changelog'),
+                    'title' => __('Changelog'),
                 ],
                 'data'        => HistoryResource::collection($histories),
             ]
@@ -133,7 +126,7 @@ class IndexHistoryInGroup extends GrpAction
                 ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
-                        'name' => $routeName,
+                        'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
                     $suffix

@@ -96,7 +96,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read Shop|null $shop
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static Builder<static>|ShopifyUser newModelQuery()
  * @method static Builder<static>|ShopifyUser newQuery()
  * @method static Builder<static>|ShopifyUser onlyTrashed()

@@ -19,14 +19,11 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\Feedback;
 use App\Models\Helpers\TaxCategory;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\SalesChannel;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasRetinaSearch;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InCustomer;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -62,20 +59,20 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $currency_id
  * @property numeric|null $grp_exchange
  * @property numeric|null $org_exchange
- * @property string $gross_amount Total asserts amount (excluding charges and shipping) before discounts
- * @property string $goods_amount
- * @property string $services_amount
- * @property string $rental_amount
- * @property string $charges_amount
- * @property string|null $shipping_amount
- * @property string|null $insurance_amount
- * @property string $net_amount
- * @property string|null $grp_net_amount
- * @property string|null $org_net_amount
+ * @property numeric $gross_amount Total asserts amount (excluding charges and shipping) before discounts
+ * @property numeric $goods_amount
+ * @property numeric $services_amount
+ * @property numeric $rental_amount
+ * @property numeric $charges_amount
+ * @property numeric|null $shipping_amount
+ * @property numeric|null $insurance_amount
+ * @property numeric $net_amount
+ * @property numeric|null $grp_net_amount
+ * @property numeric|null $org_net_amount
  * @property int $tax_category_id
- * @property string $tax_amount
- * @property string $total_amount
- * @property string $payment_amount
+ * @property numeric $tax_amount
+ * @property numeric $total_amount
+ * @property numeric $payment_amount
  * @property \Illuminate\Support\Carbon|null $date
  * @property \Illuminate\Support\Carbon|null $tax_liability_at
  * @property \Illuminate\Support\Carbon|null $paid_at
@@ -114,7 +111,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $ulid
  * @property int|null $master_shop_id
  * @property InvoicePayDetailedStatusEnum|null $pay_detailed_status
- * @property string $effective_total effective total to pay
+ * @property numeric $effective_total effective total to pay
  * @property bool $is_cash_on_delivery
  * @property int|null $shipping_zone_schema_id
  * @property int|null $shipping_zone_id
@@ -124,19 +121,19 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $external_id
  * @property bool $is_tax_only
  * @property numeric $commission_amount
- * @property string $profit_amount
- * @property string|null $margin
- * @property string $amount_off
+ * @property numeric $profit_amount
+ * @property numeric|null $margin
+ * @property numeric $amount_off
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
  * @property-read Currency $currency
- * @property-read Customer $customer
+ * @property-read Customer|null $customer
  * @property-read CustomerClient|null $customerClient
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, Feedback> $feedbacks
  * @property-read Collection<int, Address> $fixedAddresses
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read \App\Models\Accounting\InvoiceCategory|null $invoiceCategory
  * @property-read Collection<int, \App\Models\Accounting\InvoiceTransaction> $invoiceTransactions
  * @property-read Order|null $order
@@ -146,12 +143,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Accounting\Payment> $payments
  * @property-read RecurringBill|null $recurringBill
  * @property-read Collection<int, Invoice> $refunds
- * @property-read \App\Models\Helpers\RetinaSearch|null $retinaSearch
  * @property-read SalesChannel|null $salesChannel
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @property-read \App\Models\Accounting\InvoiceStats|null $stats
  * @property-read TaxCategory $taxCategory
- * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Accounting\InvoiceFactory factory($count = null, $state = [])
  * @method static Builder<static>|Invoice newModelQuery()
  * @method static Builder<static>|Invoice newQuery()
@@ -165,8 +160,6 @@ class Invoice extends Model implements Auditable
 {
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
-    use HasRetinaSearch;
     use HasFactory;
     use InCustomer;
     use HasHistory;
@@ -208,6 +201,7 @@ class Invoice extends Model implements Auditable
         'email',
         'phone',
         'commission_amount',
+        'date',
     ];
 
     public function getRouteKeyName(): string
@@ -234,7 +228,7 @@ class Invoice extends Model implements Auditable
     }
 
     /**
-     * Relation to main order, usually the only one, used no avoid looping over orders
+     * Relation to the main order, usually the only one, used no avoid looping over orders
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */

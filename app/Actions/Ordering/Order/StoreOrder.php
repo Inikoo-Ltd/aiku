@@ -12,7 +12,6 @@ use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateOrder
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
-use App\Actions\Ordering\Order\Search\OrderRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
@@ -254,9 +253,6 @@ class StoreOrder extends OrgAction
                 ]);
             }
         }
-
-
-        OrderRecordSearch::dispatch($order);
 
         return $order->fresh();
     }

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Fulfilment\Pallet;
 
-use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
@@ -34,7 +33,6 @@ class ReturnPalletToCustomer extends OrgAction
             'state'       => PalletStateEnum::DISPATCHED,
             'status'      => PalletStatusEnum::RETURNED
         ]);
-        PalletRecordSearch::dispatch($pallet);
         return $pallet;
     }
 

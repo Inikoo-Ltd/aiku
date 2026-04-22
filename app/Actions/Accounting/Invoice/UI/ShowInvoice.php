@@ -245,7 +245,8 @@ class ShowInvoice extends OrgAction
         ];
 
         return array_map(function (array $column) use ($savedColumns) {
-            $column['is_checked'] = (bool) Arr::get($savedColumns, $column['value'], false);
+            $column['is_checked'] = (bool)Arr::get($savedColumns, $column['value'], false);
+
             return $column;
         }, $columns);
     }
@@ -303,15 +304,15 @@ class ShowInvoice extends OrgAction
     {
         if ($invoice->type == InvoiceTypeEnum::REFUND) {
             if (str_ends_with($request->route()->getName(), 'invoices.show')) {
-
                 $parameters = $request->route()->originalParameters();
-                $lastKey = array_key_last($parameters);
+                $lastKey    = array_key_last($parameters);
                 if ($lastKey !== null) {
                     $parameters['refund'] = $parameters[$lastKey];
                     unset($parameters[$lastKey]);
                 }
 
                 $routeName = preg_replace('/invoices.show/', 'refunds.show', $request->route()->getName());
+
                 return Redirect::route($routeName, $parameters);
             }
 
@@ -391,27 +392,26 @@ class ShowInvoice extends OrgAction
 
                 ...$payBoxData,
 
-                'invoiceExportOptions' => $exportInvoiceOptions,
-                'routes'               => [
+                'invoiceExportOptions'          => $exportInvoiceOptions,
+                'routes'                        => [
                     'delivery_note'          => $deliveryNoteRoute,
                     'updateInvoiceDateRoute' => [
                         'name'       => 'grp.models.invoice.update.date',
                         'parameters' => [$invoice->id]
                     ],
                 ],
-                //  Todo: Edit restriction
-                'can'                  => [
-                    'editInvoiceDate' => app()->isLocal() && $request->user()->authTo("accounting.{$this->organisation->id}.edit"),
+                'can'                           => [
+                    'editInvoiceDate' => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
                 ],
-                'box_stats'    => $this->getBoxStats($invoice),
-                'list_refunds' => RefundResource::collection($invoice->refunds),
-                'invoice'      => InvoiceResource::make($invoice),
-                'outbox'       => [
+                'box_stats'                     => $this->getBoxStats($invoice),
+                'list_refunds'                  => RefundResource::collection($invoice->refunds),
+                'invoice'                       => InvoiceResource::make($invoice),
+                'outbox'                        => [
                     'state'          => $invoice->shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER->value)->first()?->state->value,
                     'workshop_route' => $this->getOutboxRoute($invoice)
                 ],
-                'download_pdf_column'    => $this->getDownloadPdfColumns($invoice),
-                'is_external'            => $invoice->shop?->type->value == 'external',
+                'download_pdf_column'           => $this->getDownloadPdfColumns($invoice),
+                'is_external'                   => $invoice->shop?->type->value == 'external',
                 InvoiceTabsEnum::REFUNDS->value => $this->tab == InvoiceTabsEnum::REFUNDS->value
                     ? fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))
                     : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))),

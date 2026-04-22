@@ -43,6 +43,8 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
 
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]);
+        $queryBuilder->where('products.is_for_sale', true);
+        /* $queryBuilder->where('products.has_live_webpage', true); */ // NEED APPLY THIS BUT NEED WAIT UNTIL RUN art product:repair_has_live_webpage T
         $queryBuilder->where('products.is_main', true);
         if ($parent instanceof Shop) {
             $shop = $parent;

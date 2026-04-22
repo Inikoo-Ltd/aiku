@@ -31,8 +31,8 @@ class UpdateFavourite extends OrgAction
 
         if (count($changes) > 0) {
             CustomerHydrateFavourites::run($favourite->customer_id);
-            ProductHydrateCustomersWhoFavourited::dispatch($favourite->product)->delay($this->hydratorsDelay);
-            ProductHydrateCustomersWhoFavouritedInCategories::dispatch($favourite->product)->delay($this->hydratorsDelay);
+            ProductHydrateCustomersWhoFavourited::dispatch($favourite->product)->delay(120);
+            ProductHydrateCustomersWhoFavouritedInCategories::dispatch($favourite->product)->delay(120);
         }
 
         return $favourite;

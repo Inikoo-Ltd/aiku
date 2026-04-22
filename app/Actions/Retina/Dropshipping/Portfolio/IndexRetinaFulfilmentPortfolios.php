@@ -94,7 +94,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
 
         $navigation = CustomerSalesChannelPortfolioTabsEnum::navigation();
 
-        if($this->customer->is_fulfilment) {
+        if ($this->customer->is_fulfilment) {
             unset($navigation[CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value]);
         }
 

@@ -13,7 +13,6 @@ use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrate
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
-use App\Actions\Ordering\Order\Search\OrderRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -72,8 +71,8 @@ class UpdateOrder extends OrgAction
 
         if ($oldState != $order->state) {
             $this->orderHydrators($order);
-            $this->orderHandlingHydrators($order, $oldState,30);
-            $this->orderHandlingHydrators($order, $order->state,30);
+            $this->orderHandlingHydrators($order, $oldState, 30);
+            $this->orderHandlingHydrators($order, $order->state, 30);
         }
 
         if ($oldPlatform != $order->platform) {
@@ -127,11 +126,6 @@ class UpdateOrder extends OrgAction
                     );
                     UpdateOrderNotesEvent::dispatch($deliveryNote);
                 }
-            }
-
-
-            if (Arr::hasAny($changedFields, ['reference', 'state', 'net_amount', 'payment_amount', 'date'])) {
-                OrderRecordSearch::dispatch($order);
             }
 
             if (Arr::has($changedFields, 'shipping_zone_schema_id')) {

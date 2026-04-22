@@ -36,6 +36,8 @@ class StoreBundle extends OrgAction
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): Bundle
     {
         return DB::transaction(function () use ($customerSalesChannel, $modelData) {
+            Arr::forget($modelData, 'id');
+
             $productData = [];
             $selectedProducts = Arr::pull($modelData, 'products');
             $shopBundleDiscount = Arr::get($customerSalesChannel->shop->settings, 'discount.bundle_discount_percentage', 10);
@@ -144,9 +146,10 @@ class StoreBundle extends OrgAction
     public function rules(): array
     {
         $rules = [
+            'id' => ['nullable'],
             'name'        => ['sometimes', 'nullable', 'string', 'max:255'],
             'code'        => ['nullable', 'string', 'max:64'],
-            'description' => ['sometimes', 'nullable', 'string', 'max:65535'],
+            'description' => ['sometimes', 'nullable', 'string', 'max:255'],
             'price'       => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'rrp'         => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'products'    => ['required', 'array', 'min:1'],

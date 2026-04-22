@@ -22,7 +22,7 @@ class ReindexWebpageSearch extends HydrateModel
 
     public function handle(Webpage $webpage): void
     {
-        WebpageRecordSearch::run($webpage);
+
     }
 
     protected function getModel(string $slug): Webpage

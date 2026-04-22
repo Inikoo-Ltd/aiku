@@ -31,11 +31,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $fetched_at
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
- * @property-read \App\Models\CRM\Customer $customer
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\CRM\Customer|null $customer
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read Product $product
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read Product|null $product
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read Website|null $website
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Favourite newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Favourite newQuery()

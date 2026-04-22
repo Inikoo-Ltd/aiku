@@ -8,7 +8,6 @@
 
 namespace App\Actions\Inventory\OrgStockFamily;
 
-use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateUniversalSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStockFamilies;
 use App\Enums\Goods\StockFamily\StockFamilyStateEnum;
@@ -48,8 +47,6 @@ class StoreOrgStockFamily extends OrgAction
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             $orgStockFamily->timeSeries()->create(['frequency' => $frequency]);
         }
-
-        OrgStockFamilyHydrateUniversalSearch::dispatch($orgStockFamily);
 
         OrganisationHydrateOrgStockFamilies::dispatch($organisation)->delay($this->hydratorsDelay);
 

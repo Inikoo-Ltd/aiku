@@ -13,6 +13,7 @@ use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -21,13 +22,16 @@ class GetLastOrders extends OrgAction
     use WithOrderingAuthorisation;
     use AsObject;
 
-    public function handle(Shop $shop): array
+    public function handle(Shop|Customer $parent): array
     {
         $orders = [];
 
         foreach (OrderStateEnum::cases() as $state) {
-            $query = Order::where('shop_id', $shop->id)
-                          ->where('state', $state);
+            $query = Order::when(
+                $parent instanceof Customer,
+                fn ($q) => $q->where('customer_id', $parent->id),
+                fn ($q) => $q->where('shop_id', $parent->id)
+            )->where('state', $state);
 
             // Apply ordering based on timeline rules
             $dateKey = '';

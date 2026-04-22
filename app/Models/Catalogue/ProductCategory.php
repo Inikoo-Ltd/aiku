@@ -15,13 +15,11 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Discounts\Offer;
 use App\Models\Helpers\Media;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
@@ -37,6 +35,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -60,14 +60,14 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $description
  * @property int|null $image_id
  * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $activated_at
- * @property \Illuminate\Support\Carbon|null $discontinuing_at
- * @property \Illuminate\Support\Carbon|null $discontinued_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $activated_at
+ * @property Carbon|null $discontinuing_at
+ * @property Carbon|null $discontinued_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $delete_comment
  * @property string|null $source_department_id
  * @property string|null $source_family_id
@@ -83,7 +83,7 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_i8n
  * @property array<array-key, mixed>|null $description_title_i8n
  * @property array<array-key, mixed>|null $description_extra_i8n
- * @property string|null $cost_price_ratio
+ * @property numeric|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
  * @property bool|null $is_name_reviewed
@@ -114,7 +114,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $descArt4Image
  * @property-read Media|null $descArt5Image
  * @property-read Media|null $extraDescArt1Image
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read MasterProductCategory|null $masterProductCategory
@@ -127,7 +127,6 @@ use Spatie\Translatable\HasTranslations;
  * @property-read ProductCategory|null $subDepartment
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ProductCategoryTimeSeries> $timeSeries
  * @property-read mixed $translations
- * @property-read UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
  * @property-read LaravelCollection<int, Webpage> $webpages
  * @method static \Database\Factories\Catalogue\ProductCategoryFactory factory($count = null, $state = [])
@@ -147,12 +146,12 @@ class ProductCategory extends Model implements Auditable, HasMedia
 {
     use HasSlug;
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasFactory;
     use HasHistory;
     use InShop;
     use HasImage;
     use HasTranslations;
+    use Searchable;
 
     protected $guarded = [];
 
@@ -178,6 +177,21 @@ class ProductCategory extends Model implements Auditable, HasMedia
         'web_images'  => '{}',
         'offers_data' => '{}',
     ];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'                => (string)$this->id,
+            'shop_id'           => $this->shop_id,
+            'type'              => $this->type->value,
+            'code'              => $this->code,
+            'name'              => (string)$this->name,
+            'description'       => (string)$this->description,
+            'description_extra' => (string)$this->description_extra,
+            'state'             => $this->state->value,
+            'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {
@@ -264,7 +278,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
         };
     }
 
-    public function getProductsDistinctVariant(): LaravelCollection // This is to fetch non-variant products. If it's a variant, will fetch only the leader.
+    public function getProductsDistinctVariant(): LaravelCollection // This is to fetch non-variant products. If it's a variant, it will fetch only the leader.
     {
         $column = match ($this->type) {
             ProductCategoryTypeEnum::DEPARTMENT => 'department_id',

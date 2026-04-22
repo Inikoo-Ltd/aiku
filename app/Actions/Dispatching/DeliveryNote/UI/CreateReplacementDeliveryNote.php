@@ -302,7 +302,7 @@ class CreateReplacementDeliveryNote extends OrgAction
     {
         return ShowOrder::make()->getBreadcrumbs(
             order: $order,
-            routeName: preg_replace('/replacement$/', 'show', $routeName),
+            routeName: preg_replace('/.replacement.create$/', '', $routeName),
             routeParameters: $routeParameters,
             suffix: '('.__('Creating replacement').')'
         );
