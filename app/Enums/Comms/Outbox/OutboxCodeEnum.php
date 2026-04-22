@@ -53,6 +53,7 @@ enum OutboxCodeEnum: string
     case CHAT_NOTIFICATION_TO_CUSTOMER = 'chat_notification_to_customer';
     case PRICE_CHANGE_NOTIFICATION = 'price_change_notification';
     case INVOICE_DATE_CHANGED = 'invoice_date_changed';
+    case WEB_USER_REGISTRATION = 'web_user_registration';
 
 
     public function type(): OutboxTypeEnum
@@ -80,7 +81,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
-            OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION
+            OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
+            OutboxCodeEnum::WEB_USER_REGISTRATION
             => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
 
             OutboxCodeEnum::BASKET_LOW_STOCK,
@@ -150,6 +152,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER => 'Chat notification to customer',
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => 'Price change notification',
             OutboxCodeEnum::INVOICE_DATE_CHANGED => 'Invoice date changed',
+            OutboxCodeEnum::WEB_USER_REGISTRATION => 'Web user registration',
         };
     }
 
@@ -194,6 +197,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER => 'Chat notification to customer',
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => 'Price change notification',
             OutboxCodeEnum::INVOICE_DATE_CHANGED => 'Invoice date changed',
+            OutboxCodeEnum::WEB_USER_REGISTRATION => 'Web user registration',
         };
     }
 
@@ -212,7 +216,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REGISTRATION,
             OutboxCodeEnum::REGISTRATION_APPROVED,
             OutboxCodeEnum::REGISTRATION_REJECTED,
-            OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
+            OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION
             => ['Website'],
             OutboxCodeEnum::NEW_CUSTOMER,
             OutboxCodeEnum::INVOICE_DELETED,
@@ -224,7 +228,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
-            OutboxCodeEnum::INVOICE_DATE_CHANGED
+            OutboxCodeEnum::INVOICE_DATE_CHANGED,
+            OutboxCodeEnum::WEB_USER_REGISTRATION
             => ['Fulfilment', 'Shop'],
 
             OutboxCodeEnum::NEW_PALLET_RETURN_FROM_CUSTOMER,
@@ -257,7 +262,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REGISTRATION,
             OutboxCodeEnum::REGISTRATION_APPROVED,
             OutboxCodeEnum::INVITE,
-            OutboxCodeEnum::REGISTRATION_REJECTED => ['b2b', 'dropshipping', 'fulfilment'],
+            OutboxCodeEnum::REGISTRATION_REJECTED,
+            OutboxCodeEnum::WEB_USER_REGISTRATION => ['b2b', 'dropshipping', 'fulfilment'],
             OutboxCodeEnum::NEW_CUSTOMER,
             OutboxCodeEnum::NEW_ORDER,
             OutboxCodeEnum::DELIVERY_NOTE_DISPATCHED,
@@ -349,6 +355,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             OutboxCodeEnum::INVOICE_DATE_CHANGED,
+            OutboxCodeEnum::WEB_USER_REGISTRATION
             => 'EmailOngoingRun',
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::NEWSLETTER,
@@ -386,7 +393,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
-            OutboxCodeEnum::INVOICE_DATE_CHANGED
+            OutboxCodeEnum::INVOICE_DATE_CHANGED,
+            OutboxCodeEnum::WEB_USER_REGISTRATION
             => EmailOngoingRunTypeEnum::TRANSACTIONAL,
             OutboxCodeEnum::BASKET_LOW_STOCK,
             OutboxCodeEnum::REORDER_REMINDER,
@@ -428,6 +436,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
+            OutboxCodeEnum::WEB_USER_REGISTRATION
 
             => PostRoomCodeEnum::CUSTOMER_NOTIFICATION,
 

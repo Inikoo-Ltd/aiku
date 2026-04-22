@@ -141,6 +141,8 @@ class UpdateDescriptionBlockToWebsiteAndChild
                 ->where('id', $key)
                 ->update(['position' => $position]);
         }
+
+        $webpage->refresh();
         UpdateWebpageContent::run($webpage);
     }
 }

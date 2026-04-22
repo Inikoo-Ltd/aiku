@@ -18,6 +18,7 @@ use App\Http\Resources\Helpers\TaxNumberResource;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
+use App\Models\Helpers\Tag;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaAccountManagement extends RetinaAction
@@ -46,7 +47,9 @@ class ShowRetinaAccountManagement extends RetinaAction
             $isEu = $this->organisation->country->continent == 'EU';
         }
 
-        $show_interest = $customer->tags()->where('tags.scope', TagScopeEnum::USER_CUSTOMER->value)->exists();
+       /*  $show_interest = $customer->tags()->where('tags.scope', TagScopeEnum::USER_CUSTOMER->value)->exists(); */
+        $show_interest = Tag::where('shop_id', $this->shop->id)->whereNotIn('scope', [TagScopeEnum::SYSTEM_CUSTOMER, TagScopeEnum::ADMIN_CUSTOMER])->get();
+        
         return Inertia::render(
             'EditModel',
             [
