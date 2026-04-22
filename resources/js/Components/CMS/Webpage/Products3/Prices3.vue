@@ -221,7 +221,7 @@ const _popoverProfit = ref(null)
 
 
             <!-- GR PRICE -->
-            <div v-if="product.discounted_price" class="grid grid-cols-[auto_1fr] items-center gap-x-2">
+           <div v-if="product.discounted_price" class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2">
 
                 <div v-if="bestOffer?.type == 'Category Quantity Ordered Order Interval'"  class="whitespace-nowrap
             text-[9px]
