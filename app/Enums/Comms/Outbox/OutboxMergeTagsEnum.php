@@ -32,6 +32,9 @@ enum OutboxMergeTagsEnum: string
     case PAYMENT_TYPE = 'Payment Type';
     case CHAT_LINK = 'Chat Link';
     case CHAT_MESSAGE = 'Chat Message';
+    case RETINA_LOGIN_LINK = 'Retina Login Link';
+    case WEB_USER_PASSWORD = 'Web User Password';
+    case WEB_USER_CONTACT_NAME = 'Web User Contact Name';
 
 
     public static function tags(): array
@@ -113,6 +116,19 @@ enum OutboxMergeTagsEnum: string
                 'name'  => __('Chat Message'),
                 'value' => '[Chat Message]'
             ],
+            [
+                'name' => __('Retina Login Link'),
+                'value' => '[Retina Login Link]'
+            ],
+            [
+                'name' => __('Web User Password'),
+                'value' => '[Web User Password]'
+            ],
+            [
+                'name' => __('Web User Contact Name'),
+                'value' => '[Web User Contact Name]'
+            ]
+
 
         ];
     }
