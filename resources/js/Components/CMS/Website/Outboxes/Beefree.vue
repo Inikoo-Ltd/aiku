@@ -105,28 +105,20 @@ const initializeBeefree = async () => {
             },
             autosave: 20,
             contentDialog: {
-                specialLinks: props.shopSlug ? [{
-                    label: 'Search Product by SKU',
-                    handler: (resolve: (value: any) => void, reject: () => void) => {
-                        productSearchResolve = resolve
-                        productSearchReject = reject
-                        productSearchModalOpen.value = true
-                        productSearchQuery.value = ''
-                        productSearchResults.value = []
-                    }
-                }] : undefined,
-
                 mergeContents: {
                     label: 'Custom text for merge contents',
                     handler: function (resolve: (value: any) => void, reject: () => void) {
+                        console.log('mergeContents clicked');
                         productSearchResolve = resolve
                         productSearchReject = reject
                         productSearchModalOpen.value = true
                         productSearchQuery.value = ''
                         productSearchResults.value = []
+                        searchProducts()
                     }
                 },
             },
+
             onSend: (htmlFile: string, jsonFile: string) => {
                 emits('sendTest', { jsonFile, htmlFile })
             },
@@ -183,20 +175,21 @@ defineExpose({
 
 // Product search functions
 const searchProducts = async () => {
-    if (!props.shopSlug || !productSearchQuery.value.trim()) {
-        productSearchResults.value = []
-        return
-    }
+    console.log('searchProducts', props.shopSlug)
+    // if (!props.shopSlug) {
+    //     productSearchResults.value = []
+    //     return
+    // }
 
     productSearchLoading.value = true
     try {
         const response = await axios.get(
             route('grp.json.shop.products_beefree_search', {
-                shop: props.shopSlug,
+                shop: "ua",
             }), {
             params: {
                 search: productSearchQuery.value.trim(),
-                per_page: 20
+                per_page: 10
             }
         }
         )
@@ -221,10 +214,9 @@ const onSearchInput = () => {
 const selectProduct = (product: any) => {
     if (productSearchResolve) {
         const productLink = {
-            type: 'product_link',
-            label: product.name || product.code,
-            link: product.url || `/shop/${props.shopSlug}/product/${product.slug || product.id}`,
-            value: {
+            name: product.name || product.code,
+            value: `[product_${product.id}]`,
+            items: [{
                 id: product.id,
                 code: product.code,
                 name: product.name,
@@ -232,7 +224,7 @@ const selectProduct = (product: any) => {
                 image: product.web_images?.[0] || null,
                 price: product.price,
                 url: product.url || `/shop/${props.shopSlug}/product/${product.slug || product.id}`
-            }
+            }]
         }
         productSearchResolve(productLink)
         productSearchResolve = null
