@@ -32,7 +32,7 @@ Route::prefix('return-backlog')->as('pallet-returns-backlog.')->group(function (
 
     Route::prefix('dropship/')->as('dropship.')->group(function () {
         Route::get('/', [ShowPalletReturnsBacklog::class, 'inDropshipping'])->name('index');
-        Route::get('/{palletReturn}', ShowPalletReturn::class)->name('pallet-returns.show');
+        Route::get('/{palletReturn}', ShowStoredItemReturn::class)->name('pallet-returns.show');
     });
 
 

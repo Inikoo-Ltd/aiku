@@ -354,7 +354,7 @@ class ShowStoredItemReturn extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.fulfilments.show.operations.pallet-return-with-stored-items.show' => array_merge(
+            'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.pallet-returns.show' => array_merge(
                 ShowFulfilment::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'fulfilment'])),
                 $headCrumb(
                     $palletReturn,
@@ -364,7 +364,7 @@ class ShowStoredItemReturn extends OrgAction
                             'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'palletReturn'])
                         ],
                         'model' => [
-                            'name'       => 'grp.org.fulfilments.show.operations.pallet-return-with-stored-items.show',
+                            'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.pallet-returns.show',
                             'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'palletReturn'])
                         ]
                     ],
