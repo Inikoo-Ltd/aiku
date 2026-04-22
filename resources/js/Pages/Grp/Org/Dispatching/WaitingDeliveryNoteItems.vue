@@ -14,6 +14,7 @@ import { ref, computed, watch } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import TableWaitingDeliveryNoteItemsByLocation from '@/Components/Tables/Grp/Org/Dispatching/TableWaitingDeliveryNoteItemsByLocation.vue'
 import TableWaitingDeliveryNoteItemsGrouped from '@/Components/Tables/Grp/Org/Dispatching/TableWaitingDeliveryNoteItemsGrouped.vue'
+import TableWaitingDeliveryNoteItemsGroupedByItem from '@/Components/Tables/Grp/Org/Dispatching/TableWaitingDeliveryNoteItemsGroupedByItem.vue'
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -24,6 +25,7 @@ const props = defineProps<{
     }
     itemized?: object
     grouped_by_delivery_note?: object
+    grouped_by_item?: object
     allow_stock_controller_set_not_picked: boolean
     is_still_picking: boolean
 }>()
@@ -35,6 +37,7 @@ const component = computed(() => {
     const components: Record<string, any> = {
         itemized: TableWaitingDeliveryNoteItemsByLocation,
         grouped_by_delivery_note: TableWaitingDeliveryNoteItemsGrouped,
+        grouped_by_item: TableWaitingDeliveryNoteItemsGroupedByItem,
     }
     return components[currentTab.value]
 })
