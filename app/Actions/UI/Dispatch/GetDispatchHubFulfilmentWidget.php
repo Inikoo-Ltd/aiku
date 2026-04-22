@@ -12,10 +12,12 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
+use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Inventory\Warehouse;
 use Illuminate\Support\Facades\Route;
 use Lorisleiva\Actions\Concerns\AsObject;
+use App\Models\SysAdmin\Organisation;
 
 class GetDispatchHubFulfilmentWidget
 {
@@ -69,6 +71,18 @@ class GetDispatchHubFulfilmentWidget
         $routePicked = $isFulfilmentContext
             ? 'grp.org.fulfilments.show.operations.pallet-returns.picked.index'
             : 'grp.org.warehouses.show.dispatching.pallet-returns.picked.index';
+        $routeWaiting = match ($type) {
+            PalletReturnTypeEnum::PALLET => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.index',
+            PalletReturnTypeEnum::STORED_ITEM => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.index',
+        };
+        $organisationParameter = $routeParameters['organisation'] ?? $organisation->slug;
+        if ($organisationParameter instanceof Organisation) {
+            $organisationParameter = $organisationParameter->slug;
+        }
+        $fulfilmentParameter = $warehouse->fulfilments()->value('slug');
+        if ($fulfilmentParameter instanceof Fulfilment) {
+            $fulfilmentParameter = $fulfilmentParameter->slug;
+        }
 
         $todoRouteParameters = $isFulfilmentContext
             ? array_merge($routeParameters, ['returns_elements[state]' => 'confirmed'], $typeFilter)
@@ -115,12 +129,19 @@ class GetDispatchHubFulfilmentWidget
                     ->where('warehouse_id', $warehouse->id)
                     ->where('type', $type->value)
                     ->where('state', PalletReturnStateEnum::PICKING->value)
-                    ->sum('number_items_waiting_crm'),
+                    ->where('number_items_waiting_crm', '>', 0)
+                    ->count(),
                 'tooltip' => __('Waiting for CRM action'),
-                'route' => [
-                    'name'       => '',
-                    'parameters' => [],
-                ],
+                'route' => Route::has($routeWaiting) && $fulfilmentParameter ? [
+                    'name'       => $routeWaiting,
+                    'parameters' => array_merge(
+                        [
+                        'organisation' => $organisationParameter,
+                        'fulfilment'   => $fulfilmentParameter,
+                    ],
+                        ['tab' => 'waiting']
+                    ),
+                ] : null,
             ],
             'waiting_crm_items' => [
                 'count' => $warehouse->deliveryNotes()
