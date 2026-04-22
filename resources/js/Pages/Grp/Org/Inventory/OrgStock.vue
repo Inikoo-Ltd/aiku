@@ -17,7 +17,9 @@ import {
     faPaperclip,
     faCube,
     faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign,
-    faExclamationCircle
+    faExclamationCircle,
+    faMoneyCheckEditAlt,
+    faChartLine
 } from "@fal"
 import {
 faCloudRainbow
@@ -55,7 +57,9 @@ library.add(
     faPoop,
     faScanner,
     faDollarSign,
-    faCloudRainbow
+    faCloudRainbow,
+    faMoneyCheckEditAlt,
+    faChartLine
 )
 
 
@@ -72,6 +76,7 @@ const props = defineProps<{
     products?: {}
     trade_units?: {}
     stock_history?: {}
+    purchase_history?: {}
     master: {}
     masterRoute: routeType | null
 }>()
@@ -89,6 +94,7 @@ const component = computed(() => {
         products: TableProducts,
         trade_units: TableTradeUnits,
         stock_history: TableOrgStockMovements,
+        purchase_history: TableOrgStockMovements,
         details: ModelDetails,
         history: ModelChangelog,
         purchase_orders: TablePurchaseOrders

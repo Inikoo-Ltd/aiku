@@ -43,6 +43,7 @@ const props = defineProps<{
         }[]
         stocks_management: StocksManagementTS
         currency_code: string
+        is_quantity_excess: boolean
     }
 }>()
 
@@ -133,7 +134,12 @@ console.log(props)
        
         <!-- Section: Stocks Management -->
         <div class="md:col-span-2">
-            <StocksManagement v-if="data.stocks_management" :stocks_management="data.stocks_management" :trade_units="data.trade_units"/>
+            <StocksManagement
+                v-if="data.stocks_management"
+                :data
+                :stocks_management="data.stocks_management"
+                :trade_units="data.trade_units"
+            />
             <!-- <pre v-if="layout.app.environment === 'local'">{{ data.stocks_management?.locations }}</pre> -->
         </div>
     </div>

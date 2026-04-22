@@ -13,6 +13,7 @@ use App\Models\Fulfilment\Pallet;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InWarehouse;
+use App\Observers\LocationOnlySearchableModelObserver;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -104,6 +105,11 @@ class Location extends Model implements Auditable
 
     protected $guarded = [];
 
+    public static function bootSearchable(): void
+    {
+        static::observe(new LocationOnlySearchableModelObserver());
+    }
+
     public function toSearchableArray(): array
     {
         return [
@@ -114,13 +120,6 @@ class Location extends Model implements Auditable
             'status'            => $this->status->value,
             'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
-    }
-
-    public function shouldBeSearchable(): bool
-    {
-        $searchableFields = ['code', 'status', 'created_at', 'warehouse_area_id', 'warehouse_id'];
-
-        return $this->isDirty($searchableFields);
     }
 
     public function generateTags(): array

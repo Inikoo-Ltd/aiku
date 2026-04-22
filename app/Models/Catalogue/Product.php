@@ -31,6 +31,7 @@ use App\Models\Traits\HasImage;
 use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
 use App\Models\Web\WebpageHasProduct;
+use App\Observers\ProductOnlySearchableModelObserver;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -181,6 +182,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $is_bundle
  * @property bool|null $mismatch_with_master_detected
  * @property bool $not_follow_master_trade_units
+ * @property int|null $index_under_family
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -298,6 +300,11 @@ class Product extends Model implements Auditable, HasMedia
         'offers_data'          => '{}',
     ];
 
+    public static function bootSearchable(): void
+    {
+        static::observe(new ProductOnlySearchableModelObserver());
+    }
+
     public function toSearchableArray(): array
     {
         return [
@@ -311,13 +318,6 @@ class Product extends Model implements Auditable, HasMedia
             'is_for_sale'       => $this->is_for_sale,
             'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
-    }
-
-    public function shouldBeSearchable(): bool
-    {
-        $searchableFields = ['code', 'name', 'description', 'description_extra', 'state', 'is_for_sale', 'created_at'];
-
-        return $this->isDirty($searchableFields);
     }
 
     public function generateTags(): array

@@ -82,6 +82,8 @@ class DeliveryNoteItemsResource extends JsonResource
             'expiry_date'                    => $this->expiry_date,
             'packed_in_message'              => $packedInMessage,
             'is_done_packing'                => (bool)$this->packing_id,
+            'is_picked'                      => $this->is_picked,
+            'is_packed'                      => $this->is_packed,
             'quantity_waiting_warehouse'     => $this->quantity_waiting_warehouse,
             'quantity_waiting_crm'           => $this->quantity_waiting_crm,
 
