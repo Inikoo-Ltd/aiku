@@ -164,11 +164,10 @@ const submitReplaceProduct = () => {
                 replacedItem: { ...selectedItem.value },
                 newProducts: snapshotSelectedProducts,
             }
-            console.log('selectedItem')
             notify({
                 title: ctrans("Success!"),
-                text: ctrans('Items has been replaced'),
-                type: "error",
+                text: ctrans('Items :itemOld has been replaced', { itemOld: selectedItem.value?.org_stock_code ?? ''}),
+                type: "success",
             })
             isModalConfirmationSuccess.value = true
         },

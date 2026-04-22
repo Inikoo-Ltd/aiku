@@ -550,12 +550,12 @@ const onSetItemToUndoWaitingWarehouse = () => {
         <template #cell(quantity_picked)="{ item: item, proxyItem }">
             <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
             <span v-else>{{ item.quantity_picked }}</span>
-
-            <span v-tooltip="ctrans('Not picked')"  v-if="item.quantity_not_picked!=0" class="text-red-500 rounded-sm border-red-400 bg-red-100  border px-1.5 ml-2">
-            {{ Number(item.quantity_not_picked) }}
+            
+            <span v-if="Number(item.quantity_not_picked) > 0" v-tooltip="ctrans('Not picked')"  class="text-red-500 rounded-sm border-red-400 bg-red-100  border px-1.5 ml-2">
+                {{ Number(item.quantity_not_picked) }}
             </span>
 
-            <span v-tooltip="ctrans('Waiting for warehouse')"  v-if="item.quantity_waiting_warehouse!=0" class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
+            <span v-if="Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')"  class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
                 {{ Number(item.quantity_waiting_warehouse) }}
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px]" fixed-width aria-hidden="true" />
@@ -948,8 +948,9 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     <div class="flex justify-start items-center">
                     <ButtonWithLink
                         v-if="!item.is_done_packing"
+                        :label="ctrans('Pack :countToPack items', { countToPack: Number(item.quantity_picked) })"
                         type="secondary"
-                        :label="ctrans('Packing')"
+                        xlabel="ctrans('Packing')"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
                         :key="screenType"
                         :bindToLink="{preserveScroll: true}"
@@ -963,6 +964,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     />
                     <ButtonWithLink
                         v-else
+                        v-tooltip="ctrans('Undo packing')"
                         type="negative"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
                         :bindToLink="{preserveScroll: true}"
@@ -986,6 +988,10 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     />
                     </div>
                 </template>
+
+                <div v-else-if="props.shop_type !== 'dropshipping' && !(item.quantity_picked > 0)" class="italic text-xs opacity-70">
+                    {{ ctrans("Nothing to pack") }}
+                </div>
         </template>
     </Table>
 
