@@ -199,7 +199,7 @@ console.log("Family2 Workshop Props:", props)
 
                <div class="relative w-full">
               <div class="overflow-hidden transition-all duration-300"
-                :class="isExpanded ? 'max-h-none' : 'max-h-[160px]'">
+                :class="isExpanded ? 'max-h-none' : 'max-h-[120px]'">
                 <div v-html="cleanedDescription"></div>
               </div>
 

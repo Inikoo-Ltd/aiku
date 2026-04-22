@@ -146,7 +146,7 @@ const images = computed(() => {
 
             <div class="relative w-full">
               <div class="overflow-hidden transition-all duration-300"
-                :class="isExpanded ? 'max-h-none' : 'max-h-[160px]'">
+                :class="isExpanded ? 'max-h-none' : 'max-h-[8rem]'">
                 <div v-html="cleanedDescription"></div>
               </div>
 
