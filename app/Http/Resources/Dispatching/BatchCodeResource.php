@@ -20,10 +20,28 @@ class BatchCodeResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'          => $this->id,
-            'code'        => $this->code,
-            'expiry_date' => $this->expiry_date,
-            'label'       => $this->code.($this->expiry_date ? ' — exp: '.$this->expiry_date->format('d M Y') : ''),
+            'id'             => $this->id,
+            'code'           => $this->code,
+            'expiry_date'    => $this->expiry_date?->format('d M Y'),
+            'label'          => $this->code.($this->expiry_date ? ' — exp: '.$this->expiry_date->format('d M Y') : ''),
+            'org_stock_id'   => $this->org_stock_id,
+            'org_stock_code' => $this->orgStock?->code,
+            'org_stock_name' => $this->orgStock?->name,
+            'org_stock_slug' => $this->orgStock?->slug,
+            'routes'         => [
+                'show'   => [
+                    'name'       => 'grp.org.warehouses.show.inventory.batch_codes.show',
+                    'parameters' => [$request->route('organisation')?->slug, $request->route('warehouse')?->slug, $this->id],
+                ],
+                'edit'   => [
+                    'name'       => 'grp.org.warehouses.show.inventory.batch_codes.edit',
+                    'parameters' => [$request->route('organisation')?->slug, $request->route('warehouse')?->slug, $this->id],
+                ],
+                'delete' => [
+                    'name'       => 'grp.models.batch_code.delete',
+                    'parameters' => ['batchCode' => $this->id],
+                ],
+            ],
         ];
     }
 }

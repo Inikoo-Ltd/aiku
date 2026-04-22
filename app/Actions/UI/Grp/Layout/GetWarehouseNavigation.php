@@ -121,6 +121,16 @@ class GetWarehouseNavigation
                                 "name"       => "grp.org.warehouses.show.inventory.org_stock_histories.index",
                                 "parameters" => [$warehouse->organisation->slug, $warehouse->slug],
                             ],
+                        ],
+
+                        [
+                            "label" => __("Batch Codes"),
+                            "icon"  => ["fal", "fa-barcode"],
+                            'root'  => 'grp.org.warehouses.show.inventory.batch_codes.',
+                            "route" => [
+                                "name"       => "grp.org.warehouses.show.inventory.batch_codes.index",
+                                "parameters" => [$warehouse->organisation->slug, $warehouse->slug],
+                            ],
                         ]
                     ],
                 ],

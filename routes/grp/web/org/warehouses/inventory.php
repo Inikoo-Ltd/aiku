@@ -37,6 +37,10 @@ use App\Actions\Inventory\OrgStock\UI\ShowOrgStockStockHistory;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\Inventory\OrgStockFamily\UI\IndexOrgStockFamilies;
 use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
+use App\Actions\Dispatching\BatchCode\UI\CreateBatchCode;
+use App\Actions\Dispatching\BatchCode\UI\EditBatchCode;
+use App\Actions\Dispatching\BatchCode\UI\IndexBatchCodes;
+use App\Actions\Dispatching\BatchCode\UI\ShowBatchCode;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use Illuminate\Support\Facades\Route;
 
@@ -205,6 +209,15 @@ Route::prefix('pallets')->as('pallets.')->group(function () {
     });
     Route::get('{pallet}/stored-item-audits/create', CreateStoredItemAuditFromPalletInWarehouse::class)->name('show.stored-item-audit.create');
     Route::get('{pallet}/stored-item-audit/{storedItemAudit}', [ShowStoredItemAuditForPallet::class, 'inWarehouse'])->name('show.stored-item-audit.show');
+});
+
+Route::prefix('batch-codes')->as('batch_codes.')->group(function () {
+    Route::get('', IndexBatchCodes::class)->name('index');
+    Route::get('create', CreateBatchCode::class)->name('create');
+    Route::prefix('{batchCode:id}')->withoutScopedBindings()->group(function () {
+        Route::get('', ShowBatchCode::class)->name('show');
+        Route::get('edit', EditBatchCode::class)->name('edit');
+    });
 });
 
 Route::prefix('stored-items')->as('stored_items.')->group(function () {
