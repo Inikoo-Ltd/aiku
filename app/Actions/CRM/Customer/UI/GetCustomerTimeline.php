@@ -18,6 +18,7 @@ use App\Models\CRM\CustomerWebActivity;
 use App\Models\GoodsIn\OrderReturn;
 use App\Models\Helpers\History;
 use App\Models\Ordering\Order;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -65,7 +66,8 @@ class GetCustomerTimeline
                     'timestamp' => $history->created_at,
                     'datetime'  => $history->created_at?->toIso8601String(),
                     'title'     => $this->getHistoryTitle($history),
-                    'subtitle'  => $history->comments,
+                    'subtitle'  => $isNote ? cleanCapitalize(array_key_first($history->new_values)) : $history->comments,
+                    'comment'   => $isNote ? Arr::first($history->new_values) : $history->comments,
                     'icon'      => $isNote ? ['fal', 'fa-sticky-note'] : ['fal', 'fa-user-edit'],
                     'color'     => $isNote ? 'yellow' : 'blue',
                     'metadata'  => [
@@ -84,7 +86,7 @@ class GetCustomerTimeline
             AuditEventEnum::UPDATED->value       => $this->getUpdateTitle($history),
             AuditEventEnum::DELETED->value       => __('Account deleted'),
             AuditEventEnum::RESTORED->value      => __('Account restored'),
-            AuditEventEnum::CUSTOMER_NOTE->value => __('Note added'),
+            AuditEventEnum::CUSTOMER_NOTE->value => __('Note modified'),
             default                              => ucfirst(str_replace('_', ' ', $history->event)),
         };
     }
