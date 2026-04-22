@@ -40,7 +40,7 @@ class GetOrderSearchSchema
                     ],
                     [
                         'name' => 'state',
-                        'type' => 'bool',
+                        'type' => 'string',
                     ],
                     [
                         'name' => 'reference',
