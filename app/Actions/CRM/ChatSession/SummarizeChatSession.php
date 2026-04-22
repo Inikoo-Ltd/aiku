@@ -11,6 +11,8 @@ class SummarizeChatSession
     use AsAction;
 
     public string $jobQueue = 'analytics';
+    public int $jobTimeout = 300;
+    public int $jobTries = 1;
 
     public function handle(ChatSession $chatSession): ChatSession
     {
@@ -19,9 +21,13 @@ class SummarizeChatSession
             ->get()
             ->map(function ($msg) {
                 $sender = $msg->sender_type->value;
-                return "{$sender}: {$msg->original_text}";
+                $text = (string) ($msg->original_text ?? $msg->message_text ?? '');
+                return "{$sender}: {$text}";
             })
+            ->filter(fn (string $line) => trim($line) !== '')
             ->join("\n");
+
+        $messages = mb_substr($messages, 0, 6000);
 
         if (empty($messages)) {
             return $chatSession;
@@ -49,11 +55,14 @@ class SummarizeChatSession
 
         // 3. Call AI
         $aiResponse = AskToAi::run($prompt);
+        if (!is_string($aiResponse) || trim($aiResponse) === '') {
+            return $chatSession;
+        }
 
         // 4. Parse & Save
         $summaryData = json_decode($aiResponse, true);
 
-        if ($summaryData) {
+        if (is_array($summaryData)) {
             $metadata = $chatSession->metadata ?? [];
             $metadata['ai_summary'] = $summaryData;
 
