@@ -16,7 +16,6 @@ use App\Models\Traits\HasRoles;
 use App\Models\Traits\IsUserable;
 use App\Models\UserFailedLogIn;
 use App\Models\UserLogin;
-use App\Observers\UserOnlySearchableModelObserver;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 use Laravel\Scout\Searchable;
