@@ -556,15 +556,15 @@ class EditProduct extends OrgAction
                             ],
                             'value'    => $product->price,
                         ],
-                        'rrp'              => [
+                        'rrp_per_unit'  => [
                             'type'     => 'input_number',
-                            'label'    => __('RRP'),
+                            'label'    => __('RRP/Unit'),
                             'required' => true,
                             'bind'     => [
                                 'minFractionDigits' => 0,
                                 'maxFractionDigits' => 2,
                             ],
-                            'value'    => $product->rrp,
+                            'value'    => ($product->rrp / trimDecimalZeros($product->units)),
                             'min'      => 0.01
                         ],
                         'cost_price_ratio' => [
