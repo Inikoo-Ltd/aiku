@@ -112,7 +112,7 @@ const displayUnits = computed(() => {
                     </div>
                 </div>
     
-                <div class="grid grid-cols-7 mt-3 text-sm font-bold">
+                <div class="grid grid-cols-6 mt-3 text-sm font-bold">
                     <div class="text-left">
                         {{ trans('Reference') }}
                     </div>
@@ -120,17 +120,16 @@ const displayUnits = computed(() => {
                         {{ trans('SKU description') }}
                     </div>
                     <div class="text-right ">
-                        {{ trans('Units/SKU') }}
-                    </div>
-                    <div class="text-right">
-                        SKUs
-                    </div>
-                    <div class="text-right ">
                         {{ trans('Units to pick') }}
+                    </div>
+
+
+                    <div class="text-right">
+                        {{ trans('SKUs to pick') }}
                     </div>
                 </div>
     
-                <div  v-for="tUnit in trade_units" :key="tUnit.tradeUnit?.id" class="grid grid-cols-7 mt-3 text-sm min-h-8">
+                <div  v-for="tUnit in trade_units" :key="tUnit.tradeUnit?.id" class="grid grid-cols-6 mt-3 text-sm min-h-8">
                     <div class="text-left flex items-center">
                         <slot name="col_code" :data="tUnit">
                             <Link v-if="routeFunction" :href="routeFunction(tUnit.tradeUnit)" class="primaryLinkxx">
@@ -145,14 +144,14 @@ const displayUnits = computed(() => {
                     <div class="text-left col-span-3 flex items-center">
                         <slot name="col_name" :data="tUnit">
                             {{ tUnit.tradeUnit?.name }}
-                        </slot>
+                        </slot> {{trans('Units/SKU')}}:{{ tUnit.units_per_sku }}
                     </div>
+
 
 
                     <div class="text-right col-span-1 flex items-center justify-items-end justify-end">
-                        {{ tUnit.units_per_sku }}
+                        {{ tUnit.total_units }}
                     </div>
-
     
                     <div class="justify-items-end text-teal-600 whitespace-nowrap flex justify-end">
                         <span class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer flex border-green-600 w-fit">
@@ -163,9 +162,7 @@ const displayUnits = computed(() => {
                         </span>
                     </div>
 
-                    <div class="text-right col-span-1 flex items-center justify-items-end justify-end">
-                        {{ tUnit.total_units }}
-                    </div>
+
                 </div>
             </slot>
         </Modal>
