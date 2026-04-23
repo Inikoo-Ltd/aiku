@@ -23,7 +23,7 @@ import { debounce, isNull } from 'lodash-es'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTrashAlt, faPaperPlane } from "@far"
-import { faSignOutAlt, faTimes, faShare, faCross, faUndo, faStickyNote, faBackspace, faDebug } from "@fal"
+import { faSignOutAlt, faTimes, faShare, faCross, faUndo, faStickyNote, faBackspace, faDebug, faHandHoldingBox } from "@fal"
 import { faSkull } from "@fas"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
@@ -35,7 +35,7 @@ import axios from "axios"
 const layout = inject('layout', layoutStructure)
 const screenType = inject('screenType', ref('desktop'))
 
-library.add(faTrashAlt, faSignOutAlt, faTimes, faShare, faCross, faUndo, faStickyNote, faPaperPlane, faBackspace, faDebug, faSkull)
+library.add(faTrashAlt, faSignOutAlt, faTimes, faShare, faCross, faUndo, faStickyNote, faPaperPlane, faBackspace, faDebug, faSkull, faHandHoldingBox)
 
 const props = defineProps<{
     data: {}
@@ -588,6 +588,8 @@ const generateLocationRoute = (item: any, picking: any) => {
                         fixed-width
                         aria-hidden="true"
                     />
+                    <FontAwesomeIcon v-if="pallet.state === 'picked'" v-tooltip="trans('Pallet picked')"
+                        :icon="faHandHoldingBox" class="text-gray-500" fixed-width aria-hidden="true" />
                     <Link
                         as="div"
                         :href="route(pallet.undoPickingRoute.name, pallet.undoPickingRoute.parameters)"
@@ -603,14 +605,9 @@ const generateLocationRoute = (item: any, picking: any) => {
                     </Link>
                 </div>
 
-                <div v-else-if="pallet.state === 'lost'" class="text-red-300 italic">
-                    {{ trans("Pallet lost") }}
-                </div>
-                <div v-else-if="pallet.state === 'damaged'" class="text-red-300 italic">
-                    {{ trans("Pallet damaged") }}
-                </div>
-                <div v-else-if="pallet.state === 'other_incident'" class="text-red-300 italic">
-                    {{ trans("Other incident") }}
+                <div v-else-if="['lost', 'damaged', 'other_incident'].includes(pallet.state)" class="text-red-300 italic">
+                    <FontAwesomeIcon v-tooltip="trans('Pallet not picked')" icon="fas fa-skull" class="text-red-500" fixed-width aria-hidden="true" />
+                    {{ trans(pallet.state === 'lost' ? 'Pallet lost' : pallet.state === 'damaged' ? 'Pallet damaged' : 'Other incident') }}
                 </div>
             </div>
         </template>
