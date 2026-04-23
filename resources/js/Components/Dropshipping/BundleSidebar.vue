@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useBundle } from '@/Composables/useBundle';
-import { onMounted, ref, watch, computed } from 'vue'
+import { onBeforeUnmount, ref, watch, computed } from 'vue'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import axios from 'axios'
@@ -553,6 +553,44 @@ const bundle = useBundle({
 })
 
 const bundleRoutes = bundle.bundleRoutes
+const isNavigationLocked = computed(() => bundle.open.value && bundle.step.value === 2)
+
+const notifyNavigationLocked = () => {
+    notify({
+        title: trans('Finish bundle first'),
+        text: trans('You cannot leave this page before completing or discarding the bundle.'),
+        type: 'warn'
+    })
+}
+
+const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+    if (!isNavigationLocked.value) return
+
+    event.preventDefault()
+    event.returnValue = ''
+}
+
+let removeNavigationGuard: null | (() => void) = null
+
+const attachNavigationGuard = () => {
+    if (removeNavigationGuard) return
+
+    removeNavigationGuard = router.on('before', (event) => {
+        if (!isNavigationLocked.value) return
+        if (event.detail.visit.method?.toLowerCase() !== 'get') return
+
+        notifyNavigationLocked()
+        return false
+    })
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+}
+
+const detachNavigationGuard = () => {
+    removeNavigationGuard?.()
+    removeNavigationGuard = null
+    window.removeEventListener('beforeunload', handleBeforeUnload)
+}
 
 watch(customerChannelsId, (val) => {
     if (val) {
@@ -580,6 +618,19 @@ watch(
     },
     { deep: true }
 )
+
+watch(isNavigationLocked, (isLocked) => {
+    if (isLocked) {
+        attachNavigationGuard()
+        return
+    }
+
+    detachNavigationGuard()
+}, { immediate: true })
+
+onBeforeUnmount(() => {
+    detachNavigationGuard()
+})
 </script>
 
 <template>
@@ -763,6 +814,10 @@ watch(
                             <FontAwesomeIcon icon="fal fa-times" />
                         </button>
 
+                    </div>
+
+                    <div class="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                        {{ trans('You cannot leave this page while creating a bundle. Complete it or discard it first.') }}
                     </div>
 
                     <!-- DESCRIPTION -->

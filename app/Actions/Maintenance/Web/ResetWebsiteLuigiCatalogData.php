@@ -36,7 +36,7 @@ class ResetWebsiteLuigiCatalogData
 
             $objects = data_get($contents, 'objects', []);
             if (count($objects) > 0) {
-                $command->info('Deleting ' . count($objects) . ' items from Luigi catalog');
+                $command->info('Deleting ' . count($objects) . ' items from Luigi catalog (' . data_get($contents, 'total') . ' lefts)');
                 $this->deleteItemBatch($website, $objects);
             }
 

@@ -1630,9 +1630,11 @@ const layout = inject("layout", layoutStructure)
 	<Modal
 		:isOpen="isOpenModalCreateBundle"
 		@onClose="isOpenModalCreateBundle = false"
+		:isClosableInBackground="step.current !== 1"
 		width="w-full max-w-7xl max-h-[600px] md:max-h-[85vh] overflow-y-auto">
 		<AddBundles
 			:step="step"
+			:customer_id="layout.user.customer_id"
 			:routes="props.routes"
 			:bundle_routes="props.bundle_routes"
 			:platform_data
