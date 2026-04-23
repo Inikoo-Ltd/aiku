@@ -228,12 +228,17 @@ const searchProducts = async () => {
 }
 
 const searchProductsAPI = async () => {
+    if (!props.shopSlug) {
+        return { data: { data: [] } }
+    }
+
     return await axios.get(
         route('grp.json.shop.products_beefree_search', {
-            shop: props.shopSlug,
+            shop: props.shopSlug!,
         }), {
         params: {
             search: productSearchQuery.value.trim(),
+            tab_type: 'products',
             per_page: 10
         }
     }
@@ -241,13 +246,40 @@ const searchProductsAPI = async () => {
 }
 
 const searchNewInProductsAPI = async () => {
-    // TODO: Implement new products API with time filter
-    return await searchProductsAPI() // Fallback to regular search for now
+    if (!props.shopSlug) {
+        return { data: { data: [] } }
+    }
+
+    return await axios.get(
+        route('grp.json.shop.products_beefree_search', {
+            shop: props.shopSlug!,
+        }), {
+        params: {
+            search: productSearchQuery.value.trim(),
+            tab_type: 'new_in',
+            per_page: 10
+        }
+    }
+    )
 }
 
 const searchTrendingProductsAPI = async () => {
-    // TODO: Implement trending products API with time filter
-    return await searchProductsAPI() // Fallback to regular search for now
+    if (!props.shopSlug) {
+        return { data: { data: [] } }
+    }
+
+    return await axios.get(
+        route('grp.json.shop.products_beefree_search', {
+            shop: props.shopSlug!,
+        }), {
+        params: {
+            search: productSearchQuery.value.trim(),
+            tab_type: 'trending',
+            time_filter: timeFilter.value,
+            per_page: 10
+        }
+    }
+    )
 }
 
 const searchCollectionFamilyProductsAPI = async () => {
