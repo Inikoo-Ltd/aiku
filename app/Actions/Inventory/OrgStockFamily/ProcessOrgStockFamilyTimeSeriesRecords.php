@@ -23,7 +23,7 @@ class ProcessOrgStockFamilyTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(int $orgStockFamilyId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -56,7 +56,7 @@ class ProcessOrgStockFamilyTimeSeriesRecords implements ShouldBeUnique
     {
         $processedPeriods = [];
 
-        $query = DB::table('invoice_transaction_has_org_stocks as pivot')
+        $query = DB::connection('aiku_no_sticky')->table('invoice_transaction_has_org_stocks as pivot')
             ->join('invoice_transactions', 'invoice_transactions.id', '=', 'pivot.invoice_transaction_id')
             ->where('pivot.org_stock_family_id', $timeSeries->org_stock_family_id)
             ->where('invoice_transactions.date', '>=', $from)
