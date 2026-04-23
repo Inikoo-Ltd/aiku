@@ -8,22 +8,28 @@
 
 namespace App\Actions\Comms\EmailTrackingEvent;
 
-use App\Actions\OrgAction;
-use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\Comms\EmailTrackingEvent;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class PostProcessingEmailTrackingEvent extends OrgAction
+class PostProcessingEmailTrackingEvent
 {
-    use WithNoStrictRules;
-    use WithActionUpdate;
+    use AsAction;
 
-    public function handle(EmailTrackingEvent $emailTrackingEvent): EmailTrackingEvent
+    public string $jobQueue = 'analytics';
+
+    public function handle(int $emailTrackingEventId): void
     {
-        $ip        = Arr::get($emailTrackingEvent->data, 'ipAddress');
-        $userAgent = Arr::get($emailTrackingEvent->data, 'userAgent');
+
+        $emailTrackingEvent = EmailTrackingEvent::find($emailTrackingEventId);
+        if (!$emailTrackingEvent) {
+            return;
+        }
+
+        $data      = $emailTrackingEvent->data;
+        $ip        = Arr::pull($data, 'ipAddress');
+        $userAgent = Arr::pull($data, 'userAgent');
 
         $device = null;
         if ($userAgent) {
@@ -31,10 +37,15 @@ class PostProcessingEmailTrackingEvent extends OrgAction
             $device      = $browserData['device'];
         }
 
-        return $this->update($emailTrackingEvent, [
-            'ip'     => $ip,
-            'device' => $device,
-            'data'   => (object)[]
-        ]);
+        $emailTrackingEvent->update(
+            [
+                'ip'     => $ip,
+                'device' => $device,
+                'data'   => $data,
+            ]
+        );
+
+
+
     }
 }
