@@ -5,7 +5,6 @@ namespace App\Models\HumanResources;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
@@ -34,8 +33,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class LeaveApprovalRecord extends Model
 {
-    use SoftDeletes;
-
     protected $casts = [
         'decided_at' => 'datetime',
     ];

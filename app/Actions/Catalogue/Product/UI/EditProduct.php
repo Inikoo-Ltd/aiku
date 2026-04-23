@@ -100,7 +100,7 @@ class EditProduct extends OrgAction
         $hasMaster      = (bool)$product->masterProduct;
         $isExternalShop = $product->shop->type == ShopTypeEnum::EXTERNAL;
 
-        if ($product->is_single_trade_unit) {
+        if ($product->is_single_trade_unit && $product->shop->type != ShopTypeEnum::EXTERNAL) {
             $warningText[] = __('This product is associated with trade unit, for weights, ingredients etc edit the trade unit. Changing name or description will affect all shops/websites using same language.');
         }
 

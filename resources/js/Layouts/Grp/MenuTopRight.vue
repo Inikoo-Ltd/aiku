@@ -91,7 +91,7 @@ const isUserMac = navigator.platform.includes('Mac')
                     <Popover width="w-80" position="right-0">
                         <template #button="{ open }">
                             <div class="relative bg-amber-300 text-amber-700 rounded px-2.5 opacity-70 hover:opacity-100 cursor-pointer font-semibold text-sm tabular-nums">
-                                {{ layout?.dispatching_waiting_count > 9 ? '9+' : layout?.dispatching_waiting_count }}
+                                <Transition name="spin-to-right"><span :key="layout?.dispatching_waiting_count">{{ layout?.dispatching_waiting_count > 9 ? '9+' : layout?.dispatching_waiting_count }}</span></Transition>
                                 <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                                 <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
                             </div>
@@ -107,7 +107,7 @@ const isUserMac = navigator.platform.includes('Mac')
                     <Popover width="w-80" position="right-0">
                         <template #button="{ open }">
                             <div class="relative bg-purple-300 text-purple-700 rounded px-2.5 opacity-70 hover:opacity-100 cursor-pointer font-semibold text-sm tabular-nums">
-                                {{ layout?.crm_waiting_count > 9 ? '9+' : layout?.crm_waiting_count }}
+                                <Transition name="spin-to-right"><span :key="layout?.crm_waiting_count">{{ layout?.crm_waiting_count > 9 ? '9+' : layout?.crm_waiting_count }}</span></Transition>
                                 <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                                 <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
                             </div>
