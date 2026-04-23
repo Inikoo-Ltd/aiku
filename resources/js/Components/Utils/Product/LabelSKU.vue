@@ -4,6 +4,7 @@ import { Link } from '@inertiajs/vue3';
 import { trans } from 'laravel-vue-i18n'
 import Modal from "@/Components/Utils/Modal.vue"
 import { computed, ref } from 'vue'
+import { ctrans } from '@/Composables/useTrans'
 
 const emit = defineEmits([
     'openModal',
@@ -30,6 +31,7 @@ const props = defineProps<{
     }[]
     hideUnit?: boolean
     forceOpenModal?: boolean
+    disableModal?: boolean
     hoverTooltip?: string
     routeFunction?: Function
     keyPicking?: string
@@ -42,10 +44,11 @@ const isOpenModal = ref(false)
 
 const textTooltip = computed(() => {
     if(props.hoverTooltip) return props.hoverTooltip;
-    return props.trade_units.length > 1  ? trans('Click to view all trade units detail') : ''
+    return props.trade_units.length > 1  ? ctrans('Click to view all trade units detail') : ''
 })
 
 const openModal = () => {
+    if(props.disableModal) return;
     if(props.trade_units.length >= 1 || props.forceOpenModal) {
         isOpenModal.value = true
         emit('openModal');

@@ -212,12 +212,12 @@ export const initialiseApp = () => {
             layout.avatar_thumbnail = usePage().props.avatar_thumbnail
         }
 
-        if (usePage().props.dispatching_waiting_badge !== undefined) {
-            layout.dispatching_waiting_badge = usePage().props.dispatching_waiting_badge
+        if (usePage().props.dispatching_waiting_count !== undefined) {
+            layout.dispatching_waiting_count = usePage().props.dispatching_waiting_count as number
         }
 
-        if (usePage().props.crm_waiting_badge !== undefined) {
-            layout.crm_waiting_badge = usePage().props.crm_waiting_badge
+        if (usePage().props.crm_waiting_count !== undefined) {
+            layout.crm_waiting_count = usePage().props.crm_waiting_count as number
         }
 
         layout.app.name = "Aiku"

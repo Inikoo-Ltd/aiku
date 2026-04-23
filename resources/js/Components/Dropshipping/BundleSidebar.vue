@@ -341,6 +341,7 @@ const handleStoreBundle = async () => {
     }
 }
 
+const submitError = ref<string | null>(null)
 const submitBundle = async () => {
 
     const payload = {
@@ -369,6 +370,7 @@ const submitBundle = async () => {
             preserveState: true,
             onStart: () => {
                 isStoringBundle.value = true
+                submitError.value = null
             },
             onSuccess: () => {
                 notify({
@@ -395,13 +397,19 @@ const submitBundle = async () => {
                 localStorage.removeItem('iris_bundle_products')
             },
             onError: errors => {
+                submitError.value =
+                    errors.description ||
+                    errors.images ||
+                    Object.values(errors)[0] ||
+                    trans("Failed to submit the data, please try again")
+
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to submit the data, please try again"),
+                    text: submitError.value,
                     type: "error"
                 })
             },
-                onFinish: () => {
+            onFinish: () => {
                 isStoringBundle.value = false
             },
         }
@@ -824,7 +832,7 @@ watch(
                     </div>
 
                     <!-- PREVIEW -->
-                    <div class="mb-5">
+                    <div class="mb-2">
                         <label class="text-sm font-semibold">
                             {{ trans('Bundle media') }}
                         </label>
@@ -849,7 +857,10 @@ watch(
                     </div>
 
                     <!-- SUBMIT -->
-                    <Button @click="submitBundle" :disabled="!bundle.description.value.length || isStoringBundle" class="flex justify-center items-center w-full" icon="fas fa-layer-group" :label="trans('Create Bundle')" type="primary" :loading="isStoringBundle" />
+                    <div v-if="submitError" class="text-md text-red-500 mb-2 italic">
+                        {{ submitError }}
+                    </div>
+                    <Button @click="submitBundle" :disabled="!bundle.description.value.length || isStoringBundle || !selectedMedia.length" class="flex justify-center items-center w-full" icon="fas fa-layer-group" :label="trans('Create Bundle')" type="primary" :loading="isStoringBundle" />
                 </div>
                 <!-- Modal Existing media -->
                 <Dialog v-model:visible="showMediaModal" modal header="Select Images" :style="{ width: '600px' }">
