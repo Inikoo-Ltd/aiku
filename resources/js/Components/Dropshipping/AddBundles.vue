@@ -869,7 +869,7 @@ watch(
                     </div>
 
                     <!-- SUBMIT -->
-                    <div  class="text-md text-red-500 mb-2 italic">
+                    <div v-if="submitError" class="text-md text-red-500 mb-2 italic">
                         {{ submitError }}
                     </div>
                     <Button @click="submitBundle" icon="fal fa-layer-group" class="flex justify-center items-center w-full" type="primary" 
