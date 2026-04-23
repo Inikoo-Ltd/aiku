@@ -66,6 +66,8 @@ use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Dispatching\Shipper\Json\GetShippers;
 use App\Actions\Dispatching\Trolley\Json\ListAvailableTrolleys;
 use App\Actions\Dispatching\Trolley\Json\ListUnavailableTrolleys;
+use App\Actions\Dispatching\WaitingItems\Json\GetCrmWaitingBadge;
+use App\Actions\Dispatching\WaitingItems\Json\GetDispatchingWaitingBadge;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetEbayProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetWooProducts;
@@ -288,3 +290,6 @@ Route::get('location/geocode', GetGeocode::class)->name('get_geocode');
 Route::get('{warehouse}/trolleys/list/', ListAvailableTrolleys::class)->name('available_trolleys.list');
 Route::get('{warehouse}/trolleys/unavailable-list/', ListUnavailableTrolleys::class)->name('unavailable_trolleys.list');
 Route::get('{warehouse}/picked-bays/list/', ListAvailablePickedBays::class)->name('picked_bays.list');
+
+Route::get('dispatching/waiting-badge', GetDispatchingWaitingBadge::class)->name('dispatching_waiting_badge');
+Route::get('dispatching/crm-waiting-badge', GetCrmWaitingBadge::class)->name('crm_waiting_badge');
