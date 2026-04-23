@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\Hydrators;
 
+use App\Actions\Dispatching\WaitingItems\SendWaitingCountUpdateToWarehouseUsers;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -38,6 +39,8 @@ class DeliveryNoteHydrateWaitingItems implements ShouldBeUnique
             'number_items_waiting_warehouse' => $deliveryNote->deliveryNoteItems()->where('has_waiting_warehouse', true)->count(),
             'number_items_waiting_crm'       => $deliveryNote->deliveryNoteItems()->where('has_waiting_crm', true)->count(),
         ]);
+
+        SendWaitingCountUpdateToWarehouseUsers::run($deliveryNote->warehouse);
     }
 
 
