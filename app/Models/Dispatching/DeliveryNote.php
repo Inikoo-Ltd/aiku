@@ -45,6 +45,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Audits\Transformer\JsonTransformer;
 
 /**
  * App\Models\Dispatching\DeliveryNote
@@ -238,6 +239,17 @@ class DeliveryNote extends Model implements Auditable
         'grp_exchange',
         'org_exchange',
         'total_amount',
+        'state',
+        'assigned_at',
+        'picking_at',
+        'picked_at',
+        'packing_at',
+        'packed_at',
+        'dispatched_at',
+        'cancelled_at',
+        'shipping_notes',
+        'customer_notes',
+        'internal_notes'
     ];
 
     public function getSlugOptions(): SlugOptions
