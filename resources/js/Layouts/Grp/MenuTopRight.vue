@@ -24,8 +24,6 @@ const layout = inject('layout', layoutStructure)
 const isAskBotEnabled =  import.meta.env.VITE_ASK_BOT_UI;
 const showSearchDialog = ref(false)
 const showAskBot = ref(false)
-const dispatchingCount = computed(() => layout?.dispatching_waiting_count ?? 0)
-const crmCount = computed(() => layout?.crm_waiting_count ?? 0)
 
 onMounted(() => {
     if (typeof window !== 'undefined') {
@@ -88,12 +86,12 @@ const isUserMac = navigator.platform.includes('Mac')
 
             <div class="pl-2 sm:pl-4 flex items-center gap-x-2">
 
-                <!-- Badge: Dispatching Waiting Items -->
-                <div v-if="dispatchingCount > 0" class="relative flex items-center">
+                <!-- Badge: Warehouse Waiting Items -->
+                <div v-if="layout?.dispatching_waiting_count > 0" class="relative flex items-center">
                     <Popover width="w-80" position="right-0">
                         <template #button="{ open }">
                             <div class="relative bg-amber-300 text-amber-700 rounded px-2.5 opacity-70 hover:opacity-100 cursor-pointer font-semibold text-sm tabular-nums">
-                                {{ dispatchingCount > 9 ? '9+' : dispatchingCount }}
+                                {{ layout?.dispatching_waiting_count > 9 ? '9+' : layout?.dispatching_waiting_count }}
                                 <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                                 <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
                             </div>
@@ -105,11 +103,11 @@ const isUserMac = navigator.platform.includes('Mac')
                 </div>
 
                 <!-- Badge: CRM Waiting Items -->
-                <div v-if="crmCount > 0" class="relative flex items-center">
+                <div v-if="layout?.crm_waiting_count > 0" class="relative flex items-center">
                     <Popover width="w-80" position="right-0">
                         <template #button="{ open }">
                             <div class="relative bg-purple-300 text-purple-700 rounded px-2.5 opacity-70 hover:opacity-100 cursor-pointer font-semibold text-sm tabular-nums">
-                                {{ crmCount > 9 ? '9+' : crmCount }}
+                                {{ layout?.crm_waiting_count > 9 ? '9+' : layout?.crm_waiting_count }}
                                 <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                                 <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
                             </div>

@@ -6,7 +6,7 @@
  * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
-namespace App\Actions\Dispatching\UI;
+namespace App\Actions\Dispatching\WaitingItems;
 
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\SysAdmin\User;
