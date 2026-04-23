@@ -36,7 +36,7 @@ class DeletePickedBay extends OrgAction
 
         return $pickedBay;
     }
-    
+
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
         if ($this->pickedBay->deliveryNotes()->exists()) {
@@ -48,10 +48,10 @@ class DeletePickedBay extends OrgAction
     {
         $this->pickedBay = $pickedBay;
         $this->initialisationFromWarehouse($pickedBay->warehouse, $request);
-        
+
         return $this->handle($pickedBay);
     }
-    
+
     public function htmlResponse(PickedBay $pickedBay): RedirectResponse
     {
         return Redirect::route('grp.org.warehouses.show.dispatching.picked_bays.index', [

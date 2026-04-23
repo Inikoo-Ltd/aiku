@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $region_code
  * @property bool $ignore_concurrency_leave_rules
  * @property-read string $short_code
+ * @property-read float $value
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\HumanResources\Leave> $leaves
  * @property-read \App\Models\SysAdmin\Organisation $organisation

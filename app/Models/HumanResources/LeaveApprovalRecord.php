@@ -16,19 +16,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $decided_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property string|null $deleted_at
  * @property-read User|null $approver
  * @property-read \App\Models\HumanResources\Leave|null $leave
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord approved()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord byLeave(\App\Models\HumanResources\Leave $leave)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord pending()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord rejected()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord withTrashed(bool $withTrashed = true)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApprovalRecord withoutTrashed()
  * @mixin \Eloquent
  */
 class LeaveApprovalRecord extends Model
