@@ -248,6 +248,7 @@ const generateAIImages = async () => {
             type: 'success'
         })
     } catch (e) {
+        console.warn("error",e)
         aiGenerateImagesError.value = trans('The OpenAI service is currently unreachable, please try again later.')
         // notify({
         //     title: trans('Error'),
@@ -317,8 +318,8 @@ const handleStoreBundle = async () => {
     }
 }
 
+const submitError = ref<string | null>(null)
 const submitBundle = async () => {
-
     const payload = {
         description: bundle.description.value,
         images: selectedMedia.value.map(img => ({
@@ -340,6 +341,7 @@ const submitBundle = async () => {
             preserveState: true,
             onStart: () => {
                 isSubmitBundle.value = true
+                submitError.value = null
             },
             onSuccess: () => {
                 notify({
@@ -356,13 +358,19 @@ const submitBundle = async () => {
                 emits('onDone')
             },
             onError: errors => {
+                submitError.value =
+                    errors.description ||
+                    errors.images ||
+                    Object.values(errors)[0] ||
+                    trans("Failed to submit the data, please try again")
+
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to submit the data, please try again"),
+                    text: submitError.value,
                     type: "error"
                 })
             },
-                onFinish: () => {
+            onFinish: () => {
                 isSubmitBundle.value = false
             },
         }
@@ -836,7 +844,7 @@ watch(
                     </div>
 
                     <!-- PREVIEW -->
-                    <div class="mb-5">
+                    <div class="mb-2">
                         <label class="text-sm font-semibold">
                             {{ trans('Bundle media') }}
                         </label>
@@ -861,10 +869,12 @@ watch(
                     </div>
 
                     <!-- SUBMIT -->
-                    
+                    <div  class="text-md text-red-500 mb-2 italic">
+                        {{ submitError }}
+                    </div>
                     <Button @click="submitBundle" icon="fal fa-layer-group" class="flex justify-center items-center w-full" type="primary" 
                     :label="trans('Create Bundle')"
-                    :disabled="!bundle.description.value.length || bundle.isStoringBundle.value"
+                    :disabled="!bundle.description.value.length || bundle.isStoringBundle.value || !selectedMedia.length"
                         :loading="isSubmitBundle" />
                   
 
