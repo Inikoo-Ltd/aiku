@@ -153,6 +153,8 @@ class ShowRetinaAccountManagement extends RetinaAction
                                 'tags' => [
                                     'type'                   => 'retina-tags-customer',
                                     'label'                  => __('Interest'),
+                                    'noSaveButton'           => true,
+                                    'full'                   => true,
                                     'value'                  => $customer
                                         ->tags()
                                         ->where('tags.scope', TagScopeEnum::USER_CUSTOMER->value)
