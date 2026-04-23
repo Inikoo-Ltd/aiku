@@ -21,6 +21,20 @@ trait WithGoogleDrive
     use WithTokenPath;
     use WithActionUpdate;
 
+    protected function getGoogleRedirectUri(Organisation $organisation): string
+    {
+        $uri = route('grp.org.settings.google_drive.callback', $organisation->slug);
+
+        if (app()->environment('local') && env('NGROK_URL')) {
+            $parsed = parse_url(env('NGROK_URL'));
+            $scheme = $parsed['scheme'] ?? 'https';
+            $host = $parsed['host'] ?? '';
+            $uri = preg_replace('/^https?:\/\/[^\/]+/', $scheme . '://' . $host, $uri);
+        }
+
+        return $uri;
+    }
+
     /**
      * @throws \Exception
      */
@@ -31,7 +45,7 @@ trait WithGoogleDrive
 
         $tokenPath = $this->getTokenPath($organisation);
         $authCode  = request()->query('code');
-        $client->setRedirectUri(route('grp.org.settings.google_drive.callback', $organisation->slug));
+        $client->setRedirectUri($this->getGoogleRedirectUri($organisation));
         $client->setApplicationName('Aiku google drive manager');
         $client->setAuthConfig([
             'client_id'     => Arr::get($google, 'id'),
@@ -62,12 +76,16 @@ trait WithGoogleDrive
 
         // Exchange authorization code for an access token.
         $accessToken = $client->fetchAccessTokenWithAuthCode($authCode);
-        $client->setAccessToken($accessToken);
 
         // Check to see if there was an error.
-        if (array_key_exists('error', $accessToken)) {
-            throw new Exception(join(', ', $accessToken));
+        if (is_array($accessToken) && array_key_exists('error', $accessToken)) {
+            $errorMessage = isset($accessToken['error_description']) 
+                ? $accessToken['error_description'] 
+                : (is_array($accessToken['error']) ? json_encode($accessToken['error']) : $accessToken['error']);
+            throw new Exception("Google Auth Error: " . $errorMessage);
         }
+
+        $client->setAccessToken($accessToken);
 
         // Save the token to a file.
         if (!file_exists(dirname($tokenPath))) {
@@ -88,7 +106,7 @@ trait WithGoogleDrive
         $tokenPath       = $this->getTokenPath($organisation);
         $authCode        = request()->query('code');
 
-        $client->setRedirectUri(route('grp.org.settings.google_drive.callback', $organisation->slug));
+        $client->setRedirectUri($this->getGoogleRedirectUri($organisation));
         $client->setApplicationName('Aiku google drive manager');
         $client->setAuthConfig([
             'client_id'     => Arr::get($organisation->settings, 'google.id'),
@@ -107,12 +125,15 @@ trait WithGoogleDrive
         // Exchange authorization code for an access token.
         $accessToken = $client->fetchAccessTokenWithAuthCode($authCode);
 
-        $client->setAccessToken($accessToken);
-
         // Check to see if there was an error.
-        if (array_key_exists('error', $accessToken)) {
-            throw new Exception(join(', ', $accessToken));
+        if (is_array($accessToken) && array_key_exists('error', $accessToken)) {
+            $errorMessage = isset($accessToken['error_description']) 
+                ? $accessToken['error_description'] 
+                : (is_array($accessToken['error']) ? json_encode($accessToken['error']) : $accessToken['error']);
+            throw new Exception("Google Auth Error: " . $errorMessage);
         }
+
+        $client->setAccessToken($accessToken);
 
         // Save the token to a file.
         if (!file_exists(dirname($tokenPath))) {

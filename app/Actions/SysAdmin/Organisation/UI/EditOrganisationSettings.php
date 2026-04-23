@@ -36,6 +36,19 @@ class EditOrganisationSettings extends OrgAction
         );
     }
 
+    protected function getGoogleRedirectUri(Organisation $organisation): string
+    {
+        $uri = route('grp.org.settings.google_drive.callback', $organisation->slug);
+
+        if (app()->environment('local') && env('NGROK_URL')) {
+            $parsed = parse_url(env('NGROK_URL'));
+            $scheme = $parsed['scheme'] ?? 'https';
+            $host = $parsed['host'] ?? '';
+            $uri = preg_replace('/^https?:\/\/[^\/]+/', $scheme . '://' . $host, $uri);
+        }
+
+        return $uri;
+    }
 
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
     {
@@ -197,7 +210,7 @@ class EditOrganisationSettings extends OrgAction
                                 "google_redirect_uri" => [
                                     "type" => "input",
                                     "label" => __("google redirect URI"),
-                                    "value" => url('/'),
+                                    "value" => $this->getGoogleRedirectUri($organisation),
                                     "readonly" => true,
                                     "copyButton" => true,
                                 ]
@@ -268,7 +281,7 @@ class EditOrganisationSettings extends OrgAction
                             'fields' => [
                                 'timezone_id' => [
                                     'type' => 'select',
-                                    'options' => GetTimezonesOptions::run(),
+                                    'options' => GetTimeZonesOptions::run(),
                                     'label' => __('Timezone'),
                                     'value' => $organisation->timezone_id,
                                 ]
