@@ -15,7 +15,6 @@ class RepairInvoiceTransactionHasTradeUnits
     use RepairInvoiceTransactionBridges;
 
     public string $commandSignature = 'accounting:repair-invoice-transaction-has-trade-units';
-
     public string $commandDescription = 'Populate invoice_transaction_has_trade_units from existing invoice_transactions';
 
     protected function getJobClass(): string
