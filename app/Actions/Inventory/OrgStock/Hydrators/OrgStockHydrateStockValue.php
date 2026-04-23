@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\DB;
 
 class OrgStockHydrateStockValue implements ShouldBeUnique
 {
-
     //todo do we need to delete this??? mybe yes
     use WithHydrateCommand;
 

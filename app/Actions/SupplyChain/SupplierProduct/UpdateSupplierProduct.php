@@ -49,10 +49,8 @@ class UpdateSupplierProduct extends GrpAction
 
 
         if (!$skipHistoric and $supplierProduct->wasChanged(
-            [ 'code', 'cbm', 'units_per_pack','units_per_pack']
+            ['code', 'cbm', 'units_per_pack', 'units_per_pack']
         )) {
-
-
             $historicProduct = StoreHistoricSupplierProduct::make()->action($supplierProduct, [
                 'status' => true,
             ]);
@@ -86,7 +84,7 @@ class UpdateSupplierProduct extends GrpAction
     public function rules(): array
     {
         $rules = [
-            'code'         => [
+            'code'             => [
                 'sometimes',
                 'required',
                 $this->strict ? 'max:64' : 'max:255',
@@ -104,10 +102,14 @@ class UpdateSupplierProduct extends GrpAction
                     ]
                 ),
             ],
-            'name'            => ['sometimes', 'required', 'string', 'max:255'],
-            'cost'            => ['sometimes', 'required'],
-            'state'           => ['sometimes', 'required', Rule::enum(SupplierProductStateEnum::class)],
-            'is_available'    => ['sometimes', 'required', 'boolean'],
+            'name'             => ['sometimes', 'required', 'string', 'max:255'],
+            'state'            => ['sometimes', 'required', Rule::enum(SupplierProductStateEnum::class)],
+            'is_available'     => ['sometimes', 'required', 'boolean'],
+            'cost'             => ['sometimes', 'required'],
+            'units_per_pack'   => ['sometimes', 'nullable'],
+            'units_per_carton' => ['sometimes', 'nullable'],
+            'cbm'              => ['sometimes', 'nullable', 'numeric'],
+            'extra_costs'      => ['sometimes', 'nullable', 'numeric', 'min:0'],
 
         ];
 

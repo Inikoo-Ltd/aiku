@@ -19,10 +19,8 @@ class FetchAuroraSupplierProduct extends FetchAurora
     protected function parseModel(): void
     {
         if ($this->auroraModelData->aiku_ignore == 'Yes') {
-
             return;
         }
-
 
         $auroraSupplierData = DB::connection('aurora')
             ->table('Supplier Dimension')
@@ -33,12 +31,6 @@ class FetchAuroraSupplierProduct extends FetchAurora
         if ($auroraSupplierData->aiku_ignore == 'Yes') {
             return;
         }
-
-        //        $stock = $this->parseStock($this->organisation->id.':'.$this->auroraModelData->{'Supplier Part Part SKU'});
-        //        if (!$stock) {
-        //            return;
-        //        }
-
 
         $supplier = $this->parseSupplier($this->organisation->id.":".$this->auroraModelData->{'Supplier Part Supplier Key'});
 
@@ -109,8 +101,6 @@ class FetchAuroraSupplierProduct extends FetchAurora
         };
 
 
-
-
         $supplierPartReference = Str::kebab(strtolower($this->cleanTradeUnitReference($supplierProductCode)));
 
         $partReference = Str::kebab(strtolower($this->cleanTradeUnitReference($auroraPartData->{'Part Reference'})));
@@ -129,30 +119,24 @@ class FetchAuroraSupplierProduct extends FetchAurora
         }
 
 
-
         $this->parsedData['supplierProduct'] =
             [
-                'code' => $supplierProductCode,
-                'name' => $name,
-
-                'cost'             => round($this->auroraModelData->{'Supplier Part Unit Cost'} ?? 0, 2),
-                'units_per_pack'   => $auroraPartData->{'Part Units Per Package'},
-                'units_per_carton' => $this->auroraModelData->{'Supplier Part Packages Per Carton'} * $auroraPartData->{'Part Units Per Package'},
-
-
+                'code'                  => $supplierProductCode,
+                'name'                  => $name,
+                'cost'                  => round($this->auroraModelData->{'Supplier Part Unit Cost'} ?? 0, 2),
+                'units_per_pack'        => $auroraPartData->{'Part Units Per Package'},
+                'units_per_carton'      => $this->auroraModelData->{'Supplier Part Packages Per Carton'} * $auroraPartData->{'Part Units Per Package'},
                 'is_available'          => $isAvailable,
                 'state'                 => $state,
                 'stock_quantity_status' => $stock_quantity_status,
-               // 'stock_id'              => $stock->id,
-
-                'data'       => $data,
-                'settings'   => $settings,
-                'created_at' => $created_at,
-
-                'source_slug'     => $sourceSlug,
-                'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Supplier Part Key'},
-                'fetched_at'      => now(),
-                'last_fetched_at' => now()
+                'data'                  => $data,
+                'settings'              => $settings,
+                'created_at'            => $created_at,
+                'source_slug'           => $sourceSlug,
+                'source_id'             => $this->organisation->id.':'.$this->auroraModelData->{'Supplier Part Key'},
+                'fetched_at'            => now(),
+                'last_fetched_at'       => now(),
+                'extra_costs'           => $this->auroraModelData->{'Supplier Part Unit Extra Cost Percentage'} ?? 0
             ];
 
 
