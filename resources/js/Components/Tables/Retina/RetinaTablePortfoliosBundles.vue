@@ -827,7 +827,7 @@ const generateAIImages = async () => {
 }
 
 const bundle = useBundle(props.bundle_routes)
-
+const submitError = ref<string | null>(null)
 const submitBundle = async () => {
 	
 		const payloadItems = bundleItems.value.map(i => ({
@@ -856,6 +856,7 @@ const submitBundle = async () => {
 				preserveState: true,
 				onStart: () => {
 					isSubmitBundle.value = true
+					submitError.value = null
 				},
 				onSuccess: () => {
 					notify({
@@ -868,9 +869,15 @@ const submitBundle = async () => {
 					bundle.resetBundle()
 				},
 				onError: errors => {
+					submitError.value =
+                    errors.description ||
+                    errors.images ||
+                    Object.values(errors)[0] ||
+                    trans("Failed to submit the data, please try again")
+
 					notify({
 						title: trans("Something went wrong"),
-						text: trans("Failed to submit the data, please try again"),
+						text: submitError.value,
 						type: "error"
 					})
 				},
@@ -1432,7 +1439,22 @@ const submitBundle = async () => {
 				</label>
 
 				<div class="bg-gray-100 rounded-xl p-4 mt-2 grid grid-cols-2 md:grid-cols-3 gap-4 min-h-[140px]">
-					<div v-for="img in selectedMedia" class="relative group rounded-xl border bg-white flex items-center justify-center h-36 md:h-44">
+					<div v-if="isLoadingMedia" class="col-span-full flex items-center justify-center min-h-[140px]">
+						<LoadingIcon />
+					</div>
+					<div
+						v-else-if="selectedMedia.length === 0"
+						class="col-span-full flex flex-col items-center justify-center text-center text-gray-400"
+					>
+						<FontAwesomeIcon icon="fal fa-image" class="text-3xl mb-2 opacity-60" />
+						<p class="text-sm font-medium">
+							{{ trans('No media added yet') }}
+						</p>
+						<p class="text-xs">
+							{{ trans('select existing media') }}
+						</p>
+					</div>
+					<div v-else v-for="img in selectedMedia" class="relative group rounded-xl border bg-white flex items-center justify-center h-36 md:h-44">
 						<Image :key="img.id" :src="img.image"  class="h-36 md:h-40 object-contain rounded-xl" />
 						<input type="radio" name="main_image" :checked="img.is_main"
 							@change="setMainImage(img.image_id)" class="absolute top-2 left-2 z-20" />
@@ -1485,9 +1507,11 @@ const submitBundle = async () => {
 					</Button>
 				</div>
 			</div>
-
+			<div v-if="submitError" class="text-md text-red-500 mb-2 italic">
+                {{ submitError }}
+            </div>
 			<div class="mt-3 flex gap-2">
-				<Button @click="submitBundle" :label="isSubmitBundle ? trans('Loading') : trans('Save')" full  icon="fad fa-save" :loading="isSubmitBundle" :disabled="!selectedEditProduct?.description.length || isSubmitBundle"/>
+				<Button @click="submitBundle" :label="isSubmitBundle ? trans('Loading') : trans('Save')" full  icon="fad fa-save" :loading="isSubmitBundle" :disabled="!selectedEditProduct?.description.length || isSubmitBundle || !selectedMedia.length"/>
 			</div>
 		</div>
 	</Modal>
