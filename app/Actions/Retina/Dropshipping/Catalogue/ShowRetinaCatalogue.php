@@ -252,6 +252,41 @@ class ShowRetinaCatalogue extends RetinaAction
                         "color" => "#4f46e5",
                         'value' => $shop->stats->number_collections,
                     ],
+                    [
+                        'label' => __('Bundles'),
+                        'route' => [
+                            'name'       => 'retina.catalogue.bundles.index',
+                            'parameters' => [
+                                'organisation' => $shop->organisation->slug,
+                                'shop'         => $shop->slug
+                            ]
+                        ],
+                        'icon'  => 'fal fa-cube',
+                        "color" => "#4f46e5",
+                        'value' => $shop->stats->number_bundles,
+                        'metas' => [
+
+                            [
+                                "icon"    => [
+                                    "tooltip" => "active",
+                                    "icon"    => "fas fa-check-circle",
+                                    "class"   => "text-green-500"
+                                ],
+                                "count"   => $shop->stats->number_bundles_state_active,
+                                "tooltip" => "Active"
+                            ],
+                            [
+                                "icon"    => [
+                                    "tooltip" => "discontinuing",
+                                    "icon"    => "fas fa-times-circle",
+                                    "class"   => "text-amber-500"
+                                ],
+                                "count"   => $shop->stats->number_bundles_state_discontinuing,
+                                "tooltip" => "Discontinuing"
+                            ],
+
+                        ]
+                    ],
 
                 ]
 
