@@ -2,7 +2,7 @@
 import { trans } from 'laravel-vue-i18n'
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { notify } from '@kyvg/vue3-notification'
-import { onMounted, ref, watch, computed, inject, onBeforeUnmount } from 'vue'
+import { onMounted, ref, watch, computed, inject, onBeforeUnmount, type Ref } from 'vue'
 import { routeType } from '@/types/route'
 import { set } from 'lodash-es'
 import axios from 'axios'
@@ -17,6 +17,7 @@ import { faLayerGroup, faSparkles, faTrash, faImages, faUpload } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { router } from '@inertiajs/vue3';
 import { useBundle } from '@/Composables/useBundle';
+import { useGenerateAIImages } from '@/Composables/useGenerateAIImages';
 import { useConfirm, ConfirmDialog } from "primevue"
 library.add(faLayerGroup, faSparkles, faTrash, faImages, faUpload)
 
@@ -122,7 +123,6 @@ const selectedPortfoliosToSync = ref([])
 const bundle = useBundle(props.bundle_routes)
 const preselectedProducts = ref<any[]>([])
 
-const isGeneratingAI = ref(false)
 const showMediaModal = ref(false)
 const isLoadingMedia = ref(false)
 const selectedMedia = ref<any[]>([])
@@ -197,40 +197,12 @@ const removeMedia = (media: any) => {
 }
 
 const showGenerateModal = ref(false)
-const showGenerateProgressModal = ref(false)
 const aiPrompt = ref('')
 const selectedMediaForAI = ref<any[]>([])
-const aiGenerateImagesError = ref<string | null>(null)
-let generateImagesChannel: any = null
-let generateImagesChannelName: string | null = null
 
-const stopGenerateImagesListener = () => {
-    if (generateImagesChannelName && window.Echo) {
-        window.Echo.leave(generateImagesChannelName)
-    }
-
-    generateImagesChannel = null
-    generateImagesChannelName = null
-}
-
-const initGenerateImagesListener = () => {
-    if (!window.Echo || !props.customer_id) return false
-    
-    const channelName = `retina.image.generation.${props.customer_id}`
-
-    stopGenerateImagesListener()
-
-    generateImagesChannelName = channelName
-    generateImagesChannel = window.Echo.private(channelName)
-
-    generateImagesChannel.listen('.action-progress', (media: any) => {
-        if (!media?.id) return
-        console.log("media", media)
-        console.log("selectedMedia", selectedMedia.value)
-        const existingIndex = selectedMedia.value.findIndex(
-            (item: any) => item.image_id === media.id
-        )
-
+const { isGeneratingAI, aiGenerateImagesError, showGenerateProgressModal, generateAIImages, stopEchoListener } = useGenerateAIImages({
+    customerId: () => props.customer_id,
+    onImageGenerated: (media) => {
         const nextMedia = {
             key: `ai-${media.id}`,
             id: media.id,
@@ -241,77 +213,29 @@ const initGenerateImagesListener = () => {
             is_ai: true,
             is_main: false
         }
-        console.log("nextMedia", nextMedia)
+        const existingIndex = selectedMedia.value.findIndex((item: any) => item.image_id === media.id)
         if (existingIndex === -1) {
             selectedMedia.value.push(nextMedia)
         } else {
-            selectedMedia.value[existingIndex] = {
-                ...selectedMedia.value[existingIndex],
-                ...nextMedia
-            }
+            selectedMedia.value[existingIndex] = { ...selectedMedia.value[existingIndex], ...nextMedia }
         }
-
-        console.log("final selectedMedia", selectedMedia.value)
-        showGenerateProgressModal.value = false
         showGenerateModal.value = false
         aiPrompt.value = ''
         selectedMediaForAI.value = []
         selectedMediaAIIds.value = []
+    }
+})
 
-        stopGenerateImagesListener()
-
-        notify({
-            title: 'AI Image Generated',
-            type: 'success'
-        })
-    })
-
-    return true
-}
-
-const generateAIImages = async () => {
-    try {
-        isGeneratingAI.value = true
-        aiGenerateImagesError.value = null
-
-        const isSocketReady = initGenerateImagesListener()
-
-        if (!isSocketReady) {
-            throw new Error('Echo or auth user is not available')
-        }
-
-        const payload = {
-            images: selectedMediaForAI.value.map(m => m.image_id),
-            prompt: aiPrompt.value
-        }
-
-        const routeParams = {
+const handleGenerateAIImages = () => {
+    generateAIImages({
+        routeName: props.bundle_routes.ai.generate_images.name,
+        routeParams: {
             ...props.bundle_routes.ai.generate_images.parameters,
             product: bundle.product_id.value
-        }
-
-        showGenerateProgressModal.value = true
-
-        await axios.post(
-            route(
-                props.bundle_routes.ai.generate_images.name,
-                routeParams
-            ),
-            payload
-        )
-    } catch (e) {
-        console.warn("error",e)
-        aiGenerateImagesError.value = trans('The OpenAI service is currently unreachable, please try again later.')
-        showGenerateProgressModal.value = false
-        stopGenerateImagesListener()
-        // notify({
-        //     title: trans('Error'),
-        //     text: trans('Failed to generate AI'),
-        //     type: 'error'
-        // })
-    } finally {
-        isGeneratingAI.value = false
-    }
+        },
+        images: selectedMediaForAI.value.map(m => m.image_id),
+        prompt: aiPrompt.value
+    })
 }
 
 const productIds = computed(() => {
@@ -641,7 +565,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-    stopGenerateImagesListener()
+    stopEchoListener()
 })
 watch(
     selectedMedia,
@@ -1028,7 +952,7 @@ watch(
                     </div>
 
                     <template #footer>
-                        <Button :label="trans('Generate')" @click="generateAIImages" :loading="isGeneratingAI"
+                        <Button :label="trans('Generate')" @click="handleGenerateAIImages" :loading="isGeneratingAI"
                             :disabled="!selectedMediaForAI.length || !aiPrompt" />
                     </template>
 

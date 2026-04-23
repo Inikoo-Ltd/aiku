@@ -15,6 +15,7 @@ import { faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, faMi
 import { library } from '@fortawesome/fontawesome-svg-core'
 library.add(faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, faMinus, faUpload)
 import { router } from '@inertiajs/vue3';
+import { useGenerateAIImages } from '@/Composables/useGenerateAIImages';
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import Image from '../Image.vue';
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -34,7 +35,6 @@ const selectedMediaAIIds = ref<any[]>([])
 const selectedMediaForAI = ref<any[]>([])
 const aiPrompt = ref<string>('')
 
-const isGeneratingAI = ref<boolean>(false)
 const isStoringBundle = ref<boolean>(false)
 const showMediaModal = ref<boolean>(false)
 const isLoadingMedia = ref<boolean>(false)
@@ -56,69 +56,37 @@ const resolveParams = (config: any) => {
 
     return config.parameters || {}
 }
-const aiGenerateImagesError = ref<string | null>(null)
-const generateAIImages = async () => {
-    try {
-        isGeneratingAI.value = true
-        aiGenerateImagesError.value = null
-        const payload = {
-            images: selectedMediaForAI.value.map(m => m.image_id),
-            prompt: aiPrompt.value
-        }
 
-        const routeConfig = bundleRoutes.ai.generate_images
-        
-        const routeParams = {
-            ...resolveParams(routeConfig),
-            product: bundle.product_id.value
-        }
-
-        const res = await axios.post(
-            route(
-                routeConfig.name,
-                routeParams
-            ),
-            payload
-        )
-
-        const media = res.data?.data
-
-        if (media) {
-
-            selectedMedia.value.push({
-                id: media.id,
-                image_id: media.id,
-                url: media.source?.original || media.thumbnail?.original,
-                image: media.thumbnail || media.source,
-                is_ai: true,
-                is_main: false
-            })
-
-        }
-
+const { isGeneratingAI, aiGenerateImagesError, generateAIImages, showGenerateProgressModal, stopEchoListener } = useGenerateAIImages({
+    customerId: () => layout.iris_variables?.customer_id ?? null,
+    onImageGenerated: (media) => {
+        selectedMedia.value.push({
+            id: media.id,
+            image_id: media.id,
+            url: media.source?.original || media.thumbnail?.original,
+            image: media.thumbnail || media.source,
+            is_ai: true,
+            is_main: false
+        })
         showGenerateModalAI.value = false
-
         aiPrompt.value = ''
         selectedMediaForAI.value = []
-
-        notify({
-            title: 'AI Image Generated',
-            type: 'success'
-        })
-
-    } catch (e) {
-        console.log("e", e)
-        console.error("e", e)
-         aiGenerateImagesError.value = 'The OpenAI service is currently unreachable, please try again later.'
-        // notify({
-        //     title: trans('Error'),
-        //     text: trans('Failed to generate AI'),
-        //     type: 'error'
-        // })
-    } finally {
-        isGeneratingAI.value = false
     }
+})
+
+const handleGenerateAIImages = () => {
+    const routeConfig = bundleRoutes.ai.generate_images
+    generateAIImages({
+        routeName: routeConfig.name,
+        routeParams: { ...resolveParams(routeConfig), product: bundle.product_id.value },
+        images: selectedMediaForAI.value.map(m => m.image_id),
+        prompt: aiPrompt.value
+    })
 }
+
+onBeforeUnmount(() => {
+    stopEchoListener()
+})
 
 const productIds = computed(() => {
     return bundle.products.value.map(p => p.id)
@@ -631,6 +599,8 @@ watch(isNavigationLocked, (isLocked) => {
 onBeforeUnmount(() => {
     detachNavigationGuard()
 })
+
+console.log("layout bundlesibdear", layout)
 </script>
 
 <template>
@@ -1006,10 +976,29 @@ onBeforeUnmount(() => {
                     </div>
 
                     <template #footer>
-                        <Button label="Generate" @click="generateAIImages" :loading="isGeneratingAI"
+                        <Button label="Generate" @click="handleGenerateAIImages" :loading="isGeneratingAI"
                             :disabled="!selectedMediaForAI.length || !aiPrompt" />
                     </template>
 
+                </Dialog>
+                 <Dialog
+                    v-model:visible="showGenerateProgressModal"
+                    :header="trans('Generating AI Image')"
+                    modal
+                    :closable="false"
+                    :closeOnEscape="false"
+                    :dismissableMask="false"
+                    :style="{ width: '420px' }"
+                >
+                    <div class="py-6 flex flex-col items-center text-center">
+                        <LoadingIcon class="mb-4" />
+                        <div class="text-sm font-semibold text-gray-800">
+                            {{ trans('Generating your image...') }}
+                        </div>
+                        <div class="text-xs text-gray-500 mt-2">
+                            {{ trans('Please wait while we process your prompt and listen for the result.') }}
+                        </div>
+                    </div>
                 </Dialog>
                 <ConfirmDialog>
                     <template #container="{ message, acceptCallback, rejectCallback }">
