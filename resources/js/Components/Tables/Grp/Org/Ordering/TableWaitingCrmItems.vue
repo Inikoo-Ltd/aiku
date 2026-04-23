@@ -21,6 +21,8 @@ import { debounce } from "lodash-es"
 import { InputNumber } from "primevue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { notify } from "@kyvg/vue3-notification"
+import { ctrans } from "@/Composables/useTrans"
 library.add(faStickyNote, faExchangeAlt, faSearch, faSave, faTimes, faTruck, faShoppingCart)
 
 defineProps<{
@@ -162,6 +164,11 @@ const submitReplaceProduct = () => {
                 replacedItem: { ...selectedItem.value },
                 newProducts: snapshotSelectedProducts,
             }
+            notify({
+                title: ctrans("Success!"),
+                text: ctrans('Items :itemOld has been replaced', { itemOld: selectedItem.value?.org_stock_code ?? ''}),
+                type: "success",
+            })
             isModalConfirmationSuccess.value = true
         },
         onFinish: () => { isSubmittingReplaceProduct.value = false },

@@ -10,6 +10,7 @@ use App\Actions\Retina\Dropshipping\Catalogue\ShowRetinaCatalogue;
 use App\Actions\Retina\Dropshipping\Collection\UI\IndexRetinaCollections;
 use App\Actions\Retina\Dropshipping\Collection\UI\ShowRetinaCollection;
 use App\Actions\Retina\Dropshipping\Product\DownloadProduct;
+use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaBundlesInCatalogue;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInCatalogue;
 use App\Actions\Retina\Dropshipping\Product\UI\ShowRetinaCatalogueProduct;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaDepartments;
@@ -47,6 +48,11 @@ Route::prefix('families')->as('families.')->group(function () {
 
 Route::prefix('products')->as('products.')->group(function () {
     Route::get('/', IndexRetinaProductsInCatalogue::class)->name('index');
+    Route::get('{product}', ShowRetinaCatalogueProduct::class)->name('show');
+});
+
+Route::prefix('bundles')->as('bundles.')->group(function () {
+    Route::get('/', IndexRetinaBundlesInCatalogue::class)->name('index');
     Route::get('{product}', ShowRetinaCatalogueProduct::class)->name('show');
 });
 

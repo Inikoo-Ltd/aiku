@@ -36,7 +36,6 @@ use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InCustomer;
-use App\Observers\OrderOnlySearchableModelObserver;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -274,9 +273,17 @@ class Order extends Model implements HasMedia, Auditable
 
     protected $guarded = [];
 
-    public static function bootSearchable(): void
+    public function searchIndexShouldBeUpdated(): bool
     {
-        static::observe(new OrderOnlySearchableModelObserver());
+        return $this->wasRecentlyCreated || $this->wasChanged([
+                'organisation_id',
+                'shop_id',
+                'customer_id',
+                'state',
+                'reference',
+                'customer_reference',
+                'date',
+            ]);
     }
 
     public function toSearchableArray(): array

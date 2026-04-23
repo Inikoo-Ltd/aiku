@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Bundle;
 
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductImages;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateBundles;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -177,6 +178,8 @@ class UpdateBundle extends OrgAction
 
             $bundle->refresh();
 
+            ShopHydrateBundles::dispatch($bundle->customer->shop)->delay($this->hydratorsDelay);
+
             return $bundle;
         });
     }
@@ -214,7 +217,7 @@ class UpdateBundle extends OrgAction
         $rules = [
             'id' => ['nullable'],
             'name' => ['sometimes', 'string', 'max:255'],
-            'description' => ['sometimes', 'nullable', 'string', 'max:65535'],
+            'description' => ['sometimes', 'nullable', 'string', 'max:15000'],
             'rrp' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'images' => ['sometimes', 'array'],
             'images.*.id' => ['sometimes', 'integer', 'exists:media,id'],

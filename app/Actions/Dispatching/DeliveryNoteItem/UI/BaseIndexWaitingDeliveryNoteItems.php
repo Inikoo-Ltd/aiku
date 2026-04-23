@@ -13,8 +13,9 @@ use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\UI\Dispatch\WaitingItemsTabsEnum;
-use App\Http\Resources\Dispatching\WaitingDeliveryNoteItemsGroupedResource;
-use App\Http\Resources\Dispatching\WaitingDeliveryNoteItemsResource;
+use App\Http\Resources\Dispatching\WaitingDeliveryNoteItemsGroupedByItemResource;
+use App\Http\Resources\Dispatching\WaitingDNItemsGroupedByDeliveryNoteResource;
+use App\Http\Resources\Dispatching\WaitingDNItemsTabsItemizedResource;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -47,7 +48,7 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
 
     public function htmlResponse(Warehouse $warehouse, ActionRequest $request): Response
     {
-        $groupedByDeliveryNote = IndexWaitingDeliveryNoteItemsGrouped::make()->handle(
+        $groupedByDeliveryNote = IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote::make()->handle(
             warehouse: $warehouse,
             waitingType: $this->waitingType,
             state: $this->getDeliveryNoteState(),
@@ -61,6 +62,14 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
             state: $this->getDeliveryNoteState(),
             shopType: $this->shopType,
             prefix: WaitingItemsTabsEnum::ITEMIZED->value
+        );
+
+        $groupedByItem = IndexWaitingDeliveryNoteItemsGroupedByItem::make()->handle(
+            warehouse: $warehouse,
+            waitingType: $this->waitingType,
+            state: $this->getDeliveryNoteState(),
+            shopType: $this->shopType,
+            prefix: WaitingItemsTabsEnum::GROUPED_BY_ITEM->value
         );
 
         $props = [
@@ -80,16 +89,20 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
                 'navigation' => $this->getTabNavigation(),
             ],
             WaitingItemsTabsEnum::ITEMIZED->value                   => $this->tab == WaitingItemsTabsEnum::ITEMIZED->value
-                ? fn () => WaitingDeliveryNoteItemsResource::collection($itemized)
-                : Inertia::lazy(fn () => WaitingDeliveryNoteItemsResource::collection($itemized)),
+                ? fn () => WaitingDNItemsTabsItemizedResource::collection($itemized)
+                : Inertia::lazy(fn () => WaitingDNItemsTabsItemizedResource::collection($itemized)),
             WaitingItemsTabsEnum::GROUPED_BY_DELIVERY_NOTE->value   => $this->tab == WaitingItemsTabsEnum::GROUPED_BY_DELIVERY_NOTE->value
-                ? fn () => WaitingDeliveryNoteItemsGroupedResource::collection($groupedByDeliveryNote)
-                : Inertia::lazy(fn () => WaitingDeliveryNoteItemsGroupedResource::collection($groupedByDeliveryNote)),
+                ? fn () => WaitingDNItemsGroupedByDeliveryNoteResource::collection($groupedByDeliveryNote)
+                : Inertia::lazy(fn () => WaitingDNItemsGroupedByDeliveryNoteResource::collection($groupedByDeliveryNote)),
+            WaitingItemsTabsEnum::GROUPED_BY_ITEM->value            => $this->tab == WaitingItemsTabsEnum::GROUPED_BY_ITEM->value
+                ? fn () => WaitingDeliveryNoteItemsGroupedByItemResource::collection($groupedByItem)
+                : Inertia::lazy(fn () => WaitingDeliveryNoteItemsGroupedByItemResource::collection($groupedByItem)),
         ];
 
         return Inertia::render('Org/Dispatching/WaitingDeliveryNoteItems', $props)
             ->table(IndexWaitingDeliveryNoteItemsItemized::make()->tableStructure(WaitingItemsTabsEnum::ITEMIZED->value))
-            ->table(IndexWaitingDeliveryNoteItemsGrouped::make()->tableStructure(WaitingItemsTabsEnum::GROUPED_BY_DELIVERY_NOTE->value));
+            ->table(IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote::make()->tableStructure(WaitingItemsTabsEnum::GROUPED_BY_DELIVERY_NOTE->value))
+            ->table(IndexWaitingDeliveryNoteItemsGroupedByItem::make()->tableStructure(WaitingItemsTabsEnum::GROUPED_BY_ITEM->value));
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Warehouse

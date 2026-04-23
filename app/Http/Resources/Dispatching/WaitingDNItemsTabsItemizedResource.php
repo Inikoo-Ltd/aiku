@@ -51,7 +51,7 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $trolley_names
  * @property mixed $picked_bay_codes
  */
-class WaitingDeliveryNoteItemsResource extends JsonResource
+class WaitingDNItemsTabsItemizedResource extends JsonResource
 {
     public function toArray($request): array
     {

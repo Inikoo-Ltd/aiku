@@ -19,7 +19,6 @@ use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\InGroup;
-use App\Observers\SupplierOnlySearchableModelObserver;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -131,9 +130,21 @@ class Supplier extends Model implements HasMedia, Auditable
 
     protected $guarded = [];
 
-    public static function bootSearchable(): void
+    public function searchIndexShouldBeUpdated(): bool
     {
-        static::observe(new SupplierOnlySearchableModelObserver());
+        return $this->wasRecentlyCreated || $this->wasChanged([
+                'agent_id',
+                'status',
+                'code',
+                'name',
+                'contact_name',
+                'company_name',
+                'email',
+                'phone',
+                'contact_website',
+                'identity_document_number',
+                'created_at'
+            ]);
     }
 
     public function toSearchableArray(): array

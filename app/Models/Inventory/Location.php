@@ -13,7 +13,6 @@ use App\Models\Fulfilment\Pallet;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InWarehouse;
-use App\Observers\LocationOnlySearchableModelObserver;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -105,10 +104,18 @@ class Location extends Model implements Auditable
 
     protected $guarded = [];
 
-    public static function bootSearchable(): void
+    public function searchIndexShouldBeUpdated(): bool
     {
-        static::observe(new LocationOnlySearchableModelObserver());
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'code',
+                'status',
+                'created_at',
+                'warehouse_area_id',
+                'warehouse_id'
+            ]);
     }
+
 
     public function toSearchableArray(): array
     {

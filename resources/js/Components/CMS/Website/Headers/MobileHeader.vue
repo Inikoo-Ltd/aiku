@@ -241,7 +241,7 @@ const getStylesRemoveFontSize = (properties, screenType) => {
 
                     <LinkIris href="/app/dashboard" class="px-1">
                         <FontAwesomeIcon
-                            :icon="headerData?.mobile?.profile?.icon || 'fal fa-user-circle'"
+                            :icon="'fal fa-user-circle'"
                             fixed-width
                             aria-hidden="true"
                             class="text-3xl"

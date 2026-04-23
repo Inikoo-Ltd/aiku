@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Bundle;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateBundles;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\OrgAction;
@@ -130,6 +131,8 @@ class StoreBundle extends OrgAction
                 'bundle_id' => $bundle->id
             ]);
 
+            ShopHydrateBundles::dispatch($customerSalesChannel->shop)->delay($this->hydratorsDelay);
+
             return $bundle;
         });
     }
@@ -149,7 +152,7 @@ class StoreBundle extends OrgAction
             'id' => ['nullable'],
             'name'        => ['sometimes', 'nullable', 'string', 'max:255'],
             'code'        => ['nullable', 'string', 'max:64'],
-            'description' => ['sometimes', 'nullable', 'string', 'max:65535'],
+            'description' => ['sometimes', 'nullable', 'string', 'max:15000'],
             'price'       => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'rrp'         => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'products'    => ['required', 'array', 'min:1'],

@@ -31,7 +31,6 @@ use App\Models\Traits\HasImage;
 use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
 use App\Models\Web\WebpageHasProduct;
-use App\Observers\ProductOnlySearchableModelObserver;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -300,10 +299,20 @@ class Product extends Model implements Auditable, HasMedia
         'offers_data'          => '{}',
     ];
 
-    public static function bootSearchable(): void
+    public function searchIndexShouldBeUpdated(): bool
     {
-        static::observe(new ProductOnlySearchableModelObserver());
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'code',
+                'name',
+                'description',
+                'description_extra',
+                'state',
+                'is_for_sale',
+                'created_at'
+            ]);
     }
+
 
     public function toSearchableArray(): array
     {

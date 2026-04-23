@@ -16,7 +16,6 @@ use App\Models\Traits\HasRoles;
 use App\Models\Traits\IsUserable;
 use App\Models\UserFailedLogIn;
 use App\Models\UserLogin;
-use App\Observers\UserOnlySearchableModelObserver;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 use Laravel\Scout\Searchable;
@@ -164,9 +163,15 @@ class User extends Authenticatable implements HasMedia, Auditable
         'sources'  => '{}',
     ];
 
-    public static function bootSearchable(): void
+    public function searchIndexShouldBeUpdated(): bool
     {
-        static::observe(new UserOnlySearchableModelObserver());
+        return $this->wasRecentlyCreated || $this->wasChanged([
+                'username',
+                'email',
+                'contact_name',
+                'status',
+                'created_at'
+            ]);
     }
 
     public function toSearchableArray(): array
