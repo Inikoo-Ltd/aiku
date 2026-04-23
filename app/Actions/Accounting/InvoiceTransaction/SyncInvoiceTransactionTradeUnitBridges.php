@@ -11,14 +11,13 @@ use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Accounting\InvoiceTransactionHasTradeUnit;
 use App\Models\Catalogue\Product;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SyncInvoiceTransactionTradeUnitBridges implements ShouldQueue, ShouldBeUnique
+class SyncInvoiceTransactionTradeUnitBridges implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'hydrators-slave';
 
     public function getJobUniqueId(?int $invoiceTransactionId): string
     {

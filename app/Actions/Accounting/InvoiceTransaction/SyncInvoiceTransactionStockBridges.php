@@ -12,31 +12,30 @@ use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Accounting\InvoiceTransactionHasStock;
 use App\Models\Catalogue\Product;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SyncInvoiceTransactionStockBridges implements ShouldBeUnique, ShouldQueue
+class SyncInvoiceTransactionStockBridges implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'hydrators-slave';
 
     public function getJobUniqueId(int $invoiceTransactionId): string
     {
-        return (string) $invoiceTransactionId;
+        return (string)$invoiceTransactionId;
     }
 
     public function handle(int $invoiceTransactionId): void
     {
         $invoiceTransaction = InvoiceTransaction::find($invoiceTransactionId);
 
-        if (! $invoiceTransaction || $invoiceTransaction->model_type !== 'Product' || ! $invoiceTransaction->model_id) {
+        if (!$invoiceTransaction || $invoiceTransaction->model_type !== 'Product' || !$invoiceTransaction->model_id) {
             return;
         }
 
         $product = Product::find($invoiceTransaction->model_id);
 
-        if (! $product) {
+        if (!$product) {
             return;
         }
 
@@ -49,10 +48,10 @@ class SyncInvoiceTransactionStockBridges implements ShouldBeUnique, ShouldQueue
         $weights = [];
         foreach ($orgStocks as $orgStock) {
             $stock = $orgStock->stock;
-            if (! $stock) {
+            if (!$stock) {
                 continue;
             }
-            $weights[$stock->id] = (float) ($orgStock->sku_value ?? 0) * ($orgStock->pivot->quantity ?? 1);
+            $weights[$stock->id] = (float)($orgStock->sku_value ?? 0) * ($orgStock->pivot->quantity ?? 1);
         }
 
         $totalWeight = array_sum($weights);
@@ -63,7 +62,7 @@ class SyncInvoiceTransactionStockBridges implements ShouldBeUnique, ShouldQueue
 
         foreach ($orgStocks as $orgStock) {
             $stock = $orgStock->stock;
-            if (! $stock) {
+            if (!$stock) {
                 continue;
             }
 
