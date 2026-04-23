@@ -8,6 +8,8 @@
 
 
 use App\Actions\Dispatching\DeliveryNote\PdfDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\PdfPackingList;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/delivery-notes/{deliveryNote}', PdfDeliveryNote::class)->name('delivery-notes');
+Route::get('/packing-lists/{deliveryNote}', PdfPackingList::class)->name('packing-lists');

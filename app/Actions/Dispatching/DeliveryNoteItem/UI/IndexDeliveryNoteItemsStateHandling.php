@@ -20,7 +20,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDeliveryNoteItemsStateHandling extends OrgAction
 {
-    public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false, ?DeliveryNoteItemStateEnum $stateFilter = null): LengthAwarePaginator
+    public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false, array|DeliveryNoteItemStateEnum|null $stateFilter = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -38,7 +38,11 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
         $query->where('delivery_note_items.delivery_note_id', $parent->id);
 
         if ($stateFilter) {
-            $query->where('delivery_note_items.state', $stateFilter);
+            if (is_array($stateFilter)) {
+                $query->whereIn('delivery_note_items.state', $stateFilter);
+            } else {
+                $query->where('delivery_note_items.state', $stateFilter);
+            }
         }
 
         $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');

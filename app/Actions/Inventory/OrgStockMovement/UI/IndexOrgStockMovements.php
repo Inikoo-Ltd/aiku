@@ -103,13 +103,14 @@ class IndexOrgStockMovements extends OrgAction
 
         if ($parent instanceof OrgStock) {
             $queryBuilder->where('org_stock_movements.org_stock_id', $parent->id);
-            
-            $queryBuilder->when($type, 
+
+            $queryBuilder->when(
+                $type,
                 function ($q) use ($type) {
                     $q->where('org_stock_movements.type', $type);
-                }, 
+                },
                 function ($q) {
-                   $q->whereNot('org_stock_movements.class', OrgStockMovementClassEnum::GARBAGE);
+                    $q->whereNot('org_stock_movements.class', OrgStockMovementClassEnum::GARBAGE);
                 }
             );
         } else {

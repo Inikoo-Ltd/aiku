@@ -7,7 +7,6 @@ use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateProductIndex extends OrgAction
@@ -25,7 +24,7 @@ class UpdateProductIndex extends OrgAction
             $product->updateQuietly([
                 "index_under_{$productCategory->type->value}"    => data_get($indexOrders, "{$product->code}.index_under_{$productCategory->type->value}", null)
             ]);
-        };
+        }
 
         BreakWebpageCache::run($productCategory->webpage);
     }

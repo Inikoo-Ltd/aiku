@@ -130,6 +130,23 @@ class Supplier extends Model implements HasMedia, Auditable
 
     protected $guarded = [];
 
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated || $this->wasChanged([
+                'agent_id',
+                'status',
+                'code',
+                'name',
+                'contact_name',
+                'company_name',
+                'email',
+                'phone',
+                'contact_website',
+                'identity_document_number',
+                'created_at'
+            ]);
+    }
+
     public function toSearchableArray(): array
     {
         return [
@@ -146,12 +163,6 @@ class Supplier extends Model implements HasMedia, Auditable
             'identity_document_number' => (string)$this->identity_document_number,
             'created_at'               => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
-    }
-
-    public function shouldBeSearchable(): bool
-    {
-        $searchableFields = ['agent_id', 'status', 'code', 'name', 'contact_name', 'company_name', 'email', 'phone', 'contact_website', 'identity_document_number', 'created_at'];
-        return $this->isDirty($searchableFields);
     }
 
     public function getRouteKeyName(): string

@@ -104,6 +104,19 @@ class Location extends Model implements Auditable
 
     protected $guarded = [];
 
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'code',
+                'status',
+                'created_at',
+                'warehouse_area_id',
+                'warehouse_id'
+            ]);
+    }
+
+
     public function toSearchableArray(): array
     {
         return [
@@ -114,13 +127,6 @@ class Location extends Model implements Auditable
             'status'            => $this->status->value,
             'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
-    }
-
-    public function shouldBeSearchable(): bool
-    {
-        $searchableFields = ['code', 'status', 'created_at', 'warehouse_area_id', 'warehouse_id'];
-
-        return $this->isDirty($searchableFields);
     }
 
     public function generateTags(): array

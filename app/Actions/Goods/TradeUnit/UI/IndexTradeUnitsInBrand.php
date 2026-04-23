@@ -3,7 +3,6 @@
 namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Actions\GrpAction;
-use App\Actions\Helpers\Brand\UI\IndexBrands;
 use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitIndex;
 use App\Actions\Helpers\Brand\UI\ShowBrand;
 use App\Actions\Helpers\Brand\WithBrandSubNavigation;
@@ -131,6 +130,10 @@ class IndexTradeUnitsInBrand extends GrpAction
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => TradeUnitsTabsEnum::navigationExcept([TradeUnitsTabsEnum::SALES]),
+                ],
+                'currentBrand'  => [
+                    'slug'  => $this->brand->slug,
+                    'id'    => $this->brand->id
                 ],
 
                 TradeUnitsTabsEnum::INDEX->value => $this->tab == TradeUnitsTabsEnum::INDEX->value

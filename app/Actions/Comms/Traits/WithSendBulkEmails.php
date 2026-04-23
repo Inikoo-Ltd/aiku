@@ -189,6 +189,9 @@ trait WithSendBulkEmails
             'invoice-date-change-blade' => Arr::get($additionalData, 'invoice_date_change_blade'),
             'delivery-note-link' => Arr::get($additionalData, 'delivery_note_link'),
             'delivery-note-reference' => Arr::get($additionalData, 'delivery_note_reference'),
+            'web-user-password' => Arr::get($additionalData, 'web_user_password'),
+            'retina-login-link' => Arr::get($additionalData, 'retina_login_link'),
+            'web-user-contact-name' => Arr::get($additionalData, 'web_user_contact_name'),
 
             default => $originalPlaceholder,
         };

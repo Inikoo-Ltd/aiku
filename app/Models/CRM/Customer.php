@@ -253,6 +253,28 @@ class Customer extends Model implements HasMedia, Auditable
 
     protected $guarded = [];
 
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated || $this->wasChanged([
+                'shop_id',
+                'status',
+                'state',
+                'reference',
+                'name',
+                'contact_name',
+                'company_name',
+                'eori',
+                'email',
+                'phone',
+                'contact_website',
+                'identity_document_number',
+                'internal_notes',
+                'warehouse_internal_notes',
+                'warehouse_public_notes',
+                'created_at'
+            ]);
+    }
+
     public function toSearchableArray(): array
     {
         return [
@@ -272,31 +294,6 @@ class Customer extends Model implements HasMedia, Auditable
             'created_at'               => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }
-
-    public function shouldBeSearchable(): bool
-    {
-        $searchableFields = [
-            'shop_id',
-            'status',
-            'state',
-            'reference',
-            'name',
-            'contact_name',
-            'company_name',
-            'eori',
-            'email',
-            'phone',
-            'contact_website',
-            'identity_document_number',
-            'internal_notes',
-            'warehouse_internal_notes',
-            'warehouse_public_notes',
-            'created_at'
-        ];
-
-        return $this->isDirty($searchableFields);
-    }
-
 
     public function generateTags(): array
     {

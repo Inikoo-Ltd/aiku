@@ -235,6 +235,12 @@ const onPayWithBalance = () => {
 
                     <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
                         <span>{{ note?.reference }}</span>
+                        <a :href="route(note?.routes?.download?.name, note?.routes?.download.parameters)"
+                            target="_blank"
+                            class="text-sm p-0.5 bg-red-100 text-red-600 rounded cursor-pointer"
+                            v-tooltip="trans('Download Picking List')">
+                            <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
+                        </a>
                         <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
                             <Icon :data="note?.state" />
                         </span>

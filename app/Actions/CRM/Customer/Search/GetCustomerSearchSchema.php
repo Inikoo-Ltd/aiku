@@ -30,11 +30,11 @@ class GetCustomerSearchSchema
                     ],
                     [
                         'name' => 'status',
-                        'type' => 'bool',
+                        'type' => 'string',
                     ],
                     [
                         'name' => 'state',
-                        'type' => 'bool',
+                        'type' => 'string',
                     ],
                     [
                         'name' => 'reference',

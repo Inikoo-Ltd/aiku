@@ -55,7 +55,7 @@ class FetchAuroraOrgStockMovement extends FetchAurora
 
         $quantity        = $this->auroraModelData->{'Inventory Transaction Quantity'};
         $auditedQuantity = null;
-
+        $note = null;
         if ($this->auroraModelData->{'Inventory Transaction Type'} == 'Sale') {
             $type        = OrgStockMovementTypeEnum::PICKED;
             $isDelivered = true;
@@ -63,6 +63,7 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             $type = OrgStockMovementTypeEnum::ADJUSTMENT;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'In') {
             $type = OrgStockMovementTypeEnum::PURCHASE;
+            $note = $this->auroraModelData->{'Note'};
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Found') {
             $type = OrgStockMovementTypeEnum::FOUND;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Restock') {
@@ -191,6 +192,7 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         $this->parsedData['orgStockMovement'] = [
             'is_delivered'    => $isDelivered,
             'type'            => $type,
+            'note'            => $note,
             'org_amount'      => $this->auroraModelData->{'Inventory Transaction Amount'},
             'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Inventory Transaction Key'},
             'date'            => $date,
@@ -211,6 +213,10 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         }
     }
 
+    //    public function parseNote($note):?array
+    //    {
+    //        print "-> ".$note." <-";
+    //    }
 
     protected function fetchData($id): object|null
     {

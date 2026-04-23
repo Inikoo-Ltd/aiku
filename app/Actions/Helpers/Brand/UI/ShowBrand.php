@@ -21,7 +21,8 @@ class ShowBrand extends GrpAction
 
     public function htmlResponse(Brand $brand, ActionRequest $request)
     {
-        return Inertia::render('Goods/Brand', 
+        return Inertia::render(
+            'Goods/Brand',
             [
                 'title'       => __('Brand').' '.$brand->slug,
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -57,8 +58,8 @@ class ShowBrand extends GrpAction
                     'navigation' => BrandTabsEnum::navigation()
                 ],
 
-                BrandTabsEnum::SHOWCASE->value => $this->tab == BrandTabsEnum::SHOWCASE->value ? 
-                    fn () => BrandResource::make($brand) 
+                BrandTabsEnum::SHOWCASE->value => $this->tab == BrandTabsEnum::SHOWCASE->value ?
+                    fn () => BrandResource::make($brand)
                     : Inertia::lazy(fn () => BrandResource::make($brand)),
 
                 BrandTabsEnum::HISTORY->value => $this->tab == BrandTabsEnum::HISTORY->value ?
@@ -76,7 +77,7 @@ class ShowBrand extends GrpAction
         return $brand;
     }
 
-    
+
     public function getBreadcrumbs(Brand $brand, string $routeName, array $routeParameters, $suffix = null): array
     {
         $headCrumb = function (Brand $brand, array $routeParameters, $suffix) {

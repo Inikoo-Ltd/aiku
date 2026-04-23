@@ -370,10 +370,6 @@ class IndexMasterProducts extends GrpAction
                     ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                     ->column(key: 'status_icon', label: '', type: 'icon')
                     ->column(key: 'code', label: __('Code'), sortable: !$sortByIndex);
-
-                // if ($parent instanceof MasterProductCategory && $parent->type == MasterProductCategoryTypeEnum::FAMILY) {
-                //     $table->column(key: 'variant_slug', label: 'Variant');
-                // }
                 $table->column(key: 'variant_slug', label: 'Variant', sortable: !$sortByIndex);
 
 
@@ -482,7 +478,7 @@ class IndexMasterProducts extends GrpAction
 
         $actions = [];
 
-        if ($isFamily ) {
+        if ($isFamily) {
             $actions[] = [
                 'type'    => 'button',
                 'style'   => 'create',

@@ -12,11 +12,7 @@ use App\Actions\Fulfilment\FulfilmentCustomer\IndexFulfilmentCustomerFromWebhook
 use Illuminate\Support\Facades\Route;
 use App\Actions\CRM\WebUser\Retina\RetinaLogin;
 use App\Actions\Web\Website\SearchOnWebsite;
-use Inertia\Inertia;
 
-
-/* Route::get('/login', function () { return Inertia::render('RetinaLogin');})->name('login'); */ // broke the  cuz iris does not have loginretina page
-// Route::get('/register', function () {return Inertia::render('Register');})->name('register'); // broke the  cuz iris does not have register page
 Route::get('/search', SearchOnWebsite::class)->name('search');
 Route::post('login', RetinaLogin::class)->name('login.store');
 Route::post('logout', RetinaLogout::class)->name('logout');

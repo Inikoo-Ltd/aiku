@@ -64,6 +64,7 @@ class OfferResource extends JsonResource
                 'product_category'  => $productCategory ? [
                     'name'  => $productCategory->name,
                     'slug'  => $productCategory->slug,
+                    'type'  => $productCategory->type->value,
                 ] : null
             ],
         ];

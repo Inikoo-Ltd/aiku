@@ -16,8 +16,6 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 import FormCreateMasterProduct from "@/Components/FormCreateMasterProduct.vue"
-import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
-import { ulid } from "ulid"
 import { trans } from "laravel-vue-i18n"
 import { notify } from '@kyvg/vue3-notification'
 import Dialog from "primevue/dialog"
@@ -25,9 +23,6 @@ import InputNumber from "primevue/inputnumber"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import { router } from "@inertiajs/vue3"
-import { inject } from 'vue'
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import TableMasterProductsEdit from "@/Components/Tables/TableMasterProductsEdit.vue"
 import { useTabChange } from '@/Composables/tab-change'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import ListSelector from "@/Components/DepartmentAndFamily/ListSelector.vue"
@@ -63,13 +58,6 @@ const props = defineProps<{
 const currentTab = ref<string>(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
-const currentData = computed(() => {
-    if (currentTab.value === 'index' || currentTab.value === 'index_ordering' || currentTab.value === 'sales') {
-        return (props as any)[currentTab.value] || props.data
-    }
-    return props.data
-})
-
 const component = computed(() => {
     const components: any = {
         index: TableMasterProducts,
@@ -98,8 +86,6 @@ const isModalOpen = {
 const compSelectedProductsId = computed(() =>
     Object.keys(selectedProductsId.value).filter(key => selectedProductsId.value[key])
 )
-console.log(compSelectedProductsId.value)
-
 
 const isLoadingVisit = ref(false)
 const onVisit = () => {
@@ -169,13 +155,14 @@ const resetSelectionByScope = {
 
 const loadingOrder = ref(false)
 const SaveOrder = () => {
+    console.log(localData)
     router.patch(route('grp.models.master_product_category.reorder_index', {
         masterProductCategory: props.familyId
     }), {
         products: localData.value.map((product: any, index: number) => ({
             id: product.id,
             code : product.code,
-            index_under_master_family: product.index_under_master_family,
+            index_under_master_family: product.index_under_family,
         }))
     }, {
         preserveScroll: true,
@@ -190,6 +177,7 @@ const SaveOrder = () => {
             })
         },
         onError: (errors) => {
+            console.log(errors)
             notify({
                 title: trans("Something went wrong"),
                 text: errors.message || trans("Failed to reorder products"),
@@ -289,7 +277,7 @@ watch(() => currentTab.value, (tab) => {
         :is="component"
         :key="currentTab"
         :tab="currentTab"
-        :data="localData"
+        :data="currentTab == 'index_ordering' ?  localData : props[currentTab]"
         :variant-slugs="variantSlugs"
         :isCheckBox="!hide_bulk_edit"
         :routes="routes"

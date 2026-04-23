@@ -273,6 +273,19 @@ class Order extends Model implements HasMedia, Auditable
 
     protected $guarded = [];
 
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated || $this->wasChanged([
+                'organisation_id',
+                'shop_id',
+                'customer_id',
+                'state',
+                'reference',
+                'customer_reference',
+                'date',
+            ]);
+    }
+
     public function toSearchableArray(): array
     {
         return [
@@ -285,21 +298,6 @@ class Order extends Model implements HasMedia, Auditable
             'customer_reference' => $this->customer_reference,
             'date'               => is_string($this->date) ? Carbon::parse($this->date)->timestamp : $this->date->timestamp,
         ];
-    }
-
-    public function shouldBeSearchable(): bool
-    {
-        $searchableFields = [
-            'organisation_id',
-            'shop_id',
-            'customer_id',
-            'state',
-            'reference',
-            'customer_reference',
-            'date'
-        ];
-
-        return $this->isDirty($searchableFields);
     }
 
     public function generateTags(): array
