@@ -31,6 +31,13 @@ class GetProductsForBeefreeSearch extends OrgAction
         $tabType = $searchData['tab_type'] ?? 'products';
         $timeFilter = $searchData['time_filter'] ?? null;
 
+        // Determine frequency based on time_filter
+        $frequency = match ($timeFilter) {
+            'month' => TimeSeriesFrequencyEnum::MONTHLY->value,
+            'year' => TimeSeriesFrequencyEnum::YEARLY->value,
+            default => TimeSeriesFrequencyEnum::WEEKLY->value,
+        };
+
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) use ($tabType) {
             $query->where(function ($query) use ($value, $tabType) {
                 if ($tabType === 'new_in') {
@@ -63,11 +70,11 @@ class GetProductsForBeefreeSearch extends OrgAction
                 aggregateColumns: [
                     'sales_grp_currency_external' => 'sales_grp_currency_external',
                 ],
-                frequency: TimeSeriesFrequencyEnum::DAILY->value,
+                frequency: $frequency,
                 prefix: 'sales',
                 includeLY: false,
                 localKey: 'asset_id',
-                timeSeriesFilters: ['shop_id' => $parent->id] + $this->getTimeFilterConditions($timeFilter),
+                timeSeriesFilters: ['shop_id' => $parent->id],
             );
 
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
@@ -102,34 +109,6 @@ class GetProductsForBeefreeSearch extends OrgAction
             ->withQueryString();
     }
 
-    private function getTimeFilterConditions(?string $timeFilter): array
-    {
-        if (!$timeFilter) {
-            return [];
-        }
-
-        $now = now();
-        $conditions = [];
-
-        switch ($timeFilter) {
-            case 'week':
-                $startDate = $now->copy()->subDays(7)->format('Y-m-d');
-                break;
-            case 'month':
-                $startDate = $now->copy()->subDays(30)->format('Y-m-d');
-                break;
-            case 'year':
-                $startDate = $now->copy()->subDays(365)->format('Y-m-d');
-                break;
-            default:
-                return [];
-        }
-
-        $conditions['date_from'] = $startDate;
-        $conditions['date_to'] = $now->format('Y-m-d');
-
-        return $conditions;
-    }
 
     public function jsonResponse(LengthAwarePaginator $products): AnonymousResourceCollection
     {
