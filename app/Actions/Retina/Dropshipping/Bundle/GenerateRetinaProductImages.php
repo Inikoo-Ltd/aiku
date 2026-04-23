@@ -12,7 +12,6 @@ namespace App\Actions\Retina\Dropshipping\Bundle;
 use App\Actions\Helpers\AI\GetGeneratedImages;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Traits\SanitizeInputs;

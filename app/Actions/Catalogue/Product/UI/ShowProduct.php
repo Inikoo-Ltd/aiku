@@ -478,7 +478,7 @@ class ShowProduct extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.catalogue.products.independent_products.all.show'  => 
+            'grp.org.shops.show.catalogue.products.independent_products.all.show'  =>
             array_merge(
                 ShowCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
@@ -497,7 +497,7 @@ class ShowProduct extends OrgAction
                     prefixIndex: "Independent "
                 )
             ),
-            'grp.org.shops.show.catalogue.products.independent_products.current.show'  => 
+            'grp.org.shops.show.catalogue.products.independent_products.current.show'  =>
             array_merge(
                 ShowCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
@@ -517,7 +517,7 @@ class ShowProduct extends OrgAction
                     "Independent "
                 )
             ),
-            'grp.org.shops.show.catalogue.products.independent_products.in_process.show'  => 
+            'grp.org.shops.show.catalogue.products.independent_products.in_process.show'  =>
             array_merge(
                 ShowCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
@@ -537,7 +537,7 @@ class ShowProduct extends OrgAction
                     "Independent "
                 )
             ),
-            'grp.org.shops.show.catalogue.products.independent_products.discontinued.show'  => 
+            'grp.org.shops.show.catalogue.products.independent_products.discontinued.show'  =>
             array_merge(
                 ShowCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
