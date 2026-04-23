@@ -52,6 +52,7 @@ const productSearchResults = ref<Array<any>>([])
 const productSearchLoading = ref(false)
 const activeTab = ref(PRODUCT_TABS.PRODUCTS)
 const timeFilter = ref(TIME_FILTERS.WEEK)
+const selectedButtonColor = ref('#007bff')
 
 // Resolve/reject handlers for product selection
 let productSearchResolve: ((value: any) => void) | null = null
@@ -271,6 +272,7 @@ const generateProductHtmlValue = (product: any, shopSlug: string): string => {
         ? description.substring(0, 300) + '...'
         : description
     const productUrl = product.url || `/shop/${shopSlug}/product/${product.slug || product.id}`
+    const buttonColor = selectedButtonColor.value
 
     return `
         <div style="max-width: 300px; font-family: Arial, sans-serif;">
@@ -286,7 +288,7 @@ const generateProductHtmlValue = (product: any, shopSlug: string): string => {
                 ` : ''}
             </div>
             <div>
-                <a href="${productUrl}" style="display: inline-block; background-color: #007bff; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: 500;">Shop Now</a>
+                <a href="${productUrl}" style="display: inline-block; background-color: ${buttonColor}; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: 500;">Shop Now</a>
             </div>
         </div>
     `.trim()
@@ -415,6 +417,16 @@ const setupProductSearchHandlers = (resolve: (value: any) => void, reject: () =>
                         <option :value="TIME_FILTERS.MONTH">Month</option>
                         <option :value="TIME_FILTERS.YEAR">Year</option>
                     </select>
+                </div>
+
+                <!-- Button Color Picker -->
+                <div class="sm:w-32">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Button Color</label>
+                    <div class="flex items-center gap-2">
+                        <input type="color" v-model="selectedButtonColor"
+                            class="h-10 w-16 border border-gray-300 rounded cursor-pointer" />
+                        <span class="text-xs text-gray-500">{{ selectedButtonColor }}</span>
+                    </div>
                 </div>
             </div>
 
