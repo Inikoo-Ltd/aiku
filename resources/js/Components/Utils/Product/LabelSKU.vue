@@ -94,7 +94,7 @@ const displayUnits = computed(() => {
             <span class="">{{ trans('No Trade Units') }}</span>
         </div>
 
-        <div 
+        <div
             v-if="!hideUnit"
             class="border-s text-gray-700 whitespace-nowrap font-bold ms-2 ps-2"
             :class="trade_units.length >= 1 ? 'border-green-600' : 'border-red-600'"
@@ -122,7 +122,7 @@ const displayUnits = computed(() => {
                     </div>	
                 </div>
     
-                <div v-for="tUnit in trade_units" :key="tUnit.tradeUnit?.id" class="grid grid-cols-5 mt-3 text-sm min-h-8">
+                <div  v-for="tUnit in trade_units" :key="tUnit.tradeUnit?.id" class="grid grid-cols-5 mt-3 text-sm min-h-8">
                     <div class="text-left flex items-center">
                         <slot name="col_code" :data="tUnit">
                             <Link v-if="routeFunction" :href="routeFunction(tUnit.tradeUnit)" class="primaryLinkxx">
