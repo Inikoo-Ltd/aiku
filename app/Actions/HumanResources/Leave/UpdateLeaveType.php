@@ -25,6 +25,24 @@ class UpdateLeaveType extends OrgAction
             unset($modelData['code']);
         }
 
+        $settings = $leaveType->settings ?? [];
+        if (!is_array($settings)) {
+            $settings = [];
+        }
+
+        if (array_key_exists('settings', $modelData) && is_array($modelData['settings'])) {
+            $settings = array_merge($settings, $modelData['settings']);
+        }
+
+        if (array_key_exists('value', $modelData)) {
+            $settings['value'] = (float) $modelData['value'];
+        } elseif (!array_key_exists('value', $settings) || !is_numeric($settings['value'])) {
+            $settings['value'] = 1.0;
+        }
+
+        $modelData['settings'] = $settings;
+        unset($modelData['value']);
+
         $leaveType->update($modelData);
 
         return $leaveType->refresh();
@@ -59,7 +77,9 @@ class UpdateLeaveType extends OrgAction
             'category'            => ['sometimes', 'required', Rule::enum(LeaveCategoryEnum::class)],
             'requires_approval'              => ['sometimes', 'boolean'],
             'max_days_per_year'              => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'value'                          => ['sometimes', 'numeric', 'min:0.01'],
             'settings'                       => ['sometimes', 'nullable', 'array'],
+            'settings.value'                 => ['sometimes', 'numeric', 'min:0.01'],
             'is_active'                      => ['sometimes', 'boolean'],
             'ignore_concurrency_leave_rules' => ['sometimes', 'boolean'],
         ];

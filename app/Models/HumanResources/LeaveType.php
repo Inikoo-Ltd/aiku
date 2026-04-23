@@ -38,6 +38,7 @@ class LeaveType extends Model
     use InOrganisation;
 
     protected $guarded = [];
+    protected $appends = ['value'];
 
     protected $casts = [
         'category'                        => LeaveCategoryEnum::class,
@@ -56,5 +57,27 @@ class LeaveType extends Model
     public function getShortCodeAttribute(): string
     {
         return \App\Enums\HumanResources\Leave\LeaveTypeEnum::shortCodes()[$this->code] ?? '';
+    }
+
+    public function getValueAttribute(): float
+    {
+        return $this->deductionValue();
+    }
+
+    public function deductionValue(): float
+    {
+        $value = $this->settings['value'] ?? null;
+
+        if (!is_numeric($value)) {
+            return 1.0;
+        }
+
+        $parsedValue = (float) $value;
+
+        if ($parsedValue <= 0) {
+            return 1.0;
+        }
+
+        return $parsedValue;
     }
 }

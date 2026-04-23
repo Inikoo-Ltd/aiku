@@ -397,6 +397,7 @@ class IndexClockingEmployees extends OrgAction
                 ->column(key: 'end_date', label: __('End Date'), sortable: true)
                 ->column(key: 'type_label', label: __('Type'))
                 ->column(key: 'duration', label: __('Duration'))
+                ->column(key: 'approval_progress', label: __('Progress Approval'))
                 ->column(key: 'status_label', label: __('Status'))
                 ->column(key: 'reason', label: __('Reason'))
                 ->column(key: 'actions', label: 'Actions');
@@ -512,7 +513,14 @@ class IndexClockingEmployees extends OrgAction
                 return 0;
             }
 
-            return $leave->is_half_day ? 0.5 : (float) $leave->duration_days;
+            $value = $leave->leaveType?->deductionValue() ?? 1.0;
+            $deduction = (float) $leave->duration_days * $value;
+
+            if ($leave->is_half_day && $value === 1.0) {
+                return 0.5;
+            }
+
+            return $deduction;
         });
     }
 

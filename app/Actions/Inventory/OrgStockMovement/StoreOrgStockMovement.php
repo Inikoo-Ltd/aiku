@@ -13,6 +13,7 @@ use App\Actions\Inventory\LocationOrgStock\CalculateValueLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQuantity;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\OrgAction;
@@ -103,7 +104,8 @@ class StoreOrgStockMovement extends OrgAction
         }
 
         if ($orgStockMovement->type == OrgStockMovementTypeEnum::PURCHASE) {
-            OrgStockHydrateStockValue::dispatch($orgStock);
+            OrgStockHydrateStockValue::dispatch($orgStock);//todo do we need to delete this??? mybe yes
+            OrgStockHydrateSkuValue::dispatch($orgStock);
         }
 
         OrgStockHydrateMovements::dispatch($orgStock)->delay(now()->addMinutes(15));
