@@ -126,7 +126,7 @@ const displayUnits = computed(() => {
                         SKUs
                     </div>
                     <div class="text-right ">
-                        {{ trans('Units') }}
+                        {{ trans('Units to pick') }}
                     </div>
                 </div>
     
