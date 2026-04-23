@@ -102,6 +102,7 @@ class IndexBatchCodes extends OrgAction
                 'pageHead'    => [
                     'title'     => __('Batch Codes'),
                     'icon'      => ['icon' => ['fal', 'fa-barcode'], 'title' => __('Batch Codes')],
+                    'model'     => __('Warehouse'),
                     'actions'   => [
                         [
                             'type'   => 'button',
