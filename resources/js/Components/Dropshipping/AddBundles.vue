@@ -877,7 +877,6 @@ watch(
                     :disabled="!bundle.description.value.length || bundle.isStoringBundle.value || !selectedMedia.length"
                         :loading="isSubmitBundle" />
                   
-
                 </div>
                 
                 <!-- Modal Existing media -->
