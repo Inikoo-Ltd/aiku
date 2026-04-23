@@ -208,7 +208,7 @@ onMounted(() => {
             v-if="!filteredOptions.length && !isLoadingMultiselect"
             class="text-center text-gray-400 py-4 text-xs"
         >
-            No tags found
+            {{ ctrans("No tags found") }}
         </div>
 
         <!-- Load More -->
@@ -217,7 +217,7 @@ onMounted(() => {
                 @click="fetchTags(pagination.next_page_url)"
                 class="text-xs text-blue-600 hover:underline"
             >
-                Load more
+                {{ ctrans("Load more") }}
             </button>
         </div>
 
