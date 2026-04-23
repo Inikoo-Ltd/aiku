@@ -22,6 +22,8 @@ const props = defineProps<{
             code: string
             name: string
             slug: string
+            units_per_sku : number
+            total_units: number
         }
         pick_fractional: {
             integer: number
@@ -104,25 +106,31 @@ const displayUnits = computed(() => {
 
         <Modal :isOpen="isOpenModal" @onClose="() => {isOpenModal = false; emit('closeModal')}" width="max-w-3xl w-full">
             <slot name="modalBody">
-                <div class="grid grid-cols-2 font-bold mb-4">
-                    <div class="text-left text-lg">
-                        {{ trans('Trade Unit SKU Details') }}
+                <div class="  font-bold mb-4">
+                    <div class="text-center text-lg">
+                    {{ trans('SKUs/Trade Units to be picked per product outer') }}
                     </div>
                 </div>
     
-                <div class="grid grid-cols-5 mt-3 text-sm font-bold">
+                <div class="grid grid-cols-7 mt-3 text-sm font-bold">
                     <div class="text-left">
-                        Code
+                        {{ trans('Code') }}
                     </div>
                     <div class="text-left col-span-3">
-                        Name
+                        {{ trans('Name') }}
+                    </div>
+                    <div class="text-right ">
+                        {{ trans('Units/SKU') }}
                     </div>
                     <div class="text-right">
-                        SKU
-                    </div>	
+                        SKUs
+                    </div>
+                    <div class="text-right ">
+                        {{ trans('Units') }}
+                    </div>
                 </div>
     
-                <div  v-for="tUnit in trade_units" :key="tUnit.tradeUnit?.id" class="grid grid-cols-5 mt-3 text-sm min-h-8">
+                <div  v-for="tUnit in trade_units" :key="tUnit.tradeUnit?.id" class="grid grid-cols-7 mt-3 text-sm min-h-8">
                     <div class="text-left flex items-center">
                         <slot name="col_code" :data="tUnit">
                             <Link v-if="routeFunction" :href="routeFunction(tUnit.tradeUnit)" class="primaryLinkxx">
@@ -139,6 +147,12 @@ const displayUnits = computed(() => {
                             {{ tUnit.tradeUnit?.name }}
                         </slot>
                     </div>
+
+
+                    <div class="text-right col-span-1 flex items-center justify-items-end justify-end">
+                        {{ tUnit.units_per_sku }}
+                    </div>
+
     
                     <div class="justify-items-end text-teal-600 whitespace-nowrap flex justify-end">
                         <span class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer flex border-green-600 w-fit">
@@ -147,6 +161,10 @@ const displayUnits = computed(() => {
                                 <FractionDisplay v-if="tUnit[key]" :fractionData="tUnit[key]" />
                             </span>
                         </span>
+                    </div>
+
+                    <div class="text-right col-span-1 flex items-center justify-items-end justify-end">
+                        {{ tUnit.total_units }}
                     </div>
                 </div>
             </slot>
