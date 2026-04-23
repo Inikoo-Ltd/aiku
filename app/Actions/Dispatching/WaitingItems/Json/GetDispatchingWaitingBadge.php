@@ -2,24 +2,24 @@
 
 /*
  * Author: Vika Aqordi
- * Created on 23-04-2026-11h-10m
+ * Created on 23-04-2026-11h-09m
  * Github: https://github.com/aqordeon
  * Copyright: 2026
 */
 
-namespace App\Actions\Dispatching\UI\Json;
+namespace App\Actions\Dispatching\WaitingItems\Json;
 
-use App\Actions\Dispatching\UI\GetCrmWaitingBadgeData;
+use App\Actions\Dispatching\WaitingItems\GetDispatchingWaitingBadgeData;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GetCrmWaitingBadge
+class GetDispatchingWaitingBadge
 {
     use AsAction;
 
     public function handle(ActionRequest $request): array
     {
-        return GetCrmWaitingBadgeData::run($request->user());
+        return GetDispatchingWaitingBadgeData::run($request->user());
     }
 
     public function asController(ActionRequest $request): \Illuminate\Http\JsonResponse

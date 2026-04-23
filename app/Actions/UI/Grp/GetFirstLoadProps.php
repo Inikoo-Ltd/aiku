@@ -8,8 +8,8 @@
 
 namespace App\Actions\UI\Grp;
 
-use App\Actions\Dispatching\UI\GetCrmWaitingBadgeData;
-use App\Actions\Dispatching\UI\GetDispatchingWaitingBadgeData;
+use App\Actions\Dispatching\WaitingItems\GetCrmWaitingBadgeData;
+use App\Actions\Dispatching\WaitingItems\GetDispatchingWaitingBadgeData;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\UI\Grp\Layout\GetLayout;
 use App\Http\Resources\Helpers\LanguageResource;
