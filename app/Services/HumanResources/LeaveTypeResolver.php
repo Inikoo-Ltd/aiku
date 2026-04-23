@@ -33,13 +33,14 @@ class LeaveTypeResolver
                     });
             })
             ->orderBy('name')
-            ->get(['code', 'name', 'category', 'max_days_per_year'])
+            ->get(['code', 'name', 'category', 'max_days_per_year', 'settings'])
             ->mapWithKeys(function (LeaveType $leaveType) {
                 return [
                     $leaveType->code => [
                         'label' => $leaveType->name,
                         'category' => $leaveType->category,
-                        'max_days_per_year' => $leaveType->max_days_per_year
+                        'max_days_per_year' => $leaveType->max_days_per_year,
+                        'value' => $leaveType->deductionValue(),
                     ]
                 ];
             })

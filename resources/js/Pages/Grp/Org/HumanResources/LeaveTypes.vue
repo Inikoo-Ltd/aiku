@@ -32,6 +32,7 @@ const form = useForm<{
 	category: string
 	requires_approval: boolean
 	max_days_per_year: number | null
+	value: number
 	is_active: boolean
 }>({
 	code: "",
@@ -41,6 +42,7 @@ const form = useForm<{
 	category: "",
 	requires_approval: true,
 	max_days_per_year: null,
+	value: 1,
 	is_active: true,
 })
 
@@ -69,6 +71,12 @@ const openEdit = (row: any) => {
 	form.category = row.category ?? ""
 	form.requires_approval = Boolean(row.requires_approval)
 	form.max_days_per_year = row.max_days_per_year ?? null
+	form.value =
+		typeof row.value === "number"
+			? row.value
+			: typeof row.settings?.value === "number"
+				? row.settings.value
+				: 1
 	form.is_active = Boolean(row.is_active)
 
 	showCreateModal.value = true
@@ -266,6 +274,23 @@ const modalTitle = computed(() =>
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
 					<div v-if="form.errors.max_days_per_year" class="mt-1 text-sm text-red-600">
 						{{ form.errors.max_days_per_year }}
+					</div>
+				</div>
+			</div>
+
+			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+				<div>
+					<label class="block text-sm font-medium text-gray-700">
+						{{ trans("Value") }}
+					</label>
+					<input
+						v-model.number="form.value"
+						type="number"
+						step="0.01"
+						min="0.01"
+						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+					<div v-if="form.errors.value" class="mt-1 text-sm text-red-600">
+						{{ form.errors.value }}
 					</div>
 				</div>
 			</div>
