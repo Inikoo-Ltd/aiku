@@ -9,7 +9,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faStickyNote, faUndo, faCheck, faDebug, faSave, faArrowAltLeft, faSkull } from "@fal"
+import { faStickyNote, faUndo, faCheck, faDebug, faSave, faArrowAltLeft, faSkull, faHandHoldingBox } from "@fal"
 import { ref, computed, watch } from "vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import InputNumber from "primevue/inputnumber"
@@ -21,7 +21,7 @@ import { trans } from "laravel-vue-i18n"
 import type { routeType } from "@/types/route"
 import "@/Composables/Icon/PalletStateEnum"
 
-library.add(faStickyNote, faUndo, faCheck, faDebug, faSave, faArrowAltLeft, faSkull)
+library.add(faStickyNote, faUndo, faCheck, faDebug, faSave, faArrowAltLeft, faSkull, faHandHoldingBox)
 
 const props = defineProps<{
     data: TableTS
@@ -109,7 +109,7 @@ const canSubmitModalPrimaryButton = computed(() => {
 })
 const modalPrimaryLabel = computed(() => {
     if (selectedDispatchableReturn.value?.state === "picking") {
-        return trans("Finish Picking")
+        return trans("Set as packed")
     }
 
     return selectedDispatchableReturn.value?.isCollection ? trans("Set as Collected") : trans("Dispatch")
@@ -593,6 +593,14 @@ const locationRoute = (item: any) => {
                                         fixed-width
                                         aria-hidden="true"
                                     />
+                                    <FontAwesomeIcon
+                                        v-if="pallet.state === 'picked' && isPickingFinished()"
+                                        :icon="faHandHoldingBox"
+                                        v-tooltip="trans('Pallet picked')"
+                                        class="text-gray-500"
+                                        fixed-width
+                                        aria-hidden="true"
+                                    />
                                     <Link v-if="isPickingFinished()"
                                         as="div"
                                         :href="route(pallet.undoPickingRoute.name, pallet.undoPickingRoute.parameters)"
@@ -652,7 +660,7 @@ const locationRoute = (item: any) => {
                     <Button
                         v-if="canRowSetAsPicked(item)"
                         icon="fal fa-save"
-                        :label="trans('Finish Picking')"
+                        :label="trans('Set as packed')"
                         type="secondary"
                         size="xs"
                         class="py-0"
@@ -820,9 +828,8 @@ const locationRoute = (item: any) => {
                     <template v-if="getDispatchableReturn(item)?.state === 'picking'">
                         <Button
                             v-if="canRowSetAsPicked(item)"
-                            icon="fas fa-monument"
-                            iconRight="fal fa-arrow-right"
-                            :label="trans('Finish picking')"
+                            icon="fas fa-save"
+                            :label="trans('Set as packed')"
                             type="secondary"
                             size="xs"
                             class="py-0"
@@ -830,9 +837,8 @@ const locationRoute = (item: any) => {
                         />
                         <Button
                             v-else
-                            icon="fas fa-monument"
-                            iconRight="fal fa-arrow-right"
-                            :label="trans('Finish picking')"
+                            icon="fas fa-save"
+                            :label="trans('Set as packed')"
                             type="secondary"
                             size="xs"
                             class="py-0"
