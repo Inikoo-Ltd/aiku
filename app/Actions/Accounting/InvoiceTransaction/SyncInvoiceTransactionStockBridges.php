@@ -40,10 +40,9 @@ class SyncInvoiceTransactionStockBridges implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $orgStocks  = $product->orgStocks;
-        $stockCount = $orgStocks->count();
+        $orgStocks = $product->orgStocks;
 
-        if ($stockCount === 0) {
+        if ($orgStocks->isEmpty()) {
             return;
         }
 
@@ -53,10 +52,14 @@ class SyncInvoiceTransactionStockBridges implements ShouldBeUnique, ShouldQueue
             if (! $stock) {
                 continue;
             }
-            $weights[$stock->id] = GetOrgStockValue::run($orgStock, $invoiceTransaction->date) * ($orgStock->pivot->quantity ?? 1);
+            $weights[$stock->id] = (float) ($orgStock->sku_value ?? 0) * ($orgStock->pivot->quantity ?? 1);
         }
 
         $totalWeight = array_sum($weights);
+
+        if ($totalWeight <= 0) {
+            return;
+        }
 
         foreach ($orgStocks as $orgStock) {
             $stock = $orgStock->stock;
@@ -64,7 +67,11 @@ class SyncInvoiceTransactionStockBridges implements ShouldBeUnique, ShouldQueue
                 continue;
             }
 
-            $factor = $totalWeight > 0 ? $weights[$stock->id] / $totalWeight : 1 / $stockCount;
+            if ($weights[$stock->id] <= 0) {
+                continue;
+            }
+
+            $factor = $weights[$stock->id] / $totalWeight;
 
             InvoiceTransactionHasStock::updateOrCreate(
                 [

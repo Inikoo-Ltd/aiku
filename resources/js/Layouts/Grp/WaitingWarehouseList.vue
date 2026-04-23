@@ -57,7 +57,7 @@ function toggleOrg(orgSlug: string): void {
 <template>
     <div>
         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-            {{ trans('Dispatching Waiting Items') }}
+            {{ trans('Warehouse Waiting Items') }}
         </p>
 
         <div v-if="isLoading" class="space-y-2">
