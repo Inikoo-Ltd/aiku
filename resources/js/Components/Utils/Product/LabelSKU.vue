@@ -31,6 +31,7 @@ const props = defineProps<{
     }[]
     hideUnit?: boolean
     forceOpenModal?: boolean
+    disableModal?: boolean
     hoverTooltip?: string
     routeFunction?: Function
     keyPicking?: string
@@ -47,6 +48,7 @@ const textTooltip = computed(() => {
 })
 
 const openModal = () => {
+    if(props.disableModal) return;
     if(props.trade_units.length >= 1 || props.forceOpenModal) {
         isOpenModal.value = true
         emit('openModal');

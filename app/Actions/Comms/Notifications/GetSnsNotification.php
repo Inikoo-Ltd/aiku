@@ -36,7 +36,6 @@ class GetSnsNotification
                 }
 
                 if ($messageId = Arr::get($messageData, 'mail.messageId')) {
-
                     $eventType = Arr::get($messageData, 'eventType', 'unknown');
 
                     $sesNotification = SesNotification::create(
@@ -46,12 +45,7 @@ class GetSnsNotification
                             'event_type' => $eventType
                         ]
                     );
-                    if($eventType == 'Send'){
-                        ProcessSesNotification::dispatch($sesNotification);
-                    }else{
-                        ProcessSesNotification::dispatch($sesNotification)->delay(now()->addMinutes(60));
-
-                    }
+                    ProcessSesNotification::dispatch($sesNotification);
                 }
             }
         }

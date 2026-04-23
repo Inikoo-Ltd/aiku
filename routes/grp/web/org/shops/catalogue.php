@@ -20,6 +20,7 @@ use App\Actions\Catalogue\Product\UI\IndexPendingBackInStockRemindersProducts;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCatalogue;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCollection;
 use App\Actions\Catalogue\Product\UI\IndexProductsInProductCategory;
+use App\Actions\Catalogue\Product\UI\IndexProductsWithIndependentTradeUnit;
 use App\Actions\Catalogue\Product\UI\IndexProductsWithNoFamily;
 use App\Actions\Catalogue\Product\UI\IndexRRPViolationProducts;
 use App\Actions\Catalogue\Product\UI\ShowProduct;
@@ -57,6 +58,52 @@ Route::prefix('products')->as('products.')
                 Route::get('images', GetProductUploadedImages::class)->name('images');
                 Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
                 Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
+            });
+        });
+
+        Route::prefix('independent')->as('independent_products.')->group(function () {
+            Route::prefix('all')->as('all.')->group(function () {
+                Route::get('/', IndexProductsWithIndependentTradeUnit::class)->name('index');
+                Route::get('create', CreateProduct::class)->name('create');
+                Route::prefix('{product}')->group(function () {
+                    Route::get('', ShowProduct::class)->name('show');
+                    Route::get('images', GetProductUploadedImages::class)->name('images');
+                    Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                    Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
+                });
+            });
+
+            Route::prefix('current')->as('current.')->group(function () {
+                Route::get('/', [IndexProductsWithIndependentTradeUnit::class, 'current'])->name('index');
+                Route::get('create', CreateProduct::class)->name('create');
+                Route::prefix('{product}')->group(function () {
+                    Route::get('', ShowProduct::class)->name('show');
+                    Route::get('images', GetProductUploadedImages::class)->name('images');
+                    Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                    Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
+                });
+            });
+
+            Route::prefix('in_process')->as('in_process.')->group(function () {
+                Route::get('/', [IndexProductsWithIndependentTradeUnit::class, 'inProcess'])->name('index');
+                Route::get('create', CreateProduct::class)->name('create');
+                Route::prefix('{product}')->group(function () {
+                    Route::get('', ShowProduct::class)->name('show');
+                    Route::get('images', GetProductUploadedImages::class)->name('images');
+                    Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                    Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
+                });
+            });
+
+            Route::prefix('discontinued')->as('discontinued.')->group(function () {
+                Route::get('/', [IndexProductsWithIndependentTradeUnit::class, 'discontinued'])->name('index');
+                Route::get('create', CreateProduct::class)->name('create');
+                Route::prefix('{product}')->group(function () {
+                    Route::get('', ShowProduct::class)->name('show');
+                    Route::get('images', GetProductUploadedImages::class)->name('images');
+                    Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                    Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
+                });
             });
         });
 

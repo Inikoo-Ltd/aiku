@@ -83,7 +83,7 @@ class GetCatalogueShowcase
             ] : null,
             'metas' => [
                 [
-                    'icon'    => ['tooltip' => 'active', 'icon' => 'fas fa-check-circle', 'class' => 'text-green-500'],
+                    'icon'    => ['icon' => 'fas fa-check-circle', 'class' => 'text-green-500'],
                     'count'   => $shop->stats->number_products_state_active,
                     'tooltip' => __('Active'),
                     'route'   => [
@@ -92,12 +92,12 @@ class GetCatalogueShowcase
                     ],
                 ],
                 [
-                    'icon'    => ['tooltip' => 'discontinuing', 'icon' => 'fas fa-times-circle', 'class' => 'text-amber-500'],
+                    'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-amber-500'],
                     'count'   => $shop->stats->number_products_state_discontinuing,
                     'tooltip' => __('Discontinuing'),
                 ],
                 [
-                    'icon'    => ['tooltip' => 'discontinued', 'icon' => 'fas fa-times-circle', 'class' => 'text-red-500'],
+                    'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-red-500'],
                     'count'   => $shop->stats->number_products_state_discontinued,
                     'tooltip' => __('Discontinued'),
                     'route'   => [
@@ -114,6 +114,15 @@ class GetCatalogueShowcase
                         'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
                     ],
                 ],
+                [
+                    'icon'    => ['icon' => 'fas fa-hat-cowboy', 'class' => 'text-red-500 animate-pulse'],
+                    'count'   => 0,
+                    'tooltip' => __('Products with Independent Trade Units'),
+                    'route'   => [
+                        'name'      => 'grp.org.shops.show.catalogue.products.independent_products.all.index',
+                        'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+                    ]
+                ]
             ],
         ];
     }
