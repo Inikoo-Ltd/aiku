@@ -114,10 +114,10 @@ const displayUnits = computed(() => {
     
                 <div class="grid grid-cols-7 mt-3 text-sm font-bold">
                     <div class="text-left">
-                        {{ trans('Code') }}
+                        {{ trans('Reference') }}
                     </div>
                     <div class="text-left col-span-3">
-                        {{ trans('Name') }}
+                        {{ trans('SKU description') }}
                     </div>
                     <div class="text-right ">
                         {{ trans('Units/SKU') }}
