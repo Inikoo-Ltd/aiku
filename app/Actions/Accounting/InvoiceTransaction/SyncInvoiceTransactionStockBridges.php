@@ -52,7 +52,7 @@ class SyncInvoiceTransactionStockBridges implements ShouldBeUnique, ShouldQueue
             if (! $stock) {
                 continue;
             }
-            $weights[$stock->id] = (float) ($orgStock->unit_cost ?? 0) * ($orgStock->pivot->quantity ?? 1);
+            $weights[$stock->id] = (float) ($orgStock->sku_value ?? 0) * ($orgStock->pivot->quantity ?? 1);
         }
 
         $totalWeight = array_sum($weights);

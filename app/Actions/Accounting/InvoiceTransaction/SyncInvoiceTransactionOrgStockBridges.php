@@ -47,7 +47,7 @@ class SyncInvoiceTransactionOrgStockBridges implements ShouldQueue, ShouldBeUniq
 
         $weights = [];
         foreach ($orgStocks as $orgStock) {
-            $weights[$orgStock->id] = (float) ($orgStock->unit_cost ?? 0) * ($orgStock->pivot->quantity ?? 1);
+            $weights[$orgStock->id] = (float) ($orgStock->sku_value ?? 0) * ($orgStock->pivot->quantity ?? 1);
         }
 
         $totalWeight = array_sum($weights);

@@ -58,7 +58,7 @@ class SyncInvoiceTransactionTradeUnitBridges implements ShouldQueue, ShouldBeUni
             $orgStocks = $tradeUnit->orgStocks()->where('organisation_id', $organisation->id)->get();
             $total     = 0.0;
             foreach ($orgStocks as $orgStock) {
-                $total += ($orgStock->pivot->quantity ?? 1) * (float) ($orgStock->unit_cost ?? 0);
+                $total += ($orgStock->pivot->quantity ?? 1) * (float) ($orgStock->sku_value ?? 0);
             }
             $values[$tradeUnit->id] = $total;
         }
