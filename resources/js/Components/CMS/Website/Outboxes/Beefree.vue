@@ -129,9 +129,8 @@ const initializeBeefree = async () => {
             autosave: 20,
             contentDialog: {
                 mergeContents: {
-                    label: 'Custom text for merge contents',
+                    label: 'Products',
                     handler: function (resolve: (value: any) => void, reject: () => void) {
-                        console.log('mergeContents clicked');
                         setupProductSearchHandlers(resolve, reject)
                     }
                 },
@@ -264,21 +263,40 @@ const onSearchInput = () => {
     }, 300)
 }
 
+const generateProductHtmlValue = (product: any, shopSlug: string): string => {
+    const imageUrl = product.web_images?.[0] || ''
+    const title = product.name || product.code || 'Unknown Product'
+    const description = product.description || ''
+    const truncatedDescription = description.length > 300
+        ? description.substring(0, 300) + '...'
+        : description
+    const productUrl = product.url || `/shop/${shopSlug}/product/${product.slug || product.id}`
+
+    return `
+        <div style="max-width: 300px; font-family: Arial, sans-serif;">
+            ${imageUrl ? `
+                <div style="margin-bottom: 12px;">
+                    <img src="${imageUrl}" alt="${title}" style="width: 100%; height: auto; border-radius: 8px;" />
+                </div>
+            ` : ''}
+            <div style="margin-bottom: 12px;">
+                <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold; color: #333;">${title}</h3>
+                ${truncatedDescription ? `
+                    <p style="margin: 0; font-size: 14px; color: #666; line-height: 1.4;">${truncatedDescription}</p>
+                ` : ''}
+            </div>
+            <div>
+                <a href="${productUrl}" style="display: inline-block; background-color: #007bff; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: 500;">Shop Now</a>
+            </div>
+        </div>
+    `.trim()
+}
+
 const selectProduct = (product: any) => {
-    console.log("Selected Product", product)
     if (productSearchResolve) {
         const productLink = {
             name: product.name || product.code,
-            value: `<div><h3>${product.name}</h3><p>${product.description || ''}</p><a href="${product.url || `/shop/${props.shopSlug}/product/${product.slug || product.id}`}">View Product</a></div>`,
-            items: [{
-                id: product.id,
-                code: product.code,
-                name: product.name,
-                description: product.description || '',
-                image: product.web_images?.[0] || null,
-                price: product.price,
-                url: product.url || `/shop/${props.shopSlug}/product/${product.slug || product.id}`
-            }]
+            value: generateProductHtmlValue(product, props.shopSlug)
         }
         productSearchResolve(productLink)
         productSearchResolve = null
