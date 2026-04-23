@@ -214,7 +214,7 @@ class UpdateBundle extends OrgAction
         $rules = [
             'id' => ['nullable'],
             'name' => ['sometimes', 'string', 'max:255'],
-            'description' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'description' => ['sometimes', 'nullable', 'string', 'max:15000'],
             'rrp' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'images' => ['sometimes', 'array'],
             'images.*.id' => ['sometimes', 'integer', 'exists:media,id'],
