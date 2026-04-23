@@ -144,7 +144,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
                     <Popover width="w-80" position="right-0">
                         <template #button>
                             <div class="relative bg-amber-300 text-amber-700 rounded px-2.5 opacity-70 hover:opacity-100 cursor-pointer font-semibold text-sm tabular-nums">
-                                {{ totalWaitingCount > 99 ? '99+' : totalWaitingCount }}
+                                {{ totalWaitingCount > 9 ? '9+' : totalWaitingCount }}
                                 <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                                 <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
                             </div>
@@ -227,7 +227,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
                     <Popover width="w-80" position="right-0">
                         <template #button>
                             <div class="relative bg-purple-300 text-purple-700 rounded px-2.5 opacity-70 hover:opacity-100 cursor-pointer font-semibold text-sm tabular-nums">
-                                {{ totalCrmWaitingCount > 99 ? '99+' : totalCrmWaitingCount }}
+                                {{ totalCrmWaitingCount > 9 ? '9+' : totalCrmWaitingCount }}
                                 <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                                 <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
                             </div>
