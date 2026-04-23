@@ -66,9 +66,8 @@ class Audit extends \OwenIt\Auditing\Models\Audit
                 } else {
                     $audit->tags = '[]';
                 }
-
-                if ($audit->event === 'updated') {
-                    $recentAudit = static::where('auditable_type', $audit->auditable_type)
+                if ($audit->event === 'updated'){
+                    $recentAudit = self::where('auditable_type', $audit->auditable_type)
                         ->where('auditable_id', $audit->auditable_id)
                         ->where('event', 'updated')
                         ->where('user_type', $audit->user_type)
@@ -81,13 +80,17 @@ class Audit extends \OwenIt\Auditing\Models\Audit
                         $oldValues = $recentAudit->old_values ?? [];
                         $newValues = $recentAudit->new_values ?? [];
 
-                        foreach ((array) $audit->new_values as $key => $newValue) {
-                            if (!array_key_exists($key, $oldValues)) {
+                                                foreach ($audit->new_values as $key => $newValue) {
+                            if (!array_key_exists($key, $oldValues)){
                                 $oldValues[$key] = $audit->old_values[$key] ?? null;
                             }
                             $newValues[$key] = $newValue;
 
-                            if ($oldValues[$key] === $newValues[$key]) {
+                            // Important: loose comparison '==' might be safer for numbers formatted differently, 
+                            // but strict '===' prevents accidental type-juggling bugs. But wait, array values from JSON 
+                            // could be strings or floats. Let's use loose comparison to handle "1" vs 1 correctly 
+                            // exactly how auditing expects.
+                            if($oldValues[$key] == $newValues[$key]){
                                 unset($oldValues[$key], $newValues[$key]);
                             }
                         }
@@ -102,6 +105,8 @@ class Audit extends \OwenIt\Auditing\Models\Audit
                         } else {
                             static::withoutEvents(fn () => $recentAudit->delete());
                         }
+
+                        $audit->old_values = $oldValues; // Give it back so we don't return false for a completely dead audit, wait we return false anyway so it's not saved.
 
                         return false;
                     }
