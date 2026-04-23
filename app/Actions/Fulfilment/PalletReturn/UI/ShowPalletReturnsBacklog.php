@@ -158,6 +158,10 @@ class ShowPalletReturnsBacklog extends OrgAction
 
     public function getTabsBox(Fulfilment $parent): array
     {
+        $statAccessor = 'pallet_returns_pallet';
+        if ($this->typeScope == PalletReturnTypeEnum::STORED_ITEM)  {
+            $statAccessor   = 'pallet_returns_items';
+        }
         return [
             [
                 'label'         => __('In Process'),
@@ -165,7 +169,7 @@ class ShowPalletReturnsBacklog extends OrgAction
                     [
                         'tab_slug'    => 'in_process',
                         'label'       => __('In Process'),
-                        'value'       => $parent->stats->number_pallet_returns_state_in_process ?? 0,
+                        'value'       => $parent->stats->{"number_{$statAccessor}_state_in_process"} ?? 0,
                         'type'        => 'number',
                         'icon_data'   => [
                             'icon'    => 'fal fa-seedling',
@@ -180,7 +184,7 @@ class ShowPalletReturnsBacklog extends OrgAction
                     [
                         'tab_slug'    => 'submitted',
                         'label'       => __('Submitted'),
-                        'value'       => $parent->stats->number_pallet_returns_state_submitted ?? 0,
+                        'value'       => $parent->stats->{"number_{$statAccessor}_state_submitted"} ?? 0,
                         'type'        => 'number',
                         'icon_data'   => [
                             'tooltip' => __('Submitted'),
@@ -191,7 +195,7 @@ class ShowPalletReturnsBacklog extends OrgAction
                     [
                         'tab_slug'    => 'confirmed',
                         'label'       => __('Confirmed'),
-                        'value'       => $parent->stats->number_pallet_returns_state_confirmed ?? 0,
+                        'value'       => $parent->stats->{"number_{$statAccessor}_state_confirmed"} ?? 0,
                         'type'        => 'number',
                         'icon_data'   => [
                             'tooltip' => __('Confirmed'),
@@ -207,7 +211,7 @@ class ShowPalletReturnsBacklog extends OrgAction
                     [
                         'tab_slug'    => 'picking',
                         'label'       => __('Picking'),
-                        'value'       => $parent->stats->number_pallet_returns_state_picking ?? 0,
+                        'value'       => $parent->stats->{"number_{$statAccessor}_state_picking"} ?? 0,
                         'type'        => 'number',
                         'icon_data'   => [
                             'tooltip' => __('Picking'),
@@ -234,7 +238,7 @@ class ShowPalletReturnsBacklog extends OrgAction
                     [
                         'tab_slug'    => 'picked',
                         'label'       => __('Picked'),
-                        'value'       => $parent->stats->number_pallet_returns_state_picked ?? 0,
+                        'value'       => $parent->stats->{"number_{$statAccessor}_state_picked"} ?? 0,
                         'type'        => 'number',
                         'icon_data'   => [
                             'tooltip' => __('Picked'),
@@ -250,7 +254,7 @@ class ShowPalletReturnsBacklog extends OrgAction
                     [
                         'tab_slug'    => 'dispatched',
                         'label'       => __('Dispatched'),
-                        'value'       => $parent->stats->number_pallet_returns_state_dispatched ?? 0,
+                        'value'       => $parent->stats->{"number_{$statAccessor}_state_dispatched"} ?? 0,
                         'icon_data'   => [
                             'tooltip' => __('Dispatched'),
                             'icon'    => 'fal fa-check-double',

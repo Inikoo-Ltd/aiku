@@ -10,6 +10,7 @@ namespace App\Actions\Fulfilment\Fulfilment\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -39,6 +40,30 @@ class FulfilmentHydratePalletReturns implements ShouldBeUnique
             where: function ($q) use ($fulfilment) {
                 $q->where('fulfilment_id', $fulfilment->id);
             }
+        ));
+
+        $stats = array_merge($stats, $this->getEnumStats(
+            model:'pallet_returns',
+            field: 'state',
+            enum: PalletReturnStateEnum::class,
+            models: PalletReturn::class,
+            where: function ($q) use ($fulfilment) {
+                $q->where('fulfilment_id', $fulfilment->id)
+                    ->where('type', PalletReturnTypeEnum::STORED_ITEM);
+            },
+            modelCustomLabel: 'pallet_returns_items'
+        ));
+
+        $stats = array_merge($stats, $this->getEnumStats(
+            model:'pallet_returns',
+            field: 'state',
+            enum: PalletReturnStateEnum::class,
+            models: PalletReturn::class,
+            where: function ($q) use ($fulfilment) {
+                $q->where('fulfilment_id', $fulfilment->id)
+                    ->where('type', PalletReturnTypeEnum::PALLET);
+            },
+            modelCustomLabel: 'pallet_returns_pallet'
         ));
 
         $fulfilment->stats()->update($stats);

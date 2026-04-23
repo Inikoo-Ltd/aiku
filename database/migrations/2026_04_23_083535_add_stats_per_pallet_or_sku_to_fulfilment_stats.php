@@ -21,7 +21,6 @@ return new class extends Migration
             $table->integer('number_pallet_returns_items_state_picking')->default(0);
             $table->integer('number_pallet_returns_items_state_picked')->default(0);
             $table->integer('number_pallet_returns_items_state_dispatched')->default(0);
-            $table->integer('number_pallet_returns_items_state_consolidated')->default(0);
             $table->integer('number_pallet_returns_items_state_cancel')->default(0);
 
             $table->integer('number_pallet_returns_pallet')->default(0);
@@ -31,8 +30,9 @@ return new class extends Migration
             $table->integer('number_pallet_returns_pallet_state_picking')->default(0);
             $table->integer('number_pallet_returns_pallet_state_picked')->default(0);
             $table->integer('number_pallet_returns_pallet_state_dispatched')->default(0);
-            $table->integer('number_pallet_returns_pallet_state_consolidated')->default(0);
             $table->integer('number_pallet_returns_pallet_state_cancel')->default(0);
+
+            $table->integer('number_pallets_state_not_picked')->default(0);
         });
     }
 
@@ -44,7 +44,7 @@ return new class extends Migration
     public function down()
     {
         Schema::table('fulfilment_stats', function (Blueprint $table) {
-            $table->dropColumns([
+            $table->dropColumn([
                 'number_pallet_returns_items',
                 'number_pallet_returns_items_state_in_process',
                 'number_pallet_returns_items_state_submitted',
@@ -52,8 +52,8 @@ return new class extends Migration
                 'number_pallet_returns_items_state_picking',
                 'number_pallet_returns_items_state_picked',
                 'number_pallet_returns_items_state_dispatched',
-                'number_pallet_returns_items_state_consolidated',
                 'number_pallet_returns_items_state_cancel',
+
                 'number_pallet_returns_pallet',
                 'number_pallet_returns_pallet_state_in_process',
                 'number_pallet_returns_pallet_state_submitted',
@@ -61,8 +61,9 @@ return new class extends Migration
                 'number_pallet_returns_pallet_state_picking',
                 'number_pallet_returns_pallet_state_picked',
                 'number_pallet_returns_pallet_state_dispatched',
-                'number_pallet_returns_pallet_state_consolidated',
                 'number_pallet_returns_pallet_state_cancel',
+
+                'number_pallets_state_not_picked',
             ]);
         });
     }
