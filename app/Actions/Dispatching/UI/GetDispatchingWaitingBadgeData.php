@@ -91,4 +91,24 @@ class GetDispatchingWaitingBadgeData
 
         return array_values($organisationsMap);
     }
+
+    public function totalCount(User $user): int
+    {
+        $total = 0;
+
+        foreach ($user->authorisedWarehouses()->get() as $warehouse) {
+            if (!$user->authTo("dispatching.{$warehouse->id}.view")) {
+                continue;
+            }
+
+            $total += $warehouse
+                ->deliveryNotes()
+                ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                ->where('delivery_note_items.has_waiting_warehouse', true)
+                ->whereIn('delivery_notes.state', [DeliveryNoteStateEnum::HANDLING_BLOCKED, DeliveryNoteStateEnum::HANDLING])
+                ->count();
+        }
+
+        return $total;
+    }
 }
