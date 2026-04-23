@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Bundle;
 
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateBundles;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Portfolio\UnlinkRetinaPortfolio;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -49,6 +50,8 @@ class DeleteBundle extends OrgAction
         foreach ($product->portfolios as $portfolio) {
             UnlinkRetinaPortfolio::run($portfolio);
         }
+
+        ShopHydrateBundles::dispatch($bundle->customer->shop)->delay($this->hydratorsDelay);
     }
 
     public function authorize(ActionRequest $request): bool
