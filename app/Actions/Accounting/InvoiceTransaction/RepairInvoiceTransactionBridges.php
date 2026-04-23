@@ -17,7 +17,6 @@ trait RepairInvoiceTransactionBridges
 
     public function handle(Command $command): void
     {
-
         $query = InvoiceTransaction::query()
             ->select('id')
             ->where('model_type', 'Product')
@@ -38,10 +37,9 @@ trait RepairInvoiceTransactionBridges
         $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
         $bar->start();
 
-
         $query->chunkById(self::CHUNK_SIZE, function ($invoiceTransactions) use ($bar) {
             foreach ($invoiceTransactions as $invoiceTransaction) {
-                $this->getJobClass()::run($invoiceTransaction->id);
+                $this->getJobClass()::dispatch($invoiceTransaction->id);
                 $bar->advance();
             }
         });

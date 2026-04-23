@@ -18,6 +18,10 @@ Broadcast::channel('retina.pc-clone.{parentId}', function (int|string $shopifyUs
     return true;
 });
 
+Broadcast::channel('retina.image.generation.{userId}', function (int|string $shopifyUserId) {
+    return true;
+});
+
 Broadcast::channel('shopify.upload-product.{shopifyUserId}', function (WebUser|ShopifyUser $user, int|string $shopifyUserId) {
     return true;
 });

@@ -11,14 +11,13 @@ use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Accounting\InvoiceTransactionHasOrgStock;
 use App\Models\Catalogue\Product;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SyncInvoiceTransactionOrgStockBridges implements ShouldQueue, ShouldBeUnique
+class SyncInvoiceTransactionOrgStockBridges implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'hydrators-slave';
 
     public function getJobUniqueId(int $invoiceTransactionId): string
     {
@@ -39,22 +38,29 @@ class SyncInvoiceTransactionOrgStockBridges implements ShouldQueue, ShouldBeUniq
             return;
         }
 
-        $orgStocks    = $product->orgStocks;
-        $stockCount   = $orgStocks->count();
+        $orgStocks = $product->orgStocks;
 
-        if ($stockCount === 0) {
+        if ($orgStocks->isEmpty()) {
             return;
         }
 
         $weights = [];
         foreach ($orgStocks as $orgStock) {
-            $weights[$orgStock->id] = GetOrgStockValue::run($orgStock, $invoiceTransaction->date) * ($orgStock->pivot->quantity ?? 1);
+            $weights[$orgStock->id] = (float) ($orgStock->sku_value ?? 0) * ($orgStock->pivot->quantity ?? 1);
         }
 
         $totalWeight = array_sum($weights);
 
+        if ($totalWeight <= 0) {
+            return;
+        }
+
         foreach ($orgStocks as $orgStock) {
-            $factor = $totalWeight > 0 ? $weights[$orgStock->id] / $totalWeight : 1 / $stockCount;
+            if ($weights[$orgStock->id] <= 0) {
+                continue;
+            }
+
+            $factor = $weights[$orgStock->id] / $totalWeight;
 
             InvoiceTransactionHasOrgStock::updateOrCreate(
                 [

@@ -2,7 +2,7 @@
 import { trans } from 'laravel-vue-i18n'
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { notify } from '@kyvg/vue3-notification'
-import { onMounted, ref, watch, computed, inject } from 'vue'
+import { onMounted, ref, watch, computed, inject, onBeforeUnmount } from 'vue'
 import { routeType } from '@/types/route'
 import { set } from 'lodash-es'
 import axios from 'axios'
@@ -21,6 +21,7 @@ import { useConfirm, ConfirmDialog } from "primevue"
 library.add(faLayerGroup, faSparkles, faTrash, faImages, faUpload)
 
 const props = defineProps<{
+    customer_id: number
     step: {
         current: number
     }
@@ -59,7 +60,6 @@ const props = defineProps<{
 }>()
 
 const locale = inject('locale', null)
-
 const emits = defineEmits<{
   (e: "onDone"): void
   (e: "onClose"): void
@@ -197,14 +197,89 @@ const removeMedia = (media: any) => {
 }
 
 const showGenerateModal = ref(false)
+const showGenerateProgressModal = ref(false)
 const aiPrompt = ref('')
 const selectedMediaForAI = ref<any[]>([])
 const aiGenerateImagesError = ref<string | null>(null)
+let generateImagesChannel: any = null
+let generateImagesChannelName: string | null = null
+
+const stopGenerateImagesListener = () => {
+    if (generateImagesChannelName && window.Echo) {
+        window.Echo.leave(generateImagesChannelName)
+    }
+
+    generateImagesChannel = null
+    generateImagesChannelName = null
+}
+
+const initGenerateImagesListener = () => {
+    if (!window.Echo || !props.customer_id) return false
+    
+    const channelName = `retina.image.generation.${props.customer_id}`
+
+    stopGenerateImagesListener()
+
+    generateImagesChannelName = channelName
+    generateImagesChannel = window.Echo.private(channelName)
+
+    generateImagesChannel.listen('.action-progress', (media: any) => {
+        if (!media?.id) return
+        console.log("media", media)
+        console.log("selectedMedia", selectedMedia.value)
+        const existingIndex = selectedMedia.value.findIndex(
+            (item: any) => item.image_id === media.id
+        )
+
+        const nextMedia = {
+            key: `ai-${media.id}`,
+            id: media.id,
+            image_id: media.id,
+            product_id: bundle.product_id.value,
+            url: media.source?.original || media.thumbnail?.original,
+            image: media.thumbnail || media.source,
+            is_ai: true,
+            is_main: false
+        }
+        console.log("nextMedia", nextMedia)
+        if (existingIndex === -1) {
+            selectedMedia.value.push(nextMedia)
+        } else {
+            selectedMedia.value[existingIndex] = {
+                ...selectedMedia.value[existingIndex],
+                ...nextMedia
+            }
+        }
+
+        console.log("final selectedMedia", selectedMedia.value)
+        showGenerateProgressModal.value = false
+        showGenerateModal.value = false
+        aiPrompt.value = ''
+        selectedMediaForAI.value = []
+        selectedMediaAIIds.value = []
+
+        stopGenerateImagesListener()
+
+        notify({
+            title: 'AI Image Generated',
+            type: 'success'
+        })
+    })
+
+    return true
+}
 
 const generateAIImages = async () => {
     try {
         isGeneratingAI.value = true
         aiGenerateImagesError.value = null
+
+        const isSocketReady = initGenerateImagesListener()
+
+        if (!isSocketReady) {
+            throw new Error('Echo or auth user is not available')
+        }
+
         const payload = {
             images: selectedMediaForAI.value.map(m => m.image_id),
             prompt: aiPrompt.value
@@ -215,41 +290,20 @@ const generateAIImages = async () => {
             product: bundle.product_id.value
         }
 
+        showGenerateProgressModal.value = true
 
-        const res = await axios.post(
+        await axios.post(
             route(
                 props.bundle_routes.ai.generate_images.name,
                 routeParams
             ),
             payload
         )
-
-        const media = res.data?.data
-
-        if (media) {
-
-            selectedMedia.value.push({
-                id: media.id,
-                image_id: media.id,
-                url: media.source?.original || media.thumbnail?.original,
-                image: media.thumbnail || media.source,
-                is_ai: true,
-                is_main: false
-            })
-
-        }
-        showGenerateModal.value = false
-
-        aiPrompt.value = ''
-        selectedMediaForAI.value = []
-
-        notify({
-            title: 'AI Image Generated',
-            type: 'success'
-        })
     } catch (e) {
         console.warn("error",e)
         aiGenerateImagesError.value = trans('The OpenAI service is currently unreachable, please try again later.')
+        showGenerateProgressModal.value = false
+        stopGenerateImagesListener()
         // notify({
         //     title: trans('Error'),
         //     text: trans('Failed to generate AI'),
@@ -440,6 +494,7 @@ const uploadFilesLocal = async (files: FileList) => {
 
         if (media) {
             selectedMedia.value.push({
+                key: `upload-${media.id}`,
                 id: media.id,
                 image_id: media.id,
                 url: media.source.original,
@@ -584,6 +639,10 @@ onMounted(() => {
         fetchIndexUnuploadedPortfolios()
     }
 })
+
+onBeforeUnmount(() => {
+    stopGenerateImagesListener()
+})
 watch(
     selectedMedia,
     (val) => {
@@ -605,6 +664,7 @@ watch(
     },
     { deep: true }
 )
+
 </script>
 
 <template>
@@ -972,6 +1032,26 @@ watch(
                             :disabled="!selectedMediaForAI.length || !aiPrompt" />
                     </template>
 
+                </Dialog>
+
+                <Dialog
+                    v-model:visible="showGenerateProgressModal"
+                    :header="trans('Generating AI Image')"
+                    modal
+                    :closable="false"
+                    :closeOnEscape="false"
+                    :dismissableMask="false"
+                    :style="{ width: '420px' }"
+                >
+                    <div class="py-6 flex flex-col items-center text-center">
+                        <LoadingIcon class="mb-4" />
+                        <div class="text-sm font-semibold text-gray-800">
+                            {{ trans('Generating your image...') }}
+                        </div>
+                        <div class="text-xs text-gray-500 mt-2">
+                            {{ trans('Please wait while we process your prompt and listen for the result.') }}
+                        </div>
+                    </div>
                 </Dialog>
                 <ConfirmDialog>
                     <template #container="{ message, acceptCallback, rejectCallback }">
