@@ -261,7 +261,7 @@ class ShowRetinaCatalogue extends RetinaAction
                                 'shop'         => $shop->slug
                             ]
                         ],
-                        'icon'  => 'fal fa-cube',
+                        'icon'  => 'fal fa-layer-group',
                         "color" => "#4f46e5",
                         'value' => $shop->stats->number_bundles,
                         'metas' => [

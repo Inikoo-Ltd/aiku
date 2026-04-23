@@ -43,9 +43,7 @@ class IndexRetinaBundlesInCatalogue extends RetinaAction
 
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]);
-        $queryBuilder->where('products.is_for_sale', true);
-        /* $queryBuilder->where('products.has_live_webpage', true); */ // NEED APPLY THIS BUT NEED WAIT UNTIL RUN art product:repair_has_live_webpage T
-        $queryBuilder->where('products.is_main', true);
+
         if ($parent instanceof Shop) {
             $shop = $parent;
             $queryBuilder->where('products.shop_id', $parent->id);
@@ -61,6 +59,7 @@ class IndexRetinaBundlesInCatalogue extends RetinaAction
         }
 
         $queryBuilder->where('products.is_bundle', true);
+        $queryBuilder->where('products.exclusive_for_customer_id', $this->customer->id);
 
         $queryBuilder
             ->defaultSort('products.code')

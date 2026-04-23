@@ -95,6 +95,14 @@ class GetRetinaDropshippingNavigation
                                     'name' => 'retina.catalogue.products.index'
                                 ]
                             ],
+                            [
+                                'label' => __('Bundles'),
+                                'icon'  => ['far', 'fa-layer-group'],
+                                'root'  => 'retina.catalogue.bundles.',
+                                'route' => [
+                                    'name' => 'retina.catalogue.bundles.index'
+                                ]
+                            ],
                         ]
                 ]
             ];
