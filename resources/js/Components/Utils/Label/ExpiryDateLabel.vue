@@ -19,9 +19,9 @@ const props = defineProps<{
             <FontAwesomeIcon icon="fad fa-viruses" class="text-red-500" fixed-width aria-hidden="true" />
             {{ useFormatTime(props.expiry_date) }}
         </span>
-
+        <span v-if="props.expiry_date && props.batch_code" class="mx-1">-</span>
         <span v-if="props.batch_code" v-tooltip="trans('Batch code')" class="text-right">
-            - <span class="font-bold">{{ props.batch_code }}</span>
+            <span class="font-bold">{{ props.batch_code }}</span>
         </span>
         ]
     </span>
