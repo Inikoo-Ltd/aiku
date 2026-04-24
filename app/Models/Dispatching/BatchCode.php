@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $org_stock_id
  * @property string $code
  * @property \Illuminate\Support\Carbon|null $expiry_date
+ * @property int $number_delivery_notes
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\SysAdmin\Group|null $group

@@ -14,20 +14,22 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $id
  * @property string $code
  * @property \Illuminate\Support\Carbon|null $expiry_date
+ * @property int $number_delivery_notes
  */
 class BatchCodeResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'id'             => $this->id,
-            'code'           => $this->code,
-            'expiry_date'    => $this->expiry_date?->format('d M Y'),
-            'label'          => $this->code.($this->expiry_date ? ' — exp: '.$this->expiry_date->format('d M Y') : ''),
-            'org_stock_id'   => $this->org_stock_id,
-            'org_stock_code' => $this->orgStock?->code,
-            'org_stock_name' => $this->orgStock?->name,
-            'org_stock_slug' => $this->orgStock?->slug,
+            'id'                    => $this->id,
+            'code'                  => $this->code,
+            'expiry_date'           => $this->expiry_date?->format('d M Y'),
+            'label'                 => $this->code.($this->expiry_date ? ' — exp: '.$this->expiry_date->format('d M Y') : ''),
+            'number_delivery_notes' => $this->number_delivery_notes,
+            'org_stock_id'          => $this->org_stock_id,
+            'org_stock_code'        => $this->orgStock?->code,
+            'org_stock_name'        => $this->orgStock?->name,
+            'org_stock_slug'        => $this->orgStock?->slug,
             'routes'         => [
                 'show'   => [
                     'name'       => 'grp.org.warehouses.show.inventory.batch_codes.show',
