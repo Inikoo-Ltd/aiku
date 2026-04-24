@@ -401,14 +401,20 @@ class ShowInvoice extends OrgAction
                         'name'       => 'grp.models.invoice.update.date',
                         'parameters' => [$invoice->id]
                     ],
+                    'updateInvoiceAddressRoute' => [
+                        'name'       => 'grp.models.invoice.update',
+                        'parameters' => [$invoice->id]
+                    ],
                 ],
                 'can'                           => [
                     'editInvoiceDate' => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
                     'editInvoiceAddress' => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
                 ],
-                'addressDetail'                 => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting") ? [
+                'billing_address_form'                 => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting") ? [
                     'value'   => AddressFormFieldsResource::make($invoice->address)->getArray(),
-                    'options' => GetAddressData::run(),
+                    'options' => [
+                        'countriesAddressData' => GetAddressData::run()
+                    ],
                 ] : [],
                 'box_stats'                     => $this->getBoxStats($invoice),
                 'list_refunds'                  => RefundResource::collection($invoice->refunds),
