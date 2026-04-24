@@ -13,6 +13,7 @@ return new class () extends Migration {
     public function up()
     {
         Schema::table('mailshots', function (Blueprint $table) {
+            $table->string('name')->nullable();
             $table->string('preview_text')->nullable();
         });
     }
@@ -25,6 +26,7 @@ return new class () extends Migration {
     public function down()
     {
         Schema::table('mailshots', function (Blueprint $table) {
+            $table->dropColumn('name');
             $table->dropColumn('preview_text');
         });
     }
