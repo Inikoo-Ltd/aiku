@@ -29,6 +29,7 @@ defineProps<{
     tab?: string
     allowStockControllerSetNotPicked: boolean
     isStillPicking: boolean
+    isReadOnly?: boolean
 }>()
 
 const routeToDeliveryNote = (slug: string) => {
@@ -137,7 +138,7 @@ const generateLocationRoute = (location: any) => {
 
             <!-- Section: items are waiting for CRM -->
             <div v-if="Number(item.quantity_waiting_crm) > 0" class="mt-2 xmx-auto w-fit">
-                <div v-tooltip="trans('Quantity of items waiting for CRM')" class="border-l-2 border-yellow-400 relative bg-yellow-500/20 py-1 pr-2 pl-1 text-yellow-700 whitespace-nowrap w-fit">
+                <div v-tooltip="trans('Quantity of items waiting for CRM')" class="border-l-2 border-purple-400 relative bg-purple-500/20 py-1 pr-2 pl-1 text-purple-700 whitespace-nowrap w-fit">
                     <FontAwesomeIcon icon="fal fa-hourglass-start" class="mr opacity-70" fixed-width aria-hidden="true" />
                     <!-- <FractionDisplay v-if="item.quantity_picked_fractional"
                         :fractionData="item.quantity_picked_fractional" /> -->
@@ -155,6 +156,7 @@ const generateLocationRoute = (location: any) => {
         <template #cell(picking_position)="{ item: itemValue }">
             <div class="rounded p-1">
                 <PickingItemActionsPanel
+                    v-if="!isReadOnly"
                     :item="itemValue"
                     :isStillPicking="isStillPicking"
                     :allowStockControllerSetNotPicked="allowStockControllerSetNotPicked"

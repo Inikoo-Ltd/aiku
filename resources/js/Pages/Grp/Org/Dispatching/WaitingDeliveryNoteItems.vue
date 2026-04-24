@@ -28,6 +28,7 @@ const props = defineProps<{
     grouped_by_item?: object
     allow_stock_controller_set_not_picked: boolean
     is_still_picking: boolean
+    is_read_only: boolean
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -61,6 +62,7 @@ watch(() => props.tabs.current, (newTab) => {
         :tab="currentTab"
         :allowStockControllerSetNotPicked="allow_stock_controller_set_not_picked"
         :isStillPicking="is_still_picking"
+        :isReadOnly="is_read_only"
     />
 </template>
 
