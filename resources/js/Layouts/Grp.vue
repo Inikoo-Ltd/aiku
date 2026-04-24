@@ -80,7 +80,8 @@ import {
 	faTimesCircle as faTimesCircleLight,
 	faUserAlien,
 	faTombstone as faTombstoneLight,
-	faCopyright, faSyncAlt
+	faCopyright, faSyncAlt, faArrowFromLeft,
+	faBarcode
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import { faViruses } from "@fad"
@@ -184,7 +185,8 @@ library.add(
 	faStarLight, faArrowUpLight, faMinusLight, faTimesCircleLight,
 	faUserAlien,
 	faTombstoneLight,
-	faCopyright, faSyncAlt
+	faCopyright, faSyncAlt, faArrowFromLeft,
+	faBarcode
 )
 
 provide("layout", useLayoutStore())
@@ -479,8 +481,9 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 					</div>
 				</div>
 
-				<div class="mt-5 sm:mt-6">
+				<div class="mt-5 sm:mt-6 flex flex-col gap-4">
 					<Button @click="() => onRefreshPage()" :label="trans('Refresh page')" full :loading="isLoadingRefreshPage" />
+					<Button @click="() => isModalNeedToRefresh = false" :label="trans('Dismiss')" full type="tertiary" />
 				</div>
 			</div>
 		</div>

@@ -12,7 +12,6 @@ namespace App\Actions\Fulfilment\Pallet;
 use App\Actions\Comms\Email\SendPalletDeletedNotification;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePallets;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
-use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
 use App\Actions\Fulfilment\RecurringBill\CalculateRecurringBillTotals;
 use App\Actions\Fulfilment\RecurringBillTransaction\DeleteRecurringBillTransaction;
 use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
@@ -83,8 +82,6 @@ class DeleteStoredPallet extends OrgAction
                 WarehouseAreaHydratePallets::dispatch($pallet->location->warehouseArea);
             }
         }
-        PalletRecordSearch::dispatch($pallet);
-
 
         return $pallet;
     }

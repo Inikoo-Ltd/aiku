@@ -9,7 +9,6 @@
 namespace App\Actions\Dropshipping\CustomerClient;
 
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClients;
-use App\Actions\Dropshipping\CustomerClient\Search\CustomerClientRecordSearch;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -55,16 +54,9 @@ class UpdateCustomerClient extends OrgAction
 
         $customerClient = $this->update($customerClient, $modelData, ['data']);
 
-        $changes = Arr::except($customerClient->getChanges(), ['updated_at', 'last_fetched_at']);
-
-        if (count($changes) > 0 || count($addressChange) > 0) {
-            CustomerClientRecordSearch::dispatch($customerClient);
-        }
-
         if (Arr::has($addressChange, 'status')) {
             CustomerHydrateClients::dispatch($customerClient->customer_id);
         }
-
 
         return $customerClient;
     }

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Fulfilment\PalletReturn;
 
-use App\Actions\Fulfilment\PalletReturn\Search\PalletReturnRecordSearch;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -77,10 +76,8 @@ class UpdatePalletReturn extends OrgAction
             Arr::forget($modelData, 'address');
         }
 
-        $palletReturn = $this->update($palletReturn, $modelData);
-        PalletReturnRecordSearch::dispatch($palletReturn);
+        return $this->update($palletReturn, $modelData);
 
-        return $palletReturn;
     }
 
     public function authorize(ActionRequest $request): bool

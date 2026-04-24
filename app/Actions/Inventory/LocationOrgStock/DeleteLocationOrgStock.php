@@ -21,6 +21,7 @@ use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -42,7 +43,7 @@ class DeleteLocationOrgStock extends OrgAction
         DB::transaction(function () use ($locationOrgStock, $location, $orgStock) {
             $currentStock = $locationOrgStock->quantity;
 
-            $costPerSku = $this->getCostPerSku($orgStock, now());
+            $costPerSku = $this->getCostPerSku($orgStock, Carbon::now());
 
             if ($currentStock != 0) {
                 $stockDiff   = -$currentStock;

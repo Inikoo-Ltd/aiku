@@ -24,6 +24,25 @@ if (!function_exists('escapeSQLSearch')) {
     }
 }
 
+if (!function_exists('cleanCapitalize')) {
+    function cleanCapitalize(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = preg_replace('/[^a-zA-Z0-9\s]/', ' ', $value);
+
+        $value = str_replace('_', ' ', $value);
+
+        $value = preg_replace('/\s+/', ' ', $value);
+
+        $value = strtolower(trim($value));
+
+        return ucwords($value);
+    }
+}
+
 if (!function_exists('errorBagHas')) {
     function errorBagHas(MessageBag $errBag, array $keys): bool
     {

@@ -16,12 +16,10 @@ use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\Currency;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InCustomer;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -87,7 +85,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Payment> $refunds
  * @property-read Shop|null $shop
  * @property-read \App\Models\Accounting\TopUp|null $topUp
- * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Accounting\PaymentFactory factory($count = null, $state = [])
  * @method static Builder<static>|Payment newModelQuery()
  * @method static Builder<static>|Payment newQuery()
@@ -100,7 +97,6 @@ use OwenIt\Auditing\Contracts\Auditable;
 class Payment extends Model implements Auditable
 {
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasFactory;
     use InCustomer;
     use HasHistory;

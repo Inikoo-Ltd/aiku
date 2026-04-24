@@ -413,13 +413,14 @@ class ShowProduct extends OrgAction
                     'slug'          => $product->shop->slug,
                     'currency_code' => $product->shop->currency->code,
                 ],
-                'is_external_shop'      => $isExternalShop,
-                'family_slug'           => $product->family->slug ?? null,
-                'product_state'         => $product->state->value,
-                'webpage_canonical_url' => $product->webpage?->canonical_url,
-                'is_single_trade_unit'  => $product->is_single_trade_unit,
-                'trade_unit_slug'       => $product->tradeUnits?->first->slug,
-                'luigi_data'            => $productWeb ? [
+                'is_external_shop'          => $isExternalShop,
+                'is_dependent_trade_unit'   => $product->not_follow_master_trade_units,
+                'family_slug'               => $product->family->slug ?? null,
+                'product_state'             => $product->state->value,
+                'webpage_canonical_url'     => $product->webpage?->canonical_url,
+                'is_single_trade_unit'      => $product->is_single_trade_unit,
+                'trade_unit_slug'           => $product->tradeUnits?->first->slug,
+                'luigi_data'                => $productWeb ? [
                     'webpage_id'            => $productWeb->id,
                     'last_reindexed'        => Arr::get($productWeb->website->settings, "luigisbox.last_reindex_at"),
                     'luigisbox_tracker_id'  => Arr::get($productWeb->website->settings, "luigisbox.tracker_id"),
@@ -454,7 +455,7 @@ class ShowProduct extends OrgAction
 
     public function getBreadcrumbs(Organisation|Shop|Fulfilment|ProductCategory $parent, Product $product, string $routeName, array $routeParameters, $suffix = null): array
     {
-        $headCrumb = function (Product $product, array $routeParameters, $suffix, $suffixIndex = '') {
+        $headCrumb = function (Product $product, array $routeParameters, $suffix, $suffixIndex = '', $prefixIndex = '') {
             return [
 
                 [
@@ -462,7 +463,7 @@ class ShowProduct extends OrgAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Products').$suffixIndex,
+                            'label' => $prefixIndex.__('Products').$suffixIndex,
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -477,6 +478,85 @@ class ShowProduct extends OrgAction
         };
 
         return match ($routeName) {
+            'grp.org.shops.show.catalogue.products.independent_products.all.show'  =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.independent_products.all.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.independent_products.all.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    prefixIndex: "Independent "
+                )
+            ),
+            'grp.org.shops.show.catalogue.products.independent_products.current.show'  =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.independent_products.current.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.independent_products.current.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    ' ('.__('Current').')',
+                    "Independent "
+                )
+            ),
+            'grp.org.shops.show.catalogue.products.independent_products.in_process.show'  =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.independent_products.in_process.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.independent_products.in_process.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    ' ('.__('In Process').')',
+                    "Independent "
+                )
+            ),
+            'grp.org.shops.show.catalogue.products.independent_products.discontinued.show'  =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.independent_products.discontinued.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.independent_products.discontinued.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    ' ('.__('Discontinued').')',
+                    "Independent "
+                )
+            ),
             'grp.org.shops.show.catalogue.products.current_products.show' =>
             array_merge(
                 ShowCatalogue::make()->getBreadcrumbs($routeParameters),

@@ -18,7 +18,6 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHasLiveWebpage;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebpages;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebpages;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateChildWebpages;
-use App\Actions\Web\Webpage\Search\WebpageRecordSearch;
 use App\Actions\Web\Website\Hydrators\WebsiteHydrateWebpages;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
@@ -39,11 +38,6 @@ trait WithWebpageHydrators
         }
     }
 
-    protected function refreshWebpageSearch(Webpage $webpage): void
-    {
-        WebpageRecordSearch::dispatch($webpage);
-    }
-
     protected function breakWebpageProductCache(Webpage $webpage): void
     {
         BreakProductInWebpagesCache::make()->breakCache($webpage);
@@ -52,7 +46,6 @@ trait WithWebpageHydrators
     protected function dispatchWebpageHydratorsAndRefresh(Webpage $webpage): void
     {
         $this->dispatchWebpageHydrators($webpage);
-        $this->refreshWebpageSearch($webpage);
         $this->breakWebpageProductCache($webpage);
     }
 }

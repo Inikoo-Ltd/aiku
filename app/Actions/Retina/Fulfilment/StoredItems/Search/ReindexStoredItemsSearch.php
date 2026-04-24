@@ -23,7 +23,6 @@ class ReindexStoredItemsSearch extends HydrateModel
 
     public function handle(StoredItem $storedItem): void
     {
-        StoredItemRecordSearch::run($storedItem);
     }
 
 

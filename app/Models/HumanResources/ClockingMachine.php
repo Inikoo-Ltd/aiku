@@ -9,11 +9,9 @@
 namespace App\Models\HumanResources;
 
 use App\Enums\HumanResources\ClockingMachine\ClockingMachineStatusEnum;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InOrganisation;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -57,7 +55,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read \App\Models\HumanResources\ClockingMachineStats|null $stats
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
- * @property-read UniversalSearch|null $universalSearch
  * @property-read \App\Models\HumanResources\Workplace|null $workplace
  * @method static Builder<static>|ClockingMachine newModelQuery()
  * @method static Builder<static>|ClockingMachine newQuery()
@@ -71,7 +68,6 @@ class ClockingMachine extends Authenticatable implements Auditable
 {
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use HasFactory;
     use HasHistory;
     use InOrganisation;

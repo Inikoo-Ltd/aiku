@@ -9,7 +9,6 @@
 namespace App\Actions\Accounting\Payment;
 
 use App\Actions\Accounting\OrgPaymentServiceProvider\Hydrators\OrgPaymentServiceProviderHydratePayments;
-use App\Actions\Accounting\Payment\Search\PaymentRecordSearch;
 use App\Actions\Accounting\PaymentAccount\Hydrators\PaymentAccountHydrateCustomers;
 use App\Actions\Accounting\PaymentAccount\Hydrators\PaymentAccountHydratePayments;
 use App\Actions\Accounting\PaymentServiceProvider\Hydrators\PaymentServiceProviderHydratePayments;
@@ -71,8 +70,6 @@ class StorePayment extends OrgAction
         if ($payment->status == PaymentStatusEnum::SUCCESS) {
             PaymentAccountHydrateCustomers::dispatch($paymentAccount)->delay($this->hydratorsDelay);
         }
-
-        PaymentRecordSearch::dispatch($payment);
 
         return $payment;
     }

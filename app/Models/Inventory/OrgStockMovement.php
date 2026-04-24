@@ -53,6 +53,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool|null $fixed_internal_helper
  * @property numeric|null $cost_per_sku
  * @property int|null $user_id
+ * @property string|null $note
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Inventory\Location|null $location
  * @property-read \App\Models\Inventory\OrgStock|null $orgStock

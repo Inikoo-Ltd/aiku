@@ -22,7 +22,7 @@ class ReindexOfferSearch extends HydrateModel
 
     public function handle(Offer $offer): void
     {
-        OfferRecordSearch::run($offer);
+
     }
 
     protected function getModel(string $slug): Offer

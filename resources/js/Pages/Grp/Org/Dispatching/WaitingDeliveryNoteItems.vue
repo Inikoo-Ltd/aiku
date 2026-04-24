@@ -14,6 +14,7 @@ import { ref, computed, watch } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import TableWaitingDeliveryNoteItemsByLocation from '@/Components/Tables/Grp/Org/Dispatching/TableWaitingDeliveryNoteItemsByLocation.vue'
 import TableWaitingDeliveryNoteItemsGrouped from '@/Components/Tables/Grp/Org/Dispatching/TableWaitingDeliveryNoteItemsGrouped.vue'
+import TableWaitingDeliveryNoteItemsGroupedByItem from '@/Components/Tables/Grp/Org/Dispatching/TableWaitingDeliveryNoteItemsGroupedByItem.vue'
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -22,10 +23,12 @@ const props = defineProps<{
         current: string
         navigation: Record<string, any>
     }
-    grouped?: object
     itemized?: object
+    grouped_by_delivery_note?: object
+    grouped_by_item?: object
     allow_stock_controller_set_not_picked: boolean
     is_still_picking: boolean
+    is_read_only: boolean
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -34,7 +37,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Record<string, any> = {
         itemized: TableWaitingDeliveryNoteItemsByLocation,
-        grouped: TableWaitingDeliveryNoteItemsGrouped,
+        grouped_by_delivery_note: TableWaitingDeliveryNoteItemsGrouped,
+        grouped_by_item: TableWaitingDeliveryNoteItemsGroupedByItem,
     }
     return components[currentTab.value]
 })
@@ -58,6 +62,7 @@ watch(() => props.tabs.current, (newTab) => {
         :tab="currentTab"
         :allowStockControllerSetNotPicked="allow_stock_controller_set_not_picked"
         :isStillPicking="is_still_picking"
+        :isReadOnly="is_read_only"
     />
 </template>
 

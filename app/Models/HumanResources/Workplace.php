@@ -11,12 +11,10 @@ namespace App\Models\HumanResources;
 use App\Actions\Utils\Abbreviate;
 use App\Enums\HumanResources\Workplace\WorkplaceTypeEnum;
 use App\Models\Helpers\Timezone;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InOrganisation;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -59,7 +57,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read \App\Models\HumanResources\WorkplaceStats|null $stats
  * @property-read Timezone|null $timezone
- * @property-read UniversalSearch|null $universalSearch
  * @method static Builder<static>|Workplace newModelQuery()
  * @method static Builder<static>|Workplace newQuery()
  * @method static Builder<static>|Workplace onlyTrashed()
@@ -71,7 +68,6 @@ use Spatie\Sluggable\SlugOptions;
 class Workplace extends Model implements Auditable
 {
     use HasSlug;
-    use HasUniversalSearch;
     use SoftDeletes;
     use HasHistory;
     use HasAddress;

@@ -58,6 +58,9 @@ const props = defineProps<{
     isSecondWave: boolean
     mailshotId: number
     groupId: number
+    ownShopTemplates?: { templates: any[], shop_name: string }
+    otherShopTemplates?: { templates: any[] }
+    workshopRoute?: routeType
 }>();
 
 const currentTab = ref(props.tabs.current);
@@ -243,7 +246,7 @@ onMounted(() => {
         return
     }
 
-    ;(window as any).Echo
+    ; (window as any).Echo
         .private(`grp.${props.groupId}.mailshots.${props.mailshotId}`)
         .listen(".mailshot.stats.updated", (e: any) => {
             const mailshotId = e.mailshot_id ?? e.data?.mailshot_id
@@ -263,7 +266,7 @@ onUnmounted(() => {
         return
     }
 
-    ;(window as any).Echo
+    ; (window as any).Echo
         .private(`grp.${props.groupId}.mailshots.${props.mailshotId}`)
         .stopListening(".mailshot.stats.updated")
 })
@@ -685,10 +688,10 @@ watch(
         </div>
 
     </div>
-    <component
-        :is="component"
-        :data="props[currentTab as keyof typeof props]"
-        :tab="currentTab"
-        v-bind="currentTab === 'showcase' ? { liveStats } : {}"
-    />
+    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" v-bind="currentTab === 'showcase' ? {
+        liveStats,
+        ownShopTemplates: props.ownShopTemplates,
+        otherShopTemplates: props.otherShopTemplates,
+        workshopRoute: props.workshopRoute
+    } : {}" />
 </template>

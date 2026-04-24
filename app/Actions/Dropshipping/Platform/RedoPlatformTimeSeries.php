@@ -22,7 +22,7 @@ class RedoPlatformTimeSeries implements ShouldBeUnique
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue = 'default-long';
+    public string $jobQueue = 'default-long-slave';
     public string $commandSignature = 'platforms:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()

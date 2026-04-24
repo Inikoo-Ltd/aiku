@@ -64,6 +64,10 @@ const props = defineProps<{
                     label: string | number
                     type?: string
                 }
+                route?: {
+                    name: string
+                    parameters: Record<string, any>
+                }
             }[]
         }[]
     }[]
@@ -120,6 +124,7 @@ const tableRows = computed(() => {
                     information: childTab?.information,
                     type: childTab?.type ?? tab.type,
                     currencyCode: matchingChild?.currency_code ?? box.currency_code,
+                    route: childTab?.route,
                 }
             })
         }),
@@ -316,7 +321,11 @@ const clickVisitRoute = (visitRoute: {
                                 v-for="(cell, i) in row.cells"
                                 :key="i"
                                 class="px-4 py-2.5 text-right tabular-nums text-gray-700"
-                                :class="tableColumns[i]?.isSectionStart ? 'border-l border-gray-200' : ''"
+                                :class="[
+                                    tableColumns[i]?.isSectionStart ? 'border-l border-gray-200' : '',
+                                    cell.route ? 'cursor-pointer hover:text-blue-600 hover:underline' : ''
+                                ]"
+                                @click="cell.route ? router.get(route(cell.route.name, cell.route.parameters)) : null"
                             >
                                 {{ renderLabelBasedOnType(cell.value, cell.type, { currency_code: cell.currencyCode }) }}
                                 <div v-if="cell.information?.label" class="text-[10px] text-gray-400">
@@ -463,7 +472,11 @@ const clickVisitRoute = (visitRoute: {
                                 v-for="(cell, i) in row.cells"
                                 :key="i"
                                 class="px-4 py-2.5 text-right tabular-nums text-gray-700 whitespace-nowrap"
-                                :class="tableColumns[i]?.isSectionStart ? 'border-l border-gray-200' : ''"
+                                :class="[
+                                    tableColumns[i]?.isSectionStart ? 'border-l border-gray-200' : '',
+                                    cell.route ? 'cursor-pointer hover:text-blue-600 hover:underline' : ''
+                                ]"
+                                @click="cell.route ? router.get(route(cell.route.name, cell.route.parameters)) : null"
                             >
                                 {{ renderLabelBasedOnType(cell.value, cell.type, { currency_code: cell.currencyCode }) }}
                                 <div v-if="cell.information?.label" class="text-[10px] text-gray-400">

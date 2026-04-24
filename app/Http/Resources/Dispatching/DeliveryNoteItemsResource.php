@@ -25,7 +25,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $packed_in
  * @property mixed $org_stock_slug
  * @property mixed $batch_code
+ * @property mixed $batch_code_id
  * @property mixed $expiry_date
+ * @property mixed $organisation_id
  * @property mixed $quantity_waiting_warehouse
  * @property mixed $quantity_waiting_crm
  */
@@ -79,9 +81,20 @@ class DeliveryNoteItemsResource extends JsonResource
             'org_stock_slug'                 => $this->org_stock_slug,
             'org_stock_id'                   => $this->org_stock_id,
             'batch_code'                     => $this->batch_code,
+            'batch_code_id'                  => $this->batch_code_id,
             'expiry_date'                    => $this->expiry_date,
+            'organisation_id'                => $this->organisation_id,
+            'batch_codes_fetch_route'        => [
+                'name'       => 'grp.json.org_stock.batch_codes.index',
+                'parameters' => [
+                    'organisation' => $this->organisation_id,
+                    'orgStock'     => $this->org_stock_id,
+                ],
+            ],
             'packed_in_message'              => $packedInMessage,
             'is_done_packing'                => (bool)$this->packing_id,
+            'is_picked'                      => $this->is_picked,
+            'is_packed'                      => $this->is_packed,
             'quantity_waiting_warehouse'     => $this->quantity_waiting_warehouse,
             'quantity_waiting_crm'           => $this->quantity_waiting_crm,
 

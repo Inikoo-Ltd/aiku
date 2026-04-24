@@ -34,10 +34,10 @@ class UpdateInvoiceTransaction extends OrgAction
         SyncInvoiceTransactionStockBridges::dispatch($invoiceTransaction->id);
 
         if (Arr::has($changes, 'date')) {
-            ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, Carbon::parse($oldDate)->toDateString())->delay($this->hydratorsDelay);
+            ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, Carbon::parse($oldDate)->toDateString())->delay(120);
         }
 
-        ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, Carbon::parse($invoiceTransaction->date)->toDateString())->delay($this->hydratorsDelay);
+        ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, Carbon::parse($invoiceTransaction->date)->toDateString())->delay(120);
 
         return $invoiceTransaction;
     }

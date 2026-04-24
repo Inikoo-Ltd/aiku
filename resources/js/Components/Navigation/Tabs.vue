@@ -34,13 +34,14 @@ import {
 	faPenAlt,
 	faShapes,
 	faLayerGroup,
+	faSortShapesUpAlt,
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import type { Navigation } from "@/types/Tabs"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from "@headlessui/vue"
-
+import { trans } from 'laravel-vue-i18n'
 library.add(
 	faShapes,
 	faInfoCircle,
@@ -66,7 +67,8 @@ library.add(
 	faAlbumCollection,
 	faUndo,
 	faPenAlt,
-	faLayerGroup
+	faLayerGroup,
+	faSortShapesUpAlt
 )
 
 const layoutStore = inject("layout", layoutStructure)
@@ -224,7 +226,17 @@ const tabIconClass = function (
 								"
 								aria-hidden="true"
 								:rotation="tab.icon_rotation" />
-							<span>{{ tab.title }}</span>
+							<span class="relative">
+								{{ tab.title }}
+								<span
+									v-if="tabSlug === 'bundles'"
+									class="absolute -top-4 -right-12 text-[8px] px-1.5 py-[1px] rounded 
+										bg-red-500 text-white font-semibold tracking-wide
+										whitespace-nowrap scale-90 origin-left impulse"
+								>
+									{{trans('BETA VERSION')}}
+								</span>
+							</span>
 
 							<div
 								v-if="typeof tab.number == 'number'"

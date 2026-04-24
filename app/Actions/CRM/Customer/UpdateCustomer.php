@@ -10,7 +10,6 @@ namespace App\Actions\CRM\Customer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
-use App\Actions\CRM\Customer\Search\CustomerRecordSearch;
 use App\Actions\Dropshipping\Platform\RedoPlatformTimeSeries;
 use App\Actions\Masters\MasterShop\RedoMasterShopTimeSeries;
 use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
@@ -38,6 +37,7 @@ use App\Actions\Traits\WithPrepareTaxNumberValidation;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Helpers\Audit\AuditEventEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
@@ -48,8 +48,10 @@ use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use OwenIt\Auditing\Events\AuditCustom;
 
 class UpdateCustomer extends OrgAction
 {
@@ -65,6 +67,9 @@ class UpdateCustomer extends OrgAction
 
     public function handle(Customer $customer, array $modelData): Customer
     {
+        $staleData = clone($customer);
+        $staleData = $staleData->toArray();
+
         if (Arr::has($modelData, 'contact_address')) {
             $contactAddressData = Arr::get($modelData, 'contact_address');
 
@@ -251,26 +256,18 @@ class UpdateCustomer extends OrgAction
             }
         }
 
-        if (Arr::hasAny($changes, [
-            'company_name',
-            'contact_name',
-            'email',
-            'internal_notes',
-            'warehouse_internal_notes',
-            'warehouse_public_notes',
-            'reference',
-            'name',
-            'state',
-            'created_at',
-            'location',
-            'phone'
-        ])) {
-            CustomerRecordSearch::dispatch($customer)->delay($this->hydratorsDelay);
-        }
-
-
         if (Arr::has($changes, 'email') && $customer->shop->is_aiku) {
             MatchCustomerProspects::run($customer);
+        }
+
+        if (Arr::hasAny($changes, ['internal_notes', 'warehouse_internal_notes'])) {
+            $customer->auditEvent = AuditEventEnum::CUSTOMER_NOTE->value;
+            $customer->isCustomEvent = true;
+
+            $customer->auditCustomOld = Arr::only($staleData, ['internal_notes', 'warehouse_internal_notes']);
+            $customer->auditCustomNew = Arr::only($changes, ['internal_notes', 'warehouse_internal_notes']);
+
+            Event::dispatch(new AuditCustom($customer));
         }
 
         $registeredAtDate = $customer->registered_at ? Carbon::parse($customer->registered_at)->toDateString() : null;

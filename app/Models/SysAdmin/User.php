@@ -112,7 +112,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Task> $tasks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserHasAuthorisedModels> $userAuthorisedModels
  * @property-read \Illuminate\Database\Eloquent\Collection<int, UserFailedLogIn> $userFailedLogins
  * @property-read \Illuminate\Database\Eloquent\Collection<int, UserLogin> $userLogins
@@ -164,6 +163,17 @@ class User extends Authenticatable implements HasMedia, Auditable
         'sources'  => '{}',
     ];
 
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated || $this->wasChanged([
+                'username',
+                'email',
+                'contact_name',
+                'status',
+                'created_at'
+            ]);
+    }
+
     public function toSearchableArray(): array
     {
         return [
@@ -175,7 +185,6 @@ class User extends Authenticatable implements HasMedia, Auditable
             'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }
-
     public function generateTags(): array
     {
         return [
@@ -330,7 +339,9 @@ class User extends Authenticatable implements HasMedia, Auditable
 
     public function getOrganisation(): ?Organisation
     {
-        return $this->getOrganisations()->first();
+        /** @var Organisation $organisation */
+        $organisation = $this->getOrganisations()->first();
+        return $organisation;
     }
 
 

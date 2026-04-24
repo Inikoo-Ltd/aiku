@@ -12,7 +12,6 @@ use App\Models\GoodsIn\StockDelivery;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InOrganisation;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -47,7 +46,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Procurement\OrgSupplierStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, StockDelivery> $stockDeliveries
  * @property-read Supplier|null $supplier
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static Builder<static>|OrgSupplier newModelQuery()
  * @method static Builder<static>|OrgSupplier newQuery()
  * @method static Builder<static>|OrgSupplier query()
@@ -57,7 +55,6 @@ class OrgSupplier extends Model
 {
     use InOrganisation;
     use HasSlug;
-    use HasUniversalSearch;
 
     protected $table = 'org_suppliers';
 

@@ -14,7 +14,6 @@ use App\Enums\Production\RawMaterial\RawMaterialTypeEnum;
 use App\Enums\Production\RawMaterial\RawMaterialUnitEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InProduction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -49,7 +48,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read \App\Models\Production\Production|null $production
  * @property-read \App\Models\Production\RawMaterialStats|null $stats
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RawMaterial newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RawMaterial newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RawMaterial onlyTrashed()
@@ -63,7 +61,6 @@ class RawMaterial extends Model implements Auditable
     use InProduction;
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use HasHistory;
 
     protected $guarded = [];

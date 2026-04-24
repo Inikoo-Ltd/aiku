@@ -56,6 +56,7 @@ class AskToAi extends OrgAction
         $url = 'https://api.openai.com/v1/chat/completions';
 
         $response = Http::withToken($apiKey)
+            ->connectTimeout(10)
             ->timeout(30)
             ->post($url, [
                 'model' => $model,
@@ -78,6 +79,16 @@ class AskToAi extends OrgAction
         }
 
         $content = $response->json('choices.0.message.content');
-        return trim($content);
+
+        if (!is_string($content)) {
+            Log::warning('AskToAi API response content missing', [
+                'response' => $response->json(),
+            ]);
+            return null;
+        }
+
+        $content = trim($content);
+
+        return $content === '' ? null : $content;
     }
 }

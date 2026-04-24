@@ -19,14 +19,11 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\Feedback;
 use App\Models\Helpers\TaxCategory;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\SalesChannel;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasRetinaSearch;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InCustomer;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -146,12 +143,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Accounting\Payment> $payments
  * @property-read RecurringBill|null $recurringBill
  * @property-read Collection<int, Invoice> $refunds
- * @property-read \App\Models\Helpers\RetinaSearch|null $retinaSearch
  * @property-read SalesChannel|null $salesChannel
  * @property-read Shop|null $shop
  * @property-read \App\Models\Accounting\InvoiceStats|null $stats
  * @property-read TaxCategory $taxCategory
- * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Accounting\InvoiceFactory factory($count = null, $state = [])
  * @method static Builder<static>|Invoice newModelQuery()
  * @method static Builder<static>|Invoice newQuery()
@@ -165,8 +160,6 @@ class Invoice extends Model implements Auditable
 {
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
-    use HasRetinaSearch;
     use HasFactory;
     use InCustomer;
     use HasHistory;

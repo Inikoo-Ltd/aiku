@@ -10,7 +10,6 @@ namespace App\Actions\Procurement\OrgSupplier;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateOrgSuppliers;
-use App\Actions\Procurement\OrgSupplier\Search\OrgSupplierRecordSearch;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgSuppliers;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\Procurement\OrgAgent;
@@ -49,7 +48,6 @@ class StoreOrgSupplier extends OrgAction
             return $orgSupplier;
         });
 
-        OrgSupplierRecordSearch::dispatch($orgSupplier)->delay($this->hydratorsDelay);
         OrganisationHydrateOrgSuppliers::dispatch($organisation)->delay($this->hydratorsDelay);
         if ($orgSupplier->org_agent_id) {
             OrgAgentHydrateOrgSuppliers::dispatch($orgSupplier->orgAgent)->delay($this->hydratorsDelay);

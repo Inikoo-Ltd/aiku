@@ -71,7 +71,7 @@ class ProcessWebsiteVisitorTracking implements ShouldBeUnique
             );
         }
 
-        StoreWebsitePageView::dispatch($visitor, $website, $currentUrl);
+        StoreWebsitePageView::dispatch($visitor, $website, $currentUrl)->delay(5);
 
         if ($visitor->web_user_id) {
             $customer = $visitor->webUser?->customer;

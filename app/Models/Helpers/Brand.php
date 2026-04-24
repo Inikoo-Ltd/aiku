@@ -13,6 +13,7 @@ namespace App\Models\Helpers;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Traits\HasImage;
+use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -30,6 +31,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $group_id
  * @property int $number_trade_units
  * @property int $number_products
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
@@ -44,6 +46,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class Brand extends Model implements HasMedia
 {
+    use InGroup;
     use HasSlug;
     use HasImage;
     protected $guarded = [];

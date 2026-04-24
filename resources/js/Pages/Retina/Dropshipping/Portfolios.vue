@@ -37,6 +37,7 @@ import {
 	faEllipsisV,
 	faDownload,
 	faTimes,
+	faPencilAlt
 } from "@fal"
 import { faCheck } from "@fas"
 import axios from "axios"
@@ -86,7 +87,8 @@ library.add(
 	faBox,
 	faArrowLeft,
 	faArrowRight,
-	faUpload
+	faUpload,
+	faPencilAlt
 )
 
 const props = defineProps<{
@@ -119,6 +121,7 @@ const props = defineProps<{
 		addPortfolioRoute: routeType
 		bulk_upload: routeType
 		bulk_unlink: routeType
+		batch_all_dimensions_update: routeType
 		itemRoute: routeType
 		updatePortfolioRoute: routeType
 		batchDeletePortfolioRoute: routeType
@@ -911,7 +914,57 @@ const onDownloadExtendedProperties = () => {
 	}, 400)
 }
 
-console.log("props parent porfot", props)
+const modalUpdateDimension = ref(false)
+const isLoadingUpdateDimension = ref(false)
+const totalProductsForDimensionUpdate = computed(
+	() => props.products?.meta?.total ?? props.products?.data?.length ?? 0
+)
+
+const openUpdateDimension = () => {
+	modalUpdateDimension.value = true
+}
+
+const submitBatchAllDimensionsUpdate = () => {
+	if (!props.routes.batch_all_dimensions_update?.name) {
+		notify({
+			title: trans("No route defined"),
+			type: "error",
+		})
+		return
+	}
+
+	router.post(
+		route(
+			props.routes.batch_all_dimensions_update.name,
+			props.routes.batch_all_dimensions_update.parameters
+		),
+		{},
+		{
+			preserveScroll: true,
+			onBefore: () => {
+				isLoadingUpdateDimension.value = true
+			},
+			onSuccess: () => {
+				modalUpdateDimension.value = false
+				notify({
+					title: trans("Success!"),
+					text: trans("Products dimensions update has been started."),
+					type: "success",
+				})
+			},
+			onError: () => {
+				notify({
+					title: trans("Something went wrong"),
+					type: "error",
+				})
+			},
+			onFinish: () => {
+				isLoadingUpdateDimension.value = false
+			},
+		}
+	)
+}
+
 const layout = inject("layout", layoutStructure)
 </script>
 
@@ -1310,6 +1363,17 @@ const layout = inject("layout", layoutStructure)
 				size="xs" />
 		</div>
 	</div>
+	<div v-if="platform_data.type === 'shopify' && currentTab === 'products'" class="pt-2 grid justify-items-end mr-4">
+		<div class="gap-x-3 flex">
+			<Button
+				v-tooltip="trans('Update all dimensions ')"
+				:type="'tertiary'"
+				:label="trans('Update all dimensions')"
+				@click="openUpdateDimension()"
+				:icon="['fal', 'fa-pencil-alt']"
+				size="xs" />
+		</div>
+	</div>
 	<Message
 		v-if="
 			is_platform_connected &&
@@ -1566,9 +1630,11 @@ const layout = inject("layout", layoutStructure)
 	<Modal
 		:isOpen="isOpenModalCreateBundle"
 		@onClose="isOpenModalCreateBundle = false"
+		:isClosableInBackground="step.current !== 1"
 		width="w-full max-w-7xl max-h-[600px] md:max-h-[85vh] overflow-y-auto">
 		<AddBundles
 			:step="step"
+			:customer_id="layout.user.customer_id"
 			:routes="props.routes"
 			:bundle_routes="props.bundle_routes"
 			:platform_data
@@ -2233,4 +2299,35 @@ const layout = inject("layout", layoutStructure)
 		:progressDescription="bulk_import_product.progressDescription"
 		:preview_template="bulk_import_product.preview_template"
 		:upload_spreadsheet="bulk_import_product.upload_spreadsheet" />
+
+	<!-- Modal: Update All Dimension Shopify -->
+	<Modal
+		:isOpen="modalUpdateDimension"
+		width="w-full max-w-md"
+		@onClose="modalUpdateDimension = false">
+		<div class="text-xl font-semibold text-center">
+			{{ trans("Update All Dimension") }}
+		</div>
+
+		<div class="mt-4 text-center text-sm text-gray-600">
+			{{
+				trans(`This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?`)
+			}}
+		</div>
+
+		<div class="mt-6 flex gap-2">
+			<Button
+				type="tertiary"
+				@click="modalUpdateDimension = false"
+				:label="trans('Close')"
+				full
+				:disabled="isLoadingUpdateDimension" />
+			<Button
+				@click="submitBatchAllDimensionsUpdate()"
+				:label="trans('Submit')"
+				full
+				:disabled="totalProductsForDimensionUpdate === 0 || isLoadingUpdateDimension"
+				:loading="isLoadingUpdateDimension" />
+		</div>
+	</Modal>
 </template>

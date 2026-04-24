@@ -8,30 +8,20 @@
 
 namespace App\Actions\Catalogue\ProductCategory\Search;
 
+use App\Actions\Traits\WithScoutReindex;
 use App\Models\Catalogue\ProductCategory;
-use Illuminate\Support\Facades\Artisan;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ReindexProductCategorySearch
 {
     use AsAction;
+    use WithScoutReindex;
 
     public string $commandSignature = 'reindex_search:product_categories';
 
     public function handle(bool $reindex = true, bool $reset = false): void
     {
-        if ($reset) {
-            Artisan::call('scout:flush', [
-                'model' => ProductCategory::class
-            ]);
-        }
-
-        if ($reindex) {
-            Artisan::call('scout:queue-import', [
-                'model'   => ProductCategory::class,
-                '--chunk' => 1000
-            ]);
-        }
+        $this->runScoutReindex(ProductCategory::class, $reindex, $reset);
     }
 
 }

@@ -16,7 +16,6 @@ use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks
 use App\Actions\Fulfilment\Pallet\ReturnPallet;
 use App\Actions\Fulfilment\PalletReturn\Hydrators\PalletReturnHydratePallets;
 use App\Actions\Fulfilment\PalletReturn\Notifications\SendPalletReturnNotification;
-use App\Actions\Fulfilment\PalletReturn\Search\PalletReturnRecordSearch;
 use App\Actions\Fulfilment\RecurringBill\CalculateRecurringBillTotals;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePalletReturns;
 use App\Actions\OrgAction;
@@ -103,7 +102,6 @@ class DispatchPalletReturn extends OrgAction
         FulfilmentCustomerHydratePalletReturns::dispatch($palletReturn->fulfilmentCustomer);
         FulfilmentHydratePalletReturns::dispatch($palletReturn->fulfilment);
         SendPalletReturnNotification::run($palletReturn);
-        PalletReturnRecordSearch::dispatch($palletReturn);
 
         $pickingSessions = $palletReturn->pickingSessions()->get();
         foreach ($pickingSessions as $pickingSession) {

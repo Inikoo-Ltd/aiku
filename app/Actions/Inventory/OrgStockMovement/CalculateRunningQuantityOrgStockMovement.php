@@ -1,11 +1,10 @@
 <?php
 
 /*
- * author Louis Perez
- * created on 09-04-2026-15h-28m
- * github: https://github.com/louis-perez
- * copyright 2026
-*/
+ * Author: Louis Perez
+ * Created: Thu, 9 Apr 2026 15:28
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Inventory\OrgStockMovement;
 
@@ -21,18 +20,25 @@ class CalculateRunningQuantityOrgStockMovement implements ShouldBeUniqueUntilPro
 
     private OrgStockMovement $orgStockMovement;
 
-    public string $jobQueue = 'stock-history';
+    public string $jobQueue = 'stock-history-urgent';
 
-    public function getJobUniqueId(OrgStockMovement $orgStockMovement): string
+    public function getJobUniqueId(?int $orgStockMovementId): string
     {
-        return $orgStockMovement->id;
+        return (string)($orgStockMovementId ?? 'empty');
     }
 
-    public function handle(OrgStockMovement $orgStockMovement): void
+    public function handle(?int $orgStockMovementId): void
     {
+        if (!$orgStockMovementId) {
+            return;
+        }
+        $orgStockMovement = OrgStockMovement::find($orgStockMovementId);
+        if (!$orgStockMovement) {
+            return;
+        }
         $orgStock = $orgStockMovement->orgStock;
         // If you want to loop
-        $runningQuantity = $this->getStockQuantity($orgStock, $orgStockMovement->location, $orgStockMovement->date);
+        $runningQuantity    = $this->getStockQuantity($orgStock, $orgStockMovement->location, $orgStockMovement->date);
         $runningQuantityOrg = 0;
 
         foreach ($orgStock->locations as $location) {
@@ -40,8 +46,8 @@ class CalculateRunningQuantityOrgStockMovement implements ShouldBeUniqueUntilPro
         }
 
         $orgStockMovement->update([
-            'running_quantity'              => $runningQuantity,
-            'running_quantity_org_stock'    => $runningQuantityOrg,
+            'running_quantity'           => $runningQuantity,
+            'running_quantity_org_stock' => $runningQuantityOrg,
         ]);
     }
 }

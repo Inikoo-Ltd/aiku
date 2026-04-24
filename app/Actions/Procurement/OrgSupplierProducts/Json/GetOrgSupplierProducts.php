@@ -10,6 +10,7 @@
 namespace App\Actions\Procurement\OrgSupplierProducts\Json;
 
 use App\Actions\OrgAction;
+use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderOrgSupplierProductsResource;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
@@ -19,7 +20,6 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -37,16 +37,7 @@ class GetOrgSupplierProducts extends OrgAction
         $queryBuilder = QueryBuilder::for(OrgSupplierProduct::class);
         $queryBuilder->leftJoin('supplier_products', 'supplier_products.id', 'org_supplier_products.supplier_product_id')
                         ->leftJoin('stock_has_supplier_products', 'stock_has_supplier_products.supplier_product_id', '=', 'supplier_products.id')
-                        ->leftJoinSub(
-                            DB::table('stocks')
-                                ->where('available', true)
-                                ->orderBy('created_at', 'asc')
-                                ->limit(1),
-                            'first_stock',
-                            'first_stock.id',
-                            '=',
-                            'stock_has_supplier_products.stock_id'
-                        )
+                        ->leftJoin('stocks as first_stock', 'first_stock.id', '=', 'stock_has_supplier_products.stock_id')
                         ->leftJoin('org_stocks', 'org_stocks.stock_id', '=', 'first_stock.id');
         $queryBuilder->leftjoin('suppliers', 'supplier_products.supplier_id', 'suppliers.id');
         $queryBuilder->leftJoin('purchase_order_transactions', function ($join) use ($purchaseOrder) {
@@ -63,7 +54,8 @@ class GetOrgSupplierProducts extends OrgAction
             $queryBuilder->where('org_supplier_products.organisation_id', $this->organisation->id);
         }
 
-        $queryBuilder->where('org_supplier_products.is_available', true);
+        $queryBuilder->where('org_supplier_products.is_available', true)
+            ->where('org_supplier_products.state', OrgSupplierProductStateEnum::ACTIVE);
 
         return $queryBuilder
             ->defaultSort('supplier_products.code')

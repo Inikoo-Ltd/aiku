@@ -92,28 +92,35 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
                 'shops.name as shop_name',
                 'shops.code as shop_code',
             ])
+            ->selectRaw('(SELECT string_agg(t.name, \', \' ORDER BY t.name) FROM delivery_note_has_trolleys dnt JOIN trolleys t ON t.id = dnt.trolley_id WHERE dnt.delivery_note_id = delivery_notes.id) as trolley_names')
+            ->selectRaw('(SELECT string_agg(pb.code, \', \' ORDER BY pb.code) FROM picked_bay_has_delivery_notes pbdn JOIN picked_bays pb ON pb.id = pbdn.picked_bay_id WHERE pbdn.delivery_note_id = delivery_notes.id) as picked_bay_codes')
             ->allowedSorts(['org_stock_name', 'org_stock_code', 'picking_position'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(?string $prefix = null): Closure
+    public function tableStructure(?string $prefix = null, bool $readOnly = false): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($prefix, $readOnly) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
 
-            $table->withEmptyState([
-                'title' => __('No waiting items found'),
-            ])->defaultSort('picking_position');
+            $emptyStateData = [
+                'icons'  => ['fal', 'fa-hourglass-start'],
+                'title'  => __('No waiting items found'),
+                'count'  => 0,
+            ];
+
+            $table->withEmptyState($emptyStateData)->defaultSort('picking_position');
 
             $table->column(key: 'delivery_note_reference', label: __('Delivery Note'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
-            // $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
-            $table->column(key: 'picking_position', label: __('Actions'), canBeHidden: false, sortable: true);
+            if (!$readOnly) {
+                $table->column(key: 'picking_position', label: __('Actions'), canBeHidden: false, sortable: true);
+            }
         };
     }
 }

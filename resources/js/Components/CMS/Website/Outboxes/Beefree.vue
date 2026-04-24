@@ -11,6 +11,7 @@ const props = withDefaults(defineProps<{
     updateRoute: routeType;
     imagesUploadRoute: routeType
     snapshot: any
+    unpublished_layout: any
     mergeTags: Array<any>
     mergeContents: Array<any> | null
     organisationSlug: string
@@ -111,7 +112,7 @@ const initializeBeefree = async () => {
         beeInstance.value = new BeefreeSDK(token)
 
         // Start with template if available
-        const template = props.snapshot?.layout ? JSON.stringify(props.snapshot.layout) : {}
+        const template = props.unpublished_layout ? JSON.stringify(props.unpublished_layout) : (props.snapshot?.layout ? JSON.stringify(props.snapshot.layout) : {})
         await beeInstance.value.start(beeConfig, template)
 
         isLoading.value = false

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Production\JobOrder;
 
-use App\Actions\Production\JobOrder\Hydrators\JobOrderHydrateUniversalSearch;
 use App\Actions\Production\Production\Hydrators\ProductionHydrateJobOrders;
 use App\Actions\OrgAction;
 use App\Http\Resources\Production\JobOrderResource;
@@ -48,7 +47,6 @@ class StoreJobOrder extends OrgAction
 
         /** @var JobOrder $jobOrder */
         $jobOrder = $production->jobOrders()->create($modelData);
-        JobOrderHydrateUniversalSearch::dispatch($jobOrder);
         ProductionHydrateJobOrders::dispatch($jobOrder->production);
 
         return $jobOrder;

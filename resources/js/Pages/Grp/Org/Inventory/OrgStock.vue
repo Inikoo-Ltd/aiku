@@ -17,7 +17,9 @@ import {
     faPaperclip,
     faCube,
     faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign,
-    faExclamationCircle
+    faExclamationCircle,
+    faMoneyCheckEditAlt,
+    faChartLine
 } from "@fal"
 import {
 faCloudRainbow
@@ -55,7 +57,9 @@ library.add(
     faPoop,
     faScanner,
     faDollarSign,
-    faCloudRainbow
+    faCloudRainbow,
+    faMoneyCheckEditAlt,
+    faChartLine
 )
 
 
@@ -72,6 +76,7 @@ const props = defineProps<{
     products?: {}
     trade_units?: {}
     stock_history?: {}
+    purchase_history?: {}
     master: {}
     masterRoute: routeType | null
 }>()
@@ -89,6 +94,7 @@ const component = computed(() => {
         products: TableProducts,
         trade_units: TableTradeUnits,
         stock_history: TableOrgStockMovements,
+        purchase_history: TableOrgStockMovements,
         details: ModelDetails,
         history: ModelChangelog,
         purchase_orders: TablePurchaseOrders
@@ -103,7 +109,7 @@ const component = computed(() => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #afterTitle>
+        <template #afterTitle2>
             <Link
                 v-if="master"
                 :href="masterRoute?.name ? route(masterRoute.name, masterRoute.parameters) : ''"
@@ -117,7 +123,7 @@ const component = computed(() => {
             </Link>
         </template>
     </PageHeading>
-    <div>
+    <!-- <div>
         <Message :severity="'warn'">
             <FontAwesomeIcon 
                 :icon="faExclamationCircle" 
@@ -125,7 +131,7 @@ const component = computed(() => {
             />
             {{ trans("Stock location changes for this Org SKU may be overwritten during Aurora imports.") }}
         </Message>
-    </div>
+    </div> -->
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
 </template>

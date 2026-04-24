@@ -13,7 +13,6 @@ use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSupplierProducts;
 use App\Actions\SupplyChain\HistoricSupplierProduct\StoreHistoricSupplierProduct;
 use App\Actions\SupplyChain\Supplier\Hydrators\SupplierHydrateSupplierProducts;
-use App\Actions\SupplyChain\SupplierProduct\Search\SupplierProductRecordSearch;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSupplierProducts;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -50,10 +49,8 @@ class UpdateSupplierProduct extends GrpAction
 
 
         if (!$skipHistoric and $supplierProduct->wasChanged(
-            [ 'code', 'cbm', 'units_per_pack','units_per_pack']
+            ['code', 'cbm', 'units_per_pack', 'units_per_pack']
         )) {
-
-
             $historicProduct = StoreHistoricSupplierProduct::make()->action($supplierProduct, [
                 'status' => true,
             ]);
@@ -81,18 +78,13 @@ class UpdateSupplierProduct extends GrpAction
             }
         }
 
-        if ($supplierProduct->wasChanged()) {
-            SupplierProductRecordSearch::dispatch($supplierProduct);
-        }
-
-
         return $supplierProduct;
     }
 
     public function rules(): array
     {
         $rules = [
-            'code'         => [
+            'code'             => [
                 'sometimes',
                 'required',
                 $this->strict ? 'max:64' : 'max:255',
@@ -110,10 +102,14 @@ class UpdateSupplierProduct extends GrpAction
                     ]
                 ),
             ],
-            'name'            => ['sometimes', 'required', 'string', 'max:255'],
-            'cost'            => ['sometimes', 'required'],
-            'state'           => ['sometimes', 'required', Rule::enum(SupplierProductStateEnum::class)],
-            'is_available'    => ['sometimes', 'required', 'boolean'],
+            'name'             => ['sometimes', 'required', 'string', 'max:255'],
+            'state'            => ['sometimes', 'required', Rule::enum(SupplierProductStateEnum::class)],
+            'is_available'     => ['sometimes', 'required', 'boolean'],
+            'cost'             => ['sometimes', 'required'],
+            'units_per_pack'   => ['sometimes', 'nullable'],
+            'units_per_carton' => ['sometimes', 'nullable'],
+            'cbm'              => ['sometimes', 'nullable', 'numeric'],
+            'extra_costs'      => ['sometimes', 'nullable', 'numeric', 'min:0'],
 
         ];
 

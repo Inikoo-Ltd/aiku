@@ -46,6 +46,7 @@ class FetchAuroraAction extends FetchAction
                 'fetch:email_tracking_events',
                 'fetch:histories',
                 'fetch:stock_movements',
+                'fetch:purchase_stock_movements',
             ]) and $command->option('order')) {
             $this->orderDesc = (bool)$command->option('order') == 'desc';
         }

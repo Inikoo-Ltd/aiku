@@ -15,7 +15,6 @@ use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\Pallet\PickWholePalletInPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\Notifications\SendPalletReturnNotification;
-use App\Actions\Fulfilment\PalletReturn\Search\PalletReturnRecordSearch;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePalletReturns;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletReturns;
@@ -76,7 +75,6 @@ class PickedPalletReturn extends OrgAction
         FulfilmentCustomerHydratePalletReturns::dispatch($palletReturn->fulfilmentCustomer);
         FulfilmentHydratePalletReturns::dispatch($palletReturn->fulfilment);
         SendPalletReturnNotification::run($palletReturn);
-        PalletReturnRecordSearch::dispatch($palletReturn);
 
         return $palletReturn;
     }

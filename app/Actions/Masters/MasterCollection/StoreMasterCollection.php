@@ -10,7 +10,6 @@ namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\StoreCollectionsFromMasterCollection;
 use App\Actions\GrpAction;
-use App\Actions\Masters\MasterCollection\Search\MasterCollectionRecordSearch;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterCollections;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterCollections;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterCollections;
@@ -77,7 +76,6 @@ class StoreMasterCollection extends GrpAction
             return $masterCollection;
         });
 
-        MasterCollectionRecordSearch::dispatch($masterCollection);
         GroupHydrateMasterCollections::dispatch($masterCollection->group)->delay($this->hydratorsDelay);
         MasterShopHydrateMasterCollections::dispatch($masterShop)->delay($this->hydratorsDelay);
 

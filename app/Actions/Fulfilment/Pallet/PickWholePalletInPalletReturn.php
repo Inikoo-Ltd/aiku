@@ -10,7 +10,6 @@ namespace App\Actions\Fulfilment\Pallet;
 
 use App\Actions\Fulfilment\PickingSession\AutoFinishPickingFulfilmentPickingSession;
 use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks;
-use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
 use App\Actions\Fulfilment\PalletReturn\Hydrators\PalletReturnHydratePallets;
 use App\Actions\Fulfilment\PalletStoredItem\SetPalletStoredItemStateToReturned;
 use App\Actions\Fulfilment\StoredItemMovement\StoreStoredItemMovementFromPickingAFullPallet;
@@ -85,7 +84,6 @@ class PickWholePalletInPalletReturn extends OrgAction
                 SetPalletStoredItemStateToReturned::run($palletStoredItem);
             }
             PalletReturnHydratePallets::dispatch($palletReturnItem->palletReturn);
-            PalletRecordSearch::dispatch($pallet);
 
             if ($palletReturnItem->picking_session_id && $palletReturnItem->pickingSession) {
                 (new CalculateFulfilmentPickingSessionPicks())->action($palletReturnItem->pickingSession);

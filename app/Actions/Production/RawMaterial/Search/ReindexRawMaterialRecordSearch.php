@@ -21,7 +21,6 @@ class ReindexRawMaterialRecordSearch extends HydrateModel
 
     public function handle(RawMaterial $rawMaterial): void
     {
-        RawMaterialRecordSearch::run($rawMaterial);
     }
 
     protected function getModel(string $slug): RawMaterial

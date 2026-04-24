@@ -20,7 +20,7 @@ class ReindexDeliveryNotesSearch extends HydrateModel
 
     public function handle(DeliveryNote $deliveryNote): void
     {
-        DeliveryNoteRecordSearch::run($deliveryNote);
+
     }
 
     protected function getModel(string $slug): DeliveryNote

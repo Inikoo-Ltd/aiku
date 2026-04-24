@@ -8,7 +8,6 @@
 
 namespace App\Actions\Production\Artefact;
 
-use App\Actions\Production\Artefact\Hydrators\ArtefactHydrateUniversalSearch;
 use App\Actions\Production\Production\Hydrators\ProductionHydrateArtefacts;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateArtefacts;
@@ -38,8 +37,6 @@ class StoreArtefact extends OrgAction
         GroupHydrateArtefacts::dispatch($artefact->group);
         OrganisationHydrateArtefacts::dispatch($artefact->organisation);
         ProductionHydrateArtefacts::dispatch($artefact->production);
-        ArtefactHydrateUniversalSearch::dispatch($artefact);
-
 
         return $artefact;
     }

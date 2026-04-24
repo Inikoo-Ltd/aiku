@@ -225,6 +225,8 @@ return [
 
     'roadrunner' => [
         'command' => env('OCTANE_ROADRUNNER_WORKER_PATH', base_path('vendor/bin/roadrunner-worker')),
-    ]
+    ],
+
+    'state_file' => env('OCTANE_STATE_FILE') ? storage_path(env('OCTANE_STATE_FILE')) : storage_path('logs/octane-server-state.json'),
 
 ];

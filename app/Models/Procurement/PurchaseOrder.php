@@ -17,7 +17,6 @@ use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InOrganisation;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -121,7 +120,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read Model|\Eloquent $parent
  * @property-read Collection<int, \App\Models\Procurement\PurchaseOrderTransaction> $purchaseOrderTransactions
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Procurement\PurchaseOrderFactory factory($count = null, $state = [])
  * @method static Builder<static>|PurchaseOrder newModelQuery()
  * @method static Builder<static>|PurchaseOrder newQuery()
@@ -141,8 +139,6 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
     use HasHistory;
     use InOrganisation;
     use HasAttachments;
-    use HasUniversalSearch;
-
 
     protected $casts = [
         'data'            => 'array',

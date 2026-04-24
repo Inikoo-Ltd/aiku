@@ -8,7 +8,6 @@
 
 namespace App\Actions\Fulfilment\Pallet;
 
-use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
 use App\Actions\Fulfilment\PalletDelivery\Hydrators\PalletDeliveryHydratePallets;
 use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
 use App\Actions\OrgAction;
@@ -36,7 +35,6 @@ class BookInPallet extends OrgAction
 
         PalletDeliveryHydratePallets::dispatch($pallet->palletDelivery);
         LocationHydratePallets::dispatch($pallet->location);
-        PalletRecordSearch::dispatch($pallet);
 
         return $pallet;
     }

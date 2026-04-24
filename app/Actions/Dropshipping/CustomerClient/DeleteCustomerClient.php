@@ -33,7 +33,7 @@ class DeleteCustomerClient extends OrgAction
         GroupHydrateCustomerClients::dispatch($customerClient->group);
 
         if ($customerClient->shop && $customerClient->platform->id) {
-            ShopHydratePlatformSalesIntervalsNewCustomerClient::dispatch($customerClient->shop, $customerClient->platform->id)->delay($this->hydratorsDelay);
+            ShopHydratePlatformSalesIntervalsNewCustomerClient::dispatch($customerClient->shop, $customerClient->platform->id)->delay(5);
         }
 
         return $customerClient;

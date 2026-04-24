@@ -17,7 +17,6 @@ use App\Models\Goods\TradeUnit;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -77,6 +76,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $has_been_in_warehouse
  * @property HealthRankEnum|null $health_rank
  * @property bool $movements_fixed
+ * @property numeric|null $sku_value
+ * @property numeric|null $current_supplier_sku_cost
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
@@ -92,7 +93,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Stock|null $stock
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, TradeUnit> $tradeUnits
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Inventory\OrgStockFactory factory($count = null, $state = [])
  * @method static Builder<static>|OrgStock newModelQuery()
  * @method static Builder<static>|OrgStock newQuery()
@@ -107,7 +107,6 @@ class OrgStock extends Model implements Auditable
     use HasFactory;
     use HasHistory;
     use HasSlug;
-    use HasUniversalSearch;
     use InOrganisation;
     use SoftDeletes;
 
@@ -192,7 +191,8 @@ class OrgStock extends Model implements Auditable
     public function orgSupplierProducts(): BelongsToMany
     {
         return $this->belongsToMany(OrgSupplierProduct::class, 'org_stock_has_org_supplier_products')
-            ->withPivot(['status', 'local_priority'])->withTimestamps();
+            ->withPivot(['status', 'local_priority'])->withTimestamps()
+            ->orderByPivot('local_priority', 'desc');
     }
 
     public function tradeUnits(): MorphToMany

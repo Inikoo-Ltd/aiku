@@ -13,7 +13,6 @@ use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Ordering\Transaction;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -74,7 +73,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Transaction> $transactions
  * @property-read Model|\Eloquent|null $trigger
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Discounts\OfferFactory factory($count = null, $state = [])
  * @method static Builder<static>|Offer newModelQuery()
  * @method static Builder<static>|Offer newQuery()
@@ -91,7 +89,6 @@ class Offer extends Model implements Auditable
     use HasFactory;
     use InShop;
     use HasHistory;
-    use HasUniversalSearch;
 
     protected $casts = [
         'data'              => 'array',

@@ -12,7 +12,9 @@ namespace App\Actions\Inventory\OrgStockMovement\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Http\Resources\Inventory\OrgStockMovementsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrgStock;
@@ -66,7 +68,7 @@ class IndexOrgStockMovements extends OrgAction
         ];
     }
 
-    public function handle(Organisation|OrgStock $parent, $prefix = null, $bucket = null): LengthAwarePaginator
+    public function handle(Organisation|OrgStock $parent, $prefix = null, $bucket = null, OrgStockMovementTypeEnum|null $type = null): LengthAwarePaginator
     {
         $this->parent = $parent;
 
@@ -101,9 +103,20 @@ class IndexOrgStockMovements extends OrgAction
 
         if ($parent instanceof OrgStock) {
             $queryBuilder->where('org_stock_movements.org_stock_id', $parent->id);
+
+            $queryBuilder->when(
+                $type,
+                function ($q) use ($type) {
+                    $q->where('org_stock_movements.type', $type);
+                },
+                function ($q) {
+                    $q->whereNot('org_stock_movements.class', OrgStockMovementClassEnum::GARBAGE);
+                }
+            );
         } else {
             $queryBuilder->where('org_stock_movements.organisation_id', $organisation->id);
         }
+
 
         return $queryBuilder
             ->defaultSort('-org_stock_movements.date')
@@ -174,7 +187,8 @@ class IndexOrgStockMovements extends OrgAction
                 $table->column(key: 'org_stock_name', label: __('Stock'), sortable: true);
             }
 
-            $table->column(key: 'flow', label: __('Flow'), sortable: true)
+            $table
+                ->column(key: 'flow', label: ['fal', 'fa-chart-line'], tooltip:__('Movement Flow'), type: 'icon', sortable: true)
                 ->column(key: 'type', label: __('Type'), sortable: true)
                 ->column(key: 'class', label: __('Class'), sortable: true)
                 ->column(key: 'location_code', label: __('Location'))

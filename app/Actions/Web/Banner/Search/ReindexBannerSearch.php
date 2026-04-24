@@ -26,7 +26,7 @@ class ReindexBannerSearch
 
     public function handle(Banner $banner): void
     {
-        BannerRecordSearch::run($banner);
+
     }
 
 

@@ -13,7 +13,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageSeo;
 use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Web\Webpage\Search\WebpageRecordSearch;
 use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
@@ -111,16 +110,6 @@ class UpdateWebpage extends OrgAction
 
         if (Arr::has($changes, 'state')) {
             $this->dispatchWebpageHydrators($webpage);
-        }
-
-        if (Arr::hasAny($changes, [
-            'code',
-            'url',
-            'state',
-            'type',
-            'state',
-        ])) {
-            WebpageRecordSearch::dispatch($webpage);
         }
 
         BreakProductInWebpagesCache::make()->breakCache($webpage);

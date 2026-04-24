@@ -36,7 +36,7 @@ library.add(
 ChartJS.register(ArcElement, Tooltip, Legend, Colors)
 const locale = useLocaleStore()
 
-const props = defineProps<{
+defineProps<{
     title: string
     pageHead: PageHeadingTypes
     flatTreeMaps: {}

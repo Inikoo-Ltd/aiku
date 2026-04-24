@@ -1,10 +1,10 @@
 <?php
+
 /*
  * Author: Arya Permana - Kirin
  * Created: Thu, 09 Jan 2025 15:26
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
-
 
 namespace App\Http\Middleware;
 
@@ -36,7 +36,7 @@ class LogWebUserRequestMiddleware
             $request->header('CF-IPLongitude'),
             $request->header('CF-IPLatitude'),
         ];
-        ProcessRetinaWebUserRequest::run(
+        ProcessRetinaWebUserRequest::dispatch(
             $request->user(),
             now(),
             [
@@ -47,7 +47,7 @@ class LogWebUserRequestMiddleware
             $request->ip(),
             $request->header('User-Agent'),
             $geoLocation
-        );
+        )->delay(now()->addSeconds(5));
 
 
         return $next($request);
@@ -81,7 +81,7 @@ class LogWebUserRequestMiddleware
             return false;
         }
 
-        if (array_any($skipPrefixes, fn($prefix) => str_starts_with($routeName, $prefix))) {
+        if (array_any($skipPrefixes, fn ($prefix) => str_starts_with($routeName, $prefix))) {
             return false;
         }
 

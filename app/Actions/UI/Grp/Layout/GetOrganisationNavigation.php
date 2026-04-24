@@ -153,7 +153,7 @@ class GetOrganisationNavigation
                             ]
                         ],
                         [
-                            'label' => __('Purchase orders'),
+                            'label' => __('Purchase Orders'),
                             'icon'  => ['fal', 'fa-clipboard-list'],
                             'root'  => 'grp.org.procurement.purchase_orders.',
                             'route' => [
@@ -175,7 +175,6 @@ class GetOrganisationNavigation
 
         $navigation['overview'] = [
             'label'   => __('Overview'),
-            'tooltip' => __('Overview'),
             'icon'    => ['fal', 'fa-mountains'],
             'root'    => 'grp.org.overview.',
 
@@ -203,7 +202,6 @@ class GetOrganisationNavigation
 
         $navigation['chat'] = [
             'label'   => __('Chat'),
-            'tooltip' => __('Chat'),
             'icon'    => ['fal', 'comment-alt'],
             'root'    => 'grp.org.chat.',
             'route'   => [
@@ -214,7 +212,6 @@ class GetOrganisationNavigation
                 'subSections' => [
                     [
                         'label'   => __('Dashboard'),
-                        'tooltip' => __('Dashboard'),
                         'icon'    => ['fal', 'comment-alt'],
                         'root'    => 'grp.org.chat.dashboard',
                         'route'   => [
@@ -224,7 +221,6 @@ class GetOrganisationNavigation
                     ],
                     [
                         'label'   => __('Agents'),
-                        'tooltip' => __('Agents'),
                         'icon'    => ['fal', 'fa-headset'],
                         'root'    => 'grp.org.chat.agents.show',
                         'route'   => [
@@ -238,7 +234,6 @@ class GetOrganisationNavigation
 
         $navigation['calendar_offers'] = [
             'label'   => __('Calendar Offers'),
-            'tooltip' => __('Calendar Offers'),
             'icon'    => ['fal', 'fa-calendar'],
             'root'    => 'grp.org.offer.calendar',
             'route'   => [

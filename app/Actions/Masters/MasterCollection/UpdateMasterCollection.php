@@ -10,7 +10,6 @@ namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\GrpAction;
-use App\Actions\Masters\MasterCollection\Search\MasterCollectionRecordSearch;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Actions\Traits\WithActionUpdate;
@@ -106,9 +105,6 @@ class UpdateMasterCollection extends GrpAction
                 UpdateCollection::make()->action($collections, $dataToBeUpdated);
             }
         }
-
-
-        MasterCollectionRecordSearch::dispatch($masterCollection);
 
         return $masterCollection;
     }

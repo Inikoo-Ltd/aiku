@@ -17,6 +17,7 @@ const props = defineProps<{
             percentage_off: string
         }
     }
+    use_duration: boolean
 }>()
 
 const componentsMap = {
@@ -51,5 +52,6 @@ const resolvedComponent = computed(() => {
         :is="resolvedComponent"
         :offer="bestOffer"
         :template
+        :use_duration="use_duration"
     />
 </template>

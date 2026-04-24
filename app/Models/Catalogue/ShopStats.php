@@ -179,6 +179,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric $average_clv
  * @property numeric $average_historic_clv
  * @property int $number_products_with_rrp_violation Number of products with faulty RRP configuration
+ * @property int $number_bundles
+ * @property int $number_bundles_state_active
+ * @property int $number_bundles_state_discontinuing
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dDepartment
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dFamily

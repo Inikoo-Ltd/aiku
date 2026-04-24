@@ -18,6 +18,8 @@ class ShopHydratePlatformSalesIntervalsNewPortfolios implements ShouldBeUnique
     use WithIntervalUniqueJob;
     use WithIntervalsAggregators;
 
+    public string $jobQueue = 'hydrators-slave';
+
     public function getJobUniqueId(Shop $shop, int $platformId, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
         return $this->getUniqueJobWithIntervalFromId($shop->id.'-'.$platformId, $intervals, $doPreviousPeriods);
@@ -31,7 +33,7 @@ class ShopHydratePlatformSalesIntervalsNewPortfolios implements ShouldBeUnique
             return;
         }
 
-        $queryBase = Portfolio::where('platform_id', $platformId)
+        $queryBase = Portfolio::on('aiku_no_sticky')->where('platform_id', $platformId)
             ->where('shop_id', $shop->id)
             ->selectRaw('count(*) as sum_aggregate');
 

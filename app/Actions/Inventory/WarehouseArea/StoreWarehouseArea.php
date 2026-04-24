@@ -10,7 +10,6 @@
 namespace App\Actions\Inventory\WarehouseArea;
 
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateWarehouseAreas;
-use App\Actions\Inventory\WarehouseArea\Search\WarehouseAreaRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWarehouseAreas;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWarehouseAreas;
@@ -49,8 +48,6 @@ class StoreWarehouseArea extends OrgAction
         GroupHydrateWarehouseAreas::dispatch($warehouse->group)->delay($this->hydratorsDelay);
         OrganisationHydrateWarehouseAreas::dispatch($warehouse->organisation)->delay($this->hydratorsDelay);
         WarehouseHydrateWarehouseAreas::dispatch($warehouse)->delay($this->hydratorsDelay);
-
-        WarehouseAreaRecordSearch::dispatch($warehouseArea);
 
         return $warehouseArea;
     }

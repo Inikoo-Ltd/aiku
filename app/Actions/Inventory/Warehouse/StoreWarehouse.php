@@ -8,7 +8,6 @@
 
 namespace App\Actions\Inventory\Warehouse;
 
-use App\Actions\Inventory\Warehouse\Search\WarehouseRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWarehouses;
 use App\Actions\SysAdmin\Group\Seeders\SeedAikuScopedSections;
@@ -81,7 +80,6 @@ class StoreWarehouse extends OrgAction
 
         GroupHydrateWarehouses::dispatch($organisation->group)->delay($this->hydratorsDelay);
         OrganisationHydrateWarehouses::dispatch($organisation)->delay($this->hydratorsDelay);
-        WarehouseRecordSearch::dispatch($warehouse);
         SeedJobPositions::dispatch($organisation);
 
 

@@ -22,7 +22,6 @@ class ReindexOrgSupplierSearch extends HydrateModel
 
     public function handle(OrgSupplier $orgSupplier): void
     {
-        OrgSupplierRecordSearch::run($orgSupplier);
     }
 
     protected function getModel(string $slug): OrgSupplier

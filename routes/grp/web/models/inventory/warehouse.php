@@ -6,6 +6,10 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Dispatching\BatchCode\DeleteBatchCode;
+use App\Actions\Dispatching\BatchCode\StoreBatchCode;
+use App\Actions\Dispatching\BatchCode\UpdateBatchCode;
+use App\Actions\Dispatching\PickedBay\DeletePickedBay;
 use App\Actions\Dispatching\PickedBay\StorePickedBay;
 use App\Actions\Dispatching\PickedBay\UpdatePickedBay;
 use App\Actions\Dispatching\PickingSession\StartPickPickingSession;
@@ -13,6 +17,7 @@ use App\Actions\Dispatching\PickingSession\StorePickingSession;
 use App\Actions\Dispatching\PickingSession\UpdatePickingSession;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\Dispatching\Shipper\UpdateShipper;
+use App\Actions\Dispatching\Trolley\DeleteTrolley;
 use App\Actions\Dispatching\Trolley\StoreTrolley;
 use App\Actions\Fulfilment\PickingSession\StoreFulfilmentPickingSession;
 use App\Actions\Fulfilment\PickingSession\StartPickFulfilmentPickingSession;
@@ -46,8 +51,15 @@ Route::name('warehouse.')->prefix('warehouse/{warehouse:id}')->group(function ()
     Route::patch('picked-bays/{pickedBay:id}', UpdatePickedBay::class)->name('picked_bays.update')->withoutScopedBindings();
 });
 
+Route::delete('picked-bays/{pickedBay:id}', DeletePickedBay::class)->name('picked_bays.delete');
+Route::delete('trolleys/{trolley:id}', DeleteTrolley::class)->name('trolleys.delete');
+
 Route::patch('picking-session/{pickingSession:id}', UpdatePickingSession::class)->name('picking_session.update')->withoutScopedBindings();
 Route::patch('picking-session/{pickingSession:id}/start-picking', StartPickPickingSession::class)->name('picking_session.start_picking')->withoutScopedBindings();
+
+Route::post('warehouse/{warehouse:id}/batch-code', StoreBatchCode::class)->name('warehouse.batch_code.store');
+Route::patch('batch-code/{batchCode:id}', UpdateBatchCode::class)->name('batch_code.update')->withoutScopedBindings();
+Route::delete('batch-code/{batchCode:id}', DeleteBatchCode::class)->name('batch_code.delete')->withoutScopedBindings();
 
 Route::post('organisation/{organisation:id}/shipper', StoreShipper::class)->name('shipper.store');
 Route::patch('organisation/{organisation:id}/shipper/{shipper}', UpdateShipper::class)->name('shipper.update');

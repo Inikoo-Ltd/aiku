@@ -22,7 +22,6 @@ use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InMasterShop;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Model;
@@ -143,6 +142,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $mismatch_detected Have a mismatch trade unit data (picking quantity, linked trade unit) with one or more of its children product
  * @property HealthRankEnum|null $health_rank
  * @property bool|null $mismatch_with_seeder_detected
+ * @property int|null $index_under_master_family
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -179,7 +179,6 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $topImage
  * @property-read LaravelCollection<int, TradeUnit> $tradeUnits
  * @property-read mixed $translations
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset onlyTrashed()
@@ -196,7 +195,6 @@ class MasterAsset extends Model implements Auditable, HasMedia
 {
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use HasHistory;
     use HasImage;
     use HasTranslations;

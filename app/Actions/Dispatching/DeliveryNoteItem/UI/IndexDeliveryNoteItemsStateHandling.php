@@ -20,7 +20,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDeliveryNoteItemsStateHandling extends OrgAction
 {
-    public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false, ?DeliveryNoteItemStateEnum $stateFilter = null): LengthAwarePaginator
+    public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false, array|DeliveryNoteItemStateEnum|null $stateFilter = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -38,10 +38,15 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
         $query->where('delivery_note_items.delivery_note_id', $parent->id);
 
         if ($stateFilter) {
-            $query->where('delivery_note_items.state', $stateFilter);
+            if (is_array($stateFilter)) {
+                $query->whereIn('delivery_note_items.state', $stateFilter);
+            } else {
+                $query->where('delivery_note_items.state', $stateFilter);
+            }
         }
 
         $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
+        $query->leftJoin('batch_codes', 'delivery_note_items.batch_code_id', '=', 'batch_codes.id');
         $query->leftjoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id');
         $query->leftjoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
         $query->leftjoin('shops', 'shops.id', '=', 'delivery_note_items.shop_id');
@@ -58,8 +63,10 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                 'delivery_note_items.quantity_waiting_warehouse',
                 'delivery_note_items.quantity_waiting_crm',
                 'delivery_note_items.is_handled',
-                'delivery_note_items.batch_code',
-                'delivery_note_items.expiry_date',
+                'delivery_note_items.batch_code_id',
+                'delivery_note_items.organisation_id',
+                \Illuminate\Support\Facades\DB::raw('COALESCE(batch_codes.code, delivery_note_items.batch_code) as batch_code'),
+                \Illuminate\Support\Facades\DB::raw('COALESCE(batch_codes.expiry_date, delivery_note_items.expiry_date) as expiry_date'),
                 'delivery_note_items.notes',
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',

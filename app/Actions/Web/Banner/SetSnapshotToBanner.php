@@ -12,7 +12,6 @@ use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Web\Banner\Search\BannerRecordSearch;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Models\Helpers\Snapshot;
@@ -59,7 +58,7 @@ class SetSnapshotToBanner extends OrgAction
         ]);
 
         UpdateBannerImage::run($banner);
-        BannerRecordSearch::dispatch($banner);
+
 
         // return $banner;
     }

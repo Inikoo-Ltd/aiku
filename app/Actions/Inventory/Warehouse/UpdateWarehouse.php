@@ -9,7 +9,6 @@
 
 namespace App\Actions\Inventory\Warehouse;
 
-use App\Actions\Inventory\Warehouse\Search\WarehouseRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWarehouses;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWarehouses;
@@ -46,17 +45,6 @@ class UpdateWarehouse extends OrgAction
             GroupHydrateWarehouses::dispatch($warehouse->group)->delay($this->hydratorsDelay);
             OrganisationHydrateWarehouses::dispatch($warehouse->organisation)->delay($this->hydratorsDelay);
         }
-
-        if (Arr::hasAny($changes, [
-            'name',
-            'code',
-            'state',
-
-        ])) {
-            WarehouseRecordSearch::dispatch($warehouse);
-        }
-
-
 
         return $warehouse;
     }

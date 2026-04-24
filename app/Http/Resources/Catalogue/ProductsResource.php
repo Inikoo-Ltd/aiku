@@ -83,6 +83,21 @@ class ProductsResource extends JsonResource
         // Don't worry, won't run if relationship is not eager loaded
         if ($product->relationLoaded('orgStocks')) {
             data_set($extraField, 'org_stocks', $this->getDataPickingFactor($product->orgStocks));
+            $pickingFactor = [];
+            foreach ($product->orgStocks as $orgStock) {
+                $pickingFactor[] = [
+                    'org_stock_id'   => $orgStock->id,
+                    'org_stock_code' => $orgStock->code,
+                    'org_stock_name' => $orgStock->name,
+                    'note'           => $orgStock->pivot->note,
+                    'is_on_demand'   => $orgStock->is_on_demand,
+                    'picking_factor' => riseDivisor(
+                        divideWithRemainder(findSmallestFactors($orgStock->pivot->quantity)),
+                        $orgStock->packed_in
+                    )
+                ];
+            }
+            data_set($extraField, 'product_org_stocks', $pickingFactor);
         }
 
 
@@ -134,6 +149,7 @@ class ProductsResource extends JsonResource
             'iris_url'                          => $this->webpage?->canonical_url,
             'is_for_sale'                       => $this->is_for_sale,
             'health_rank'                       => $this->health_rank ? HealthRankEnum::from($this->health_rank)->stateIcon()[HealthRankEnum::from($this->health_rank)->value] : null,
+            'index_under_family'                => $product->index_under_family ?? null,
             ...$extraField
         ];
     }

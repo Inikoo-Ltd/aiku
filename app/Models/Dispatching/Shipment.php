@@ -12,10 +12,8 @@ use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\PalletReturn;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InCustomer;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -63,7 +61,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, PalletReturn> $palletReturns
  * @property-read \App\Models\Dispatching\Shipper|null $shipper
  * @property-read Shop|null $shop
- * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Dispatch\ShipmentFactory factory($count = null, $state = [])
  * @method static Builder<static>|Shipment newModelQuery()
  * @method static Builder<static>|Shipment newQuery()
@@ -76,7 +73,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Shipment extends Model
 {
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasFactory;
     use InCustomer;
 

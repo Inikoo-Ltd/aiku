@@ -34,7 +34,7 @@ class AppVersionWebsocketEvent implements ShouldBroadcastNow
         return new PrivateChannel('app.general');
     }
 
-    public function broadcastAs()
+    public function broadcastAs(): string
     {
         return 'post-deployed';
     }

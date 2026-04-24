@@ -108,6 +108,8 @@ const saveDescription = debounce(async (key: string, value: string) => {
   }
 }, 1000)
 
+const isExpanded = ref(false)
+
 watch(name, async (val) => {
   modelValue.value.family.description_title = val
   saveDescription("description_title", val)
@@ -169,16 +171,19 @@ console.log("Family2 Workshop Props:", props)
           }" class="w-full h-full">
             <SwiperSlide v-for="(img, i) in images" :key="i">
               <div class="w-full h-full flex items-center justify-center">
-                <Image :src="img.original" :alt="modelValue?.image?.alt || 'Image preview'"
-                  :imgAttributes="modelValue?.image?.attributes" :imageCover="false"
-                  class="w-auto h-full object-contain" />
+                 <Image :src="img.original" :alt="modelValue?.image?.alt || 'Image preview'" :imgAttributes="{
+                  ...modelValue?.image?.attributes,
+                  class: 'w-full h-full object-cover'
+                }" />
               </div>
             </SwiperSlide>
           </Swiper>
 
          <div v-else class="absolute inset-0">
-            <Image :src="images[0]?.original" :alt="modelValue?.image?.alt || 'Image preview'"
-              :imgAttributes="modelValue?.image?.attributes" :imageCover="false" class="w-full h-full object-contain" />
+            <Image :src="images[0]?.original" :alt="modelValue?.image?.alt || 'Image preview'" :imgAttributes="{
+              ...modelValue?.image?.attributes,
+              class: 'w-full h-full object-cover'
+            }" />
           </div>
 
         </div>
@@ -192,11 +197,26 @@ console.log("Family2 Workshop Props:", props)
             <textarea ref="titleRef" v-model="name" @input="autoResize" rows="1" placeholder="Family Title"
               class="w-full resize-none overflow-hidden box-border appearance-none bg-transparent border-none p-0 m-0 text-[1.5rem] leading-[2rem] font-semibold text-gray-800 focus:outline-none focus:ring-0 shadow-none text-center md:text-left" />
 
-            <EditorV2 v-model="modelValue.family.description" placeholder="Family Description"
-              @update:model-value="(e) => saveDescription('description', e)" :uploadImageRoute="{
-                name: webpageData?.images_upload_route?.name,
-                parameters: { modelHasWebBlocks: blockData?.id }
-              }" />
+               <div class="relative w-full">
+              <div class="overflow-hidden transition-all duration-300"
+                :class="isExpanded ? 'max-h-none' : 'max-h-[120px]'">
+                <div v-html="cleanedDescription"></div>
+              </div>
+
+
+              <!-- fade effect when collapsed -->
+              <div v-if="!isExpanded"
+                class="absolute bottom-0 left-0 w-full h-10 bg-gradient-to-t from-white to-transparent"></div>
+            </div>
+
+            <div class="mt-2">
+              <button class="text-sm text-gray-800 hover:underline" @click="isExpanded = !isExpanded">
+                {{ isExpanded ? 'Show less' : 'Show more' }}
+              </button>
+            </div>
+
+
+                 
 
             <div class="flex justify-center md:justify-start mt-6">
 

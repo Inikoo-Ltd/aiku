@@ -9,7 +9,6 @@
 namespace App\Actions\Inventory\Location;
 
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateSortCode;
-use App\Actions\Inventory\Location\Search\LocationRecordSearch;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLocations;
 use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydrateLocations;
 use App\Actions\OrgAction;
@@ -21,7 +20,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Inventory\LocationResource;
 use App\Models\Inventory\Location;
 use App\Rules\IUnique;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateLocation extends OrgAction
@@ -52,15 +50,6 @@ class UpdateLocation extends OrgAction
         }
 
         // TODO allow_dropshipping change -> disable all orgLocation that use this location as default dropshipping
-
-        if (Arr::hasAny($changes, [
-            'code',
-            'barcode',
-
-        ])) {
-            LocationRecordSearch::dispatch($location);
-        }
-
 
         return $location;
     }

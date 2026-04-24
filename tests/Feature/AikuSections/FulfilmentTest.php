@@ -29,7 +29,6 @@ use App\Actions\CRM\Customer\RejectCustomer;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Fulfilment\Fulfilment\UpdateFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\FetchNewWebhookFulfilmentCustomer;
-use App\Actions\Fulfilment\FulfilmentCustomer\Search\ReindexFulfilmentCustomerSearch;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UpdateFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentTransaction\DeleteFulfilmentTransaction;
@@ -3157,14 +3156,6 @@ test('import pallet with stored items (xlsx) duplicate', function (PalletDeliver
 
 test('hydrate pallet return command', function () {
     $this->artisan('hydrate:pallet_returns  '.$this->organisation->slug)->assertExitCode(0);
-});
-
-test('fulfilment customers search', function () {
-    $this->artisan('search:fulfilment_customers')->assertExitCode(0);
-
-    $fulfilmentCustomers = FulfilmentCustomer::first();
-    ReindexFulfilmentCustomerSearch::run($fulfilmentCustomers);
-    expect($fulfilmentCustomers->universalSearch()->count())->toBe(1);
 });
 
 test('update current recurring bills', function () {

@@ -9,7 +9,6 @@
 namespace App\Actions\Fulfilment\StoredItemAudit\Search;
 
 use App\Actions\HydrateModel;
-use App\Models\Accounting\Invoice;
 use App\Models\Fulfilment\StoredItemAudit;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
@@ -21,10 +20,9 @@ class ReindexStoredItemAuditSearch extends HydrateModel
 
     public function handle(StoredItemAudit $storedItemAudit): void
     {
-        StoredItemAuditRecordSearch::run($storedItemAudit);
     }
 
-    protected function getModel(string $slug): Invoice
+    protected function getModel(string $slug): StoredItemAudit
     {
         return StoredItemAudit::where('slug', $slug)->first();
     }

@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3";
+import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue";
 import { StockFamily } from "@/types/stock-family";
 import { RouteParams } from "@/types/route-params";
@@ -122,7 +122,10 @@ function orgStockFamilyOrgStocksRoute(stockFamily: StockFamily) {
         </template>
 
         <template #cell(invoices)="{ item }">
-            <span class="tabular-nums">{{ item.invoices }}</span>
+            <Link v-if="item.invoices_route" :href="route(item.invoices_route.name, item.invoices_route.parameters)" class="secondaryLink tabular-nums">
+                {{ item.invoices }}
+            </Link>
+            <span v-else class="tabular-nums">{{ item.invoices }}</span>
         </template>
 
         <template #cell(invoices_delta)="{ item }">

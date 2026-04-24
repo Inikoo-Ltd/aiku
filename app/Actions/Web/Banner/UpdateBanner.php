@@ -11,7 +11,6 @@ namespace App\Actions\Web\Banner;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Web\Banner\Search\BannerRecordSearch;
 use App\Http\Resources\Web\BannerResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Web\Banner;
@@ -26,8 +25,6 @@ class UpdateBanner extends OrgAction
     public function handle(Banner $banner, array $modelData): Banner
     {
         $this->update($banner, $modelData, ['data']);
-
-        BannerRecordSearch::dispatch($banner);
 
         return $banner;
     }

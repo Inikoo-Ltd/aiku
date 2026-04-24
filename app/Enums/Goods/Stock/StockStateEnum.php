@@ -37,7 +37,7 @@ enum StockStateEnum: string
     {
         return [
             'in_process'    => [
-                'tooltip' => __('in process'),
+                'tooltip' => __('In process'),
                 'icon'    => 'fal fa-seedling',
                 'class'   => 'text-green-500'
             ],
@@ -47,17 +47,17 @@ enum StockStateEnum: string
                 'class'   => 'text-green-500'
             ],
             'discontinuing' => [
-                'tooltip' => __('discontinuing'),
+                'tooltip' => __('Discontinuing'),
                 'icon'    => 'fal fa-exclamation-triangle',
                 'class'   => 'text-orange-500'
             ],
             'discontinued'  => [
-                'tooltip' => __('discontinued'),
+                'tooltip' => __('Discontinued'),
                 'icon'    => 'fal fa-skull',
                 'class'   => 'text-yellow-500'
             ],
             'suspended'     => [
-                'tooltip' => __('suspended'),
+                'tooltip' => __('Suspended'),
                 'icon'    => 'fas fa-pause-circle',
                 'class'   => 'text-slate-300'
             ],

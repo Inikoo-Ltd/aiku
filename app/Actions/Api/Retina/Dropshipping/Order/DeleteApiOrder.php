@@ -47,7 +47,7 @@ class DeleteApiOrder extends RetinaApiAction
         $order->transactions()->delete();
         $order->delete();
 
-        MasterShopHydrateOrders::dispatch($order->master_shop_id);
+        MasterShopHydrateOrders::dispatch($order->master_shop_id)->delay(30);
         ShopHydrateOrders::dispatch($this->shop);
         OrganisationHydrateOrders::dispatch($this->organisation);
         GroupHydrateOrders::dispatch($this->group);

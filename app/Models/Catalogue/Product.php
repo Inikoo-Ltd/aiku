@@ -181,6 +181,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $is_bundle
  * @property bool|null $mismatch_with_master_detected
  * @property bool $not_follow_master_trade_units
+ * @property int|null $index_under_family
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -298,6 +299,21 @@ class Product extends Model implements Auditable, HasMedia
         'offers_data'          => '{}',
     ];
 
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'code',
+                'name',
+                'description',
+                'description_extra',
+                'state',
+                'is_for_sale',
+                'created_at'
+            ]);
+    }
+
+
     public function toSearchableArray(): array
     {
         return [
@@ -309,7 +325,7 @@ class Product extends Model implements Auditable, HasMedia
             'description_extra' => (string)$this->description_extra,
             'state'             => $this->state->value,
             'is_for_sale'       => $this->is_for_sale,
-            'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+            'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }
 

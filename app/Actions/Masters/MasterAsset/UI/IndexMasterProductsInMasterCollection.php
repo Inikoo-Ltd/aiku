@@ -151,7 +151,7 @@ class IndexMasterProductsInMasterCollection extends GrpAction
                 'hide_bulk_edit'          => true,
                 'tabs' => [
                     'current'    => $this->tab,
-                    'navigation' => MasterProductsTabsEnum::navigationExcept([MasterProductsTabsEnum::SALES]),
+                    'navigation' => MasterProductsTabsEnum::navigationExcept([MasterProductsTabsEnum::SALES, MasterProductsTabsEnum::INDEX_ORDERING]),
                 ],
                 'routes'    => [
                     'dataList'     => [

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\Shop;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateUniversalSearch;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
@@ -80,6 +79,8 @@ class UpdateShop extends OrgAction
             );
         }
 
+        // Catalogue Descriptions etc
+
         if (Arr::has($modelData, 'collection_follow_master')) {
             data_set($modelData, 'settings.catalog.collection_follow_master', Arr::pull($modelData, 'collection_follow_master'));
         }
@@ -100,11 +101,18 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.catalog.product_follow_master', Arr::pull($modelData, 'product_follow_master'));
         }
 
+        // Catalogue Indexing etc
+
+        if (Arr::has($modelData, 'family_indexing_follow_master')) {
+            data_set($modelData, 'settings.catalog.family_indexing_follow_master', Arr::pull($modelData, 'family_indexing_follow_master'));
+        }
+
         if (Arr::exists($modelData, 'portal_link')) {
             if (Arr::get($modelData, 'portal_link') === null) {
                 data_set($modelData, 'portal_link', '');
             }
         }
+
 
         foreach ($modelData as $key => $value) {
             data_set(
@@ -258,11 +266,6 @@ class UpdateShop extends OrgAction
             }
         }
 
-
-        if (count($changes) > 0) {
-            ShopHydrateUniversalSearch::dispatch($shop);
-        }
-
         return $shop;
     }
 
@@ -392,6 +395,7 @@ class UpdateShop extends OrgAction
             'sub_department_follow_master'                            => ['sometimes', 'boolean'],
             'family_follow_master'                                    => ['sometimes', 'boolean'],
             'product_follow_master'                                   => ['sometimes', 'boolean'],
+            'family_indexing_follow_master'                           => ['sometimes', 'boolean'],
             'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
             'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
             'family_webpage_split_description'                        => ['sometimes', 'boolean'],

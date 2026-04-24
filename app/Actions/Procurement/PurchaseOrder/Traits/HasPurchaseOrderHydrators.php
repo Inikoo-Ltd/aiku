@@ -10,7 +10,6 @@ namespace App\Actions\Procurement\PurchaseOrder\Traits;
 
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydratePurchaseOrders;
 use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydratePurchaseOrders;
-use App\Actions\Procurement\PurchaseOrder\Search\PurchaseOrderRecordSearch;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydratePurchaseOrders;
 use App\Actions\SupplyChain\Supplier\Hydrators\SupplierHydratePurchaseOrders;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePurchaseOrders;
@@ -36,6 +35,5 @@ trait HasPurchaseOrderHydrators
         }
         GroupHydratePurchaseOrders::dispatch($purchaseOrder->group);
         OrganisationHydratePurchaseOrders::dispatch($purchaseOrder->organisation);
-        PurchaseOrderRecordSearch::dispatch($purchaseOrder);
     }
 }

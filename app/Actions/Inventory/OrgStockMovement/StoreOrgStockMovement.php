@@ -13,6 +13,8 @@ use App\Actions\Inventory\LocationOrgStock\CalculateValueLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQuantity;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
@@ -90,7 +92,7 @@ class StoreOrgStockMovement extends OrgAction
                     ]
                 );
             } else {
-                $stock = $this->getStockQuantity($orgStock, $location, now());
+                $stock = $this->getStockQuantity($orgStock, $location);
                 UpdateLocationOrgStock::run(
                     $locationOrgStock,
                     [
@@ -98,11 +100,17 @@ class StoreOrgStockMovement extends OrgAction
                     ]
                 );
             }
-            CalculateValueLocationOrgStock::dispatch($locationOrgStock);
+            CalculateValueLocationOrgStock::dispatch($locationOrgStock->id);
         }
-        OrgStockHydrateMovements::dispatch($orgStock)->delay($this->hydratorsDelay);
-        OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock)->delay($this->hydratorsDelay);
-        CalculateRunningQuantityOrgStockMovement::dispatch($orgStockMovement, $locationOrgStock)->delay($this->hydratorsDelay);
+
+        if ($orgStockMovement->type == OrgStockMovementTypeEnum::PURCHASE) {
+            OrgStockHydrateStockValue::dispatch($orgStock);//todo do we need to delete this??? mybe yes
+            OrgStockHydrateSkuValue::dispatch($orgStock);
+        }
+
+        OrgStockHydrateMovements::dispatch($orgStock)->delay(now()->addMinutes(15));
+        OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock)->delay(now()->addMinutes(15));
+        CalculateRunningQuantityOrgStockMovement::dispatch($orgStockMovement->id)->delay(now()->addMinutes(15));
 
 
         return $orgStockMovement;
@@ -123,6 +131,7 @@ class StoreOrgStockMovement extends OrgAction
             'user_id'          => ['sometimes', 'nullable', 'numeric']
         ];
         if (!$this->strict) {
+            $rules['note']       = ['sometimes', 'nullable', 'string', 'max:1024'];
             $rules['fetched_at'] = ['sometimes', 'date'];
             $rules['source_id']  = ['sometimes', 'string'];
         }

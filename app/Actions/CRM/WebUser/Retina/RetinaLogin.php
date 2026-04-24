@@ -16,6 +16,7 @@ use App\Actions\Traits\WithLogin;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\CRM\WebUser;
 use App\Models\Web\Webpage;
 use Illuminate\Http\RedirectResponse;
@@ -104,7 +105,7 @@ class RetinaLogin
                 userAgent: $request->header('User-Agent'),
                 datetime: now(),
                 geoLocation: $geoLocation
-            );
+            )->delay(now()->addSeconds(5));
 
             throw ValidationException::withMessages([
                 'username' => __('The provided credentials do not match our records.'),
@@ -138,7 +139,7 @@ class RetinaLogin
             userAgent: $request->header('User-Agent'),
             datetime: now(),
             geoLocation: $geoLocation
-        );
+        )->delay(now()->addSeconds(5));
 
         if ($tiktokCode = $request->input('tiktok_code')) {
             ProcessUnregisterCustomerTiktokUser::run($webUser->customer, [
@@ -161,6 +162,11 @@ class RetinaLogin
         if ($webpage_key && is_numeric($webpage_key)) {
             $webpage = Webpage::where('id', $webpage_key)->where('website_id', $request->input('website')->id)
                 ->where('state', WebpageStateEnum::LIVE)->first();
+            if ($webpage) {
+                $retinaHome = ShowIrisWebpage::make()->getEnvironmentUrl($webpage->canonical_url);
+            }
+        } else {
+            $webpage = Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('state', WebpageStateEnum::LIVE)->where('website_id', $request->input('website')->id)->first();
             if ($webpage) {
                 $retinaHome = ShowIrisWebpage::make()->getEnvironmentUrl($webpage->canonical_url);
             }

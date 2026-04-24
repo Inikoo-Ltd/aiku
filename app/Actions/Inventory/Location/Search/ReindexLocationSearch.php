@@ -8,44 +8,20 @@
 
 namespace App\Actions\Inventory\Location\Search;
 
-use App\Actions\HydrateModel;
+use App\Actions\Traits\WithScoutReindex;
 use App\Models\Inventory\Location;
-use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexLocationSearch extends HydrateModel
+class ReindexLocationSearch
 {
-    public string $commandSignature = 'search:locations {organisations?*} {--s|slugs=}';
+    use AsAction;
+    use WithScoutReindex;
 
+    public string $commandSignature = 'reindex_search:locations';
 
-    public function handle(Location $location): void
+    public function handle(bool $reindex = true, bool $reset = false): void
     {
-        LocationRecordSearch::run($location);
+        $this->runScoutReindex(Location::class, $reindex, $reset);
     }
 
-
-    protected function getModel(string $slug): Location
-    {
-        return Location::withTrashed()->where('slug', $slug)->first();
-    }
-
-    protected function loopAll(Command $command): void
-    {
-        $command->info("Reindex Locations");
-        $count = Location::withTrashed()->count();
-
-        $bar = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
-        $bar->start();
-
-        Location::withTrashed()->chunk(1000, function (Collection $models) use ($bar) {
-            foreach ($models as $model) {
-                $this->handle($model);
-                $bar->advance();
-            }
-        });
-
-        $bar->finish();
-        $command->info("");
-    }
 }

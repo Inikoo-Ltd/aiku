@@ -92,6 +92,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
         if ($this->tab === CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value) {
             $query->where('portfolios.is_bundle', true);
+            $query->whereNot('products.state', ProductStateEnum::DISCONTINUED->value);
         } else {
             $query->where('portfolios.is_bundle', false);
         }
@@ -350,6 +351,12 @@ class IndexRetinaPortfolios extends RetinaAction
                     'bulk_upload'               => $bulkUploadRoute,
                     'bulk_unlink'               => [
                         'name' => 'retina.models.dropshipping.bulk.unlink',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
+                    'batch_all_dimensions_update'  => [
+                        'name' => 'retina.models.dropshipping.shopify.batch_all_dimensions_update',
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ]

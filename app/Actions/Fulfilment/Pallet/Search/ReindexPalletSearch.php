@@ -20,7 +20,6 @@ class ReindexPalletSearch extends HydrateModel
 
     public function handle(Pallet $pallet): void
     {
-        PalletRecordSearch::run($pallet);
     }
 
 
