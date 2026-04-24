@@ -238,7 +238,7 @@ class UpdateInvoice extends OrgAction
         $newData = Arr::except($newBillAddressData->toArray(), ['updated_at']);
 
         if ($parent instanceof Customer) {
-            array_merge($newData, [
+            $newData = array_merge($newData, [
                 'affected_invoice'  => $this->invoice->reference,
             ]);
         } elseif ($stale) {
