@@ -33,9 +33,8 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Support\Facades\Event;
-use OwenIt\Auditing\Events\AuditCustom;
 use App\Models\SysAdmin\User;
+use App\Actions\Audits\DispatchedCustomAudit;
 
 class UpdateDeliveryNote extends OrgAction
 {
@@ -50,7 +49,7 @@ class UpdateDeliveryNote extends OrgAction
     {
         $oldState           = $deliveryNote->state;
         $oldPickerUserId    = $deliveryNote->picker_user_id;
-        $oldPackerUserId   = $deliveryNote->packer_user_id;
+        $oldPackerUserId    = $deliveryNote->packer_user_id;
         $deliveryNote       = $this->update($deliveryNote, $modelData, ['data']);
         $changes            = Arr::except($deliveryNote->getChanges(), ['updated_at', 'last_fetched_at']);
 
@@ -70,12 +69,26 @@ class UpdateDeliveryNote extends OrgAction
             }
 
             if (Arr::has($changes, 'picker_user_id')) {
-                $this->customAudit($oldPickerUserId, $deliveryNote, 'picker_user_id', User::class, ['contact_name'], 'picker_name');
+                DispatchedCustomAudit::run(
+                    auditableModel      : $deliveryNote,
+                    relationModelClass  : User::class,
+                    oldId               : $oldPickerUserId,
+                    newId               : $deliveryNote->picker_user_id,
+                    attributes          : ['contact_name'],
+                    logKey              : 'picker_name'
+                );
                 DeliveryNoteHydratePicker::dispatch($deliveryNote->id);
             }
 
-            if (Arr::has($changes, 'packer_user_id')) {     
-                $this->customAudit($oldPackerUserId, $deliveryNote, 'packer_user_id', User::class, ['contact_name'], 'packer_name');
+            if (Arr::has($changes, 'packer_user_id')) {
+                DispatchedCustomAudit::run(
+                    auditableModel      : $deliveryNote,
+                    relationModelClass  : User::class,
+                    oldId               : $oldPackerUserId,
+                    newId               : $deliveryNote->packer_user_id,
+                    attributes          : ['contact_name'],
+                    logKey              : 'packer_name'
+                );
                 DeliveryNoteHydratePacker::dispatch($deliveryNote->id);
             }
 
@@ -234,45 +247,5 @@ class UpdateDeliveryNote extends OrgAction
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
         return $this->handle($deliveryNote, $this->validatedData);
-    }
-
-    public function customAudit($oldValue, $deliveryNote, string $relationData, $model, array $attributes, string $logKey) 
-    {
-        // Closer to extract the column
-        $extractValue = function ($model) use ($attributes) {
-            if (!$model) return null;
-
-            $values = array_map(fn($attr) => $model->{$attr}, $attributes);
-            return implode(', ', array_filter($values));
-        };
-
-        // First initialitation to evade undifined
-        $newName = null;
-        $oldName = null;
-
-        // Search for a new name
-        if ($deliveryNote->$relationData) {
-            $user = $model::find($deliveryNote->$relationData);
-            $newName = $extractValue($user);
-        }
-
-        // Search for a old name
-        if ($oldValue) {
-            $user = $model::find($oldValue);
-            $oldName = $extractValue($user);
-        }
-        
-        $deliveryNote->auditEvent = 'updated';
-        $deliveryNote->isCustomEvent = true;
-
-        $deliveryNote->auditCustomOld = [
-            $logKey => $oldName
-        ];
-
-        $deliveryNote->auditCustomNew = [
-            $logKey => $newName
-        ];
-        
-        Event::dispatch(new AuditCustom($deliveryNote));
     }
 }

@@ -45,7 +45,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
-use App\Audits\Transformer\JsonTransformer;
 
 /**
  * App\Models\Dispatching\DeliveryNote

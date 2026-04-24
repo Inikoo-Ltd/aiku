@@ -54,7 +54,6 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use App\Audits\Transformer\RelationTransformer;
-use Google\Service\Dataform\Relation;
 
 /**
  * @property int $id
@@ -365,9 +364,21 @@ class Order extends Model implements HasMedia, Auditable
 
     public function transformAudit(array $data): array
     {
-        // RelationTransformer::execute(auditable : $this, data : $data, relationName : '', relationModel : , attributes : [])
-        $data = RelationTransformer::execute(auditable : $this, data : $data, relationName : 'collection_address', relationModel : Address::class, attributes : ['address_line_1', 'address_line_2']);
-        $data = RelationTransformer::execute(auditable : $this, data : $data, relationName : 'shipping_zone', relationModel : ShippingZone::class, attributes : ['name']);
+        $data = RelationTransformer::execute(
+            auditable       : $this, 
+            data            : $data, 
+            relationName    : 'collection_address', 
+            relationModel   : Address::class, 
+            attributes      : ['address_line_1', 'address_line_2']
+        );
+
+        $data = RelationTransformer::execute(
+            auditable       : $this, 
+            data            : $data, 
+            relationName    : 'shipping_zone', 
+            relationModel   : ShippingZone::class, 
+            attributes      : ['name']
+        );
 
         return $data;
     }

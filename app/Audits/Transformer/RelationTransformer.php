@@ -3,7 +3,6 @@
 namespace App\Audits\Transformer;
 
 use Illuminate\Support\Arr;
-
 class RelationTransformer
 {
     public static function execute($auditable, array $data, string $relationName, string $relationModel, array $attributes): array
