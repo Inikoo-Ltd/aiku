@@ -85,7 +85,6 @@ class Kernel extends HttpKernel
         ConvertEmptyStringsToNull::class,
         AddSentryBrowserProfilingHeader::class,
         AcceptClientHintsMiddleware::class,
-        NewRelicTransactionMiddleware::class,
     ];
 
     protected $middlewareGroups = [
@@ -166,6 +165,7 @@ class Kernel extends HttpKernel
             SetLocale::class,
         ],
         'aiku-public' => [
+            NewRelicTransactionMiddleware::class,
             DisableSSR::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
@@ -175,6 +175,7 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
             HandleAikuPublicInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+
         ],
         'iris'        => [
             DetectIrisWebsite::class,
