@@ -4,6 +4,7 @@ import { Link } from '@inertiajs/vue3';
 import { trans } from 'laravel-vue-i18n'
 import Modal from "@/Components/Utils/Modal.vue"
 import { computed, ref } from 'vue'
+import { ctrans } from '@/Composables/useTrans'
 
 const emit = defineEmits([
     'openModal',
@@ -21,6 +22,8 @@ const props = defineProps<{
             code: string
             name: string
             slug: string
+            units_per_sku : number
+            total_units: number
         }
         pick_fractional: {
             integer: number
@@ -30,6 +33,7 @@ const props = defineProps<{
     }[]
     hideUnit?: boolean
     forceOpenModal?: boolean
+    disableModal?: boolean
     hoverTooltip?: string
     routeFunction?: Function
     keyPicking?: string
@@ -42,10 +46,11 @@ const isOpenModal = ref(false)
 
 const textTooltip = computed(() => {
     if(props.hoverTooltip) return props.hoverTooltip;
-    return props.trade_units.length > 1  ? trans('Click to view all trade units detail') : ''
+    return props.trade_units.length > 1  ? ctrans('Click to view all trade units detail') : ''
 })
 
 const openModal = () => {
+    if(props.disableModal) return;
     if(props.trade_units.length >= 1 || props.forceOpenModal) {
         isOpenModal.value = true
         emit('openModal');
@@ -91,7 +96,7 @@ const displayUnits = computed(() => {
             <span class="">{{ trans('No Trade Units') }}</span>
         </div>
 
-        <div 
+        <div
             v-if="!hideUnit"
             class="border-s text-gray-700 whitespace-nowrap font-bold ms-2 ps-2"
             :class="trade_units.length >= 1 ? 'border-green-600' : 'border-red-600'"
@@ -101,25 +106,30 @@ const displayUnits = computed(() => {
 
         <Modal :isOpen="isOpenModal" @onClose="() => {isOpenModal = false; emit('closeModal')}" width="max-w-3xl w-full">
             <slot name="modalBody">
-                <div class="grid grid-cols-2 font-bold mb-4">
-                    <div class="text-left text-lg">
-                        {{ trans('Trade Unit SKU Details') }}
+                <div class="  font-bold mb-4">
+                    <div class="text-center text-lg">
+                    {{ trans('SKUs/Trade Units to be picked per product outer') }}
                     </div>
                 </div>
     
-                <div class="grid grid-cols-5 mt-3 text-sm font-bold">
+                <div class="grid grid-cols-6 mt-3 text-sm font-bold">
                     <div class="text-left">
-                        Code
+                        {{ trans('Reference') }}
                     </div>
                     <div class="text-left col-span-3">
-                        Name
+                        {{ trans('SKU description') }}
                     </div>
+                    <div class="text-right ">
+                        {{ trans('Units to pick') }}
+                    </div>
+
+
                     <div class="text-right">
-                        SKU
-                    </div>	
+                        {{ trans('SKUs to pick') }}
+                    </div>
                 </div>
     
-                <div v-for="tUnit in trade_units" :key="tUnit.tradeUnit?.id" class="grid grid-cols-5 mt-3 text-sm min-h-8">
+                <div  v-for="tUnit in trade_units" :key="tUnit.tradeUnit?.id" class="grid grid-cols-6 mt-3 text-sm min-h-8">
                     <div class="text-left flex items-center">
                         <slot name="col_code" :data="tUnit">
                             <Link v-if="routeFunction" :href="routeFunction(tUnit.tradeUnit)" class="primaryLinkxx">
@@ -134,7 +144,13 @@ const displayUnits = computed(() => {
                     <div class="text-left col-span-3 flex items-center">
                         <slot name="col_name" :data="tUnit">
                             {{ tUnit.tradeUnit?.name }}
-                        </slot>
+                        </slot> {{trans('Units/SKU')}}:{{ tUnit.units_per_sku }}
+                    </div>
+
+
+
+                    <div class="text-right col-span-1 flex items-center justify-items-end justify-end">
+                        {{ tUnit.total_units }}
                     </div>
     
                     <div class="justify-items-end text-teal-600 whitespace-nowrap flex justify-end">
@@ -145,6 +161,8 @@ const displayUnits = computed(() => {
                             </span>
                         </span>
                     </div>
+
+
                 </div>
             </slot>
         </Modal>

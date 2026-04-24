@@ -19,6 +19,8 @@ enum DispatchHubTabsEnum: string
 
     case DELIVERY_NOTE = 'delivery_note';
     case PICKING_SESSION = 'picking_session';
+    case PICKERS = 'pickers';
+    case PACKERS = 'packers';
 
     public function blueprint(): array
     {
@@ -30,6 +32,14 @@ enum DispatchHubTabsEnum: string
             DispatchHubTabsEnum::PICKING_SESSION => [
                 'title' => __('Picking Session'),
                 'icon'  => 'fab fa-stack-overflow',
+            ],
+            DispatchHubTabsEnum::PICKERS => [
+                'title' => __('Pickers'),
+                'icon'  => 'fal fa-person-carry',
+            ],
+            DispatchHubTabsEnum::PACKERS => [
+                'title' => __('Packers'),
+                'icon'  => 'fal fa-box-open',
             ],
         };
     }

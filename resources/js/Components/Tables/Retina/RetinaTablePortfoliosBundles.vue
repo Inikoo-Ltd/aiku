@@ -9,7 +9,7 @@ import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { Product } from "@/types/product"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { inject, ref, computed, watch, nextTick } from "vue"
+import { inject, ref, computed, watch, nextTick, onBeforeUnmount } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -60,6 +60,7 @@ import QuantitySelector from "@/Components/Dropshipping/QuantitySelector.vue"
 import { EditorContent } from "@tiptap/vue-3"
 import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { useBundle } from "@/Composables/useBundle"
+import { useGenerateAIImages } from "@/Composables/useGenerateAIImages"
 
 library.add(
 	faUnlink,
@@ -508,7 +509,6 @@ const openEditModal = (item: any) => {
 const isLoadingMedia = ref(false)
 const showMediaModal = ref(false)
 const selectedMedia = ref<any[]>([])
-const isGeneratingAI = ref(false)
 const selectedMediaIds = ref<number[]>([])
 const mediaGallery = ref<string[]>([])
 const editMediaGallery = ref<string[]>([])
@@ -657,7 +657,6 @@ const toggleSelect = (img: any) => {
 
 const aiTitleError = ref<string | null>(null)
 const aiDescError = ref<string | null>(null)
-const aiGenerateImagesError = ref<string | null>(null)
 const generateAITitle = async () => {
 	try {
 		isGeneratingAI.value = true
@@ -768,66 +767,38 @@ const toggleSelectAI = (media: any) => {
 	}
 }
 
-const generateAIImages = async () => {
-	try {
-		isGeneratingAI.value = true
-		aiGenerateImagesError.value = null
-		const payload = {
-			images: selectedMediaForAI.value.map(m => m.image_id),
-			prompt: aiPrompt.value
-		}
-		const routeParams = {
-			...props.bundle_routes.ai.generate_images.parameters,
-			product: selectedEditProduct.value.product_id
-		}
-
-
-		const res = await axios.post(
-			route(
-				props.bundle_routes.ai.generate_images.name,
-				routeParams
-			),
-			payload
-		)
-
-		const media = res.data?.data
-
-		if (media) {
-
-			selectedMedia.value.push({
-				id: media.id,
-				image_id: media.id,
-				url: media.source?.original || media.thumbnail?.original,
-				image: media.thumbnail || media.source,
-				is_ai: true,
-				is_main: false
-			})
-
-		}
-
+const isGeneratingAI = ref(false)
+const { isGeneratingAI: isGeneratingAIImages, aiGenerateImagesError, showGenerateProgressModal, stopEchoListener, generateAIImages } = useGenerateAIImages({
+	customerId: () => layout.user?.customer_id ?? null,
+	onImageGenerated: (media) => {
+		selectedMedia.value.push({
+			id: media.id,
+			image_id: media.id,
+			url: media.source?.original || media.thumbnail?.original,
+			image: media.thumbnail || media.source,
+			is_ai: true,
+			is_main: false
+		})
 		showGenerateModal.value = false
-
 		aiPrompt.value = ''
 		selectedMediaForAI.value = []
-
-		notify({
-			title: 'AI Image Generated',
-			type: 'success'
-		})
-	} catch (e) {
-		aiGenerateImagesError.value = trans('The OpenAI service is currently unreachable, please try again later.')
-		notify({
-			title: trans('Error'),
-			text: trans('Failed to generate AI'),
-			type: 'error'
-		})
-	} finally {
-		isGeneratingAI.value = false
 	}
+})
+
+const handleGenerateAIImages = () => {
+	generateAIImages({
+		routeName: props.bundle_routes.ai.generate_images.name,
+		routeParams: {
+			...props.bundle_routes.ai.generate_images.parameters,
+			product: selectedEditProduct.value.product_id
+		},
+		images: selectedMediaForAI.value.map(m => m.image_id),
+		prompt: aiPrompt.value
+	})
 }
 
 const bundle = useBundle(props.bundle_routes)
-
+const submitError = ref<string | null>(null)
 const submitBundle = async () => {
 	
 		const payloadItems = bundleItems.value.map(i => ({
@@ -856,6 +827,7 @@ const submitBundle = async () => {
 				preserveState: true,
 				onStart: () => {
 					isSubmitBundle.value = true
+					submitError.value = null
 				},
 				onSuccess: () => {
 					notify({
@@ -868,9 +840,15 @@ const submitBundle = async () => {
 					bundle.resetBundle()
 				},
 				onError: errors => {
+					submitError.value =
+                    errors.description ||
+                    errors.images ||
+                    Object.values(errors)[0] ||
+                    trans("Failed to submit the data, please try again")
+
 					notify({
 						title: trans("Something went wrong"),
-						text: trans("Failed to submit the data, please try again"),
+						text: submitError.value,
 						type: "error"
 					})
 				},
@@ -880,6 +858,9 @@ const submitBundle = async () => {
 			}
 		)
 }
+onBeforeUnmount(() => {
+    stopEchoListener()
+})
 </script>
 
 <template>
@@ -1432,7 +1413,22 @@ const submitBundle = async () => {
 				</label>
 
 				<div class="bg-gray-100 rounded-xl p-4 mt-2 grid grid-cols-2 md:grid-cols-3 gap-4 min-h-[140px]">
-					<div v-for="img in selectedMedia" class="relative group rounded-xl border bg-white flex items-center justify-center h-36 md:h-44">
+					<div v-if="isLoadingMedia" class="col-span-full flex items-center justify-center min-h-[140px]">
+						<LoadingIcon />
+					</div>
+					<div
+						v-else-if="selectedMedia.length === 0"
+						class="col-span-full flex flex-col items-center justify-center text-center text-gray-400"
+					>
+						<FontAwesomeIcon icon="fal fa-image" class="text-3xl mb-2 opacity-60" />
+						<p class="text-sm font-medium">
+							{{ trans('No media added yet') }}
+						</p>
+						<p class="text-xs">
+							{{ trans('select existing media') }}
+						</p>
+					</div>
+					<div v-else v-for="img in selectedMedia" class="relative group rounded-xl border bg-white flex items-center justify-center h-36 md:h-44">
 						<Image :key="img.id" :src="img.image"  class="h-36 md:h-40 object-contain rounded-xl" />
 						<input type="radio" name="main_image" :checked="img.is_main"
 							@change="setMainImage(img.image_id)" class="absolute top-2 left-2 z-20" />
@@ -1485,9 +1481,11 @@ const submitBundle = async () => {
 					</Button>
 				</div>
 			</div>
-
+			<div v-if="submitError" class="text-md text-red-500 mb-2 italic">
+                {{ submitError }}
+            </div>
 			<div class="mt-3 flex gap-2">
-				<Button @click="submitBundle" :label="isSubmitBundle ? trans('Loading') : trans('Save')" full  icon="fad fa-save" :loading="isSubmitBundle" :disabled="!selectedEditProduct?.description.length || isSubmitBundle"/>
+				<Button @click="submitBundle" :label="isSubmitBundle ? trans('Loading') : trans('Save')" full  icon="fad fa-save" :loading="isSubmitBundle" :disabled="!selectedEditProduct?.description.length || isSubmitBundle || !selectedMedia.length"/>
 			</div>
 		</div>
 	</Modal>
@@ -1576,9 +1574,28 @@ const submitBundle = async () => {
                         {{ aiGenerateImagesError }}
                     </div>
 		<template #footer>
-			<Button label="Generate" @click="generateAIImages" :loading="isGeneratingAI"
+			<Button label="Generate" @click="handleGenerateAIImages" :loading="isGeneratingAIImages"
 				:disabled="!selectedMediaForAI.length || !aiPrompt" />
 		</template>
 
+	</Dialog>
+	<Dialog
+		v-model:visible="showGenerateProgressModal"
+		:header="trans('Generating AI Image')"
+		modal
+		:closable="false"
+		:closeOnEscape="false"
+		:dismissableMask="false"
+		:style="{ width: '420px' }"
+	>
+		<div class="py-6 flex flex-col items-center text-center">
+			<LoadingIcon class="mb-4" />
+			<div class="text-sm font-semibold text-gray-800">
+				{{ trans('Generating your image...') }}
+			</div>
+			<div class="text-xs text-gray-500 mt-2">
+				{{ trans('Please wait while we process your prompt and listen for the result.') }}
+			</div>
+		</div>
 	</Dialog>
 </template>

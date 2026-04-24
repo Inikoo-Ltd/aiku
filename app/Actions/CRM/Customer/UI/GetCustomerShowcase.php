@@ -102,8 +102,23 @@ class GetCustomerShowcase
                     'customer' => $customer->id
                 ]
             ],
-            'note_route' => [
-                'name'       => 'grp.models.customer.note.store',
+            // Commented out, will bring it back if it is needed
+            // 'note_route' => [
+            //     'name'       => 'grp.models.customer.note.store',
+            //     'parameters' => [
+            //         'customer' => $customer->id
+            //     ]
+            // ]
+            'internal_note' => [
+                "label"       => __("Private"),
+                "note"        => $customer->internal_notes ?? '',
+                "information" => __("This note is only visible to staff members. Staff can communicate with each other about the customer."),
+                "editable"    => true,
+                "bgColor"     => "#FF7DBD",
+                "field"       => "internal_notes"
+            ],
+            'update_route' => [
+                'name'       => 'grp.models.customer.update',
                 'parameters' => [
                     'customer' => $customer->id
                 ]

@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\Traits\HasBucketImages;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Http\Resources\Catalogue\TagsResource;
@@ -82,11 +83,12 @@ class GetProductShowcase
 
         return [
             'product'             => ProductResource::make($product),
+            'is_external'         => $product->shop->type == ShopTypeEnum::EXTERNAL,
             'properties'          => $properties,
             'gpsr'                => $gpsr,
             'parts'               => // todo: delete this asap use org_stocks
                 OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
-            'org_stocks'               => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
+            'org_stocks'          => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
             'stats'               => $product->stats,
             'images'              => $this->getImagesData($product),
             'brand'               => $product->brand(),

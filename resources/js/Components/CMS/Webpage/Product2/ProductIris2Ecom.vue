@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, computed, watch } from "vue"
+import { ref, inject, computed, watch, onMounted } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
@@ -178,7 +178,12 @@ const getIcon = (type: string) => {
     return faFileCheck
 }
 
-const baseUrl = `${window.location.origin}/`
+const baseUrl = ref("")
+
+onMounted(() => {
+    baseUrl.value = `${window.location.origin}/`
+})
+
 </script>
 
 

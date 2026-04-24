@@ -32,7 +32,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $shop_engine
  * @property mixed $organisation_slug
  */
-class WaitingDeliveryNoteItemsGroupedResource extends JsonResource
+class WaitingDNItemsGroupedByDeliveryNoteResource extends JsonResource
 {
     public function toArray($request): array
     {
@@ -58,25 +58,13 @@ class WaitingDeliveryNoteItemsGroupedResource extends JsonResource
             'organisation_slug'                 => $this->organisation_slug,
             'notes'                             => $this->notes,
             'items'                             => $deliveryNote
-                ? collect(DeliveryNoteItemsStateHandlingResource::collection(
+                ? collect(WaitingDNItemsGroupedByDeliveryNoteForItemsResource::collection(
                     IndexDeliveryNoteItemsStateHandling::run(
                         $deliveryNote,
                         ignoreParentPagination: true,
-                        stateFilter: DeliveryNoteItemStateEnum::HANDLING_BLOCKED
+                        stateFilter: [DeliveryNoteItemStateEnum::HANDLING_BLOCKED, DeliveryNoteItemStateEnum::QUEUED]
                     )
-                )->resolve())->map(function ($item) {
-                    $item['upsert_picking_route'] = [
-                        'name'       => 'grp.models.delivery_note_item.picking.upsert_from_waiting_warehouse',
-                        'parameters' => ['deliveryNoteItem' => $item['id']],
-                        'method'     => 'post',
-                    ];
-                    $item['picking_all_route'] = [
-                        'name'       => 'grp.models.delivery_note_item.picking_all_from_waiting_warehouse.store',
-                        'parameters' => ['deliveryNoteItem' => $item['id']],
-                        'method'     => 'post',
-                    ];
-                    return $item;
-                })->toArray()
+                )->resolve())->filter(fn ($item) => ($item['quantity_waiting_warehouse'] ?? 0) > 0)->values()->toArray()
                 : [],
         ];
     }

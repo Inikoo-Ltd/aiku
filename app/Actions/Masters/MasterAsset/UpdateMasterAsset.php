@@ -122,7 +122,7 @@ class UpdateMasterAsset extends OrgAction
                     data_set($modelData, 'unit', 'bundle');
                 }
 
-                foreach ($masterAsset->products as $product) {
+                foreach ($masterAsset->products()->whereNot('products.not_follow_master_trade_units', true)->get() as $product) {
                     SyncProductTradeUnits::run($product, $tradeUnits);
                 }
 

@@ -44,10 +44,14 @@ trait CalculatesOrgStockHistories
             return $closestPurchase->cost_per_sku;
         }
 
-        return $orgStock->unit_cost * $orgStock->packed_in;
+        if ($orgStock->current_supplier_sku_cost) {
+            return $orgStock->current_supplier_sku_cost;
+        }
+
+        return $orgStock->unit_cost * $orgStock->packed_in;// todo remove this, when removing $orgStock->unit_cost from DB
     }
 
-    public function getStockQuantity(OrgStock $orgStock, Location $location, ?Carbon $date=null): float
+    public function getStockQuantity(OrgStock $orgStock, Location $location, ?Carbon $date = null): float
     {
         if (!$date) {
             $date = now();

@@ -1,10 +1,10 @@
 <?php
+
 /*
  * Author: Arya Permana - Kirin <raul@inikoo.com>
  * Created: Wed, 20 Nov 2024 16:30
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
-
 
 namespace App\Actions\SysAdmin\User;
 

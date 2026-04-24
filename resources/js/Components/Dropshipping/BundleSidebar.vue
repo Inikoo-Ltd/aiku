@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useBundle } from '@/Composables/useBundle';
-import { onMounted, ref, watch, computed } from 'vue'
+import { onBeforeUnmount, ref, watch, computed } from 'vue'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import axios from 'axios'
@@ -15,6 +15,7 @@ import { faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, faMi
 import { library } from '@fortawesome/fontawesome-svg-core'
 library.add(faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, faMinus, faUpload)
 import { router } from '@inertiajs/vue3';
+import { useGenerateAIImages } from '@/Composables/useGenerateAIImages';
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import Image from '../Image.vue';
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -34,7 +35,6 @@ const selectedMediaAIIds = ref<any[]>([])
 const selectedMediaForAI = ref<any[]>([])
 const aiPrompt = ref<string>('')
 
-const isGeneratingAI = ref<boolean>(false)
 const isStoringBundle = ref<boolean>(false)
 const showMediaModal = ref<boolean>(false)
 const isLoadingMedia = ref<boolean>(false)
@@ -56,69 +56,37 @@ const resolveParams = (config: any) => {
 
     return config.parameters || {}
 }
-const aiGenerateImagesError = ref<string | null>(null)
-const generateAIImages = async () => {
-    try {
-        isGeneratingAI.value = true
-        aiGenerateImagesError.value = null
-        const payload = {
-            images: selectedMediaForAI.value.map(m => m.image_id),
-            prompt: aiPrompt.value
-        }
 
-        const routeConfig = bundleRoutes.ai.generate_images
-        
-        const routeParams = {
-            ...resolveParams(routeConfig),
-            product: bundle.product_id.value
-        }
-
-        const res = await axios.post(
-            route(
-                routeConfig.name,
-                routeParams
-            ),
-            payload
-        )
-
-        const media = res.data?.data
-
-        if (media) {
-
-            selectedMedia.value.push({
-                id: media.id,
-                image_id: media.id,
-                url: media.source?.original || media.thumbnail?.original,
-                image: media.thumbnail || media.source,
-                is_ai: true,
-                is_main: false
-            })
-
-        }
-
+const { isGeneratingAI, aiGenerateImagesError, generateAIImages, showGenerateProgressModal, stopEchoListener } = useGenerateAIImages({
+    customerId: () => layout.iris_variables?.customer_id ?? null,
+    onImageGenerated: (media) => {
+        selectedMedia.value.push({
+            id: media.id,
+            image_id: media.id,
+            url: media.source?.original || media.thumbnail?.original,
+            image: media.thumbnail || media.source,
+            is_ai: true,
+            is_main: false
+        })
         showGenerateModalAI.value = false
-
         aiPrompt.value = ''
         selectedMediaForAI.value = []
-
-        notify({
-            title: 'AI Image Generated',
-            type: 'success'
-        })
-
-    } catch (e) {
-        console.log("e", e)
-        console.error("e", e)
-         aiGenerateImagesError.value = 'The OpenAI service is currently unreachable, please try again later.'
-        // notify({
-        //     title: trans('Error'),
-        //     text: trans('Failed to generate AI'),
-        //     type: 'error'
-        // })
-    } finally {
-        isGeneratingAI.value = false
     }
+})
+
+const handleGenerateAIImages = () => {
+    const routeConfig = bundleRoutes.ai.generate_images
+    generateAIImages({
+        routeName: routeConfig.name,
+        routeParams: { ...resolveParams(routeConfig), product: bundle.product_id.value },
+        images: selectedMediaForAI.value.map(m => m.image_id),
+        prompt: aiPrompt.value
+    })
 }
+
+onBeforeUnmount(() => {
+    stopEchoListener()
+})
 
 const productIds = computed(() => {
     return bundle.products.value.map(p => p.id)
@@ -341,6 +309,7 @@ const handleStoreBundle = async () => {
     }
 }
 
+const submitError = ref<string | null>(null)
 const submitBundle = async () => {
 
     const payload = {
@@ -369,6 +338,7 @@ const submitBundle = async () => {
             preserveState: true,
             onStart: () => {
                 isStoringBundle.value = true
+                submitError.value = null
             },
             onSuccess: () => {
                 notify({
@@ -395,13 +365,19 @@ const submitBundle = async () => {
                 localStorage.removeItem('iris_bundle_products')
             },
             onError: errors => {
+                submitError.value =
+                    errors.description ||
+                    errors.images ||
+                    Object.values(errors)[0] ||
+                    trans("Failed to submit the data, please try again")
+
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to submit the data, please try again"),
+                    text: submitError.value,
                     type: "error"
                 })
             },
-                onFinish: () => {
+            onFinish: () => {
                 isStoringBundle.value = false
             },
         }
@@ -545,6 +521,44 @@ const bundle = useBundle({
 })
 
 const bundleRoutes = bundle.bundleRoutes
+const isNavigationLocked = computed(() => bundle.open.value && bundle.step.value === 2)
+
+const notifyNavigationLocked = () => {
+    notify({
+        title: trans('Finish bundle first'),
+        text: trans('You cannot leave this page before completing or discarding the bundle.'),
+        type: 'warn'
+    })
+}
+
+const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+    if (!isNavigationLocked.value) return
+
+    event.preventDefault()
+    event.returnValue = ''
+}
+
+let removeNavigationGuard: null | (() => void) = null
+
+const attachNavigationGuard = () => {
+    if (removeNavigationGuard) return
+
+    removeNavigationGuard = router.on('before', (event) => {
+        if (!isNavigationLocked.value) return
+        if (event.detail.visit.method?.toLowerCase() !== 'get') return
+
+        notifyNavigationLocked()
+        return false
+    })
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+}
+
+const detachNavigationGuard = () => {
+    removeNavigationGuard?.()
+    removeNavigationGuard = null
+    window.removeEventListener('beforeunload', handleBeforeUnload)
+}
 
 watch(customerChannelsId, (val) => {
     if (val) {
@@ -572,6 +586,21 @@ watch(
     },
     { deep: true }
 )
+
+watch(isNavigationLocked, (isLocked) => {
+    if (isLocked) {
+        attachNavigationGuard()
+        return
+    }
+
+    detachNavigationGuard()
+}, { immediate: true })
+
+onBeforeUnmount(() => {
+    detachNavigationGuard()
+})
+
+console.log("layout bundlesibdear", layout)
 </script>
 
 <template>
@@ -757,6 +786,10 @@ watch(
 
                     </div>
 
+                    <div class="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                        {{ trans('You cannot leave this page while creating a bundle. Complete it or discard it first.') }}
+                    </div>
+
                     <!-- DESCRIPTION -->
                     <div class="mb-5">
                         <label class="text-sm font-semibold">
@@ -824,7 +857,7 @@ watch(
                     </div>
 
                     <!-- PREVIEW -->
-                    <div class="mb-5">
+                    <div class="mb-2">
                         <label class="text-sm font-semibold">
                             {{ trans('Bundle media') }}
                         </label>
@@ -849,7 +882,10 @@ watch(
                     </div>
 
                     <!-- SUBMIT -->
-                    <Button @click="submitBundle" :disabled="!bundle.description.value.length || isStoringBundle" class="flex justify-center items-center w-full" icon="fas fa-layer-group" :label="trans('Create Bundle')" type="primary" :loading="isStoringBundle" />
+                    <div v-if="submitError" class="text-md text-red-500 mb-2 italic">
+                        {{ submitError }}
+                    </div>
+                    <Button @click="submitBundle" :disabled="!bundle.description.value.length || isStoringBundle || !selectedMedia.length" class="flex justify-center items-center w-full" icon="fas fa-layer-group" :label="trans('Create Bundle')" type="primary" :loading="isStoringBundle" />
                 </div>
                 <!-- Modal Existing media -->
                 <Dialog v-model:visible="showMediaModal" modal header="Select Images" :style="{ width: '600px' }">
@@ -940,10 +976,29 @@ watch(
                     </div>
 
                     <template #footer>
-                        <Button label="Generate" @click="generateAIImages" :loading="isGeneratingAI"
+                        <Button label="Generate" @click="handleGenerateAIImages" :loading="isGeneratingAI"
                             :disabled="!selectedMediaForAI.length || !aiPrompt" />
                     </template>
 
+                </Dialog>
+                 <Dialog
+                    v-model:visible="showGenerateProgressModal"
+                    :header="trans('Generating AI Image')"
+                    modal
+                    :closable="false"
+                    :closeOnEscape="false"
+                    :dismissableMask="false"
+                    :style="{ width: '420px' }"
+                >
+                    <div class="py-6 flex flex-col items-center text-center">
+                        <LoadingIcon class="mb-4" />
+                        <div class="text-sm font-semibold text-gray-800">
+                            {{ trans('Generating your image...') }}
+                        </div>
+                        <div class="text-xs text-gray-500 mt-2">
+                            {{ trans('Please wait while we process your prompt and listen for the result.') }}
+                        </div>
+                    </div>
                 </Dialog>
                 <ConfirmDialog>
                     <template #container="{ message, acceptCallback, rejectCallback }">

@@ -66,6 +66,8 @@ use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Dispatching\Shipper\Json\GetShippers;
 use App\Actions\Dispatching\Trolley\Json\ListAvailableTrolleys;
 use App\Actions\Dispatching\Trolley\Json\ListUnavailableTrolleys;
+use App\Actions\Dispatching\WaitingItems\Json\GetCrmWaitingBadge;
+use App\Actions\Dispatching\WaitingItems\Json\GetDispatchingWaitingBadge;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetEbayProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetWooProducts;
@@ -248,6 +250,8 @@ Route::get('master-product-category/{masterProductCategory:id}/recommended-trade
 Route::get('master-product-category/{masterProductCategory:id}/taken-trade-units', GetTakenTradeUnits::class)->name('master-product-category.taken-trade-units')->withoutScopedBindings();
 Route::get('master-product-category/all-trade-units', GetAllTradeUnitsInGroup::class)->name('master_product_category.all_trade_units');
 
+Route::get('brand/{brand:id}/all-trade-units/', [GetAllTradeUnitsInGroup::class, 'inBrand'])->name('brand.all_trade_units');
+
 Route::get('product/{product:id}/trade-units/all', GetAllTradeUnitsInProduct::class)->name('trade-units.all.under-product')->withoutScopedBindings();
 Route::get('product/{product:id}/trade-units/recommended', [GetRecommendedTradeUnits::class, 'inExternal'])->name('trade-units.recommended.under-product')->withoutScopedBindings();
 
@@ -286,3 +290,6 @@ Route::get('location/geocode', GetGeocode::class)->name('get_geocode');
 Route::get('{warehouse}/trolleys/list/', ListAvailableTrolleys::class)->name('available_trolleys.list');
 Route::get('{warehouse}/trolleys/unavailable-list/', ListUnavailableTrolleys::class)->name('unavailable_trolleys.list');
 Route::get('{warehouse}/picked-bays/list/', ListAvailablePickedBays::class)->name('picked_bays.list');
+
+Route::get('dispatching/waiting-badge', GetDispatchingWaitingBadge::class)->name('dispatching_waiting_badge');
+Route::get('dispatching/crm-waiting-badge', GetCrmWaitingBadge::class)->name('crm_waiting_badge');

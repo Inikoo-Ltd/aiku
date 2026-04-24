@@ -17,6 +17,7 @@ enum OrgStockStockHistoryTabsEnum: string
     use HasTabs;
 
     case STOCK_HISTORY = 'stock_history';
+    case PURCHASE_HISTORY     = 'purchase_history';
 
     public function blueprint(): array
     {
@@ -24,6 +25,10 @@ enum OrgStockStockHistoryTabsEnum: string
             OrgStockStockHistoryTabsEnum::STOCK_HISTORY => [
                 'title' => __('Stock History'),
                 'icon'  => 'fal fa-scanner',
+            ],
+            OrgStockStockHistoryTabsEnum::PURCHASE_HISTORY => [
+                'title' => __('Purchases'),
+                'icon'  => 'fal fa-money-check-edit-alt',
             ],
         };
     }

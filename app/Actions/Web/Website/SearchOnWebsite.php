@@ -10,8 +10,8 @@ class SearchOnWebsite extends IrisAction
 {
     public function handle(): array
     {
-        $layout = $this->website->liveProductsSnapshot->layout;
-        $webBlockData = data_get($layout, 'data.fieldValue');
+        $layout = $this->website->liveProductsSnapshot?->layout;
+        $webBlockData = data_get($layout, 'data.fieldValue', []);
 
         return [
             'data' => $webBlockData,

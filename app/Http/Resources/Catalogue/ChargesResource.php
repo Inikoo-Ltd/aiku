@@ -41,12 +41,29 @@ class ChargesResource extends JsonResource
             'state_icon'                        => $this->state->stateIcon()[$this->state->value],
             'created_at'                        => $this->created_at,
             'updated_at'                        => $this->updated_at,
-            'customers_invoiced'                => $this->customers_invoiced,
-            'invoices'                          => $this->invoices,
-            'sales_grp_currency_external'       => $this->sales_grp_currency_external,
-            'sales_grp_currency_external_ly'    => $this->sales_grp_currency_external_ly,
+            'customers_invoiced'                => $this->customers_invoiced ?? 0,
+            'invoices'                          => $this->invoices ?? 0,
+            'sales_grp_currency_external'       => $this->sales_grp_currency_external ?? 0,
+            'sales_grp_currency_external_ly'    => $this->sales_grp_currency_external_ly ?? 0,
+            'sales_grp_currency_external_delta' => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),
             'organisation_name'                 => $this->organisation_name,
             'organisation_slug'                 => $this->organisation_slug,
+        ];
+    }
+
+    private function calculateDelta(float $current, float $previous): ?array
+    {
+        if (!$previous || $previous == 0) {
+            return null;
+        }
+
+        $delta = (($current - $previous) / $previous) * 100;
+
+        return [
+            'value'       => $delta,
+            'formatted'   => number_format($delta, 1).'%',
+            'is_positive' => $delta > 0,
+            'is_negative' => $delta < 0,
         ];
     }
 }

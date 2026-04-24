@@ -45,6 +45,7 @@ class GetWebBlockProducts
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
 
         data_set($webBlock, 'web_block.layout.data.fieldValue.products', $products);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.sub_type', $webpage->sub_type);
         data_set($webBlock, 'web_block.layout.data.fieldValue.model_type', $webpage->model_type);
         data_set($webBlock, 'web_block.layout.data.fieldValue.model_id', $webpage->model_id);
         data_set($webBlock, 'web_block.layout.data.fieldValue.model_slug', $model?->slug);

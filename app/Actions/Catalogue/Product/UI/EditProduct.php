@@ -100,7 +100,7 @@ class EditProduct extends OrgAction
         $hasMaster      = (bool)$product->masterProduct;
         $isExternalShop = $product->shop->type == ShopTypeEnum::EXTERNAL;
 
-        if ($product->is_single_trade_unit) {
+        if ($product->is_single_trade_unit && $product->shop->type != ShopTypeEnum::EXTERNAL) {
             $warningText[] = __('This product is associated with trade unit, for weights, ingredients etc edit the trade unit. Changing name or description will affect all shops/websites using same language.');
         }
 
@@ -189,21 +189,7 @@ class EditProduct extends OrgAction
 
     public function getBlueprintExternal(Product $product): array
     {
-        $packedIn = DB::table('model_has_trade_units')
-            ->where('model_type', 'Stock')
-            ->whereIn('trade_unit_id', $product->tradeUnits->pluck('id'))
-            ->pluck('quantity', 'trade_unit_id')
-            ->toArray();
-
-        $tradeUnits = $product->tradeUnits->map(function ($t) use ($packedIn) {
-            return array_merge(
-                ['quantity' => (int)$t->pivot->quantity],
-                ['fraction' => $t->pivot->quantity / $packedIn[$t->id]],
-                ['packed_in' => $packedIn[$t->id]],
-                ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($t->pivot->quantity / $packedIn[$t->id])), $packedIn[$t->id])],
-                $t->toArray()
-            );
-        });
+        $tradeUnits = $this->getTradeUnitsWithPackingData($product);
 
         return array_filter([
             [
@@ -277,6 +263,8 @@ class EditProduct extends OrgAction
                 }
             }
         }
+
+        $tradeUnits = $this->getTradeUnitsWithPackingData($product);
 
         $nameFields = [
             'name'              => $product->masterProduct
@@ -628,7 +616,7 @@ class EditProduct extends OrgAction
                                 'value'    => $product->barcode,
                                 'readonly' => $product->tradeUnits->count() == 1,
                                 'options'  => $barcodes->mapWithKeys(function ($barcode) {
-                                    return [$barcode => $barcode];
+                                    return [(string)$barcode => $barcode];
                                 })->toArray()
                             ],
 
@@ -647,20 +635,79 @@ class EditProduct extends OrgAction
                         ],
                     ],
                 ] : [],
-                $product->masterProduct ? [
+                [
                     'label'  => __('Trade Unit'),
                     'icon'   => 'fal fa-atom',
-                    'fields' => [
-                        'not_follow_master_trade_units' => [
+                    'fields' => array_filter([
+                        'not_follow_master_trade_units' => $product->masterProduct ? [
                             'type'  => 'toggle',
                             'label' => __('Do not follow master trade units'),
                             'value' => $product->not_follow_master_trade_units,
                             'information' => __('Would set product to have standalone trade units (Differs from master)')
-                        ],
-                    ],
-                ] : [],
+                        ] : [],
+                        'trade_units' => (!$product->masterProduct || $product->not_follow_master_trade_units) ? [
+                            'label'        => __('Trade units'),
+                            'type'         => 'list-selector-trade-unit',
+                            'key_quantity' => 'quantity',
+                            'withQuantity' => true,
+                            'full'         => true,
+                            'noSaveButton' => false,
+                            'use_confirm'  => false,
+                            'is_dropship'  => $product->shop->type == ShopTypeEnum::DROPSHIPPING,
+                            'tabs' => array_values(array_filter([
+                                $product->family?->masterProductCategory ? [
+                                    'label'      => __('To do'),
+                                    'routeFetch' => [
+                                        'name'       => 'grp.json.master-product-category.recommended-trade-units',
+                                        'parameters' => [
+                                            'masterProductCategory' => $product->family->masterProductCategory->id,
+                                        ],
+                                    ],
+                                ] : null,
+                                $product->family?->masterProductCategory ? [
+                                    'label'      => __('Done'),
+                                    'routeFetch' => [
+                                        'name'       => 'grp.json.master-product-category.taken-trade-units',
+                                        'parameters' => [
+                                            'masterProductCategory' => $product->family->masterProductCategory->id,
+                                        ],
+                                    ],
+                                ] : null,
+                                [
+                                    'label'      => __('All'),
+                                    'search'     => true,
+                                    'routeFetch' => [
+                                        'name' => 'grp.json.master_product_category.all_trade_units',
+                                    ],
+                                ],
+                            ])),
+                            'value'        => $tradeUnits,
+                        ] : [],
+                    ]),
+                ],
             ]
         );
+    }
+
+    private function getTradeUnitsWithPackingData(Product $product)
+    {
+        $packedIn = DB::table('model_has_trade_units')
+            ->where('model_type', 'Stock')
+            ->whereIn('trade_unit_id', $product->tradeUnits->pluck('id'))
+            ->pluck('quantity', 'trade_unit_id')
+            ->toArray();
+
+        return $product->tradeUnits->map(function ($tradeUnit) use ($packedIn) {
+            $packedQuantity = max(1, (int)($packedIn[$tradeUnit->id] ?? 0));
+
+            return array_merge(
+                ['quantity' => (int)$tradeUnit->pivot->quantity],
+                ['fraction' => $tradeUnit->pivot->quantity / $packedQuantity],
+                ['packed_in' => $packedQuantity],
+                ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit->pivot->quantity / $packedQuantity)), $packedQuantity)],
+                $tradeUnit->toArray()
+            );
+        });
     }
 
     public function getBreadcrumbs(Product $product, string $routeName, array $routeParameters): array

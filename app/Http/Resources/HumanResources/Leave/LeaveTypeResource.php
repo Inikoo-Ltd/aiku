@@ -36,6 +36,7 @@ class LeaveTypeResource extends JsonResource
             'category_color'    => LeaveCategoryEnum::colors()[$this->category?->value] ?? 'gray',
             'requires_approval' => (bool) $this->requires_approval,
             'max_days_per_year' => $this->max_days_per_year,
+            'value'             => $this->value,
             'settings'          => $this->settings,
             'is_active'         => (bool) $this->is_active,
             'created_at'        => $this->created_at?->toISOString(),

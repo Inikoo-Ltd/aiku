@@ -464,23 +464,25 @@ const onSetItemToUndoWaitingWarehouse = () => {
         <!-- Column: Name -->
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
             <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span></div>
-            <div>
+            <div class="flex items-center flex-wrap">
+                <!-- Label: expired date -->
                 <ExpiryDateLabel v-if="(deliveryNoteItem.expiry_date || deliveryNoteItem.batch_code) && (deliveryNoteItem.is_picked && !deliveryNoteItem.is_packed)" :expiry_date="deliveryNoteItem.expiry_date" :batch_code="deliveryNoteItem.batch_code" />
-                <template v-if="deliveryNoteItem.is_picked && !deliveryNoteItem.is_packed">
+
+                <!-- Button: add/edit expiry date and batch code -->
+                <div v-if="(deliveryNoteItem.is_picked || Number(deliveryNoteItem.quantity_picked) > 0) && state !== 'cancelled'">
                     <Button
                         v-if="deliveryNoteItem.expiry_date || deliveryNoteItem.batch_code"
                         @click="() => (isModalEditExpiryDate = true, selectedItemToEditExpiryDate = deliveryNoteItem)"
                         type="transparent"
-                        v-tooltip="trans('Edit expiry date and batch code')"
+                        v-tooltip="ctrans('Edit expiry date and batch code')"
                         size="xs"
                         icon="fal fa-pencil"
                     />
                     <Button v-else
                         @click="() => (isModalEditExpiryDate = true, selectedItemToEditExpiryDate = deliveryNoteItem)"
                         type="tertiary"
-                        vxtooltip="trans('Add expiry date and batch code')"
                         size="xs"
-                        :label="trans('Add expiry date and batch code')"
+                        :label="ctrans('Add expiry date and batch code')"
                         icon="fas fa-plus"
                         key="1"
                     >
@@ -488,7 +490,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                             <FontAwesomeIcon icon="fad fa-viruses" class="text-red-500" fixed-width aria-hidden="true" />
                         </template>
                     </Button>
-                </template>
+                </div>
             </div>
         </template>
 
@@ -548,13 +550,15 @@ const onSetItemToUndoWaitingWarehouse = () => {
         <template #cell(quantity_picked)="{ item: item, proxyItem }">
             <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
             <span v-else>{{ item.quantity_picked }}</span>
-
-            <span v-tooltip="ctrans('Not picked')"  v-if="item.quantity_not_picked!=0" class="text-red-500 rounded-sm border-red-400 bg-red-100  border px-1.5 ml-2">
-            {{ Number(item.quantity_not_picked) }}
+            
+            <span v-if="Number(item.quantity_not_picked) > 0" v-tooltip="ctrans('Not picked')"  class="text-red-500 rounded-sm border-red-400 bg-red-100  border px-1.5 ml-2">
+                {{ Number(item.quantity_not_picked) }}
             </span>
 
-            <span v-tooltip="ctrans('Waiting for warehouse')"  v-if="item.quantity_waiting_warehouse!=0" class="text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
-            {{ Number(item.quantity_waiting_warehouse) }}
+            <span v-if="Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')"  class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
+                {{ Number(item.quantity_waiting_warehouse) }}
+                <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px]" fixed-width aria-hidden="true" />
             </span>
 
 
@@ -944,8 +948,9 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     <div class="flex justify-start items-center">
                     <ButtonWithLink
                         v-if="!item.is_done_packing"
+                        :label="ctrans('Pack :countToPack items', { countToPack: Number(item.quantity_picked) })"
                         type="secondary"
-                        :label="ctrans('Packing')"
+                        xlabel="ctrans('Packing')"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
                         :key="screenType"
                         :bindToLink="{preserveScroll: true}"
@@ -959,6 +964,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     />
                     <ButtonWithLink
                         v-else
+                        v-tooltip="ctrans('Undo packing')"
                         type="negative"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
                         :bindToLink="{preserveScroll: true}"
@@ -982,6 +988,10 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     />
                     </div>
                 </template>
+
+                <div v-else-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && !(item.quantity_picked > 0)" class="italic text-xs opacity-70">
+                    {{ ctrans("Nothing to pack") }}
+                </div>
         </template>
     </Table>
 
@@ -1093,6 +1103,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     fluid
                     dateFormat="dd M yy"
                     :disabled="isLoadingSubmitExpiryDate"
+                    :showClear="true"
                 />
             </div>
 

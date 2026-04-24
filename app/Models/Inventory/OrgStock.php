@@ -76,6 +76,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $has_been_in_warehouse
  * @property HealthRankEnum|null $health_rank
  * @property bool $movements_fixed
+ * @property numeric|null $sku_value
+ * @property numeric|null $current_supplier_sku_cost
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
@@ -189,7 +191,8 @@ class OrgStock extends Model implements Auditable
     public function orgSupplierProducts(): BelongsToMany
     {
         return $this->belongsToMany(OrgSupplierProduct::class, 'org_stock_has_org_supplier_products')
-            ->withPivot(['status', 'local_priority'])->withTimestamps();
+            ->withPivot(['status', 'local_priority'])->withTimestamps()
+            ->orderByPivot('local_priority', 'desc');
     }
 
     public function tradeUnits(): MorphToMany

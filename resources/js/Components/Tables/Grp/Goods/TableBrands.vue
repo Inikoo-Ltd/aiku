@@ -24,7 +24,7 @@ defineProps<{
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(name)="{ item: brand }">
-            <Link :href="route('grp.trade_units.brands.edit', brand.slug)" class="primaryLink">
+            <Link :href="route('grp.trade_units.brands.show', brand.slug)" class="primaryLink">
                 {{ brand.name }}
             </Link>
         </template>

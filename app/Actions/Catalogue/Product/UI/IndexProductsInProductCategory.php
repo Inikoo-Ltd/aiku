@@ -35,6 +35,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -72,7 +73,7 @@ class IndexProductsInProductCategory extends OrgAction
         ];
     }
 
-    public function handle(ProductCategory $productCategory, $prefix = null): LengthAwarePaginator
+    public function handle(ProductCategory $productCategory, $prefix = null): Collection|LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -84,6 +85,8 @@ class IndexProductsInProductCategory extends OrgAction
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
+
+        $sortByIndex = $prefix === ProductsTabsEnum::INDEX_ORDERING->value;
 
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->orderBy('products.state');
@@ -113,7 +116,6 @@ class IndexProductsInProductCategory extends OrgAction
                 prefix: $prefix
             );
         }
-
 
         $selects = [
             'products.id',
@@ -167,25 +169,44 @@ class IndexProductsInProductCategory extends OrgAction
         }
 
         $queryBuilder
-            ->defaultSort('products.code')
             ->select($selects)
-            ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
+            ->leftJoin('product_stats', 'products.id', 'product_stats.product_id')
+            ->when(
+                $sortByIndex,
+                function ($query) {
+                    $query
+                        ->orderBy('products.index_under_family')
+                        ->orderBy('products.code');
+                },
+                function ($query) {
+                    $query
+                        ->orderBy('products.code');
+                }
+            )
+            ->allowedSorts([
+                'code',
+                'name',
+                'shop_slug',
+                'department_slug',
+                'family_slug',
+                'customers_invoiced',
+                'sales_grp_currency_external',
+                'invoices',
+                'health_rank',
+                'price',
+                'rrp_per_unit',
+                'available_quantity'
+            ])
+            ->allowedFilters([$globalSearch]);
 
-        return $queryBuilder->allowedSorts([
-            'code',
-            'name',
-            'shop_slug',
-            'department_slug',
-            'family_slug',
-            'customers_invoiced',
-            'sales_grp_currency_external',
-            'invoices',
-            'health_rank',
-            'price',
-            'rrp_per_unit',
-            'available_quantity'
-        ])
-            ->allowedFilters([$globalSearch])
+        if ($sortByIndex) {
+            return $queryBuilder
+                ->addSelect('products.index_under_family')
+                ->get();
+        }
+
+        return $queryBuilder
+            ->defaultSort('products.code')
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -254,16 +275,19 @@ class IndexProductsInProductCategory extends OrgAction
     {
         $productCategory = $this->parent;
 
-        $navigation = ProductsTabsEnum::navigation();
+        $exception  = [ProductsTabsEnum::INDEX_ORDERING];
 
         $subNavigation = null;
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $subNavigation = $this->getDepartmentSubNavigation($productCategory);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
+            $exception     = [];
             $subNavigation = $this->getFamilySubNavigation($productCategory, $this->grandParent ?? $productCategory->shop, $request);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $subNavigation = $this->getSubDepartmentSubNavigation($productCategory);
         }
+
+        $navigation = ProductsTabsEnum::navigationExcept($exception);
 
 
         $title           = __('Products');
@@ -306,6 +330,7 @@ class IndexProductsInProductCategory extends OrgAction
                 'tooltip' => __('Sync Product Images from Trade Units'),
                 'label'   => __('Repair Images'),
                 'icon'    => 'fal fa-tools',
+                'key'     => 'repair-image',
                 'route'   => [
                     'name'          => 'grp.models.product_category.repair_product_images',
                     'method'        => 'patch',
@@ -321,10 +346,19 @@ class IndexProductsInProductCategory extends OrgAction
                     'style'   => 'create',
                     'tooltip' => __('New product'),
                     'label'   => __('Product'),
+                    'key'     => 'create',
                     'route'   => [
                         'name'       => str_replace('index', 'create', $request->route()->getName()),
                         'parameters' => $request->route()->originalParameters()
                     ]
+                ];
+
+                $actions[] = [
+                   'type'    => 'button',
+                   'style'   => 'save',
+                   'tooltip' => __('Save Order'),
+                   'key'     => 'save_order',
+                   'label'   => __('Save Ordering'),
                 ];
             }
 
@@ -370,6 +404,7 @@ class IndexProductsInProductCategory extends OrgAction
                 'shop_id'                      => $this->shop->id,
                 'currencies'                   => $productCategory->shop->currency,
                 'data'                         => ProductsResource::collection($products),
+                'familyId'                      => $productCategory->type === ProductCategoryTypeEnum::FAMILY ? $productCategory->id : null,
                 'variantSlugs'                 => $products->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]),
                 'tabs'                         => [
                     'current'    => $this->tab,
@@ -379,14 +414,18 @@ class IndexProductsInProductCategory extends OrgAction
                     fn () => ProductsResource::collection($products)
                     : Inertia::lazy(fn () => ProductsResource::collection($products)),
 
+                ProductsTabsEnum::INDEX_ORDERING->value => $this->tab == ProductsTabsEnum::INDEX_ORDERING->value ?
+                    fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::INDEX_ORDERING->value))
+                    : Inertia::lazy(fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::INDEX_ORDERING->value))),
+
                 ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?
                     fn () => ProductsResource::collection($this->handle($productCategory, ProductTabsEnum::SALES->value))
                     : Inertia::lazy(fn () => ProductsResource::collection($this->handle($productCategory, ProductTabsEnum::SALES->value))),
 
-
             ]
-        )->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::INDEX->value))
-            ->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::SALES->value));
+        )
+        ->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::INDEX->value))
+        ->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::SALES->value));
     }
 
 

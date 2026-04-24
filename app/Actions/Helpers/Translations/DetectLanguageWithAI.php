@@ -6,6 +6,7 @@ use Throwable;
 use App\Actions\OrgAction;
 use App\Models\Helpers\Language;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -66,9 +67,11 @@ class DetectLanguageWithAI extends OrgAction
                 return null;
             }
 
-            $code = trim($response->json('choices.0.message.content'));
+            $rawCode = $response->json('choices.0.message.content');
+            $code = is_string($rawCode) ? trim($rawCode) : '';
 
             $code = strtolower(str_replace(['"', "'", '.'], '', $code));
+            $code = Str::of($code)->squish()->value();
 
             if ($code === 'null' || empty($code)) {
                 return null;

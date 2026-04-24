@@ -21,7 +21,7 @@ return new class () extends Migration {
             $table->foreign('dispatched_email_id')->references('id')->on('dispatched_emails')->onUpdate('cascade')->onDelete('cascade');
             $table->string('recipient_type');
             $table->unsignedInteger('recipient_id');
-            $table->unsignedSmallInteger('channel')->index();
+            $table->unsignedInteger('channel')->index();
             $table->timestampsTz();
             $table->index(['recipient_type','recipient_id','mailshot_id']);
             $table->unique(['mailshot_id','dispatched_email_id']);

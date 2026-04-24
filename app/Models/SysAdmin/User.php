@@ -163,6 +163,17 @@ class User extends Authenticatable implements HasMedia, Auditable
         'sources'  => '{}',
     ];
 
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated || $this->wasChanged([
+                'username',
+                'email',
+                'contact_name',
+                'status',
+                'created_at'
+            ]);
+    }
+
     public function toSearchableArray(): array
     {
         return [
@@ -174,13 +185,6 @@ class User extends Authenticatable implements HasMedia, Auditable
             'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }
-
-    public function shouldBeSearchable(): bool
-    {
-        $searchableFields = ['username', 'email', 'contact_name','status','created_at'];
-        return $this->isDirty($searchableFields);
-    }
-
     public function generateTags(): array
     {
         return [
@@ -336,7 +340,7 @@ class User extends Authenticatable implements HasMedia, Auditable
     public function getOrganisation(): ?Organisation
     {
         /** @var Organisation $organisation */
-        $organisation= $this->getOrganisations()->first();
+        $organisation = $this->getOrganisations()->first();
         return $organisation;
     }
 

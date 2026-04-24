@@ -11,14 +11,14 @@ use JsonSerializable;
  * @property int $employee_id
  * @property int $year
  * @property int $annual_days
- * @property int $annual_used
+ * @property float $annual_used
  * @property int $unpaid_days
- * @property int $unpaid_used
+ * @property float $unpaid_used
  * @property int $medical_days
- * @property int $medical_used
- * @property int $annual_remaining
- * @property int $unpaid_remaining
- * @property int $medical_remaining
+ * @property float $medical_used
+ * @property float $annual_remaining
+ * @property float $unpaid_remaining
+ * @property float $medical_remaining
  */
 class LeaveBalanceResource extends JsonResource
 {

@@ -37,7 +37,7 @@ trait OfferCampaignCategoryOffersTrait
                             'icon'  => ['fal', 'comment-dollar'],
                             'title' => __('Offer campaign')
                         ],
-                    'title'     => $offerCampaign->name,
+                    'title'     => OfferCampaignTypeEnum::from($offerCampaign->type->value)->labels()[$offerCampaign->type->value],
                     'model'     => __('Offer Campaign'),
                     'iconRight' => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],
                 ],

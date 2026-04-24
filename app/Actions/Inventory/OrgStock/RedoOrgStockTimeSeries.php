@@ -21,7 +21,7 @@ class RedoOrgStockTimeSeries implements ShouldBeUnique
 {
     use WithHydrateCommand;
 
-    public string $jobQueue         = 'default-long';
+    public string $jobQueue         = 'default-long-slave';
     public string $commandSignature = 'org-stocks:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -37,7 +37,7 @@ class RedoOrgStockTimeSeries implements ShouldBeUnique
     public function handle(OrgStock $orgStock, bool $async = false, ?string $from = null, ?string $to = null): void
     {
         if (!$from || !$to) {
-            $dateRange = DB::table('invoice_transactions')
+            $dateRange = DB::connection('aiku_no_sticky')->table('invoice_transactions')
                 ->join('invoice_transaction_has_org_stocks', 'invoice_transaction_has_org_stocks.invoice_transaction_id', '=', 'invoice_transactions.id')
                 ->where('invoice_transaction_has_org_stocks.org_stock_id', $orgStock->id)
                 ->whereNull('invoice_transactions.deleted_at')

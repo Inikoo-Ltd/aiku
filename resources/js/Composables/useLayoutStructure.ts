@@ -67,24 +67,6 @@ export const layoutStructure = {
     isShopPage: false as boolean,
     isFulfilmentPage: false as boolean,
     // isShopPage: false as boolean,
-    dispatching_waiting_badge: [] as Array<{
-        organisation: { slug: string; name: string; code: string }
-        warehouses: Array<{
-            slug: string
-            name: string
-            code: string
-            waiting_items: { count: number; route: { name: string; parameters: Record<string, string> } }
-            waiting_items_still_picking: { count: number; route: { name: string; parameters: Record<string, string> } }
-        }>
-    }>,
-    crm_waiting_badge: [] as Array<{
-        organisation: { slug: string; name: string; code: string }
-        warehouses: Array<{
-            slug: string
-            name: string
-            code: string
-            waiting_crm_items: { count: number; route: { name: string; parameters: Record<string, string> } }
-            waiting_crm_items_still_picking: { count: number; route: { name: string; parameters: Record<string, string> } }
-        }>
-    }>,
+    dispatching_waiting_count: 0 as number,
+    crm_waiting_count: 0 as number,
 }

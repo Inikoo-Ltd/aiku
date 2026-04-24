@@ -17,6 +17,7 @@ import {
     faEye,
     faShoppingCart,
     faUndo,
+    faStopwatch,
 } from '@fal'
 import { trans } from 'laravel-vue-i18n'
 import { useFormatTime } from '@/Composables/useFormatTime'
@@ -33,6 +34,7 @@ interface TimelineEvent {
     datetime: string
     title: string
     subtitle: string | null
+    comment: string | null
     icon: string[]
     color: string
     metadata: Record<string, unknown>
@@ -140,7 +142,7 @@ const formatMetadataValue = (value: unknown): string => {
                                 <p class="text-xs font-semibold text-gray-900 leading-tight">
                                     {{ event.title }}
                                 </p>
-                                <p v-if="event.subtitle && !(event.type === 'note' && expandedIds.has(event.id))" class="text-xs text-gray-500 mt-0.5 truncate">
+                                <p v-if="event.subtitle" class="text-xs text-gray-500 mt-0.5 truncate">
                                     {{ event.subtitle }}
                                 </p>
                             </div>
@@ -174,9 +176,18 @@ const formatMetadataValue = (value: unknown): string => {
                                 class="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-xs text-gray-600"
                             >
                                 <template v-if="event.type === 'note'">
-                                    <p class="whitespace-pre-wrap leading-relaxed">{{ event.subtitle }}</p>
+                                    <p class="whitespace-pre-wrap leading-relaxed">{{ event.comment }}</p>
                                 </template>
 
+                                <template v-else-if="['page_view', 'product_view'].includes(event.type)">
+                                    <span v-if="event.metadata?.duration_seconds" class="flex gap-2" v-tooltip="trans('Browsed for :_durationSeconds seconds', {_durationSeconds: event.metadata?.duration_seconds})">
+                                        <FontAwesomeIcon :icon="faStopwatch" class="self-center" /> 
+                                        <span  class="self-center">
+                                            {{ event.metadata?.duration_seconds }} {{ trans('Seconds') }}
+                                        </span>
+                                    </span>
+                                </template>
+                                
                                 <template v-else-if="event.type === 'account_update' && (event.metadata.old_values || event.metadata.new_values)">
                                     <div
                                         v-for="key in Object.keys({ ...(event.metadata.old_values as object ?? {}), ...(event.metadata.new_values as object ?? {}) })"

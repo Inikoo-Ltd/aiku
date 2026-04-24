@@ -268,7 +268,7 @@ watch(
             <PureInput :model-value="getActualValue(value)" @update:model-value="updateVat" />
             <span class="italic text-xs" v-if="fieldData?.europeanUnion">
                 <span style="color: red">*</span> {{ trans("This will affect your VAT Rate") }}
-                <FontAwesomeIcon v-on:click="isModalOpen = true" v-tooltip="'Click to view detailed explanation'" icon='fal fa-info-circle' class="opacity-60 hover:opacity-100 cursor-pointer" fixed-width aria-hidden='true' />
+                <FontAwesomeIcon v-on:click="isModalOpen = true" v-tooltip="ctrans('Click to view detailed explanation')" icon='fal fa-info-circle' class="opacity-60 hover:opacity-100 cursor-pointer" fixed-width aria-hidden='true' />
             </span>
         </div>
 

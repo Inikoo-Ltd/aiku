@@ -12,6 +12,7 @@ use App\Actions\GrpAction;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Http\Resources\Goods\TradeUnitsForMasterResource;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Brand;
 use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -22,6 +23,13 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class GetAllTradeUnitsInGroup extends GrpAction
 {
+    public function inBrand(Brand $brand, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisation(group(), $request);
+
+        return $this->handle($this->group, except: $brand->tradeUnits->pluck('id'));
+    }
+
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation(group(), $request);
@@ -29,7 +37,7 @@ class GetAllTradeUnitsInGroup extends GrpAction
         return $this->handle($this->group);
     }
 
-    public function handle(Group $group, $prefix = null): LengthAwarePaginator
+    public function handle(Group $group, $prefix = null, $except = []): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -41,6 +49,9 @@ class GetAllTradeUnitsInGroup extends GrpAction
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
         $queryBuilder->where('trade_units.group_id', $group->id);
         $queryBuilder->where('status', TradeUnitStatusEnum::ACTIVE);
+        $queryBuilder->when($except, function ($q) use ($except) {
+            $q->whereNotIn('trade_units.id', $except);
+        });
 
         return $queryBuilder
             ->defaultSort('trade_units.code')

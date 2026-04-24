@@ -21,8 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $dispatched_email_id
  * @property EmailTrackingEventTypeEnum $type
  * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string|null $created_at
  * @property string|null $source_id
  * @property string|null $ip
  * @property string|null $device
@@ -34,6 +33,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class EmailTrackingEvent extends Model
 {
+    public $timestamps = false;
+
     protected $casts = [
         'data'  => 'array',
         'type'  => EmailTrackingEventTypeEnum::class

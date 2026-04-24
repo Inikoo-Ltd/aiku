@@ -7,6 +7,7 @@ use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithBase64FileConverter;
 use App\Actions\Traits\WithUploadModelImages;
+use App\Events\GenerateGptImagesProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Media;
 use Illuminate\Console\Command;
@@ -18,7 +19,10 @@ class GetGeneratedImages extends OrgAction
     use WithUploadModelImages;
     use WithBase64FileConverter;
 
-    public function handle(Product $model, string $prompt, array $metadata = []): array
+    public int $jobTries = 3;
+    public string $jobQueue = 'default-long';
+
+    public function handle(Product $model, string $prompt, array $metadata = []): void
     {
         $apiKey = config('services.openai.api_key');
         $client = OpenAI::client($apiKey);
@@ -65,9 +69,11 @@ class GetGeneratedImages extends OrgAction
             return $this->convertBase64ToFile($image['b64_json'], $model);
         })->toArray();
 
-        return UploadImagesToProduct::run($model, 'images', [
+        $uploadedImages = UploadImagesToProduct::run($model, 'images', [
             'images' => $result
         ]);
+
+        GenerateGptImagesProgressEvent::dispatch($uploadedImages, $model->exclusive_for_customer_id);
     }
 
     private function prepareImage(string $imageId): string
@@ -97,10 +103,10 @@ class GetGeneratedImages extends OrgAction
         dd($result);
     }
 
-    public function action(Product $model, string $prompt, array $metadata = []): array
+    public function action(Product $model, string $prompt, array $metadata = []): void
     {
         $this->asAction = true;
 
-        return $this->handle($model, $prompt, $metadata);
+        $this->handle($model, $prompt, $metadata);
     }
 }

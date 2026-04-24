@@ -8,27 +8,19 @@
 
 namespace App\Actions\Ordering\Order\Search;
 
-use App\Actions\HydrateModel;
+use App\Actions\Traits\WithScoutReindex;
 use App\Models\Ordering\Order;
-use Illuminate\Support\Collection;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexOrdersSearch extends HydrateModel
+class ReindexOrdersSearch
 {
-    public string $commandSignature = 'search:orders {organisations?*} {--s|slugs=}';
+    use AsAction;
+    use WithScoutReindex;
 
+    public string $commandSignature = 'reindex_search:orders';
 
-    public function handle(Order $order): void
+    public function handle(bool $reindex = true, bool $reset = false): void
     {
-
-    }
-
-    protected function getModel(string $slug): Order
-    {
-        return Order::withTrashed()->where('slug', $slug)->first();
-    }
-
-    protected function getAllModels(): Collection
-    {
-        return Order::withTrashed()->get();
+        $this->runScoutReindex(Order::class, $reindex, $reset);
     }
 }
