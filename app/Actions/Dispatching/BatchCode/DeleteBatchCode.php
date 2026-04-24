@@ -16,21 +16,32 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteBatchCode extends OrgAction
 {
-    public function handle(BatchCode $batchCode): void
+    public function handle(BatchCode $batchCode): BatchCode
     {
         $batchCode->deliveryNoteItems()->update(['batch_code_id' => null]);
         $batchCode->delete();
+
+        return $batchCode;
     }
 
-    public function asController(BatchCode $batchCode, ActionRequest $request): void
+    public function asController(BatchCode $batchCode, ActionRequest $request): BatchCode
     {
         $this->initialisation($batchCode->organisation, $request);
 
-        $this->handle($batchCode);
+        return $this->handle($batchCode);
     }
 
-    public function htmlResponse(): RedirectResponse
+    public function htmlResponse(BatchCode $batchCode): RedirectResponse
     {
-        return Redirect::back();
+        $warehouse = $batchCode->organisation->warehouses()->first();
+
+        if ($warehouse) {
+            return Redirect::route('grp.org.warehouses.show.inventory.batch_codes.index', [
+                $batchCode->organisation->slug,
+                $warehouse->slug,
+            ]);
+        }
+
+        return Redirect::route('grp.org.dashboard.show', $batchCode->organisation->slug);
     }
 }

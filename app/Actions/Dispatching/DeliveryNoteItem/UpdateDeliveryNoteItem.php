@@ -8,11 +8,13 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
+use App\Actions\Dispatching\BatchCode\Hydrators\BatchCodeHydrateDeliveryNotes;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemCancelStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Models\Dispatching\BatchCode;
 use App\Models\Dispatching\DeliveryNoteItem;
 use Illuminate\Validation\Rules\Enum;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,7 +27,17 @@ class UpdateDeliveryNoteItem extends OrgAction
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): DeliveryNoteItem
     {
-        $deliveryNoteItem = $this->update($deliveryNoteItem, $modelData, ['data']);
+        $previousBatchCodeId = $deliveryNoteItem->batch_code_id;
+        $deliveryNoteItem    = $this->update($deliveryNoteItem, $modelData, ['data']);
+
+        if ($deliveryNoteItem->wasChanged('batch_code_id')) {
+            if ($previousBatchCodeId) {
+                BatchCodeHydrateDeliveryNotes::dispatch(BatchCode::find($previousBatchCodeId))->delay($this->hydratorsDelay);
+            }
+            if ($deliveryNoteItem->batch_code_id) {
+                BatchCodeHydrateDeliveryNotes::dispatch($deliveryNoteItem->batchCode)->delay($this->hydratorsDelay);
+            }
+        }
 
         if ($this->strict) {
             if ($deliveryNoteItem->wasChanged('quantity_picked') && $deliveryNoteItem->quantity_picked === $deliveryNoteItem->quantity_required) {

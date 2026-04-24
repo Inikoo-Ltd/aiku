@@ -77,7 +77,7 @@ class StoreInvoiceTransaction extends OrgAction
 
                 $brand = $product->brand();
                 if ($brand) {
-                    $modelData['brand_id']         = $brand->id;
+                    $modelData['brand_id'] = $brand->id;
                 }
 
                 if ($masterProduct = $product->masterProduct) {
@@ -95,9 +95,9 @@ class StoreInvoiceTransaction extends OrgAction
         /** @var InvoiceTransaction $invoiceTransaction */
         $invoiceTransaction = $invoice->invoiceTransactions()->create($modelData);
 
-        SyncInvoiceTransactionTradeUnitBridges::dispatch($invoiceTransaction->id);
-        SyncInvoiceTransactionOrgStockBridges::dispatch($invoiceTransaction->id);
-        SyncInvoiceTransactionStockBridges::dispatch($invoiceTransaction->id);
+        SyncInvoiceTransactionTradeUnitBridges::dispatch($invoiceTransaction->id)->delay(5);
+        SyncInvoiceTransactionOrgStockBridges::dispatch($invoiceTransaction->id)->delay(5);
+        SyncInvoiceTransactionStockBridges::dispatch($invoiceTransaction->id)->delay(5);
 
         if ($invoiceTransaction->order_id && $invoiceTransaction->transaction_id) {
             $invoiceTransaction->transaction->update([
@@ -105,7 +105,7 @@ class StoreInvoiceTransaction extends OrgAction
             ]);
         }
 
-        ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction)->delay(120);
+        ProcessInvoiceTransactionTimeSeries::dispatch(invoiceTransaction: $invoiceTransaction, delay: 300)->delay(30);
 
         return $invoiceTransaction;
     }

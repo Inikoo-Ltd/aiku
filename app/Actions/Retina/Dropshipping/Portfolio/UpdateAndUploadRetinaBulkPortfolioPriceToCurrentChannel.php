@@ -39,7 +39,7 @@ class UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel extends RetinaActi
             data_forget($modelData, 'amount');
             data_forget($modelData, 'type');
 
-            UpdateAndUploadRetinaPortfolioToCurrentChannel::dispatch($portfolio, $modelData, $isDraft);
+            UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, $modelData, $isDraft);
         }
     }
 
