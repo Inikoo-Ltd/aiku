@@ -1,0 +1,9 @@
+* * * * * cd /home/<user>/aiku/current && /usr/bin/flock -n /tmp/aiku-scheduler.lock /usr/bin/php8.4 \
+-d newrelic.enabled=true \
+-d newrelic.appname="<NEW_RELIC_APP_NAME>-scheduler" \
+-d newrelic.daemon.address="@newrelic-daemon" \
+-d newrelic.license="<NEW_RELIC_LICENSE_KEY>" \
+-d newrelic.labels="environment:<APP_ENV>;process:scheduler" \
+-d newrelic.background_job=true \
+-d newrelic.daemon.app_connect_timeout=5s \
+artisan schedule:run >> /home/<user>/logs/cron-schedule-run.log 2>&1
