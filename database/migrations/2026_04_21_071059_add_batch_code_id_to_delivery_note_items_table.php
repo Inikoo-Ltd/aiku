@@ -14,7 +14,7 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('delivery_note_items', function (Blueprint $table) {
-            $table->unsignedInteger('batch_code_id')->nullable()->after('batch_code')->index();
+            $table->unsignedInteger('batch_code_id')->nullable()->index();
             $table->foreign('batch_code_id')->references('id')->on('batch_codes');
         });
     }
