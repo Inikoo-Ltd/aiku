@@ -19,14 +19,14 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, ref } from "vue"
 import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
-import { faSeedling } from '@fal'
+import { faSeedling, faCheckCircle } from '@fal'
 import {library} from "@fortawesome/fontawesome-svg-core";
 import { routeType } from '@/types/route'
 import { trans } from 'laravel-vue-i18n'
 import { KeepAlive } from 'vue'
 import TabsBox from '@/Components/Navigation/TabsBox.vue'
 
-library.add(faSeedling)
+library.add(faSeedling, faCheckCircle)
 
 const props = defineProps<{
     title: string

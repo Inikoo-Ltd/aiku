@@ -159,7 +159,7 @@ class ShowPalletReturnsBacklog extends OrgAction
     public function getTabsBox(Fulfilment $parent): array
     {
         $statAccessor = 'pallet_returns_pallet';
-        if ($this->typeScope == PalletReturnTypeEnum::STORED_ITEM)  {
+        if ($this->typeScope == PalletReturnTypeEnum::STORED_ITEM) {
             $statAccessor   = 'pallet_returns_items';
         }
         return [
@@ -179,7 +179,7 @@ class ShowPalletReturnsBacklog extends OrgAction
                 ],
             ],
             [
-                'label'         => __('Processed'),
+                'label'         => __('Processing'),
                 'tabs'          => [
                     [
                         'tab_slug'    => 'submitted',
@@ -188,19 +188,13 @@ class ShowPalletReturnsBacklog extends OrgAction
                         'type'        => 'number',
                         'icon_data'   => [
                             'tooltip' => __('Submitted'),
-                            'icon'    => 'fal fa-share',
-                            'class'   => 'text-indigo-400',
-                        ],
-                    ],
-                    [
-                        'tab_slug'    => 'confirmed',
-                        'label'       => __('Confirmed'),
-                        'value'       => $parent->stats->{"number_{$statAccessor}_state_confirmed"} ?? 0,
-                        'type'        => 'number',
-                        'icon_data'   => [
-                            'tooltip' => __('Confirmed'),
-                            'icon'    => 'fal fa-spell-check',
-                            'class'   => 'text-emerald-500',
+                            'icon'    => 'fal fa-check-circle',
+                            'class'   => 'text-green-600',
+                            'color'   => 'lime',
+                            'app'     => [
+                                'name' => 'check-circle',
+                                'type' => 'font-awesome-5'
+                            ]
                         ],
                     ],
                 ],
@@ -209,14 +203,29 @@ class ShowPalletReturnsBacklog extends OrgAction
                 'label'         => __('In Warehouse'),
                 'tabs'          => [
                     [
+                        'tab_slug'    => 'confirmed',
+                        'label'       => __('Confirmed'),
+                        'value'       => $parent->stats->{"number_{$statAccessor}_state_confirmed"} ?? 0,
+                        'type'        => 'number',
+                        'icon_data'   => [
+                            'tooltip' => __('To do'),
+                            'icon'    => 'fal fa-clock',
+                        ],
+                    ],
+                    [
                         'tab_slug'    => 'picking',
                         'label'       => __('Picking'),
                         'value'       => $parent->stats->{"number_{$statAccessor}_state_picking"} ?? 0,
                         'type'        => 'number',
                         'icon_data'   => [
                             'tooltip' => __('Picking'),
-                            'icon'    => 'fal fa-truck',
-                            'class'   => 'text-orange-500',
+                            'icon'    => 'fal fa-apple-crate',
+                            'class'   => 'text-gray-500',
+                            'color'   => 'slate',
+                            'app'     => [
+                                'name' => 'check',
+                                'type' => 'font-awesome-5'
+                            ]
                         ],
                     ],
                     [
@@ -231,8 +240,13 @@ class ShowPalletReturnsBacklog extends OrgAction
                         'type'        => 'number',
                         'icon_data'   => [
                             'tooltip' => __('Waiting'),
-                            'icon'    => 'fal fa-hourglass-start',
-                            'class'   => 'text-amber-500',
+                            'icon'    => 'fal fa-snooze',
+                            'class'   => 'text-red-500',
+                            'color'   => 'slate',
+                            'app'     => [
+                                'name' => 'ban',
+                                'type' => 'font-awesome-5'
+                            ]
                         ],
                     ],
                     [
@@ -242,14 +256,19 @@ class ShowPalletReturnsBacklog extends OrgAction
                         'type'        => 'number',
                         'icon_data'   => [
                             'tooltip' => __('Picked'),
-                            'icon'    => 'fal fa-check',
-                            'class'   => 'text-slate-500',
+                            'icon'    => 'fal fa-box',
+                            'class'   => 'text-gray-500',
+                            'color'   => 'slate',
+                            'app'     => [
+                                'name' => 'times',
+                                'type' => 'font-awesome-5'
+                            ]
                         ],
                     ],
                 ],
             ],
             [
-                'label'         => __('Dispatched'),
+                'label'         => __('Dispatched Today'),
                 'tabs'          => [
                     [
                         'tab_slug'    => 'dispatched',
@@ -257,8 +276,13 @@ class ShowPalletReturnsBacklog extends OrgAction
                         'value'       => $parent->stats->{"number_{$statAccessor}_state_dispatched"} ?? 0,
                         'icon_data'   => [
                             'tooltip' => __('Dispatched'),
-                            'icon'    => 'fal fa-check-double',
-                            'class'   => 'text-purple-500',
+                            'icon'    => 'fal fa-paper-plane',
+                            'class'   => 'text-gray-500',
+                            'color'   => 'purple',
+                            'app'     => [
+                                'name' => 'check-double',
+                                'type' => 'font-awesome-5'
+                            ]
                         ],
                     ],
                 ],
