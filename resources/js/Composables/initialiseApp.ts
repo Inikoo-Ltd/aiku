@@ -119,7 +119,6 @@ export const initialiseApp = () => {
 
             const dataActiveUser = {
                 ...usePage().props.auth.user,
-                name: null,
                 last_active: new Date(),
                 action: 'navigate',
                 current_page: {

@@ -164,7 +164,7 @@ const force2FA = async () => {
             <div class="border-t border-gray-100 px-4 py-6 sm:px-0">
                 <dt class="text-sm font-medium">{{ trans("Geolocation") }}:</dt>
                 <dd class="mt-1 text-sm sm:mt-2 flex flex-wrap">
-                    {{ data?.data?.last_login.geolocation.filter(geo => geo).join(', ') }}
+                    {{ data?.data?.last_login?.geolocation?.filter(geo => geo).join(', ') }}
                     <!-- <template v-for="item of data?.data?.last_login.geolocation">
                         <div v-if="item" class="m-1">
                             <Tag :label="item" />

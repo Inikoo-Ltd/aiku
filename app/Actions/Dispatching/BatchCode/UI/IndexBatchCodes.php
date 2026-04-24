@@ -57,12 +57,13 @@ class IndexBatchCodes extends OrgAction
                 'batch_codes.id',
                 'batch_codes.code',
                 'batch_codes.expiry_date',
+                'batch_codes.number_delivery_notes',
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
                 'org_stocks.slug as org_stock_slug',
             ])
-            ->allowedSorts(['code', 'expiry_date', 'org_stock_code'])
+            ->allowedSorts(['code', 'expiry_date', 'org_stock_code', 'number_delivery_notes'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -83,6 +84,7 @@ class IndexBatchCodes extends OrgAction
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'expiry_date', label: __('Expiry Date'), canBeHidden: false, sortable: true, type: 'date')
                 ->column(key: 'org_stock_code', label: __('SKU'), canBeHidden: false, sortable: true)
+                ->column(key: 'number_delivery_notes', label: __('Delivery Notes'), canBeHidden: false, sortable: true)
                 ->column(key: 'actions', label: '', canBeHidden: false, align: 'right');
         };
     }

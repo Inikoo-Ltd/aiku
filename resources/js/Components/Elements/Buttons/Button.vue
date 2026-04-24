@@ -129,7 +129,7 @@ const getActionLabel = (label: string | undefined) => {
       case "cancel":
         return trans("Cancel");
       case "delete":
-        return trans("delete");
+        return trans("Delete");
       case "clearMulti":
         return trans("Clear");
       default:
