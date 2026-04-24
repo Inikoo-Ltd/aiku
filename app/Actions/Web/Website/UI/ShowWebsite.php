@@ -286,8 +286,8 @@ class ShowWebsite extends OrgAction
                     : Inertia::lazy(fn () => ExternalLinksResource::collection(IndexExternalLinks::run($website))),
 
                 WebsiteTabsEnum::REDIRECTS->value => $this->tab == WebsiteTabsEnum::REDIRECTS->value ?
-                    fn () => RedirectsResource::collection(IndexRedirects::run($website))
-                    : Inertia::lazy(fn () => RedirectsResource::collection(IndexRedirects::run($website))),
+                    fn () => RedirectsResource::collection(IndexRedirects::run($website, WebsiteTabsEnum::REDIRECTS->value))
+                    : Inertia::lazy(fn () => RedirectsResource::collection(IndexRedirects::run($website, WebsiteTabsEnum::REDIRECTS->value))),
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: WebsiteTabsEnum::CHANGELOG->value))

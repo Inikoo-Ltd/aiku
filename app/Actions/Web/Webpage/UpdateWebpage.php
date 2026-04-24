@@ -15,6 +15,8 @@ use App\Actions\Traits\UI\WithImageSeo;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
+use App\Actions\Web\Redirect\StoreRedirect;
+use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -90,6 +92,11 @@ class UpdateWebpage extends OrgAction
             if (Arr::has($modelData, 'state_data.redirect_webpage_id')) {
                 data_set($modelData, 'redirect_webpage_id', Arr::get($modelData, 'state_data.redirect_webpage_id'));
             }
+
+            StoreRedirect::make()->action($webpage, [
+                'type'          => RedirectTypeEnum::TEMPORAL,
+                'to_webpage_id' => Arr::get($modelData, 'state_data.redirect_webpage_id')
+            ]);
 
             data_forget($modelData, 'state_data');
         }

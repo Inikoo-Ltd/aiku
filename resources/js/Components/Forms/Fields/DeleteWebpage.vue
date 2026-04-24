@@ -54,7 +54,10 @@ const xxx = ref('')
                 <PureMultiselectInfiniteScroll
                     :class="get(form, ['errors', `redirect_webpage_id`]) ? 'errorShake' : ''"
                     :modelValue="form[fieldName].redirect_webpage_id"
-                    @update:modelValue="(e) => (set(form, [fieldName, 'redirect_webpage_id'], e))"
+                    @update:modelValue="(e) => {
+                        set(form, [fieldName, 'redirect_webpage_id'], e);
+                        set(fieldData.route_delete, ['body', 'redirect_webpage_id'], e);
+                    }"
                     :initOptions="fieldData?.init_options || []"
                     required
                     :placeholder="trans('Select webpage to redirect')"
@@ -94,6 +97,7 @@ const xxx = ref('')
 
         
         <div class="mt-4 w-fit max-w-sm">
+            {{ fieldData.route_delete }}
             <ButtonWithLink
                 v-if="fieldData.current_state === 'closed' || fieldData.current_state === 'live'"
                 icon="far fa-trash-alt"

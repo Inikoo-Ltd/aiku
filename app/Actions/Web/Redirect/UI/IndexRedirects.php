@@ -30,8 +30,8 @@ class IndexRedirects extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('redirects.url', $value)
-                    ->orWhereStartWith('webpages.to_webpage_title', $value);
+                $query->whereAnyWordStartWith('redirects.from_url', $value)
+                    ->orWhereStartWith('webpages.title', $value);
             });
         });
 

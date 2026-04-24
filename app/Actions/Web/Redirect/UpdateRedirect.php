@@ -11,8 +11,10 @@ namespace App\Actions\Web\Redirect;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Models\Web\Redirect;
+use App\Models\Web\Webpage;
 use App\Rules\NoDomainString;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -30,6 +32,9 @@ class UpdateRedirect extends OrgAction
             data_set($modelData, 'url', $url);
         }
         $redirect = $this->update($redirect, $modelData);
+
+        $toWebpage = Webpage::find($redirect->to_webpage_id);
+        WebpageHydrateRedirects::run($toWebpage);
 
         return $redirect;
     }

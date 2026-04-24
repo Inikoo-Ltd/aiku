@@ -40,7 +40,8 @@ class DeleteWebpage extends OrgAction
                 DB::table('webpage_time_series')->where('webpage_id', $webpage->id)->delete();
                 DB::table('webpage_stats')->where('webpage_id', $webpage->id)->delete();
                 DB::table('redirects')->where('to_webpage_id', $webpage->id)->delete();
-                DB::table('redirects')->where('from_webpage_id', $webpage->id)->update(['from_webpage_id' => null]);
+                // TODO: Maybe use a diff route & allow redirects. :shrug:
+                // DB::table('redirects')->where('from_webpage_id', $webpage->id)->update(['from_webpage_id' => null]);
                 DB::table('model_has_web_blocks')->where('webpage_id', $webpage->id)->delete();
                 if ($webpage->model_type == 'Product') {
                     DB::table('products')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
