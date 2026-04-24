@@ -8,8 +8,10 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
+use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -82,10 +84,25 @@ class EditInvoice extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
+                            'title'   => __('Billing Details'),
+                            'label'   => __('Billing Details'),
+                            'icon'    => 'fal fa-map-marked-alt',
+                            'current' => true,
+                            'fields'  => [
+                                'invoice_billing_address' => [
+                                    'type'    => 'address',
+                                    'label'   => __('Address'),
+                                    'value'   => AddressFormFieldsResource::make($invoice->address)->getArray(),
+                                    'options' => [
+                                        'countriesAddressData' => GetAddressData::run()
+                                    ]
+                                ],
+                            ]
+                        ],
+                        [
                             'title'   => __('Footer'),
                             'label'   => __('Footer'),
                             'icon'    => 'fa-light fa-key',
-                            'current' => true,
                             'fields'  => [
                                 'footer' => [
                                     'type'  => 'textEditor',

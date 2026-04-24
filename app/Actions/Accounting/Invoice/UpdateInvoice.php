@@ -14,6 +14,9 @@ use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoi
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
+use App\Actions\Helpers\Address\UpdateAddress;
+use App\Actions\Helpers\TaxCategory\GetTaxCategory;
+use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\SalesChannel\RedoSalesChannelTimeSeries;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
@@ -24,6 +27,7 @@ use App\Actions\Traits\WithFixedAddressActions;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
+use App\Models\Helpers\Address;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
@@ -50,13 +54,31 @@ class UpdateInvoice extends OrgAction
         $oldShippingZoneId       = $invoice->shipping_zone_id;
         $oldDate                 = $invoice->date;
 
+        $newBillAddressData = Arr::pull($modelData, 'invoice_billing_address');
+
+        if ($newBillAddressData) {
+            $parent = $invoice->order ?? $invoice;
+            if ($parent->address_id != $parent->delivery_address_id) {
+                $newAddress = UpdateAddress::run($invoice->address, $newBillAddressData, null, 'contact address');
+            } else {
+                $newBillAddressData = array_merge(
+                    $newBillAddressData,
+                    Arr::only($invoice->address->toArray(), ['group_id', 'multiplicity', 'is_fixed', 'fixed_scope'])
+                );
+                data_set($newBillAddressData, 'usage', 0);
+                data_set($newBillAddressData, 'fixed_usage', 0);
+
+                $newAddress = Address::create($newBillAddressData);
+            }
+
+            data_set($modelData, 'billing_address', $newAddress);
+        }
+
         $billingAddressData = Arr::pull($modelData, 'billing_address');
 
         $deliveryAddressData = Arr::pull($modelData, 'delivery_address');
 
-
         $invoice = $this->update($invoice, $modelData, ['data']);
-
 
         if ($billingAddressData) {
             $this->updateFixedAddress(
@@ -70,6 +92,33 @@ class UpdateInvoice extends OrgAction
             $invoice->update([
                 'billing_country_id' => $invoice->billingAddress->country_id,
             ]);
+
+            if ($order = $invoice->order) {
+                $customer = $order->customer;
+                $order->update([
+                    'billing_address_id'    => $billingAddressData->id,
+                    'tax_category_id' => GetTaxCategory::run(
+                        country: $order->organisation->country,
+                        taxNumber: $customer->taxNumber,
+                        billingAddress: $order->billingAddress,
+                        deliveryAddress: $order->deliveryAddress,
+                        isRe: $customer?->is_re,
+                    )->id,
+                ]);
+
+                $order->refresh();
+                CalculateOrderTotalAmounts::run($order, false, false);
+                $order->refresh();
+                
+                $invoice->update([
+                    'total_amount'      => $order->total_amount,
+                    'tax_category_id'   => $order->tax_category_id,
+                    'tax_amount'        => $order->tax_amount,
+                ]);
+            }
+            
+
+            RunInvoiceHydrators::run($invoice, $this->hydratorsDelay);
         }
 
 
@@ -88,9 +137,7 @@ class UpdateInvoice extends OrgAction
             ]);
         }
 
-
         $changes = Arr::except($invoice->getChanges(), ['updated_at', 'last_fetched_at']);
-
 
         if (count($changes) > 0) {
             $invoiceDate    = \Carbon\Carbon::parse($invoice->date);
@@ -180,6 +227,7 @@ class UpdateInvoice extends OrgAction
             'tax_liability_at'         => ['sometimes', 'date'],
             'footer'                   => ['sometimes', 'string'],
             'billing_address'          => ['sometimes', 'required', new ValidAddress()],
+            'invoice_billing_address'  => ['sometimes', 'required', new ValidAddress()],
             'delivery_address'         => ['sometimes', 'required', new ValidAddress()],
             'sales_channel_id'         => [
                 'sometimes',
