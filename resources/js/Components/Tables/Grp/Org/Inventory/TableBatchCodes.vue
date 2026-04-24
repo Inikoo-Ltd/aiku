@@ -6,15 +6,14 @@
 
 <script setup lang="ts">
 import Table from "@/Components/Table/Table.vue"
-import { Link, router } from "@inertiajs/vue3"
+import { Link } from "@inertiajs/vue3"
 import { RouteParams } from "@/types/route-params"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPencil, faTrashAlt } from "@far"
+import { faPencil } from "@far"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 
-library.add(faPencil, faTrashAlt)
+library.add(faPencil)
 
 defineProps<{
     data: object
@@ -48,6 +47,20 @@ function showRoute(batchCode: { id: number }) {
             <span v-else class="text-gray-400">—</span>
         </template>
 
+        <template #cell(number_delivery_notes)="{ item }">
+            <Link
+                :href="route('grp.org.warehouses.show.inventory.batch_codes.show', {
+                    organisation: (route().params as RouteParams).organisation,
+                    warehouse: (route().params as RouteParams).warehouse,
+                    batchCode: item.id,
+                    tab: 'delivery_notes',
+                })"
+                class="primaryLink"
+            >
+                {{ item.number_delivery_notes }}
+            </Link>
+        </template>
+
         <template #cell(actions)="{ item }">
             <div class="flex gap-2 justify-end">
                 <Link
@@ -60,24 +73,6 @@ function showRoute(batchCode: { id: number }) {
                 >
                     <FontAwesomeIcon :icon="faPencil" fixed-width aria-hidden="true" />
                 </Link>
-
-                <ModalConfirmationDelete
-                    :routeDelete="{
-                        name: 'grp.models.batch_code.delete',
-                        parameters: [item.id],
-                    }"
-                    :title="`Delete batch code &quot;${item.code}&quot;?`"
-                    @success="router.reload()"
-                >
-                    <template #default="{ changeModel }">
-                        <button
-                            class="text-red-400 hover:text-red-600"
-                            @click="changeModel"
-                        >
-                            <FontAwesomeIcon :icon="faTrashAlt" fixed-width aria-hidden="true" />
-                        </button>
-                    </template>
-                </ModalConfirmationDelete>
             </div>
         </template>
     </Table>

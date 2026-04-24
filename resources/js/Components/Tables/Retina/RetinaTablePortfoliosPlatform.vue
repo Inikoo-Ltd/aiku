@@ -738,6 +738,10 @@ const percentageIncrease = ref(0);
 					{{ trans("RRP (include VAT):") }}
 					{{ locale.currencyFormat(product.currency_code, product.customer_price) }}
 				</div>
+				<div v-else>
+					{{ trans("RRP:") }}
+					{{ locale.currencyFormat(product.currency_code, product.customer_price) }}
+				</div>
 				<!-- <div v-else-if="platform_data.type === 'ebay'">
 					{{ trans("RRP:") }}
 					{{ locale.currencyFormat(product.currency_code, product.customer_price * 0.8) }}
@@ -1379,7 +1383,7 @@ const percentageIncrease = ref(0);
 						type="tertiary"
 						:style="'white-w-outline'" />
 						<div class="flex flex-row">
-							<InputNumber 
+							<InputNumber
 								@update:modelValue="(value) => percentageIncrease = value"
 								:modelValue="percentageIncrease"
 								:inputClass="'xxs w-[65px]'"
@@ -1389,13 +1393,13 @@ const percentageIncrease = ref(0);
 									'font-size': '0.75rem'
 								}"
 								type="tertiary"
-								:style="'white-w-outline'" 
+								:style="'white-w-outline'"
 								:min="0"
 								:max="100"
 								:allowEmpty="false"
 								:suffix="'%'"
 							/>
-							<Button 
+							<Button
 								@click="
 									set(
 										selectedEditProduct,
@@ -1411,7 +1415,7 @@ const percentageIncrease = ref(0);
 								size="xs"
 								type="tertiary"
 								:class="'rounded-l-none  ml-0 px-4'"
-								:style="'white-w-outline'" 
+								:style="'white-w-outline'"
 							/>
 						</div>
 						<Button

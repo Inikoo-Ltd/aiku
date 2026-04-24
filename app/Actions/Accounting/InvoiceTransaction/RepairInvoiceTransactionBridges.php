@@ -27,7 +27,7 @@ trait RepairInvoiceTransactionBridges
             return;
         }
 
-        $command->line("Found {$total} invoice transactions to process.");
+        $command->line("Found $total invoice transactions to process.");
 
         $bar = $command->getOutput()->createProgressBar($total);
         $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
@@ -39,7 +39,9 @@ trait RepairInvoiceTransactionBridges
                 if ($invoiceTransaction->deleted_at == null && $invoiceTransaction->model_type == 'Product'
                 && $invoiceTransaction->model_id != null
                 ) {
-                    $this->getJobClass()::dispatch($invoiceTransaction->id);
+                    /** @var class-string $jobClass */
+                    $jobClass = $this->getJobClass();
+                    $jobClass::dispatch($invoiceTransaction->id)->onQueue('sales_slave_historic');
                 }
 
                 $bar->advance();
@@ -56,5 +58,8 @@ trait RepairInvoiceTransactionBridges
         $this->handle($command);
     }
 
+    /**
+     * @return class-string
+     */
     abstract protected function getJobClass(): string;
 }

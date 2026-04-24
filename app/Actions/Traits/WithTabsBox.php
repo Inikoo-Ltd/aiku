@@ -126,6 +126,7 @@ trait WithTabsBox
             ],
             [
                 'label'         => __('Submitted'),
+                'show_total'    => true,
                 'currency_code' => $currencyCode,
                 'tabs'          => [
                     [
@@ -199,6 +200,7 @@ trait WithTabsBox
             ],
             [
                 'label'         => __('Warehouse'),
+                'show_total'    => true,
                 'currency_code' => $currencyCode,
                 'tabs'          => [
                     [

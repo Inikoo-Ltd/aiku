@@ -23,6 +23,7 @@ use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Audits\DispatchSimpleAudit;
 
 class UpdateDeliveryNoteItemPacking extends OrgAction
 {
@@ -35,10 +36,26 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): DeliveryNoteItem
     {
-        $deliveryNote = $deliveryNoteItem->deliveryNote;
-        $oldState     = $deliveryNote->state;
+        $deliveryNote       = $deliveryNoteItem->deliveryNote;
+        $oldState           = $deliveryNote->state;
+        $oldPackedQuantity  = (int) ($deliveryNoteItem->getOriginal('quantity_packed') ?? 0);
 
         StorePacking::make()->action($deliveryNoteItem, $this->user, []);
+        $deliveryNoteItem->refresh();
+
+        $newPackedQuantity = (int) $deliveryNoteItem->quantity_packed;
+        $productName = $deliveryNoteItem->data['name'] ?? $deliveryNoteItem->data['title'] ?? 'Unknown Item';
+
+        $oldAuditString = "{$oldPackedQuantity} pcs of {$productName}";
+        $newAuditString = "{$newPackedQuantity} pcs of {$productName}";
+
+        DispatchSimpleAudit::run(
+            auditableModel  : $deliveryNote,
+            logKey          : 'packed_item_' . $deliveryNoteItem->id, 
+            oldValue        : $oldAuditString,
+            newValue        : $newAuditString,
+            eventName       : 'item_packed'
+        );
 
         $siblingDeliveryNoteItems = $deliveryNote->deliveryNoteItems()->with('packings')->get();
 

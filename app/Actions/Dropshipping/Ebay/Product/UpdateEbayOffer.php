@@ -6,19 +6,19 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Dropshipping\WooCommerce\Product;
+namespace App\Actions\Dropshipping\Ebay\Product;
 
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
+use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
-class UpdateWooProduct implements ShouldBeUnique
+class UpdateEbayOffer implements ShouldBeUnique
 {
     use AsAction;
 
@@ -34,32 +34,30 @@ class UpdateWooProduct implements ShouldBeUnique
             return;
         }
 
-        $wooCommerceUser = $customerSalesChannel->user;
-        if (!$wooCommerceUser instanceof WooCommerceUser) {
+        $ebayUser = $customerSalesChannel->user;
+        if (!$ebayUser instanceof EbayUser) {
             return;
         }
 
         $platformPortfolioLog = StorePlatformPortfolioLog::run($portfolio, []);
 
-        $wooCommerceUser->setTimeout(45);
-
         try {
-            $wooCommerceUser->updateWooCommerceProduct(
+            $ebayUser->updateOffer(
                 $portfolio->platform_product_id,
                 [
-                    'regular_price'     => (string)$portfolio->customer_price,
                     'title' => $portfolio->customer_product_name,
-                    'description' => $portfolio->customer_description
+                    'description' => $portfolio->customer_description,
+                    'price' => (string) $portfolio->customer_price
                 ]
             );
 
             UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
-                'status'           => PlatformPortfolioLogsStatusEnum::OK
+                'status' => PlatformPortfolioLogsStatusEnum::OK
             ]);
         } catch (Throwable $e) {
             UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
-                'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                'response' => 'E2: '.$e->getMessage()
+                'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response' => 'E2: ' . $e->getMessage()
             ]);
         }
     }
