@@ -307,7 +307,7 @@ const generateProductHtmlValue = (product: any, shopSlug: string): string => {
     const buttonColor = selectedButtonColor.value
 
     return `
-        <div style="max-width: 300px; font-family: Arial, sans-serif;">
+        <div style="width: 100%; font-family: Arial, sans-serif;">
             ${imageUrl ? `
                 <div style="margin-bottom: 12px;">
                     <img src="${imageUrl}" alt="${title}" style="width: 100%; height: auto; border-radius: 8px;" />
@@ -319,7 +319,7 @@ const generateProductHtmlValue = (product: any, shopSlug: string): string => {
                     <p style="margin: 0; font-size: 14px; color: #666; line-height: 1.4;">${truncatedDescription}</p>
                 ` : ''}
             </div>
-            <div>
+            <div style="text-align: center;">
                 <a href="${productUrl}" style="display: inline-block; background-color: ${buttonColor}; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: 500;">Shop Now</a>
             </div>
         </div>
