@@ -45,7 +45,7 @@ class GetGeneratedImages extends OrgAction
             }
 
             $response = Http::baseUrl('https://api.openai.com/v1')
-                ->timeout(30)
+                ->timeout(150)
                 ->withToken($apiKey)
                 ->post('images/edits', [
                 'model' => 'gpt-image-1.5',
