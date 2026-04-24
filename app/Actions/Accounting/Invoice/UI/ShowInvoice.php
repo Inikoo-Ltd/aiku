@@ -402,6 +402,7 @@ class ShowInvoice extends OrgAction
                 ],
                 'can'                           => [
                     'editInvoiceDate' => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
+                    'editInvoiceAddress' => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
                 ],
                 'box_stats'                     => $this->getBoxStats($invoice),
                 'list_refunds'                  => RefundResource::collection($invoice->refunds),
