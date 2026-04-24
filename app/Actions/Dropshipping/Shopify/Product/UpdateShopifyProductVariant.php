@@ -56,7 +56,8 @@ class UpdateShopifyProductVariant extends RetinaAction
         }
 
         try {
-            $variantId      = $portfolio->platform_product_variant_id;
+            $currentVariant = FindSpecificShopifyProductVariant::run($customerSalesChannel, $productID);
+            $variantId      = Arr::get($currentVariant, 'id');
 
             if (!$variantId) {
                 $errorMessage = 'No variant ID found for product: '.$productID;

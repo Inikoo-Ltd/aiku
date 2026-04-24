@@ -18,6 +18,7 @@ use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\Portfolio;
 use App\Traits\SanitizeInputs;
+use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -77,4 +78,14 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
         $this->handle($portfolio, $this->validatedData, true);
     }
 
+    public string $commandSignature = 'UpdateAndUploadRetinaPortfolioToCurrentChannel {portfolio_id}';
+
+    public function asCommand(Command $command): void
+    {
+        $portfolio = Portfolio::find($command->argument('portfolio_id'));
+
+        $this->handle($portfolio, [
+            'customer_price' => '999'
+        ]);
+    }
 }
