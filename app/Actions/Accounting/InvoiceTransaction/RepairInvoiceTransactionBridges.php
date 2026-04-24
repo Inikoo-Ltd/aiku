@@ -39,7 +39,7 @@ trait RepairInvoiceTransactionBridges
                 if ($invoiceTransaction->deleted_at == null && $invoiceTransaction->model_type == 'Product'
                 && $invoiceTransaction->model_id != null
                 ) {
-                    $this->getJobClass()::dispatch($invoiceTransaction->id);
+                    $this->getJobClass()::dispatch($invoiceTransaction->id)->onQueue('sales_slave_historic');
                 }
 
                 $bar->advance();

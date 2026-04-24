@@ -17,7 +17,7 @@ class SyncInvoiceTransactionTradeUnitBridges implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $jobQueue = 'hydrators-slave';
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(?int $invoiceTransactionId): string
     {
