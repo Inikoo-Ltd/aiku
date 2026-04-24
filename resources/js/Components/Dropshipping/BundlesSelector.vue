@@ -89,10 +89,19 @@ const debounceGetPortfoliosList = debounce(() => (getPortfoliosList()), 500)
 
 // Section: On select product
 const selectedProduct = ref<Portfolio[]>([])
+const MAX_SELECTED_PRODUCTS = 10
+
+const notifyMaxSelectedProducts = () => {
+    notify({
+        title: trans('Information'),
+        text: trans('Only a maximum of 10 selected products can be selected'),
+        type: 'warn'
+    })
+}
 
 watch(() => props.preselected, (val) => {
     if (Array.isArray(val)) {
-        selectedProduct.value = [...val]
+        selectedProduct.value = [...val].slice(0, MAX_SELECTED_PRODUCTS)
     }
 }, { immediate: true })
 
@@ -108,6 +117,10 @@ const buildSelectedProduct = (item: any) => ({
 const selectProduct = (item: any) => {
     const index = selectedProduct.value.findIndex((selected) => selected.id === item.id)
     if (index === -1) {
+        if (selectedProduct.value.length >= MAX_SELECTED_PRODUCTS) {
+            notifyMaxSelectedProducts()
+            return
+        }
         selectedProduct.value.push(buildSelectedProduct(item))
     } else {
         selectedProduct.value.splice(index, 1)
@@ -195,11 +208,11 @@ watch(selectedProduct, (val) => {
                         <div class="font-semibold text-lg py-1">{{ props.label_result ?? trans("Result") }} ({{
                             locale?.number(portfoliosMeta?.total || 0) }})</div>
                         <div class="flex gap-2">
-                            <div @click="() => isAllSelected ? null : selectAllProducts()" class=" "
+                            <!-- <div @click="() => isAllSelected ? null : selectAllProducts()" class=" "
                                 :class="isAllSelected ? 'text-green-400' : 'cursor-pointer text-green-600 hover:text-green-700 hover:underline'">
                                 {{ trans("Select :number products in this page", { number: portfoliosList.length }) }}
 
-                            </div>
+                            </div> -->
                             <!-- <ToggleSwitch :model-value="isAllSelected" @change="() => selectAllProducts()" /> -->
                             <div v-if="compSelectedProduct.length" @click="() => selectedProduct = []"
                                 class="cursor-pointer text-red-400 hover:text-red-600 hover:underline">

@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Dropshipping\Ebay\Product\StoreNewProductToCurrentEbay;
+use App\Actions\Dropshipping\Ebay\Product\UpdateEbayOffer;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyProductVariant;
@@ -18,6 +19,7 @@ use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\Portfolio;
 use App\Traits\SanitizeInputs;
+use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -32,9 +34,9 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
 
         if (! $isDraft) {
             match ($portfolio->platform->type) {
-                PlatformTypeEnum::EBAY => StoreNewProductToCurrentEbay::run($portfolio->customerSalesChannel->user, $portfolio),
+                PlatformTypeEnum::EBAY => UpdateEbayOffer::run($portfolio),
                 PlatformTypeEnum::WOOCOMMERCE => UpdateWooProduct::run($portfolio),
-                PlatformTypeEnum::SHOPIFY => UpdateShopifyProductVariant::run($portfolio, $modelData),
+                PlatformTypeEnum::SHOPIFY => UpdateShopifyProductVariant::run($portfolio),
                 default => null
             };
         }
@@ -77,4 +79,14 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
         $this->handle($portfolio, $this->validatedData, true);
     }
 
+    public string $commandSignature = 'UpdateAndUploadRetinaPortfolioToCurrentChannel {portfolio_id}';
+
+    public function asCommand(Command $command): void
+    {
+        $portfolio = Portfolio::find($command->argument('portfolio_id'));
+
+        $this->handle($portfolio, [
+            'customer_price' => '999'
+        ]);
+    }
 }

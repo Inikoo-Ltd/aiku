@@ -10,6 +10,7 @@ const title = ref('')
 const description = ref('')
 
 const STORAGE_KEY = 'iris_bundle_products'
+const MAX_BUNDLE_PRODUCTS = 10
 
 const products = ref<any[]>([])
 const summary = ref({
@@ -35,6 +36,14 @@ export function useBundle(routes?: any) {
 
     const aiTitleError = ref<string | null>(null)
     const aiDescError = ref<string | null>(null)
+
+    const notifyMaxBundleProducts = () => {
+        notify({
+            title: trans('Information'),
+            text: trans('Only a maximum of 10 selected products can be selected'),
+            type: 'warn'
+        })
+    }
 
     const dedupeProducts = (items: any[] = []) => {
         const map = new Map()
@@ -77,15 +86,29 @@ export function useBundle(routes?: any) {
     }
 
     const addProduct = (product: any) => {
+        if (Array.isArray(product)) {
+            products.value = product
+            saveProductsToStorage()
+            open.value = true
+            return
+        }
+
         const exist = products.value.find(p => p.id === product.id)
 
         if (!exist) {
+            if (products.value.length >= MAX_BUNDLE_PRODUCTS) {
+                notifyMaxBundleProducts()
+                return
+            }
+
             products.value.push({
                 ...product,
-                quantity: 1
+                quantity: product?.quantity ?? product?.quantity_selected ?? 1,
+                quantity_selected: product?.quantity_selected ?? product?.quantity ?? 1
             })
             saveProductsToStorage()
         }
+
         open.value = true
     }
 
@@ -400,6 +423,7 @@ export function useBundle(routes?: any) {
         bundle_id,
         productIds,
         bundleRoutes,
+        MAX_BUNDLE_PRODUCTS,
         resetBundle,
         isStoringBundle,
         aiTitleError,
