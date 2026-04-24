@@ -19,7 +19,7 @@ class SyncInvoiceTransactionStockBridges extends SyncInvoiceTransactionBridges i
 {
     use AsAction;
 
-    public string $jobQueue = 'hydrators-slave';
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(int $invoiceTransactionId): string
     {
