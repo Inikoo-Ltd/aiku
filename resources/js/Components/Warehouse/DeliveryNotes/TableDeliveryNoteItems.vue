@@ -39,6 +39,7 @@ import LoadingOverlay2 from "@/Components/Utils/LoadingOverlay2.vue"
 import { ctrans } from "@/Composables/useTrans"
 import LabelPickingLocation from "./LabelPickingLocation.vue"
 import PickingLocationModal from "./PickingLocationModal.vue"
+import SelectPickingLocation from "./SelectPickingLocation.vue"
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox);
 
 
@@ -1031,58 +1032,14 @@ const onSetItemToUndoWaitingWarehouse = () => {
 
 
     <!-- Modal: Location picker -->
-    <KeepAlive>
-        <PickingLocationModal
-            :isOpen="isModalLocation"
+    
+    <Modal :isOpen="isModalLocation" @onClose="isModalLocation = false" width="w-full max-w-3xl" xdialogStyle="{ background: '#ffffff' }">
+        <SelectPickingLocation
             :item="selectedItemValue"
             :selectedLocationCode="get(selectedLocationCode, [selectedItemValue?.id], null)"
-            @close="isModalLocation = false"
             @select="(code) => { set(selectedLocationCode, [selectedItemValue?.id], code); isModalLocation = false; }"
         />
-    </KeepAlive>
-
-    
-    <!-- <Modal :isOpen="isModalLocation" @onClose="() => onCloseModal()" width="w-full max-w-2xl" :dialogStyle="{
-        background: '#ffffff'
-    }">
-        <div class="text-center font-semibold text-2xl">
-            Location list for {{ selectedItemValue?.org_stock_code }}:
-        </div>
-        <div class="mb-4 italic opacity-60 xtext-sm text-center">
-            {{ ctrans("Total stocks on all locations") }}: <span class="font-bold">{{ locale.number(countStockInAllLocations(selectedItemValue?.locations)) }}</span> {{ trans("stocks") }}
-        </div>
-
-        <div class="rounded p-1 grid grid-cols-3 justify-between gap-x-6 items-center xdivide-x xdivide-gray-300">
-            <div v-for="location in selectedItemValue?.locations"
-                class="xbg-gray-100 border border-gray-300 rounded mb-3 w-full xeven:bg-black/5 flex justify-between gap-x-3 items-center px-2 xpy-2">
-                <label :for="location.location_code" class="flex flex-wrap cursor-pointer w-full py-2">
-                    <span v-if="location.location_code"
-                        v-tooltip="location.quantity <= 0 ? 'Location has no stock' : ''"
-                        :class="location.quantity <= 0 ? 'text-gray-400' : ''">
-                        <Link :href="generateLocationRoute(location)"
-                            class="bg-gradient-to-t from-yellow-300/50 to-yellow-200/50 focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1;">
-                        {{ location.location_code }}
-                        </Link>
-                    </span>
-                    <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">
-                        ({{ trans("Unknown") }})
-                    </span>
-
-                    <span
-                        v-tooltip="trans('Total stock is :quantity in location :location_code', {quantity: locale.number(Number(location.quantity) || 0), location_code: location.location_code || ''})"
-                        class="ml-1 whitespace-nowrap text-gray-400 tabular-nums xborder border-gray-300 rounded xpx-1">
-                        (<FractionDisplay v-if="location.quantity_fractional"
-                            :fractionData="location.quantity_fractional" />
-                        <template v-else>{{ location.quantity }}</template> stocks)
-                    </span>
-                </label>
-                <RadioButton v-model="selectedItemProxy.org_stock_id" @update:modelValue="() => {
-                        onCloseModal()
-                    }" :inputId="location.location_code" :disabled="location.quantity <= 0" name="location"
-                    :value="location.location_code" />
-            </div>
-        </div>
-    </Modal> -->
+    </Modal>
 
     <!-- Modal: Select batch code -->
     <Modal :isOpen="isModalEditExpiryDate" @onClose="() => onCloseModalExpiryDate()" width="w-full max-w-lg">
