@@ -181,7 +181,6 @@ class UpdateOrder extends OrgAction
             'in_warehouse_at'         => ['sometimes', 'date'],
             'dispatched_at'           => ['sometimes', 'nullable', 'date'],
             'finalised_at'            => ['sometimes', 'nullable', 'date'],
-            'billing_address_id'     => ['sometimes', Rule::exists('addresses', 'id')],
             'delivery_address_id'     => ['sometimes', Rule::exists('addresses', 'id')],
             'collection_address_id'   => ['sometimes', 'nullable', Rule::exists('addresses', 'id')],
             'shipping_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],

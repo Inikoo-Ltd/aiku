@@ -32,7 +32,7 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
             ($forceRecalculate ? '1' : '0');
     }
 
-    public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false): Order
+    public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false)
     {
 
         $itemsNet   = $order->transactions()->where('model_type', 'Product')->sum('net_amount');
@@ -137,8 +137,6 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
                 CalculateCollectionCharges::run($order);
             }
         }
-
-        return $order;
     }
 
     public string $commandSignature = 'order:totals {--s|slugs=}';
