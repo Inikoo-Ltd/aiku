@@ -39,6 +39,7 @@ class BeefreeProductResource extends JsonResource
             'description'   => $this->description,
             'web_images'    => $webImages,
             'product_image' => $productImage,
+            'url'           => $this->webpage?->getCanonicalUrl(),
         ];
     }
 }

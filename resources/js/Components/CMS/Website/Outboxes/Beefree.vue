@@ -303,7 +303,7 @@ const generateProductHtmlValue = (product: any, shopSlug: string): string => {
     const truncatedDescription = description.length > 300
         ? description.substring(0, 300) + '...'
         : description
-    const productUrl = product.url || `/shop/${shopSlug}/product/${product.slug || product.id}`
+    const productUrl = product.url || '#'
     const buttonColor = selectedButtonColor.value
 
     return `
