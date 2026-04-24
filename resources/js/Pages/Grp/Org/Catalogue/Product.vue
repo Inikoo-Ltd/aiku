@@ -7,12 +7,9 @@ import {
     faStream, faUsers, faHeart, faMinus,
     faFolderTree, faBrowser, faLanguage,faFolders, faPaperclip,
     faFolderDownload,faQuoteLeft,
-    faSync,
     faSearch,
     faBadgePercent,
     faTools,
-    faAtom,
-    faLasso,
 } from '@fal'
 import { ref, computed, inject } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -20,8 +17,7 @@ import { capitalize } from "@/Composables/capitalize"
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import Breadcrumb from 'primevue/breadcrumb'
-import Message from 'primevue/message'
-import { FontAwesomeIcon, FontAwesomeLayers } from '@fortawesome/vue-fontawesome'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import type { PageHeadingTypes } from '@/types/PageHeading'
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableOrders from "@/Components/Tables/Grp/Org/Ordering/TableOrders.vue"
@@ -43,9 +39,8 @@ import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategory
 import { trans } from "laravel-vue-i18n"
 import ProductContent from '@/Components/Showcases/Grp/ProductContent.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { faMagnifyingGlass, faMagnifyingGlassArrowRight } from '@fortawesome/free-solid-svg-icons'
-import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
-import { faBoneBreak, faHatCowboySide, faShapes, faStar } from '@fas'
+import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
+import { faShapes, faStar } from '@fas'
 import { faHatCowboy } from "@far"
 import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
 import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'

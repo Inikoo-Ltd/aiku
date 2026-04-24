@@ -92,6 +92,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
         if ($this->tab === CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value) {
             $query->where('portfolios.is_bundle', true);
+            $query->whereNot('products.state', ProductStateEnum::DISCONTINUED->value);
         } else {
             $query->where('portfolios.is_bundle', false);
         }

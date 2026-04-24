@@ -8,27 +8,22 @@
 
 namespace App\Actions\Accounting\InvoiceTransaction;
 
-use App\Models\Accounting\InvoiceTransaction;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 trait RepairInvoiceTransactionBridges
 {
-    private const int CHUNK_SIZE = 2000;
+    private const int CHUNK_SIZE = 10000;
 
     public function handle(Command $command): void
     {
-
-        $query = InvoiceTransaction::query()
-            ->select('id')
-            ->where('model_type', 'Product')
-            ->whereNotNull('model_id')
-            ->whereNull('deleted_at');
+        $query = DB::table('invoice_transactions')
+            ->select('id', 'model_id', 'model_type', 'deleted_at');
 
         $total = (clone $query)->count('id');
 
         if ($total === 0) {
             $command->info('No invoice transactions to repair.');
-
             return;
         }
 
@@ -38,10 +33,15 @@ trait RepairInvoiceTransactionBridges
         $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
         $bar->start();
 
-
         $query->chunkById(self::CHUNK_SIZE, function ($invoiceTransactions) use ($bar) {
             foreach ($invoiceTransactions as $invoiceTransaction) {
-                $this->getJobClass()::run($invoiceTransaction->id);
+
+                if ($invoiceTransaction->deleted_at == null && $invoiceTransaction->model_type == 'Product'
+                && $invoiceTransaction->model_id != null
+                ) {
+                    $this->getJobClass()::dispatch($invoiceTransaction->id);
+                }
+
                 $bar->advance();
             }
         });

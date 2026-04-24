@@ -2,17 +2,17 @@
 
 /*
  * Author: Steven Wicca stewicalf@gmail.com
- * Created: Wed, 16 Apr 2026 00:00:00 Central Indonesia Time, Bali, Indonesia
+ * Created: Thu, 17 Apr 2026 00:00:00 Central Indonesia Time, Bali, Indonesia
  * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
-namespace App\Actions\Dispatching\UI;
+namespace App\Actions\Dispatching\WaitingItems;
 
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetDispatchingWaitingBadgeData
+class GetCrmWaitingBadgeData
 {
     use AsObject;
 
@@ -46,7 +46,7 @@ class GetDispatchingWaitingBadgeData
                     "=",
                     "delivery_note_items.delivery_note_id",
                 )
-                ->where("delivery_note_items.has_waiting_warehouse", true)
+                ->where("delivery_note_items.has_waiting_crm", true)
                 ->where("delivery_notes.state", DeliveryNoteStateEnum::HANDLING_BLOCKED)
                 ->count();
 
@@ -58,7 +58,7 @@ class GetDispatchingWaitingBadgeData
                     "=",
                     "delivery_note_items.delivery_note_id",
                 )
-                ->where("delivery_note_items.has_waiting_warehouse", true)
+                ->where("delivery_note_items.has_waiting_crm", true)
                 ->where("delivery_notes.state", DeliveryNoteStateEnum::HANDLING)
                 ->count();
 
@@ -66,20 +66,20 @@ class GetDispatchingWaitingBadgeData
                 "slug" => $warehouse->slug,
                 "name" => $warehouse->name,
                 "code" => $warehouse->code,
-                "waiting_items" => [
+                "waiting_crm_items" => [
                     "count" => $waitingCount,
                     "route" => [
-                        "name" => "grp.org.warehouses.show.dispatching.waiting_items",
+                        "name" => "grp.org.warehouses.show.dispatching.waiting_crm_items",
                         "parameters" => [
                             "organisation" => $warehouse->organisation->slug,
                             "warehouse" => $warehouse->slug,
                         ],
                     ],
                 ],
-                "waiting_items_still_picking" => [
+                "waiting_crm_items_still_picking" => [
                     "count" => $stillPickingCount,
                     "route" => [
-                        "name" => "grp.org.warehouses.show.dispatching.waiting_items_still_picking",
+                        "name" => "grp.org.warehouses.show.dispatching.waiting_crm_items_still_picking",
                         "parameters" => [
                             "organisation" => $warehouse->organisation->slug,
                             "warehouse" => $warehouse->slug,
@@ -90,5 +90,25 @@ class GetDispatchingWaitingBadgeData
         }
 
         return array_values($organisationsMap);
+    }
+
+    public function totalCount(User $user): int
+    {
+        $total = 0;
+
+        foreach ($user->authorisedWarehouses()->get() as $warehouse) {
+            if (!$user->authTo("dispatching.{$warehouse->id}.view")) {
+                continue;
+            }
+
+            $total += $warehouse
+                ->deliveryNotes()
+                ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                ->where('delivery_note_items.has_waiting_crm', true)
+                ->whereIn('delivery_notes.state', [DeliveryNoteStateEnum::HANDLING_BLOCKED, DeliveryNoteStateEnum::HANDLING])
+                ->count();
+        }
+
+        return $total;
     }
 }

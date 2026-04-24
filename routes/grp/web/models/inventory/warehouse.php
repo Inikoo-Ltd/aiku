@@ -9,6 +9,7 @@
 use App\Actions\Dispatching\BatchCode\DeleteBatchCode;
 use App\Actions\Dispatching\BatchCode\StoreBatchCode;
 use App\Actions\Dispatching\BatchCode\UpdateBatchCode;
+use App\Actions\Dispatching\PickedBay\DeletePickedBay;
 use App\Actions\Dispatching\PickedBay\StorePickedBay;
 use App\Actions\Dispatching\PickedBay\UpdatePickedBay;
 use App\Actions\Dispatching\PickingSession\StartPickPickingSession;
@@ -16,6 +17,7 @@ use App\Actions\Dispatching\PickingSession\StorePickingSession;
 use App\Actions\Dispatching\PickingSession\UpdatePickingSession;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\Dispatching\Shipper\UpdateShipper;
+use App\Actions\Dispatching\Trolley\DeleteTrolley;
 use App\Actions\Dispatching\Trolley\StoreTrolley;
 use App\Actions\Fulfilment\Pallet\UpdatePalletLocation;
 use App\Actions\Inventory\Location\ImportLocation;
@@ -44,6 +46,9 @@ Route::name('warehouse.')->prefix('warehouse/{warehouse:id}')->group(function ()
     Route::post('picked-bays', [StorePickedBay::class, 'inWarehouse'])->name('picked_bays.store');
     Route::patch('picked-bays/{pickedBay:id}', UpdatePickedBay::class)->name('picked_bays.update')->withoutScopedBindings();
 });
+
+Route::delete('picked-bays/{pickedBay:id}', DeletePickedBay::class)->name('picked_bays.delete');
+Route::delete('trolleys/{trolley:id}', DeleteTrolley::class)->name('trolleys.delete');
 
 Route::patch('picking-session/{pickingSession:id}', UpdatePickingSession::class)->name('picking_session.update')->withoutScopedBindings();
 Route::patch('picking-session/{pickingSession:id}/start-picking', StartPickPickingSession::class)->name('picking_session.start_picking')->withoutScopedBindings();

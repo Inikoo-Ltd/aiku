@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $region_code
  * @property bool $ignore_concurrency_leave_rules
  * @property-read string $short_code
+ * @property-read float $value
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\HumanResources\Leave> $leaves
  * @property-read \App\Models\SysAdmin\Organisation $organisation
@@ -38,6 +39,7 @@ class LeaveType extends Model
     use InOrganisation;
 
     protected $guarded = [];
+    protected $appends = ['value'];
 
     protected $casts = [
         'category'                        => LeaveCategoryEnum::class,
@@ -56,5 +58,27 @@ class LeaveType extends Model
     public function getShortCodeAttribute(): string
     {
         return \App\Enums\HumanResources\Leave\LeaveTypeEnum::shortCodes()[$this->code] ?? '';
+    }
+
+    public function getValueAttribute(): float
+    {
+        return $this->deductionValue();
+    }
+
+    public function deductionValue(): float
+    {
+        $value = $this->settings['value'] ?? null;
+
+        if (!is_numeric($value)) {
+            return 1.0;
+        }
+
+        $parsedValue = (float) $value;
+
+        if ($parsedValue <= 0) {
+            return 1.0;
+        }
+
+        return $parsedValue;
     }
 }

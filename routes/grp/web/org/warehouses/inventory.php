@@ -35,6 +35,7 @@ use App\Actions\Inventory\OrgStock\UI\ShowOrgStockProcurement;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStockProducts;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStockStockHistory;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
+use App\Actions\Inventory\OrgStockFamily\UI\IndexInvoicesInOrgStockFamily;
 use App\Actions\Inventory\OrgStockFamily\UI\IndexOrgStockFamilies;
 use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
 use App\Actions\Dispatching\BatchCode\UI\CreateBatchCode;
@@ -168,6 +169,8 @@ Route::prefix('families')->as('org_stock_families.')->group(function () {
         Route::get('/edit', EditStockFamily::class)->name('edit');
 
         Route::name('show.')->group(function () {
+            Route::get('/invoices', IndexInvoicesInOrgStockFamily::class)->name('invoices.index');
+
             Route::prefix('stocks')->as('org_stocks.')->group(function () {
                 Route::get('/', [IndexOrgStocks::class, 'inStockFamily'])->name('index');
                 Route::get('/export', [ExportOrgStocks::class, 'inStockFamily'])->name('export');

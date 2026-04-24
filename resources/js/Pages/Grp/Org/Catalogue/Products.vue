@@ -52,6 +52,7 @@ const props = defineProps<{
     shop_id?: number
     variantSlugs?: Record<string, string>;
     mismatch_trade_unit_with_master?: boolean
+    hide_sku_in_name_column?: boolean
 }>()
 
 const layout = inject<string>('layout')
@@ -275,6 +276,7 @@ const replaceProps = (updatedData) => {
         @selectedRow="(ids) => selectedProductsId = { ...selectedProductsId, ...ids }"
         :variantSlugs="variantSlugs"
         :mismatch_trade_unit_with_master="mismatch_trade_unit_with_master"
+        :hide_sku_in_name_column="hide_sku_in_name_column"
         @update:data="(updatedData) => replaceProps(updatedData)"
     />
 

@@ -115,19 +115,29 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
         UpdateWebpageContent::run($webpage);
     }
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_collections_webpages {--website_id=} {--set-description-top} {--hide-description}';
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_collections_webpages {--website_id=} {--webpage_slug=} {--set-description-top} {--hide-description}';
 
     public function asCommand(Command $command): void
     {
         $websiteId      = $command->option('website_id');
-        $webpagesID     = DB::table('webpages')
-            ->when(
-                !empty($websiteId),
-                fn ($q) => $q->where('website_id', $websiteId)
-            )
-            ->select('id')
-            ->where('model_type', 'Collection')
-            ->get();
+        $webpageSlug      = $command->option('webpage_slug');
+        if ($webpageSlug) {
+            $webpagesID     = DB::table('webpages')
+                ->where('slug', $webpageSlug)
+                ->select('id')
+                ->where('model_type', 'Collection')
+                ->get();
+        } else {
+            $webpagesID     = DB::table('webpages')
+                ->when(
+                    !empty($websiteId),
+                    fn ($q) => $q->where('website_id', $websiteId)
+                )
+                ->select('id')
+                ->where('model_type', 'Collection')
+                ->get();
+        }
+
 
         foreach ($webpagesID as $webpageID) {
             $webpage = Webpage::find($webpageID->id);

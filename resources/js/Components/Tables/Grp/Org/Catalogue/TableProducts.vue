@@ -52,6 +52,7 @@ const props = defineProps<{
     selectedProductsId?: {}
     variantSlugs?: Record<string, string>;
     mismatch_trade_unit_with_master?: boolean
+    hide_sku_in_name_column?: boolean
 }>()
 
 const emits = defineEmits<{
@@ -138,8 +139,44 @@ function productRoute(product: Product) {
         return ""
     }
 
-    console.log(route().current())
+    // console.log(route().current())
     switch (route().current()) {
+        case 'grp.org.shops.show.catalogue.products.independent_products.current.index':
+            return route(
+                "grp.org.shops.show.catalogue.products.independent_products.current.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    product.slug
+                ]
+            )
+        case 'grp.org.shops.show.catalogue.products.independent_products.in_process.index':
+            return route(
+                "grp.org.shops.show.catalogue.products.independent_products.in_process.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    product.slug
+                ]
+            )
+        case 'grp.org.shops.show.catalogue.products.independent_products.discontinued.index':
+            return route(
+                "grp.org.shops.show.catalogue.products.independent_products.discontinued.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    product.slug
+                ]
+            )
+        case 'grp.org.shops.show.catalogue.products.independent_products.all.index':
+            return route(
+                "grp.org.shops.show.catalogue.products.independent_products.all.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    product.slug
+                ]
+            )
         case "grp.org.shops.show.catalogue.products.current_products.index":
             return route(
                 "grp.org.shops.show.catalogue.products.current_products.show",
@@ -552,14 +589,14 @@ const repairTradeUnitFromChildren = async (product) => {
 
         <template #cell(name)="{ item: product }">
             <div class="flex items-center">
-                <span v-if="mismatch_trade_unit_with_master" class="py-1 px-2 border border-solid border-yellow-600 text-yellow-600 mr-2 rounded-md cursor-pointer min-w-[40px] " v-tooltip="trans(`Follow this child's trade unit`)" @click="repairTradeUnitFromChildren(product)">
+                <span v-if="mismatch_trade_unit_with_master && !hide_sku_in_name_column" class="py-1 px-2 border border-solid border-yellow-600 text-yellow-600 mr-2 rounded-md cursor-pointer min-w-[40px] " v-tooltip="trans(`Follow this child's trade unit`)" @click="repairTradeUnitFromChildren(product)">
                     <FontAwesomeLayers class="w-fit-content">
                         <FontAwesomeIcon :icon="faTools" style="right:-20; bottom:-5" class="text-xs"/>
                         <FontAwesomeIcon :icon="faRunning" class="text-lg"/>
                     </FontAwesomeLayers>
                     <LoadingIcon v-if="isLoadingRepairFromChildren == product.id"/>
                 </span>
-                <div v-if="product.org_stocks" class="text-xxs shrink-0">
+                <div v-if="product.org_stocks && !hide_sku_in_name_column" class="text-xxs shrink-0">
                     <LabelSKU
                         :product="product"
                         :trade_units="product.org_stocks"
@@ -707,6 +744,7 @@ const repairTradeUnitFromChildren = async (product) => {
             <div v-if="item.customers_invoiced_delta">
                 <span>{{ item.customers_invoiced_delta.formatted }}</span>
                 <FontAwesomeIcon
+                    v-if="getIntervalChangesIcon(item.customers_invoiced_delta.is_positive)?.icon"
                     :icon="getIntervalChangesIcon(item.customers_invoiced_delta.is_positive)?.icon"
                     class="text-xxs md:text-sm"
                     :class="[

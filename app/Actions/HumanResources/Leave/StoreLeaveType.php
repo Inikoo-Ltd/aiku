@@ -22,6 +22,19 @@ class StoreLeaveType extends OrgAction
         $modelData['group_id']        = $organisation->group_id;
         $modelData['organisation_id'] = $organisation->id;
 
+        $settings = $modelData['settings'] ?? [];
+        if (!is_array($settings)) {
+            $settings = [];
+        }
+
+        $settingsValue = $settings['value'] ?? null;
+        $settings['value'] = array_key_exists('value', $modelData)
+            ? (float) $modelData['value']
+            : (is_numeric($settingsValue) ? (float) $settingsValue : 1.0);
+        $modelData['settings'] = $settings;
+
+        unset($modelData['value']);
+
         return LeaveType::query()->create($modelData);
     }
 
@@ -45,7 +58,9 @@ class StoreLeaveType extends OrgAction
             'category'            => ['required', Rule::enum(LeaveCategoryEnum::class)],
             'requires_approval'              => ['sometimes', 'boolean'],
             'max_days_per_year'              => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'value'                          => ['sometimes', 'numeric', 'min:0.01'],
             'settings'                       => ['sometimes', 'nullable', 'array'],
+            'settings.value'                 => ['sometimes', 'numeric', 'min:0.01'],
             'is_active'                      => ['sometimes', 'boolean'],
             'ignore_concurrency_leave_rules' => ['sometimes', 'boolean'],
         ];

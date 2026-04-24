@@ -52,6 +52,7 @@ class IndexLeaveTypes extends OrgAction
                 'leave_types.category',
                 'leave_types.requires_approval',
                 'leave_types.max_days_per_year',
+                'leave_types.settings',
                 'leave_types.is_active',
             ])
             ->allowedSorts(['code', 'name', 'category', 'requires_approval', 'max_days_per_year', 'is_active'])
@@ -77,6 +78,7 @@ class IndexLeaveTypes extends OrgAction
                 ->column(key: 'category', label: __('Category'), canBeHidden: false, sortable: true)
                 ->column(key: 'requires_approval', label: __('Requires Approval'), canBeHidden: true, sortable: true)
                 ->column(key: 'max_days_per_year', label: __('Maximum Days'), canBeHidden: true, sortable: true)
+                ->column(key: 'value', label: __('Value'), canBeHidden: true)
                 ->column(key: 'is_active', label: __('Active'), canBeHidden: true, sortable: true)
                 ->column(key: 'action', label: __('Actions'), canBeHidden: false)
                 ->defaultSort('code');

@@ -43,7 +43,8 @@ class IndexPickedBays extends OrgAction
         }
 
         $query = QueryBuilder::for(PickedBay::class)
-            ->where('picked_bays.warehouse_id', $warehouse->id);
+            ->where('picked_bays.warehouse_id', $warehouse->id)
+            ->with('deliveryNotes');
 
         return $query
             ->select([
@@ -86,7 +87,8 @@ class IndexPickedBays extends OrgAction
                     ] : null,
                 ])
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'delivery_note', label: __('Current Delivery Note'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'delivery_notes', label: __('Current Delivery Note'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'actions', label: __('Action'), canBeHidden: false)
                 ->defaultSort('code');
         };
     }

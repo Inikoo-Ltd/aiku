@@ -19,20 +19,27 @@ class RejectLeave extends OrgAction
     {
         $user = Auth::user();
 
-        if (!$leave->canBeApprovedBy($user)) {
+        if (!$user) {
             abort(403, 'You are not authorized to reject this leave at this level.');
         }
 
-        $currentLevel = $leave->currentApprovalLevel();
+        $approvalLevel = $leave->approvalLevelForUser($user);
+        if ($approvalLevel === null) {
+            abort(403, 'You are not authorized to reject this leave at this level.');
+        }
 
-        LeaveApprovalRecord::create([
-            'leave_id' => $leave->id,
-            'approver_id' => $user->id,
-            'sequence_number' => $currentLevel,
-            'status' => 'rejected',
-            'comments' => $rejectionReason,
-            'decided_at' => now(),
-        ]);
+        LeaveApprovalRecord::updateOrCreate(
+            [
+                'leave_id' => $leave->id,
+                'approver_id' => $user->id,
+                'sequence_number' => $approvalLevel,
+            ],
+            [
+                'status' => 'rejected',
+                'comments' => $rejectionReason,
+                'decided_at' => now(),
+            ]
+        );
 
         $leave->update([
             'status' => LeaveStatusEnum::REJECTED,
