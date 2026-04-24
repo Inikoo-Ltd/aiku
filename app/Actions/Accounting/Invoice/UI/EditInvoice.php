@@ -89,7 +89,7 @@ class EditInvoice extends OrgAction
                             'icon'    => 'fal fa-map-marked-alt',
                             'current' => true,
                             'fields'  => [
-                                'invoice_billing_address' => [
+                                'invoice_billing_address' => [ // TODO: consolidate(rename) this fields names after aurora migration
                                     'type'    => 'address',
                                     'label'   => __('Address'),
                                     'value'   => AddressFormFieldsResource::make($invoice->address)->getArray(),

@@ -61,6 +61,7 @@ class UpdateInvoice extends OrgAction
         $newBillAddressData = Arr::pull($modelData, 'invoice_billing_address');
         $oldBillAddressData = clone($invoice->address);
 
+        // TODO: Refactor invoice_billing_address logic after done migrating completely from Aurora
         if ($newBillAddressData) {
             $parent = $invoice->order ?? $invoice;
             if ($parent->address_id != $parent->delivery_address_id) {
@@ -276,7 +277,7 @@ class UpdateInvoice extends OrgAction
             'tax_liability_at'         => ['sometimes', 'date'],
             'footer'                   => ['sometimes', 'string'],
             'billing_address'          => ['sometimes', 'required', new ValidAddress()],
-            'invoice_billing_address'  => ['sometimes', 'required', new ValidAddress()],
+            'invoice_billing_address'  => ['sometimes', 'required', new ValidAddress()], // TODO: consolidate(rename) this fields names after aurora migration
             'delivery_address'         => ['sometimes', 'required', new ValidAddress()],
             'sales_channel_id'         => [
                 'sometimes',
