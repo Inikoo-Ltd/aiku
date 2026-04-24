@@ -300,24 +300,35 @@ watch(() => editingAddress.value.country_id, (countryId) => {
 })
 
 const submitEditAddress = async () => {
-    isSubmittingAddress.value = true
+    const payload = pick(editingAddress.value, ['address_line_1', 'address_line_2', 'sorting_code', 'postal_code', 'dependent_locality', 'locality', 'administrative_area', 'country_code', 'country_id'])
 
-    try {
-        const payload = pick(editingAddress.value, ['address_line_1', 'address_line_2', 'sorting_code', 'postal_code', 'dependent_locality', 'locality', 'administrative_area', 'country_code', 'country_id'])
-
-        await axios.patch(
-            route(props.routes.updateInvoiceAddressRoute.name, props.routes.updateInvoiceAddressRoute.parameters),
-            { billing_address: payload }
-        )
-
-        isModalEditAddress.value = false
-        notify({ type: 'success', title: trans('Invoice address updated'), text: trans('Invoice address has been successfully updated.') })
-        router.reload({ only: ['invoice'] })
-    } catch {
-        notify({ type: 'error', title: trans('Failed to update invoice address'), text: trans('Please review the address fields and try again.') })
-    } finally {
-        isSubmittingAddress.value = false
-    }
+    router.patch(
+        route(props.routes.updateInvoiceAddressRoute.name, props.routes.updateInvoiceAddressRoute.parameters),
+        { invoice_billing_address: payload },
+        {
+            onStart: () => {
+                isSubmittingAddress.value = true
+            },
+            onSuccess: () => {
+                isModalEditAddress.value = false
+                notify({ 
+                    type: 'success', 
+                    title: trans('Invoice address updated'), 
+                    text: trans('Invoice address has been successfully updated.') 
+                })
+            }, 
+            onError: () => {
+                notify({ 
+                    type: 'error', 
+                    title: trans('Failed to update invoice address'), 
+                    text: trans('Please review the address fields and try again.') 
+                })
+            },
+            onFinish: () => {
+                isSubmittingAddress.value = false
+            }
+        }
+    )
 }
 </script>
 
