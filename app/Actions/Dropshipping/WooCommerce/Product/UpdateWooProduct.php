@@ -42,11 +42,12 @@ class UpdateWooProduct implements ShouldBeUnique
         $platformPortfolioLog = StorePlatformPortfolioLog::run($portfolio, []);
 
         $wooCommerceUser->setTimeout(45);
+
         try {
             $wooCommerceUser->updateWooCommerceProduct(
                 $portfolio->platform_product_id,
                 [
-                    'price' => $portfolio->customer_price,
+                    'regular_price'     => (string)$portfolio->customer_price,
                     'title' => $portfolio->customer_product_name,
                     'description' => $portfolio->customer_description
                 ]
