@@ -70,6 +70,20 @@ class ShowTrolley extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ],
                         ],
+                        [
+                            'type'  => 'button',
+                            'style' => 'negative',
+                            'key'   => 'delete-trolley',
+                            'label' => __('Delete'),
+                            'icon'    => 'fal fa-skull',
+                            'route' => [
+                                'method'     => 'delete',
+                                'name'       => 'grp.models.trolleys.delete',
+                                'parameters' => [
+                                    'trolley' => $trolley->id
+                                ],
+                            ],
+                        ]
                     ],
                 ],
 

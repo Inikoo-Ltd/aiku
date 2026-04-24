@@ -16,6 +16,8 @@ class IndexWaitingCrmDeliveryNoteItems extends BaseIndexWaitingDeliveryNoteItems
 {
     protected string $waitingType = 'crm';
 
+    protected bool $readOnly = true;
+
     protected function getDeliveryNoteState(): DeliveryNoteStateEnum
     {
         return DeliveryNoteStateEnum::HANDLING_BLOCKED;

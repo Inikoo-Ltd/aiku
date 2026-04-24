@@ -76,6 +76,20 @@ class ShowPickedBay extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ],
                         ],
+                        [
+                            'type'  => 'button',
+                            'style' => 'negative',
+                            'key'   => 'delete-picked-bay',
+                            'label' => __('Delete'),
+                            'icon'    => 'fal fa-skull',
+                            'route' => [
+                                'method'     => 'delete',
+                                'name'       => 'grp.models.picked_bays.delete',
+                                'parameters' => [
+                                    'pickedBay' => $pickedBay->id
+                                ],
+                            ],
+                        ],
                     ],
                 ],
 

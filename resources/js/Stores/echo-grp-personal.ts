@@ -7,6 +7,7 @@
 import { useMilisecondToTime } from "@/Composables/useFormatTime"
 import { differenceInMilliseconds } from 'date-fns'
 import { defineStore } from "pinia";
+import { useLayoutStore } from "@/Stores/layout"
 
 interface ProgressBar {
     [key: string]: {
@@ -31,9 +32,10 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
     }),
     actions: {
         subscribe(userID: number) {
-            let param = window.Echo.private("grp.personal." + userID).listen(
-                ".action-progress",
-                (eventData) => {
+            let param = window.Echo.private("grp.personal." + userID)
+                .listen(
+                    ".action-progress",
+                    (eventData) => {
                     // console.log(eventData)
 
                     // Update the state
@@ -70,8 +72,12 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
                         }, 4000)
                     }
                 }
-            );
-
+            )
+            .listen('.waiting-items-count-update', (eventData: { dispatching_waiting_count: number; crm_waiting_count: number }) => {
+                const layout = useLayoutStore()
+                layout.dispatching_waiting_count = eventData.dispatching_waiting_count
+                layout.crm_waiting_count = eventData.crm_waiting_count
+            })
         },
     },
 });

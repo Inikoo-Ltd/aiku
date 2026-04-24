@@ -139,7 +139,7 @@ function productRoute(product: Product) {
         return ""
     }
 
-    console.log(route().current())
+    // console.log(route().current())
     switch (route().current()) {
         case 'grp.org.shops.show.catalogue.products.independent_products.current.index':
             return route(
@@ -744,6 +744,7 @@ const repairTradeUnitFromChildren = async (product) => {
             <div v-if="item.customers_invoiced_delta">
                 <span>{{ item.customers_invoiced_delta.formatted }}</span>
                 <FontAwesomeIcon
+                    v-if="getIntervalChangesIcon(item.customers_invoiced_delta.is_positive)?.icon"
                     :icon="getIntervalChangesIcon(item.customers_invoiced_delta.is_positive)?.icon"
                     class="text-xxs md:text-sm"
                     :class="[

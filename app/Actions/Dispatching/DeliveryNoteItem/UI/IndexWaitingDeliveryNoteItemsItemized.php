@@ -100,9 +100,9 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(?string $prefix = null): Closure
+    public function tableStructure(?string $prefix = null, bool $readOnly = false): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($prefix, $readOnly) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
@@ -117,9 +117,10 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
 
             $table->column(key: 'delivery_note_reference', label: __('Delivery Note'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
-            // $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
-            $table->column(key: 'picking_position', label: __('Actions'), canBeHidden: false, sortable: true);
+            if (!$readOnly) {
+                $table->column(key: 'picking_position', label: __('Actions'), canBeHidden: false, sortable: true);
+            }
         };
     }
 }

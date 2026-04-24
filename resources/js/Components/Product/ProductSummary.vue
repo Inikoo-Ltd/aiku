@@ -192,6 +192,16 @@ library.add(
 						<dd class="w-full border border-gray-200 px-2.5 py-1.5 rounded">
 							<template v-if="data?.picking_factor?.length">
 								<div v-for="pick in data.picking_factor" :key="pick.org_stock_id"
+									class="grid grid-cols-4 gap-2 py-1 text-sm border-b border-dashed">
+									<div class="col-span-3 fontsmei">
+										{{ ctrans("Reference") }}
+									</div>
+
+									<div class="text-right">
+										{{ ctrans("Number of picking") }}
+									</div>
+								</div>
+								<div v-for="pick in data.picking_factor" :key="pick.org_stock_id"
 									class="grid grid-cols-4 gap-2 py-1 text-sm">
 									<!-- Left -->
 									<div class="col-span-3">
@@ -201,26 +211,25 @@ library.add(
 												{{ pick.org_stock_code }}
 											</Link>
 
-											<span class="text-[11px] italic text-gray-400">
+											<!-- <span class="text-[11px] italic text-gray-400">
 												({{ pick.org_stock_id }})
-											</span>
+											</span> -->
 
 											<span v-if="pick?.is_on_demand"
 												class="text-[10px] px-1.5 rounded bg-amber-100 text-amber-700">
-												On Demand
+												{{ ctrans("On Demand") }}
 											</span>
 										</div>
 
-										<div v-tooltip="trans('Note')"
+										<div v-if="pick.note" v-tooltip="trans('Note')"
 											class="text-[11px] text-gray-400 truncate max-w-[90%]">
-											{{ pick.note || '-' }}
+											{{ pick.note }}
 										</div>
 									</div>
 
 									<!-- Right -->
 									<div class="flex items-center justify-end text-xs">
-										<FractionDisplay v-tooltip="trans('Number of picking')"
-											:fractionData="pick.picking_factor" />
+										<FractionDisplay vxtooltip="trans('Number of picking')" :fractionData="pick.picking_factor" />
 									</div>
 								</div>
 							</template>

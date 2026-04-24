@@ -8,7 +8,6 @@ use App\Http\Resources\HumanResources\LeaveResource;
 use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\LeaveApprovalRecord;
-use App\Models\HumanResources\LeaveApprover;
 use App\Models\SysAdmin\Organisation;
 use App\Services\HumanResources\LeaveTypeResolver;
 use Illuminate\Http\RedirectResponse;
@@ -22,26 +21,32 @@ class ApproveLeave extends OrgAction
     {
         $user = Auth::user();
 
-        if (!$leave->canBeApprovedBy($user)) {
+        if (!$user) {
             abort(403, 'You are not authorized to approve this leave at this level.');
         }
 
-        $currentLevel = $leave->currentApprovalLevel();
+        $approvalLevel = $leave->approvalLevelForUser($user);
+        if ($approvalLevel === null) {
+            abort(403, 'You are not authorized to approve this leave at this level.');
+        }
 
-        LeaveApprovalRecord::create([
-            'leave_id' => $leave->id,
-            'approver_id' => $user->id,
-            'sequence_number' => $currentLevel,
-            'status' => 'approved',
-            'decided_at' => now(),
-        ]);
+        LeaveApprovalRecord::updateOrCreate(
+            [
+                'leave_id' => $leave->id,
+                'approver_id' => $user->id,
+                'sequence_number' => $approvalLevel,
+            ],
+            [
+                'status' => 'approved',
+                'decided_at' => now(),
+            ]
+        );
 
-        $nextLevelApprovers = LeaveApprover::byOrganisation($leave->organisation)
-            ->bySequence($currentLevel + 1)
-            ->active()
-            ->count();
+        $highestApprovalLevel = $leave->highestApprovalLevel();
+        $isHighestLevelApproval = $highestApprovalLevel !== null && $approvalLevel === $highestApprovalLevel;
+        $nextLevel = $leave->nextApprovalLevelAfter($approvalLevel);
 
-        if ($nextLevelApprovers === 0) {
+        if ($isHighestLevelApproval || $nextLevel === null) {
             $balanceYear = $leave->start_date?->year ?? now()->year;
             $leave->loadMissing(['leaveType', 'employee.organisation']);
 
@@ -74,10 +79,13 @@ class ApproveLeave extends OrgAction
             };
 
             if ($field) {
-                $isHalfDay = $leave->is_half_day
-                    || in_array((string) $leave->type, ['halfday-morning', 'halfday-afternoon'], true);
+                $value = $leave->leaveType?->deductionValue() ?? 1.0;
+                $deduction = (float) $leave->duration_days * $value;
 
-                $deduction = $isHalfDay ? 0.5 : (float) $leave->duration_days;
+                if ($leave->is_half_day && $value === 1.0) {
+                    $deduction = 0.5;
+                }
+
                 $balance->increment($field, $deduction);
             }
         }

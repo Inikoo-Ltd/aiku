@@ -7,6 +7,7 @@ use App\Models\SysAdmin\User;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -86,29 +87,154 @@ class Leave extends Model implements HasMedia
             ->acceptsMimeTypes(['application/pdf', 'image/jpeg', 'image/png']);
     }
 
-    public function approvalRecords()
+    public function approvalRecords(): HasMany
     {
         return $this->hasMany(LeaveApprovalRecord::class);
     }
 
     public function currentApprovalLevel(): int
     {
-        $latestApproved = $this->approvalRecords()
-            ->approved()
-            ->max('sequence_number');
+        $levels = $this->approvalLevels();
 
-        return $latestApproved ? $latestApproved + 1 : 1;
+        if ($levels === []) {
+            return 1;
+        }
+
+        $approvedLevels = $this->approvalRecords()
+            ->approved()
+            ->pluck('sequence_number')
+            ->map(fn ($level) => (int) $level)
+            ->unique()
+            ->values()
+            ->all();
+
+        foreach ($levels as $level) {
+            if (!in_array($level, $approvedLevels, true)) {
+                return $level;
+            }
+        }
+
+        return $levels[array_key_last($levels)];
     }
 
     public function canBeApprovedBy(User $user): bool
     {
+        if ($this->status !== LeaveStatusEnum::PENDING) {
+            return false;
+        }
+
+        $approvalLevel = $this->approvalLevelForUser($user);
+
+        return $approvalLevel !== null;
+    }
+
+    public function approvalLevelForUser(User $user): ?int
+    {
+        $userLevels = $this->activeApproverLevelsForUser($user);
+
+        if ($userLevels === []) {
+            return null;
+        }
+
         $currentLevel = $this->currentApprovalLevel();
 
-        return LeaveApprover::byOrganisation($this->organisation)
-            ->bySequence($currentLevel)
-            ->active()
+        if (in_array($currentLevel, $userLevels, true)) {
+            return $currentLevel;
+        }
+
+        $highestLevel = $this->highestApprovalLevel();
+        if ($highestLevel === null) {
+            return null;
+        }
+
+        if (in_array($highestLevel, $userLevels, true)) {
+            return $highestLevel;
+        }
+
+        return null;
+    }
+
+    public function nextApprovalLevelAfter(int $level): ?int
+    {
+        foreach ($this->approvalLevels() as $approvalLevel) {
+            if ($approvalLevel > $level) {
+                return $approvalLevel;
+            }
+        }
+
+        return null;
+    }
+
+    public function highestApprovalLevel(): ?int
+    {
+        $levels = $this->approvalLevels();
+
+        if ($levels === []) {
+            return null;
+        }
+
+        return $levels[array_key_last($levels)];
+    }
+
+    public function totalApprovalSteps(): int
+    {
+        return count($this->approvalLevels());
+    }
+
+    public function completedApprovalSteps(): int
+    {
+        $levels = $this->approvalLevels();
+
+        if ($levels === []) {
+            return 0;
+        }
+
+        $approvedLevels = $this->approvalRecords()
+            ->approved()
+            ->pluck('sequence_number')
+            ->map(fn ($level) => (int) $level)
+            ->unique()
+            ->values()
+            ->all();
+
+        return count(array_intersect($levels, $approvedLevels));
+    }
+
+    public function currentApprovalStep(): int
+    {
+        $total = $this->totalApprovalSteps();
+        if ($total === 0) {
+            return 0;
+        }
+
+        return min($this->completedApprovalSteps() + 1, $total);
+    }
+
+    public function approvalLevels(): array
+    {
+        return LeaveApprover::query()
+            ->where('organisation_id', $this->organisation_id)
+            ->where('is_active', true)
+            ->orderBy('sequence_number')
+            ->pluck('sequence_number')
+            ->map(fn ($level) => (int) $level)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public function activeApproverLevelsForUser(User $user): array
+    {
+        return LeaveApprover::query()
+            ->where('organisation_id', $this->organisation_id)
+            ->where('is_active', true)
             ->where('user_id', $user->id)
-            ->exists();
+            ->orderBy('sequence_number')
+            ->pluck('sequence_number')
+            ->map(fn ($level) => (int) $level)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     public function isPendingApproval(): bool

@@ -6,6 +6,7 @@ import axios from 'axios'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faHourglassStart, faHourglassHalf, faChevronDown, faChevronRight } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import { useLayoutStore } from '@/Stores/layout'
 library.add(faHourglassStart, faHourglassHalf, faChevronDown, faChevronRight)
 
 type WarehouseEntry = {
@@ -31,7 +32,7 @@ const isLoading = ref(false)
 const expandedOrgs = ref<Set<string>>(new Set())
 
 watch(() => props.open, async (isOpen) => {
-    if (!isOpen || data.value.length > 0) {
+    if (!isOpen) {
         return
     }
 
@@ -40,6 +41,13 @@ watch(() => props.open, async (isOpen) => {
         const response = await axios.get(route('grp.json.dispatching_waiting_badge'))
         data.value = response.data
         data.value.forEach((org: OrgEntry) => expandedOrgs.value.add(org.organisation.slug))
+
+        const layout = useLayoutStore()
+        layout.dispatching_waiting_count = data.value.reduce((total, org) =>
+            total + org.warehouses.reduce((wTotal, wh) =>
+                wTotal + wh.waiting_items.count + wh.waiting_items_still_picking.count, 0
+            ), 0
+        )
     } finally {
         isLoading.value = false
     }
