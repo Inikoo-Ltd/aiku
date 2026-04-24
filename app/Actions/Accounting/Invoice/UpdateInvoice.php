@@ -27,12 +27,16 @@ use App\Actions\Traits\WithFixedAddressActions;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
+use App\Models\CRM\Customer;
 use App\Models\Helpers\Address;
+use App\Models\Ordering\Order;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use OwenIt\Auditing\Events\AuditCustom;
 
 class UpdateInvoice extends OrgAction
 {
@@ -55,6 +59,7 @@ class UpdateInvoice extends OrgAction
         $oldDate                 = $invoice->date;
 
         $newBillAddressData = Arr::pull($modelData, 'invoice_billing_address');
+        $oldBillAddressData = clone($invoice->address);
 
         if ($newBillAddressData) {
             $parent = $invoice->order ?? $invoice;
@@ -81,6 +86,9 @@ class UpdateInvoice extends OrgAction
         $invoice = $this->update($invoice, $modelData, ['data']);
 
         if ($billingAddressData) {
+
+            $staleInvoice = clone($invoice);
+
             $this->updateFixedAddress(
                 $invoice,
                 $invoice->billingAddress,
@@ -93,32 +101,46 @@ class UpdateInvoice extends OrgAction
                 'billing_country_id' => $invoice->billingAddress->country_id,
             ]);
 
+            $customer = $invoice->customer;
+
             if ($order = $invoice->order) {
-                $customer = $order->customer;
+
+                $staleOrder = clone($order);
+
+                $taxCategoryOrder = GetTaxCategory::run(
+                    country: $order->organisation->country,
+                    taxNumber: $customer->taxNumber,
+                    billingAddress: $order->billingAddress,
+                    deliveryAddress: $order->deliveryAddress,
+                    isRe: $customer?->is_re,
+                );
+
                 $order->update([
                     'billing_address_id'    => $billingAddressData->id,
-                    'tax_category_id' => GetTaxCategory::run(
-                        country: $order->organisation->country,
-                        taxNumber: $customer->taxNumber,
-                        billingAddress: $order->billingAddress,
-                        deliveryAddress: $order->deliveryAddress,
-                        isRe: $customer?->is_re,
-                    )->id,
+                    'tax_category_id' => $taxCategoryOrder->id,
                 ]);
 
-                $order->refresh();
                 CalculateOrderTotalAmounts::run($order, false, false);
+
+                $this->auditBillingAddressUpdate($order, $oldBillAddressData, $billingAddressData, $staleOrder);
             }
 
+            $taxCategoryInvoice = GetTaxCategory::run(
+                country: $invoice->organisation->country,
+                taxNumber: $customer->taxNumber,
+                billingAddress: $invoice->billingAddress,
+                deliveryAddress: $invoice->deliveryAddress,
+                isRe: $customer?->is_re,
+            );
             $invoice->update([
-                'tax_category_id'   => GetTaxCategory::run(
-                    country: $invoice->organisation->country,
-                    taxNumber: $customer->taxNumber,
-                    billingAddress: $invoice->billingAddress,
-                    deliveryAddress: $invoice->deliveryAddress,
-                    isRe: $customer?->is_re,
-                )->id,
+                'tax_category_id'   => $taxCategoryInvoice->id,
             ]);
+
+            CalculateInvoiceTotals::run($invoice);
+            RunInvoiceHydrators::run($invoice, $this->hydratorsDelay);
+
+            $this->auditBillingAddressUpdate($invoice, $oldBillAddressData, $billingAddressData, $staleInvoice);
+            $this->auditBillingAddressUpdate($customer, $oldBillAddressData, $billingAddressData);
         }
 
 
@@ -204,14 +226,34 @@ class UpdateInvoice extends OrgAction
             }
         }
 
-        if ($billingAddressData) {
-            $invoice->refresh();
-            CalculateInvoiceTotals::run($invoice);
-            
-            RunInvoiceHydrators::run($invoice, $this->hydratorsDelay);
+        return $invoice;
+    }
+
+    private function auditBillingAddressUpdate(Customer|Invoice|Order $parent, Address $oldBillAddressData, Address $newBillAddressData, Invoice|Order|null $stale = null): void
+    {
+        $parent->auditEvent = 'invoice_billing_address_update';
+        $parent->isCustomEvent = true;
+
+        $oldData = Arr::except($oldBillAddressData->toArray(), ['updated_at']);
+        $newData = Arr::except($newBillAddressData->toArray(), ['updated_at']);
+
+        if ($parent instanceof Customer) {
+            array_merge($newData, [
+                'affected_invoice'  => $this->invoice->reference,
+            ]);
+        } elseif ($stale) {
+            $oldData = array_merge($oldData, [
+                'total_amount'  => $stale->total_amount,
+            ]);
+            $newData = array_merge($newData, [
+                'total_amount'  => $parent->total_amount,
+            ]);
         }
 
-        return $invoice;
+        $parent->auditCustomOld = $oldData;
+        $parent->auditCustomNew = $newData;
+
+        Event::dispatch(new AuditCustom($parent));
     }
 
     public function rules(): array

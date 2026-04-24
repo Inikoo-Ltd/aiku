@@ -20,6 +20,9 @@ class CalculateInvoiceTotals extends OrgAction
 {
     public function handle(Invoice $invoice): Invoice
     {
+        // To ensure fresh data
+        $invoice->refresh();
+
         if ($invoice->is_tax_only) {
             return CalculateInvoiceTotalsTaxOnly::run($invoice);
         }
