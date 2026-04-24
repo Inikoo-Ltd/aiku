@@ -104,7 +104,7 @@ class UpdateShopifyProduct extends RetinaAction
             $variables = [
                 'input' => [
                     'id'              => $portfolio->platform_product_id,
-                    'descriptionHtml' => $product->description.' '.$product->description_extra . ' ' .$description,
+                    'descriptionHtml' => $portfolio->customer_description.' '.$product->description_extra . ' ' .$description,
                 ]
             ];
 

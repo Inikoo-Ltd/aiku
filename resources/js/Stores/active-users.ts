@@ -14,8 +14,8 @@ import { defineStore } from 'pinia'
 interface LiveUser {
     id: number
     username: string  // aiku
+    contact_name?: string  // Mr. Aiku
     avatar_thumbnail: Image
-    name: string  // Mr. Aiku
     action: string  // navigate, leave, logout
     last_active: Date
     current_page?: {
@@ -47,20 +47,6 @@ export const useLiveUsers = defineStore('useLiveUsers', {
         // liveUsersWithoutMe: (state) => state.liveUsers.filter((liveUser, keyUser) => keyUser != layout.user.id )
     },
     actions: {
-        // getFilteredLiveUsers() {
-        //     const xxx = {}
-        //     Object.keys(this.liveUsers).forEach((key) => {
-        //         if(!(
-        //             (this.liveUsers[key].action === 'leave' && useIsFutureIsAPast(this.liveUsers[key]?.last_active, 300)) ||
-        //             (this.liveUsers[key].action === 'logout' && useIsFutureIsAPast(this.liveUsers[key]?.last_active, 3)))
-        //         ){
-        //             console.log(xxx[key] = this.liveUsers[key])
-        //             return xxx[key] = this.liveUsers[key]
-        //         }}
-        //     )
-
-        //     return xxx
-        // },
         unsubscribe() {
             window.Echo.leave(`grp.live.users`)
         },

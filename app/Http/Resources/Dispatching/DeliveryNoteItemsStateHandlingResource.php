@@ -31,7 +31,9 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $warehouse_area_picking_position
  * @property mixed $warehouse_area_code
  * @property mixed $batch_code
+ * @property mixed $batch_code_id
  * @property mixed $expiry_date
+ * @property mixed $organisation_id
  * @property mixed $quantity_waiting_warehouse
  * @property mixed $quantity_waiting_crm
  * @property mixed $notes
@@ -174,7 +176,16 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'quantity_required_fractional' => $requiredFactionalData,
             'warehouse_area'               => $warehouseArea,
             'batch_code'                   => $this->batch_code,
+            'batch_code_id'                => $this->batch_code_id,
             'expiry_date'                  => $this->expiry_date,
+            'organisation_id'              => $this->organisation_id,
+            'batch_codes_fetch_route'      => [
+                'name'       => 'grp.json.org_stock.batch_codes.index',
+                'parameters' => [
+                    'organisation' => $this->organisation_id,
+                    'orgStock'     => $this->org_stock_id,
+                ],
+            ],
             'packed_in_message'            => $packedInMessage,
             'notes'                        => $this->notes,
             'shop_slug'                    => $this->shop_slug,

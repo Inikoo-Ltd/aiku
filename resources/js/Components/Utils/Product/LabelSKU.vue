@@ -143,8 +143,8 @@ const displayUnits = computed(() => {
     
                     <div class="text-left col-span-3 flex items-center">
                         <slot name="col_name" :data="tUnit">
-                            {{ tUnit.tradeUnit?.name }}
-                        </slot> {{trans('Units/SKU')}}:{{ tUnit.units_per_sku }}
+                            <p>{{ tUnit.tradeUnit?.name }} <span class="text-orange-500">{{ trans('Units/SKU')}}:{{ tUnit.units_per_sku }}</span></p>
+                        </slot>
                     </div>
 
 
@@ -153,8 +153,8 @@ const displayUnits = computed(() => {
                         {{ tUnit.total_units }}
                     </div>
     
-                    <div class="justify-items-end text-teal-600 whitespace-nowrap flex justify-end">
-                        <span class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer flex border-green-600 w-fit">
+                    <div class="justify-items-end text-teal-600 whitespace-nowrap flex justify-end items-center">
+                        <span class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer h-fit flex border-green-600 w-fit">
                             <span> &#8623; SKU </span>
                             <span class="font-bold ms-2">
                                 <FractionDisplay v-if="tUnit[key]" :fractionData="tUnit[key]" />

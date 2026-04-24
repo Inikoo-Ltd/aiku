@@ -55,6 +55,7 @@ class UpdateDeliveryNoteItem extends OrgAction
             'cancel_state'       => ['sometimes', new Enum(DeliveryNoteItemCancelStateEnum::class)],
             'picking_session_id' => ['sometimes'],
             'batch_code'         => ['sometimes', 'nullable', 'string', 'max:255'],
+            'batch_code_id'      => ['sometimes', 'nullable', 'exists:batch_codes,id'],
             'expiry_date'        => ['sometimes', 'nullable', 'date'],
         ];
 
