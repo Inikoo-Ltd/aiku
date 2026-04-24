@@ -108,17 +108,17 @@ class UpdateInvoice extends OrgAction
 
                 $order->refresh();
                 CalculateOrderTotalAmounts::run($order, false, false);
-                $order->refresh();
-                
-                $invoice->update([
-                    'total_amount'      => $order->total_amount,
-                    'tax_category_id'   => $order->tax_category_id,
-                    'tax_amount'        => $order->tax_amount,
-                ]);
             }
-            
 
-            RunInvoiceHydrators::run($invoice, $this->hydratorsDelay);
+            $invoice->update([
+                'tax_category_id'   => GetTaxCategory::run(
+                    country: $invoice->organisation->country,
+                    taxNumber: $customer->taxNumber,
+                    billingAddress: $invoice->billingAddress,
+                    deliveryAddress: $invoice->deliveryAddress,
+                    isRe: $customer?->is_re,
+                )->id,
+            ]);
         }
 
 
@@ -202,6 +202,13 @@ class UpdateInvoice extends OrgAction
             if ($invoice->shipping_zone_id) {
                 ShippingZoneHydrateUsageInInvoices::dispatch($invoice->shipping_zone_id)->delay($this->hydratorsDelay);
             }
+        }
+
+        if ($billingAddressData) {
+            $invoice->refresh();
+            CalculateInvoiceTotals::run($invoice);
+            
+            RunInvoiceHydrators::run($invoice, $this->hydratorsDelay);
         }
 
         return $invoice;
