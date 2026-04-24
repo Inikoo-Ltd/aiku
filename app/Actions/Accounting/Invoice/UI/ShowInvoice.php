@@ -13,6 +13,7 @@ use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactions;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
+use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
@@ -25,6 +26,7 @@ use App\Http\Resources\Accounting\InvoiceTransactionsResource;
 use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\Accounting\RefundResource;
 use App\Http\Resources\Accounting\RefundsResource;
+use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Models\Accounting\Invoice;
@@ -404,6 +406,10 @@ class ShowInvoice extends OrgAction
                     'editInvoiceDate' => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
                     'editInvoiceAddress' => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
                 ],
+                'addressDetail'                 => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting") ? [
+                    'value'   => AddressFormFieldsResource::make($invoice->address)->getArray(),
+                    'options' => GetAddressData::run(),
+                ] : [],
                 'box_stats'                     => $this->getBoxStats($invoice),
                 'list_refunds'                  => RefundResource::collection($invoice->refunds),
                 'invoice'                       => InvoiceResource::make($invoice),
