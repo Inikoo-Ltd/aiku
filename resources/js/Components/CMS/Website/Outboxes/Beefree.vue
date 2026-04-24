@@ -300,9 +300,7 @@ const generateProductHtmlValue = (product: any, shopSlug: string): string => {
     const imageUrl = product.product_image || ''
     const title = product.name || product.code || 'Unknown Product'
     const description = product.description || ''
-    const truncatedDescription = description.length > 300
-        ? description.substring(0, 300) + '...'
-        : description
+    const truncatedDescription = description
     const productUrl = product.url || '#'
     const buttonColor = selectedButtonColor.value
 
