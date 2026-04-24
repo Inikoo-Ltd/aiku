@@ -37,6 +37,13 @@ class EditProspectMailshot extends OrgAction
                     'required'    => true,
                     'value'       => $mailshot->subject,
                 ],
+                'name'           => [
+                    'type'        => 'input',
+                    'label'       => __('Name'),
+                    'placeholder' => __('Mailshot name'),
+                    'required'    => false,
+                    'value'       => $mailshot->name,
+                ],
                 'preview_text' => [
                     'type'        => 'input',
                     'label'       => __('Preview text'),

@@ -77,6 +77,7 @@ class StoreMailshot extends OrgAction
     {
         $rules = [
             'subject'           => ['required', 'string', 'max:255'],
+            'name'              => ['sometimes', 'nullable', 'string', 'max:255'],
             'preview_text'      => ['sometimes', 'nullable', 'string', 'max:255'],
             'type'              => ['sometimes', Rule::enum(MailshotTypeEnum::class)],
             'state'             => ['sometimes', Rule::enum(MailshotStateEnum::class)],

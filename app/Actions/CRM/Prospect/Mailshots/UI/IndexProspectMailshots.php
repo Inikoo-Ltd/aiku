@@ -44,7 +44,9 @@ class IndexProspectMailshots extends InertiaAction
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('contact_name', $value);
+                $query->whereAnyWordStartWith('contact_name', $value)
+                    ->orWhere('mailshots.subject', 'like', "%{$value}%")
+                    ->orWhere('mailshots.name', 'like', "%{$value}%");
             });
         });
 
@@ -75,7 +77,7 @@ class IndexProspectMailshots extends InertiaAction
 
         return $queryBuilder
             ->defaultSort('mailshots.slug')
-            ->allowedSorts(['slug', 'subject', 'date'])
+            ->allowedSorts(['slug', 'subject', 'name', 'date'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -119,6 +121,7 @@ class IndexProspectMailshots extends InertiaAction
                 )
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'subject', label: __('subject'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'date', label: __('Date'), sortable: true)
                 ->column(key: 'number_recipients', label: __('recipients'))
                 ->column(key: 'percentage_bounced', label: __('bounces'))
