@@ -40,6 +40,7 @@ class IndexDeliveryNoteItems extends OrgAction
         $query->with(['pickings.location.warehouse']);
 
         $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
+        $query->leftJoin('batch_codes', 'delivery_note_items.batch_code_id', '=', 'batch_codes.id');
 
         $query->leftJoin('packings', function ($join) use ($parent) {
             $join->on('packings.delivery_note_item_id', 'delivery_note_items.id');
@@ -71,8 +72,10 @@ class IndexDeliveryNoteItems extends OrgAction
                 'delivery_note_items.quantity_dispatched',
                 'delivery_note_items.quantity_not_picked',
                 'delivery_note_items.is_handled',
-                'delivery_note_items.batch_code',
-                'delivery_note_items.expiry_date',
+                'delivery_note_items.batch_code_id',
+                'delivery_note_items.organisation_id',
+                \Illuminate\Support\Facades\DB::raw('COALESCE(batch_codes.code, delivery_note_items.batch_code) as batch_code'),
+                \Illuminate\Support\Facades\DB::raw('COALESCE(batch_codes.expiry_date, delivery_note_items.expiry_date) as expiry_date'),
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',

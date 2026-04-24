@@ -23,7 +23,8 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import Modal from "@/Components/Utils/Modal.vue"
-import { RadioButton, DatePicker } from "primevue"
+import { RadioButton } from "primevue"
+import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
@@ -159,18 +160,45 @@ const exceptPropsToLoad = ['tabs', 'quick_pickers', 'routes', 'queryBuilderProps
 // Section: Modal for edit expiry date and batch code
 const selectedItemToEditExpiryDate = ref(null)
 const isModalEditExpiryDate = ref(false)
+const selectedBatchCode = ref(null)
+
+const batchCodeFetchRoute = computed(() => {
+    if (!selectedItemToEditExpiryDate.value?.org_stock_id || !selectedItemToEditExpiryDate.value?.organisation_id) {
+        return null
+    }
+    return {
+        name: 'grp.json.org_stock.batch_codes.index',
+        parameters: {
+            organisation: selectedItemToEditExpiryDate.value.organisation_id,
+            orgStock: selectedItemToEditExpiryDate.value.org_stock_id,
+        },
+    }
+})
+
+watch(isModalEditExpiryDate, (isOpen) => {
+    if (isOpen && selectedItemToEditExpiryDate.value?.batch_code_id) {
+        selectedBatchCode.value = {
+            id: selectedItemToEditExpiryDate.value.batch_code_id,
+            code: selectedItemToEditExpiryDate.value.batch_code,
+            expiry_date: selectedItemToEditExpiryDate.value.expiry_date,
+            label: selectedItemToEditExpiryDate.value.batch_code,
+        }
+    } else {
+        selectedBatchCode.value = null
+    }
+})
+
 const onCloseModalExpiryDate = () => {
     isModalEditExpiryDate.value = false
 
     setTimeout(() => {
         selectedItemToEditExpiryDate.value = null
+        selectedBatchCode.value = null
     }, 300);
 }
 const isLoadingSubmitExpiryDate = ref(false)
 const onSubmitEditExpiryDate = () => {
-
     if (!selectedItemToEditExpiryDate.value) {
-        console.log('No item expiry date selected')
         return
     }
 
@@ -179,27 +207,26 @@ const onSubmitEditExpiryDate = () => {
             deliveryNoteItem: selectedItemToEditExpiryDate.value?.id
         }),
         {
-            expiry_date: selectedItemToEditExpiryDate.value?.expiry_date,
-            batch_code: selectedItemToEditExpiryDate.value?.batch_code,
+            batch_code_id: selectedBatchCode.value?.id ?? null,
         },
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingSubmitExpiryDate.value = true
             },
             onSuccess: () => {
                 notify({
                     title: trans("Success"),
-                    text: trans("Successfully set expiry date and batch code"),
+                    text: trans("Successfully set batch code"),
                     type: "success"
                 })
                 onCloseModalExpiryDate()
             },
-            onError: errors => {
+            onError: () => {
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to set expiry date and batch code. Try again"),
+                    text: trans("Failed to set batch code. Try again"),
                     type: "error"
                 })
             },
@@ -466,7 +493,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
             <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span></div>
             <div class="flex items-center flex-wrap">
                 <!-- Label: expired date -->
-                <ExpiryDateLabel v-if="(deliveryNoteItem.expiry_date || deliveryNoteItem.batch_code) && (deliveryNoteItem.is_picked && !deliveryNoteItem.is_packed)" :expiry_date="deliveryNoteItem.expiry_date" :batch_code="deliveryNoteItem.batch_code" />
+                <ExpiryDateLabel v-if="(deliveryNoteItem.expiry_date || deliveryNoteItem.batch_code)" :expiry_date="deliveryNoteItem.expiry_date" :batch_code="deliveryNoteItem.batch_code" />
 
                 <!-- Button: add/edit expiry date and batch code -->
                 <div v-if="(deliveryNoteItem.is_picked || Number(deliveryNoteItem.quantity_picked) > 0) && state !== 'cancelled'">
@@ -1083,37 +1110,29 @@ const onSetItemToUndoWaitingWarehouse = () => {
         </div>
     </Modal>
 
-    <!-- Modal: Edit expiry date & batch code -->
+    <!-- Modal: Select batch code -->
     <Modal :isOpen="isModalEditExpiryDate" @onClose="() => onCloseModalExpiryDate()" width="w-full max-w-lg">
         <div class="text-center mb-4">
-            <div class="font-semibold text-2xl">Update for {{ selectedItemToEditExpiryDate?.org_stock_code }}:</div>
+            <div class="font-semibold text-2xl">{{ trans('Batch Code for') }} {{ selectedItemToEditExpiryDate?.org_stock_code }}:</div>
             <div class="opacity-80 italic text-sm">
                 {{ selectedItemToEditExpiryDate?.org_stock_name }}
             </div>
         </div>
 
         <div class="flex flex-col items-center gap-4">
-            <div class="w-full ">
-                <label class="block text-sm font-medium mb-2">
-                    {{ trans("Expiry Date") }}:
-                </label>
-                <DatePicker
-                    :modelValue="get(selectedItemToEditExpiryDate, 'expiry_date', null) ? new Date(get(selectedItemToEditExpiryDate, 'expiry_date', '')) : null"
-                    @update:modelValue="(e) => set(selectedItemToEditExpiryDate, 'expiry_date', e)"
-                    fluid
-                    dateFormat="dd M yy"
-                    :disabled="isLoadingSubmitExpiryDate"
-                    :showClear="true"
-                />
-            </div>
-
-            <div class="w-full ">
+            <div class="w-full">
                 <label class="block text-sm font-medium mb-2">
                     {{ trans("Batch code") }}:
                 </label>
-                <PureInput
-                    :modelValue="get(selectedItemToEditExpiryDate, 'batch_code', '')"
-                    @update:modelValue="(e) => set(selectedItemToEditExpiryDate, 'batch_code', e)"
+                <PureMultiselectInfiniteScroll
+                    v-if="batchCodeFetchRoute"
+                    v-model="selectedBatchCode"
+                    :fetchRoute="batchCodeFetchRoute"
+                    :initOptions="selectedBatchCode ? [selectedBatchCode] : []"
+                    labelProp="label"
+                    valueProp="id"
+                    object
+                    :placeholder="trans('Search batch code...')"
                     :disabled="isLoadingSubmitExpiryDate"
                 />
             </div>
@@ -1126,8 +1145,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     icon="far fa-arrow-left"
                     @click="onCloseModalExpiryDate"
                     :label="trans('Cancel')"
-                >
-                </Button>
+                />
 
                 <Button
                     type="primary"
@@ -1136,9 +1154,8 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     icon="fad fa-save"
                     @click="onSubmitEditExpiryDate"
                     full
-                    label="Save"
-                >
-                </Button>
+                    :label="trans('Save')"
+                />
             </div>
         </div>
     </Modal>
