@@ -33,7 +33,7 @@ class DispatchSimpleAudit
         $auditableModel->isCustomEvent = true;
 
         $auditableModel->auditCustomOld = [
-            $logKey => $oldValue
+            $logKey => $oldValue ?: 'None'
         ];
 
         $auditableModel->auditCustomNew = [

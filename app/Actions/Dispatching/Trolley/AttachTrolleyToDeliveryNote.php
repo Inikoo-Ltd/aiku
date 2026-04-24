@@ -17,6 +17,7 @@ use App\Models\Dispatching\Trolley;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
 use Illuminate\Support\Facades\Event;
+use App\Actions\Audits\DispatchSimpleAudit;
 
 class AttachTrolleyToDeliveryNote extends OrgAction
 {
@@ -45,16 +46,13 @@ class AttachTrolleyToDeliveryNote extends OrgAction
         $newTrolleys = $deliveryNote->trolleys()->pluck('name')->join(', ');
 
         // Custom Audits Event
-        $deliveryNote->auditEvent = 'updated';
-        $deliveryNote->isCustomEvent = true;
-        $deliveryNote->auditCustomOld = [
-            'trolleys' => $oldTrolleys ?: 'None'
-        ];
-        $deliveryNote->auditCustomNew = [
-            'trolleys' => $newTrolleys
-        ];
-
-        Event::dispatch(new AuditCustom($deliveryNote));
+        DispatchSimpleAudit::run(
+            auditableModel  : $deliveryNote,
+            logKey          : 'trolleys_attached', 
+            oldValue        : $oldTrolleys,
+            newValue        : $newTrolleys,
+            eventName       : 'trolley_attached'
+        );
         
         DeliveryNoteHydrateTrolleys::dispatch($deliveryNote->id);
     }
