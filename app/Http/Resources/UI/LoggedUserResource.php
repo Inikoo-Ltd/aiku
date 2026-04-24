@@ -34,9 +34,10 @@ class LoggedUserResource extends JsonResource
         }
 
         return [
-            'id'       => $user->id,
-            'username' => $user->username,
-            'email'    => $user->email,
+            'id'           => $user->id,
+            'username'     => $user->username,
+            'contact_name' => (string) $user->contact_name,
+            'email'        => $user->email,
             'is_agent'    => $isAgent,
             'agent_shops' => $agentShops,
             'settings' => [
