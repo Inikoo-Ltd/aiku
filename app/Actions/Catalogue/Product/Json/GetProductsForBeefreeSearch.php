@@ -11,7 +11,7 @@ namespace App\Actions\Catalogue\Product\Json;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Http\Resources\Catalogue\ProductsWebpageResource;
+use App\Http\Resources\Catalogue\BeefreeProductResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Services\QueryBuilder;
@@ -112,7 +112,7 @@ class GetProductsForBeefreeSearch extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $products): AnonymousResourceCollection
     {
-        return ProductsWebpageResource::collection($products);
+        return BeefreeProductResource::collection($products);
     }
 
     public function asController(Shop $shop, ActionRequest $request): LengthAwarePaginator

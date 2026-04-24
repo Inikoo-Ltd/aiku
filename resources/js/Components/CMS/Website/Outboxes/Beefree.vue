@@ -297,7 +297,7 @@ const onSearchInput = () => {
 }
 
 const generateProductHtmlValue = (product: any, shopSlug: string): string => {
-    const imageUrl = product.web_images?.[0] || ''
+    const imageUrl = product.product_image || ''
     const title = product.name || product.code || 'Unknown Product'
     const description = product.description || ''
     const truncatedDescription = description.length > 300
@@ -474,8 +474,8 @@ const setupProductSearchHandlers = (resolve: (value: any) => void, reject: () =>
                         class="flex items-center gap-4 p-4 hover:bg-gray-50 cursor-pointer border border-gray-200 rounded-lg transition-colors">
                         <!-- Product Image -->
                         <div class="w-16 h-16 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
-                            <img v-if="product.web_images && product.web_images.length > 0" :src="product.web_images[0]"
-                                :alt="product.name" class="w-full h-full object-cover" />
+                            <img v-if="product.product_image" :src="product.product_image" :alt="product.name"
+                                class="w-full h-full object-cover" />
                             <div v-else class="w-full h-full flex items-center justify-center text-gray-400 text-xs">
                                 No Image
                             </div>
