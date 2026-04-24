@@ -35,6 +35,13 @@ const props = defineProps<{
         </span>
     </div>
 
+    <!-- Label: Discretionary Discount (because sto is null) -->
+    <div v-else-if="offers_data?.o?.sto === null" class="bg-purple-500/20 px-1 py-0.5 text-xs border flex items-center border-purple-500/50 rounded-sm w-fit text-purple-700" >
+        <FontAwesomeIcon icon="fas fa-badge-percent" class="text-purple-500 text-[1.1667em] align-middle" fixed-width aria-hidden="true" />
+        <span class="ml-0.5 font-bold mr-1">{{ formatPercentage(props.offers_data?.o?.p)  }}</span>
+        {{ offers_data?.o?.l }}
+    </div>
+
     <div v-else class="bg-green-500/20 px-1 py-0.5 text-xs border flex items-center border-green-500/50 rounded-sm w-fit text-green-700" >
         <!-- Label: Gold Reward Amnesty -->
         <template v-if="offers_data?.o?.st === 'a'">
