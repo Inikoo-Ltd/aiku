@@ -30,19 +30,19 @@ class EditProspectMailshot extends OrgAction
         $fields[] = [
             'title'  => '',
             'fields' => [
-                'subject'        => [
-                    'type'        => 'input',
-                    'label'       => __('Subject'),
-                    'placeholder' => __('Email subject'),
-                    'required'    => true,
-                    'value'       => $mailshot->subject,
-                ],
                 'name'           => [
                     'type'        => 'input',
                     'label'       => __('Name'),
                     'placeholder' => __('Mailshot name'),
                     'required'    => false,
                     'value'       => $mailshot->name,
+                ],
+                'subject'        => [
+                    'type'        => 'input',
+                    'label'       => __('Subject'),
+                    'placeholder' => __('Email subject'),
+                    'required'    => true,
+                    'value'       => $mailshot->subject,
                 ],
                 'preview_text' => [
                     'type'        => 'input',
