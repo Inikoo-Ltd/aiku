@@ -12,6 +12,7 @@ use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductTradeUnitCompositionEnum;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Currency;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
@@ -32,8 +33,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- * App\Models\SupplyChain\SupplierProduct
- *
  * @property int $id
  * @property int $group_id
  * @property string $slug
@@ -65,8 +64,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_slug
  * @property string|null $source_id
  * @property array<array-key, mixed> $sources
+ * @property numeric $extra_costs Estimated percentage of extra costs
  * @property-read \App\Models\SupplyChain\Agent|null $agent
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read Currency $currency
  * @property-read Group|null $group
  * @property-read \App\Models\SupplyChain\HistoricSupplierProduct|null $historicSupplierProduct
  * @property-read Collection<int, \App\Models\SupplyChain\HistoricSupplierProduct> $historicSupplierProducts
@@ -94,6 +95,7 @@ class SupplierProduct extends Model implements Auditable
 
     protected $casts = [
         'cost'                   => 'decimal:4',
+        'extra_costs'            => 'decimal:3',
         'data'                   => 'array',
         'settings'               => 'array',
         'sources'                => 'array',
@@ -193,6 +195,11 @@ class SupplierProduct extends Model implements Auditable
     public function stocks(): BelongsToMany
     {
         return $this->belongsToMany(Stock::class, 'stock_has_supplier_products');
+    }
+
+    public function currency(): BelongsTo
+    {
+        return $this->belongsTo(Currency::class);
     }
 
 }

@@ -135,6 +135,11 @@ class IndexLeavesAdmin extends OrgAction
                     sortable: true
                 )
                 ->column(
+                    key: 'approval_progress',
+                    label: __('Approval'),
+                    canBeHidden: false
+                )
+                ->column(
                     key: 'reason',
                     label: __('Reason'),
                     canBeHidden: true,

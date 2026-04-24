@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class OrgStockHydrateStockValue implements ShouldBeUnique
 {
+    //todo do we need to delete this??? mybe yes
     use WithHydrateCommand;
 
     public string $commandSignature = 'hydrate:org-stock-stock-value {organisations?*} {--s|slugs=}';

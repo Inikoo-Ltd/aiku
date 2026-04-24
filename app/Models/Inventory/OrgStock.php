@@ -191,7 +191,8 @@ class OrgStock extends Model implements Auditable
     public function orgSupplierProducts(): BelongsToMany
     {
         return $this->belongsToMany(OrgSupplierProduct::class, 'org_stock_has_org_supplier_products')
-            ->withPivot(['status', 'local_priority'])->withTimestamps();
+            ->withPivot(['status', 'local_priority'])->withTimestamps()
+            ->orderByPivot('local_priority', 'desc');
     }
 
     public function tradeUnits(): MorphToMany

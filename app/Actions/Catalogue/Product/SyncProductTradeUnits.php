@@ -38,7 +38,6 @@ class SyncProductTradeUnits
 
         $product->tradeUnits()->sync($tradeUnits);
         ModelHydrateSingleTradeUnits::run($product);
-
         ProductHydrateGrossWeightFromTradeUnits::dispatch($product);
         ProductHydrateBarcodeFromTradeUnit::dispatch($product);
         ProductHydrateMarketingWeightFromTradeUnits::dispatch($product);
