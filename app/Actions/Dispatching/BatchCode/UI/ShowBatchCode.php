@@ -10,7 +10,9 @@ namespace App\Actions\Dispatching\BatchCode\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
+use App\Enums\UI\Inventory\BatchCodeTabsEnum;
 use App\Http\Resources\Dispatching\BatchCodeResource;
+use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\Models\Dispatching\BatchCode;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -24,7 +26,7 @@ class ShowBatchCode extends OrgAction
 
     public function asController(Organisation $organisation, Warehouse $warehouse, BatchCode $batchCode, ActionRequest $request): BatchCode
     {
-        $this->initialisationFromWarehouse($warehouse, $request);
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(BatchCodeTabsEnum::values());
 
         return $batchCode;
     }
@@ -52,6 +54,7 @@ class ShowBatchCode extends OrgAction
                         $this->canEdit ? [
                             'type'   => 'button',
                             'style'  => 'delete',
+                            'key'    => 'delete_batch_code',
                             'route'  => [
                                 'name'       => 'grp.models.batch_code.delete',
                                 'parameters' => ['batchCode' => $batchCode->id],
@@ -60,9 +63,17 @@ class ShowBatchCode extends OrgAction
                         ] : false,
                     ],
                 ],
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => BatchCodeTabsEnum::navigation(),
+                ],
                 'batch_code' => BatchCodeResource::make($batchCode->load('orgStock'))->resolve(),
+
+                BatchCodeTabsEnum::DELIVERY_NOTES->value => $this->tab == BatchCodeTabsEnum::DELIVERY_NOTES->value
+                    ? fn () => DeliveryNotesResource::collection(IndexDeliveryNotesInBatchCode::run($batchCode, BatchCodeTabsEnum::DELIVERY_NOTES->value))
+                    : Inertia::lazy(fn () => DeliveryNotesResource::collection(IndexDeliveryNotesInBatchCode::run($batchCode, BatchCodeTabsEnum::DELIVERY_NOTES->value))),
             ]
-        );
+        )->table(IndexDeliveryNotesInBatchCode::make()->tableStructure(prefix: BatchCodeTabsEnum::DELIVERY_NOTES->value));
     }
 
     public function getBreadcrumbs(BatchCode $batchCode, array $routeParameters, ?string $suffix = null): array
