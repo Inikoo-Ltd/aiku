@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Dropshipping\Ebay\Product\StoreNewProductToCurrentEbay;
+use App\Actions\Dropshipping\Ebay\Product\UpdateEbayOffer;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyProductVariant;
@@ -33,9 +34,9 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
 
         if (! $isDraft) {
             match ($portfolio->platform->type) {
-                PlatformTypeEnum::EBAY => StoreNewProductToCurrentEbay::run($portfolio->customerSalesChannel->user, $portfolio),
+                PlatformTypeEnum::EBAY => UpdateEbayOffer::run($portfolio),
                 PlatformTypeEnum::WOOCOMMERCE => UpdateWooProduct::run($portfolio),
-                PlatformTypeEnum::SHOPIFY => UpdateShopifyProductVariant::run($portfolio, $modelData),
+                PlatformTypeEnum::SHOPIFY => UpdateShopifyProductVariant::run($portfolio),
                 default => null
             };
         }
