@@ -9,18 +9,14 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithOrganisationsArgument;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 
 class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
 {
-    use WithOrganisationsArgument;
-
     public string $jobQueue = 'urgent';
 
     public function getJobUniqueId(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false): string
@@ -32,9 +28,8 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
             ($forceRecalculate ? '1' : '0');
     }
 
-    public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false)
+    public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false): void
     {
-
         $itemsNet   = $order->transactions()->where('model_type', 'Product')->sum('net_amount');
         $itemsGross = $order->transactions()->where('model_type', 'Product')->sum('gross_amount');
         $tax        = $order->taxCategory->rate;
@@ -139,42 +134,22 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
         }
     }
 
-    public string $commandSignature = 'order:totals {--s|slugs=}';
+    public string $commandSignature = 'order:totals {order}';
 
     public function asCommand(Command $command): int
     {
         $exitCode = 0;
-        if (!$command->option('slugs')) {
-            if ($command->argument('organisations')) {
-                /** @var Organisation $organisation */
-                $organisation       = $this->getOrganisations($command)->first();
-                $this->organisation = $organisation;
-            }
-
-            $this->loopAll($command);
+        $order    = Order::where('slug', $command->argument('order'))->firstOrFail();
+        if ($order) {
+            $this->handle($order);
+            $command->line("Order $order->reference totals calculated. 🧮");
         } else {
-            $slug  = $command->option('slugs');
-            $order = Order::where('slug', $slug)->first();
-            if ($order) {
-                $this->handle($order);
-                $command->line("Order $order->reference totals calculated. 🧮");
-            } else {
-                $command->error("Model not found");
-                $exitCode = 1;
-            }
+            $command->error("Model not found");
+            $exitCode = 1;
         }
 
         return $exitCode;
     }
 
-    protected function loopAll(Command $command): void
-    {
-        $command->withProgressBar(Order::all(), function ($model) {
-            if ($model) {
-                $this->handle($model);
-            }
-        });
-        $command->info("");
-    }
 
 }
