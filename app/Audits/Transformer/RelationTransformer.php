@@ -16,7 +16,10 @@ class RelationTransformer
             $extractValue = function ($model) use ($attributes) {
                 if (!$model) return null;
 
-                $values = array_map(fn($attr) => $model->{$attr}, $attributes);
+                $values = [];
+                foreach ($attributes as $attribute) {
+                    $values[] = $model->{$attribute};
+                }
                 return implode(', ', array_filter($values));
             };
 
