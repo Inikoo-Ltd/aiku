@@ -85,6 +85,7 @@ class Kernel extends HttpKernel
         ConvertEmptyStringsToNull::class,
         AddSentryBrowserProfilingHeader::class,
         AcceptClientHintsMiddleware::class,
+        NewRelicTransactionMiddleware::class,
     ];
 
     protected $middlewareGroups = [
@@ -165,7 +166,6 @@ class Kernel extends HttpKernel
             SetLocale::class,
         ],
         'aiku-public' => [
-            NewRelicTransactionMiddleware::class,
             DisableSSR::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
