@@ -32,7 +32,7 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
             ($forceRecalculate ? '1' : '0');
     }
 
-    public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false): void
+    public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false)
     {
 
         $itemsNet   = $order->transactions()->where('model_type', 'Product')->sum('net_amount');
