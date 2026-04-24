@@ -20,23 +20,22 @@ readonly class NewRelicTransactionMiddleware
 
     public function handle(Request $request, Closure $next): Response
     {
-        $response = $next($request);
 
         if (!config('newrelic.enabled') || !$this->agent->isLoaded()) {
-            return $response;
+            return $next($request);
         }
 
         $appName = trim((string) config('newrelic.app_name'));
-        if ($appName !== '') {
-            $this->agent->setAppName($appName);
-        }
+        $this->agent->startTransaction($appName);
 
-        $this->agent->markAsWebTransaction();
+        $response = $next($request);
+
+
         $this->agent->nameTransaction($this->resolveTransactionName($request));
         $this->agent->addCustomParameter('app_env', (string) app()->environment());
         $this->agent->addCustomParameter('request_method', $request->method());
         $this->agent->addCustomParameter('request_path', '/'.ltrim($request->path(), '/'));
-
+        $this->agent->terminateTransaction();
         return $response;
     }
 

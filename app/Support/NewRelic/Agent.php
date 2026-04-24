@@ -14,10 +14,18 @@ class Agent
         return extension_loaded('newrelic');
     }
 
-    public function setAppName(string $appName): void
+    public function startTransaction(string $appName): void
     {
-        if (function_exists('newrelic_set_appname')) {
-            call_user_func('newrelic_set_appname', $appName);
+        if (function_exists('newrelic_end_transaction')) {
+            call_user_func('newrelic_end_transaction', $appName);
+        }
+        $this->markAsWebTransaction();
+    }
+
+    public function terminateTransaction(): void
+    {
+        if (function_exists('newrelic_end_transaction')) {
+            call_user_func('newrelic_end_transaction');
         }
     }
 
