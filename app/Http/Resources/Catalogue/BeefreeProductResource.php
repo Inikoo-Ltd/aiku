@@ -78,12 +78,22 @@ class BeefreeProductResource extends JsonResource
             }
         }
 
-        // Close any open tags
-        foreach (array_reverse($tagStack) as $openTag) {
-            $result .= "</{$openTag}>";
+        // Add ellipsis to indicate truncation
+        if (!empty($tagStack)) {
+            // If there are open tags, add "..." inside the last open tag
+            $lastOpenTag = end($tagStack);
+            $result .= "...</{$lastOpenTag}>";
+            // Close the remaining open tags (excluding the last one)
+            $remainingTags = array_slice(array_reverse($tagStack), 1);
+            foreach ($remainingTags as $openTag) {
+                $result .= "</{$openTag}>";
+            }
+        } else {
+            // If no open tags, add "..." after the last text
+            $result .= "...";
         }
 
-        return $result . "...";
+        return $result;
     }
 
     public function toArray($request): array
