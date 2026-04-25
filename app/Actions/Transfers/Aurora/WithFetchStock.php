@@ -47,7 +47,6 @@ trait WithFetchStock
                 'name',
                 'source_id',
                 'source_slug',
-                'unit_cost',
                 'fetched_at',
                 'last_fetched_at'
             ]);
@@ -108,7 +107,6 @@ trait WithFetchStock
         $organisation = $organisationSource->getOrganisation();
         /** @var OrgStock $orgStock */
         if ($orgStock = $organisation->orgStocks()->where('source_id', $stockData['stock']['source_id'])->first()) {
-
             $orgStockDataToUpdate2 = Arr::only($orgStockData, [
                 'state',
                 'discontinued_in_organisation_at',

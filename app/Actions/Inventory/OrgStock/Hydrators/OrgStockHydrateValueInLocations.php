@@ -25,7 +25,7 @@ class OrgStockHydrateValueInLocations implements ShouldBeUnique
     {
 
         $orgStock->update([
-            'value_in_locations' => $orgStock->locationOrgStocks()->sum('quantity') * $orgStock->unit_value
+            'value_in_locations' => $orgStock->locationOrgStocks()->sum('quantity') * $orgStock->sku_value
         ]);
     }
 

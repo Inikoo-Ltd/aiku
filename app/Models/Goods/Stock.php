@@ -52,7 +52,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $raw_material
  * @property int|null $units_per_pack units per pack
  * @property int|null $units_per_carton units per carton
- * @property numeric|null $unit_value
+ * @property numeric|null $value_in_warehouses
  * @property int|null $image_id
  * @property int|null $gross_weight package weight grams
  * @property array<array-key, mixed> $settings

@@ -170,7 +170,7 @@ function roundDown2(num: number) {
 
                         <!-- Org Cost -->
                         <th class="px-2 py-1 text-center">
-                            {{ trans('Org cost') }}
+                            {{ trans('Cost') }}
                         </th>
 
                         <!-- Outer Price -->

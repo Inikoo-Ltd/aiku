@@ -67,7 +67,6 @@ class UpdateOrgStock extends OrgAction
     {
         $rules = [
             'state'        => ['sometimes', Rule::enum(OrgStockStateEnum::class)],
-            'unit_cost'    => ['sometimes', 'numeric', 'min:0'],
             'is_on_demand' => ['sometimes', 'boolean'],
             'name'         => ['sometimes', 'string', 'max:255'],
             'packed_in'    => ['sometimes', 'nullable', 'numeric', 'min:0'],
