@@ -6,6 +6,8 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\Invoice\Search\GetInvoiceSearchSchema;
+use App\Actions\Accounting\Payment\Search\GetPaymentSearchSchema;
 use App\Actions\Catalogue\Collection\Search\GetCollectionSearchSchema;
 use App\Actions\Catalogue\Product\Search\GetProductSearchSchema;
 use App\Actions\Catalogue\ProductCategory\Search\GetProductCategorySearchSchema;
@@ -19,6 +21,8 @@ use App\Actions\Ordering\Order\Search\GetOrderSearchSchema;
 use App\Actions\SupplyChain\Supplier\Search\GetSupplierSearchSchema;
 use App\Actions\SysAdmin\Guest\Search\GetGuestSearchSchema;
 use App\Actions\SysAdmin\User\Search\GetUserSearchSchema;
+use App\Models\Accounting\Invoice;
+use App\Models\Accounting\Payment;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -185,6 +189,8 @@ return [
             TradeUnitFamily::class => GetTradeUnitFamilySearchSchema::run(),
             Stock::class           => GetStockSearchSchema::run(),
             StockFamily::class     => GetStockFamilySearchSchema::run(),
+            Payment::class         => GetPaymentSearchSchema::run(),
+            Invoice::class         => GetInvoiceSearchSchema::run()
 
         ],
     ],

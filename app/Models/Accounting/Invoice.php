@@ -37,6 +37,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -163,6 +165,7 @@ class Invoice extends Model implements Auditable
     use HasFactory;
     use InCustomer;
     use HasHistory;
+    use Searchable;
 
     protected $casts = [
         'type'                => InvoiceTypeEnum::class,
@@ -187,6 +190,33 @@ class Invoice extends Model implements Auditable
     ];
 
     protected $guarded = [];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'organisation_id',
+                'shop_id',
+                'customer_id',
+                'state',
+                'reference',
+                'customer_reference',
+                'date',
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'              => (string)$this->id,
+            'organisation_id' => $this->organisation_id,
+            'shop_id'         => $this->shop_id,
+            'customer_id'     => $this->customer_id,
+            'type'            => $this->type->value,
+            'reference'       => $this->reference,
+            'date'            => is_string($this->date) ? Carbon::parse($this->date)->timestamp : $this->date->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {

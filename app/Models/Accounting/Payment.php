@@ -30,6 +30,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -100,6 +102,7 @@ class Payment extends Model implements Auditable
     use HasFactory;
     use InCustomer;
     use HasHistory;
+    use Searchable;
 
     protected $casts = [
         'data'              => 'array',
@@ -118,6 +121,36 @@ class Payment extends Model implements Auditable
     ];
 
     protected $guarded = [];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'organisation_id',
+                'shop_id',
+                'customer_id',
+                'status',
+                'state',
+                'type',
+                'reference',
+                'date',
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'              => (string)$this->id,
+            'organisation_id' => $this->organisation_id,
+            'shop_id'         => $this->shop_id,
+            'customer_id'     => $this->customer_id,
+            'status'          => $this->status->value,
+            'state'           => $this->state->value,
+            'type'            => $this->type->value,
+            'reference'       => (string)$this->reference,
+            'date'            => is_string($this->date) ? Carbon::parse($this->date)->timestamp : $this->date->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {
