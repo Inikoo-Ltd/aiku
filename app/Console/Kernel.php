@@ -164,16 +164,6 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->job(HydrateOfferCampaigns::makeJob())->dailyAt('00:00')->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'HydrateOfferCampaignStats',
-                ),
-                name: 'HydrateOfferCampaignStats',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-
-
-            $this->logSchedule(
                 $schedule->job(UpdateCurrentRecurringBillsTemporalAggregates::makeJob())->dailyAt('00:00')->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'UpdateCurrentRecurringBillsTemporalAggregates',
                 ),
