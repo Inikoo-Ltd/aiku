@@ -13,6 +13,7 @@ use App\Actions\CRM\Customer\Search\GetCustomerSearchSchema;
 use App\Actions\Goods\Stock\Search\GetStockSearchSchema;
 use App\Actions\Goods\StockFamily\Search\GetStockFamilySearchSchema;
 use App\Actions\Goods\TradeUnit\Search\GetTradeUnitSearchSchema;
+use App\Actions\Goods\TradeUnitFamily\Search\GetTradeUnitFamilySearchSchema;
 use App\Actions\Inventory\Location\Search\GetLocationSearchSchema;
 use App\Actions\Ordering\Order\Search\GetOrderSearchSchema;
 use App\Actions\SupplyChain\Supplier\Search\GetSupplierSearchSchema;
@@ -181,7 +182,7 @@ return [
             Customer::class        => GetCustomerSearchSchema::run(),
             Order::class           => GetOrderSearchSchema::run(),
             TradeUnit::class       => GetTradeUnitSearchSchema::run(),
-            TradeUnitFamily::class => GetTradeUnitSearchSchema::run(),
+            TradeUnitFamily::class => GetTradeUnitFamilySearchSchema::run(),
             Stock::class           => GetStockSearchSchema::run(),
             StockFamily::class     => GetStockFamilySearchSchema::run(),
 
