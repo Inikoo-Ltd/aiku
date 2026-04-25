@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n";
-import { fromJSON } from "postcss";
 import { InputNumber } from "primevue";
 import { inject, computed, watch } from "vue";
 

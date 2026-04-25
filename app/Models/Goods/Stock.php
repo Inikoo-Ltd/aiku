@@ -195,11 +195,6 @@ class Stock extends Model implements HasMedia, Auditable
         return $this->hasOne(StockIntervals::class);
     }
 
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(StockSalesInterval::class);
-    }
-
     public function stockFamily(): BelongsTo
     {
         return $this->belongsTo(StockFamily::class);
@@ -221,11 +216,6 @@ class Stock extends Model implements HasMedia, Auditable
     {
         return $this->belongsToMany(SupplierProduct::class, 'stock_has_supplier_products')
             ->withPivot(['priority', 'status', 'source_id', 'source_slug', 'fetched_at', 'last_fetched_at'])->withTimestamps();
-    }
-
-    public function getMainSupplierProduct(): SupplierProduct
-    {
-        return$this->supplierProducts()->where('available', true)->orderBy('priority', 'desc')->first();
     }
 
     public function timeSeries(): HasMany
