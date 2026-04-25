@@ -30,6 +30,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
@@ -102,6 +104,7 @@ class Stock extends Model implements HasMedia, Auditable
     use HasImage;
     use HasFactory;
     use HasHistory;
+    use Searchable;
 
     protected $casts = [
         'data'                   => 'array',
@@ -123,6 +126,31 @@ class Stock extends Model implements HasMedia, Auditable
     ];
 
     protected $guarded = [];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'code',
+                'state',
+                'name',
+                'description',
+                'created_at'
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+
+            'id'          => (string)$this->id,
+            'code'        => $this->code,
+            'name'        => $this->name,
+            'state'       => $this->state->value,
+            'description' => (string)$this->description,
+            'created_at'  => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {

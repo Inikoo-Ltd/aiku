@@ -14,6 +14,10 @@ use App\Actions\Catalogue\Collection\Search\ReindexCollectionSearch;
 use App\Actions\Catalogue\Product\Search\ReindexProductSearch;
 use App\Actions\Catalogue\ProductCategory\Search\ReindexProductCategorySearch;
 use App\Actions\CRM\Customer\Search\ReindexCustomerSearch;
+use App\Actions\Goods\Stock\Search\ReindexStockSearch;
+use App\Actions\Goods\StockFamily\Search\ReindexStockFamilySearch;
+use App\Actions\Goods\TradeUnit\Search\ReindexTradeUnitsSearch;
+use App\Actions\Goods\TradeUnitFamily\Search\ReindexTradeUnitFamiliesSearch;
 use App\Actions\HydrateModel;
 use App\Actions\Inventory\Location\Search\ReindexLocationSearch;
 use App\Actions\Ordering\Order\Search\ReindexOrdersSearch;
@@ -102,9 +106,17 @@ class ReindexSearch extends HydrateModel
     protected function reindexGoods(Command $command): void
     {
         $command->info('Goods section ⛅️');
-        //todo search $command->call('search:stocks');
-        //todo search $command->call('search:stock_families');
-        //todo search $command->call('search:trade_units');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+
+        ReindexStockSearch::run(reset: $command->option('reset'));
+        ReindexStockFamilySearch::run(reset: $command->option('reset'));
+        ReindexTradeUnitsSearch::run(reset: $command->option('reset'));
+        ReindexTradeUnitFamiliesSearch::run(reset: $command->option('reset'));
+
+
+
         //todo search $command->call('search:ingredients');
 
     }

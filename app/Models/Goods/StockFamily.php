@@ -22,6 +22,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -77,12 +79,13 @@ class StockFamily extends Model implements HasMedia, Auditable
     use InGroup;
     use HasHistory;
     use HasFactory;
+    use Searchable;
 
     protected $casts = [
-        'data'                        => 'array',
-        'state'                       => StockFamilyStateEnum::class,
-        'fetched_at'                  => 'datetime',
-        'last_fetched_at'             => 'datetime',
+        'data'            => 'array',
+        'state'           => StockFamilyStateEnum::class,
+        'fetched_at'      => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
@@ -90,6 +93,31 @@ class StockFamily extends Model implements HasMedia, Auditable
     ];
 
     protected $guarded = [];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'code',
+                'state',
+                'name',
+                'description',
+                'created_at'
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+
+            'id'          => (string)$this->id,
+            'code'        => $this->code,
+            'state'       => $this->state,
+            'name'        => (string)$this->name,
+            'description' => (string)$this->description,
+            'created_at'  => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {
@@ -131,11 +159,6 @@ class StockFamily extends Model implements HasMedia, Auditable
     public function intervals(): HasOne
     {
         return $this->hasOne(StockFamilyIntervals::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(StockFamilySalesIntervals::class);
     }
 
     public function orgStockFamilies(): HasMany

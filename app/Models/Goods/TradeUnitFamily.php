@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -57,6 +59,7 @@ class TradeUnitFamily extends Model implements Auditable, HasMedia
     use HasHistory;
     use HasFactory;
     use HasAttachments;
+    use Searchable;
 
     protected $table = 'trade_unit_families';
 
@@ -70,6 +73,29 @@ class TradeUnitFamily extends Model implements Auditable, HasMedia
     ];
 
     protected $guarded = [];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'code',
+                'name',
+                'description',
+                'created_at'
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+
+            'id'          => (string)$this->id,
+            'code'        => $this->code,
+            'name'        => (string)$this->name,
+            'description' => (string)$this->description,
+            'created_at'  => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {
