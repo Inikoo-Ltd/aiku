@@ -312,7 +312,7 @@ class Order extends Model implements HasMedia, Auditable
         'status',
         'pay_status',
         'pay_detailed_status',
-        
+
         // Handling & Locks
         'handing_type',
         'is_handling_on_hold',
@@ -320,7 +320,7 @@ class Order extends Model implements HasMedia, Auditable
         'customer_locked',
         'billing_locked',
         'delivery_locked',
-        
+
         // Timestamps
         'submitted_at',
         'in_warehouse_at',
@@ -332,7 +332,7 @@ class Order extends Model implements HasMedia, Auditable
         'cancelled_at',
         'settled_at',
         'handling_blocked_at',
-        
+
         // Shipping & Delivery
         'shipping_engine',
         'charges_engine',
@@ -347,13 +347,13 @@ class Order extends Model implements HasMedia, Auditable
         'delivery_address_id',
         'billing_address_id',
         'shipping_zone_id',
-        
+
         // Notes
         'customer_notes',
         'public_notes',
         'internal_notes',
         'shipping_notes',
-        
+
         // Totals & Quantities
         'number_item_transactions',
         'gross_amount',
@@ -365,18 +365,18 @@ class Order extends Model implements HasMedia, Auditable
     public function transformAudit(array $data): array
     {
         $data = RelationTransformer::execute(
-            auditable       : $this, 
-            data            : $data, 
-            relationName    : 'collection_address', 
-            relationModel   : Address::class, 
+            auditable       : $this,
+            data            : $data,
+            relationName    : 'collection_address',
+            relationModel   : Address::class,
             attributes      : ['address_line_1', 'address_line_2']
         );
 
         $data = RelationTransformer::execute(
-            auditable       : $this, 
-            data            : $data, 
-            relationName    : 'shipping_zone', 
-            relationModel   : ShippingZone::class, 
+            auditable       : $this,
+            data            : $data,
+            relationName    : 'shipping_zone',
+            relationModel   : ShippingZone::class,
             attributes      : ['name']
         );
 

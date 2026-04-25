@@ -10,7 +10,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 class DispatchedCustomAudit
 {
     use AsAction;
-    
+
     /**
      * @param Auditable $auditableModel The model instance that implements the Auditable contract and is being audited
      * @param string $relationModelClass The class name of the related model to fetch values from
@@ -30,7 +30,7 @@ class DispatchedCustomAudit
         string $logKey,
         string $eventName = 'updated'
     ): void {
-        if($oldId === $newId) {
+        if ($oldId === $newId) {
             return;
         }
 
@@ -51,9 +51,9 @@ class DispatchedCustomAudit
         Event::dispatch(new AuditCustom($auditableModel));
     }
 
-    private function extractValue($modelClass, $id, array $attributes) : ?string
+    private function extractValue($modelClass, $id, array $attributes): ?string
     {
-        if(!$id) {
+        if (!$id) {
             return null;
         }
 

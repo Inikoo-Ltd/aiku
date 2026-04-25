@@ -83,7 +83,7 @@ class StorePicking extends OrgAction
 
         DispatchSimpleAudit::run(
             auditableModel  : $deliveryNoteItem->deliveryNote,
-            logKey          : 'picked_item', 
+            logKey          : 'picked_item',
             oldValue        : $oldAuditString,
             newValue        : $newAuditString,
             eventName       : 'item_picked'

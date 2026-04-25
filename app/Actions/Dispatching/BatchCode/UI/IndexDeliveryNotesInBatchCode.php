@@ -8,7 +8,6 @@
 
 namespace App\Actions\Dispatching\BatchCode\UI;
 
-use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\BatchCode;
 use App\Models\Dispatching\DeliveryNote;

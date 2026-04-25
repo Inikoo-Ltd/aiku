@@ -66,7 +66,7 @@ class Audit extends \OwenIt\Auditing\Models\Audit
                 } else {
                     $audit->tags = '[]';
                 }
-                if ($audit->event === 'updated'){
+                if ($audit->event === 'updated') {
                     $recentAudit = self::where('auditable_type', $audit->auditable_type)
                         ->where('auditable_id', $audit->auditable_id)
                         ->where('event', 'updated')
@@ -80,17 +80,17 @@ class Audit extends \OwenIt\Auditing\Models\Audit
                         $oldValues = $recentAudit->old_values ?? [];
                         $newValues = $recentAudit->new_values ?? [];
 
-                                                foreach ($audit->new_values as $key => $newValue) {
-                            if (!array_key_exists($key, $oldValues)){
+                        foreach ($audit->new_values as $key => $newValue) {
+                            if (!array_key_exists($key, $oldValues)) {
                                 $oldValues[$key] = $audit->old_values[$key] ?? null;
                             }
                             $newValues[$key] = $newValue;
 
-                            // Important: loose comparison '==' might be safer for numbers formatted differently, 
-                            // but strict '===' prevents accidental type-juggling bugs. But wait, array values from JSON 
-                            // could be strings or floats. Let's use loose comparison to handle "1" vs 1 correctly 
+                            // Important: loose comparison '==' might be safer for numbers formatted differently,
+                            // but strict '===' prevents accidental type-juggling bugs. But wait, array values from JSON
+                            // could be strings or floats. Let's use loose comparison to handle "1" vs 1 correctly
                             // exactly how auditing expects.
-                            if($oldValues[$key] == $newValues[$key]){
+                            if ($oldValues[$key] == $newValues[$key]) {
                                 unset($oldValues[$key], $newValues[$key]);
                             }
                         }
