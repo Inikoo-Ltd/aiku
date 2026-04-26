@@ -75,16 +75,16 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $tax_amount
  * @property numeric $total_amount
  * @property numeric $payment_amount
- * @property \Illuminate\Support\Carbon|null $date
- * @property \Illuminate\Support\Carbon|null $tax_liability_at
- * @property \Illuminate\Support\Carbon|null $paid_at
+ * @property Carbon|null $date
+ * @property Carbon|null $tax_liability_at
+ * @property Carbon|null $paid_at
  * @property array<array-key, mixed> $payment_data
  * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $source_id
  * @property InvoicePayStatusEnum|null $pay_status
  * @property bool $in_process Used for refunds only

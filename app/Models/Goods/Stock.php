@@ -14,7 +14,6 @@ use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Media;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\StockIntervals;
-use App\Models\StockSalesInterval;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
@@ -59,14 +58,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $gross_weight package weight grams
  * @property array<array-key, mixed> $settings
  * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $activated_at
- * @property \Illuminate\Support\Carbon|null $discontinuing_at
- * @property \Illuminate\Support\Carbon|null $discontinued_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $activated_at
+ * @property Carbon|null $discontinuing_at
+ * @property Carbon|null $discontinued_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $source_slug
  * @property string|null $source_id
  * @property array<array-key, mixed> $sources
@@ -81,7 +80,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read StockIntervals|null $intervals
  * @property-read MediaCollection<int, Media> $media
  * @property-read Collection<int, OrgStock> $orgStocks
- * @property-read StockSalesInterval|null $salesIntervals
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Goods\StockStats|null $stats
  * @property-read \App\Models\Goods\StockFamily|null $stockFamily

@@ -40,14 +40,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $name
  * @property string|null $description
  * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property string|null $activated_at
  * @property string|null $discontinuing_at
  * @property string|null $discontinued_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $source_slug
  * @property string|null $source_id
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -57,7 +57,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Goods\StockFamilyIntervals|null $intervals
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Collection<int, OrgStockFamily> $orgStockFamilies
- * @property-read \App\Models\Goods\StockFamilySalesIntervals|null $salesIntervals
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Goods\StockFamilyStats|null $stats
  * @property-read Collection<int, \App\Models\Goods\Stock> $stocks

@@ -77,14 +77,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $packing_percentage
  * @property int|null $picker_id Main picker
  * @property int|null $packer_id Main packer
- * @property \Illuminate\Support\Carbon $date
+ * @property Carbon $date
  * @property string|null $queued_at
  * @property string|null $handling_at
  * @property string|null $handling_blocked_at
- * @property \Illuminate\Support\Carbon|null $packed_at
+ * @property Carbon|null $packed_at
  * @property string|null $finalised_at
- * @property \Illuminate\Support\Carbon|null $dispatched_at
- * @property \Illuminate\Support\Carbon|null $cancelled_at
+ * @property Carbon|null $dispatched_at
+ * @property Carbon|null $cancelled_at
  * @property string|null $start_picking
  * @property string|null $end_picking
  * @property string|null $start_packing
@@ -92,11 +92,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $picking_on_hold_time Time when picking was put on hold (seconds)
  * @property string|null $packing_on_hold_time Time when packing was put on hold (seconds)
  * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $source_id
  * @property bool $is_vip Indicate if the delivery note is for a VIP customer
  * @property int|null $as_organisation_id Indicate if the delivery note is for an organisation in this group
@@ -144,8 +144,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $tracking_number for search purposes
  * @property array<array-key, mixed> $shipping_data for UI purposes
  * @property bool $is_shipping_by_external
- * @property \Illuminate\Support\Carbon|null $picked_at
- * @property \Illuminate\Support\Carbon|null $packing_at
+ * @property Carbon|null $picked_at
+ * @property Carbon|null $packing_at
  * @property int $number_items_state_picked
  * @property int $number_items_state_packing
  * @property string|null $sort_picker Used only for UI tables sorting
