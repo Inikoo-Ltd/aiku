@@ -60,11 +60,14 @@ class MatchProductCategoryToMaster extends OrgAction
         $matchedCount = 0;
 
 
-        $query=ProductCategory::whereNull('master_product_category_id');
+        $query = ProductCategory::whereNull('master_product_category_id');
 
-        if($command->argument('shop')){
-            $shop=Shop::where('slug',$command->argument('shop'))->firstOrFail();
-            $query->where('shop_id',$shop->id);
+        if ($command->argument('shop')) {
+            $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
+            $query->where('shop_id', $shop->id);
+        } else {
+            $shopsWithMaster = Shop::whereNotNull('master_shop_id')->pluck('id')->toArray();
+            $query->whereIn('shop_id', $shopsWithMaster);
         }
 
         $totalCount = $query->count();
@@ -82,6 +85,10 @@ class MatchProductCategoryToMaster extends OrgAction
                         $hadMaster = (bool)$productCategory->master_product_category_id;
                         $this->handle($productCategory);
                         $hasNowMaster = (bool)$productCategory->master_product_category_id;
+
+                        if ($hasNowMaster) {
+                            $command->info('Family '.$productCategory->slug.' connected to master');
+                        }
 
                         if (!$hadMaster && $hasNowMaster) {
                             $matchedCount++;
