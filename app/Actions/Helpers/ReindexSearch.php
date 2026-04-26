@@ -16,6 +16,7 @@ use App\Actions\Catalogue\Collection\Search\ReindexCollectionSearch;
 use App\Actions\Catalogue\Product\Search\ReindexProductSearch;
 use App\Actions\Catalogue\ProductCategory\Search\ReindexProductCategorySearch;
 use App\Actions\CRM\Customer\Search\ReindexCustomerSearch;
+use App\Actions\Dispatching\DeliveryNote\Search\ReindexDeliveryNotesSearch;
 use App\Actions\Goods\Stock\Search\ReindexStockSearch;
 use App\Actions\Goods\StockFamily\Search\ReindexStockFamilySearch;
 use App\Actions\Goods\TradeUnit\Search\ReindexTradeUnitsSearch;
@@ -81,7 +82,7 @@ class ReindexSearch extends HydrateModel
             $this->reindexHr($command);
         }
 
-        if ($this->checkIfCanReindex(['accounting','acc'], $command)) {
+        if ($this->checkIfCanReindex(['accounting', 'acc'], $command)) {
             $this->reindexAccounting($command);
         }
 
@@ -168,7 +169,7 @@ class ReindexSearch extends HydrateModel
         }
         ReindexOrdersSearch::run(reset: $command->option('reset'));
         ReindexInvoicesSearch::run(reset: $command->option('reset'));
-        //        $command->call('search:delivery_notes');
+        ReindexDeliveryNotesSearch::run(reset: $command->option('reset'));
     }
 
     protected function reindexHr(Command $command): void

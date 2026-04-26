@@ -42,6 +42,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -195,6 +197,7 @@ class DeliveryNote extends Model implements Auditable
     use InCustomer;
     use HasAddresses;
     use HasHistory;
+    use Searchable;
 
     protected $casts = [
         'data'                    => 'array',
@@ -228,6 +231,32 @@ class DeliveryNote extends Model implements Auditable
     public function generateTags(): array
     {
         return ['dispatching'];
+    }
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'organisation_id',
+                'shop_id',
+                'customer_id',
+                'state',
+                'reference',
+                'date',
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'              => (string)$this->id,
+            'organisation_id' => $this->organisation_id,
+            'shop_id'         => $this->shop_id,
+            'customer_id'     => $this->customer_id,
+            'state'           => $this->state->value,
+            'reference'       => $this->reference,
+            'date'            => is_string($this->date) ? Carbon::parse($this->date)->timestamp : $this->date->timestamp,
+        ];
     }
 
     protected array $auditInclude = [
