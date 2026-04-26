@@ -53,9 +53,9 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property numeric $grp_amount
  * @property numeric $org_amount
  * @property array<array-key, mixed> $data
- * @property string $date Most relevant date at current state
- * @property string|null $completed_at
- * @property string|null $cancelled_at
+ * @property Carbon $date Most relevant date at current state
+ * @property Carbon|null $completed_at
+ * @property Carbon|null $cancelled_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property string|null $fetched_at
@@ -114,6 +114,10 @@ class Payment extends Model implements Auditable
         'amount'            => 'decimal:2',
         'grp_amount'        => 'decimal:2',
         'org_amount'        => 'decimal:2',
+        'date'              => 'datetime',
+        'completed_at'      => 'datetime',
+        'cancelled_at'      => 'datetime'
+
     ];
 
     protected $attributes = [
