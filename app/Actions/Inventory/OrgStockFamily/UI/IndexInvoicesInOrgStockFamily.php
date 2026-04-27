@@ -48,7 +48,10 @@ class IndexInvoicesInOrgStockFamily extends OrgAction
         return QueryBuilder::for(Invoice::class)
             ->where('invoices.type', InvoiceTypeEnum::INVOICE)
             ->whereNot('invoices.in_process', true)
-            ->join('invoice_transactions', 'invoices.id', '=', 'invoice_transactions.invoice_id')
+            ->join('invoice_transactions', function ($join) {
+                $join->on('invoices.id', '=', 'invoice_transactions.invoice_id')
+                    ->whereNull('invoice_transactions.deleted_at');
+            })
             ->join('invoice_transaction_has_org_stocks', 'invoice_transactions.id', '=', 'invoice_transaction_has_org_stocks.invoice_transaction_id')
             ->where('invoice_transaction_has_org_stocks.org_stock_family_id', $orgStockFamily->id)
             ->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id')

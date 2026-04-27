@@ -29,7 +29,8 @@ import {
     faStickyNote,
     faClock,
     faListAlt,
-    faTrafficLight
+    faTrafficLight,
+    faTruck
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
@@ -57,7 +58,7 @@ import CustomerMiniTimeline from "@/Components/Showcases/Grp/CustomerMiniTimelin
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import { PDRNotes } from "@/types/Pallet"
 
-library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight)
+library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight, faTruck)
 
 interface Customer {
     slug: string
@@ -78,6 +79,8 @@ interface Customer {
     number_current_customer_clients: number | null
     address: Address
     contact_website?: string | null
+    eori?: string | null
+    ukims?: string | null
     is_dropshipping: boolean
     email_subscriptions?: {
         update_route: {
@@ -487,6 +490,7 @@ function tagColorClass(scope?: string) {
                                 <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
                             </button>
                         </div>
+
                         <div v-if="data?.customer?.eori" class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="'Economic Operators Registration and Identification (EORI) number'" class="flex-none">
                                 <span class="sr-only">EORI</span>
@@ -498,6 +502,16 @@ function tagColorClass(scope?: string) {
 
                         </div>
 
+                        <div v-if="data?.customer?.ukims" class="flex items-center w-full flex-none gap-x-4 px-6">
+                            <dt v-tooltip="'UK Internal Market Scheme (UKIMS) number'" class="flex-none">
+                                <span class="sr-only">UKIMS</span>
+                                <FontAwesomeIcon icon="fal fa-truck" class="text-gray-400" fixed-width aria-hidden="true" />
+                            </dt>
+                            <dd class="text-gray-500">
+                                {{ data?.customer?.ukims }} <span class="text-xs text-gray-400 ml-1">UKIMS</span>
+                            </dd>
+
+                        </div>
 
                         <!-- Field: Address -->
                         <div v-if="data?.customer?.address"
