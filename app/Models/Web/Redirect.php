@@ -15,6 +15,7 @@ use App\Models\Traits\HasHistory;
 use App\Models\Traits\InWebsite;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -68,6 +69,11 @@ class Redirect extends Model implements Auditable
         'type',
         'url',
     ];
+
+    public function redirectTo(): HasOne
+    {
+        return $this->hasOne(Webpage::class, 'id', 'to_webpage_id');
+    }
 
 
 }

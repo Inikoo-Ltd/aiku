@@ -29,11 +29,11 @@ class StoreRedirectFromWebsite extends OrgAction
 
         $fromUrl = Arr::get($modelData, 'from_url', '');
 
-        if (!str_starts_with($fromUrl, '/')) {
-            $fromUrl = '/' . ltrim($fromUrl, '/');
+        if (str_starts_with($fromUrl, '/')) {
+            $fromUrl = ltrim($fromUrl, '/');
         }
 
-        $url = 'https://' . $website->domain . $fromUrl;
+        $url = 'https://' . $website->domain . '/' . $fromUrl;
         $toUrl = Arr::pull($modelData, 'to_url');
 
         data_set($modelData, 'from_url', $url);
@@ -58,23 +58,21 @@ class StoreRedirectFromWebsite extends OrgAction
     {
         if ($redirect->shop->type == ShopTypeEnum::FULFILMENT) {
             return FacadesRedirect::route(
-                'grp.org.fulfilments.show.web.websites.show',
+                'grp.org.fulfilments.show.web.redirect.index',
                 [
                     'organisation' => $redirect->organisation->slug,
                     'fulfilment' => $redirect->shop->fulfilment->slug,
                     'website' => $redirect->website->slug,
-                    'tab' => WebsiteTabsEnum::REDIRECTS->value
                 ]
             );
         }
 
         return FacadesRedirect::route(
-            'grp.org.shops.show.web.websites.show',
+            'grp.org.shops.show.web.redirect.index',
             [
                 'organisation' => $redirect->organisation->slug,
                 'shop' => $redirect->shop->slug,
                 'website' => $redirect->website->slug,
-                'tab' => WebsiteTabsEnum::REDIRECTS->value
             ]
         );
     }

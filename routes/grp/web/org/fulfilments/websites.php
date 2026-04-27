@@ -14,6 +14,7 @@ use App\Actions\Web\Banner\UI\ShowBanner;
 use App\Actions\Web\Banner\UI\ShowBannerWorkshop;
 use App\Actions\Web\Redirect\UI\CreateRedirect;
 use App\Actions\Web\Redirect\UI\EditRedirect;
+use App\Actions\Web\Redirect\UI\IndexRedirects;
 use App\Actions\Web\Redirect\UI\ShowRedirect;
 use App\Actions\Web\Webpage\UI\CreateWebpage;
 use App\Actions\Web\Webpage\UI\EditWebpage;
@@ -54,13 +55,13 @@ Route::name('websites.')->group(function () {
                     Route::get('menu', [ShowMenuWorkshop::class, 'inFulfilment'])->name('.menu');
                     Route::get('sidebar', [ShowSidebarWorkshop::class, 'inFulfilment'])->name('.sidebar');
                 });
-
-            Route::name('redirect')->prefix('redirect')
-                ->group(function () {
-                    Route::get('{redirect}', [ShowRedirect::class, 'inWebsiteInFulfilment'])->name('.show');
-                    Route::get('{redirect}/edit', [EditRedirect::class, 'inWebsiteInFulfilment'])->name('.edit');
-                });
         });
+});
+
+Route::name('redirect')->prefix('{website}/redirect')->group(function () {
+    Route::get('/', [IndexRedirects::class, 'inFulfilment'])->name('.index');
+    Route::get('/{redirect}', [ShowRedirect::class, 'inWebsite'])->name('.show');
+    Route::get('/{redirect}/edit', [EditRedirect::class, 'inWebsiteInFulfilment'])->name('.edit');
 });
 
 Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
