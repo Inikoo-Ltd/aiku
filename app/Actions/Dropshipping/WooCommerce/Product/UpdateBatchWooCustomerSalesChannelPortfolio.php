@@ -8,7 +8,6 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
-use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;

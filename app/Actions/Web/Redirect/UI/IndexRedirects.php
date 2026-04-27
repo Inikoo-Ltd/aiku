@@ -9,7 +9,6 @@
 
 namespace App\Actions\Web\Redirect\UI;
 
-use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\Website\UI\ShowWebsite;
@@ -26,7 +25,6 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -35,7 +33,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexRedirects extends OrgAction
 {
     use WithWebAuthorisation;
-    
+
     private Website $website;
 
     public function htmlResponse(LengthAwarePaginator $redirects, ActionRequest $request): Response
@@ -54,7 +52,7 @@ class IndexRedirects extends OrgAction
                     'icon'  => 'fal fa-terminal'
                 ],
                 // 'iconRight' => $this->website->state->stateIcon()[$this->website->state->value],
-                'actions'   =>[
+                'actions'   => [
                 ]
             ],
             'tabs'        => [
@@ -163,7 +161,7 @@ class IndexRedirects extends OrgAction
             }
         };
     }
-    
+
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, ActionRequest $request): LengthAwarePaginator
     {
         $this->website = $website;
@@ -201,7 +199,6 @@ class IndexRedirects extends OrgAction
             ];
         };
 
-        // dd($routeName);
         switch ($routeName) {
             case 'grp.org.fulfilments.show.web.redirect.index':
                 /** @var Website $website */

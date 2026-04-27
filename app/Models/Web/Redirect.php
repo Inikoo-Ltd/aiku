@@ -33,6 +33,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read \App\Models\Web\Webpage|null $redirectTo
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Web\Webpage|null $webpage
  * @property-read \App\Models\Web\Website|null $website

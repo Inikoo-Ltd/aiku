@@ -13,8 +13,6 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
