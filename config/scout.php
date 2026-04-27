@@ -18,6 +18,9 @@ use App\Actions\Goods\StockFamily\Search\GetStockFamilySearchSchema;
 use App\Actions\Goods\TradeUnit\Search\GetTradeUnitSearchSchema;
 use App\Actions\Goods\TradeUnitFamily\Search\GetTradeUnitFamilySearchSchema;
 use App\Actions\Inventory\Location\Search\GetLocationSearchSchema;
+use App\Actions\Inventory\OrgStock\Search\GetOrgStockSearchSchema;
+use App\Actions\Inventory\OrgStockFamily\Search\GetOrgStockFamilySearchSchema;
+use App\Actions\Inventory\WarehouseArea\Search\GetWarehouseAreaSearchSchema;
 use App\Actions\Ordering\Order\Search\GetOrderSearchSchema;
 use App\Actions\SupplyChain\Supplier\Search\GetSupplierSearchSchema;
 use App\Actions\SysAdmin\Guest\Search\GetGuestSearchSchema;
@@ -34,6 +37,9 @@ use App\Models\Goods\StockFamily;
 use App\Models\Goods\TradeUnit;
 use App\Models\Goods\TradeUnitFamily;
 use App\Models\Inventory\Location;
+use App\Models\Inventory\OrgStock;
+use App\Models\Inventory\OrgStockFamily;
+use App\Models\Inventory\WarehouseArea;
 use App\Models\Ordering\Order;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Guest;
@@ -193,7 +199,10 @@ return [
             StockFamily::class     => GetStockFamilySearchSchema::run(),
             Payment::class         => GetPaymentSearchSchema::run(),
             Invoice::class         => GetInvoiceSearchSchema::run(),
-            DeliveryNote::class    => GetDeliveryNoteSearchSchema::run()
+            DeliveryNote::class    => GetDeliveryNoteSearchSchema::run(),
+            OrgStock::class        => GetOrgStockSearchSchema::run(),
+            OrgStockFamily::class  => GetOrgStockFamilySearchSchema::run(),
+            WarehouseArea::class   => GetWarehouseAreaSearchSchema::run()
 
         ],
     ],

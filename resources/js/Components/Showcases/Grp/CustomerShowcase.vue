@@ -29,7 +29,10 @@ import {
     faStickyNote,
     faClock,
     faListAlt,
-    faTrafficLight
+    faTrafficLight,
+    faTruck,
+    faGlobeEurope,
+    faIslandTropical
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
@@ -57,7 +60,7 @@ import CustomerMiniTimeline from "@/Components/Showcases/Grp/CustomerMiniTimelin
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import { PDRNotes } from "@/types/Pallet"
 
-library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight)
+library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight, faTruck, faGlobeEurope, faIslandTropical)
 
 interface Customer {
     slug: string
@@ -78,6 +81,8 @@ interface Customer {
     number_current_customer_clients: number | null
     address: Address
     contact_website?: string | null
+    eori?: string | null
+    ukims?: string | null
     is_dropshipping: boolean
     email_subscriptions?: {
         update_route: {
@@ -487,17 +492,28 @@ function tagColorClass(scope?: string) {
                                 <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
                             </button>
                         </div>
+
                         <div v-if="data?.customer?.eori" class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="'Economic Operators Registration and Identification (EORI) number'" class="flex-none">
                                 <span class="sr-only">EORI</span>
-                                <FontAwesomeIcon icon="fal fa-traffic-light" class="text-gray-400" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon icon="fal fa-globe-europe" class="text-gray-400" fixed-width aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">
-                                {{ data?.customer?.eori }} <span class="text-xs text-gray-400 ml-1">EORI</span>
+                                {{ data?.customer?.eori }} 
+                                <span class="text-xs text-gray-400">EORI</span>
                             </dd>
-
                         </div>
 
+                        <div v-if="data?.customer?.ukims" class="flex items-center w-full flex-none gap-x-4 px-6">
+                            <dt v-tooltip="'UK Internal Market Scheme (UKIMS) number'" class="flex-none">
+                                <span class="sr-only">UKIMS</span>
+                                <FontAwesomeIcon icon="fal fa-island-tropical" class="text-gray-400" fixed-width aria-hidden="true" />
+                            </dt>
+                            <dd class="text-gray-500">
+                                {{ data?.customer?.ukims }} 
+                                <span class="text-xs text-gray-400">UKIMS</span>
+                            </dd>
+                        </div>
 
                         <!-- Field: Address -->
                         <div v-if="data?.customer?.address"

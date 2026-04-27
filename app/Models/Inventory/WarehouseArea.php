@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -66,6 +68,7 @@ class WarehouseArea extends Model implements Auditable
     use HasFactory;
     use HasHistory;
     use InWarehouse;
+    use Searchable;
 
     protected $casts = [
         'unit_quantity'   => 'decimal:2',
@@ -75,6 +78,27 @@ class WarehouseArea extends Model implements Auditable
     ];
 
     protected $guarded = [];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'code',
+                'name',
+                'warehouse_id'
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'           => (string)$this->id,
+            'warehouse_id' => $this->warehouse_id,
+            'code'         => $this->code,
+            'name'         => $this->name,
+            'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {
