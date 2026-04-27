@@ -22,7 +22,10 @@ use App\Actions\Goods\StockFamily\Search\ReindexStockFamilySearch;
 use App\Actions\Goods\TradeUnit\Search\ReindexTradeUnitsSearch;
 use App\Actions\Goods\TradeUnitFamily\Search\ReindexTradeUnitFamiliesSearch;
 use App\Actions\HydrateModel;
-use App\Actions\Inventory\Location\Search\ReindexLocationSearch;
+use App\Actions\Inventory\Location\Search\ReindexLocationsSearch;
+use App\Actions\Inventory\OrgStock\Search\ReindexOrgStockSearch;
+use App\Actions\Inventory\OrgStockFamily\Search\ReindexOrgStockFamilySearch;
+use App\Actions\Inventory\WarehouseArea\Search\ReindexWarehouseAreaSearch;
 use App\Actions\Ordering\Order\Search\ReindexOrdersSearch;
 use App\Actions\SupplyChain\Supplier\Search\ReindexSupplierSearch;
 use App\Actions\SysAdmin\Guest\Search\ReindexGuestSearch;
@@ -48,6 +51,10 @@ class ReindexSearch extends HydrateModel
 
         if ($this->checkIfCanReindex(['inventory', 'inv'], $command)) {
             $this->reindexInventory($command);
+        }
+
+        if ($this->checkIfCanReindex(['locations', 'warehouse', 'loc', 'w'], $command)) {
+            $this->reindexWarehouse($command);
         }
 
         if ($this->checkIfCanReindex(['goods'], $command)) {
@@ -216,17 +223,25 @@ class ReindexSearch extends HydrateModel
         $command->info('Production section 🏭');
     }
 
+    protected function reindexWarehouse(Command $command): void
+    {
+        $command->info('Warehouse section 📦');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexWarehouseAreaSearch::run(reset: $command->option('reset'));
+        ReindexLocationsSearch::run(reset: $command->option('reset'));
+
+    }
+
     protected function reindexInventory(Command $command): void
     {
         $command->info('Inventory section 📦');
         if ($command->option('reset')) {
             $command->warn('Resetting search indexes');
         }
-        //        $command->call('search:warehouse_areas');
-        ReindexLocationSearch::run(reset: $command->option('reset'));
-
-        //        $command->call('search:org_stocks');
-        //        $command->call('search:org_stock_families');
+        ReindexOrgStockSearch::run(reset: $command->option('reset'));
+        ReindexOrgStockFamilySearch::run(reset: $command->option('reset'));
     }
 
     protected function reindexCrm(Command $command): void

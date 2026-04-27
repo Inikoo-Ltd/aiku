@@ -116,7 +116,6 @@ class Location extends Model implements Auditable
             ]);
     }
 
-
     public function toSearchableArray(): array
     {
         return [
