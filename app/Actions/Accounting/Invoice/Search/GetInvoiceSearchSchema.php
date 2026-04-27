@@ -52,6 +52,22 @@ class GetInvoiceSearchSchema
                         'optional' => true,
                     ],
                     [
+                        'name' => 'email',
+                        'type' => 'string',
+                    ],
+                    [
+                        'name' => 'phone',
+                        'type' => 'string',
+                    ],
+                    [
+                        'name' => 'customer_name',
+                        'type' => 'string',
+                    ],
+                    [
+                        'name' => 'customer_contact_name',
+                        'type' => 'string',
+                    ],
+                    [
                         'name' => 'date',
                         'type' => 'int64',
                     ],
