@@ -608,12 +608,13 @@ defineExpose({
             </div>
 
             <!-- Empty State -->
-            <div v-else-if="productSearchQuery.trim() && !productSearchLoading" class="text-center py-8 text-gray-500">
+            <div v-else-if="productSearchQuery.trim() && !productSearchLoading && productSearchResults.length === 0"
+                class="text-center py-8 text-gray-500">
                 {{ trans('No products found matching') }} "{{ productSearchQuery }}"
             </div>
 
             <!-- Initial State -->
-            <div v-else class="text-center py-8 text-gray-400">
+            <div v-else-if="productSearchResults.length === 0" class="text-center py-8 text-gray-400">
                 <div v-if="activeTab === PRODUCT_TABS.PRODUCTS">
                     {{ trans('Type a SKU or product name to search') }}
                 </div>

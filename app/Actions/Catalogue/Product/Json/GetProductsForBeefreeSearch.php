@@ -41,16 +41,10 @@ class GetProductsForBeefreeSearch extends OrgAction
             default => TimeSeriesFrequencyEnum::WEEKLY->value,
         };
 
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) use ($tabType) {
-            $query->where(function ($query) use ($value, $tabType) {
-                if ($tabType === 'new_in') {
-                    // New In tab: search only by name, not code/SKU
-                    $query->where('products.name', 'ilike', '%' . $value . '%');
-                } else {
-                    // Other tabs: search by both name and code
-                    $query->where('products.code', 'ilike', '%' . $value . '%')
-                        ->orWhere('products.name', 'ilike', '%' . $value . '%');
-                }
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->where('products.code', 'like', '%' . $value . '%')
+                    ->orWhere('products.name', 'like', '%' . $value . '%');
             });
         });
 
