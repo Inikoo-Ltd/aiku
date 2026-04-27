@@ -14,7 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('redirects', function (Blueprint $table) {
-            $table->dropUnique(['redirects_url_group_id_unique']);
+            $table->dropUnique('redirects_url_group_id_unique');
         });
     }
 
