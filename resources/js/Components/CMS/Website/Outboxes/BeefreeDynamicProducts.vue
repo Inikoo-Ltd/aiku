@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject } from "vue";
+import { ref, inject, watch } from "vue";
 import axios from "axios"
 import { routeType } from "@/types/route";
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
@@ -7,6 +7,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 
 // Tab types for product search modal
 const PRODUCT_TABS = {
@@ -251,6 +252,32 @@ const fetchSubDepartments = async () => {
     }
 }
 
+// Route configuration for infinite scroll components
+function getEntityFetchRoute(entityType: string) {
+    if (entityType === 'family') {
+        return {
+            name: 'grp.json.shop.families',
+            parameters: { shop: props.shopId }
+        }
+    }
+
+    if (entityType === 'sub_department') {
+        return {
+            name: 'grp.json.shop.sub_departments',
+            parameters: { shop: props.shopId }
+        }
+    }
+
+    if (entityType === 'collection') {
+        return {
+            name: 'grp.json.shop.catalogue.collections',
+            parameters: { shop: props.shopSlug, scope: props.shopSlug }
+        }
+    }
+
+    return null
+}
+
 const searchCollectionFamilyProductsAPI = async (page: number = 1) => {
     if (!props.shopSlug) {
         return { data: { data: [] } }
@@ -355,32 +382,30 @@ const changeTimeFilter = (filter: string) => {
     }
 }
 
-const changeCollection = (collectionId: string) => {
-    selectedCollection.value = collectionId
+// Watchers for infinite scroll components
+watch(selectedCollection, (newValue) => {
     if (activeTab.value === PRODUCT_TABS.COLLECTION_FAMILY) {
         // Reset to page 1 when changing collection
         currentPage.value = 1
         searchProducts(1)
     }
-}
+})
 
-const changeFamily = (familyId: string) => {
-    selectedFamily.value = familyId
+watch(selectedFamily, (newValue) => {
     if (activeTab.value === PRODUCT_TABS.COLLECTION_FAMILY) {
         // Reset to page 1 when changing family
         currentPage.value = 1
         searchProducts(1)
     }
-}
+})
 
-const changeSubDepartment = (subDepartmentId: string) => {
-    selectedSubDepartment.value = subDepartmentId
+watch(selectedSubDepartment, (newValue) => {
     if (activeTab.value === PRODUCT_TABS.COLLECTION_FAMILY) {
         // Reset to page 1 when changing sub-department
         currentPage.value = 1
         searchProducts(1)
     }
-}
+})
 
 // Pagination functions
 const goToPage = (page: number) => {
@@ -482,36 +507,26 @@ defineExpose({
 
                 <!-- Family Filter (for Collection/Family) -->
                 <div v-if="activeTab === PRODUCT_TABS.COLLECTION_FAMILY" class="sm:w-48">
-                    <select v-model="selectedFamily" @change="changeFamily(selectedFamily)"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        <option value="">Select a family</option>
-                        <option v-for="family in families" :key="family.id" :value="family.id">
-                            {{ family.name }}
-                        </option>
-                    </select>
+                    <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute('family')" mode="single"
+                        v-model="selectedFamily" :initOptions="families || []"
+                        :fetchRoute="getEntityFetchRoute('family')!" valueProp="id" labelProp="name"
+                        placeholder="Select a family" />
                 </div>
 
                 <!-- Sub-Department Filter (for Collection/Family) -->
                 <div v-if="activeTab === PRODUCT_TABS.COLLECTION_FAMILY" class="sm:w-48">
-                    <select v-model="selectedSubDepartment" @change="changeSubDepartment(selectedSubDepartment)"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        <option value="">Select a sub-department</option>
-                        <option v-for="subDepartment in subDepartments" :key="subDepartment.id"
-                            :value="subDepartment.id">
-                            {{ subDepartment.name }}
-                        </option>
-                    </select>
+                    <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute('sub_department')" mode="single"
+                        v-model="selectedSubDepartment" :initOptions="subDepartments || []"
+                        :fetchRoute="getEntityFetchRoute('sub_department')!" valueProp="id" labelProp="name"
+                        placeholder="Select a sub-department" />
                 </div>
 
                 <!-- Collection Filter (for Collection/Family) -->
                 <div v-if="activeTab === PRODUCT_TABS.COLLECTION_FAMILY" class="sm:w-48">
-                    <select v-model="selectedCollection" @change="changeCollection(selectedCollection)"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        <option value="">Select a collection</option>
-                        <option v-for="collection in collections" :key="collection.id" :value="collection.id">
-                            {{ collection.name }}
-                        </option>
-                    </select>
+                    <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute('collection')" mode="single"
+                        v-model="selectedCollection" :initOptions="collections || []"
+                        :fetchRoute="getEntityFetchRoute('collection')!" valueProp="id" labelProp="name"
+                        placeholder="Select a collection" />
                 </div>
 
                 <!-- Button Color Picker -->

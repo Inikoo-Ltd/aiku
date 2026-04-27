@@ -31,6 +31,8 @@ class GetProductsForBeefreeSearch extends OrgAction
         $tabType = $searchData['tab_type'] ?? 'products';
         $timeFilter = $searchData['time_filter'] ?? null;
         $collectionId = $searchData['collection_id'] ?? null;
+        $familyId = $searchData['family_id'] ?? null;
+        $subDepartmentId = $searchData['sub_department_id'] ?? null;
 
         // Determine frequency based on time_filter
         $frequency = match ($timeFilter) {
@@ -63,6 +65,16 @@ class GetProductsForBeefreeSearch extends OrgAction
                     ->where('collection_has_models.model_type', '=', 'Product');
             });
             $queryBuilder->where('collection_has_models.collection_id', '=', $collectionId);
+        }
+
+        // Apply family filter if provided
+        if ($familyId && $tabType === 'collection_family') {
+            $queryBuilder->where('products.family_id', '=', $familyId);
+        }
+
+        // Apply sub-department filter if provided
+        if ($subDepartmentId && $tabType === 'collection_family') {
+            $queryBuilder->where('products.sub_department_id', '=', $subDepartmentId);
         }
 
         // Base selects
@@ -135,6 +147,8 @@ class GetProductsForBeefreeSearch extends OrgAction
             'tab_type' => $request->input('tab_type', 'products'),
             'time_filter' => $request->input('time_filter'),
             'collection_id' => $request->input('collection_id'),
+            'family_id' => $request->input('family_id'),
+            'sub_department_id' => $request->input('sub_department_id'),
         ];
 
         return $this->handle(parent: $shop, searchData: $searchData);
@@ -147,6 +161,8 @@ class GetProductsForBeefreeSearch extends OrgAction
             'tab_type' => ['nullable', 'string', 'in:products,new_in,trending,collection_family'],
             'time_filter' => ['nullable', 'string', 'in:week,month,year'],
             'collection_id' => ['nullable', 'integer', 'exists:collections,id'],
+            'family_id' => ['nullable', 'integer', 'exists:product_categories,id'],
+            'sub_department_id' => ['nullable', 'integer', 'exists:product_categories,id'],
         ];
     }
 }
