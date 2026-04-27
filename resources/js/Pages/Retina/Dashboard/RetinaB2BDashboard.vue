@@ -98,17 +98,19 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                         <FontAwesomeIcon
                             icon="fas fa-globe-europe"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('Contact Name')"
+                            v-tooltip="trans('Economic Operators Registration and Identification (EORI) number')"
                         />
                         <span class="text-gray-900">{{ data.customer.eori }}</span>
+                        <span class="text-xs text-gray-400 ml-2">EORI</span>
                     </div>
                     <div v-if="data.customer.ukims" class="flex items-center">
                         <FontAwesomeIcon
                             icon="fas fa-island-tropical"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('Contact Name')"
+                            v-tooltip="trans('UK Internal Market Scheme (UKIMS) number')"
                         />
                         <span class="text-gray-900">{{ data.customer.ukims }}</span>
+                        <span class="text-xs text-gray-400 ml-2">UKIMS</span>
                     </div>
                 </div>
 
