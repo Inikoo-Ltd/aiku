@@ -169,8 +169,9 @@ function roundDown2(num: number) {
                 <thead>
                     <!-- GROUP HEADER -->
                     <tr class="text-[11px] uppercase tracking-wide text-gray-500">
-                        <th colspan="4" class="border-b-0 border border-gray-400 border-b-1 border-l-2 bg-gray-200">Shop
-                            Detail</th>
+                        <th colspan="4" class="border-b-0 border border-gray-400 border-b-1 border-l-2 bg-gray-200">
+                            Inventory
+                        </th>
 
                         <th colspan="3"
                             class="border bg-blue-100 text-blue-700 text-center border-blue-400 border-l-2 ">
@@ -190,11 +191,11 @@ function roundDown2(num: number) {
                             <input type="checkbox" v-model="allChecked" />
                         </th>
 
-                        <th class="px-3 py-2 border border-gray-200 border border  border-gray-400 bg-gray-200">
+                        <th class="px-3 py-2  border border-gray-200 border border  border-gray-400 bg-gray-200">
                             {{ trans('Shop') }}
                         </th>
 
-                        <th class="px-3 py-2  border border-gray-200 border  border-gray-400 bg-gray-200">
+                        <th class="px-3 py-2 text-right  border border-gray-200 border  border-gray-400 bg-gray-200">
                             {{ trans('Stock') }}
                         </th>
 
@@ -258,19 +259,13 @@ function roundDown2(num: number) {
                                 <span class="text-sm font-semibold text-gray-800">
                                     {{ item.product?.stock }}
                                 </span>
-                                <span class="text-[10px] text-gray-400">
-                                    {{ form.unit }}
-                                </span>
                             </div>
 
                             <!-- VALUE -->
                             <div v-if="item.product?.org_value_in_warehouse" v-tooltip="trans('Value in warehouse')"
                                 class="flex items-center gap-1 text-[11px] text-gray-500">
-                                <span class="text-[10px] uppercase tracking-wide text-gray-400">
-                                    warehouse value
-                                </span>
                                 <span class="font-medium text-gray-600">
-                                    {{ Number(item.product?.org_value_in_warehouse).toLocaleString() }}
+                                     {{ locale.currencyFormat(item.product?.shop_currency ?? currency,item.product?.org_value_in_warehouse) }}
                                 </span>
                             </div>
 
