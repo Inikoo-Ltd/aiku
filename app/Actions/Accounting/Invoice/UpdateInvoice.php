@@ -59,7 +59,7 @@ class UpdateInvoice extends OrgAction
         $oldDate                 = $invoice->date;
 
         $newBillAddressData = Arr::pull($modelData, 'invoice_billing_address');
-        $oldBillAddressData = clone($invoice->address);
+        $oldBillAddressData = clone $invoice->address;
 
         // TODO: Refactor invoice_billing_address logic after done migrating completely from Aurora
         if ($newBillAddressData) {
@@ -87,7 +87,7 @@ class UpdateInvoice extends OrgAction
         $invoice = $this->update($invoice, $modelData, ['data']);
 
         if ($billingAddressData) {
-            $staleInvoice = clone($invoice);
+            $staleInvoice = clone $invoice;
 
             $this->updateFixedAddress(
                 $invoice,
@@ -122,12 +122,21 @@ class UpdateInvoice extends OrgAction
             $this->auditBillingAddressUpdate($customer, $oldBillAddressData, $billingAddressData);
 
             if ($order = $invoice->order) {
-                $staleOrder = clone($order);
-                $order->update([
-                    'billing_address_id' => $invoice->billingAddress,
-                    'tax_category_id'    => $taxCategoryInvoice->id,
-                ]);
+                $staleOrder = clone $order;
 
+                $this->updateFixedAddress(
+                    $order,
+                    $order->billingAddress,
+                    $billingAddressData,
+                    'Ordering',
+                    'billing',
+                    'billing_address_id'
+                );
+
+                $order->update([
+                    'tax_category_id' => $taxCategoryInvoice->id,
+                ]);
+                $order->refresh();
                 CalculateOrderTotalAmounts::run($order, false, false);
 
                 $this->auditBillingAddressUpdate($order, $oldBillAddressData, $billingAddressData, $staleOrder);
