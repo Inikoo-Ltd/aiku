@@ -51,7 +51,7 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
 
         DispatchSimpleAudit::run(
             auditableModel  : $deliveryNote,
-            logKey          : 'packed_item_' . $deliveryNoteItem->id, 
+            logKey          : 'packed_item_' . $deliveryNoteItem->id,
             oldValue        : $oldAuditString,
             newValue        : $newAuditString,
             eventName       : 'item_packed'

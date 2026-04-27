@@ -14,15 +14,15 @@ class DispatchSimpleAudit
     /**
      * @param Auditable $auditableModel Model that implements Auditable contract
      * @param string $logKey Key to identify the log entry in the audit
-     * @param mixed $oldValue Old value before the change 
+     * @param mixed $oldValue Old value before the change
      * @param mixed $newValue New value after the change
      * @param string $eventName Event name to categorize the audit log (default: 'updated')
      */
     public function handle(
-        Auditable $auditableModel, 
-        string $logKey, 
-        $oldValue, 
-        $newValue, 
+        Auditable $auditableModel,
+        string $logKey,
+        $oldValue,
+        $newValue,
         string $eventName = 'updated'
     ): void {
         if ($oldValue === $newValue) {
@@ -39,7 +39,7 @@ class DispatchSimpleAudit
         $auditableModel->auditCustomNew = [
             $logKey => $newValue
         ];
-        
+
         Event::dispatch(new AuditCustom($auditableModel));
     }
 }

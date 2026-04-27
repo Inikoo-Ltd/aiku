@@ -10,10 +10,17 @@
 
 namespace App\Actions\Helpers;
 
+use App\Actions\Accounting\Invoice\Search\ReindexInvoicesSearch;
+use App\Actions\Accounting\Payment\Search\ReindexPaymentsSearch;
 use App\Actions\Catalogue\Collection\Search\ReindexCollectionSearch;
 use App\Actions\Catalogue\Product\Search\ReindexProductSearch;
 use App\Actions\Catalogue\ProductCategory\Search\ReindexProductCategorySearch;
 use App\Actions\CRM\Customer\Search\ReindexCustomerSearch;
+use App\Actions\Dispatching\DeliveryNote\Search\ReindexDeliveryNotesSearch;
+use App\Actions\Goods\Stock\Search\ReindexStockSearch;
+use App\Actions\Goods\StockFamily\Search\ReindexStockFamilySearch;
+use App\Actions\Goods\TradeUnit\Search\ReindexTradeUnitsSearch;
+use App\Actions\Goods\TradeUnitFamily\Search\ReindexTradeUnitFamiliesSearch;
 use App\Actions\HydrateModel;
 use App\Actions\Inventory\Location\Search\ReindexLocationSearch;
 use App\Actions\Ordering\Order\Search\ReindexOrdersSearch;
@@ -51,10 +58,6 @@ class ReindexSearch extends HydrateModel
             $this->reindexCatalogue($command);
         }
 
-        if ($this->checkIfCanReindex(['billables'], $command)) {
-            $this->reindexBillables($command);
-        }
-
         if ($this->checkIfCanReindex(['discount'], $command)) {
             $this->reindexDiscount($command);
         }
@@ -79,7 +82,7 @@ class ReindexSearch extends HydrateModel
             $this->reindexHr($command);
         }
 
-        if ($this->checkIfCanReindex(['accounting'], $command)) {
+        if ($this->checkIfCanReindex(['accounting', 'acc'], $command)) {
             $this->reindexAccounting($command);
         }
 
@@ -102,9 +105,14 @@ class ReindexSearch extends HydrateModel
     protected function reindexGoods(Command $command): void
     {
         $command->info('Goods section ⛅️');
-        //todo search $command->call('search:stocks');
-        //todo search $command->call('search:stock_families');
-        //todo search $command->call('search:trade_units');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+
+        ReindexStockSearch::run(reset: $command->option('reset'));
+        ReindexStockFamilySearch::run(reset: $command->option('reset'));
+        ReindexTradeUnitsSearch::run(reset: $command->option('reset'));
+        ReindexTradeUnitFamiliesSearch::run(reset: $command->option('reset'));
         //todo search $command->call('search:ingredients');
 
     }
@@ -120,13 +128,6 @@ class ReindexSearch extends HydrateModel
         ReindexProductSearch::run(reset: $command->option('reset'));
     }
 
-    protected function reindexBillables(Command $command): void
-    {
-        $command->info('Billables section 💸');
-        //        $command->call('search:rentals');
-        //        $command->call('search:charges');
-        //        $command->call('search:services');
-    }
 
     protected function reindexDiscount(Command $command): void
     {
@@ -146,8 +147,6 @@ class ReindexSearch extends HydrateModel
     protected function reindexComms(Command $command): void
     {
         $command->info('Comms section 📧');
-        //todo $command->call('search:post_rooms');
-        //todo $command->call('search:outboxes');
         // todo $command->call('search:newsletters');
         // todo $command->call('search:mailshots');
     }
@@ -169,26 +168,25 @@ class ReindexSearch extends HydrateModel
             $command->warn('Resetting search indexes');
         }
         ReindexOrdersSearch::run(reset: $command->option('reset'));
-
-
-        //        $command->call('search:invoices');
-        //        $command->call('search:delivery_notes');
+        ReindexInvoicesSearch::run(reset: $command->option('reset'));
+        ReindexDeliveryNotesSearch::run(reset: $command->option('reset'));
     }
 
     protected function reindexHr(Command $command): void
     {
         $command->info('HR section 👩🏻‍💼');
         //        $command->call('search:employees');
-        //        $command->call('search:workplaces');
-        //        $command->call('search:job_positions');
-        //        $command->call('search:clocking_machines');
+
     }
 
     protected function reindexAccounting(Command $command): void
     {
         $command->info('Accounting section 💰');
-        //        $command->call('search:payments');
-        //        $command->call('search:payment_accounts');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexInvoicesSearch::run(reset: $command->option('reset'));
+        ReindexPaymentsSearch::run(reset: $command->option('reset'));
     }
 
     protected function reindexProcurement(Command $command): void
@@ -244,7 +242,6 @@ class ReindexSearch extends HydrateModel
     protected function reindexFulfilment(Command $command): void
     {
         $command->info('Fulfillment section 🚛');
-        //        $command->call('search:rentals');
         //        $command->call('search:fulfilment_customers');
         //        $command->call('search:stored_items'); // not yet tested
         //        $command->call('search:stored_item_audits'); // not yet tested

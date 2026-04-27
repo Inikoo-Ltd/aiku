@@ -3,6 +3,7 @@
 namespace App\Audits\Transformer;
 
 use Illuminate\Support\Arr;
+
 class RelationTransformer
 {
     public static function execute($auditable, array $data, string $relationName, string $relationModel, array $attributes): array
@@ -14,7 +15,9 @@ class RelationTransformer
             $newRelated = $relationModel::find($auditable->getAttribute($foreignKey));
 
             $extractValue = function ($model) use ($attributes) {
-                if (!$model) return null;
+                if (!$model) {
+                    return null;
+                }
 
                 $values = [];
                 foreach ($attributes as $attribute) {

@@ -59,7 +59,7 @@ import {
     faSign,
     faClipboardListCheck,
     faClipboardList,
-    faPiggyBank, faLongArrowRight, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faAnalytics, faUserCircle, faAppleCrate
+    faPiggyBank, faLongArrowRight, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faAnalytics, faUserCircle, faAppleCrate, faChevronRight
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import MenuTopRight from "@/Layouts/Grp/MenuTopRight.vue"
@@ -73,7 +73,7 @@ import { useTruncate } from "@/Composables/useTruncate"
 library.add(faChevronDown, faTerminal, faUserAlien, faCog, faCity, faBuilding, faNetworkWired, faUserHardHat, faCalendar, faStopwatch, faStoreAlt, faWarehouseAlt, faChartNetwork, faFolderTree, faFolder, faCube, faUserPlus,
     faBox, faBoxesAlt, faMoneyCheckAlt, faCashRegister, faCoins, faFileInvoiceDollar, faReceipt, faPersonDolly, faPeopleArrows, faStream, faAppleCrate,
     faConciergeBell, faGarage, faHamsa, faCodeMerge, faSortShapesDownAlt, faHatChef, faTags, faCommentDollar, faNewspaper, faMailBulk, faBell, faLaptopHouse, faHandHoldingBox,
-    faShippingFast, faChessClock, faBallot, faHouseDamage, faSign, faClipboardListCheck, faClipboardList, faPiggyBank, faLongArrowRight, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faAnalytics, faUserCircle
+    faShippingFast, faChessClock, faBallot, faHouseDamage, faSign, faClipboardListCheck, faClipboardList, faPiggyBank, faLongArrowRight, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faAnalytics, faUserCircle, faChevronRight
 )
 
 defineProps<{
@@ -151,7 +151,7 @@ const label = {
                     </div>
 
                     <!-- Dropdown: TopBars -->
-                    <Menu v-if="layoutStore.group || (layoutStore.organisations.data?.length > 1)" as="div" class="ml-2 relative text-left">
+                    <Menu v-if="layoutStore.group || (layoutStore.organisations.data?.length > 1)" as="div" class="ml-2 relative text-left" v-slot="{ close: closeOrgMenu }">
                         <MenuButton v-slot="{ open }"
                                     class="inline-flex sm:min-w-32 sm:w-[184px] h-[26px] lg:h-8 overflow-ellipsis rounded border border-gray-300 w-full whitespace-nowrap justify-between items-center gap-x-2 px-2.5 py-2 text-xxs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
                                     :class="[!!(layoutStore.organisations.data?.find((item) => item.slug == layoutStore.currentParams?.organisation)) || !!layoutStore.agents.data?.find((item) => item.slug == layoutStore.currentParams?.organisation) ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' : 'hover:bg-slate-200 text-slate-600']">
@@ -207,6 +207,7 @@ const label = {
                                     :imageSkeleton="imageSkeleton"
                                     :label="trans('E-Commerce')"
                                     icon="fal fa-cash-register"
+                                    :closeMenu="closeOrgMenu"
                                 />
 
                                 <!-- Dropdown: Agents -->
@@ -295,6 +296,7 @@ const label = {
                                                 </div>
                                         </MenuItem>
 
+                                        <!-- Popover: shops list -->
                                         <MenuPopoverList
                                             v-if="layoutStore.organisations.data?.find(organisation => organisation.slug == layoutStore.currentParams.organisation)?.authorised_shops?.length || layoutStore.agents.data?.find(agent => agent.slug == layoutStore.currentParams.organisation)?.authorised_shops?.length"
                                             xicon="fal fa-store-alt"
@@ -303,6 +305,7 @@ const label = {
                                             class="pt-1"
                                         />
 
+                                        <!-- Popover: fulfilment list -->
                                         <MenuPopoverList
                                             v-if="layoutStore.organisations.data?.find(organisation => organisation.slug == layoutStore.currentParams.organisation)?.authorised_fulfilments.length || layoutStore.agents.data?.find(agent => agent.slug == layoutStore.currentParams.organisation)?.authorised_fulfilments.length"
                                             xicon="fal fa-hand-holding-box"

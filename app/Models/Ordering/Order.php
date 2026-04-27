@@ -206,7 +206,6 @@ class Order extends Model implements HasMedia, Auditable
     use HasHistory;
     use Searchable;
 
-
     protected $casts = [
         'data'                          => 'array',
         'payment_data'                  => 'array',
@@ -215,51 +214,44 @@ class Order extends Model implements HasMedia, Auditable
         'shipping_data'                 => 'array',
         'categories_data'               => 'array',
         'discretionary_offers_data'     => 'array',
-
-
-        'date'                   => 'datetime',
-        'updated_by_customer_at' => 'datetime',
-        'submitted_at'           => 'datetime',
-        'in_warehouse_at'        => 'datetime',
-        'handling_at'            => 'datetime',
-        'picked_at'              => 'datetime',
-        'packed_at'              => 'datetime',
-        'finalised_at'           => 'datetime',
-        'dispatched_at'          => 'datetime',
-        'cancelled_at'           => 'datetime',
-        'settled_at'             => 'datetime',
-        'fetched_at'             => 'datetime',
-        'last_fetched_at'        => 'datetime',
-
-
-        'grp_exchange' => 'decimal:4',
-        'org_exchange' => 'decimal:4',
-
-        'gross_amount'      => 'decimal:2',
-        'goods_amount'      => 'decimal:2',
-        'services_amount'   => 'decimal:2',
-        'charges_amount'    => 'decimal:2',
-        'shipping_amount'   => 'decimal:2',
-        'insurance_amount'  => 'decimal:2',
-        'net_amount'        => 'decimal:2',
-        'grp_net_amount'    => 'decimal:2',
-        'org_net_amount'    => 'decimal:2',
-        'tax_amount'        => 'decimal:2',
-        'total_amount'      => 'decimal:2',
-        'payment_amount'    => 'decimal:2',
-        'commission_amount' => 'decimal:2',
-
-
-        'state'                   => OrderStateEnum::class,
-        'status'                  => OrderStatusEnum::class,
-        'handing_type'            => OrderHandingTypeEnum::class,
-        'pay_status'              => OrderPayStatusEnum::class,
-        'pay_detailed_status'     => OrderPayDetailedStatusEnum::class,
-        'shipping_engine'         => OrderShippingEngineEnum::class,
-        'charges_engine'          => OrderChargesEngineEnum::class,
-        'to_be_paid_by'           => OrderToBePaidByEnum::class,
-        'with_replacement'        => 'boolean',
-        'is_shipping_by_external' => 'boolean'
+        'date'                          => 'datetime',
+        'updated_by_customer_at'        => 'datetime',
+        'submitted_at'                  => 'datetime',
+        'in_warehouse_at'               => 'datetime',
+        'handling_at'                   => 'datetime',
+        'picked_at'                     => 'datetime',
+        'packed_at'                     => 'datetime',
+        'finalised_at'                  => 'datetime',
+        'dispatched_at'                 => 'datetime',
+        'cancelled_at'                  => 'datetime',
+        'settled_at'                    => 'datetime',
+        'fetched_at'                    => 'datetime',
+        'last_fetched_at'               => 'datetime',
+        'grp_exchange'                  => 'decimal:4',
+        'org_exchange'                  => 'decimal:4',
+        'gross_amount'                  => 'decimal:2',
+        'goods_amount'                  => 'decimal:2',
+        'services_amount'               => 'decimal:2',
+        'charges_amount'                => 'decimal:2',
+        'shipping_amount'               => 'decimal:2',
+        'insurance_amount'              => 'decimal:2',
+        'net_amount'                    => 'decimal:2',
+        'grp_net_amount'                => 'decimal:2',
+        'org_net_amount'                => 'decimal:2',
+        'tax_amount'                    => 'decimal:2',
+        'total_amount'                  => 'decimal:2',
+        'payment_amount'                => 'decimal:2',
+        'commission_amount'             => 'decimal:2',
+        'state'                         => OrderStateEnum::class,
+        'status'                        => OrderStatusEnum::class,
+        'handing_type'                  => OrderHandingTypeEnum::class,
+        'pay_status'                    => OrderPayStatusEnum::class,
+        'pay_detailed_status'           => OrderPayDetailedStatusEnum::class,
+        'shipping_engine'               => OrderShippingEngineEnum::class,
+        'charges_engine'                => OrderChargesEngineEnum::class,
+        'to_be_paid_by'                 => OrderToBePaidByEnum::class,
+        'with_replacement'              => 'boolean',
+        'is_shipping_by_external'       => 'boolean'
     ];
 
     protected $attributes = [
@@ -276,7 +268,8 @@ class Order extends Model implements HasMedia, Auditable
 
     public function searchIndexShouldBeUpdated(): bool
     {
-        return $this->wasRecentlyCreated || $this->wasChanged([
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
                 'organisation_id',
                 'shop_id',
                 'customer_id',
@@ -312,7 +305,7 @@ class Order extends Model implements HasMedia, Auditable
         'status',
         'pay_status',
         'pay_detailed_status',
-        
+
         // Handling & Locks
         'handing_type',
         'is_handling_on_hold',
@@ -320,7 +313,7 @@ class Order extends Model implements HasMedia, Auditable
         'customer_locked',
         'billing_locked',
         'delivery_locked',
-        
+
         // Timestamps
         'submitted_at',
         'in_warehouse_at',
@@ -332,7 +325,7 @@ class Order extends Model implements HasMedia, Auditable
         'cancelled_at',
         'settled_at',
         'handling_blocked_at',
-        
+
         // Shipping & Delivery
         'shipping_engine',
         'charges_engine',
@@ -347,13 +340,13 @@ class Order extends Model implements HasMedia, Auditable
         'delivery_address_id',
         'billing_address_id',
         'shipping_zone_id',
-        
+
         // Notes
         'customer_notes',
         'public_notes',
         'internal_notes',
         'shipping_notes',
-        
+
         // Totals & Quantities
         'number_item_transactions',
         'gross_amount',
@@ -365,19 +358,19 @@ class Order extends Model implements HasMedia, Auditable
     public function transformAudit(array $data): array
     {
         $data = RelationTransformer::execute(
-            auditable       : $this, 
-            data            : $data, 
-            relationName    : 'collection_address', 
-            relationModel   : Address::class, 
-            attributes      : ['address_line_1', 'address_line_2']
+            auditable: $this,
+            data: $data,
+            relationName: 'collection_address',
+            relationModel: Address::class,
+            attributes: ['address_line_1', 'address_line_2']
         );
 
         $data = RelationTransformer::execute(
-            auditable       : $this, 
-            data            : $data, 
-            relationName    : 'shipping_zone', 
-            relationModel   : ShippingZone::class, 
-            attributes      : ['name']
+            auditable: $this,
+            data: $data,
+            relationName: 'shipping_zone',
+            relationModel: ShippingZone::class,
+            attributes: ['name']
         );
 
         return $data;

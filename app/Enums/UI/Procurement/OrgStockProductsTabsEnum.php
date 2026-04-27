@@ -16,20 +16,21 @@ enum OrgStockProductsTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SALES = 'sales';
     case PRODUCTS = 'products';
+    case SALES = 'sales';
 
     public function blueprint(): array
     {
         return match ($this) {
-            OrgStockProductsTabsEnum::SALES => [
-                'title' => __('Sales'),
-                'icon'  => 'fal fa-dollar-sign',
-            ],
             OrgStockProductsTabsEnum::PRODUCTS => [
                 'title' => __('Products'),
                 'icon'  => 'fal fa-cube',
             ],
+            OrgStockProductsTabsEnum::SALES => [
+                'title' => __('Sales'),
+                'icon'  => 'fal fa-dollar-sign',
+            ],
+
         };
     }
 }

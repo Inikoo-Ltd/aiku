@@ -18,7 +18,7 @@ trait RepairInvoiceTransactionBridges
     public function handle(Command $command): void
     {
         $query = DB::table('invoice_transactions')
-            ->select('id', 'model_id', 'model_type', 'deleted_at')->orderBy('id','desc');
+            ->select('id', 'model_id', 'model_type', 'deleted_at')->orderBy('id', 'desc');
 
         $total = (clone $query)->count('id');
 

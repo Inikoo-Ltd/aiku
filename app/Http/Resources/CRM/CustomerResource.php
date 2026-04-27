@@ -28,7 +28,7 @@ class CustomerResource extends JsonResource
         /** @var Customer $customer */
         $customer = $this;
 
-        // Temp fix || Need to redo later, some payment have invalid customer id
+        // Temp fix || Need to redo later, some payment has invalid customer id
         if (!$customer->resource) {
             return [];
         }
@@ -116,6 +116,7 @@ class CustomerResource extends JsonResource
             'status'              => $customer->status,
             'currency_code'       => $customer->shop?->currency?->code,
             'eori'                => $customer->eori,
+            'ukims'               => $customer->ukims,
             'email_subscriptions' => [
                 'update_route'  => [
                     'method'     => 'patch',
@@ -136,7 +137,7 @@ class CustomerResource extends JsonResource
                 'subscriptions' => $subscriptions
 
             ],
-            'tags' => TagsResource::collection($customer->tags)->toArray(request())
+            'tags'                => TagsResource::collection($customer->tags)->toArray(request())
         ];
     }
 }
