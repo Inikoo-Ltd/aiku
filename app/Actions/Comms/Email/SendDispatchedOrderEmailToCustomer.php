@@ -214,7 +214,7 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
         foreach ($invoices as $invoice) {
             $url = $this->getPdfInvoiceLink($invoice);
             if ($url != '') {
-                $pdfLinks[] = '<a href="' . $url . '" target="_blank" style="color: #3498DB; text-decoration: underline;"><span class="fallback-text">' . $invoice->reference . '</span></a></div>';
+                $pdfLinks[] = '<a href="' . $url . '" target="_blank" style="color: #3498DB; text-decoration: underline;"><span class="fallback-text">' . $invoice->reference . '</span></a>';
             }
         }
 
