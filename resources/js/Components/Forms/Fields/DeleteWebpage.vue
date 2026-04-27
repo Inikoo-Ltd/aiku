@@ -56,7 +56,6 @@ const xxx = ref('')
                     :modelValue="form[fieldName].redirect_webpage_id"
                     @update:modelValue="(e) => {
                         set(form, [fieldName, 'redirect_webpage_id'], e);
-                        set(fieldData.route_delete, ['body', 'redirect_webpage_id'], e);
                     }"
                     :initOptions="fieldData?.init_options || []"
                     required
@@ -101,8 +100,11 @@ const xxx = ref('')
             <ButtonWithLink
                 v-if="fieldData.current_state === 'closed' || fieldData.current_state === 'live'"
                 icon="far fa-trash-alt"
+                :key="form[fieldName].redirect_webpage_id ?? 'storefront-1'"
                 label="Delete Webpage"
                 type="negative"
+                method="patch"
+                :body="{redirects : form[fieldName].redirect_webpage_id }"
                 :routeTarget="fieldData.route_delete"
                 :disabled="!form[fieldName].redirect_webpage_id"
                 v-tooltip="form[fieldName].redirect_webpage_id ? trans('Select webpage to redirect before delete') : ''"
@@ -111,9 +113,12 @@ const xxx = ref('')
             <ButtonWithLink
                 v-else
                 icon="far fa-trash-alt"
+                :key="form[fieldName].redirect_webpage_id  ?? 'storefront-2'"
                 label="Delete Webpage"
                 type="negative"
                 :routeTarget="fieldData.route_delete"
+                :body="{redirects : form[fieldName].redirect_webpage_id }"
+                method="patch"
             />
         </div>
     </div>
