@@ -64,6 +64,19 @@ class IndexStoredItemsInReturn extends OrgAction
                 'stored_items.slug',
                 'stored_items.name',
                 'stored_items.total_quantity',
+                DB::raw("(
+                    SELECT
+                        warehouses.slug
+                    FROM
+                        fulfilment_warehouse
+                    INNER JOIN
+                        warehouses
+                    ON
+                        warehouses.id = fulfilment_warehouse.warehouse_id
+                    WHERE
+                        fulfilment_warehouse.fulfilment_id = stored_items.fulfilment_id
+                    LIMIT 1
+                ) AS warehouse_slug"),
                 'pallet_returns.id as pallet_return_id',
                 'pallet_returns.state as pallet_return_state',
                 DB::raw("(

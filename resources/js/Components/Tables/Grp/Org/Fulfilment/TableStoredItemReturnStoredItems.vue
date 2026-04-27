@@ -161,27 +161,38 @@ onMounted(() => {
 
 const generateLinkReference = (reference: any) => {
     if (!reference.slug) {
-        return null
+        return undefined
+    }
+
+    const params = route().params as Record<string, string | undefined>
+    const warehouseSlug = params.warehouse
+        ?? reference.warehouse_slug
+
+    if (!params.organisation || !warehouseSlug) {
+        return undefined
     }
 
     switch (route().current()) {
+        case 'grp.org.warehouses.show.dispatching.pallet-return-with-stored-items.show':
+        case 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.pallet-returns.show':
+        case 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.pallet-returns.show':
         case 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.with_stored_items.show':
             return route(
-                'grp.org.fulfilments.show.crm.customers.show.stored-items.show',
+                'grp.org.warehouses.show.inventory.stored_items.current.show',
                 {
-                    organisation: route().params['organisation'],
-                    fulfilment: route().params['fulfilment'],
-                    fulfilmentCustomer: route().params['fulfilmentCustomer'],
+                    organisation: params.organisation,
+                    warehouse: warehouseSlug,
                     storedItem: reference.slug,
-                });
+                }
+            );
         default:
-            null
+            return undefined
     }
 }
 
 const generateLinkPalletLocation = (pallet: any) => {
     if (!pallet.reference) {
-        return null
+        return undefined
     }
 
     switch (route().current()) {
@@ -195,7 +206,7 @@ const generateLinkPalletLocation = (pallet: any) => {
                     pallet: pallet.reference,
                 });
         default:
-            null
+            return undefined
     }
 }
 
@@ -237,9 +248,12 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
 
         <!-- Column: Reference -->
         <template #cell(reference)="{ item: value }">
-            <Link :href="generateLinkReference(value)" class="primaryLink">
+            <Link v-if="generateLinkReference(value)" :href="generateLinkReference(value)" class="primaryLink">
                 {{ value.reference }}
             </Link>
+            <div v-else>
+                {{ value.reference }}
+            </div>
         </template>
 
         <!-- Column: Pallet of Stored items -->

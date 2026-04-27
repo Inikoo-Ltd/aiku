@@ -34,6 +34,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $pallet_delivery_id
  * @property mixed $pallet_return_id
  * @property mixed $pallet_id
+ * @property mixed $warehouse_slug
  * @property mixed $fulfilment_customer_name
  * @property mixed $fulfilment_customer_slug
  */
@@ -48,6 +49,7 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
             'slug'                   => $this->slug,
             'reference'              => $this->reference,
             'name'                   => $this->name,
+            'warehouse_slug'         => $this->warehouse_slug ?? null,
             'pallet_return_id'        => $this->pallet_return_id ?? null,
             'pallet_return_reference' => $this->pallet_return_reference ?? null,
             'pallet_return_slug'      => $this->pallet_return_slug ?? null,
