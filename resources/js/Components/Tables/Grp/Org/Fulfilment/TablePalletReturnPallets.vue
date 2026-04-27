@@ -349,11 +349,34 @@ const generateLinkPallet = (pallet: any) => {
         return null
     }
 
+    const params = route().params as Record<string, string | undefined>
+
     switch (route().current()) {
         case "grp.org.warehouses.show.dispatching.pallet-returns.show":
             return route("grp.org.warehouses.show.inventory.pallets.current.show", [
-                route().params["organisation"],
-                route().params["warehouse"],
+                params.organisation,
+                params.warehouse,
+                pallet.slug,
+            ])
+        case "grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.pallet-returns.show":
+            if (!params.organisation || !params.fulfilment) {
+                return null
+            }
+
+            return route("grp.org.fulfilments.show.operations.pallets.current.show", [
+                params.organisation,
+                params.fulfilment,
+                pallet.slug,
+            ])
+        case "grp.org.fulfilments.show.crm.customers.show.pallet_returns.show":
+            if (!params.organisation || !params.fulfilment) {
+                return null
+            }
+
+            return route("grp.org.fulfilments.show.crm.customers.show.pallets.show", [
+                params.organisation,
+                params.fulfilment,
+                params.fulfilmentCustomer ?? pallet.fulfilment_customer_slug,
                 pallet.slug,
             ])
         default:
