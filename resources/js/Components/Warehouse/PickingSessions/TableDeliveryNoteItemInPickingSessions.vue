@@ -306,53 +306,25 @@ const GetQuantityToPickFractional = (item) => {
                     </div>
 
                     <template v-if="deliveryItem.quantity_to_pick > 0 && deliveryItem.state == 'handling'">
-                        <div v-if="findLocation(deliveryItem.locations, get(selectedLocationCode, [itemValue.id], null))"
+                        <div v-if="findLocation(deliveryItem.locations, get(selectedLocationCode, [deliveryItem.id], null))"
                             class="rounded p-1 flex flex-col justify-between gap-x-6 items-center">
                             <div class="mb-3 w-full flex justify-between gap-x-6 items-center">
-                                <!-- Location Info -->
-                                <div>
-                                    <Transition name="spin-to-right">
-                                        <div :key="findLocation(deliveryItem.locations, get(selectedLocationCode, [itemValue.id], null)).location_code">
-                                            <Link v-if="findLocation(deliveryItem.locations, get(selectedLocationCode, [itemValue.id], null))"
-                                                :href="generateLocationRoute(findLocation(deliveryItem.locations, get(selectedLocationCode, [itemValue.id], null)))"
-                                                class="secondaryLink">
-                                            {{ findLocation(deliveryItem.locations, get(selectedLocationCode, [itemValue.id], null)).location_code }}
-                                            </Link>
-                                            <span v-else v-tooltip="trans('Unknown location')"
-                                                class="text-gray-400 italic">
-                                                ({{ trans("Unknown") }})
-                                            </span>
-
-                                            <span v-tooltip="trans('Total stock in this location')"
-                                                class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1">
-                                                <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
-                                                    aria-hidden="true" />
-                                                {{ findLocation(deliveryItem.locations, get(selectedLocationCode, [itemValue.id], null)).quantity }}
-                                            </span>
-
-                                            <span v-if="deliveryItem.locations?.length > 1" @click="() => {
-                                                    isModalLocation = true;
-                                                    selectedItemValue = deliveryItem;
-                                                    selectedItemProxy = proxyItem;
-                                                }"
-                                                v-tooltip="trans(`Other :_count_location locations`, { _count_location: deliveryItem.locations.length - 1})"
-                                                class="cursor-pointer hover:bg-orange-50 ml-1 whitespace-nowrap py-1.5 lg:py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded px-1">
-                                                <FontAwesomeIcon icon="fal fa-list-ol" class="mr-1" fixed-width
-                                                    aria-hidden="true" />
-                                                {{ deliveryItem.locations.length - 1 }}
-                                            </span>
-                                        </div>
-                                    </Transition>
-                                </div>
+                                <!-- Section: Locations -->
+                                <LabelPickingLocation
+                                    :locations="deliveryItem.locations"
+                                    :selectedOrgStockId="get(selectedLocationCode, [deliveryItem.id], null)"
+                                    :warehouseArea="deliveryItem.warehouse_area"
+                                    @openLocationModal="() => { isModalLocation = true; selectedItemValue = deliveryItem; selectedItemProxy = proxyItem; }"
+                                />
 
                                 <!-- Quantity Picker -->
                                 <div class="flex items-center flex-nowrap gap-x-2">
                                     <NumberWithButtonSave
-                                        v-if="!deliveryItem.is_handled && findLocation(deliveryItem.locations, get(selectedLocationCode, [itemValue.id], null)).quantity > 0"
-                                        :key="findLocation(deliveryItem.locations, get(selectedLocationCode, [itemValue.id], null)).location_code"
+                                        v-if="!deliveryItem.is_handled && findLocation(deliveryItem.locations, get(selectedLocationCode, [deliveryItem.id], null)).quantity > 0"
+                                        :key="findLocation(deliveryItem.locations, get(selectedLocationCode, [deliveryItem.id], null)).location_code"
                                         noUndoButton
                                         @onError="(error: any) => proxyItem.errors = Object.values(error || {})"
-                                        :modelValue="findLocation(deliveryItem.locations, get(selectedLocationCode, [itemValue.id], null)).quantity_picked"
+                                        :modelValue="findLocation(deliveryItem.locations, get(selectedLocationCode, [deliveryItem.id], null)).quantity_picked"
                                         @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
                                         saveOnForm :routeSubmit="{
                                             name: deliveryItem.upsert_picking_route.name,
@@ -361,13 +333,13 @@ const GetQuantityToPickFractional = (item) => {
                                             step: 1,
                                             min: 0,
                                             max: Math.min(
-                                                findLocation(deliveryItem.locations, get(selectedLocationCode, [itemValue.id], null)).quantity,
+                                                findLocation(deliveryItem.locations, get(selectedLocationCode, [deliveryItem.id], null)).quantity,
                                                 deliveryItem.quantity_required,
-                                                deliveryItem.quantity_to_pick + findLocation(deliveryItem.locations, get(selectedLocationCode, [itemValue.id], null)).quantity_picked
+                                                deliveryItem.quantity_to_pick + findLocation(deliveryItem.locations, get(selectedLocationCode, [deliveryItem.id], null)).quantity_picked
                                             )
                                         }" :additionalData="{
-                                            location_org_stock_id: findLocation(deliveryItem.locations, get(selectedLocationCode, [itemValue.id], null)).id,
-                                            picking_id: deliveryItem.pickings.find(p => p.location_id === findLocation(deliveryItem.locations, get(selectedLocationCode, [itemValue.id], null)).location_id)?.id
+                                            location_org_stock_id: findLocation(deliveryItem.locations, get(selectedLocationCode, [deliveryItem.id], null)).id,
+                                            picking_id: deliveryItem.pickings.find(p => p.location_id === findLocation(deliveryItem.locations, get(selectedLocationCode, [deliveryItem.id], null)).location_id)?.id
                                         }" autoSave xxisWithRefreshModel
                                         :readonly="deliveryItem.is_handled || deliveryItem.quantity_required === deliveryItem.quantity_picked">
                                         <template #save="{ isProcessing }">
@@ -380,7 +352,7 @@ const GetQuantityToPickFractional = (item) => {
                                                     preserveScroll: true,
                                                     preserveState: true
                                                 }" :body="{
-                                                    location_org_stock_id: findLocation(deliveryItem.locations, get(selectedLocationCode, [itemValue.id], null)).id
+                                                    location_org_stock_id: findLocation(deliveryItem.locations, get(selectedLocationCode, [deliveryItem.id], null)).id
                                                 }" isWithError>
                                                 <template #label>
                                                     <FractionDisplay v-if="GetQuantityToPickFractional(deliveryItem)"

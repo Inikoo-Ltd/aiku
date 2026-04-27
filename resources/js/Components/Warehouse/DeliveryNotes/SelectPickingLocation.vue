@@ -16,7 +16,13 @@ import { RouteParams } from "@/types/route-params"
 library.add(faInventory)
 
 defineProps<{
-    item: any | null
+    item: {
+        org_stock_code: string
+        locations: {
+            location_code: string
+            quantity: number
+        }[]
+    }
     selectedLocationCode: string
 }>()
 
