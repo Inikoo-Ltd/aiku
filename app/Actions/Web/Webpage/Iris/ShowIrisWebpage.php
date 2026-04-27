@@ -253,9 +253,12 @@ class ShowIrisWebpage
                 $webpageID = $webpage->id;
             } else{
                 $webpageID = null;
-                $redirectData = Redirect::where('from_path', $path)->first();
 
-                if ($redirectData) {
+                if ($redirectData = DB::table('redirects')
+                    ->select('to_webpage_id')
+                    ->where('from_path', $path)
+                    ->where('website_id', $website->id)
+                    ->first()) {
                     $webpageID = $redirectData->to_webpage_id;
                 }
             }
