@@ -30,6 +30,7 @@ class GetProductsForBeefreeSearch extends OrgAction
     {
         $tabType = $searchData['tab_type'] ?? 'products';
         $timeFilter = $searchData['time_filter'] ?? null;
+        $collectionId = $searchData['collection_id'] ?? null;
 
         // Determine frequency based on time_filter
         $frequency = match ($timeFilter) {
@@ -54,6 +55,15 @@ class GetProductsForBeefreeSearch extends OrgAction
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->where('products.shop_id', $parent->id);
         $queryBuilder->where('products.is_for_sale', true);
+
+        // Apply collection filter if provided
+        if ($collectionId && $tabType === 'collection_family') {
+            $queryBuilder->join('collection_has_models', function ($join) {
+                $join->on('products.id', '=', 'collection_has_models.model_id')
+                    ->where('collection_has_models.model_type', '=', 'Product');
+            });
+            $queryBuilder->where('collection_has_models.collection_id', '=', $collectionId);
+        }
 
         // Base selects
         $selects = [
@@ -124,6 +134,7 @@ class GetProductsForBeefreeSearch extends OrgAction
             'search' => $request->input('search', ''),
             'tab_type' => $request->input('tab_type', 'products'),
             'time_filter' => $request->input('time_filter'),
+            'collection_id' => $request->input('collection_id'),
         ];
 
         return $this->handle(parent: $shop, searchData: $searchData);
@@ -133,8 +144,9 @@ class GetProductsForBeefreeSearch extends OrgAction
     {
         return [
             'search' => ['nullable', 'string', 'max:255'],
-            'tab_type' => ['nullable', 'string', 'in:products,new_in,trending'],
+            'tab_type' => ['nullable', 'string', 'in:products,new_in,trending,collection_family'],
             'time_filter' => ['nullable', 'string', 'in:week,month,year'],
+            'collection_id' => ['nullable', 'integer', 'exists:collections,id'],
         ];
     }
 }

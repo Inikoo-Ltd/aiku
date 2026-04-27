@@ -54,6 +54,11 @@ const activeTab = ref(PRODUCT_TABS.PRODUCTS)
 const timeFilter = ref(TIME_FILTERS.WEEK)
 const selectedButtonColor = ref('#007bff')
 
+// Collection filtering state
+const collections = ref<Array<any>>([])
+const selectedCollection = ref<string>('')
+const collectionsLoading = ref(false)
+
 // Resolve/reject handlers for product selection
 let productSearchResolve: ((value: any) => void) | null = null
 let productSearchReject: (() => void) | null = null
@@ -282,9 +287,46 @@ const searchTrendingProductsAPI = async () => {
     )
 }
 
+const fetchCollections = async () => {
+    if (!props.shopSlug) {
+        collections.value = []
+        return
+    }
+
+    collectionsLoading.value = true
+    try {
+        const response = await axios.get(
+            route('grp.json.shop.catalogue.collections', {
+                shop: props.shopSlug!,
+                scope: props.shopSlug!
+            })
+        )
+        collections.value = response.data.data || []
+    } catch (error) {
+        console.error('Collections fetch error:', error)
+        collections.value = []
+    } finally {
+        collectionsLoading.value = false
+    }
+}
+
 const searchCollectionFamilyProductsAPI = async () => {
-    // TODO: Implement collection/family products API
-    return await searchProductsAPI() // Fallback to regular search for now
+    if (!props.shopSlug) {
+        return { data: { data: [] } }
+    }
+
+    return await axios.get(
+        route('grp.json.shop.products_beefree_search', {
+            shop: props.shopSlug!,
+        }), {
+        params: {
+            search: productSearchQuery.value.trim(),
+            tab_type: 'collection_family',
+            collection_id: selectedCollection.value || null,
+            per_page: 10
+        }
+    }
+    )
 }
 
 const onSearchInput = () => {
@@ -363,6 +405,13 @@ const changeTimeFilter = (filter: string) => {
     }
 }
 
+const changeCollection = (collectionId: string) => {
+    selectedCollection.value = collectionId
+    if (activeTab.value === PRODUCT_TABS.COLLECTION_FAMILY) {
+        searchProducts()
+    }
+}
+
 const setupProductSearchHandlers = (resolve: (value: any) => void, reject: () => void) => {
     productSearchResolve = resolve
     productSearchReject = reject
@@ -371,6 +420,8 @@ const setupProductSearchHandlers = (resolve: (value: any) => void, reject: () =>
     productSearchQuery.value = ''
     productSearchResults.value = []
     activeTab.value = PRODUCT_TABS.PRODUCTS
+    selectedCollection.value = ''
+    fetchCollections()
     searchProducts()
 }
 
@@ -449,6 +500,17 @@ const setupProductSearchHandlers = (resolve: (value: any) => void, reject: () =>
                     </select>
                 </div>
 
+                <!-- Collection Filter (for Collection/Family) -->
+                <div v-if="activeTab === PRODUCT_TABS.COLLECTION_FAMILY" class="sm:w-48">
+                    <select v-model="selectedCollection" @change="changeCollection(selectedCollection)"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <option value="">Select a collection</option>
+                        <option v-for="collection in collections" :key="collection.id" :value="collection.id">
+                            {{ collection.name }}
+                        </option>
+                    </select>
+                </div>
+
                 <!-- Button Color Picker -->
                 <div class="sm:w-32">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Button Color</label>
@@ -511,7 +573,7 @@ const setupProductSearchHandlers = (resolve: (value: any) => void, reject: () =>
                     Showing trending products for selected time period
                 </div>
                 <div v-else-if="activeTab === PRODUCT_TABS.COLLECTION_FAMILY">
-                    Browse products by collection and family
+                    Select a collection to browse products
                 </div>
             </div>
 
