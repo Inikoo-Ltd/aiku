@@ -155,8 +155,8 @@ const onCloseModal = () => {
 
 // Method: to find the location that Alt ed, fallback is index 0
 const selectedLocationCode = reactive({})
-const findLocation = (locationsList: { location_code: string }[], selectedOrgStockId: string) => {
-    return locationsList.find(x => x.location_code == selectedOrgStockId) || locationsList[0]
+const findLocation = (locationsList: { location_code: string }[], locationCode: string) => {
+    return locationsList.find(x => x.location_code == locationCode) || locationsList[0]
 }
 
 const exceptPropsToLoad = ['tabs', 'quick_pickers', 'routes', 'queryBuilderProps', 'warehouse', 'shipments_routes', 'address', 'navigation', 'breadcrumbs']
