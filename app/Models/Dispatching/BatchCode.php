@@ -26,13 +26,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $org_stock_id
  * @property string $code
  * @property \Illuminate\Support\Carbon|null $expiry_date
- * @property int $number_delivery_notes
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_delivery_notes
+ * @property-read Collection<int, \App\Models\Dispatching\DeliveryNoteItem> $deliveryNoteItems
  * @property-read \App\Models\SysAdmin\Group|null $group
- * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read OrgStock|null $orgStock
- * @property-read Collection<int, DeliveryNoteItem> $deliveryNoteItems
+ * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|BatchCode newModelQuery()
  * @method static Builder<static>|BatchCode newQuery()
  * @method static Builder<static>|BatchCode query()

@@ -117,7 +117,6 @@ class FetchAuroraStock extends FetchAurora
             'code'            => $code,
             'activated_at'    => $this->parseDatetime($this->auroraModelData->{'Part Active From'}),
             'units_per_pack'  => $this->auroraModelData->{'Part Units Per Package'},
-            'unit_value'      => $this->auroraModelData->{'Part Cost in Warehouse'},
             'discontinued_at' =>
                 ($this->auroraModelData->{'Part Valid To'} && $this->auroraModelData->{'Part Status'} == 'Not In Use')
                     ? $this->parseDatetime($this->auroraModelData->{'Part Valid To'})
@@ -162,7 +161,6 @@ class FetchAuroraStock extends FetchAurora
             'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Part SKU'},
             'source_slug'     => $sourceSlug,
             'images'          => $this->parseImages(),
-            'unit_cost'       => $this->auroraModelData->{'Part Cost'} / $this->auroraModelData->{'Part Units Per Package'},
             'fetched_at'      => now(),
             'last_fetched_at' => now(),
         ];

@@ -57,6 +57,7 @@ class GetAddressData
             $selectOptions[$country->id] =
                 [
                     'label'               => $country->name.' ('.$country->code.')',
+                    'code'                => $country->code,
                     'fields'              => $fields,
                     'administrativeAreas' => Arr::get($country->data, 'administrative_areas'),
                 ];

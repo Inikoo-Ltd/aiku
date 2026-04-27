@@ -248,7 +248,6 @@ test('create org stock', function () {
     expect($orgStock)->toBeInstanceOf($orgStock::class)
         ->and($orgStock->code)->toBe($stock->code)
         ->and($orgStock->name)->toBe($stock->name)
-        ->and($orgStock->unit_value)->toBe($stock->unit_value)
         ->and($this->organisation->inventoryStats->number_org_stocks)->toBe(1)
         ->and($this->organisation->inventoryStats->number_current_org_stocks)->toBe(1);
 

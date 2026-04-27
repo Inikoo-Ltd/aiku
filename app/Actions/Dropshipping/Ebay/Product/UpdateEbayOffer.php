@@ -47,7 +47,7 @@ class UpdateEbayOffer implements ShouldBeUnique
                 [
                     'title' => $portfolio->customer_product_name,
                     'description' => $portfolio->customer_description,
-                    'price' => $portfolio->customer_price
+                    'price' => (string) $portfolio->customer_price
                 ]
             );
 

@@ -23,7 +23,7 @@ const props = defineProps<{
     isError?: boolean
     rows?: number|string
     inputName?: string
-    maxlength: number|string
+    maxlength?: number|string
 }>()
 
 const emits = defineEmits<{

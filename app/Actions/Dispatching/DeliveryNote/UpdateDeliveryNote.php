@@ -33,6 +33,8 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\SysAdmin\User;
+use App\Actions\Audits\DispatchedCustomAudit;
 
 class UpdateDeliveryNote extends OrgAction
 {
@@ -45,9 +47,11 @@ class UpdateDeliveryNote extends OrgAction
 
     public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
     {
-        $oldState     = $deliveryNote->state;
-        $deliveryNote = $this->update($deliveryNote, $modelData, ['data']);
-        $changes      = Arr::except($deliveryNote->getChanges(), ['updated_at', 'last_fetched_at']);
+        $oldState           = $deliveryNote->state;
+        $oldPickerUserId    = $deliveryNote->picker_user_id;
+        $oldPackerUserId    = $deliveryNote->packer_user_id;
+        $deliveryNote       = $this->update($deliveryNote, $modelData, ['data']);
+        $changes            = Arr::except($deliveryNote->getChanges(), ['updated_at', 'last_fetched_at']);
 
         $deliveryNote->refresh();
 
@@ -65,10 +69,26 @@ class UpdateDeliveryNote extends OrgAction
             }
 
             if (Arr::has($changes, 'picker_user_id')) {
+                DispatchedCustomAudit::run(
+                    auditableModel      : $deliveryNote,
+                    relationModelClass  : User::class,
+                    oldId               : $oldPickerUserId,
+                    newId               : $deliveryNote->picker_user_id,
+                    attributes          : ['contact_name'],
+                    logKey              : 'picker_name'
+                );
                 DeliveryNoteHydratePicker::dispatch($deliveryNote->id);
             }
 
             if (Arr::has($changes, 'packer_user_id')) {
+                DispatchedCustomAudit::run(
+                    auditableModel      : $deliveryNote,
+                    relationModelClass  : User::class,
+                    oldId               : $oldPackerUserId,
+                    newId               : $deliveryNote->packer_user_id,
+                    attributes          : ['contact_name'],
+                    logKey              : 'packer_name'
+                );
                 DeliveryNoteHydratePacker::dispatch($deliveryNote->id);
             }
 

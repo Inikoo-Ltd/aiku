@@ -38,10 +38,10 @@ class GetOrgStockShowcase
 
         return collect(
             [
-                'trade_units'       => $dataTradeUnits,
-                'currency_code'     => $orgStock->organisation->currency->code,
+                'trade_units'        => $dataTradeUnits,
+                'currency_code'      => $orgStock->organisation->currency->code,
                 'is_quantity_excess' => $orgStock->quantity_status === OrgStockQuantityStatusEnum::EXCESS,
-                'stocks_management' => [
+                'stocks_management'  => [
                     'routes'          => [
                         'location_route'                         => [
                             'name'       => 'grp.org.warehouses.show.infrastructure.locations.index.excluded_in_org_stock',
@@ -77,8 +77,9 @@ class GetOrgStockShowcase
                         'add_parts_location_note'                => [],  // TODO
                     ],
                     'stock_cost'      => [
-                        'sku_value'        => $orgStock->sku_value,
-                        'total_stock_value' => $orgStock->sku_value * $orgStock->quantity_available,
+                        'sku_value'                 => $orgStock->sku_value,
+                        'total_stock_value'         => $orgStock->sku_value * $orgStock->quantity_available,
+                        'current_supplier_sku_cost' => $orgStock->current_supplier_sku_cost,
                     ],
                     'summary'         => [
                         'quantity_in_submitted_orders' => [
@@ -95,14 +96,6 @@ class GetOrgStockShowcase
                             ],
                             'value'      => $orgStock->quantity_to_be_picked
                         ],
-                        // 'quantity_available'           => [
-                        //     'icon_state' => [
-                        //         'icon'    => 'fal fa-dot-circle',
-                        //         'class'   => 'animate-pulse text-green-500',
-                        //         'tooltip' => __("Stock available for sale"),
-                        //     ],
-                        //     'value'      => $orgStock->quantity_available
-                        // ],
                     ],
                     'locations'       => $locations,
                     'qty_in_location' => $orgStock->quantity_in_locations
@@ -111,28 +104,6 @@ class GetOrgStockShowcase
         );
     }
 
-    public function orgStockData(OrgStock $orgStock): array
-    {
-        // $locationData = $orgStock->locationOrgStocks->map(function (LocationOrgStock $locationOrgStock) {
-        //     return [
-        //         'id'        => $locationOrgStock->id,
-        //         'name'      => $locationOrgStock->location->code,
-        //         'lastAudit' => $locationOrgStock->audited_at,
-        //         'stock'     => $locationOrgStock->quantity,
-        //         'isAudited' => !is_null($locationOrgStock->audited_at)
-        //     ];
-        // })->toArray();
-
-        return [
-            // 'stock_in_locations' => $orgStock->quantity_in_locations,
-            'stock_in_process' => $orgStock->stats->number_stock_deliveries_state_in_process,
-            'stock_in_picked'  => $orgStock->stats->number_stock_deliveries_state_ready_to_ship,
-            'stock_available'  => $orgStock->quantity_in_locations - ($orgStock->stats->number_stock_deliveries_state_in_process + $orgStock->stats->number_stock_deliveries_state_ready_to_ship),
-            'stock_value'      => $orgStock->value_in_locations,
-            'current_cost'     => $orgStock->unit_cost,
-            // 'locations'          => $locationData
-        ];
-    }
 
     private function getDataTradeUnit($tradeUnits): array
     {
