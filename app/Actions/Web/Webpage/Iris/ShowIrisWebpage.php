@@ -18,6 +18,7 @@ use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -111,7 +112,7 @@ class ShowIrisWebpage
             $canonicalUrl = $this->getCanonicalUrl($webpageID);
         } else {
             $key = config('iris.cache.webpage.prefix').'_'.$request->input('website')->id.'_canonicals_'.$webpageID;
-
+            
             $canonicalUrl = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID) {
                 return $this->getCanonicalUrl($webpageID);
             });
@@ -124,7 +125,7 @@ class ShowIrisWebpage
 
 
             $normalizedCanon = $this->getEnvironmentUrl($canonicalUrl);
-
+            
             if ($normalizedCanon !== $currentUrl) {
                 return $this->getEnvironmentUrl($canonicalUrl);
             }
@@ -252,16 +253,17 @@ class ShowIrisWebpage
             if ($webpage?->state === WebpageStateEnum::LIVE) {
                 $webpageID = $webpage->id;
             } else{
-                $webpageID = null;
-
-                if ($redirectData = DB::table('redirects')
+                $webpageID = DB::table('redirects')
                     ->select('to_webpage_id')
                     ->where('from_path', $path)
                     ->where('website_id', $website->id)
-                    ->first()) {
-                    $webpageID = $redirectData->to_webpage_id;
-                }
+                    ->first()?->to_webpage_id;
+                    
+                Log::error('Initial WebpageID failed');
+                Log::error("Path: {$path}");
+                Log::error("WebpageID: {$webpageID}");
             }
+
         }
 
 
