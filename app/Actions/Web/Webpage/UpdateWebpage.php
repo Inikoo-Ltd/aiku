@@ -16,12 +16,14 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\Web\Redirect\StoreRedirect;
+use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\Web\WebpageResource;
 use App\Models\Catalogue\Product;
+use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashSlash;
 use Illuminate\Support\Arr;
@@ -93,10 +95,24 @@ class UpdateWebpage extends OrgAction
                 data_set($modelData, 'redirect_webpage_id', Arr::get($modelData, 'state_data.redirect_webpage_id'));
             }
 
-            StoreRedirect::make()->action($webpage, [
-                'type'          => RedirectTypeEnum::TEMPORAL,
-                'to_webpage_id' => Arr::get($modelData, 'state_data.redirect_webpage_id')
-            ]);
+            if (Arr::get($modelData, 'state_data.state') == 'closed') {
+                if ($redirect = $webpage->redirectedTo) {
+                    $redirect->update([
+                        'from_webpage_id'   => $webpage->id
+                    ]);
+                    $redirect->refresh();
+                    UpdateRedirect::make()->action($redirect, [
+                        'to_webpage_id' => Arr::get($modelData, 'state_data.redirect_webpage_id')
+                    ]);
+                } else {
+                    StoreRedirect::make()->action($webpage, [
+                        'type'          => RedirectTypeEnum::TEMPORAL,
+                        'to_webpage_id' => Arr::get($modelData, 'state_data.redirect_webpage_id')
+                    ]);
+                }
+            } else {
+                Redirect::where('from_path', $webpage->url)->where('website_id', $webpage->website->id)->delete();
+            }
 
             data_forget($modelData, 'state_data');
         }

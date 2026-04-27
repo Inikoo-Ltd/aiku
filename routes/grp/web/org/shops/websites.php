@@ -120,7 +120,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
     Route::get('/sub-type/family/{scope}/products', [IndexProductWebpages::class, 'inFamilyWebpages'])->name('index.sub_type.family.products');
     Route::get('/sub-type/product', IndexProductWebpages::class)->name('index.sub_type.product');
 
-
+    Route::get('/{webpage}/redirect-options', [IndexWebpages::class, 'asRedirectOption'])->name('index.redirect-options');
 
     Route::get('create', CreateWebpage::class)->name('create');
     Route::prefix('{webpage}')

@@ -34,6 +34,13 @@ class UpdateRedirect extends OrgAction
         $redirect = $this->update($redirect, $modelData);
 
         $toWebpage = Webpage::find($redirect->to_webpage_id);
+
+        if ($webpage = $redirect->webpage) {
+            $webpage->update([
+                'redirect_webpage_id'   => $toWebpage->id
+            ]);
+        }
+
         WebpageHydrateRedirects::run($toWebpage);
 
         return $redirect;

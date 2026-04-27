@@ -16,6 +16,7 @@ use App\Actions\Web\Webpage\WithWebpageSubNavigation;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Http\Resources\Web\WebpagesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -41,6 +42,8 @@ class IndexWebpages extends OrgAction
     private Group|Organisation|Website|Fulfilment|Webpage $parent;
 
     private mixed $bucket;
+    private string $stateFilter = 'all';
+    private Webpage|null $excludeWebpage = null;
 
 
     public function inGroup(ActionRequest $request): LengthAwarePaginator
@@ -90,6 +93,17 @@ class IndexWebpages extends OrgAction
         $this->parent = $website;
         $this->initialisationFromShop($website->shop, $request);
 
+
+        return $this->handle(parent: $this->parent, bucket: $this->bucket);
+    }
+
+    public function asRedirectOption(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'all';
+        $this->parent = $website;
+        $this->excludeWebpage = $webpage;
+        $this->stateFilter = WebsiteStateEnum::LIVE->value;
+        $this->initialisationFromShop($website->shop, $request);
 
         return $this->handle(parent: $this->parent, bucket: $this->bucket);
     }
@@ -254,6 +268,16 @@ class IndexWebpages extends OrgAction
             $queryBuilder->where('webpages.type', WebpageTypeEnum::STOREFRONT);
         } else {
             $queryBuilder->whereNot('webpages.type', WebpageTypeEnum::BLOG);
+        }
+
+        if ($this->stateFilter !== 'all') {
+            $queryBuilder
+                ->where('webpages.state', $this->stateFilter);
+        }
+
+        if ($this->excludeWebpage) {
+            $queryBuilder
+                ->whereNot('webpages.id', $this->excludeWebpage->id);
         }
 
         if (isset(request()->query()['json']) && request()->query()['json'] === 'true' || (function_exists('request') && request() && request()->expectsJson())) {

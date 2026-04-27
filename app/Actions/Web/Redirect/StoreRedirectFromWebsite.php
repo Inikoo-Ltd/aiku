@@ -4,7 +4,6 @@ namespace App\Actions\Web\Redirect;
 
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\UI\Web\WebsiteTabsEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\Redirect;
@@ -46,10 +45,21 @@ class StoreRedirectFromWebsite extends OrgAction
     public function rules(): array
     {
         return [
-            'from_url'                => ['required', 'string', 'max:2048'],
+            'from_url'                => [
+                'required',
+                'string',
+                'max:2048',
+                Rule::unique(Redirect::class, 'from_path')
+                    ->where(fn ($query) => $query->where('website_id', $this->shop->website->id)),
+            ],
             'to_url' => [
                 'required',
-                Rule::exists(Webpage::class, 'id')->where('website_id', $this->shop->website->id)->where('state', WebpageStateEnum::LIVE),
+                Rule::exists(Webpage::class, 'id')
+                    ->where(
+                        fn ($query) => $query
+                        ->where('website_id', $this->shop->website->id)
+                        ->where('state', WebpageStateEnum::LIVE)
+                    ),
             ],
         ];
     }

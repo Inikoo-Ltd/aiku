@@ -14,7 +14,6 @@ use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InWebsite;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use OwenIt\Auditing\Contracts\Auditable;
 
@@ -53,11 +52,6 @@ class Redirect extends Model implements Auditable
 
     protected $guarded = [];
 
-    public function webpage(): BelongsTo
-    {
-        return $this->belongsTo(Webpage::class);
-    }
-
     public function generateTags(): array
     {
         return [
@@ -75,5 +69,9 @@ class Redirect extends Model implements Auditable
         return $this->hasOne(Webpage::class, 'id', 'to_webpage_id');
     }
 
+    public function webpage(): HasOne
+    {
+        return $this->hasOne(Webpage::class, 'id', 'from_webpage_id');
+    }
 
 }

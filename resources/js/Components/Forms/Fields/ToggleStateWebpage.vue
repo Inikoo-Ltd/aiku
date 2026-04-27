@@ -28,7 +28,8 @@ const props = defineProps<{
 const fetch_paramsExist = props.fieldData && props.fieldData.fetch_params;
 let paramOrg = fetch_paramsExist ? props.fieldData.fetch_params["organisation"] : route().params.organisation;
 let paramShop = fetch_paramsExist ? props.fieldData.fetch_params["shop"] : route().params.shop;
-let paramWeb = fetch_paramsExist ? props.fieldData.fetch_params["website"] : route().params.website;
+let paramWebsite = fetch_paramsExist ? props.fieldData.fetch_params["website"] : route().params.website;
+let paramWebpage = fetch_paramsExist ? props.fieldData.fetch_params["webpage"] : route().params.webpage;
 
 // const compareObjects = (objA, objB) => {
 //     // Get the keys of objA and objB
@@ -121,11 +122,12 @@ const xxx = ref('')
                     required
                     :placeholder="trans('Select webpage to redirect')"
                     :fetchRoute="{
-                        name: 'grp.org.shops.show.web.webpages.index',
+                        name: 'grp.org.shops.show.web.webpages.index.redirect-options', // Update new route to exclude self & closed webpages
                         parameters: {
                             organisation: paramOrg,
                             shop: paramShop,
-                            website: paramWeb,
+                            website: paramWebsite,
+                            webpage: paramWebpage,
                         }
                     }"
                 >

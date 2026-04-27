@@ -15,7 +15,6 @@ use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Webpage\Luigi\DeleteReindexWebpageLuigiData;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -62,7 +61,7 @@ class DeleteWebpage extends OrgAction
                 return $webpage;
             });
         } else {
-            
+
             $redirect = Arr::pull($modelData, 'redirects');
 
             $webpage->delete();
@@ -79,6 +78,7 @@ class DeleteWebpage extends OrgAction
 
             if ($redirect) {
                 DB::table('redirects')->where('to_webpage_id', $webpage->id)->delete();
+                DB::table('redirects')->where('from_path', $webpage->url)->delete();
 
                 StoreRedirect::make()->action($webpage, [
                     'type'              => RedirectTypeEnum::PERMANENT,
