@@ -63,17 +63,17 @@ const inactiveClass = `bg-[${layout.app?.theme[4]}] text-[${layout.app?.theme[1]
     >
         <LoadingIcon v-if="isLoading" class="flex-shrink-0 h-4 w-4" />
         <FontAwesomeIcon v-else-if="nav.icon" aria-hidden="true" :rotation="nav.icon_rotation" class="flex-shrink-0 h-4 w-4" fixed-width :icon="nav.icon" />
-        <div class=" items-center justify-between w-full leading-none"
+        <div class=" items-center justify-between w-full leading-none pr-4"
             :class="[
                 layout.leftSidebar.show ? 'flex' : 'block md:hidden'
             ]"
         >
             <Transition name="slide-to-left">
-                <span v-if="layout.leftSidebar.show" class="capitalize leading-none whitespace-nowrap block md:block">
+                <span v-if="layout.leftSidebar.show" class="capitalize leading-none whitespace-nowrap truncate">
                     {{ nav.label }}
                     <FontAwesomeIcon v-if="nav.indicator" icon="fas fa-circle" class="align-middle text-red-600 text-[0.5rem] animate-pulse" fixed-width aria-hidden="true" />
                 </span>
-                <span v-else class="capitalize leading-none whitespace-nowrap block md:hidden">
+                <span v-else class="capitalize leading-none whitespace-nowrap block md:hidden truncate">
                     {{ nav.label }}
                     <FontAwesomeIcon v-if="nav.indicator" icon="fas fa-circle" class="align-middle text-red-600 text-[0.5rem] animate-pulse" fixed-width aria-hidden="true" />
                 </span>

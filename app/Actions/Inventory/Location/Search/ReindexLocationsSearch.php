@@ -12,7 +12,7 @@ use App\Actions\Traits\WithScoutReindex;
 use App\Models\Inventory\Location;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexLocationSearch
+class ReindexLocationsSearch
 {
     use AsAction;
     use WithScoutReindex;

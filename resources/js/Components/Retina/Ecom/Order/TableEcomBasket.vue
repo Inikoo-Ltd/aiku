@@ -74,6 +74,12 @@ const debounceUpdateQuantity = debounce(
     500
 )
 
+const isOffersData = (offersData: any): boolean => {
+    if (!offersData) return false
+    const parsed = typeof offersData === 'string' ? JSON.parse(offersData) : offersData
+    return Object.keys(parsed || {}).length > 0
+}
+
 </script>
 
 
@@ -117,7 +123,7 @@ const debounceUpdateQuantity = debounce(
                     {{ trans('Stock') }}  {{ locale.number(item.available_quantity || 0) }} {{ trans('available') }}
                 </div>
 
-                <Discount v-if="Object.keys(item.offers_data || {})?.length" :offers_data="item.offers_data" />
+                <Discount v-if="isOffersData(item.offers_data)" :offers_data="item.offers_data" />
             </div>
         </template>
 
@@ -169,7 +175,7 @@ const debounceUpdateQuantity = debounce(
 
                 <div class="ml-4 flex justify-between gap-x-4 w-full text-xs">
                     <div class="flex flex-1 flex-col">
-                        <Discount v-if="Object.keys(item.offers_data || {})?.length" :offers_data="item.offers_data"
+                        <Discount v-if="isOffersData(item.offers_data)" :offers_data="item.offers_data"
                             class="text-xxs" />
 
                         <div class="flex justify-between font-medium">

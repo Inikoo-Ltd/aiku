@@ -70,28 +70,27 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
         foreach ($openShops as $shop) {
             $orgStocksData = $organisationsData[$shop->organisation_id]['org_stocks_data'];
             if ($orgStocksData['org_cost'] === null) {
-                $shopCost = null;
-                $price    = null;
-                $rrp      = null;
+                $shopCost       = null;
+                $warehouseValue = null;
+                $price          = null;
+                $rrp            = null;
             } else {
-                $shopCost = round($orgStocksData['org_cost'] * GetCurrencyExchange::run($shop->organisation->currency, $shop->currency), 2);
-                $price    = round($shopCost * $shop->cost_price_ratio, 2);
-                $rrp      = round($price * 2.4, 2);
+                $shopCost       = round($orgStocksData['org_cost'] * GetCurrencyExchange::run($shop->organisation->currency, $shop->currency), 2);
+                $warehouseValue = round($orgStocksData['org_value_in_warehouse'] * GetCurrencyExchange::run($shop->organisation->currency, $shop->currency), 2);
+
+                $price = round($shopCost * $shop->cost_price_ratio, 2);
+                $rrp   = round($price * 2.4, 2);
             }
 
 
-            $orgStocksData['shop_currency'] = $shop->currency->code;
-            $orgStocksData['shop_cost']     = $shopCost;
-            $orgStocksData['id']            = $shop->id;
-            $orgStocksData['price']         = $price ?? 0.01;
-            $orgStocksData['rrp']           = $rrp ?? 0.01;
-            $orgStocksData['gross_weight']  = $tradeUnits[0]['model']->gross_weight * $tradeUnits[0]['quantity'];
-            //todo delete this, ask arya what is this for
-            //            $organisationsData['images']    = $shop->organisation->media->map(fn($media) => [
-            //                'id'  => $media->id,
-            //                'url' => $media->getUrl()
-            //            ]);
-            $orgStocksData['margin']        = ($orgStocksData['price'] > 0)
+            $orgStocksData['shop_currency']        = $shop->currency->code;
+            $orgStocksData['shop_cost']            = $shopCost;
+            $orgStocksData['shop_warehouse_value'] = $warehouseValue;
+            $orgStocksData['id']                   = $shop->id;
+            $orgStocksData['price']                = $price ?? 0.01;
+            $orgStocksData['rrp']                  = $rrp ?? 0.01;
+            $orgStocksData['gross_weight']         = $tradeUnits[0]['model']->gross_weight * $tradeUnits[0]['quantity'];
+            $orgStocksData['margin']               = ($orgStocksData['price'] > 0)
                 ? round((($orgStocksData['price'] - $orgStocksData['shop_cost']) / $orgStocksData['price']) * 100, 2)
                 : null;
 
@@ -136,7 +135,7 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
                     }
 
 
-                    $orgStockUnitCost = ($orgStock->current_supplier_sku_cost ?? 0) / ($orgStock->packed_in ?? 1);
+                    $orgStockUnitCost  = ($orgStock->current_supplier_sku_cost ?? 0) / ($orgStock->packed_in ?? 1);
                     $orgStockUnitValue = ($orgStock->sku_value ?? 0) / ($orgStock->packed_in ?? 1);
 
 
