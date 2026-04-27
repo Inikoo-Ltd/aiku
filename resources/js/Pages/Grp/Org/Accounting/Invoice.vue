@@ -9,7 +9,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {Head, Link, router} from "@inertiajs/vue3";
 import axios from "axios";
 import { notify } from "@kyvg/vue3-notification";
-import {computed, ref} from "vue";
+import {computed, ref, watch} from "vue";
 import type {Component} from "vue";
 import {useTabChange} from "@/Composables/tab-change";
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue";
@@ -61,11 +61,11 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import ListColumnToDownload from "../../Invoices/ListColumnToDownload.vue"
 import { Icon as IconType } from "@/types/Utils/Icon"
-
+import PureAddress from "@/Components/Pure/PureAddress.vue";
+import { Address, AddressOptions } from "@/types/PureComponent/Address";
+import { cloneDeep, pick } from "lodash-es"
 
 library.add(faShapes,faAddressCard,faExpandArrows, faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt, faOmega, faReceipt, faExclamationCircle, faCheckCircle, faSpinnerThird, faExclamationTriangle);
-
-
 
 const props = defineProps<{
     title: string,
@@ -137,9 +137,14 @@ const props = defineProps<{
     routes: {
         delivery_note: routeType
         updateInvoiceDateRoute: routeType
+        updateInvoiceAddressRoute: routeType
     }
     can: {
         editInvoiceDate: boolean
+        editInvoiceAddress: boolean
+    }
+    billing_address_form: {
+        options: AddressOptions
     }
     invoiceExportOptions: {
         type: string
@@ -266,6 +271,64 @@ const submitEditDate = async () => {
     } finally {
         isSubmittingDate.value = false
     }
+}
+
+// Section: Edit invoice address
+const isModalEditAddress = ref(false)
+const isSubmittingAddress = ref(false)
+const getEmptyAddress = (): Address => ({
+    country_id: null,
+    label: null,
+    checksum: '',
+    created_at: null,
+    updated_at: ''
+})
+
+const editingAddress = ref<Address>(getEmptyAddress())
+
+const openEditAddressModal = () => {
+    editingAddress.value = cloneDeep(props.invoice.address || getEmptyAddress())
+    isModalEditAddress.value = true
+}
+
+watch(() => editingAddress.value.country_id, (countryId) => {
+    if (!countryId) return
+    const countryData = props.billing_address_form?.options?.countriesAddressData?.[countryId]
+    if (countryData?.code) {
+        editingAddress.value.country_code = countryData.code
+    }
+})
+
+const submitEditAddress = async () => {
+    const payload = pick(editingAddress.value, ['address_line_1', 'address_line_2', 'sorting_code', 'postal_code', 'dependent_locality', 'locality', 'administrative_area', 'country_code', 'country_id'])
+
+    router.patch(
+        route(props.routes.updateInvoiceAddressRoute.name, props.routes.updateInvoiceAddressRoute.parameters),
+        { invoice_billing_address: payload },
+        {
+            onStart: () => {
+                isSubmittingAddress.value = true
+            },
+            onSuccess: () => {
+                isModalEditAddress.value = false
+                notify({ 
+                    type: 'success', 
+                    title: trans('Invoice address updated'), 
+                    text: trans('Invoice address has been successfully updated.') 
+                })
+            }, 
+            onError: () => {
+                notify({ 
+                    type: 'error', 
+                    title: trans('Failed to update invoice address'), 
+                    text: trans('Please review the address fields and try again.') 
+                })
+            },
+            onFinish: () => {
+                isSubmittingAddress.value = false
+            }
+        }
+    )
 }
 </script>
 
@@ -436,7 +499,6 @@ const submitEditDate = async () => {
                 <dd class="text-base text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
             </dl>
 
-
             <!-- Field: Phone -->
             <dl v-if="box_stats?.customer.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <dt v-tooltip="'Phone'" class="flex-none">
@@ -475,11 +537,27 @@ const submitEditDate = async () => {
 
                 <dd class="text-base text-gray-500 w-full">
                     <div v-if="invoice.address" class="relative bg-gray-50 border border-gray-300 rounded px-2 py-1">
+                        <FontAwesomeIcon
+                            v-if="props.can?.editInvoiceAddress"
+                            icon="fal fa-pencil"
+                            class="absolute bottom-2 right-2 text-gray-400 hover:text-gray-600 cursor-pointer text-sm"
+                            v-tooltip="trans('Edit invoice address')"
+                            @click="openEditAddressModal"
+                            aria-hidden="true"
+                        />
                         <div v-html="invoice.address.formatted_address"/>
                     </div>
 
-                    <div v-else class="text-gray-400 italic">
-                        No address
+                    <div v-else class="text-gray-400 italic flex items-center gap-x-2">
+                        <span>No address</span>
+                        <FontAwesomeIcon
+                            v-if="props.can?.editInvoiceAddress"
+                            icon="fal fa-pencil"
+                            class="text-gray-400 hover:text-gray-600 cursor-pointer text-sm"
+                            v-tooltip="trans('Edit invoice address')"
+                            @click="openEditAddressModal"
+                            aria-hidden="true"
+                        />
                     </div>
                 </dd>
             </dl>
@@ -663,6 +741,20 @@ const submitEditDate = async () => {
             <div class="flex justify-end gap-2">
                 <Button type="tertiary" :label="trans('Cancel')" :disabled="isSubmittingDate" @click="isModalConfirmEditDate = false" />
                 <Button type="secondary" :label="trans('Yes, update date')" :loading="isSubmittingDate" @click="submitEditDate" />
+            </div>
+        </div>
+    </Modal>
+
+    <Modal :isOpen="isModalEditAddress" @onClose="isModalEditAddress = false" width="w-full max-w-2xl">
+        <div class="p-4 flex flex-col gap-4">
+            <h2 class="text-base font-semibold text-gray-700">{{ trans('Edit invoice address') }}</h2>
+            <PureAddress
+                v-model="editingAddress"
+                :options="props.billing_address_form.options"
+            />
+            <div class="flex justify-end gap-2">
+                <Button type="tertiary" :label="trans('Cancel')" @click="isModalEditAddress = false" />
+                <Button type="primary" :label="trans('Save')" :loading="isSubmittingAddress" @click="submitEditAddress" />
             </div>
         </div>
     </Modal>

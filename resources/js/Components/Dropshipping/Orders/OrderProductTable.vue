@@ -24,6 +24,7 @@ import { InputNumber, InputText } from "primevue"
 import axios from "axios"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import BasicDiscount from "@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue"
 
 library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt)
 
@@ -559,7 +560,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
             <div class="text-center mb-4">
                 <div class="font-semibold text-2xl">Update for {{ selectedItemToEditNetAmount?.asset_code }}:</div>
                 <div class="opacity-80 italic text-sm">
-                    <pre>{{ selectedItemToEditNetAmount?.asset_name }}</pre>
+                    {{ selectedItemToEditNetAmount?.asset_name }}
                 </div>
             </div>
 
@@ -572,6 +573,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                     <InputNumber
                         :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer', 0)"
                         @input="(e) => set(selectedItemToEditNetAmount, 'discretionary_offer', e?.value)"
+                        :max-fraction-digits="2"
                         suffix="%"
                         :disabled="isLoadingSubmitNetAmount"
                     />
@@ -585,7 +587,27 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                     <InputText
                         :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer_label', '')"
                         @input="(e) => (set(selectedItemToEditNetAmount, 'discretionary_offer_label', e?.target?.value))"
+                        :placeholder="ctrans('Discretionary Discount')"
                         :disabled="isLoadingSubmitNetAmount"
+                    />
+                </div>
+
+                <!-- Section: preview -->
+                <div class="w-full border-y py-4 flex justify-center">
+                    <BasicDiscount
+                        :offers_data="{
+                            v: get(selectedItemToEditNetAmount, 'discretionary_offer', 0),
+                            o: {
+                                oc: 0,
+                                o: 0,
+                                oa: 0,
+                                t: 'percentage',
+                                p: String(parseFloat((Number(selectedItemToEditNetAmount?.discretionary_offer || 0)).toFixed(2))) + '%',
+                                l: get(selectedItemToEditNetAmount, 'discretionary_offer_label', '') || ctrans('Discretionary Discount'),
+                                st: null,
+                                sto: null
+                            }
+                        }"
                     />
                 </div>
 

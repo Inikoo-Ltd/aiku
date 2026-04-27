@@ -28,7 +28,7 @@ class LocationHydrateStockValue implements ShouldBeUnique
         foreach ($location->locationOrgStocks() as $locationOrgStock) {
             $orgStock = $locationOrgStock->orgStock;
             $orgStockValue          += $locationOrgStock->quantity * $orgStock->unit_value;
-            $orgStockCommercialValue += $locationOrgStock->quantity * $orgStock->unit_commercial_value;
+            $orgStockCommercialValue += $locationOrgStock->quantity * $orgStock->sku_commercial_value;
         }
 
 

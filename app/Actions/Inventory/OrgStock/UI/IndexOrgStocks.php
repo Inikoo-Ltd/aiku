@@ -227,8 +227,8 @@ class IndexOrgStocks extends OrgAction
             'org_stocks.name',
             'org_stocks.slug',
             'org_stocks.state',
-            'org_stocks.unit_value',
-            'org_stocks.unit_cost',
+            'org_stocks.sku_value',
+            'org_stocks.current_supplier_sku_cost',
             'org_stocks.quantity_available',
             'org_stocks.value_in_locations',
             'number_locations',
@@ -261,7 +261,6 @@ class IndexOrgStocks extends OrgAction
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
-                includeLY: true
             );
 
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
@@ -270,7 +269,7 @@ class IndexOrgStocks extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
-        $allowedSorts = ['code', 'name', 'family_code', 'unit_value', 'unit_cost', 'stock_value', 'discontinued_in_organisation_at', 'organisation_name', 'value_in_locations', 'dispatched', 'revenue', 'quantity_available', 'on_the_way_po_value', 'health_rank', 'week_of_cover', 'product_count'];
+        $allowedSorts = ['code', 'name', 'family_code', 'sku_value', 'current_supplier_sku_cost', 'stock_value', 'discontinued_in_organisation_at', 'organisation_name', 'value_in_locations', 'dispatched', 'revenue', 'quantity_available', 'on_the_way_po_value', 'health_rank', 'week_of_cover', 'product_count'];
 
         if ($prefix === OrgStocksTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_grp_currency_external';
@@ -314,43 +313,42 @@ class IndexOrgStocks extends OrgAction
 
             $table
                 ->defaultSort('code')
-                ->withLabelRecord([__('sku'), __('skus')])
+                ->withLabelRecord(['SKU','SKUs'])
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
-                ->column(key: 'code', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'code', label: __('Reference'), sortable: true, searchable: true);
 
             if ($parent instanceof Organisation && $bucket != 'abnormality') {
-                $table->column(key: 'family_code', label: __('Family'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'family_code', label: __('Family'), sortable: true, searchable: true);
             }
 
-            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'quantity_available', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
+                ->column(key: 'quantity_available', label: __('Stock'), sortable: true, align: 'right');
 
             if ($sales) {
                 $table->betweenDates(['date'])
-                    ->column(key: 'stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
+                    ->column(key: 'stock_value', label: __('Stock Value'), sortable: true, type: 'currency')
                     ->column(key: 'on_the_way_po_value', label: __("On the way (PO's)"), sortable: true, type: 'currency')
-                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
-                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
-                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
+                    ->column(key: 'invoices', label: __('Invoices'), sortable: true, align: 'right')
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), align: 'right')
+                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), sortable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), sortable: true, type: 'icon');
             } else {
                 if ($parent instanceof OrgStockFamily || !$bucket || in_array($bucket, ['active', 'discontinuing'])) {
                     $table
-                        ->column(key: 'unit_cost', label: __('Cost Value'), canBeHidden: false, sortable: true, type: 'currency')
-                        // ->column(key: 'value_in_locations', label: __('Stock value'), canBeHidden: false, sortable: true, type: 'currency') // Todo: fix value_In_locations because mostly 0 or null
-                        ->column(key: 'woc', label: __('WOC'), canBeHidden: false, align: 'right')
+                        ->column(key: 'sku_value', label: __('Sku value'), sortable: true, type: 'currency')
+                        ->column(key: 'woc', label: __('WOC'), align: 'right')
                         ->column(key: 'revenue', label: __('Revenue'), sortable: true, type: 'currency')
                         ->column(key: 'dispatched', label: __('Dispatched'), sortable: true);
                 }
 
                 if ($bucket == 'discontinued' || $bucket == 'abnormality') {
-                    $table->column(key: 'discontinued_in_organisation_at', label: $bucket == 'discontinued' ? __('Discontinued') : __('Last seen'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
+                    $table->column(key: 'discontinued_in_organisation_at', label: $bucket == 'discontinued' ? __('Discontinued') : __('Last seen'), sortable: true, searchable: true, type: 'date');
                 }
 
             }
-            $table->column(key: 'product_count', label: __('Used in Products'), canBeHidden: false, sortable: true, searchable: true, align: 'left');
+            $table->column(key: 'product_count', label: __('Used in Products'), sortable: true, searchable: true, align: 'left');
         };
     }
 

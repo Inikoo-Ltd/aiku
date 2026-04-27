@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n";
-import { fromJSON } from "postcss";
 import { InputNumber } from "primevue";
 import { inject, computed, watch } from "vue";
 
@@ -170,7 +169,7 @@ function roundDown2(num: number) {
 
                         <!-- Org Cost -->
                         <th class="px-2 py-1 text-center">
-                            {{ trans('Org cost') }}
+                            {{ trans('Cost') }}
                         </th>
 
                         <!-- Outer Price -->

@@ -81,14 +81,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $picking_session_id
  * @property numeric|null $original_quantity_required
  * @property string|null $batch_code
- * @property int|null $batch_code_id
  * @property \Illuminate\Support\Carbon|null $expiry_date
  * @property string|null $locked_at
  * @property numeric $quantity_waiting_warehouse
  * @property numeric $quantity_waiting_crm
  * @property bool $has_waiting_warehouse
  * @property bool $has_waiting_crm
- * @property-read BatchCode|null $batchCode
+ * @property int|null $batch_code_id
+ * @property-read \App\Models\Dispatching\BatchCode|null $batchCode
  * @property-read \App\Models\Dispatching\DeliveryNote|null $deliveryNote
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read OrgStock|null $orgStock

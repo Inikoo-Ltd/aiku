@@ -43,9 +43,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $slug
  * @property string $code
  * @property string|null $name
- * @property numeric|null $unit_cost
- * @property numeric|null $unit_value
- * @property numeric $unit_commercial_value
+ * @property numeric $sku_commercial_value
  * @property bool $is_sellable_in_organisation
  * @property bool $is_raw_material_in_organisation
  * @property OrgStockStateEnum $state

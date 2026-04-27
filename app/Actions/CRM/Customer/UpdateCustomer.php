@@ -67,7 +67,7 @@ class UpdateCustomer extends OrgAction
 
     public function handle(Customer $customer, array $modelData): Customer
     {
-        $staleData = clone($customer);
+        $staleData = clone $customer;
         $staleData = $staleData->toArray();
 
         if (Arr::has($modelData, 'contact_address')) {
@@ -261,7 +261,7 @@ class UpdateCustomer extends OrgAction
         }
 
         if (Arr::hasAny($changes, ['internal_notes', 'warehouse_internal_notes'])) {
-            $customer->auditEvent = AuditEventEnum::CUSTOMER_NOTE->value;
+            $customer->auditEvent    = AuditEventEnum::CUSTOMER_NOTE->value;
             $customer->isCustomEvent = true;
 
             $customer->auditCustomOld = Arr::only($staleData, ['internal_notes', 'warehouse_internal_notes']);
@@ -347,6 +347,7 @@ class UpdateCustomer extends OrgAction
             'accounting_reference'                                  => ['sometimes', 'nullable', 'string', 'max:255'],
             'disable_order_auto_processing'                         => ['sometimes', 'boolean'],
             'eori'                                                  => ['sometimes', 'nullable', 'string', 'max:20'],
+            'ukims'                                                 => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
 
         if ($this?->asAction) {

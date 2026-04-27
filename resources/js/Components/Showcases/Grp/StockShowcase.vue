@@ -108,8 +108,11 @@ console.log(props)
             <div class="space-y-2 pr-10">
                 <div class="grid grid-cols-5 gap-x-3 items-center">
 
-                    <div class="col-span-3 xtext-right">
-                        {{ ctrans("SKU cost") }}
+                    <div class="col-span-2 xtext-right">
+                        {{ ctrans("Future delivered cost") }}
+                    </div>
+                    <div class="col-span-1 text-right">
+                        {{ ctrans("SKU value") }}
                     </div>
 
                     <div class="col-span-2 text-right">
@@ -119,7 +122,10 @@ console.log(props)
 
                 <div class="grid grid-cols-5 gap-x-3 items-center">
 
-                    <div class="col-span-3 xtext-right text-2xl font-semibold">
+                    <div class="col-span-2 xtext-right text-2xl font-semibold">
+                        {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.current_supplier_sku_cost || 0) }}
+                    </div>
+                    <div class="col-span-1 text-right text-2xl font-semibold">
                         {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.sku_value || 0) }}
                     </div>
 
@@ -131,7 +137,6 @@ console.log(props)
         </div>
         </div>
 
-       
         <!-- Section: Stocks Management -->
         <div class="md:col-span-2">
             <StocksManagement
@@ -140,7 +145,6 @@ console.log(props)
                 :stocks_management="data.stocks_management"
                 :trade_units="data.trade_units"
             />
-            <!-- <pre v-if="layout.app.environment === 'local'">{{ data.stocks_management?.locations }}</pre> -->
         </div>
     </div>
 </template>
