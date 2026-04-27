@@ -97,7 +97,7 @@ const xxx = ref('')
 
         
         <div class="mt-4 w-fit max-w-sm">
-            {{ fieldData.route_delete }}
+            <!-- {{ fieldData.route_delete }} -->
             <ButtonWithLink
                 v-if="fieldData.current_state === 'closed' || fieldData.current_state === 'live'"
                 icon="far fa-trash-alt"
