@@ -25,6 +25,7 @@ const TIME_FILTERS = {
 
 const props = defineProps<{
     shopSlug?: string
+    shopId?: number
     organisationSlug: string
 }>()
 
@@ -49,6 +50,16 @@ const paginationData = ref<any>(null)
 const collections = ref<Array<any>>([])
 const selectedCollection = ref<string>('')
 const collectionsLoading = ref(false)
+
+// Family filtering state
+const families = ref<Array<any>>([])
+const selectedFamily = ref<string>('')
+const familiesLoading = ref(false)
+
+// Sub-department filtering state
+const subDepartments = ref<Array<any>>([])
+const selectedSubDepartment = ref<string>('')
+const subDepartmentsLoading = ref(false)
 
 // Resolve/reject handlers for product selection
 let productSearchResolve: ((value: any) => void) | null = null
@@ -196,6 +207,50 @@ const fetchCollections = async () => {
     }
 }
 
+const fetchFamilies = async () => {
+    if (!props.shopId) {
+        families.value = []
+        return
+    }
+
+    familiesLoading.value = true
+    try {
+        const response = await axios.get(
+            route('grp.json.shop.families', {
+                shop: props.shopId!
+            })
+        )
+        families.value = response.data.data || []
+    } catch (error) {
+        console.error('Families fetch error:', error)
+        families.value = []
+    } finally {
+        familiesLoading.value = false
+    }
+}
+
+const fetchSubDepartments = async () => {
+    if (!props.shopId) {
+        subDepartments.value = []
+        return
+    }
+
+    subDepartmentsLoading.value = true
+    try {
+        const response = await axios.get(
+            route('grp.json.shop.sub_departments', {
+                shop: props.shopId!
+            })
+        )
+        subDepartments.value = response.data.data || []
+    } catch (error) {
+        console.error('Sub-departments fetch error:', error)
+        subDepartments.value = []
+    } finally {
+        subDepartmentsLoading.value = false
+    }
+}
+
 const searchCollectionFamilyProductsAPI = async (page: number = 1) => {
     if (!props.shopSlug) {
         return { data: { data: [] } }
@@ -209,6 +264,8 @@ const searchCollectionFamilyProductsAPI = async (page: number = 1) => {
             search: productSearchQuery.value.trim(),
             tab_type: 'collection_family',
             collection_id: selectedCollection.value || null,
+            family_id: selectedFamily.value || null,
+            sub_department_id: selectedSubDepartment.value || null,
             per_page: 10,
             page: page
         }
@@ -307,6 +364,24 @@ const changeCollection = (collectionId: string) => {
     }
 }
 
+const changeFamily = (familyId: string) => {
+    selectedFamily.value = familyId
+    if (activeTab.value === PRODUCT_TABS.COLLECTION_FAMILY) {
+        // Reset to page 1 when changing family
+        currentPage.value = 1
+        searchProducts(1)
+    }
+}
+
+const changeSubDepartment = (subDepartmentId: string) => {
+    selectedSubDepartment.value = subDepartmentId
+    if (activeTab.value === PRODUCT_TABS.COLLECTION_FAMILY) {
+        // Reset to page 1 when changing sub-department
+        currentPage.value = 1
+        searchProducts(1)
+    }
+}
+
 // Pagination functions
 const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages.value && page !== currentPage.value) {
@@ -336,12 +411,16 @@ const setupProductSearchHandlers = (resolve: (value: any) => void, reject: () =>
     productSearchResults.value = []
     activeTab.value = PRODUCT_TABS.PRODUCTS
     selectedCollection.value = ''
+    selectedFamily.value = ''
+    selectedSubDepartment.value = ''
     // Reset pagination when opening modal
     currentPage.value = 1
     totalPages.value = 0
     totalItems.value = 0
     paginationData.value = null
     fetchCollections()
+    fetchFamilies()
+    fetchSubDepartments()
     searchProducts(1)
 }
 
@@ -385,8 +464,8 @@ defineExpose({
 
             <!-- Filters Section -->
             <div class="mb-4 flex flex-col sm:flex-row gap-4">
-                <!-- Search Input -->
-                <div class="flex-1">
+                <!-- Search Input (hidden for Collection/Family tab) -->
+                <div v-if="activeTab !== PRODUCT_TABS.COLLECTION_FAMILY" class="flex-1">
                     <PureInput v-model="productSearchQuery" placeholder="Type SKU or product name..."
                         @input="onSearchInput" :autofocus="true" />
                 </div>
@@ -398,6 +477,29 @@ defineExpose({
                         <option :value="TIME_FILTERS.WEEK">Week</option>
                         <option :value="TIME_FILTERS.MONTH">Month</option>
                         <option :value="TIME_FILTERS.YEAR">Year</option>
+                    </select>
+                </div>
+
+                <!-- Family Filter (for Collection/Family) -->
+                <div v-if="activeTab === PRODUCT_TABS.COLLECTION_FAMILY" class="sm:w-48">
+                    <select v-model="selectedFamily" @change="changeFamily(selectedFamily)"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <option value="">Select a family</option>
+                        <option v-for="family in families" :key="family.id" :value="family.id">
+                            {{ family.name }}
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Sub-Department Filter (for Collection/Family) -->
+                <div v-if="activeTab === PRODUCT_TABS.COLLECTION_FAMILY" class="sm:w-48">
+                    <select v-model="selectedSubDepartment" @change="changeSubDepartment(selectedSubDepartment)"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <option value="">Select a sub-department</option>
+                        <option v-for="subDepartment in subDepartments" :key="subDepartment.id"
+                            :value="subDepartment.id">
+                            {{ subDepartment.name }}
+                        </option>
                     </select>
                 </div>
 

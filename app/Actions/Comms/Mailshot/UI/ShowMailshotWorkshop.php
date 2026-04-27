@@ -182,6 +182,7 @@ class ShowMailshotWorkshop extends OrgAction
                 'status' => $email->outbox->state,
                 'organisationSlug' => $this->organisation->slug,
                 'shopSlug' => $mailshot->shop->slug,
+                'shopId' => $mailshot->shop_id,
                 'isEditMailshot' => true,
                 'tabs' => [
                     'current'    => $this->tab,

@@ -17,6 +17,7 @@ const props = withDefaults(defineProps<{
     mergeContents: Array<any> | null
     organisationSlug: string
     shopSlug?: string
+    shopId?: number
     isEditMailshot?: boolean
 }>(), {
     isEditMailshot: false
@@ -197,7 +198,8 @@ defineExpose({
     </div>
 
     <!-- Dynamic Products Component -->
-    <BeefreeDynamicProducts ref="dynamicProductsRef" :shopSlug="shopSlug" :organisationSlug="organisationSlug" />
+    <BeefreeDynamicProducts ref="dynamicProductsRef" :shopSlug="shopSlug" :shopId="shopId"
+        :organisationSlug="organisationSlug" />
 </template>
 
 <style scoped>

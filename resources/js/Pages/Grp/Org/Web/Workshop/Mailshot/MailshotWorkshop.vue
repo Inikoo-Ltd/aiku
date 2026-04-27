@@ -47,6 +47,7 @@ const props = defineProps<{
     sendTestRoute: routeType
     organisationSlug: string
     shopSlug: string
+    shopId: number
     storeNewTemplateRoute: routeType
 }>()
 
@@ -326,9 +327,9 @@ watch(
     <!-- beefree -->
     <Beetree v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
         :snapshot="activeSnapshot" :unpublished_layout="unpublished_layout" :mergeTags="mergeTags"
-        :mergeContents="mergeContents" :organisationSlug="organisationSlug" :shopSlug="shopSlug" @onSave="onSendPublish"
-        @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree"
-        @ready="isBeefreeReady = $event" />
+        :mergeContents="mergeContents" :organisationSlug="organisationSlug" :shopSlug="shopSlug" :shopId="shopId"
+        @onSave="onSendPublish" @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate"
+        ref="_beefree" @ready="isBeefreeReady = $event" />
 
     <!-- unlayer -->
     <Unlayer v-else-if="builder == 'unlayer'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
