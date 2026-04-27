@@ -175,7 +175,6 @@ const generateLinkReference = (reference: any) => {
     switch (route().current()) {
         case 'grp.org.warehouses.show.dispatching.pallet-return-with-stored-items.show':
         case 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.pallet-returns.show':
-        case 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.pallet-returns.show':
         case 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.with_stored_items.show':
             return route(
                 'grp.org.warehouses.show.inventory.stored_items.current.show',
@@ -191,20 +190,55 @@ const generateLinkReference = (reference: any) => {
 }
 
 const generateLinkPalletLocation = (pallet: any) => {
-    if (!pallet.reference) {
+    const palletIdentifier = pallet.pallet_slug ?? pallet.reference
+    if (!palletIdentifier) {
         return undefined
     }
 
+    const params = route().params as Record<string, string | undefined>
+
     switch (route().current()) {
-        case 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.with_stored_items.show':
+        case 'grp.org.warehouses.show.dispatching.pallet-returns.show':
+        case 'grp.org.warehouses.show.dispatching.pallet-return-with-stored-items.show':
+            if (!params.organisation || !params.warehouse) {
+                return undefined
+            }
+
             return route(
-                'grp.org.fulfilments.show.crm.customers.show.pallets.show',
+                'grp.org.warehouses.show.inventory.pallets.current.show',
                 {
-                    organisation: route().params['organisation'],
-                    fulfilment: route().params['fulfilment'],
-                    fulfilmentCustomer: route().params['fulfilmentCustomer'],
-                    pallet: pallet.reference,
-                });
+                    organisation: params.organisation,
+                    warehouse: params.warehouse,
+                    pallet: palletIdentifier,
+                }
+            );
+        case 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.pallet-returns.show':
+        case 'grp.org.fulfilments.show.operations.pallet-return-with-stored-items.show':
+            if (!params.organisation || !params.fulfilment) {
+                return undefined
+            }
+
+            return route(
+                'grp.org.fulfilments.show.operations.pallets.current.show',
+                {
+                    organisation: params.organisation,
+                    fulfilment: params.fulfilment,
+                    pallet: palletIdentifier,
+                }
+            );
+        case 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.with_stored_items.show':
+            if (!params.organisation || !params.fulfilment) {
+                return undefined
+            }
+
+            return route(
+                'grp.org.fulfilments.show.operations.pallets.current.show',
+                {
+                    organisation: params.organisation,
+                    fulfilment: params.fulfilment,
+                    pallet: palletIdentifier,
+                }
+            );
         default:
             return undefined
     }
@@ -273,9 +307,10 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                             <!-- Pallet name -->
                             <div class="">
                                 <span v-if="pallet_stored_item.reference">
-                                    <Link :href="generateLinkPalletLocation(pallet_stored_item)" class="secondaryLink">
+                                    <Link v-if="generateLinkPalletLocation(pallet_stored_item)" :href="generateLinkPalletLocation(pallet_stored_item)" class="secondaryLink">
                                         {{ pallet_stored_item.reference }}
                                     </Link>
+                                    <div v-else>{{ pallet_stored_item.reference }}</div>
                                 </span>
                                 <span v-else class="text-gray-400 italic">({{ trans('No reference') }})</span>
                                 <span v-if="pallet_stored_item.location?.code" v-tooltip="trans('Location code of the pallet')" class="text-gray-400"> [{{ pallet_stored_item.location?.code }}]</span>
