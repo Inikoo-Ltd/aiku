@@ -87,7 +87,6 @@ class UpdateInvoice extends OrgAction
         $invoice = $this->update($invoice, $modelData, ['data']);
 
         if ($billingAddressData) {
-
             $staleInvoice = clone($invoice);
 
             $this->updateFixedAddress(
@@ -104,27 +103,6 @@ class UpdateInvoice extends OrgAction
 
             $customer = $invoice->customer;
 
-            if ($order = $invoice->order) {
-
-                $staleOrder = clone($order);
-
-                $taxCategoryOrder = GetTaxCategory::run(
-                    country: $order->organisation->country,
-                    taxNumber: $customer->taxNumber,
-                    billingAddress: $order->billingAddress,
-                    deliveryAddress: $order->deliveryAddress,
-                    isRe: $customer?->is_re,
-                );
-
-                $order->update([
-                    'billing_address_id'    => $billingAddressData->id,
-                    'tax_category_id' => $taxCategoryOrder->id,
-                ]);
-
-                CalculateOrderTotalAmounts::run($order, false, false);
-
-                $this->auditBillingAddressUpdate($order, $oldBillAddressData, $billingAddressData, $staleOrder);
-            }
 
             $taxCategoryInvoice = GetTaxCategory::run(
                 country: $invoice->organisation->country,
@@ -134,7 +112,7 @@ class UpdateInvoice extends OrgAction
                 isRe: $customer?->is_re,
             );
             $invoice->update([
-                'tax_category_id'   => $taxCategoryInvoice->id,
+                'tax_category_id' => $taxCategoryInvoice->id,
             ]);
 
             CalculateInvoiceTotals::run($invoice);
@@ -142,6 +120,18 @@ class UpdateInvoice extends OrgAction
 
             $this->auditBillingAddressUpdate($invoice, $oldBillAddressData, $billingAddressData, $staleInvoice);
             $this->auditBillingAddressUpdate($customer, $oldBillAddressData, $billingAddressData);
+
+            if ($order = $invoice->order) {
+                $staleOrder = clone($order);
+                $order->update([
+                    'billing_address_id' => $invoice->billingAddress,
+                    'tax_category_id'    => $taxCategoryInvoice->id,
+                ]);
+
+                CalculateOrderTotalAmounts::run($order, false, false);
+
+                $this->auditBillingAddressUpdate($order, $oldBillAddressData, $billingAddressData, $staleOrder);
+            }
         }
 
 
@@ -189,7 +179,6 @@ class UpdateInvoice extends OrgAction
             ShopHydrateInvoices::dispatch($invoice->shop)->delay($this->hydratorsDelay);
             OrganisationHydrateInvoices::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
             GroupHydrateInvoices::dispatch($invoice->group)->delay($this->hydratorsDelay);
-
         }
 
 
@@ -232,7 +221,7 @@ class UpdateInvoice extends OrgAction
 
     private function auditBillingAddressUpdate(Customer|Invoice|Order $parent, Address $oldBillAddressData, Address $newBillAddressData, Invoice|Order|null $stale = null): void
     {
-        $parent->auditEvent = 'invoice_billing_address_update';
+        $parent->auditEvent    = 'invoice_billing_address_update';
         $parent->isCustomEvent = true;
 
         $oldData = Arr::except($oldBillAddressData->toArray(), ['updated_at']);
@@ -240,14 +229,14 @@ class UpdateInvoice extends OrgAction
 
         if ($parent instanceof Customer) {
             $newData = array_merge($newData, [
-                'affected_invoice'  => $this->invoice->reference,
+                'affected_invoice' => $this->invoice->reference,
             ]);
         } elseif ($stale) {
             $oldData = array_merge($oldData, [
-                'total_amount'  => $stale->total_amount,
+                'total_amount' => $stale->total_amount,
             ]);
             $newData = array_merge($newData, [
-                'total_amount'  => $parent->total_amount,
+                'total_amount' => $parent->total_amount,
             ]);
         }
 
