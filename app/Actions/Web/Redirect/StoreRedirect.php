@@ -44,7 +44,7 @@ class StoreRedirect extends OrgAction
     public function afterValidator(Validator $validator): void
     {
         if ($this->webpage) {
-            $hasRedirect = Redirect::where('from_path', $this->webpage->url)->exists();
+            $hasRedirect = Redirect::where('from_path', $this->webpage->url)->where('website_id', $this->webpage->website_id)->exists();
 
             if ($hasRedirect) {
                 $validator->errors()->add('from_url', 'This webpage already have existing redirect');
