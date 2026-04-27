@@ -30,7 +30,7 @@ class StoreBatchCode extends OrgAction
         return [
             'code'         => ['required', 'string', 'max:255'],
             'expiry_date'  => ['nullable', 'date'],
-            'org_stock_id' => ['nullable', 'exists:org_stocks,id'],
+            'org_stock_id' => ['required', 'exists:org_stocks,id'],
         ];
     }
 
