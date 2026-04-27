@@ -54,6 +54,12 @@ const activeTab = ref(PRODUCT_TABS.PRODUCTS)
 const timeFilter = ref(TIME_FILTERS.WEEK)
 const selectedButtonColor = ref('#007bff')
 
+// Pagination state
+const currentPage = ref(1)
+const totalPages = ref(0)
+const totalItems = ref(0)
+const paginationData = ref<any>(null)
+
 // Collection filtering state
 const collections = ref<Array<any>>([])
 const selectedCollection = ref<string>('')
@@ -196,7 +202,7 @@ defineExpose({
 })
 
 // Product search functions
-const searchProducts = async () => {
+const searchProducts = async (page: number = 1) => {
     if (!props.shopSlug) {
         productSearchResults.value = []
         return
@@ -208,31 +214,50 @@ const searchProducts = async () => {
 
         switch (activeTab.value) {
             case PRODUCT_TABS.PRODUCTS:
-                response = await searchProductsAPI()
+                response = await searchProductsAPI(page)
                 break
             case PRODUCT_TABS.NEW_IN:
-                response = await searchNewInProductsAPI()
+                response = await searchNewInProductsAPI(page)
                 break
             case PRODUCT_TABS.TRENDING:
-                response = await searchTrendingProductsAPI()
+                response = await searchTrendingProductsAPI(page)
                 break
             case PRODUCT_TABS.COLLECTION_FAMILY:
-                response = await searchCollectionFamilyProductsAPI()
+                response = await searchCollectionFamilyProductsAPI(page)
                 break
             default:
-                response = await searchProductsAPI()
+                response = await searchProductsAPI(page)
         }
 
         productSearchResults.value = response.data.data || []
+
+        // Extract pagination metadata
+        if (response.data.meta) {
+            paginationData.value = response.data.meta
+            currentPage.value = response.data.meta.current_page || 1
+            totalPages.value = response.data.meta.last_page || 0
+            totalItems.value = response.data.meta.total || 0
+        } else {
+            // Fallback if no pagination metadata
+            currentPage.value = page
+            totalPages.value = 1
+            totalItems.value = response.data.data?.length || 0
+            paginationData.value = null
+        }
     } catch (error) {
         console.error('Product search error:', error)
         productSearchResults.value = []
+        // Reset pagination on error
+        currentPage.value = 1
+        totalPages.value = 0
+        totalItems.value = 0
+        paginationData.value = null
     } finally {
         productSearchLoading.value = false
     }
 }
 
-const searchProductsAPI = async () => {
+const searchProductsAPI = async (page: number = 1) => {
     if (!props.shopSlug) {
         return { data: { data: [] } }
     }
@@ -244,13 +269,14 @@ const searchProductsAPI = async () => {
         params: {
             search: productSearchQuery.value.trim(),
             tab_type: 'products',
-            per_page: 10
+            per_page: 10,
+            page: page
         }
     }
     )
 }
 
-const searchNewInProductsAPI = async () => {
+const searchNewInProductsAPI = async (page: number = 1) => {
     if (!props.shopSlug) {
         return { data: { data: [] } }
     }
@@ -262,13 +288,14 @@ const searchNewInProductsAPI = async () => {
         params: {
             search: productSearchQuery.value.trim(),
             tab_type: 'new_in',
-            per_page: 10
+            per_page: 10,
+            page: page
         }
     }
     )
 }
 
-const searchTrendingProductsAPI = async () => {
+const searchTrendingProductsAPI = async (page: number = 1) => {
     if (!props.shopSlug) {
         return { data: { data: [] } }
     }
@@ -281,7 +308,8 @@ const searchTrendingProductsAPI = async () => {
             search: productSearchQuery.value.trim(),
             tab_type: 'trending',
             time_filter: timeFilter.value,
-            per_page: 10
+            per_page: 10,
+            page: page
         }
     }
     )
@@ -310,7 +338,7 @@ const fetchCollections = async () => {
     }
 }
 
-const searchCollectionFamilyProductsAPI = async () => {
+const searchCollectionFamilyProductsAPI = async (page: number = 1) => {
     if (!props.shopSlug) {
         return { data: { data: [] } }
     }
@@ -323,7 +351,8 @@ const searchCollectionFamilyProductsAPI = async () => {
             search: productSearchQuery.value.trim(),
             tab_type: 'collection_family',
             collection_id: selectedCollection.value || null,
-            per_page: 10
+            per_page: 10,
+            page: page
         }
     }
     )
@@ -333,8 +362,10 @@ const onSearchInput = () => {
     if (searchDebounceTimeout) {
         clearTimeout(searchDebounceTimeout)
     }
+    // Reset to page 1 when searching
+    currentPage.value = 1
     searchDebounceTimeout = setTimeout(() => {
-        searchProducts()
+        searchProducts(1)
     }, 300)
 }
 
@@ -395,20 +426,46 @@ const closeProductSearchModal = () => {
 const switchTab = (tab: string) => {
     activeTab.value = tab
     productSearchQuery.value = ''
-    searchProducts()
+    // Reset to page 1 when switching tabs
+    currentPage.value = 1
+    searchProducts(1)
 }
 
 const changeTimeFilter = (filter: string) => {
     timeFilter.value = filter
     if (activeTab.value === PRODUCT_TABS.NEW_IN || activeTab.value === PRODUCT_TABS.TRENDING) {
-        searchProducts()
+        // Reset to page 1 when changing time filter
+        currentPage.value = 1
+        searchProducts(1)
     }
 }
 
 const changeCollection = (collectionId: string) => {
     selectedCollection.value = collectionId
     if (activeTab.value === PRODUCT_TABS.COLLECTION_FAMILY) {
-        searchProducts()
+        // Reset to page 1 when changing collection
+        currentPage.value = 1
+        searchProducts(1)
+    }
+}
+
+// Pagination functions
+const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages.value && page !== currentPage.value) {
+        currentPage.value = page
+        searchProducts(page)
+    }
+}
+
+const goToPreviousPage = () => {
+    if (currentPage.value > 1) {
+        goToPage(currentPage.value - 1)
+    }
+}
+
+const goToNextPage = () => {
+    if (currentPage.value < totalPages.value) {
+        goToPage(currentPage.value + 1)
     }
 }
 
@@ -421,8 +478,13 @@ const setupProductSearchHandlers = (resolve: (value: any) => void, reject: () =>
     productSearchResults.value = []
     activeTab.value = PRODUCT_TABS.PRODUCTS
     selectedCollection.value = ''
+    // Reset pagination when opening modal
+    currentPage.value = 1
+    totalPages.value = 0
+    totalItems.value = 0
+    paginationData.value = null
     fetchCollections()
-    searchProducts()
+    searchProducts(1)
 }
 
 
@@ -530,8 +592,8 @@ const setupProductSearchHandlers = (resolve: (value: any) => void, reject: () =>
             <!-- Results List -->
             <div v-else-if="productSearchResults.length > 0" class="max-h-96 overflow-y-auto">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div v-for="product in productSearchResults" :key="product.id" @click="selectProduct(product)"
-                        class="flex items-center gap-4 p-4 hover:bg-gray-50 cursor-pointer border border-gray-200 rounded-lg transition-colors">
+                    <div v-for="product in productSearchResults" :key="product.id"
+                        class="flex items-center gap-4 p-4 hover:bg-gray-50 border border-gray-200 rounded-lg transition-colors">
                         <!-- Product Image -->
                         <div class="w-16 h-16 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
                             <img v-if="product.product_image" :src="product.product_image" :alt="product.name"
@@ -553,6 +615,26 @@ const setupProductSearchHandlers = (resolve: (value: any) => void, reject: () =>
                         <!-- Select Button -->
                         <Button type="secondary" label="Select" size="sm" @click.stop="selectProduct(product)" />
                     </div>
+                </div>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div v-if="productSearchResults.length > 0 && totalPages > 1"
+                class="mt-4 flex items-center justify-between border-t pt-4">
+                <!-- Page Information -->
+                <div class="text-sm text-gray-600">
+                    <span>Page {{ currentPage }} of {{ totalPages }}</span>
+                    <span v-if="totalItems > 0" class="ml-2">({{ totalItems }} total items)</span>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="flex items-center gap-2">
+                    <Button type="secondary" label="Previous" size="sm" @click="goToPreviousPage"
+                        :disabled="currentPage === 1 || productSearchLoading"
+                        :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 || productSearchLoading }" />
+                    <Button type="secondary" label="Next" size="sm" @click="goToNextPage"
+                        :disabled="currentPage === totalPages || productSearchLoading"
+                        :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages || productSearchLoading }" />
                 </div>
             </div>
 
