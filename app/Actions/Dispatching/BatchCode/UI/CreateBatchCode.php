@@ -61,7 +61,7 @@ class CreateBatchCode extends OrgAction
                                     'placeholder' => __('Select SKU'),
                                     'mode'        => 'single',
                                     'searchable'  => true,
-                                    'labelProp'   => 'code',
+                                    'labelProp'   => 'name',
                                     'valueProp'   => 'id',
                                     'fetchRoute'  => [
                                         'name'       => 'grp.json.org_stocks.index',
