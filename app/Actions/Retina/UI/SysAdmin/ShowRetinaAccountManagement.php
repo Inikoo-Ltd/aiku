@@ -116,6 +116,11 @@ class ShowRetinaAccountManagement extends RetinaAction
                                         'label' => 'EORI',
                                         'value' => $customer->eori,
                                     ],
+                                    'ukims'                    => [
+                                        'type'  => 'input',
+                                        'label' => 'UKIMS',
+                                        'value' => $customer->ukims
+                                    ],
                                     'tax_number'       => [
                                         'type'          => 'tax_number',
                                         'label'         => __('Tax number'),

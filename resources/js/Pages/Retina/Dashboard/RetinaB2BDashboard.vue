@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, inject } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faUser, faBuilding, faEnvelope, faPhone, faTags, faMedal as fasMedal } from "@fas"
+import { faUser, faBuilding, faEnvelope, faPhone, faTags, faMedal as fasMedal, faGlobeEurope, faIslandTropical } from "@fas"
 import { faMedal } from "@fal"
 import { faMedal as fadMedal } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -12,7 +12,7 @@ import GoldReward from '@/Components/Utils/GoldReward.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { textReplaceVariables } from "@/Composables/Workshop"
 
-library.add(faUser, faMedal, fasMedal, fadMedal,faBuilding, faEnvelope, faPhone, faXmark, faTags)
+library.add(faUser, faMedal, fasMedal, fadMedal,faBuilding, faEnvelope, faPhone, faXmark, faTags, faGlobeEurope, faIslandTropical)
 
 const props = defineProps<{
     data: {}
@@ -93,6 +93,22 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                                 {{ tag.name }}
                             </span>
                         </div>
+                    </div>
+                    <div v-if="data.customer.eori" class="flex items-center">
+                        <FontAwesomeIcon
+                            icon="fas fa-globe-europe"
+                            class="text-gray-600 mr-2 w-4 h-4"
+                            v-tooltip="trans('Contact Name')"
+                        />
+                        <span class="text-gray-900">{{ data.customer.eori }}</span>
+                    </div>
+                    <div v-if="data.customer.ukims" class="flex items-center">
+                        <FontAwesomeIcon
+                            icon="fas fa-island-tropical"
+                            class="text-gray-600 mr-2 w-4 h-4"
+                            v-tooltip="trans('Contact Name')"
+                        />
+                        <span class="text-gray-900">{{ data.customer.ukims }}</span>
                     </div>
                 </div>
 
