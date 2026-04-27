@@ -18,7 +18,7 @@ defineProps<{
 function webpageRoute(data: {}) {
 
     switch (route().current()) {
-      case 'grp.org.shops.show.web.websites.show':
+      case 'grp.org.shops.show.web.redirect.index':
         return route(
             'grp.org.shops.show.web.webpages.show',
             [
@@ -33,16 +33,26 @@ function webpageRoute(data: {}) {
 function editRedirect(data: {}) {
 
     switch (route().current()) {
-      case 'grp.org.shops.show.web.websites.show':
-        return route(
-            'grp.org.shops.show.web.websites.redirect.edit',
-            {
-                organisation: route().params['organisation'],
-                shop: route().params['shop'],
-                website: route().params['website'],
-                redirect: data.id,
-            }
-        )
+          case 'grp.org.fulfilments.show.web.redirect.index':
+            return route(
+                'grp.org.fulfilments.show.web.redirect.edit',
+                {
+                    organisation: route().params['organisation'],
+                    fulfilment: route().params['fulfilment'],
+                    website: route().params['website'],
+                    redirect: data.id,
+                }
+            )
+        case 'grp.org.shops.show.web.redirect.index':
+            return route(
+                'grp.org.shops.show.web.redirect.edit',
+                {
+                    organisation: route().params['organisation'],
+                    shop: route().params['shop'],
+                    website: route().params['website'],
+                    redirect: data.id,
+                }
+            )
     }
 }
 // console.log('dddd', route())
