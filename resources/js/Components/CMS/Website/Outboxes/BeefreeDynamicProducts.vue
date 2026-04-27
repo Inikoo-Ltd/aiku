@@ -3,11 +3,17 @@ import { ref, inject, watch } from "vue";
 import axios from "axios"
 import { routeType } from "@/types/route";
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import { trans } from 'laravel-vue-i18n';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faExclamationCircle } from '@fad';
+import { library } from '@fortawesome/fontawesome-svg-core';
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
+
+library.add(faExclamationCircle)
 
 // Tab types for product search modal
 const PRODUCT_TABS = {
@@ -333,7 +339,7 @@ const generateProductHtmlValue = (product: any, shopSlug: string): string => {
                 ` : ''}
             </div>
             <div style="text-align: center;">
-                <a href="${productUrl}" style="display: inline-block; background-color: ${buttonColor}; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: 500;">Shop Now</a>
+                <a href="${productUrl}" style="display: inline-block; background-color: ${buttonColor}; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: 500;">${trans('Shop Now')}</a>
             </div>
         </div>
     `.trim()
@@ -466,16 +472,16 @@ defineExpose({
     <Modal :isOpen="productSearchModalOpen" @onClose="closeProductSearchModal" width="w-full max-w-4xl"
         :closeButton="true">
         <div class="p-4">
-            <h3 class="text-lg font-semibold mb-4">Search Products</h3>
+            <h3 class="text-lg font-semibold mb-4">{{ trans('Search Products') }}</h3>
 
             <!-- Tabs -->
             <div class="border-b border-gray-200 mb-4">
                 <nav class="flex space-x-8" aria-label="Tabs">
                     <button v-for="tab in [
-                        { key: PRODUCT_TABS.PRODUCTS, label: 'Products' },
-                        { key: PRODUCT_TABS.NEW_IN, label: 'New In' },
-                        { key: PRODUCT_TABS.TRENDING, label: 'Trending Products' },
-                        { key: PRODUCT_TABS.COLLECTION_FAMILY, label: 'Collection/Family' }
+                        { key: PRODUCT_TABS.PRODUCTS, label: trans('Products') },
+                        { key: PRODUCT_TABS.NEW_IN, label: trans('New In') },
+                        { key: PRODUCT_TABS.TRENDING, label: trans('Trending Products') },
+                        { key: PRODUCT_TABS.COLLECTION_FAMILY, label: trans('Collection/Family') }
                     ]" :key="tab.key" @click="switchTab(tab.key)" :class="[
                         activeTab === tab.key
                             ? 'border-indigo-500 text-indigo-600'
@@ -488,10 +494,10 @@ defineExpose({
             </div>
 
             <!-- Filters Section -->
-            <div class="mb-4 flex flex-col sm:flex-row gap-4">
+            <div class="mb-4 flex flex-col sm:flex-row gap-4 items-center">
                 <!-- Search Input (only for Products tab) -->
                 <div v-if="activeTab === PRODUCT_TABS.PRODUCTS" class="flex-1">
-                    <PureInput v-model="productSearchQuery" placeholder="Type SKU or product name..."
+                    <PureInput v-model="productSearchQuery" :placeholder="trans('Type SKU or product name...')"
                         @input="onSearchInput" :autofocus="true" />
                 </div>
 
@@ -499,9 +505,9 @@ defineExpose({
                 <div v-if="activeTab === PRODUCT_TABS.TRENDING" class="sm:w-32">
                     <select v-model="timeFilter" @change="changeTimeFilter(timeFilter)"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        <option :value="TIME_FILTERS.WEEK">Week</option>
-                        <option :value="TIME_FILTERS.MONTH">Month</option>
-                        <option :value="TIME_FILTERS.YEAR">Year</option>
+                        <option :value="TIME_FILTERS.WEEK">{{ trans('Week') }}</option>
+                        <option :value="TIME_FILTERS.MONTH">{{ trans('Month') }}</option>
+                        <option :value="TIME_FILTERS.YEAR">{{ trans('Year') }}</option>
                     </select>
                 </div>
 
@@ -510,7 +516,7 @@ defineExpose({
                     <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute('family')" mode="single"
                         v-model="selectedFamily" :initOptions="families || []"
                         :fetchRoute="getEntityFetchRoute('family')!" valueProp="id" labelProp="name"
-                        placeholder="Select a family" />
+                        :placeholder="trans('Select a family')" />
                 </div>
 
                 <!-- Sub-Department Filter (for Collection/Family) -->
@@ -518,7 +524,7 @@ defineExpose({
                     <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute('sub_department')" mode="single"
                         v-model="selectedSubDepartment" :initOptions="subDepartments || []"
                         :fetchRoute="getEntityFetchRoute('sub_department')!" valueProp="id" labelProp="name"
-                        placeholder="Select a sub-department" />
+                        :placeholder="trans('Select a sub-department')" />
                 </div>
 
                 <!-- Collection Filter (for Collection/Family) -->
@@ -526,15 +532,21 @@ defineExpose({
                     <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute('collection')" mode="single"
                         v-model="selectedCollection" :initOptions="collections || []"
                         :fetchRoute="getEntityFetchRoute('collection')!" valueProp="id" labelProp="name"
-                        placeholder="Select a collection" />
+                        :placeholder="trans('Select a collection')" />
                 </div>
 
                 <!-- Button Color Picker -->
                 <div class="sm:w-32">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Button Color</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ trans('Custom Color') }}
+                        <FontAwesomeIcon icon='fad fa-exclamation-circle'
+                            class='inline-block w-4 h-4 ml-1 text-gray-400 cursor-help'
+                            :title="trans('custom color will be use for button shop now')" fixed-width
+                            aria-hidden='true' />
+                    </label>
                     <div class="flex items-center gap-2">
                         <input type="color" v-model="selectedButtonColor"
-                            class="h-10 w-16 border border-gray-300 rounded cursor-pointer" />
+                            class="h-6 w-16 border border-gray-300 rounded cursor-pointer" />
                         <span class="text-xs text-gray-500">{{ selectedButtonColor }}</span>
                     </div>
                 </div>
@@ -555,21 +567,22 @@ defineExpose({
                             <img v-if="product.product_image" :src="product.product_image" :alt="product.name"
                                 class="w-full h-full object-cover" />
                             <div v-else class="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                                No Image
+                                {{ trans('No Image') }}
                             </div>
                         </div>
 
                         <!-- Product Info -->
                         <div class="flex-1 min-w-0">
                             <div class="font-medium text-gray-900 truncate">{{ product.name }}</div>
-                            <div class="text-sm text-gray-500">SKU: {{ product.code }}</div>
+                            <div class="text-sm text-gray-500">{{ trans('SKU') }}: {{ product.code }}</div>
                             <div v-if="product.price" class="text-sm text-gray-600 mt-1">
-                                Price: {{ product.price }}
+                                {{ trans('Price') }}: {{ product.price }}
                             </div>
                         </div>
 
                         <!-- Select Button -->
-                        <Button type="secondary" label="Select" size="sm" @click.stop="selectProduct(product)" />
+                        <Button type="secondary" :label="trans('Select')" size="sm"
+                            @click.stop="selectProduct(product)" />
                     </div>
                 </div>
             </div>
@@ -579,16 +592,16 @@ defineExpose({
                 class="mt-4 flex items-center justify-between border-t pt-4">
                 <!-- Page Information -->
                 <div class="text-sm text-gray-600">
-                    <span>Page {{ currentPage }} of {{ totalPages }}</span>
-                    <span v-if="totalItems > 0" class="ml-2">({{ totalItems }} total items)</span>
+                    <span>{{ trans('Page') }} {{ currentPage }} {{ trans('of') }} {{ totalPages }}</span>
+                    <span v-if="totalItems > 0" class="ml-2">({{ totalItems }} {{ trans('total items') }})</span>
                 </div>
 
                 <!-- Navigation Buttons -->
                 <div class="flex items-center gap-2">
-                    <Button type="secondary" label="Previous" size="sm" @click="goToPreviousPage"
+                    <Button type="secondary" :label="trans('Previous')" size="sm" @click="goToPreviousPage"
                         :disabled="currentPage === 1 || productSearchLoading"
                         :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 || productSearchLoading }" />
-                    <Button type="secondary" label="Next" size="sm" @click="goToNextPage"
+                    <Button type="secondary" :label="trans('Next')" size="sm" @click="goToNextPage"
                         :disabled="currentPage === totalPages || productSearchLoading"
                         :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages || productSearchLoading }" />
                 </div>
@@ -596,28 +609,28 @@ defineExpose({
 
             <!-- Empty State -->
             <div v-else-if="productSearchQuery.trim() && !productSearchLoading" class="text-center py-8 text-gray-500">
-                No products found matching "{{ productSearchQuery }}"
+                {{ trans('No products found matching') }} "{{ productSearchQuery }}"
             </div>
 
             <!-- Initial State -->
             <div v-else class="text-center py-8 text-gray-400">
                 <div v-if="activeTab === PRODUCT_TABS.PRODUCTS">
-                    Type a SKU or product name to search
+                    {{ trans('Type a SKU or product name to search') }}
                 </div>
                 <div v-else-if="activeTab === PRODUCT_TABS.NEW_IN">
-                    Showing new products for selected time period
+                    {{ trans('Showing new products for selected time period') }}
                 </div>
                 <div v-else-if="activeTab === PRODUCT_TABS.TRENDING">
-                    Showing trending products for selected time period
+                    {{ trans('Showing trending products for selected time period') }}
                 </div>
                 <div v-else-if="activeTab === PRODUCT_TABS.COLLECTION_FAMILY">
-                    Select a collection to browse products
+                    {{ trans('Select a collection to browse products') }}
                 </div>
             </div>
 
             <!-- Cancel Button -->
             <div class="mt-6 flex justify-end">
-                <Button type="tertiary" label="Cancel" @click="closeProductSearchModal" />
+                <Button type="tertiary" :label="trans('Cancel')" @click="closeProductSearchModal" />
             </div>
         </div>
     </Modal>
