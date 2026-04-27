@@ -105,7 +105,6 @@ class StoreOrgStock extends OrgAction
     {
         $rules = [
             'state'           => ['sometimes', Rule::enum(OrgStockStateEnum::class)],
-            'unit_cost'       => ['sometimes', 'numeric', 'min:0'],
             'quantity_status' => ['sometimes', 'nullable', Rule::enum(OrgStockQuantityStatusEnum::class)],
             'packed_in'       => ['sometimes', 'integer']
         ];

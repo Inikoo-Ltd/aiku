@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 27-05-2025-13h-40m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -45,7 +45,7 @@ class IndexOrgStocksInProduct extends OrgAction
                 'org_stocks.name',
                 'org_stocks.slug',
                 'org_stocks.state',
-                'org_stocks.unit_value',
+                'org_stocks.sku_value',
                 'product_has_org_stocks.quantity as quantity',
                 'org_stocks.discontinued_in_organisation_at',
                 'org_stock_families.slug as family_slug',
@@ -78,11 +78,9 @@ class IndexOrgStocksInProduct extends OrgAction
 
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'code', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
-
-            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity', label: __('Quantity to pick'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            $table->column(key: 'quantity_in_locations', label: __('Quantity in Locations'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+            $table->column(key: 'quantity_in_locations', label: __('Quantity in Locations'), canBeHidden: false, align: 'right');
         };
     }
 }

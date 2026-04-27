@@ -81,7 +81,7 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
                     }
                 } else {
                     foreach ($webpages as $webpage) {
-                        ReindexWebpageLuigi::dispatch($webpage);
+                        ReindexWebpageLuigi::dispatch($webpage)->delay(1);
                     }
 
                 }

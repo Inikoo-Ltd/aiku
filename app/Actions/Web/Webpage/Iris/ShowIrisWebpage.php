@@ -13,6 +13,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
@@ -250,10 +251,16 @@ class ShowIrisWebpage
 
             if ($webpage?->state === WebpageStateEnum::LIVE) {
                 $webpageID = $webpage->id;
-            } elseif ($webpage?->state === WebpageStateEnum::CLOSED) {
-                $webpageID = $webpage->redirectWebpage?->id;
-            } else {
+            } else{
                 $webpageID = null;
+
+                if ($redirectData = DB::table('redirects')
+                    ->select('to_webpage_id')
+                    ->where('from_path', $path)
+                    ->where('website_id', $website->id)
+                    ->first()) {
+                    $webpageID = $redirectData->to_webpage_id;
+                }
             }
         }
 

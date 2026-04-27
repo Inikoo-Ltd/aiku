@@ -102,13 +102,6 @@ class GetCustomerShowcase
                     'customer' => $customer->id
                 ]
             ],
-            // Commented out, will bring it back if it is needed
-            // 'note_route' => [
-            //     'name'       => 'grp.models.customer.note.store',
-            //     'parameters' => [
-            //         'customer' => $customer->id
-            //     ]
-            // ]
             'internal_note' => [
                 "label"       => __("Private"),
                 "note"        => $customer->internal_notes ?? '',

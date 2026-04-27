@@ -27,6 +27,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -43,9 +45,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $slug
  * @property string $code
  * @property string|null $name
- * @property numeric|null $unit_cost
- * @property numeric|null $unit_value
- * @property numeric $unit_commercial_value
+ * @property numeric $sku_commercial_value
  * @property bool $is_sellable_in_organisation
  * @property bool $is_raw_material_in_organisation
  * @property OrgStockStateEnum $state
@@ -109,6 +109,7 @@ class OrgStock extends Model implements Auditable
     use HasSlug;
     use InOrganisation;
     use SoftDeletes;
+    use Searchable;
 
     protected $casts = [
         'data'                             => 'array',
@@ -129,6 +130,28 @@ class OrgStock extends Model implements Auditable
     ];
 
     protected $guarded = [];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'code',
+                'state',
+                'name',
+                'created_at'
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'         => (string)$this->id,
+            'code'       => $this->code,
+            'name'       => $this->name,
+            'state'      => $this->state->value,
+            'created_at' => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function getRouteKeyName(): string
     {
@@ -219,8 +242,4 @@ class OrgStock extends Model implements Auditable
             ->withPivot(['type', 'picking_priority', 'value', 'dropshipping_pipe', 'quantity', 'notes']);
     }
 
-    public function orgStockHistories(): HasMany
-    {
-        return $this->hasMany(OrgStockHistory::class);
-    }
 }

@@ -30,6 +30,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -51,14 +53,14 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property numeric $grp_amount
  * @property numeric $org_amount
  * @property array<array-key, mixed> $data
- * @property string $date Most relevant date at current state
- * @property string|null $completed_at
- * @property string|null $cancelled_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon $date Most relevant date at current state
+ * @property Carbon|null $completed_at
+ * @property Carbon|null $cancelled_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property string|null $fetched_at
  * @property string|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $deleted_at
  * @property bool $with_refund
  * @property string|null $source_id
  * @property int|null $original_payment_id Only use when payment refund to original payment
@@ -100,6 +102,7 @@ class Payment extends Model implements Auditable
     use HasFactory;
     use InCustomer;
     use HasHistory;
+    use Searchable;
 
     protected $casts = [
         'data'              => 'array',
@@ -111,6 +114,10 @@ class Payment extends Model implements Auditable
         'amount'            => 'decimal:2',
         'grp_amount'        => 'decimal:2',
         'org_amount'        => 'decimal:2',
+        'date'              => 'datetime',
+        'completed_at'      => 'datetime',
+        'cancelled_at'      => 'datetime'
+
     ];
 
     protected $attributes = [
@@ -118,6 +125,36 @@ class Payment extends Model implements Auditable
     ];
 
     protected $guarded = [];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'organisation_id',
+                'shop_id',
+                'customer_id',
+                'status',
+                'state',
+                'type',
+                'reference',
+                'date',
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'              => (string)$this->id,
+            'organisation_id' => $this->organisation_id,
+            'shop_id'         => $this->shop_id,
+            'customer_id'     => $this->customer_id,
+            'status'          => $this->status->value,
+            'state'           => $this->state->value,
+            'type'            => $this->type->value,
+            'reference'       => (string)$this->reference,
+            'date'            => is_string($this->date) ? Carbon::parse($this->date)->timestamp : $this->date->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {

@@ -142,6 +142,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $external_id
  * @property string|null $searchable_text Normalized search cache for ILIKE queries
  * @property string|null $eori
+ * @property string|null $ukims
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, AllegroUser> $allegroUsers
@@ -255,7 +256,8 @@ class Customer extends Model implements HasMedia, Auditable
 
     public function searchIndexShouldBeUpdated(): bool
     {
-        return $this->wasRecentlyCreated || $this->wasChanged([
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
                 'shop_id',
                 'status',
                 'state',
@@ -271,6 +273,8 @@ class Customer extends Model implements HasMedia, Auditable
                 'internal_notes',
                 'warehouse_internal_notes',
                 'warehouse_public_notes',
+                'eori',
+                'ukims',
                 'created_at'
             ]);
     }
@@ -290,6 +294,8 @@ class Customer extends Model implements HasMedia, Auditable
             'phone'                    => (string)$this->phone,
             'contact_website'          => (string)$this->contact_website,
             'identity_document_number' => (string)$this->identity_document_number,
+            'eori'                     => (string)$this->identity_document_number,
+            'ukims'                    => (string)$this->identity_document_number,
             'notes'                    => preg_replace('/\s+/', ' ', trim($this->internal_notes.' '.$this->warehouse_internal_notes.' '.$this->warehouse_public_notes)),
             'created_at'               => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
@@ -310,6 +316,7 @@ class Customer extends Model implements HasMedia, Auditable
         'contact_name',
         'company_name',
         'eori',
+        'ukims',
         'email',
         'phone',
         'contact_website',
@@ -323,6 +330,7 @@ class Customer extends Model implements HasMedia, Auditable
         'contact_name',
         'company_name',
         'eori',
+        'ukims',
         'email',
         'phone',
     ];

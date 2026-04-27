@@ -5,8 +5,6 @@
   -->
 
 <script setup lang="ts">
-import PureInput from "@/Components/Pure/PureInput.vue"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faCopy } from '@fal'
 import { faSpinnerThird } from '@fad'
@@ -84,9 +82,7 @@ const offerType = props.fieldData.offer.type
     <div class="relative max-w-2xl w-full">
 
         <div v-if="['Amount AND Order Number', 'Category Quantity Ordered'].includes(offerType)" class="xborder-b border-gray-300 border-dashed pb-4 mb-2">
-            <!-- <div class="font-bold text-orange-600 text-lg">
-                {{ trans("Trigger") }}
-            </div> -->
+
 
             <div class="xpl-4 space-y-4">
                 <div v-if="['Category Quantity Ordered'].includes(offerType) && form[fieldName].hasOwnProperty('trigger_item_quantity')" class="flex flex-col grid-cols-7 gap-x-4">
@@ -147,9 +143,7 @@ const offerType = props.fieldData.offer.type
         </div>
 
         <div v-if="['Category Ordered', 'Category Quantity Ordered'].includes(offerType) && form[fieldName].hasOwnProperty('percentage_off')" class="w-full">
-            <!-- <div class="font-bold xtext-center text-green-600 text-lg">
-                {{ trans("Discount") }}
-            </div> -->
+
 
             <!-- <div class="pl-4"> -->
                 <!-- Section: discounts -->

@@ -76,7 +76,6 @@ trait WithFixedAddressActions
     {
         if (!$currentAddress  || $currentAddress->checksum != $addressData->getChecksum()) {
 
-
             if ($currentAddress) {
                 $model->fixedAddresses()->detach($currentAddress->id);
                 AddressHydrateFixedUsage::dispatch($currentAddress)->delay(5);

@@ -214,7 +214,7 @@ class GetFulfilmentNavigation
 
 
                             [
-                                'label'   => __('webpages'),
+                                'label'   => __('Webpages'),
                                 'tooltip' => __('Webpages'),
                                 'icon'    => ['fal', 'fa-browser'],
                                 'root'    => 'grp.org.fulfilments.show.web.webpages.',
@@ -228,10 +228,19 @@ class GetFulfilmentNavigation
 
                                 ]
                             ],
-
                             [
-                                "label"   => __("banners"),
-                                "tooltip" => __("banners"),
+                                "label"   => __("Redirects"),
+                                "tooltip" => __("Redirects"),
+                                "icon"    => ["fal", "fa-terminal"],
+                                'root'    => 'grp.org.fulfilments.show.web.redirect.',
+                                "route"   => [
+                                    "name"       => "grp.org.fulfilments.show.web.redirect.index",
+                                    "parameters" => [$fulfilment->organisation->slug, $fulfilment->slug, $fulfilment->shop->website->slug],
+                                ],
+                            ],
+                            [
+                                "label"   => __("Banners"),
+                                "tooltip" => __("Banners"),
                                 "icon"    => ["fal", "fa-sign"],
                                 'root'    => 'grp.org.fulfilments.show.web.banners.index',
                                 "route"   => [
@@ -240,8 +249,8 @@ class GetFulfilmentNavigation
                                 ],
                             ],
                             [
-                                "label"   => __("analytics"),
-                                "tooltip" => __("analytics"),
+                                "label"   => __("Analytics"),
+                                "tooltip" => __("Analytics"),
                                 "icon"    => ["fal", "fa-analytics"],
                                 'root'    => 'grp.org.fulfilments.show.web.analytics.',
                                 "route"   => [

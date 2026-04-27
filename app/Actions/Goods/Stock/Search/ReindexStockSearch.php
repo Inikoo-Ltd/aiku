@@ -3,50 +3,26 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 14-11-2024, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2024
  *
 */
 
 namespace App\Actions\Goods\Stock\Search;
 
-use App\Actions\HydrateModel;
+use App\Actions\Traits\WithScoutReindex;
 use App\Models\Goods\Stock;
-use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexStockSearch extends HydrateModel
+class ReindexStockSearch
 {
-    public string $commandSignature = 'search:stocks {organisations?*} {--s|slugs=}';
+    use AsAction;
+    use WithScoutReindex;
 
+    public string $commandSignature = 'reindex_search:stocks';
 
-    public function handle(Stock $stock): void
+    public function handle(bool $reindex = true, bool $reset = false): void
     {
-    }
-
-
-    protected function getModel(string $slug): Stock
-    {
-        return Stock::withTrashed()->where('slug', $slug)->first();
-    }
-
-    protected function loopAll(Command $command): void
-    {
-        $command->info("Reindex Stocks");
-        $count = Stock::withTrashed()->count();
-
-        $bar = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
-        $bar->start();
-
-        Stock::withTrashed()->chunk(1000, function (Collection $models) use ($bar) {
-            foreach ($models as $model) {
-                $this->handle($model);
-                $bar->advance();
-            }
-        });
-
-        $bar->finish();
-        $command->info("");
+        $this->runScoutReindex(Stock::class, $reindex, $reset);
     }
 }

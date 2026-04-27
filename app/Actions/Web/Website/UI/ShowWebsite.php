@@ -14,14 +14,12 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\ExternalLink\UI\IndexExternalLinks;
 use App\Actions\Web\HasWorkshopAction;
-use App\Actions\Web\Redirect\UI\IndexRedirects;
 use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebsiteTabsEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Web\ExternalLinksResource;
-use App\Http\Resources\Web\RedirectsResource;
 use App\Http\Resources\Web\WebsiteResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -234,23 +232,6 @@ class ShowWebsite extends OrgAction
                 ],
 
                 'route_storefront' => $route_storefront,
-
-                'route_redirects' => [
-                    'submit'              => [
-                        'name'       => 'grp.models.website.redirect.store',
-                        'parameters' => [
-                            'organisation' => $shop->organisation->slug,
-                            'shop'         => $shop->slug,
-                            'website'      => $website->id
-                        ]
-                    ],
-                    'fetch_live_webpages' => [
-                        'name'       => 'grp.json.active_webpages.index',
-                        'parameters' => [
-                            'shop' => $shop->slug,
-                        ]
-                    ],
-                ],
                 'migrated'        => $website->migrated,
                 'luigi_data'      => [
                     'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),
@@ -285,14 +266,10 @@ class ShowWebsite extends OrgAction
                     fn () => ExternalLinksResource::collection(IndexExternalLinks::run($website))
                     : Inertia::lazy(fn () => ExternalLinksResource::collection(IndexExternalLinks::run($website))),
 
-                WebsiteTabsEnum::REDIRECTS->value => $this->tab == WebsiteTabsEnum::REDIRECTS->value ?
-                    fn () => RedirectsResource::collection(IndexRedirects::run($website))
-                    : Inertia::lazy(fn () => RedirectsResource::collection(IndexRedirects::run($website))),
-
             ]
-        )->table(IndexHistory::make()->tableStructure(prefix: WebsiteTabsEnum::CHANGELOG->value))
-            ->table(IndexRedirects::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::REDIRECTS->value))
-            ->table(IndexExternalLinks::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::EXTERNAL_LINKS->value));
+        )
+        ->table(IndexHistory::make()->tableStructure(prefix: WebsiteTabsEnum::CHANGELOG->value))
+        ->table(IndexExternalLinks::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::EXTERNAL_LINKS->value));
     }
 
 

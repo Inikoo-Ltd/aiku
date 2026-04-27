@@ -9,6 +9,7 @@
 namespace App\Models\Helpers;
 
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use BadMethodCallException;
 
 /**
  * App\Models\Helpers\Audit
@@ -60,12 +61,56 @@ class Audit extends \OwenIt\Auditing\Models\Audit
     protected static function booted(): void
     {
         static::creating(
-            function (Audit $audit) {
+            function (Audit $audit): bool {
                 if ($audit->tags) {
-                    $audit->tags = json_encode(explode(",", $audit->tags));
+                    $tags = array_values(array_filter(array_map('trim', explode(',', $audit->tags)), fn (string $tag) => $tag !== ''));
+                    $audit->tags = json_encode($tags);
                 } else {
                     $audit->tags = '[]';
                 }
+                if ($audit->event === 'updated') {
+                    $recentAudit = self::where('auditable_type', $audit->auditable_type)
+                        ->where('auditable_id', $audit->auditable_id)
+                        ->where('event', 'updated')
+                        ->where('user_type', $audit->user_type)
+                        ->where('user_id', $audit->user_id)
+                        ->where('created_at', '>=', now()->subSeconds(3))
+                        ->latest('id')
+                        ->first();
+
+                    if ($recentAudit) {
+                        $oldValues = $recentAudit->old_values ?? [];
+                        $newValues = $recentAudit->new_values ?? [];
+                        $incomingOldValues = is_array($audit->old_values) ? $audit->old_values : [];
+                        $incomingNewValues = is_array($audit->new_values) ? $audit->new_values : [];
+
+                        foreach ($incomingNewValues as $key => $newValue) {
+                            if (!array_key_exists($key, $oldValues)) {
+                                $oldValues[$key] = $incomingOldValues[$key] ?? null;
+                            }
+                            $newValues[$key] = $newValue;
+
+                            if ($oldValues[$key] == $newValues[$key]) {
+                                unset($oldValues[$key], $newValues[$key]);
+                            }
+                        }
+
+                        if (!empty($newValues)) {
+                            static::withoutEvents(function () use ($recentAudit, $oldValues, $newValues) {
+                                $recentAudit->update([
+                                    'old_values' => $oldValues,
+                                    'new_values' => $newValues,
+                                ]);
+                            });
+                        } else {
+                            static::withoutEvents(fn () => $recentAudit->delete());
+                        }
+
+                        return false;
+                    }
+                }
+
+                return true;
             }
         );
     }
@@ -76,7 +121,7 @@ class Audit extends \OwenIt\Auditing\Models\Audit
 
         try {
             return $morph->withTrashed();
-        } catch (\Exception $e) {
+        } catch (BadMethodCallException) {
             return $morph;
         }
     }
