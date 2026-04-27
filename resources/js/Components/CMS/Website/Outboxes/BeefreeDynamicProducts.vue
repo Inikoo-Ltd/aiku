@@ -489,14 +489,14 @@ defineExpose({
 
             <!-- Filters Section -->
             <div class="mb-4 flex flex-col sm:flex-row gap-4">
-                <!-- Search Input (hidden for Collection/Family tab) -->
-                <div v-if="activeTab !== PRODUCT_TABS.COLLECTION_FAMILY" class="flex-1">
+                <!-- Search Input (only for Products tab) -->
+                <div v-if="activeTab === PRODUCT_TABS.PRODUCTS" class="flex-1">
                     <PureInput v-model="productSearchQuery" placeholder="Type SKU or product name..."
                         @input="onSearchInput" :autofocus="true" />
                 </div>
 
-                <!-- Time Filter (for New In and Trending) -->
-                <div v-if="activeTab === PRODUCT_TABS.NEW_IN || activeTab === PRODUCT_TABS.TRENDING" class="sm:w-32">
+                <!-- Time Filter (for Trending only) -->
+                <div v-if="activeTab === PRODUCT_TABS.TRENDING" class="sm:w-32">
                     <select v-model="timeFilter" @change="changeTimeFilter(timeFilter)"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                         <option :value="TIME_FILTERS.WEEK">Week</option>
