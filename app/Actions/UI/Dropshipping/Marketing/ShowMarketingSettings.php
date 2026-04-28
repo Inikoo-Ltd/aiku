@@ -1,0 +1,119 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 28 Apr 2026 15:43:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\UI\Dropshipping\Marketing;
+
+use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\OrgAction;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
+use Inertia\Inertia;
+use Inertia\Response;
+use Lorisleiva\Actions\ActionRequest;
+
+class ShowMarketingSettings extends OrgAction
+{
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo("marketing.{$this->shop->id}.view");
+    }
+
+    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): ActionRequest
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        return $request;
+    }
+
+    public function htmlResponse(ActionRequest $request): Response
+    {
+        $title = __('Marketing Settings');
+
+        return Inertia::render(
+            'EditModel',
+            [
+                'breadcrumbs'  => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'title'        => $title,
+                'pageHead'     => [
+                    'title' => $title,
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'exitEdit',
+                            'label' => __('Exit edit'),
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.marketing.dashboard',
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ]
+                    ],
+                ],
+                'formData' => [
+                    'fullLayout' => true,
+                    'blueprint' => [
+                        [
+                            'title'  => __('Marketing Schedule Settings'),
+                            'fields' => [
+                                'marketing_days' => [
+                                    'type'  => 'input_number',
+                                    'label' => __('Number of Days'),
+                                    'value' => Arr::get($this->shop->settings, 'marketing.days'),
+                                ],
+                                'marketing_hours' => [
+                                    'type'  => 'input_number',
+                                    'label' => __('Number of Hours'),
+                                    'value' => Arr::get($this->shop->settings, 'marketing.hours'),
+                                ],
+                            ]
+                        ]
+                    ],
+                    'args' => [
+                        'updateRoute' => [
+                            'name'       => 'grp.org.shops.show.marketing.settings.update',
+                            'parameters' => [
+                                'organisation' => $this->organisation->slug,
+                                'shop'         => $this->shop->slug,
+                            ],
+                        ],
+                    ],
+                ]
+            ]
+        );
+    }
+
+    public function getBreadcrumbs(array $routeParameters): array
+    {
+        return
+            array_merge(
+                ShowShop::make()->getBreadcrumbs($routeParameters),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.marketing.dashboard',
+                                'parameters' => $routeParameters
+                            ],
+                            'label' => __('Marketing')
+                        ]
+                    ],
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.marketing.settings',
+                                'parameters' => $routeParameters
+                            ],
+                            'label' => __('Settings')
+                        ]
+                    ]
+                ]
+            );
+    }
+}
