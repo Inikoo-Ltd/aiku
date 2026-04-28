@@ -24,10 +24,10 @@ class TranslateTag
     public function handle(Tag $tag):Tag
     {
         $english          = Language::where('code', 'en')->first();
-        $websiteLanguages = Shop::pluck('language_id')->unique()->toArray();
+        $shopLanguages = Shop::pluck('language_id')->unique()->toArray();
 
         $translations = [];
-        foreach ($websiteLanguages as $languageId) {
+        foreach ($shopLanguages as $languageId) {
             $language = Language::find($languageId);
 
             $translatedLabel = Translate::run($tag->name, $english, $language);
