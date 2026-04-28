@@ -224,6 +224,40 @@ const submitRouteRequest = async (routeTarget: routeType, payload: Record<string
     return axios.get(url, { params: payload })
 }
 
+const notifyRequestError = (error: unknown) => {
+    const messages: string[] = []
+
+    if (axios.isAxiosError(error)) {
+        const responseData = error.response?.data as { message?: string; errors?: Record<string, string[] | string> } | undefined
+
+        if (responseData?.message) {
+            messages.push(responseData.message)
+        }
+
+        if (responseData?.errors) {
+            Object.values(responseData.errors).forEach((errorValue) => {
+                if (Array.isArray(errorValue)) {
+                    errorValue.forEach((message) => {
+                        if (message) {
+                            messages.push(message)
+                        }
+                    })
+                } else if (errorValue) {
+                    messages.push(errorValue)
+                }
+            })
+        }
+    }
+
+    const uniqueMessages = [...new Set(messages)].filter(Boolean)
+
+    notify({
+        title: trans('Something went wrong.'),
+        text: uniqueMessages[0] ?? trans('Request failed'),
+        type: 'error',
+    })
+}
+
 // Button: undo pick
 const isLoadingUndoPick = reactive({})
 const isLoadingSetNotPicked = reactive({})
@@ -239,8 +273,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
         })
         // console.log('qqqqq', pallet_stored_item)
     } catch (error) {
-        console.error('hehehe', error)
-
+        notifyRequestError(error)
     } finally {
         set(isLoadingUndoPick, loadingKey, false)
     }
