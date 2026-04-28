@@ -51,10 +51,16 @@ class StoreBatchCode extends OrgAction
 
     public function htmlResponse(BatchCode $batchCode, ActionRequest $request): RedirectResponse
     {
-        return Redirect::route('grp.org.warehouses.show.inventory.batch_codes.show', [
+        $redirectRouteName = $request->input('redirect_route_name');
+        $redirectRouteParameters = $request->input('redirect_route_parameters', []);
+
+        if (is_string($redirectRouteName) && is_array($redirectRouteParameters)) {
+            return Redirect::route($redirectRouteName, $redirectRouteParameters);
+        }
+
+        return Redirect::route('grp.org.warehouses.show.inventory.batch_codes.index', [
             'organisation' => $this->warehouse->organisation->slug,
             'warehouse'    => $this->warehouse->slug,
-            'batchCode'    => $batchCode->id,
         ]);
     }
 }

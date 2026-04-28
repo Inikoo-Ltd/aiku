@@ -32,6 +32,7 @@ defineProps<{
     title: string
     pageHead: PageHeadingTypes
     data: object
+    allow_edit?: boolean
     upload_batch_codes: UploadSection
 }>()
 
@@ -49,7 +50,7 @@ const isModalUploadOpen = ref(false)
             />
         </template>
     </PageHeading>
-    <TableBatchCodes :data="data" />
+    <TableBatchCodes :data="data" :allow-edit="allow_edit" />
 
     <UploadExcel
         v-model="isModalUploadOpen"
