@@ -29,6 +29,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Object
   screenType: "mobile" | "tablet" | "desktop"
+  indexBlock:number
 }>()
 
 const layout: any = inject("layout", {})
@@ -77,7 +78,7 @@ const images = computed(() => {
 </script>
 
 <template>
-  <div :id="fieldValue?.id || 'family-2'" class="w-full">
+  <div :id="fieldValue?.id || 'family-2'+indexBlock" class="w-full">
 
     <div class="mx-auto w-full" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),

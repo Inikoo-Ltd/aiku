@@ -11,6 +11,7 @@ const props = defineProps<{
         }
     }
     screenType: 'mobile' | 'tablet' | 'desktop'
+    indexBlock:number
 }>()
 const layout: any = inject("layout", {})
 
@@ -45,7 +46,7 @@ const valueForField = computed({
 </script>
 
 <template>
-    <div :id="fieldValue?.id ? fieldValue?.id  : 'text'"  component="text">
+    <div :id="fieldValue?.id ? fieldValue?.id  : 'text'+indexBlock"  component="text">
         <div :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType,true,false),
             ...getStyles(fieldValue.container?.properties, screenType, true,false)

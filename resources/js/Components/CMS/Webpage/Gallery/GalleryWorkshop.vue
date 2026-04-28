@@ -17,6 +17,7 @@ const props = defineProps<{
   web_block: Object
   id: Number,
   type: String
+  indexBlock:number
   properties: {}
 }>()
 
@@ -61,7 +62,7 @@ const onCloseGallery = () => {
 </script>
 
 <template>
-  <div class="bg-white" :style="getStyles(properties)">
+  <div class="bg-white" :style="getStyles(properties)" :id="modelValue?.id ? modelValue?.id  : 'gallery'+indexBlock" >
     <div class="w-full">
 
 

@@ -42,7 +42,7 @@ const openDisclosure = async (index: number) => {
 </script>
 
 <template>
-  <div id="disclosure">
+  <div :id="modelValue?.id ? modelValue?.id  : 'disclosure'+indexBlock" >
     <div :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(modelValue.container?.properties, screenType)

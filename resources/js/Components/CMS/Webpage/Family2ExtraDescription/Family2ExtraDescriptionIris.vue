@@ -30,6 +30,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Object
   screenType: "mobile" | "tablet" | "desktop"
+  indexBlock:number
 }>()
 
 const layout: any = inject("layout", {})
@@ -81,7 +82,7 @@ const buttonJustifyClass = computed(() =>
 
 <template>
   <div
-    :id="fieldValue?.id || 'family-extra-description'"
+    :id="fieldValue?.id || 'family-extra-description'+indexBlock"
     class="w-full"
   >
     <div

@@ -124,7 +124,7 @@ watch(
 
 
 <template>
-	<div id="cta-video-1">
+	<div :id="modelValue?.id ? modelValue?.id  : 'cta-video-1'+indexBlock" >
 		<div class="grid grid-cols-1 md:grid-cols-2 w-full" :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(modelValue.container?.properties, screenType)

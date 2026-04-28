@@ -45,7 +45,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || [];
 </script>
 
 <template>
-	<div id="iframe" :style="iframeStyles">
+	<div :id="modelValue?.id ? modelValue?.id  : 'iframe'+indexBlock" :style="iframeStyles">
 		<!-- Placeholder if no link -->
 		<div
 			v-if="!props.modelValue.link || props.modelValue?.link === ''"

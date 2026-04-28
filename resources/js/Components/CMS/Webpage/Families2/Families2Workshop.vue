@@ -190,7 +190,7 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
 </script>
 
 <template>
-  <div id="families-2" :key="refreshTrigger" ref="containerRef">
+  <div  :id="modelValue?.id ? modelValue?.id : 'families-2'+indexBlock" :key="refreshTrigger" ref="containerRef">
     <div v-if="allItems.length" class="px-4 py-10" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(props.modelValue.container?.properties, props.screenType)

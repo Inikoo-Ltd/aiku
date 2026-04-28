@@ -32,6 +32,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Object
   screenType: "mobile" | "tablet" | "desktop"
+  indexBlock:number
 }>()
 
 const layout: any = inject("layout", {})
@@ -113,7 +114,7 @@ const saveDescription = debounce(async (key: string, value: string) => {
 </script>
 
 <template>
-  <div :id="modelValue?.id || 'family-2'" class="w-full">
+  <div :id="modelValue?.id || 'family-2'+indexBlock" class="w-full">
     <div :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(modelValue?.container?.properties, screenType)
