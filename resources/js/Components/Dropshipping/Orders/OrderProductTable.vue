@@ -345,6 +345,12 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
         }
     )
 }
+
+const isOffersData = (offersData: any): boolean => {
+    if (!offersData) return false
+    const parsed = typeof offersData === 'string' ? JSON.parse(offersData) : offersData
+    return Object.keys(parsed || {}).length > 0
+}
 </script>
 
 <template>
@@ -384,7 +390,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                         Stock: {{ locale.number(item.available_quantity || 0) }} available
                     </div>
 
-                    <Discount v-if="Object.keys(item.offers_data || {})?.length" :offers_data="item.offers_data" />
+                    <Discount v-if="isOffersData(item.offers_data)" :offers_data="item.offers_data" />
                 </div>
             </template>
 
