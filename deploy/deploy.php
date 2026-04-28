@@ -78,7 +78,7 @@ task('deploy:build', function () {
     $frontEndChanged = get('front_end_changed');
     if ($frontEndChanged) {
         if ( currentHost()->getAlias() == 'staging') {
-            set('use_nvm', 'source ~/.nvm/nvm.sh && nvm use');
+            set('use_nvm', 'source ~/.nvm/nvm.sh && nvm use --lts');
             run("cd {{release_path}} && {{use_nvm}} && npm run build");
         }else{
             run("cd {{release_path}} && {{bin/npm}} run build");
