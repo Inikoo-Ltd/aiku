@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { computed, inject, ref } from "vue"
+import { computed, inject } from "vue"
 import { get, isPlainObject } from "lodash-es"
 
 import Image from "@/Components/Image.vue"
@@ -30,14 +30,10 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Object
   screenType: "mobile" | "tablet" | "desktop"
-  indexBlock:number
+  indexBlock: number
 }>()
 
 const layout: any = inject("layout", {})
-
-const bestOffer = computed(() => {
-  return getBestOffer(props.fieldValue?.family?.offers_data)
-})
 
 const cleanedDescription = computed(() => {
   const html = props.fieldValue?.family?.description_extra || ""
@@ -54,72 +50,63 @@ const columnPosition = computed(() => {
 })
 
 const isImageLeft = computed(() => columnPosition.value === "Image-right")
-
-const gridClass = computed(() =>
-  isImageLeft.value
-    ? "md:grid-cols-[40%_60%]"
-    : "md:grid-cols-[60%_40%]"
-)
-
-const imageOrder = computed(() =>
-  isImageLeft.value ? "order-1" : "order-2"
-)
-
-const textOrder = computed(() =>
-  isImageLeft.value ? "order-2" : "order-1"
-)
-
-const hideImageOnMobile = computed(() => props.screenType === "mobile")
-
-const textAlignClass = computed(() =>
-  props.screenType === "mobile" ? "text-center" : "text-left"
-)
-
-const buttonJustifyClass = computed(() =>
-  props.screenType === "mobile" ? "justify-center" : "justify-start"
-)
 </script>
 
 <template>
-  <div
-    :id="fieldValue?.id || 'family-extra-description'+indexBlock"
-    class="w-full"
-  >
-    <div
-      :style="{
+  <section
+    :id="fieldValue?.id || 'family-extra-description' + indexBlock"
+    class="w-full bg-gray-100 py-10"
+    :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue?.container?.properties, screenType)
       }"
+  >
+    <div
+      class="max-w-[2000px] mx-auto px-4 lg:px-8"
+      
     >
       <!-- GRID -->
       <div
-        class="grid w-full grid-cols-1 items-stretch"
-        :class="gridClass"
+        class="grid items-center gap-10"
+        :class="isImageLeft
+          ? 'lg:grid-cols-[1fr_1.2fr]'
+          : 'lg:grid-cols-[1.2fr_1fr]'"
       >
         <!-- IMAGE -->
         <div
-          class="w-full h-full flex items-center justify-center"
-          :class="[imageOrder]"
-          :style="getStyles(fieldValue?.image?.container?.properties, screenType)"
+          class="flex justify-center"
+          :class="isImageLeft ? 'order-1' : 'order-2'"
         >
-          <Image
-            :src="fieldValue?.family?.extra_description_image"
-            :alt="fieldValue?.family?.extra_description_image?.alt || 'Image preview'"
-            :imageCover="false"
-            class="max-h-full w-auto object-contain"
-          />
+          <div class="flex justify-center w-full max-w-md lg:max-w-lg 2xl:max-w-xl">
+            <Image
+              :src="fieldValue?.family?.extra_description_image"
+              :alt="fieldValue?.family?.extra_description_image?.alt || 'Image preview'"
+              :imageCover="false"
+              class="w-full h-auto object-contain"
+            />
+          </div>
         </div>
 
         <!-- TEXT -->
         <div
-          class="flex flex-col justify-center m-auto p-4 mx-5"
-          :class="[textOrder, textAlignClass]"
-          :style="getStyles(fieldValue?.text_block?.properties, screenType)"
+          class="flex flex-col justify-center"
+          :class="[
+            isImageLeft ? 'order-2' : 'order-1',
+            screenType === 'mobile' ? 'text-center' : 'text-left'
+          ]"
         >
-          <div class="w-full">
-            <div v-html="cleanedDescription"></div>
+          <div class="max-w-xl">
+            <!-- CONTENT -->
+            <div
+              class="text-gray-700 leading-relaxed space-y-4"
+              v-html="cleanedDescription"
+            />
 
-            <div class="flex mt-6" :class="buttonJustifyClass">
+            <!-- BUTTON -->
+            <div
+              class="mt-6 flex"
+              :class="screenType === 'mobile' ? 'justify-center' : 'justify-start'"
+            >
               <LinkIris
                 :href="fieldValue?.button?.link?.href"
                 :canonical_url="fieldValue?.button?.link?.canonical_url"
@@ -128,6 +115,7 @@ const buttonJustifyClass = computed(() =>
               >
                 <Button
                   :label="fieldValue?.button?.text"
+                  class="px-6 py-3"
                   :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
                 />
               </LinkIris>
@@ -136,5 +124,5 @@ const buttonJustifyClass = computed(() =>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 </template>

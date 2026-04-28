@@ -12,6 +12,7 @@ use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Dispatching\BatchCode;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\Procurement\OrgSupplierProduct;
@@ -239,6 +240,11 @@ class OrgStock extends Model implements Auditable
     {
         return $this->belongsToMany(Location::class, 'location_org_stocks')
             ->withPivot(['type', 'picking_priority', 'value', 'dropshipping_pipe', 'quantity', 'notes']);
+    }
+
+    public function mainBatchCode(): BelongsTo
+    {
+        return $this->belongsTo(BatchCode::class,'main_batch_code_id');
     }
 
 }

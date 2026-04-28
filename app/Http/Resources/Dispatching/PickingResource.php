@@ -20,6 +20,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $type
  * @property mixed $location
  * @property mixed $orgStock
+ * @property mixed $batch_code_id
  */
 class PickingResource extends JsonResource
 {
@@ -40,14 +41,17 @@ class PickingResource extends JsonResource
             'location_code'              => $this->location?->code,
             'location_slug'              => $this->location?->slug,
             'location_id'                => $this->location?->id,
-            'update_route'               => [
+            'show_batch_code_ui'         => $this->orgStock?->current_batch_codes>0,
+            'batch_code_id'              => $this->batch_code_id??$this->orgStock?->mainBatchCode?->id,
+
+            'update_route'       => [
                 'name'       => 'grp.models.picking.update',
                 'parameters' => [
                     'picking' => $this->id
                 ],
                 'method'     => 'patch'
             ],
-            'undo_picking_route'         => [
+            'undo_picking_route' => [
                 'name'       => 'grp.models.picking.delete',
                 'parameters' => [
                     'picking' => $this->id

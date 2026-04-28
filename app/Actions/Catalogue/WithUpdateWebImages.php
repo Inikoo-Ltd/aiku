@@ -22,8 +22,10 @@ trait WithUpdateWebImages
     public function updateWebImages(Product|ProductCategory|Collection|MasterAsset|MasterProductCategory|MasterCollection $model): Product|ProductCategory|Collection|MasterAsset|MasterProductCategory|MasterCollection
     {
         if ($model instanceof MasterProductCategory || $model instanceof ProductCategory) {
+            $description = $this->getDescriptionImageData($model);
             $extraDescription = $this->getExtraDescriptionImageData($model);
         } else {
+            $description = [];
             $extraDescription = [];
         }
 
@@ -32,6 +34,7 @@ trait WithUpdateWebImages
             'v'                => '1.1',
             'main'             => $this->getMainWebImageData($model),
             'secondary'        => $this->getSecondaryWebImageData($model),
+            'description'      => $description,
             'extraDescription' => $extraDescription,
             'all'              => $this->getAllWebImageData($model)
         ];
@@ -100,6 +103,34 @@ trait WithUpdateWebImages
         ];
     }
 
+    public function getDescriptionImageData(ProductCategory|MasterProductCategory $model): array
+    {
+        $media = null;
+        $column = 'desc_art';
+        
+        $images = [];
+
+        for($i = 1; $i <= 5; $i++) {
+            if ($model->{$column.$i}) {
+                $media = Media::find($model->{$column.$i});
+            }
+
+            if (!$media) {
+                return [];
+            }
+
+            $imageOriginal  = $media->getImage();
+            $imageGallery   = $media->getImage()->resize(0, 600);
+            $imageThumbnail = $media->getImage()->resize(0, 48);
+
+            data_set($images, "{$column}{$i}", [
+                'original'  => GetPictureSources::run($imageOriginal),
+                'gallery'   => GetPictureSources::run($imageGallery),
+                'thumbnail' => GetPictureSources::run($imageThumbnail),
+            ]);
+        }
+        return $images;
+    }
 
     public function getExtraDescriptionImageData(ProductCategory|MasterProductCategory $model): array
     {
