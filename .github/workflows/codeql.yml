@@ -13,7 +13,7 @@ name: "CodeQL Advanced"
 
 on:
   push:
-    branches: [ "staging" ]
+    branches: [ "code-ql" ]
     paths-ignore:
       - '**/*.md'
       - '**/*.txt'
