@@ -7,7 +7,7 @@ import TabSelector from '@/Components/Elements/TabSelector.vue'
 import { get } from 'lodash-es'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 
-const props = defineProps<{
+defineProps<{
     form: any
     fieldName: string
     fieldData: any  // declare to avoid warning
