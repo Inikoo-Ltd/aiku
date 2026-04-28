@@ -543,7 +543,9 @@ const onSetItemToUndoWaitingWarehouse = () => {
         <!-- Column: Name -->
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
             <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span></div>
-            <div class="flex items-center flex-wrap">
+
+            <!-- Section: DNI Expired date -->
+            <div v-if="false" class="flex items-center flex-wrap">
                 <!-- Label: expired date -->
                 <ExpiryDateLabel v-if="(deliveryNoteItem.expiry_date || deliveryNoteItem.batch_code)" :expiry_date="deliveryNoteItem.expiry_date" :batch_code="deliveryNoteItem.batch_code" />
 
@@ -696,6 +698,9 @@ const onSetItemToUndoWaitingWarehouse = () => {
                             <FontAwesomeIcon icon="fal fa-barcode" class="mr-1" fixed-width aria-hidden="true" />
                             {{ picking.batch_code ?? ctrans('Batch code') }}
                         </button>
+
+                        <ExpiryDateLabel v-if="(picking.expiry_date || picking.batch_code)" :expiry_date="picking.expiry_date" :batch_code="picking.batch_code" />
+
                     </div>
 
                     <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')"
