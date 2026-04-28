@@ -54,6 +54,7 @@ class UpdatePicking extends OrgAction
             'not_picked_reason' => ['sometimes', Rule::enum(PickingNotPickedReasonEnum::class)],
             'not_picked_note'   => ['sometimes', 'string'],
             'quantity'          => ['sometimes', 'numeric'],
+            'batch_code_id'     => ['sometimes', 'nullable', 'integer', 'exists:batch_codes,id'],
         ];
     }
 

@@ -11,6 +11,7 @@ namespace App\Http;
 use App\Http\Middleware\AcceptClientHintsMiddleware;
 use App\Http\Middleware\AddSentryBrowserProfilingHeader;
 use App\Http\Middleware\AddVaryHeader;
+use App\Http\Middleware\AddFrameOptionsHeader;
 use App\Http\Middleware\ApiBindGroupInstance;
 use App\Http\Middleware\CorneaAuthenticate;
 use App\Http\Middleware\DisableSSR;
@@ -83,6 +84,7 @@ class Kernel extends HttpKernel
         ValidatePostSize::class,
         TrimStrings::class,
         ConvertEmptyStringsToNull::class,
+        AddFrameOptionsHeader::class,
         AddSentryBrowserProfilingHeader::class,
         AcceptClientHintsMiddleware::class,
         NewRelicTransactionMiddleware::class,

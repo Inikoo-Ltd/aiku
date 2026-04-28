@@ -116,7 +116,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
         $isPacked = $isPicked && $this->quantity_packed == $this->quantity_picked;
 
 
-        $pickings = Picking::where('delivery_note_item_id', $this->id)->get();
+        $pickings = Picking::where('delivery_note_item_id', $this->id)->with(['batchCode', 'orgStock.mainBatchCode'])->get();
 
 
         $warehouseArea = '';
