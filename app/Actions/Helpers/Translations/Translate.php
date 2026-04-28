@@ -38,7 +38,7 @@ class Translate extends OrgAction
                 return $text;
             }
 
-            $cacheKey = 'translate.v2:'.sha1($languageFrom->code.'|'.$languageTo->code.'|'.$text);
+            $cacheKey = 'translate:'.sha1($languageFrom->code.'|'.$languageTo->code.'|'.$text);
             $cachedTranslation = Cache::get($cacheKey);
             if ($cachedTranslation !== null) {
                 if ($broadcastRandomString != null) {
