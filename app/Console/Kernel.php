@@ -10,6 +10,7 @@ namespace App\Console;
 
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProductsAllShops;
+use App\Actions\Comms\Mailshot\RunMailshotHourlyHydrator;
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
 use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
 use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
@@ -94,6 +95,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'RunProspectMailshotSecondWave',
                 ),
                 name: 'RunProspectMailshotSecondWave',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RunMailshotHourlyHydrator::makeJob())->hourly()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RunMailshotHourlyHydrator',
+                ),
+                name: 'RunMailshotHourlyHydrator',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
