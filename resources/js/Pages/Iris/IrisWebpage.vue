@@ -101,21 +101,39 @@ onBeforeUnmount(() => {
     </Head>
 
 
-  <div class="bg-white">
-     <div v-for="(web_block_data, index) in props.web_blocks" :key="'block-' + web_block_data.id" class="w-full" :id="`v-${web_block_data.type}-${index}`">
-        <component
-          :screenType="screenType"
-          :code="web_block_data.type"
-          :is="getIrisComponent(web_block_data.type, { shop_type: layout.retina.type })"
-          :theme="layout?.app?.theme" :key="web_block_data_idx"
-          :fieldValue="web_block_data.web_block.layout.data.fieldValue"
-          :indexBlock="index"
-          />
+      <div class="bg-white">
 
-       
+      <!-- GLOBAL CONTAINER -->
+      <div class="mx-auto w-full max-w-screen-3xl">
+
+        <div
+          v-for="(web_block_data, index) in props.web_blocks"
+          :key="'block-' + web_block_data.id"
+          class="w-full 2xl:mb-12"
+          :id="`v-${web_block_data.type}-${index}`"
+        >
+          <component
+            :screenType="screenType"
+            :code="web_block_data.type"
+            :is="getIrisComponent(web_block_data.type, { shop_type: layout.retina.type })"
+            :theme="layout?.app?.theme"
+            :key="web_block_data_idx"
+            :fieldValue="web_block_data.web_block.layout.data.fieldValue"
+            :indexBlock="index"
+          />
+        </div>
+
+        <!-- REVIEW -->
+        <div
+          v-if="(webpage_data.type == 'storefront' || webpage_data.model_type == 'ProductCategory') && (review?.enabled ?? true)"
+          class="my-10 2xl:my-16"
+        >
+          <div class="mx-auto max-w-5xl 2xl:max-w-6xl">
+            <ReviewByStore :code="'review-by-store'" />
+          </div>
+        </div>
+
       </div>
-      <div v-if="(webpage_data.type == 'storefront' || webpage_data.model_type == 'ProductCategory') && (review?.enabled ?? true)" class="my-10">
-          <ReviewByStore :code="'review-by-store'" />
+
       </div>
-  </div>
 </template>
