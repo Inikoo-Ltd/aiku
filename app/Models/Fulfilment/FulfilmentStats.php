@@ -138,6 +138,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_pallet_returns_pallet_state_picked
  * @property int $number_pallet_returns_pallet_state_dispatched
  * @property int $number_pallet_returns_pallet_state_cancel
+ * @property int $number_pallet_returns_pallet_state_dispatched_today
+ * @property int $number_pallet_returns_items_state_dispatched_today
  * @property int $number_pallets_state_not_picked
  * @property-read \App\Models\Fulfilment\Fulfilment|null $fulfilment
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentStats newModelQuery()

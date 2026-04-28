@@ -19,6 +19,7 @@ use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\RecurringBill;
 use App\Services\QueryBuilder;
+use Carbon\Carbon;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -63,6 +64,9 @@ class IndexPalletReturnsBacklog extends OrgAction
                 ->where('pallet_returns.number_items_waiting_crm', '>', 0);
         } elseif ($stateFilter) {
             $queryBuilder->where('pallet_returns.state', $stateFilter->value);
+            if ($prefix === PalletReturnsBacklogTabsEnum::DISPATCHED->value) {
+                $queryBuilder->whereDate('pallet_returns.dispatched_at', Carbon::today());
+            }
         }
 
         if ($typeFilter) {

@@ -273,7 +273,7 @@ class ShowPalletReturnsBacklog extends OrgAction
                     [
                         'tab_slug'    => 'dispatched',
                         'label'       => __('Dispatched'),
-                        'value'       => $parent->stats->{"number_{$statAccessor}_state_dispatched"} ?? 0,
+                        'value'       => $parent->stats->{"number_{$statAccessor}_state_dispatched_today"} ?? 0,
                         'icon_data'   => [
                             'tooltip' => __('Dispatched'),
                             'icon'    => 'fal fa-paper-plane',
