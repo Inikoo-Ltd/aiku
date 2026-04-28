@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Dispatching\BatchCode\DeleteBatchCode;
+use App\Actions\Dispatching\BatchCode\ImportBatchCodes;
 use App\Actions\Dispatching\BatchCode\StoreBatchCode;
 use App\Actions\Dispatching\BatchCode\UpdateBatchCode;
 use App\Actions\Dispatching\PickedBay\DeletePickedBay;
@@ -54,6 +55,7 @@ Route::patch('picking-session/{pickingSession:id}', UpdatePickingSession::class)
 Route::patch('picking-session/{pickingSession:id}/start-picking', StartPickPickingSession::class)->name('picking_session.start_picking')->withoutScopedBindings();
 
 Route::post('warehouse/{warehouse:id}/batch-code', StoreBatchCode::class)->name('warehouse.batch_code.store');
+Route::post('warehouse/{warehouse:id}/batch-code/upload', [ImportBatchCodes::class, 'inWarehouse'])->name('warehouse.batch_codes.upload');
 Route::patch('batch-code/{batchCode:id}', UpdateBatchCode::class)->name('batch_code.update')->withoutScopedBindings();
 Route::delete('batch-code/{batchCode:id}', DeleteBatchCode::class)->name('batch_code.delete')->withoutScopedBindings();
 

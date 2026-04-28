@@ -44,27 +44,12 @@ class ShowGroupDashboard extends OrgAction
         }
 
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
-
-        $performanceDates = [null, null];
-        if ($saved_interval === DateIntervalEnum::CUSTOM) {
-            $rangeInterval = Arr::get($userSettings, 'range_interval', '');
-            if ($rangeInterval) {
-                $dates = explode('-', $rangeInterval);
-                if (count($dates) === 2) {
-                    $performanceDates = [$dates[0], $dates[1]];
-                }
-            }
-        } elseif ($saved_interval !== DateIntervalEnum::ALL) {
-            $intervalString = DashboardIntervalFilters::run($saved_interval);
-            if ($intervalString) {
-                $dates = explode('-', $intervalString);
-                if (count($dates) === 2) {
-                    $performanceDates = [$dates[0], $dates[1]];
-                }
-            }
-        }
+        $performanceDates = $this->resolvePerformanceDates($saved_interval, $userSettings);
 
         $timeSeriesData = GetGroupDashboardTimeSeriesData::run($group, $performanceDates[0], $performanceDates[1]);
+        $currentTabEnum = GroupDashboardSalesTableTabsEnum::from($currentTab);
+        $primaryTables = GroupDashboardSalesTableTabsEnum::tablesForTabs($group, $timeSeriesData, [$currentTabEnum]);
+        $secondaryTables = GroupDashboardSalesTableTabsEnum::tablesForTabs($group, $timeSeriesData, [$currentTabEnum], true);
 
         $tabsBox = $this->getTabsBox($group);
 
@@ -88,7 +73,10 @@ class ShowGroupDashboard extends OrgAction
                             'type'        => 'table',
                             'current_tab' => $currentTab,
                             'tabs'        => GroupDashboardSalesTableTabsEnum::navigation(),
-                            'tables'      => GroupDashboardSalesTableTabsEnum::tables($group, $timeSeriesData),
+                            'tables'      => $primaryTables,
+                            'tab_fetch_route' => [
+                                'name' => 'grp.dashboard.tab-data',
+                            ],
                             'charts'      => [],
                         ]
                     ],
@@ -97,7 +85,7 @@ class ShowGroupDashboard extends OrgAction
                             'id'          => 'sales_table_2',
                             'type'        => 'table',
                             'tabs'        => GroupDashboardSalesTableTabsEnum::navigation(),
-                            'tables'      => GroupDashboardSalesTableTabsEnum::tables($group, $timeSeriesData, true),
+                            'tables'      => $secondaryTables,
                         ]
                     ],
                     'tabs_box'    => [
@@ -126,6 +114,39 @@ class ShowGroupDashboard extends OrgAction
         $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $request);
+    }
+
+    private function resolvePerformanceDates(DateIntervalEnum $savedInterval, array $userSettings): array
+    {
+        $performanceDates = [null, null];
+
+        if ($savedInterval === DateIntervalEnum::CUSTOM) {
+            $rangeInterval = Arr::get($userSettings, 'range_interval', '');
+            if ($rangeInterval) {
+                $dates = explode('-', $rangeInterval);
+                if (count($dates) === 2) {
+                    $performanceDates = [$dates[0], $dates[1]];
+                }
+            }
+
+            return $performanceDates;
+        }
+
+        if ($savedInterval === DateIntervalEnum::ALL) {
+            return $performanceDates;
+        }
+
+        $intervalString = DashboardIntervalFilters::run($savedInterval);
+        if (!$intervalString) {
+            return $performanceDates;
+        }
+
+        $dates = explode('-', $intervalString);
+        if (count($dates) !== 2) {
+            return $performanceDates;
+        }
+
+        return [$dates[0], $dates[1]];
     }
 
     public function getBreadcrumbs($label = null): array
