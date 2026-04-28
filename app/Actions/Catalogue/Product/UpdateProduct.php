@@ -64,6 +64,11 @@ class UpdateProduct extends OrgAction
         $newData     = [];
         $oldData     = $product->toArray();
 
+        if (Arr::has($modelData, 'rrp_per_unit')) {
+            $rrpPerUnit = Arr::pull($modelData, 'rrp_per_unit');
+            $rrp = $rrpPerUnit * trimDecimalZeros($product->units);
+            data_set($modelData, 'rrp', $rrp);
+        }
 
         if (Arr::has($modelData, 'webpage_title')) {
             $webpageData['title'] = Arr::pull($modelData, 'webpage_title');
@@ -365,6 +370,7 @@ class UpdateProduct extends OrgAction
             'description_title'         => ['sometimes', 'nullable', 'max:255'],
             'description_extra'         => ['sometimes', 'nullable', 'max:65500'],
             'rrp'                       => ['sometimes', 'nullable', 'numeric', 'min:0.01'],
+            'rrp_per_unit'              => ['sometimes', 'nullable', 'numeric', 'min:0.01'],
             'data'                      => ['sometimes', 'array'],
             'settings'                  => ['sometimes', 'array'],
             'status'                    => ['sometimes', 'required', Rule::enum(ProductStatusEnum::class)],
