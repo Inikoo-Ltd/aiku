@@ -79,33 +79,33 @@ onMounted(() => {
     isMounted.value = true;
 });
 
-const onPickingQuantity = (pick_route: routeType, quantity: number) => {
-    router[pick_route.method || "post"](
-        route(pick_route.name, pick_route.parameters),
-        {
-            quantity: quantity
-        },
-        {
-            preserveState: true,
-            preserveScroll: true,
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: "",
-                    type: "error"
-                });
-            },
-            onError: (error) => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: "",
-                    type: "error"
-                });
-            }
-        }
-    );
-};
-const debounceOnPickingQuantity = debounce(onPickingQuantity, 500);
+// const onPickingQuantity = (pick_route: routeType, quantity: number) => {
+//     router[pick_route.method || "post"](
+//         route(pick_route.name, pick_route.parameters),
+//         {
+//             quantity: quantity
+//         },
+//         {
+//             preserveState: true,
+//             preserveScroll: true,
+//             onSuccess: () => {
+//                 notify({
+//                     title: trans("Success"),
+//                     text: "",
+//                     type: "error"
+//                 });
+//             },
+//             onError: (error) => {
+//                 notify({
+//                     title: trans("Something went wrong"),
+//                     text: "",
+//                     type: "error"
+//                 });
+//             }
+//         }
+//     );
+// };
+// const debounceOnPickingQuantity = debounce(onPickingQuantity, 500);
 
 
 const generateLocationRoute = (location: any) => {
