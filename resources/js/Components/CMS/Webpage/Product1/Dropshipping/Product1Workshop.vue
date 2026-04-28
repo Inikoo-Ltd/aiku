@@ -112,7 +112,7 @@ defineOptions({
 
 <template>
     <!-- Desktop / Tablet Layout -->
-    <div id="product-1" v-bind="attrs" :style="{
+    <div :id="modelValue?.id ? modelValue?.id  : 'product-ds-1'+indexBlock" v-bind="attrs" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         marginLeft: 'auto',
         marginRight: 'auto'

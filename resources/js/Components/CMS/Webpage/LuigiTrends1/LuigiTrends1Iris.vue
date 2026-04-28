@@ -26,6 +26,7 @@ const props = defineProps<{
     webpageData?: any
     blockData?: Object,
     screenType: 'mobile' | 'tablet' | 'desktop'
+    indexBlock:number
 }>()
 
 
@@ -155,7 +156,7 @@ onMounted(() => {
 
 <template>
     
-    <div aria-type="luigi-trends-1-iris" class="w-full pb-6 px-4" :id="fieldValue?.id ? fieldValue?.id  : 'luigi-trends-1-iris'"  component="luigi-trends-1-iris"
+    <div aria-type="luigi-trends-1-iris" class="w-full pb-6 px-4" :id="fieldValue?.id ? fieldValue?.id  : 'luigi-trends-1-iris'+indexBlock"  component="luigi-trends-1-iris"
     :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),

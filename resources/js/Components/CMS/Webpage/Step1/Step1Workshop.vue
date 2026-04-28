@@ -59,7 +59,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 </script>
 
 <template>
-	<div id="step-1">
+	<div :id="modelValue?.id ? modelValue?.id  : 'step-1'+indexBlock">
 		<div @click="
 			() =>
 				sendMessageToParent(

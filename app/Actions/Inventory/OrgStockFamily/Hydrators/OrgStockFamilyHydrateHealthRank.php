@@ -32,7 +32,7 @@ class OrgStockFamilyHydrateHealthRank implements ShouldBeUnique
                 SELECT
                     itos.org_stock_family_id,
                     MAX(it.date) AS last_sale_date,
-                    SUM(CASE WHEN it.date >= NOW() - INTERVAL '90 days' THEN COALESCE(it.grp_net_amount, 0) ELSE 0 END) AS revenue_3m
+                    SUM(CASE WHEN it.date >= NOW() - INTERVAL '90 days' THEN COALESCE(itos.grp_net_amount, 0) ELSE 0 END) AS revenue_3m
                 FROM invoice_transaction_has_org_stocks itos
                 JOIN invoice_transactions it ON it.id = itos.invoice_transaction_id
                 WHERE it.in_process = false

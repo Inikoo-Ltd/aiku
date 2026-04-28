@@ -58,6 +58,7 @@ const props = withDefaults(defineProps<{
     productExistenceInChannels: Number[]
     listProducts?: object
     isLoadingRemindBackInStock? : boolean
+    indexBlock:number
 }>(), {})
 
 const emits = defineEmits<{
@@ -87,7 +88,7 @@ const openBundlePanel = (product:any) => {
 </script>
 
 <template>
-    <div v-if="screenType != 'mobile'" :id="fieldValue?.id ? fieldValue?.id  : 'product-ds-1'"  component="product-ds-1" :style="{
+    <div v-if="screenType != 'mobile'" :id="fieldValue?.id ? fieldValue?.id  : 'product-ds-1'+indexBlock"  component="product-ds-1" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         marginLeft: 'auto',
         marginRight: 'auto'

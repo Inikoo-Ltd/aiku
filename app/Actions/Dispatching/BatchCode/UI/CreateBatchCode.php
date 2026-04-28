@@ -38,39 +38,30 @@ class CreateBatchCode extends OrgAction
                     'title'   => __('New Batch Code'),
                     'actions' => [
                         [
-                            'type'   => 'button',
-                            'style'  => 'cancel',
-                            'label'  => __('Cancel'),
-                            'route'  => [
+                            'type'  => 'button',
+                            'style' => 'cancel',
+                            'label' => __('Cancel'),
+                            'route' => [
                                 'name'       => 'grp.org.warehouses.show.inventory.batch_codes.index',
                                 'parameters' => $request->route()->originalParameters(),
                             ],
                         ],
                     ],
                 ],
-                'formData' => [
+                'formData'    => [
                     'blueprint' => [
                         [
                             'label'  => __('Batch Code'),
                             'icon'   => 'fa-light fa-barcode',
                             'title'  => __('Batch Code'),
                             'fields' => [
-                                'code' => [
-                                    'type'     => 'input',
-                                    'label'    => __('Code'),
-                                    'required' => true,
-                                ],
-                                'expiry_date' => [
-                                    'type'  => 'date',
-                                    'label' => __('Expiry Date'),
-                                ],
                                 'org_stock_id' => [
                                     'type'        => 'select_infinite',
                                     'label'       => __('SKU'),
-                                    'placeholder' => __('Select SKU (optional)'),
+                                    'placeholder' => __('Select SKU'),
                                     'mode'        => 'single',
                                     'searchable'  => true,
-                                    'labelProp'   => 'code',
+                                    'labelProp'   => 'name',
                                     'valueProp'   => 'id',
                                     'fetchRoute'  => [
                                         'name'       => 'grp.json.org_stocks.index',
@@ -78,12 +69,23 @@ class CreateBatchCode extends OrgAction
                                             'organisation' => $this->warehouse->organisation_id,
                                         ],
                                     ],
+                                    'required'    => true,
                                     'value'       => null,
                                 ],
+                                'code'         => [
+                                    'type'     => 'input',
+                                    'label'    => __('Batch code'),
+                                    'required' => true,
+                                ],
+                                'expiry_date'  => [
+                                    'type'  => 'date',
+                                    'label' => __('Expiry Date'),
+                                ],
+
                             ],
                         ],
                     ],
-                    'route' => [
+                    'route'     => [
                         'name'       => 'grp.models.warehouse.batch_code.store',
                         'parameters' => ['warehouse' => $this->warehouse->id],
                     ],

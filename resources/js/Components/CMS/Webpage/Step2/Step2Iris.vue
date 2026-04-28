@@ -43,6 +43,7 @@ const props = defineProps<{
 	fieldValue: {}
 	theme?: any
 	screenType: 'mobile' | 'tablet' | 'desktop'
+	indexBlock : number
 }>()
 
 const layout: any = inject("layout", {})
@@ -55,7 +56,7 @@ const emits = defineEmits<{
 </script>
 
 <template>
-	<div :id="fieldValue?.id ? fieldValue?.id  : 'step-2'"  component="step-2">
+	<div :id="fieldValue?.id ? fieldValue?.id  : 'step-2'+indexBlock"  component="step-2">
 		<div :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(fieldValue.container?.properties, screenType),

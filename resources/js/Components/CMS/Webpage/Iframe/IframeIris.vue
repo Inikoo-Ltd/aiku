@@ -12,6 +12,7 @@ const props = defineProps<{
 	webpageData?: any;
 	blockData?: Object;
 	screenType: "mobile" | "tablet" | "desktop"
+	indexBlock:number
 }>();
 
 const screenWidth = ref(0);
@@ -40,7 +41,7 @@ const iframeStyles = computed(() => {
 });
 </script>
 <template>
-	<div id="iframe" :style="iframeStyles" :id="fieldValue?.id ? fieldValue?.id  : 'iframe'"  component="iframe" >
+	<div id="iframe" :style="iframeStyles" :id="fieldValue?.id ? fieldValue?.id  : 'iframe'+indexBlock"  component="iframe" >
 		<iframe
 		:style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),

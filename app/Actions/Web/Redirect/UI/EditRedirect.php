@@ -10,6 +10,7 @@
 namespace App\Actions\Web\Redirect\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -36,24 +37,27 @@ class EditRedirect extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                // 'breadcrumbs' => $this->getBreadcrumbs(
-                //     $request->route()->originalParameters()
-                // ),
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $redirect,
+                    $request->route()->getName(),
+                    $request->route()->originalParameters(),
+                    'edit'
+                ),
                 'title'       => $title,
                 'pageHead'    => [
                     'icon'  => 'fal fa-terminal',
                     'model' => $title,
                     'title' => $redirect->from_url,
-                    // 'actions'   => [
-                    //     [
-                    //         'type'  => 'button',
-                    //         'style' => 'exitEdit',
-                    //         'route' => [
-                    //             'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                    //             'parameters' => array_values($request->route()->originalParameters())
-                    //         ]
-                    //     ]
-                    // ],
+                    'actions'   => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'exitEdit',
+                            'route' => [
+                                'name'       => preg_replace('/edit$/', 'index', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ]
+                    ],
                 ],
                 'formData'    => [
                     'fullLayout' => true,
@@ -151,6 +155,79 @@ class EditRedirect extends OrgAction
         return $this->handle($redirect, $request);
     }
 
+    public function getBreadcrumbs(Redirect $redirect, string $routeName, array $routeParameters, $suffix = null): array
+    {
+        $headCrumb = function (array $routeParameters, array $routeParent, ?string $suffix) use ($routeName, $redirect) {
+            return [
+                'type'           => 'modelWithIndex',
+                'modelWithIndex' => [
+                    'index' => [
+                        'route' => $routeParent,
+                        'label' => __('Redirects'),
+                        'icon'  => 'fal fa-bars'
+                    ],
+                    'model' => [
+                        'route' => $routeParameters,
+                        'label' => $redirect->from_path,
+                        'icon'  => 'fal fa-bars'
+                    ]
+                ],
+                'suffix'         => '('.$suffix.')',
+            ];
+        };
 
+        switch ($routeName) {
+            case 'grp.org.fulfilments.show.web.redirect.edit':
+                /** @var Website $website */
+                $website = request()->route()->parameter('website');
+
+                return array_merge(
+                    ShowWebsite::make()->getBreadcrumbs(
+                        $website,
+                        'grp.org.fulfilments.show.web.websites.show',
+                        $routeParameters
+                    ),
+                    [
+                        $headCrumb(
+                            [
+                                'name'       => 'grp.org.fulfilments.show.web.redirect.edit',
+                                'parameters' => $routeParameters
+                            ],
+                            [
+                                'name'       => 'grp.org.fulfilments.show.web.redirect.index',
+                                'parameters' => $routeParameters
+                            ],
+                            $suffix
+                        )
+                    ]
+                );
+            case 'grp.org.shops.show.web.redirect.edit':
+                /** @var Website $website */
+                $website = request()->route()->parameter('website');
+
+                return array_merge(
+                    ShowWebsite::make()->getBreadcrumbs(
+                        $website,
+                        'grp.org.shops.show.web.websites.show',
+                        $routeParameters
+                    ),
+                    [
+                        $headCrumb(
+                            [
+                                'name'       => 'grp.org.shops.show.web.redirect.edit',
+                                'parameters' => $routeParameters
+                            ],
+                            [
+                                'name'       => 'grp.org.shops.show.web.redirect.index',
+                                'parameters' => $routeParameters
+                            ],
+                            $suffix
+                        )
+                    ]
+                );
+            default:
+                return [];
+        }
+    }
 
 }

@@ -40,7 +40,7 @@ class GetBatchCodes extends OrgAction
         }
 
         return QueryBuilder::for(BatchCode::class)
-            // ->where('batch_codes.org_stock_id', $orgStock->id) // Uncomment this to make batch_code strict with org_stock_id
+            ->where('batch_codes.org_stock_id', $orgStock->id)
             ->where('batch_codes.organisation_id', $orgStock->organisation_id)
             ->defaultSort('batch_codes.code')
             ->select([

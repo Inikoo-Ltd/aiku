@@ -39,6 +39,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Object
   screenType: "mobile" | "tablet" | "desktop"
+  indexBlock: number
 }>()
 
 const layout: any = inject("layout", {})
@@ -141,7 +142,7 @@ console.log("Family2 Workshop Props:", props)
 </script>
 
 <template>
-  <div :id="modelValue?.id || 'family-2'" component="family-2" class="w-full">
+  <div :id="modelValue?.id || 'family-2'+indexBlock" component="family-2" class="w-full">
 
     <div :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),

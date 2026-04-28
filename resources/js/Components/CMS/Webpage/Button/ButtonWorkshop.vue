@@ -22,7 +22,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 </script>
 
 <template>
-    <div id="button">
+    <div :id="modelValue?.id ? modelValue?.id  : 'button' + indexBlock">
         <div class="flex m-4" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             ...getStyles(modelValue.container?.properties, screenType)

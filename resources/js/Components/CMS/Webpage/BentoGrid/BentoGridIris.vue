@@ -10,11 +10,12 @@ library.add(faCube, faLink)
 const props = defineProps<{
   fieldValue: FieldValue
   screenType: "mobile" | "tablet" | "desktop"
+  indexBlock:number
 }>()
 </script>
 
 <template>
-  <div :id="fieldValue?.id ? fieldValue?.id  : 'bento-grid'"  component="bento-grid"  :style="getStyles(fieldValue?.container?.properties, screenType)">
+  <div :id="fieldValue?.id ? fieldValue?.id  : 'bento-grid' + indexBlock"  component="bento-grid"  :style="getStyles(fieldValue?.container?.properties, screenType)">
     <div class="mx-auto max-w-2xl px-6 lg:max-w-7xl lg:px-8">
 
       <div class="relative z-20">

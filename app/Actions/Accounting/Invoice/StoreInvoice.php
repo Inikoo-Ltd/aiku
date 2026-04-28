@@ -12,6 +12,7 @@ use App\Actions\CRM\Customer\MatchCustomerProspects;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
+use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
@@ -87,6 +88,8 @@ class StoreInvoice extends OrgAction
         data_set($modelData, 'customer_id', $customer->id);
         data_set($modelData, 'customer_name', $customer->name, false);
         data_set($modelData, 'customer_contact_name', $customer->contact_name, false);
+        data_set($modelData, 'email', $customer->email, false);
+        data_set($modelData, 'phone', $customer->phone, false);
         data_set($modelData, 'identity_document_type', $customer->identity_document_type, false);
         data_set($modelData, 'identity_document_number', $customer->identity_document_number, false);
 
@@ -182,6 +185,20 @@ class StoreInvoice extends OrgAction
                     ]
                 );
             }
+
+
+            if ($parent instanceof Order && $parent->customer) {
+                UpdateOrder::make()->action(
+                    $parent,
+                    [
+                        'email'        => $parent->customer->email,
+                        'phone'        => $parent->customer->phone,
+                        'contact_name' => $parent->customer->contact_name,
+                        'company_name' => $parent->customer->company_name,
+                    ]
+                );
+            }
+
 
             return $invoice;
         });

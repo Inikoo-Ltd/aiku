@@ -47,6 +47,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Object
   screenType: 'mobile' | 'tablet' | 'desktop'
+  indexBlock:number
 }>()
 
 const showExtra = ref(false)
@@ -74,7 +75,7 @@ const cleanedDescription = computed(() => {
 </script>
 
 <template>
-  <div  :id="fieldValue?.id ? fieldValue?.id  : 'family-1-iris'"  component="family-1-iris" >
+  <div  :id="fieldValue?.id ? fieldValue?.id  : 'family-1-iris'+indexBlock"  component="family-1-iris" >
     <div :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), ...getStyles(fieldValue?.container?.properties), width : 'auto' }"  class="py-4 px-[10px] sm:px-[50px]"
       aria-label="Family Description Section">
       

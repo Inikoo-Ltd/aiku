@@ -12,13 +12,14 @@ use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateInventoryInWooPortfolio
 {
     use AsAction;
 
-    public string $commandSignature = 'woo:update-inventory';
+    public string $commandSignature = 'woo:update-inventory {customerSalesChannel?}';
 
 
     public function handle(?CustomerSalesChannel $customerSalesChannel = null): void
@@ -60,7 +61,7 @@ class UpdateInventoryInWooPortfolio
                     'ban_stock_update_util' => null
                 ]);
 
-                UpdateWooCustomerSalesChannelPortfolio::dispatch($customerSalesChannel);
+                UpdateWooCustomerSalesChannelPortfolio::run($customerSalesChannel);
             } else {
                 $customerSalesChannel->update([
                     'ban_stock_update_util' => now()->addSeconds(10)
@@ -70,8 +71,10 @@ class UpdateInventoryInWooPortfolio
     }
 
 
-    public function asCommand(): void
+    public function asCommand(Command $command): void
     {
-        $this->handle();
+        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->first();
+
+        $this->handle($customerSalesChannel);
     }
 }
