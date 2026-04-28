@@ -332,7 +332,7 @@ resetForm();
                             <label class="font-medium mb-2 block">
                                 {{ trans('End Date') }}
                                 <InformationIcon
-                                    :information="trans('If start date is empty, will start immediately')" />:
+                                    :information="trans('If end date is empty, will treat as permanent')" />:
                             </label>
 
                             <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"
