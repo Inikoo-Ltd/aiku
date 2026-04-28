@@ -122,6 +122,10 @@ const routeToDeliveryNote = (slug: string) => {
                         <!-- Actions: picking engine -->
                         <div v-if="Number(deliveryItem.quantity_waiting_warehouse) > 0" class="flex gap-x-4 items-center w-full">
                             <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(deliveryItem.quantity_waiting_warehouse)" />
+                            <span v-if="deliveryItem.trolley_names" v-tooltip="trans('Trolley')" class="inline-flex items-center gap-x-1 text-xs text-gray-500 bg-gray-100 border rounded px-1.5 py-0.5">
+                                <FontAwesomeIcon icon="fal fa-dolly-flatbed-alt" fixed-width aria-hidden="true" />
+                                {{ deliveryItem.trolley_names }}
+                            </span>
                             <span class="ml-8 mr-4 whitespace-nowrap">--></span>
                             <div class="flex justify-end w-full">
                                 <PickingItemActionsPanel
