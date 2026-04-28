@@ -9,6 +9,8 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
@@ -27,8 +29,13 @@ class RunMailshotHourlyHydrator
         $currentHour = Carbon::now()->utc()->hour;
 
         // Get all shops with marketing.hours configured
-        $shops = Shop::whereNotNull('settings->marketing->hours')->cursor();
+        // TODO: Make sure shop condition
+        $shops = Shop::where('status', ShopStateEnum::OPEN->value)
+            ->whereIn('type', [ShopTypeEnum::DROPSHIPPING->value, ShopTypeEnum::B2B->value])
+            ->whereNotNull('settings->marketing->hours')
+            ->cursor();
 
+        // TODO: need default value or not, if setting not exist
         foreach ($shops as $shop) {
             $marketingHours = $shop->settings['marketing']['hours'] ?? null;
             $marketingDays = $shop->settings['marketing']['days'] ?? null;
