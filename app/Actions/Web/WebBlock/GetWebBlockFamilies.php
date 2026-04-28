@@ -40,6 +40,7 @@ class GetWebBlockFamilies
                     $join->on('product_categories.id', '=', 'webpages.model_id')
                         ->where('webpages.model_type', 'ProductCategory');
                 })
+                //todo make join to yearly sales
                 ->select(['product_categories.code', 'product_categories.web_images','product_categories.offers_data', 'name', 'image_id', 'webpages.url', 'webpages.canonical_url', 'title'])
                 ->selectRaw('\''.request()->path().'\' as parent_url')
                 ->where(function ($query) use ($webpage) {
@@ -69,9 +70,10 @@ class GetWebBlockFamilies
                 ->when(
                     ($hasOverviewPage),
                     function ($query) {
-                        $query->limit(3);
+                        $query->limit(20);
                     }
-                )
+                    //todo order more to less sales
+                )->orderBy('product_categories.name')
                 ->get();
         } elseif ($webpage->model instanceof Collection) {
             $families = DB::table('product_categories')
