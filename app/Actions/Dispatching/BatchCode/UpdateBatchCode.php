@@ -8,9 +8,11 @@
 
 namespace App\Actions\Dispatching\BatchCode;
 
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentBatchCodes;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\BatchCode;
+use App\Models\Inventory\OrgStock;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -21,7 +23,20 @@ class UpdateBatchCode extends OrgAction
 
     public function handle(BatchCode $batchCode, array $modelData): BatchCode
     {
-        return $this->update($batchCode, $modelData);
+        $previousOrgStockId = $batchCode->org_stock_id;
+
+        $batchCode = $this->update($batchCode, $modelData);
+
+        if ($batchCode->wasChanged('org_stock_id')) {
+            if ($previousOrgStockId) {
+                OrgStockHydrateCurrentBatchCodes::dispatch(OrgStock::find($previousOrgStockId))->delay($this->hydratorsDelay);
+            }
+            if ($batchCode->org_stock_id) {
+                OrgStockHydrateCurrentBatchCodes::dispatch(OrgStock::find($batchCode->org_stock_id))->delay($this->hydratorsDelay);
+            }
+        }
+
+        return $batchCode;
     }
 
     public function rules(): array
