@@ -688,6 +688,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                             </span>
                         </div>
 
+                        <!-- Section: Picking Batch Code -->
                         <button
                             v-if="picking.show_batch_code_ui"
                             @click="() => (isModalPickingBatchCode = true, selectedPickingForBatchCode = picking)"
@@ -1366,7 +1367,8 @@ const onSetItemToUndoWaitingWarehouse = () => {
         <div class="text-center mb-4">
             <div class="font-semibold text-2xl">{{ trans('Batch Code') }}</div>
             <div class="opacity-80 italic text-sm">
-                {{ selectedPickingForBatchCode?.location_code ? ctrans('Location: :loc', { loc: selectedPickingForBatchCode.location_code }) : '' }}
+                <span>{{ selectedPickingForBatchCode?.location_code ? ctrans('Location: :loc', { loc: selectedPickingForBatchCode.location_code }) : '' }} || </span>
+                <span>{{ ctrans("Quantity") }}: {{ selectedPickingForBatchCode?.quantity_picked }}</span>
             </div>
         </div>
 
@@ -1383,7 +1385,23 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     object
                     :placeholder="trans('Search batch code...')"
                     :disabled="isLoadingSubmitPickingBatchCode"
-                />
+                >
+                    <template #afterlist>
+                        <div class="text-center m-2 py-1 cursor-auto text-blue-400 text-sm">
+                            {{ trans("Don't see the batch code") }}?
+
+                            <Link
+                                :href="route('grp.org.warehouses.show.inventory.batch_codes.index', {
+                                    organisation: route().params.organisation,
+                                    warehouse: route().params.warehouse,
+                                })"
+                                class="underline hover:text-blue-700 cursor-pointer"
+                            >
+                                {{ trans("See the batch codes list") }}
+                            </Link>
+                        </div>
+                    </template>
+                </PureMultiselectInfiniteScroll>
             </div>
 
             <div class="w-full flex gap-4 mt-4">

@@ -113,6 +113,7 @@ class WaitingDNItemsGroupedByDeliveryNoteForItemsResource extends JsonResource
             'quantity_dispatched'        => $this->quantity_dispatched,
             'quantity_waiting_warehouse' => $this->quantity_waiting_warehouse,  // TODO: RAUL -- wrong quantity if multiple pickings location (case in page Index Waiting Warehouse Group)
             'quantity_waiting_crm'       => $this->quantity_waiting_crm,
+            'trolley_names'              => $deliveryNoteItem->deliveryNote?->trolleys->pluck('name')->join(', ') ?: null,
 
             'is_handled'                 => $this->is_handled,
             'notes'                      => $this->notes,
