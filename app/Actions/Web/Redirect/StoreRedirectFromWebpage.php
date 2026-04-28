@@ -10,6 +10,7 @@
 namespace App\Actions\Web\Redirect;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebpageTabsEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
@@ -49,7 +50,11 @@ class StoreRedirectFromWebpage extends OrgAction
 
         $this->disableReload = Arr::pull($modelData, 'disableReload', false);
 
-        return Redirect::create($modelData);
+        $redirect = Redirect::create($modelData);
+
+        WebpageHydrateRedirects::run($webpage);
+
+        return $redirect;
     }
 
     public function rules(): array

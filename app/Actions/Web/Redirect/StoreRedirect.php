@@ -10,6 +10,7 @@
 namespace App\Actions\Web\Redirect;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebpageTabsEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
@@ -37,7 +38,11 @@ class StoreRedirect extends OrgAction
 
         $webpage->update(['redirect_webpage_id' => data_get($modelData, 'to_webpage_id')]);
 
-        return $webpage->redirectedTo()->create($modelData);
+        
+        $redirect = $webpage->redirectedTo()->create($modelData);
+        WebpageHydrateRedirects::run($webpage);
+
+        return $redirect;
 
     }
 
