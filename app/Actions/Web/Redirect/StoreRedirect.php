@@ -102,13 +102,4 @@ class StoreRedirect extends OrgAction
         return $this->handle($webpage, $this->validatedData);
     }
 
-    public function inWebpage(Webpage $webpage, ActionRequest $request): Redirect
-    {
-        $this->webpage      = $webpage;
-        $this->initialisationFromShop($webpage->shop, $request);
-
-        return $this->handle($webpage, $this->validatedData);
-    }
-
-
 }

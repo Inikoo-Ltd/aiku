@@ -9,7 +9,7 @@ import { Head, useForm, usePage } from '@inertiajs/vue3'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationCircle, faCheckCircle, faAsterisk, faChevronDown } from '@fas'
-import { faAddressBook, faFileSignature, faPhone } from '@fal'
+import { faAddressBook, faFileSignature, faPhone, faSave } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
 import { isArray } from 'lodash-es'
@@ -28,6 +28,10 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     formData: {
         submitButton?: String
+        additionalSubmitButton?: {
+            label: string
+            param: {}
+        }
         fullLayout?: Boolean
         submitLabel?: String
         submitPosition?:String
@@ -79,6 +83,45 @@ const handleFormSubmit = async () => {
             form.post(route(
                 props.formData.route.name,
                 props.formData.route.parameters
+            ), {
+                onStart: () => isLoading.value = true,
+                onError: () => isLoading.value = false
+            })
+        }
+    } else {
+        form.post(route(
+            ButtonActive.value.name,
+            ButtonActive.value.parameters
+        ), {
+            onStart: () => isLoading.value = true,
+            onError: () => isLoading.value = false
+        })
+    }
+}
+
+const handleFormSubmitAdditional = async () => {
+    if (!props.formData.submitButton) {
+        let params = {
+            ...props.formData.route.parameters,
+            ...props.formData.additionalSubmitButton?.param
+        };
+        if (props.formData?.route?.body) {
+            form
+                .transform((data) => ({
+                    ...data,
+                    ...props.formData.route.body
+                }))
+                .post(route(
+                    props.formData.route.name,
+                    params
+                ), {
+                    onStart: () => isLoading.value = true,
+                    onError: () => isLoading.value = false
+                })
+        } else {
+            form.post(route(
+                props.formData.route.name,
+                params
             ), {
                 onStart: () => isLoading.value = true,
                 onError: () => isLoading.value = false
@@ -278,13 +321,21 @@ console.log("formdata create", props.formData)
                 <!-- Button -->
                 <div v-if="!formData?.submitPosition || formData?.submitPosition != 'top'" class="pt-5 flex justify-end">
                     <Button
+                        v-if="formData.additionalSubmitButton"
+                        :loading="isLoading"
+                        :style="'secondary'"
+                        class="mr-2"
+                        :icon="faSave"
+                        :label="formData.additionalSubmitButton?.label ?? ''"
+                        @click="handleFormSubmitAdditional"
+                    />
+                    <Button
                         v-if="!formData.submitButton"
                         :loading="isLoading"
                         type="save"
                         :label="formData.submitLabel"
                         @click="handleFormSubmit"
                     />
-
                     <div v-else-if="formData.submitButton == 'dropdown'" class="flex justify-center">
                         <Button :key="ButtonActive.key" type="submit" :disabled="form.processing"
                             class="rounded-r-none border-none" :style="'primary'" size="m" @click="handleFormSubmit">

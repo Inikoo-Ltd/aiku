@@ -12,6 +12,7 @@ namespace App\Actions\Web\Redirect\UI;
 use App\Actions\OrgAction;
 use App\Actions\Web\Webpage\UI\ShowWebpage;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
@@ -58,11 +59,20 @@ class CreateRedirect extends OrgAction
                 'title'       => $title,
                 'pageHead'    => [
                     'title' => $title,
+                    'icon'       => [
+                        'icon'  => ['fal', 'fa-terminal'],
+                        'title' => __("Webpage Redirect")
+                    ],
+                    'iconRight'  => $parent instanceof Webpage ? WebpageStateEnum::stateIcon()[$parent->state->value] : [],
+                    'afterTitle' => [
+                        'label' => $parent->getUrl(),
+                    ],
+                    'model'      => class_basename($parent),
                     'actions' => [
                         [
                             'type'  => 'button',
-                            'style' => 'cancel',
-                            'label' => __('Cancel'),
+                            'style' => 'exit',
+                            'label' => __('Exit create redirect'),
                             'route' => [
                                 'name'       => preg_replace('/redirect.create$/', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
@@ -83,15 +93,28 @@ class CreateRedirect extends OrgAction
                                     'required' => true,
                                     'options'  => Options::forEnum(RedirectTypeEnum::class),
                                 ],
-                                'path' => [
+                                'from_url' => [
                                     'type'     => 'input',
-                                    'label'    => __('path'),
+                                    'label'    => __('From URL'),
                                     'required' => true
                                 ],
+                                'placeholder'   => [
+                                    'type'     => 'input',
+                                    'label'    => __('To URL'),
+                                    'value'    => $parent->getUrl(),
+                                    'readonly' => true,
+                                    'disabled' => true,
+                                ]
                             ]
                         ]
                     ],
-                    'route'      => $route
+                    'route'      => $route,
+                    'additionalSubmitButton' => [
+                        'label' => 'Save & Create Another One', 
+                        'param' => [
+                            'disableReload' => true
+                        ],
+                    ],
                 ],
 
             ]
