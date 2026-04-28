@@ -113,7 +113,6 @@ class BeefreeProductResource extends JsonResource
             'code'          => $this->code,
             'name'          => $this->name,
             'description'   => $this->truncateHtml($this->description ?? '', 300),
-            'web_images'    => $webImages,
             'product_image' => $productImage,
             'url'           => $this->webpage?->getCanonicalUrl(),
         ];

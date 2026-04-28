@@ -7,6 +7,7 @@ import EmptyState from "@/Components/Utils/EmptyState.vue";
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import BeefreeDynamicProducts from './BeefreeDynamicProducts.vue'
+import { trans } from "laravel-vue-i18n";
 
 const props = withDefaults(defineProps<{
     updateRoute: routeType;
@@ -102,7 +103,7 @@ const initializeBeefree = async () => {
             autosave: 20,
             contentDialog: {
                 mergeContents: {
-                    label: 'Products',
+                    label: trans('Insert Products'),
                     handler: function (resolve: (value: any) => void, reject: () => void) {
                         if (dynamicProductsRef.value) {
                             dynamicProductsRef.value.openModal().then(resolve).catch(reject)

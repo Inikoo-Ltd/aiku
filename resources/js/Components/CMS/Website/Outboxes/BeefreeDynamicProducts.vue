@@ -4,16 +4,12 @@ import axios from "axios"
 import { routeType } from "@/types/route";
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { trans } from 'laravel-vue-i18n';
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faExclamationCircle } from '@fad';
-import { library } from '@fortawesome/fontawesome-svg-core';
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 
-library.add(faExclamationCircle)
 
 // Tab types for product search modal
 const PRODUCT_TABS = {
@@ -105,6 +101,8 @@ const searchProducts = async (page: number = 1) => {
                 response = await searchProductsAPI(page)
         }
 
+        console.log("result data")
+        console.log(response)
         productSearchResults.value = response.data.data || []
 
         // Extract pagination metadata
@@ -537,14 +535,12 @@ defineExpose({
 
                 <!-- Button Color Picker -->
                 <div class="sm:w-32">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                    <label v-tooltip="trans('custom color will be use for button shop now')"
+                        class="block text-sm font-medium text-gray-700 mb-1">
                         {{ trans('Custom Color') }}
-                        <FontAwesomeIcon icon='fad fa-exclamation-circle'
-                            class='inline-block w-4 h-4 ml-1 text-gray-400 cursor-help'
-                            :title="trans('custom color will be use for button shop now')" fixed-width
-                            aria-hidden='true' />
                     </label>
-                    <div class="flex items-center gap-2">
+                    <div v-tooltip="trans('custom color will be use for button shop now')"
+                        class="flex items-center gap-2">
                         <input type="color" v-model="selectedButtonColor"
                             class="h-6 w-16 border border-gray-300 rounded cursor-pointer" />
                         <span class="text-xs text-gray-500">{{ selectedButtonColor }}</span>
@@ -574,10 +570,7 @@ defineExpose({
                         <!-- Product Info -->
                         <div class="flex-1 min-w-0">
                             <div class="font-medium text-gray-900 truncate">{{ product.name }}</div>
-                            <div class="text-sm text-gray-500">{{ trans('SKU') }}: {{ product.code }}</div>
-                            <div v-if="product.price" class="text-sm text-gray-600 mt-1">
-                                {{ trans('Price') }}: {{ product.price }}
-                            </div>
+                            <div class="text-sm text-gray-500">{{ trans('Product Code') }}: {{ product.code }}</div>
                         </div>
 
                         <!-- Select Button -->

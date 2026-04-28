@@ -73,7 +73,11 @@ class GetProductsForBeefreeSearch extends OrgAction
 
         // Base selects
         $selects = [
-            'products.*',
+            'products.id',
+            'products.slug',
+            'products.code',
+            'products.name',
+            'products.description',
         ];
 
         // Handle different tab types
@@ -154,9 +158,9 @@ class GetProductsForBeefreeSearch extends OrgAction
             'search' => ['nullable', 'string', 'max:255'],
             'tab_type' => ['nullable', 'string', 'in:products,new_in,trending,collection_family'],
             'time_filter' => ['nullable', 'string', 'in:week,month,year'],
-            'collection_id' => ['nullable', 'integer', 'exists:collections,id'],
-            'family_id' => ['nullable', 'integer', 'exists:product_categories,id'],
-            'sub_department_id' => ['nullable', 'integer', 'exists:product_categories,id'],
+            'collection_id' => ['nullable', 'integer'],
+            'family_id' => ['nullable', 'integer'],
+            'sub_department_id' => ['nullable', 'integer'],
         ];
     }
 }
