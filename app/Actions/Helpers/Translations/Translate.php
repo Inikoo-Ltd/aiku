@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Events\TranslateProgressEvent;
 use App\Models\Helpers\Language;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
@@ -27,15 +28,24 @@ class Translate extends OrgAction
      */
     public function handle(?string $text, Language $languageFrom, Language $languageTo, $broadcastRandomString = null): string
     {
-
-
         try {
             if ($text == null || $text == '' || $languageFrom->code == $languageTo->code) {
                 return $text ?? '';
             }
 
-            if (app()->environment('local')) {
+
+            if (app()->environment('local') && !config('app.sandbox.translate')) {
                 return $text;
+            }
+
+            $cacheKey = 'translate:'.sha1($languageFrom->code.'|'.$languageTo->code.'|'.$text);
+            $cachedTranslation = Cache::get($cacheKey);
+            if ($cachedTranslation !== null) {
+                if ($broadcastRandomString != null) {
+                    TranslateProgressEvent::dispatch($cachedTranslation, $broadcastRandomString);
+                }
+
+                return $cachedTranslation;
             }
 
 
@@ -51,15 +61,19 @@ class Translate extends OrgAction
             $translatedTexts = $translationWorkflowService->translate($languageFrom->code, $languageTo->code, config('auto-translations.default_driver'));
 
             $text = Arr::get($translatedTexts, 'text_to_translate', $text);
+
+            $cacheTtlHours = mb_strlen($text) < 32 ? 1440 : (mb_strlen($text) < 256 ? 480 : 72);
+            Cache::put($cacheKey, $text, now()->addHours($cacheTtlHours));
+
             if ($broadcastRandomString != null) {
                 TranslateProgressEvent::dispatch($text, $broadcastRandomString);
             }
 
 
             return $text;
-
         } catch (\Throwable $e) {
             Sentry::captureMessage($e->getMessage());
+
             return $text;
         }
     }

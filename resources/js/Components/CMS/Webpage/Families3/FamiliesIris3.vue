@@ -182,7 +182,7 @@ console.log('families',props)
 </script>
 
 <template>
-  <div :id="fieldValue?.id ? fieldValue?.id : 'families-3'" component="families-3" :key="refreshTrigger"
+  <div :id="fieldValue?.id ? fieldValue?.id : 'families-3'+indexBlock" component="families-3" :key="refreshTrigger"
     ref="containerRef">
     <div v-if="allItems.length" class="px-4 py-10" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),

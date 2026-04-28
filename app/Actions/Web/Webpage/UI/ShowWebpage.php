@@ -115,7 +115,7 @@ class ShowWebpage extends OrgAction
             $actions[] = [
                 'type'    => 'button',
                 'style'   => 'edit',
-                'icon'    => ["fal", "fa-directions"],
+                'icon'    => ["fal", "fa-terminal"],
                 'tooltip' => __('New Redirect'),
                 'route'   => $redirectRoute
             ];
@@ -281,6 +281,9 @@ class ShowWebpage extends OrgAction
 
         $canonicalPath = parse_url($webpage->canonical_url ?? '', PHP_URL_PATH);
 
+        $tabsNavigation = WebpageTabsEnum::navigation();
+        data_set($tabsNavigation, 'redirects.number', $webpage->stats->number_redirects);
+
         return Inertia::render(
             'Org/Web/Webpage',
             [
@@ -306,7 +309,7 @@ class ShowWebpage extends OrgAction
 
                 'tabs'                  => [
                     'current'    => $this->tab,
-                    'navigation' => WebpageTabsEnum::navigation()
+                    'navigation' => $tabsNavigation,
                 ],
                 'root_active'           => $subNavigationRoot,
                 'webpage_url'           => $webpage->getUrl(),

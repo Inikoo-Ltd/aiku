@@ -126,6 +126,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $profit_amount
  * @property numeric|null $margin
  * @property numeric $amount_off
+ * @property string|null $email
+ * @property string|null $phone
+ * @property string|null $contact_name
+ * @property string|null $company_name
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
@@ -201,6 +205,10 @@ class Invoice extends Model implements Auditable
                 'state',
                 'reference',
                 'customer_reference',
+                'customer_name',
+                'customer_contact_name',
+                'email',
+                'phone',
                 'date',
             ]);
     }
@@ -208,13 +216,17 @@ class Invoice extends Model implements Auditable
     public function toSearchableArray(): array
     {
         return [
-            'id'              => (string)$this->id,
-            'organisation_id' => $this->organisation_id,
-            'shop_id'         => $this->shop_id,
-            'customer_id'     => $this->customer_id,
-            'type'            => $this->type->value,
-            'reference'       => $this->reference,
-            'date'            => is_string($this->date) ? Carbon::parse($this->date)->timestamp : $this->date->timestamp,
+            'id'                    => (string)$this->id,
+            'organisation_id'       => $this->organisation_id,
+            'shop_id'               => $this->shop_id,
+            'customer_id'           => $this->customer_id,
+            'type'                  => $this->type->value,
+            'reference'             => $this->reference,
+            'customer_name'         => (string)$this->customer_name,
+            'customer_contact_name' => (string)$this->customer_contact_name,
+            'email'                 => (string)$this->email,
+            'phone'                 => (string)$this->phone,
+            'date'                  => is_string($this->date) ? Carbon::parse($this->date)->timestamp : $this->date->timestamp,
         ];
     }
 

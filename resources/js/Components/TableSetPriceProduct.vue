@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faEdit, faRobot } from "@far";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { trans } from "laravel-vue-i18n";
 import { InputNumber } from "primevue";
 import { inject, computed, watch } from "vue";
@@ -58,7 +60,7 @@ const emits = defineEmits<{
 const props = defineProps<{
     currency: string;
     form: any;
-    price_rrp_warning_ratio : number
+    price_rrp_warning_ratio: number
 }>();
 
 const locale = inject("locale", {});
@@ -148,166 +150,206 @@ function roundDown2(num: number) {
         </div>
 
         <div v-if="modelValue.data.length" class="overflow-x-auto">
-            <table class="w-full border-collapse text-xs">
-                <thead>
-                    <tr class="bg-gray-50 text-left font-medium text-gray-600 border-b border-gray-200">
+            <table class="w-full border-collapse text-xs table-fixed table-custom">
+                <colgroup>
+                    <col class="w-8" /> <!-- checkbox -->
+                    <col class="w-12" /> <!-- shop -->
+                    <col class="w-32" /> <!-- stock -->
+                    <col class="w-20" /> <!-- cost -->
 
-                        <!-- Checkbox -->
-                        <th class="px-2 py-1 text-center">
+                    <col class="w-40" /> <!-- outer price -->
+                    <col class="w-28" /> <!-- price/unit -->
+                    <col class="w-20" /> <!-- margin -->
+
+                    <col class="w-28" /> <!-- outer rrp -->
+                    <col class="w-40" /> <!-- rrp/unit -->
+                    <col class="w-20" /> <!-- rrp margin -->
+                </colgroup>
+
+                <thead>
+                    <!-- GROUP HEADER -->
+                    <tr class="text-[11px] uppercase tracking-wide text-gray-500">
+                        <th colspan="4" class="border-b-0 border border-gray-400 border-b-1 border-l-2 bg-gray-200">
+                            Inventory
+                        </th>
+
+                        <th colspan="3"
+                            class="border bg-blue-100 text-blue-700 text-center border-blue-400 border-l-2 ">
+                            Price
+                        </th>
+
+                        <th colspan="3"
+                            class="border border-gray-200 border-l-2 text-purple-700 border-purple-400 text-center bg-purple-100  ">
+                            RRP
+                        </th>
+                    </tr>
+
+                    <!-- MAIN HEADER -->
+                    <tr class="text-left font-medium text-gray-600">
+
+                        <th class="px-3 py-2 text-center border border-gray-200 border-l-2 border-gray-400 bg-gray-200">
                             <input type="checkbox" v-model="allChecked" />
                         </th>
 
-                        <!-- Shop (2 column width) -->
-                        <th class="px-2 py-1 text-left">
+                        <th class="px-3 py-2  border border-gray-200 border border  border-gray-400 bg-gray-200">
                             {{ trans('Shop') }}
                         </th>
 
-                        <!-- Stock -->
-                        <th class="px-2 py-1 text-center">
+                        <th class="px-3 py-2 text-right  border border-gray-200 border  border-gray-400 bg-gray-200">
                             {{ trans('Stock') }}
                         </th>
 
-                        <!-- Org Cost -->
-                        <th class="px-2 py-1 text-center">
-                            {{ trans('Cost') }}
+                        <th class="px-3 py-2 text-right border border-gray-200   border-gray-400 bg-gray-200">
+                            {{ trans('Org Cost') }}
                         </th>
 
-                        <!-- Outer Price -->
-                        <th class="px-2 py-1">
+                        <!-- PRICE -->
+                        <th
+                            class="px-3 py-2 w-56 bg-blue-100 text-blue-700 text-right border border-blue-400 border-l-2">
                             {{ trans('Outer Price') }}
                         </th>
 
-                        <!-- Price per unit -->
-                        <th class="px-2 py-1">
-                            {{ trans('Price per unit') }}
+                        <th class="px-3 py-2 w-32 bg-blue-100 text-blue-700 text-right border border-blue-400">
+                            {{ trans('Price / Unit') }}
                         </th>
 
-                        <!-- Margin -->
-                        <th class="px-2 py-1">
+                        <th class="px-3 py-2 w-20 bg-blue-100 text-blue-700 text-right border border-blue-400 border-r">
                             {{ trans('Margin') }}
                         </th>
 
-                        <!-- Outer Rrp -->
-                        <th class="px-2 py-1">
-                            {{ trans('Outer Rrp') }}
+                        <!-- RRP -->
+                        <th
+                            class="px-3 py-2 w-48 bg-purple-100 text-purple-700 text-right border border-purple-400 border-l-2">
+                            {{ trans('Outer RRP') }}
                         </th>
 
-                        <!-- Rrp per unit -->
-                        <th class="px-2 py-1">
-                            {{ trans('Rrp per unit') }}
+                        <th class="px-3 py-2 w-32 bg-purple-100 text-purple-700 text-right border border-purple-400">
+                            {{ trans('RRP / Unit') }}
                         </th>
 
-                        <!-- Rrp Margin -->
-                        <th class="px-2 py-1">
-                            {{ trans('Rrp Margin') }}
+                        <th
+                            class="px-3 py-2 w-28 bg-purple-100 text-purple-700 text-right border border-purple-400 border-r-2">
+                            {{ trans('RRP Margin') }}
                         </th>
 
                     </tr>
                 </thead>
 
-                <tbody>
-                    <tr v-for="item in modelValue.data" :key="item.id" class="transition-colors"
-                        :class="{ 'opacity-50': !item.product.create_in_shop }">
+                <tr v-for="item in modelValue.data" :key="item.id"
+                    class="border-b border-gray-200 hover:bg-gray-50 transition"
+                    :class="{ 'opacity-50': !item.product.create_in_shop }">
 
-                        <!-- Checkbox -->
-                        <td class="px-2 py-1 border-b border-gray-100 text-center">
-                            <input type="checkbox" v-model="item.product.create_in_shop"
-                                @change="emits('change', modelValue)" class="cursor-pointer relative z-10" />
-                        </td>
+                    <!-- CHECK -->
+                    <td class="px-3 py-2 text-center  border-l-2 border-gray-400">
+                        <input type="checkbox" v-model="item.product.create_in_shop"
+                            @change="emits('change', modelValue)" />
+                    </td>
 
-                        <!-- Shop name -->
-                        <td class="px-2 py-2  border-b border-gray-100 text-gray-700 font-medium col-span-2">
-                            {{ item.name }}
-                        </td>
+                    <!-- SHOP -->
+                    <td class="px-3 py-2 font-medium text-gray-700">
+                        {{ item.code }}
+                    </td>
 
-                        <!-- Stock -->
-                        <td class="px-2 py-2  border-b border-gray-100 text-center">
-                            {{ item.product?.stock }}
-                        </td>
+                    <!-- STOCK -->
+                    <td class="px-3 py-2 text-right">
+                        <div class="flex flex-col items-end gap-[2px]">
 
-                        <!-- Org Cost -->
-                        <td class="px-2 py-2  border-b border-gray-100 text-center">
-                            {{ locale.currencyFormat(item.product?.shop_currency ?? currency, item.product?.org_cost) }}
-                        </td>
-
-                        <!-- Price -->
-                        <td class="px-2 py-2  border-b border-gray-100 w-32">
-                            <InputNumber v-model="item.product.price" mode="currency"
-                                :disabled="!item.product.create_in_shop"
-                                :currency="item?.product?.shop_currency ?? currency" :step="0.25"
-                                :showButtons="true" inputClass="w-full text-xs" :min="0.01"
-                                @input="emits('change', modelValue)" />
-                            <span v-if="form?.errors[`shop_products.${item.id}.price`]" class="text-xs text-red-500">{{ form?.errors[`shop_products.${item.id}.price`] }}</span>
-                            <span v-if="item.product.org_cost
-                                && item.product.price
-                                && price_rrp_warning_ratio
-                                && item.product.price < item.product.org_cost * (1 + price_rrp_warning_ratio / 100)"
-                                class="text-xxs text-yellow-500">
-                                Price should be at least {{ (item.product.org_cost * (1 + price_rrp_warning_ratio /  100)).toFixed(2) }} ({{ price_rrp_warning_ratio }}% above cost).
-                            </span>
-                        </td>
-
-                        <!-- Price per unit -->
-                        <td class="px-2 py-2  border-b border-gray-100 text-center">
-                            {{ locale.currencyFormat(item.product?.shop_currency ?? currency, (item.product?.price / (form.trade_units.length == 1 ? parseInt(form.trade_units[0].quantity) : 1))) }}
-                        </td>
-
-                        <!-- Margin -->
-                        <td class="px-2 py-2  border-b border-gray-100 text-center">
-                            <span :class="{
-                                'text-green-600 font-medium': getMargin(item) > 0,
-                                'text-red-600 font-medium': getMargin(item) < 0,
-                                'text-gray-500': getMargin(item) === 0,
-                            }">
-                                {{ getMargin(item) + '%' }}
-                            </span>
-                        </td>
-
-                        <!-- RRP -->
-                        <td class="px-2 py-2  border-b border-gray-100">
-                            {{  locale.currencyFormat(item.product?.shop_currency ?? currency, roundDown2(
-                                Number(item.product.rrp * (props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1))
-                            ))}}
-                        </td>
-                        <!-- RRP per unit -->
-                        <td class="px-2 py-2 border-b border-gray-100 text-center">
-                            <div class="flex items-center gap-2 text-xs">
-                                <div class="w-32" v-if="item.product?.useCustomRrp">
-                                    <InputNumber v-model="item.product.rrp" mode="currency"
-                                        :disabled="!item.product.create_in_shop"
-                                        :currency="item?.product?.shop_currency ?? currency" :step="0.25"
-                                        :showButtons="true" inputClass="w-full text-xs" :min="0.01"
-                                        @input="emits('change', modelValue)" />
-
-                                </div>
-
-                                <span v-else>
-                                    {{locale.currencyFormat(item.product?.shop_currency ?? currency, roundDown2(Number(item.product.price / (props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1)) * 2.4))}}
+                            <!-- STOCK -->
+                            <div v-if="item.product?.stock" class="flex items-baseline gap-1">
+                                <span class="text-sm font-semibold text-gray-800">
+                                    {{ item.product?.stock }}
                                 </span>
-
-                                <button class="px-2 py-1 text-[10px] rounded border bg-gray-50 hover:bg-gray-100"
-                                    :disabled="!item.product.create_in_shop"
-                                    @click="item.product.useCustomRrp = !item.product.useCustomRrp">
-                                    {{ item.product?.useCustomRrp ? 'Auto' : 'Custom' }}
-                                </button>
                             </div>
-                            <span v-if="form?.errors[`shop_products.${item.id}.rrp`]" class="text-xs text-red-500">{{ form?.errors[`shop_products.${item.id}.rrp`] }}</span>
-                        </td>
 
-                        <!-- RRP Margin -->
-                        <td class="px-2 py-2  border-b border-gray-100 text-center">
-                            <span :class="{
-                                'text-green-600 font-medium': getRrpMargin(item) > 0,
-                                'text-red-600 font-medium': getRrpMargin(item) < 0,
-                                'text-gray-500': getRrpMargin(item) === 0,
-                            }">
-                                {{ getRrpMargin(item) + '%' }}
+                            <!-- VALUE -->
+                            <div v-if="item.product?.org_value_in_warehouse" v-tooltip="trans('Value in warehouse')"
+                                class="flex items-center gap-1 text-[11px] text-gray-500">
+                                <span class="font-medium text-gray-600">
+                                     {{ locale.currencyFormat(item.product?.shop_currency ?? currency,item.product?.org_value_in_warehouse) }}
+                                </span>
+                            </div>
+
+                        </div>
+                    </td>
+
+                    <!-- COST -->
+                    <td class="px-3 py-2 text-right">
+                        {{ locale.currencyFormat(item.product?.shop_currency ?? currency, item.product?.shop_cost) }}
+                    </td>
+
+                    <!-- PRICE BLOCK -->
+                    <td class="px-3 py-2 bg-blue-50 border-l-2 border-blue-400">
+                        <InputNumber v-model="item.product.price" mode="currency"
+                            :disabled="!item.product.create_in_shop"
+                            :currency="item?.product?.shop_currency ?? currency" :step="0.25" :showButtons="true"
+                            inputClass="w-full" :min="0.01" @input="emits('change', modelValue)" />
+                        <span v-if="form?.errors[`shop_products.${item.id}.price`]" class="text-xs text-red-500">{{
+                            form?.errors[`shop_products.${item.id}.price`] }}</span>
+                        <span v-if="item.product.org_cost
+                            && item.product.price
+                            && price_rrp_warning_ratio
+                            && item.product.price < item.product.org_cost * (1 + price_rrp_warning_ratio / 100)"
+                            class="text-xxs text-yellow-500">
+                            Price should be at least {{ (item.product.org_cost * (1 + price_rrp_warning_ratio /
+                                100)).toFixed(2) }} ({{ price_rrp_warning_ratio }}% above cost).
+                        </span>
+                    </td>
+
+                    <td class="px-3 py-2 text-right bg-blue-50">
+                        {{ locale.currencyFormat(item.product?.shop_currency ?? currency, (item.product?.price /
+                            (form.trade_units.length == 1 ? parseInt(form.trade_units[0].quantity) : 1))) }}
+                    </td>
+
+                    <td class="px-3 py-2 text-right bg-blue-50 border-r border-blue-400">
+                        <span :class="{
+                            'text-green-600 font-medium': getMargin(item) > 0,
+                            'text-red-600 font-medium': getMargin(item) < 0,
+                            'text-gray-500': getMargin(item) === 0,
+                        }">
+                            {{ getMargin(item) + '%' }}
+                        </span>
+                    </td>
+
+                    <!-- RRP BLOCK -->
+                    <td class="px-3 py-2 text-right bg-purple-50 border-l-2 border-purple-400">
+                        {{ locale.currencyFormat(item.product?.shop_currency ?? currency, roundDown2(
+                            Number(item.product.rrp * (props.form.trade_units.length == 1 ?
+                                parseInt(props.form.trade_units[0].quantity) : 1))
+                        )) }}
+                    </td>
+
+                    <td class="px-3 py-2 text-right bg-purple-50">
+                        <div class="flex justify-end gap-2 text-xs">
+                            <div class="w-32" v-if="item.product?.useCustomRrp">
+                                <InputNumber v-model="item.product.rrp" mode="currency"
+                                    :disabled="!item.product.create_in_shop"
+                                    :currency="item?.product?.shop_currency ?? currency" :step="0.25"
+                                    :showButtons="true" inputClass="w-full" :min="0.01"
+                                    @input="emits('change', modelValue)" />
+                            </div>
+
+                            <span v-else>
+                                {{ locale.currencyFormat(item.product?.shop_currency ?? currency,
+                                    roundDown2(Number(item.product.price / (props.form.trade_units.length == 1 ?
+                                        parseInt(props.form.trade_units[0].quantity) : 1)) * 2.4)) }}
                             </span>
-                        </td>
 
-                    </tr>
-                </tbody>
+                            <button class="text-[10px] rounded border bg-gray-50 hover:bg-gray-100"
+                                :disabled="!item.product.create_in_shop"
+                                @click="item.product.useCustomRrp = !item.product.useCustomRrp">
+                                <FontAwesomeIcon :icon="item.product?.useCustomRrp ? faRobot : faEdit"
+                                    :title="item.product?.useCustomRrp ? 'Auto RRP' : 'Manual RRP'" />
+                            </button>
+                        </div>
+                        <span v-if="form?.errors[`shop_products.${item.id}.rrp`]" class="text-xs text-red-500">{{
+                            form?.errors[`shop_products.${item.id}.rrp`] }}</span>
+                    </td>
 
+                    <td class="px-3 py-2 text-right bg-purple-50 border-r-2 border-purple-400">
+                        {{ getRrpMargin(item) + '%' }}
+                    </td>
+
+                </tr>
             </table>
         </div>
 
@@ -317,6 +359,7 @@ function roundDown2(num: number) {
     </div>
 
 </template>
+
 <style>
 div.force-xs {
     input {
@@ -328,5 +371,9 @@ div.grid.min-h-11 {
     div {
         min-height: 100%;
     }
+}
+
+.table-custom .p-inputtext {
+    font-size: 11px !important;
 }
 </style>

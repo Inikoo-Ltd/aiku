@@ -20,6 +20,10 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $type
  * @property mixed $location
  * @property mixed $orgStock
+ * @property mixed $batch_code_id
+ * @property mixed $org_stock_id
+ * @property mixed $organisation_id
+ * @property mixed $batchCode
  */
 class PickingResource extends JsonResource
 {
@@ -40,14 +44,27 @@ class PickingResource extends JsonResource
             'location_code'              => $this->location?->code,
             'location_slug'              => $this->location?->slug,
             'location_id'                => $this->location?->id,
-            'update_route'               => [
+            'show_batch_code_ui'         => $this->orgStock?->current_batch_codes > 0,
+            'batch_code_id'              => $this->batch_code_id ?? $this->orgStock?->mainBatchCode?->id,
+            'batch_code'                 => $this->batchCode?->code ?? $this->orgStock?->mainBatchCode?->code,
+            'org_stock_id'               => $this->org_stock_id,
+            'organisation_id'            => $this->organisation_id,
+            'batch_codes_fetch_route'    => [
+                'name'       => 'grp.json.org_stock.batch_codes.index',
+                'parameters' => [
+                    'organisation' => $this->organisation_id,
+                    'orgStock'     => $this->org_stock_id,
+                ],
+            ],
+
+            'update_route'       => [
                 'name'       => 'grp.models.picking.update',
                 'parameters' => [
                     'picking' => $this->id
                 ],
                 'method'     => 'patch'
             ],
-            'undo_picking_route'         => [
+            'undo_picking_route' => [
                 'name'       => 'grp.models.picking.delete',
                 'parameters' => [
                     'picking' => $this->id

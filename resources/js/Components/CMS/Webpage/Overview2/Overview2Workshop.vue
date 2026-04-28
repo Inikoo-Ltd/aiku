@@ -47,7 +47,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 
 
 <template>
-	<div id="overview-2">
+	<div :id="modelValue?.id ? modelValue?.id  : 'overview-2'+indexBlock">
 		<div class="flex flex-col md:flex-row w-full rounded-lg overflow-hidden" :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(modelValue.container?.properties, screenType)

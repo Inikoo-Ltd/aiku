@@ -366,7 +366,6 @@ use App\Actions\Web\ModelHasWebBlocks\DuplicateModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\UploadImagesToModelHasWebBlocks;
-use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\Webpage\BreakWebpageCache;
@@ -400,6 +399,7 @@ use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\StoreClocking
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\UpdateClockingMachineCoordinatePolicyRule;
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\DeleteClockingMachineCoordinatePolicyRule;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetIndex;
+use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
 use App\Actions\Fulfilment\PalletReturnItem\SetNotPickedPallet;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
@@ -962,7 +962,6 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('web-block', StoreModelHasWebBlock::class)->name('web_block.store');
     Route::post('web-block/{modelHasWebBlock:id}/duplicate', DuplicateModelHasWebBlock::class)->name('web_block.duplicate')->withoutScopedBindings();
     Route::post('reorder-web-blocks', ReorderWebBlocks::class)->name('reorder_web_blocks');
-    Route::post('redirect', [StoreRedirect::class, 'inWebpage'])->name('redirect.store');
     Route::post('set-snapshot/{snapshot:id}', SetSnapshotAsLive::class)->name('set-snapshot-as-live')->withoutScopedBindings();
 });
 
@@ -1164,6 +1163,7 @@ Route::name('poll.')->prefix('poll')->group(function () {
 });
 
 Route::post('webpage/{webpage:id}/break-cache', BreakWebpageCache::class)->name('webpage.break_cache')->withoutScopedBindings();
+Route::post('webpage/{webpage:id}/redirect', StoreRedirectFromWebpage::class)->name('webpage.redirect.store')->withoutScopedBindings();
 
 Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name('website.break_cache')->withoutScopedBindings();
 Route::post('website/{website:id}/redirect', StoreRedirectFromWebsite::class)->name('website.redirect.store')->withoutScopedBindings();

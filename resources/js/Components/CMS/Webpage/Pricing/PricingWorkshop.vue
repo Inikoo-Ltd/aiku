@@ -33,7 +33,7 @@ const getBackgroundStyle = (bg: any): Record<string, string> => {
 </script>
 
 <template>
-	<div
+	<div :id="modelValue?.id ? modelValue?.id  : 'pricing'+indexBlock"
 		class="container flex flex-wrap justify-between"
 		:style="getStyles(modelValue.container.properties, screenType)">
 		<div class="container mx-auto px-6 py-12">

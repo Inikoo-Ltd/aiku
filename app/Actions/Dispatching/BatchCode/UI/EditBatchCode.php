@@ -13,6 +13,8 @@ use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Models\Dispatching\BatchCode;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Contracts\Routing\UrlRoutable;
+use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -30,6 +32,9 @@ class EditBatchCode extends OrgAction
 
     public function handle(BatchCode $batchCode, ActionRequest $request): Response
     {
+        $redirectRoutePayload = $this->getRedirectRoutePayload($request);
+        $redirectRouteName    = $redirectRoutePayload['redirect_route_name'];
+
         return Inertia::render(
             'EditModel',
             [
@@ -43,7 +48,7 @@ class EditBatchCode extends OrgAction
                             'style' => 'cancel',
                             'label' => __('Exit edit'),
                             'route' => [
-                                'name'       => 'grp.org.warehouses.show.inventory.batch_codes.show',
+                                'name'       => $redirectRouteName,
                                 'parameters' => $request->route()->originalParameters(),
                             ],
                         ],
@@ -56,6 +61,22 @@ class EditBatchCode extends OrgAction
                             'icon'   => 'fa-light fa-barcode',
                             'title'  => __('Batch Code'),
                             'fields' => [
+                                'org_stock_id' => [
+                                    'type'        => 'select_infinite',
+                                    'label'       => __('SKU'),
+                                    'placeholder' => __('Select SKU'),
+                                    'mode'        => 'single',
+                                    'searchable'  => true,
+                                    'labelProp'   => 'name',
+                                    'valueProp'   => 'id',
+                                    'fetchRoute'  => [
+                                        'name'       => 'grp.json.org_stocks.index',
+                                        'parameters' => [
+                                            'organisation' => $batchCode->organisation_id,
+                                        ],
+                                    ],
+                                    'value' => $batchCode->org_stock_id,
+                                ],
                                 'code' => [
                                     'type'  => 'input',
                                     'label' => __('Code'),
@@ -66,29 +87,16 @@ class EditBatchCode extends OrgAction
                                     'label' => __('Expiry Date'),
                                     'value' => $batchCode->expiry_date?->format('Y-m-d'),
                                 ],
-                                'org_stock_id' => [
-                                    'type'        => 'select_infinite',
-                                    'label'       => __('SKU'),
-                                    'placeholder' => __('Select SKU (optional)'),
-                                    'mode'        => 'single',
-                                    'searchable'  => true,
-                                    'labelProp'   => 'code',
-                                    'valueProp'   => 'id',
-                                    'fetchRoute'  => [
-                                        'name'       => 'grp.json.org_stocks.index',
-                                        'parameters' => [
-                                            'organisation' => $batchCode->organisation_id,
-                                        ],
-                                    ],
-                                    'value' => $batchCode->org_stock_id,
-                                ],
                             ],
                         ],
                     ],
                     'args' => [
                         'updateRoute' => [
                             'name'       => 'grp.models.batch_code.update',
-                            'parameters' => ['batchCode' => $batchCode->id],
+                            'parameters' => [
+                                'batchCode' => $batchCode->id,
+                                ...$redirectRoutePayload,
+                            ],
                         ],
                     ],
                 ],
@@ -102,5 +110,21 @@ class EditBatchCode extends OrgAction
             ShowBatchCode::make()->getBreadcrumbs($batchCode, $routeParameters, '('.__('Editing').')'),
             []
         );
+    }
+
+    public function getRedirectRoutePayload(ActionRequest $request): array
+    {
+        $routeName = preg_replace('/\.edit$/', '', $request->route()->getName());
+
+        if (!Route::has($routeName)) {
+            $routeName .= '.index';
+        }
+
+        return [
+            'redirect_route_name'       => $routeName,
+            'redirect_route_parameters' => collect($request->route()->originalParameters())
+                ->map(fn ($value) => $value instanceof UrlRoutable ? $value->getRouteKey() : $value)
+                ->toArray(),
+        ];
     }
 }

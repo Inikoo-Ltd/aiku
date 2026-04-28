@@ -127,6 +127,13 @@ class SendOrderToWarehouse extends OrgAction
         });
 
         DeliveryNoteHydrateDeliveryNoteItemsSalesType::run($deliveryNote);
+
+        if ($order->customer) {
+            $modelData['email']        = $order->customer->email;
+            $modelData['phone']        = $order->customer->phone;
+            $modelData['contact_name'] = $order->customer->contact_name;
+            $modelData['company_name'] = $order->customer->company_name;
+        }
         UpdateOrder::make()->action($order, $modelData);
 
 

@@ -18,6 +18,7 @@ library.add(faPencil)
 defineProps<{
     data: object
     tab?: string
+    allowEdit?: boolean
 }>()
 
 function showRoute(batchCode: { id: number }) {
@@ -64,6 +65,7 @@ function showRoute(batchCode: { id: number }) {
         <template #cell(actions)="{ item }">
             <div class="flex gap-2 justify-end">
                 <Link
+                    v-if="allowEdit"
                     :href="route('grp.org.warehouses.show.inventory.batch_codes.edit', {
                         organisation: (route().params as RouteParams).organisation,
                         warehouse: (route().params as RouteParams).warehouse,

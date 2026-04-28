@@ -11,10 +11,17 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Redirect\StoreRedirect;
+use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
 use App\Actions\Web\Webpage\Luigi\DeleteReindexWebpageLuigiData;
+use App\Actions\Web\Website\HydrateRedirect;
+use App\Enums\Web\Redirect\RedirectTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\Webpage;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -24,14 +31,13 @@ class DeleteWebpage extends OrgAction
     use AsAction;
     use WithAttributes;
 
+    private Webpage $webpage;
 
     /**
      * @throws \Throwable
      */
-    public function handle(Webpage $webpage, bool $forceDelete = false): Webpage
+    public function handle(Webpage $webpage, bool $forceDelete = false, array $modelData = []): Webpage
     {
-
-
         if ($forceDelete) {
             $webpage = DB::transaction(function () use ($webpage) {
                 DB::table('web_block_histories')->where('webpage_id', $webpage->id)->delete();
@@ -57,7 +63,11 @@ class DeleteWebpage extends OrgAction
                 return $webpage;
             });
         } else {
+
+            $redirect = Arr::pull($modelData, 'redirects');
+
             $webpage->delete();
+
             if ($webpage->model_type == 'Product') {
                 DB::table('products')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
             }
@@ -67,6 +77,23 @@ class DeleteWebpage extends OrgAction
             if ($webpage->model_type == 'Collection') {
                 DB::table('collections')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
             }
+
+            if ($redirect) {
+                DB::table('redirects')->where('to_webpage_id', $webpage->id)->delete();
+                DB::table('redirects')->where('from_path', $webpage->url)->delete();
+
+                StoreRedirect::make()->action($webpage, [
+                    'type'              => RedirectTypeEnum::PERMANENT,
+                    'to_webpage_id'     => $redirect
+                ]);
+
+                HydrateRedirect::run($webpage);
+                
+                $redirectedWebpage = Webpage::find($redirect);
+                if ($redirectedWebpage) {
+                    WebpageHydrateRedirects::run($redirectedWebpage);
+                }
+            }
         }
 
         DeleteReindexWebpageLuigiData::dispatch($webpage);
@@ -74,11 +101,22 @@ class DeleteWebpage extends OrgAction
         return $webpage;
     }
 
+    public function rules()
+    {
+        return [
+            'redirects'  => [
+                'required',
+                Rule::exists(Webpage::class, 'id')->where('website_id', $this->webpage->website->id)->where('state', WebpageStateEnum::LIVE),
+            ],
+        ];
+    }
+
     /**
      * @throws \Throwable
      */
     public function action(Webpage $webpage, bool $forceDelete = false): Webpage
     {
+        $this->webpage = $webpage;
         return $this->handle($webpage, $forceDelete);
     }
 
@@ -87,11 +125,12 @@ class DeleteWebpage extends OrgAction
      */
     public function asController(Webpage $webpage, ActionRequest $request): Webpage
     {
-        $this->initialisation($webpage->organisation, $request);
+        $this->webpage = $webpage;
+        $this->initialisationFromShop($webpage->shop, $request);
 
         $forceDelete = $request->boolean('force_delete');
 
-        return $this->handle($webpage, $forceDelete);
+        return $this->handle($webpage, $forceDelete, $this->validatedData);
     }
 
 

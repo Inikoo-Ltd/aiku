@@ -38,11 +38,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $name
  * @property numeric $unit_quantity
  * @property numeric $value
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $source_id
  * @property float|null $picking_position
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits

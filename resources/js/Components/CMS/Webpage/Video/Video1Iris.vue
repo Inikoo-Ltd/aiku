@@ -30,6 +30,7 @@ const props = defineProps<{
 	webpageData?: any;
 	blockData?: Object;
 	screenType: "mobile" | "tablet" | "desktop";
+	indexBlock:number
 }>();
 
 const emits = defineEmits<{
@@ -60,7 +61,7 @@ const layout: any = inject("layout", {})
 </script>
 
 <template>
-	<div :id="fieldValue?.id ? fieldValue?.id  : 'video'"  component="video">
+	<div :id="fieldValue?.id ? fieldValue?.id  : 'video'+indexBlock"  component="video">
 		<div class="grid grid-cols-1 md:grid-cols-1 relative" :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(fieldValue.container?.properties, screenType)

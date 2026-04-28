@@ -17,7 +17,6 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Traits\WithOrderExchanges;
-use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
@@ -96,7 +95,13 @@ class StoreOrder extends OrgAction
             $modelData['currency_id']      = $parent->shop->currency_id;
             $modelData['shop_id']          = $parent->shop_id;
             $modelData['sales_channel_id'] = Arr::get($modelData, 'sales_channel_id');
-            $shop                          = $parent->shop;
+            $modelData['email']            = $parent->email;
+            $modelData['phone']            = $parent->phone;
+            $modelData['contact_name']     = $parent->contact_name;
+            $modelData['company_name']     = $parent->company_name;
+
+
+            $shop = $parent->shop;
         } elseif ($parent instanceof CustomerClient) {
             $modelData['customer_id']               = $parent->customer_id;
             $modelData['customer_client_id']        = $parent->id;
@@ -105,6 +110,13 @@ class StoreOrder extends OrgAction
             $modelData['platform_id']               = $parent->salesChannel->platform_id;
             $modelData['customer_sales_channel_id'] = $parent->customer_sales_channel_id;
             $shop                                   = $parent->shop;
+
+            if ($parent->customer) {
+                $modelData['email']        = $parent->customer->email;
+                $modelData['phone']        = $parent->customer->phone;
+                $modelData['contact_name'] = $parent->customer->contact_name;
+                $modelData['company_name'] = $parent->customer->company_name;
+            }
         } else {
             $modelData['currency_id'] = $parent->currency_id;
             $modelData['shop_id']     = $parent->id;
@@ -232,8 +244,6 @@ class StoreOrder extends OrgAction
 
         $this->orderHydrators($order);
         $this->orderHandlingHydrators($order, $order->state);
-
-        $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 
         if ($order->customer_client_id) {
             CustomerClientHydrateOrders::dispatch($order->customerClient)->delay($this->hydratorsDelay);

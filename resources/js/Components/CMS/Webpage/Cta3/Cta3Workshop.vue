@@ -37,7 +37,7 @@ const imageSettings = {
 </script>
 
 <template>
-  <div id="cta3">
+  <div :id="modelValue?.id ? modelValue?.id  : 'cta3'+indexBlock" >
     <div
       class="relative grid rounded-lg  shadow-lg"
       :style="{

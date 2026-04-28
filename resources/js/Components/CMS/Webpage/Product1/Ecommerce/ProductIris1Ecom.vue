@@ -108,6 +108,7 @@ const props = withDefaults(
         isLoadingFavourite: boolean
         videoSetup: { url: string }
         listProducts: ProductResource[]
+        indexBlock:number
     }>(),
     {}
 )
@@ -179,6 +180,10 @@ const showDiscount = computed(() => {
     )
 })
 
+
+
+
+
 watch([variantPrevEl, variantNextEl], () => {
   if (variantPrevEl.value && variantNextEl.value) {
     varinatNavigation.value = {
@@ -188,19 +193,20 @@ watch([variantPrevEl, variantNextEl], () => {
   }
 })
 
+
+
 onMounted(async () => {
   await nextTick()
   varinatNavigation.value.prevEl = variantPrevEl.value
   varinatNavigation.value.nextEl = variantNextEl.value
 })
-
-console.log('props', props)
+console.log(props)
 </script>
 
 
 <template>
     <!-- DESKTOP -->
-    <div v-if="screenType !== 'mobile'"  :id="fieldValue?.id ? fieldValue?.id  : 'product-ecom-1'"  component="product-ecom-1"
+    <div v-if="screenType !== 'mobile'"  :id="fieldValue?.id ? fieldValue?.id  : 'product-ecom-1'+indexBlock"  component="product-ecom-1"
         class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block mt-4" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft: 'auto',
@@ -219,7 +225,7 @@ console.log('props', props)
                         <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
                         <Image v-else :src="tag.image" :alt="`Thumbnail tag ${index}`"
                             class="w-[15px] h-[15px] object-cover" />
-                        <span>{{ tag.name }}</span>
+                        <span>{{ trans(tag?.label) || tag?.label }}</span>
                     </div>
                 </div>
             </div>

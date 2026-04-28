@@ -37,7 +37,7 @@ const imageSettings = {
 </script>
 
 <template>
-  <div id="cta-image-background">
+  <div :id="modelValue?.id ? modelValue?.id  : 'cta-image-background'+indexBlock">
     <div class="relative grid rounded-lg shadow-lg" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(modelValue.container?.properties, screenType)

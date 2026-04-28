@@ -22,6 +22,8 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Spatie\Translatable\Attributes\Translatable;
+use Spatie\Translatable\HasTranslations;
 
 /**
  * @property int $id
@@ -37,6 +39,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int|null $image_id
  * @property array<array-key, mixed>|null $web_image
+ * @property string $label
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Customer> $customers
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
@@ -50,10 +53,13 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Tag query()
  * @mixin \Eloquent
  */
+
+#[Translatable('label')]
 class Tag extends Model implements HasMedia
 {
     use HasSlug;
     use HasImage;
+    use HasTranslations;
 
     protected $guarded = [];
 

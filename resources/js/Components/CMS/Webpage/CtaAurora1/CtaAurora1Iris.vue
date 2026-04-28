@@ -27,13 +27,14 @@ const props = defineProps<{
     webpageData?: any
     screenType: "mobile" | "tablet" | "desktop"
     blockData?: Object
+    indexBlock:number
 }>()
 
 const layout: any = inject("layout", {})
 </script>
 
 <template>
-    <div :id="fieldValue?.id ? fieldValue?.id : 'ctaAurora'" component="ctaAurora">
+    <div :id="fieldValue?.id ? fieldValue?.id : 'ctaAurora'+indexBlock" component="ctaAurora">
         <div :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             ...getStyles(fieldValue.container?.properties, screenType)

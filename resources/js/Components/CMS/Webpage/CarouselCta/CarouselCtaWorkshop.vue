@@ -44,7 +44,7 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 </script>
 
 <template>
-    <div id="carousel-cta">
+    <div :id="modelValue?.id ? modelValue?.id  : 'carousel-cta' + indexBlock" >
         <div :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             ...getStyles(modelValue.container?.properties, screenType)

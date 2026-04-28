@@ -17,7 +17,7 @@ import { trans } from "laravel-vue-i18n";
 import { routeType } from "@/types/route";
 import { ref, onMounted, reactive, inject, computed, watch } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox } from "@fal";
+import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox, faBarcode } from "@fal";
 import { faSkull, faWandMagic } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
@@ -40,7 +40,7 @@ import { ctrans } from "@/Composables/useTrans"
 import LabelPickingLocation from "./LabelPickingLocation.vue"
 import PickingLocationModal from "./PickingLocationModal.vue"
 import SelectPickingLocation from "./SelectPickingLocation.vue"
-library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox);
+library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode);
 
 
 const props = defineProps<{
@@ -79,33 +79,33 @@ onMounted(() => {
     isMounted.value = true;
 });
 
-const onPickingQuantity = (pick_route: routeType, quantity: number) => {
-    router[pick_route.method || "post"](
-        route(pick_route.name, pick_route.parameters),
-        {
-            quantity: quantity
-        },
-        {
-            preserveState: true,
-            preserveScroll: true,
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: "",
-                    type: "error"
-                });
-            },
-            onError: (error) => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: "",
-                    type: "error"
-                });
-            }
-        }
-    );
-};
-const debounceOnPickingQuantity = debounce(onPickingQuantity, 500);
+// const onPickingQuantity = (pick_route: routeType, quantity: number) => {
+//     router[pick_route.method || "post"](
+//         route(pick_route.name, pick_route.parameters),
+//         {
+//             quantity: quantity
+//         },
+//         {
+//             preserveState: true,
+//             preserveScroll: true,
+//             onSuccess: () => {
+//                 notify({
+//                     title: trans("Success"),
+//                     text: "",
+//                     type: "error"
+//                 });
+//             },
+//             onError: (error) => {
+//                 notify({
+//                     title: trans("Something went wrong"),
+//                     text: "",
+//                     type: "error"
+//                 });
+//             }
+//         }
+//     );
+// };
+// const debounceOnPickingQuantity = debounce(onPickingQuantity, 500);
 
 
 const generateLocationRoute = (location: any) => {
@@ -155,8 +155,8 @@ const onCloseModal = () => {
 
 // Method: to find the location that Alt ed, fallback is index 0
 const selectedLocationCode = reactive({})
-const findLocation = (locationsList: { location_code: string }[], selectedOrgStockId: string) => {
-    return locationsList.find(x => x.location_code == selectedOrgStockId) || locationsList[0]
+const findLocation = (locationsList: { location_code: string }[], locationCode: string) => {
+    return locationsList.find(x => x.location_code == locationCode) || locationsList[0]
 }
 
 const exceptPropsToLoad = ['tabs', 'quick_pickers', 'routes', 'queryBuilderProps', 'warehouse', 'shipments_routes', 'address', 'navigation', 'breadcrumbs']
@@ -434,6 +434,54 @@ const routeItemsWaitingCrm = (item) => {
 // }, { deep: true })
 
 
+// Section: Picking batch code
+const isModalPickingBatchCode = ref(false)
+const selectedPickingForBatchCode = ref(null)
+const selectedPickingBatchCode = ref(null)
+const isLoadingSubmitPickingBatchCode = ref(false)
+
+watch(isModalPickingBatchCode, (isOpen) => {
+    if (isOpen && selectedPickingForBatchCode.value?.batch_code_id) {
+        selectedPickingBatchCode.value = {
+            id: selectedPickingForBatchCode.value.batch_code_id,
+            code: selectedPickingForBatchCode.value.batch_code,
+            label: selectedPickingForBatchCode.value.batch_code,
+        }
+    } else {
+        selectedPickingBatchCode.value = null
+    }
+})
+
+const onCloseModalPickingBatchCode = () => {
+    isModalPickingBatchCode.value = false
+    setTimeout(() => {
+        selectedPickingForBatchCode.value = null
+        selectedPickingBatchCode.value = null
+    }, 300)
+}
+
+const onSubmitPickingBatchCode = () => {
+    if (!selectedPickingForBatchCode.value) return
+
+    router.patch(
+        route(selectedPickingForBatchCode.value.update_route.name, selectedPickingForBatchCode.value.update_route.parameters),
+        { batch_code_id: selectedPickingBatchCode.value?.id ?? null },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { isLoadingSubmitPickingBatchCode.value = true },
+            onSuccess: () => {
+                notify({ title: trans("Success"), text: trans("Successfully set batch code"), type: "success" })
+                onCloseModalPickingBatchCode()
+            },
+            onError: () => {
+                notify({ title: trans("Something went wrong"), text: trans("Failed to set batch code. Try again"), type: "error" })
+            },
+            onFinish: () => { isLoadingSubmitPickingBatchCode.value = false },
+        }
+    )
+}
+
 // Section: Undo Quantity Waiting Warehouse
 const isOpenModalUndoWaitingWarehouse = ref(false)
 const selectedItemToUndoWaitingWarehouse = ref(null)
@@ -622,7 +670,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
             <div v-if="item.pickings?.length" class="space-y-1">
                 <div v-for="picking in item.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
                     <!-- {{ picking.location_code }} -->
-                    <div v-if="picking.type === 'pick'" class="flex gap-x-2 items-center">
+                    <div v-if="picking.type === 'pick'" class="flex gap-x-2 items-center flex-wrap">
                         <Link :href="generateLocationRoute(picking)" class="secondaryLink">
                         {{ picking.location_code }}
                         </Link>
@@ -637,6 +685,17 @@ const onSetItemToUndoWaitingWarehouse = () => {
                                 {{ picking.quantity_picked }}
                             </span>
                         </div>
+
+                        <button
+                            v-if="picking.show_batch_code_ui"
+                            @click="() => (isModalPickingBatchCode = true, selectedPickingForBatchCode = picking)"
+                            v-tooltip="picking.batch_code ? ctrans('Change batch code: :code', { code: picking.batch_code }) : ctrans('Set batch code')"
+                            class="text-xs px-1.5 py-0.5 rounded border transition-colors"
+                            :class="picking.batch_code ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100' : 'border-dashed border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600'"
+                        >
+                            <FontAwesomeIcon icon="fal fa-barcode" class="mr-1" fixed-width aria-hidden="true" />
+                            {{ picking.batch_code ?? ctrans('Batch code') }}
+                        </button>
                     </div>
 
                     <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')"
@@ -1296,6 +1355,53 @@ const onSetItemToUndoWaitingWarehouse = () => {
                 </div>
             </div>
             <LoadingOverlay2 v-if="isLoadingUndoWaitingWarehouse" class="rounded-2xl" />
+        </div>
+    </Modal>
+
+    <!-- Modal: Set batch code per picking -->
+    <Modal :isOpen="isModalPickingBatchCode" @onClose="onCloseModalPickingBatchCode" width="w-full max-w-lg">
+        <div class="text-center mb-4">
+            <div class="font-semibold text-2xl">{{ trans('Batch Code') }}</div>
+            <div class="opacity-80 italic text-sm">
+                {{ selectedPickingForBatchCode?.location_code ? ctrans('Location: :loc', { loc: selectedPickingForBatchCode.location_code }) : '' }}
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center gap-4">
+            <div class="w-full">
+                <label class="block text-sm font-medium mb-2">{{ trans("Batch code") }}:</label>
+                <PureMultiselectInfiniteScroll
+                    v-if="selectedPickingForBatchCode?.batch_codes_fetch_route"
+                    v-model="selectedPickingBatchCode"
+                    :fetchRoute="selectedPickingForBatchCode.batch_codes_fetch_route"
+                    :initOptions="selectedPickingBatchCode ? [selectedPickingBatchCode] : []"
+                    labelProp="label"
+                    valueProp="id"
+                    object
+                    :placeholder="trans('Search batch code...')"
+                    :disabled="isLoadingSubmitPickingBatchCode"
+                />
+            </div>
+
+            <div class="w-full flex gap-4 mt-4">
+                <Button
+                    type="negative"
+                    size="md"
+                    :disabled="isLoadingSubmitPickingBatchCode"
+                    icon="far fa-arrow-left"
+                    @click="onCloseModalPickingBatchCode"
+                    :label="trans('Cancel')"
+                />
+                <Button
+                    type="primary"
+                    size="md"
+                    :loading="isLoadingSubmitPickingBatchCode"
+                    icon="fad fa-save"
+                    @click="onSubmitPickingBatchCode"
+                    full
+                    :label="trans('Save')"
+                />
+            </div>
         </div>
     </Modal>
 </template>

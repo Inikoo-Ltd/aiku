@@ -30,7 +30,14 @@ class UpdateMasterProductCategoryImages extends GrpAction
 
         $this->update($masterProductCategory, $modelData);
 
-        if (Arr::has($modelData, 'extra_desc_art1')) {
+        if (Arr::hasAny($modelData, [
+            'desc_art1',
+            'desc_art2',
+            'desc_art3',
+            'desc_art4',
+            'desc_art5',
+            'extra_desc_art1',
+        ])) {
             $this->updateWebImages($masterProductCategory);
         }
 

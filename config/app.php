@@ -287,6 +287,7 @@ return [
     'help_portal_url' => env('JIRA_HELP_PORTAL'),
 
     'sandbox' => [
+        'translate' => env('TRANSLATE_ON_LOCAL', false),
 
         'shipper_itd_token'            => env('ITD_TOKEN'),
         'shipper_apc_token'            => env('APC_TOKEN'),
