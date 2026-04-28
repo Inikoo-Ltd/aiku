@@ -3,6 +3,8 @@
 namespace App\Actions\Web\Redirect;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
+use App\Actions\Web\Website\HydrateRedirect;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -39,7 +41,14 @@ class StoreRedirectFromWebsite extends OrgAction
         data_set($modelData, 'from_path', $fromUrl);
         data_set($modelData, 'to_webpage_id', $toUrl);
 
-        return Redirect::create($modelData);
+        $redirect = Redirect::create($modelData);
+    
+        $redirectedWebpage = Webpage::find($toUrl);
+        if ($redirectedWebpage) {
+            WebpageHydrateRedirects::run($redirectedWebpage);
+        }
+        
+        return $redirect;
     }
 
     public function rules(): array
