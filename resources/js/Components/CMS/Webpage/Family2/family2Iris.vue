@@ -17,6 +17,7 @@ import { Navigation } from "swiper/modules"
 
 import "swiper/css"
 import "swiper/css/navigation"
+import LinkIris from "@/Components/Iris/LinkIris.vue"
 
 library.add(faChevronCircleLeft, faChevronCircleRight)
 
@@ -162,10 +163,15 @@ console.log(props)
           />
 
           <div class="btn-wrapper">
-              <LinkIris :href="fieldValue?.button?.link?.href" :canonical_url="fieldValue?.button?.link?.canonical_url"
-                :target="fieldValue?.button?.link?.target" :type="fieldValue?.button?.link?.type">
-                <Button :label="fieldValue?.button?.text"
-                  :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" />
+              <LinkIris 
+                :href="fieldValue?.button?.link?.href" 
+                :canonical_url="fieldValue?.button?.link?.canonical_url"
+                :target="fieldValue?.button?.link?.target" 
+                :type="fieldValue?.button?.link?.type">
+                <Button 
+                  :label="fieldValue?.button?.text"
+                  :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" 
+                />
               </LinkIris>
             </div>
         </div>
