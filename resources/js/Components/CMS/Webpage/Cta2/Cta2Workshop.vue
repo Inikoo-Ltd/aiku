@@ -33,7 +33,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 </script>
 
 <template>
-	<div id="cta2">
+	<div :id="modelValue?.id ? modelValue?.id  : 'cta2'+indexBlock">
 		<div :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(modelValue.container?.properties, screenType)

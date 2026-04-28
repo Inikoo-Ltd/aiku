@@ -56,6 +56,22 @@ class EditBatchCode extends OrgAction
                             'icon'   => 'fa-light fa-barcode',
                             'title'  => __('Batch Code'),
                             'fields' => [
+                                'org_stock_id' => [
+                                    'type'        => 'select_infinite',
+                                    'label'       => __('SKU'),
+                                    'placeholder' => __('Select SKU'),
+                                    'mode'        => 'single',
+                                    'searchable'  => true,
+                                    'labelProp'   => 'name',
+                                    'valueProp'   => 'id',
+                                    'fetchRoute'  => [
+                                        'name'       => 'grp.json.org_stocks.index',
+                                        'parameters' => [
+                                            'organisation' => $batchCode->organisation_id,
+                                        ],
+                                    ],
+                                    'value' => $batchCode->org_stock_id,
+                                ],
                                 'code' => [
                                     'type'  => 'input',
                                     'label' => __('Code'),
@@ -65,22 +81,6 @@ class EditBatchCode extends OrgAction
                                     'type'  => 'date',
                                     'label' => __('Expiry Date'),
                                     'value' => $batchCode->expiry_date?->format('Y-m-d'),
-                                ],
-                                'org_stock_id' => [
-                                    'type'        => 'select_infinite',
-                                    'label'       => __('SKU'),
-                                    'placeholder' => __('Select SKU (optional)'),
-                                    'mode'        => 'single',
-                                    'searchable'  => true,
-                                    'labelProp'   => 'code',
-                                    'valueProp'   => 'id',
-                                    'fetchRoute'  => [
-                                        'name'       => 'grp.json.org_stocks.index',
-                                        'parameters' => [
-                                            'organisation' => $batchCode->organisation_id,
-                                        ],
-                                    ],
-                                    'value' => $batchCode->org_stock_id,
                                 ],
                             ],
                         ],

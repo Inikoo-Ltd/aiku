@@ -159,6 +159,10 @@ use App\Audits\Transformer\RelationTransformer;
  * @property string|null $packing_at
  * @property numeric $amount_off
  * @property string|null $handling_blocked_at
+ * @property string|null $email
+ * @property string|null $phone
+ * @property string|null $contact_name
+ * @property string|null $company_name
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -276,6 +280,10 @@ class Order extends Model implements HasMedia, Auditable
                 'state',
                 'reference',
                 'customer_reference',
+                'email',
+                'phone',
+                'company_name',
+                'contact_name',
                 'date',
             ]);
     }
@@ -290,6 +298,10 @@ class Order extends Model implements HasMedia, Auditable
             'state'              => $this->state->value,
             'reference'          => $this->reference,
             'customer_reference' => $this->customer_reference,
+            'email'              => (string)$this->email,
+            'phone'              => (string)$this->phone,
+            'company_name'       => (string)$this->company_name,
+            'contact_name'       => (string)$this->contact_name,
             'date'               => is_string($this->date) ? Carbon::parse($this->date)->timestamp : $this->date->timestamp,
         ];
     }

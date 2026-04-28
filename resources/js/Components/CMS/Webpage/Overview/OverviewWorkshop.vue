@@ -15,6 +15,7 @@ const props = defineProps<{
     modelValue: any
 	webpageData?: any
 	blockData?: Object
+	indexBlock:number
 }>()
 
 
@@ -143,6 +144,7 @@ onBeforeUnmount(() => {
 
 <template>
 	<div
+	    :id="modelValue?.id ? modelValue?.id  : 'overview'+indexBlock"
 		ref="_parentComponent"
 		class="relative  transition-all hidden md:block"
 		:style="getStyles(modelValue.container.properties)">

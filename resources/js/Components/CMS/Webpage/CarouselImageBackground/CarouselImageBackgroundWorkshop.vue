@@ -132,7 +132,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div id="carousel-background-image" class="relative w-full">
+  <div  :id="modelValue?.id ? modelValue?.id  : 'carousel-background-image'+ indexBlock"   class="relative w-full">
     <div :data-refresh="refreshTrigger" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
         ...getStyles(modelValue?.container?.properties, props.screenType),

@@ -55,22 +55,13 @@ class CreateBatchCode extends OrgAction
                             'icon'   => 'fa-light fa-barcode',
                             'title'  => __('Batch Code'),
                             'fields' => [
-                                'code'         => [
-                                    'type'     => 'input',
-                                    'label'    => __('Code'),
-                                    'required' => true,
-                                ],
-                                'expiry_date'  => [
-                                    'type'  => 'date',
-                                    'label' => __('Expiry Date'),
-                                ],
                                 'org_stock_id' => [
                                     'type'        => 'select_infinite',
                                     'label'       => __('SKU'),
                                     'placeholder' => __('Select SKU'),
                                     'mode'        => 'single',
                                     'searchable'  => true,
-                                    'labelProp'   => 'code',
+                                    'labelProp'   => 'name',
                                     'valueProp'   => 'id',
                                     'fetchRoute'  => [
                                         'name'       => 'grp.json.org_stocks.index',
@@ -81,6 +72,16 @@ class CreateBatchCode extends OrgAction
                                     'required'    => true,
                                     'value'       => null,
                                 ],
+                                'code'         => [
+                                    'type'     => 'input',
+                                    'label'    => __('Batch code'),
+                                    'required' => true,
+                                ],
+                                'expiry_date'  => [
+                                    'type'  => 'date',
+                                    'label' => __('Expiry Date'),
+                                ],
+
                             ],
                         ],
                     ],

@@ -16,6 +16,7 @@ library.add(faPlus, faMinus)
 const props = defineProps<{
   fieldValue: any
   screenType: 'mobile' | 'tablet' | 'desktop'
+  indexBlock: number
 }>()
 
 const layout: any = inject("layout", {})
@@ -23,7 +24,7 @@ const layout: any = inject("layout", {})
 </script>
 
 <template>
-  <div  :id="fieldValue?.id ? fieldValue?.id  : 'disclosure'"  component="disclosure">
+  <div :id="fieldValue?.id ? fieldValue?.id  : 'disclosure'+indexBlock"  component="disclosure">
     <div :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue.container?.properties, screenType)

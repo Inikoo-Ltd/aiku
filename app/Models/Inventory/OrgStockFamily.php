@@ -36,12 +36,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $name
  * @property OrgStockFamilyStateEnum $state
  * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property string|null $activated_in_organisation_at
  * @property string|null $discontinuing_in_organisation_at
  * @property string|null $discontinued_in_organisation_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $deleted_at
  * @property string|null $source_id
  * @property HealthRankEnum|null $health_rank
  * @property-read Group|null $group

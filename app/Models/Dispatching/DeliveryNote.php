@@ -242,6 +242,10 @@ class DeliveryNote extends Model implements Auditable
                 'customer_id',
                 'state',
                 'reference',
+                'email',
+                'phone',
+                'company_name',
+                'contact_name',
                 'date',
             ]);
     }
@@ -255,6 +259,10 @@ class DeliveryNote extends Model implements Auditable
             'customer_id'     => $this->customer_id,
             'state'           => $this->state->value,
             'reference'       => $this->reference,
+            'email'           => (string)$this->email,
+            'phone'           => (string)$this->phone,
+            'company_name'    => (string)$this->company_name,
+            'contact_name'    => (string)$this->contact_name,
             'date'            => is_string($this->date) ? Carbon::parse($this->date)->timestamp : $this->date->timestamp,
         ];
     }

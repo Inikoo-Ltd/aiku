@@ -102,17 +102,15 @@ onBeforeUnmount(() => {
 
 
   <div class="bg-white">
-      <div v-for="(web_block_data, web_block_data_idx) in props.web_blocks"
-        :key="'block' + web_block_data.id"
-        class="w-full"
-        :id="`v-${web_block_data.type}`"
-      >
+     <div v-for="(web_block_data, index) in props.web_blocks" :key="'block-' + web_block_data.id" class="w-full" :id="`v-${web_block_data.type}-${index}`">
         <component
           :screenType="screenType"
           :code="web_block_data.type"
           :is="getIrisComponent(web_block_data.type, { shop_type: layout.retina.type })"
           :theme="layout?.app?.theme" :key="web_block_data_idx"
-          :fieldValue="web_block_data.web_block.layout.data.fieldValue" />
+          :fieldValue="web_block_data.web_block.layout.data.fieldValue"
+          :indexBlock="index"
+          />
 
        
       </div>

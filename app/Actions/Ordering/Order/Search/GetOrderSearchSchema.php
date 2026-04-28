@@ -52,6 +52,22 @@ class GetOrderSearchSchema
                         'optional' => true,
                     ],
                     [
+                        'name' => 'email',
+                        'type' => 'string',
+                    ],
+                    [
+                        'name' => 'phone',
+                        'type' => 'string',
+                    ],
+                    [
+                        'name' => 'company_name',
+                        'type' => 'string',
+                    ],
+                    [
+                        'name' => 'contact_name',
+                        'type' => 'string',
+                    ],
+                    [
                         'name' => 'date',
                         'type' => 'int64',
                     ],
