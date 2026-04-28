@@ -84,6 +84,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Location> $locations
+ * @property-read BatchCode|null $mainBatchCode
  * @property-read \App\Models\Inventory\OrgStockFamily|null $orgStockFamily
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockMovement> $orgStockMovements
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OrgSupplierProduct> $orgSupplierProducts
@@ -244,7 +245,7 @@ class OrgStock extends Model implements Auditable
 
     public function mainBatchCode(): BelongsTo
     {
-        return $this->belongsTo(BatchCode::class,'main_batch_code_id');
+        return $this->belongsTo(BatchCode::class, 'main_batch_code_id');
     }
 
 }

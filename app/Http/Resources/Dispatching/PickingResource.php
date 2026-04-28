@@ -41,8 +41,8 @@ class PickingResource extends JsonResource
             'location_code'              => $this->location?->code,
             'location_slug'              => $this->location?->slug,
             'location_id'                => $this->location?->id,
-            'show_batch_code_ui'         => $this->orgStock?->current_batch_codes>0,
-            'batch_code_id'              => $this->batch_code_id??$this->orgStock?->mainBatchCode?->id,
+            'show_batch_code_ui'         => $this->orgStock?->current_batch_codes > 0,
+            'batch_code_id'              => $this->batch_code_id ?? $this->orgStock?->mainBatchCode?->id,
 
             'update_route'       => [
                 'name'       => 'grp.models.picking.update',

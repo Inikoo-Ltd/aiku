@@ -107,10 +107,10 @@ trait WithUpdateWebImages
     {
         $media = null;
         $column = 'desc_art';
-        
+
         $images = [];
 
-        for($i = 1; $i <= 5; $i++) {
+        for ($i = 1; $i <= 5; $i++) {
             if ($model->{$column.$i}) {
                 $media = Media::find($model->{$column.$i});
             }
