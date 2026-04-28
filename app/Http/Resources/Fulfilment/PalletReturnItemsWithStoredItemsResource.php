@@ -83,6 +83,10 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
                     $palletReturnItem = $palletStoredItem->palletReturnItems
                         ->where('pallet_return_id', $this->pallet_return_id)
                         ->first();
+                    $quantityOrdered = (float) ($palletReturnItem->quantity_ordered ?? 0);
+                    $quantityPicked = (float) ($palletReturnItem->quantity_picked ?? 0);
+                    $quantityNotPicked = (float) ($palletReturnItem->quantity_not_picked ?? 0);
+
                     return [
                         'ordered_quantity'              => (int) $palletStoredItem->quantity_ordered,
                         'id'                         => $palletStoredItem->id,
@@ -92,8 +96,9 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
                         'available_quantity'         => (int) $palletStoredItem->quantity,
                         'max_quantity'               => (int) $palletStoredItem->quantity,
                         'quantity_in_pallet'         => (int) $palletStoredItem->quantity,
-                        'available_to_pick_quantity' => (int) ($palletReturnItem->quantity_ordered ?? 0),
+                        'available_to_pick_quantity' => (int) max(0, $quantityOrdered - $quantityPicked - $quantityNotPicked),
                         'picked_quantity'            => (int) ($palletReturnItem->quantity_picked ?? 0),
+                        'not_picked_quantity'        => (int) ($palletReturnItem->quantity_not_picked ?? 0),
                         'pallet_id'                  => $palletStoredItem->pallet_id,
                         'state'                      => $palletReturnItem->state ?? null,
                         'pallet_return_item_id'      => $palletReturnItem->id ?? null,
@@ -135,6 +140,13 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
                         ],
                         'undoRoute' => [
                             'name'      => 'grp.models.pallet-return-item.undo-picking-stored-item',
+                            'parameters' => [
+                                'palletReturnItem' => $palletReturnItem->id ?? null
+                            ],
+                            'method'    => 'patch'
+                        ],
+                        'notPickedRoute' => [
+                            'name'      => 'grp.models.pallet-return-item.not-picked',
                             'parameters' => [
                                 'palletReturnItem' => $palletReturnItem->id ?? null
                             ],

@@ -32,10 +32,13 @@ class NotPickedPalletFromReturn extends OrgAction
 
     public function handle(PalletReturnItem $palletReturnItem, $modelData): PalletReturnItem
     {
+        $requestedNotPicked = Arr::get($modelData, 'quantity_not_picked');
+
         if ($palletReturnItem->type == 'Pallet') {
             $palletReturnItem = $this->update($palletReturnItem, [
-                'state'          => PalletReturnItemStateEnum::NOT_PICKED,
-                'quantity_picked' => 0,
+                'state'               => PalletReturnItemStateEnum::NOT_PICKED,
+                'quantity_picked'     => 0,
+                'quantity_not_picked' => max(0, (float) $palletReturnItem->quantity_ordered - (float) $palletReturnItem->quantity_picked),
                 'quantity_waiting_crm' => 0,
                 'has_waiting_crm'      => false,
             ], ['data']);
@@ -49,23 +52,16 @@ class NotPickedPalletFromReturn extends OrgAction
                 ]
             ]);
         } else {
-            $storedItems = PalletReturnItem::where('pallet_return_id', $palletReturnItem->pallet_return_id)->where('stored_item_id', $palletReturnItem->stored_item_id)->get();
-            foreach ($storedItems as $storedItem) {
-                $palletReturnItem = $this->update($storedItem, [
-                    'state' => PalletReturnItemStateEnum::NOT_PICKED,
-                    'quantity_waiting_crm' => 0,
-                    'has_waiting_crm'      => false,
-                ], ['data']);
+            $maxNotPicked = max(0, (float) $palletReturnItem->quantity_ordered - (float) $palletReturnItem->quantity_picked);
+            $quantityNotPicked = is_numeric($requestedNotPicked)
+                ? min(max(0, (float) $requestedNotPicked), $maxNotPicked)
+                : $maxNotPicked;
 
-                UpdatePallet::run($storedItem->pallet, [
-                    'state'              => Arr::get($modelData, 'state'),
-                    'status'             => PalletStatusEnum::INCIDENT,
-                    'set_as_incident_at' => now(),
-                    'incident_report'    => [
-                        'notes' => Arr::get($modelData, 'notes')
-                    ]
-                ]);
-            }
+            $palletReturnItem = $this->update($palletReturnItem, [
+                'quantity_not_picked' => $quantityNotPicked,
+                'quantity_waiting_crm' => 0,
+                'has_waiting_crm'      => false,
+            ], ['data']);
         }
 
         $palletReturn = $palletReturnItem->palletReturn;
@@ -93,9 +89,13 @@ class NotPickedPalletFromReturn extends OrgAction
 
     public function rules(): array
     {
+        $palletReturnItem = request()->route('palletReturnItem');
+        $isPalletType = $palletReturnItem instanceof PalletReturnItem && $palletReturnItem->type == 'Pallet';
+
         return [
-            'state'   => ['required', Rule::enum(PalletStateEnum::class)],
-            'notes'   => ['required', 'string']
+            'state'   => [Rule::requiredIf($isPalletType), Rule::enum(PalletStateEnum::class)],
+            'notes'   => [Rule::requiredIf($isPalletType), 'string'],
+            'quantity_not_picked' => ['nullable', 'numeric', 'min:0']
         ];
     }
 

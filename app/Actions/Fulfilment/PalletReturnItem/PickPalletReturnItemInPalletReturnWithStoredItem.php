@@ -38,8 +38,13 @@ class PickPalletReturnItemInPalletReturnWithStoredItem extends OrgAction
     public function handle(PalletReturnItem $palletReturnItem, array $modelData, ?User $user = null): PalletReturnItem
     {
         return DB::transaction(function () use ($palletReturnItem, $modelData, $user) {
-            $quantity = Arr::get($modelData, 'quantity_picked');
+            $previousPickedQuantity = (float) ($palletReturnItem->quantity_picked ?? 0);
+            $quantity = (float) Arr::get($modelData, 'quantity_picked', 0);
             $palletStoredItemQuantity = $palletReturnItem->palletStoredItem->quantity;
+            $maxPickableQuantity = max(0, (float) $palletReturnItem->quantity_ordered - (float) ($palletReturnItem->quantity_not_picked ?? 0));
+            $quantity = min(max(0, $quantity), $maxPickableQuantity);
+            $movementQuantity = max(0, $quantity - $previousPickedQuantity);
+            data_set($modelData, 'quantity_picked', $quantity);
 
             if ($user && !$palletReturnItem->palletReturn->packer_user_id) {
                 UpdatePalletReturn::run($palletReturnItem->palletReturn, [
@@ -49,9 +54,11 @@ class PickPalletReturnItemInPalletReturnWithStoredItem extends OrgAction
 
             $this->update($palletReturnItem, $modelData);
 
-            StoreStoredItemMovementFromPicking::run($palletReturnItem, [
-                'quantity' => $quantity
-            ]);
+            if ($movementQuantity > 0) {
+                StoreStoredItemMovementFromPicking::run($palletReturnItem, [
+                    'quantity' => $movementQuantity
+                ]);
+            }
 
             if ($quantity == $palletStoredItemQuantity) {
                 SetPalletStoredItemStateToReturned::run($palletReturnItem->palletStoredItem);
