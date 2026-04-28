@@ -116,7 +116,8 @@ const handleFormSubmitAdditional = async () => {
                     params
                 ), {
                     onStart: () => isLoading.value = true,
-                    onError: () => isLoading.value = false
+                    onError: () => isLoading.value = false,
+                    onFinish: () => isLoading.value = false
                 })
         } else {
             form.post(route(
@@ -124,7 +125,8 @@ const handleFormSubmitAdditional = async () => {
                 params
             ), {
                 onStart: () => isLoading.value = true,
-                onError: () => isLoading.value = false
+                onError: () => isLoading.value = false,
+                onFinish: () => isLoading.value = false
             })
         }
     } else {
@@ -133,7 +135,8 @@ const handleFormSubmitAdditional = async () => {
             ButtonActive.value.parameters
         ), {
             onStart: () => isLoading.value = true,
-            onError: () => isLoading.value = false
+            onError: () => isLoading.value = false,
+            onFinish: () => isLoading.value = false
         })
     }
 }
