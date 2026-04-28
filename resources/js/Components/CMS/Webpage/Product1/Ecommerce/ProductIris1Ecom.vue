@@ -225,7 +225,7 @@ console.log(props)
                         <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
                         <Image v-else :src="tag.image" :alt="`Thumbnail tag ${index}`"
                             class="w-[15px] h-[15px] object-cover" />
-                        <span>{{ trans(tag?.label) || tag?.label }}</span>
+                        <span>{{ trans(tag?.name) || tag?.tag?.name }}</span>
                     </div>
                 </div>
             </div>

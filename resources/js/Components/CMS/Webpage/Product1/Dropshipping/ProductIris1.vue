@@ -106,7 +106,7 @@ const openBundlePanel = (product:any) => {
                             <Image :src="tag?.image" :alt="`Thumbnail tag ${index}`"
                                 class="w-full h-full object-cover" />
                         </div>
-                        <span>{{ tag.label }}</span>
+                        <span>{{ tag.name }}</span>
                     </div>
                 </div>
             </div>
