@@ -8,8 +8,10 @@
 
 namespace App\Actions\Dispatching\BatchCode;
 
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentBatchCodes;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\BatchCode;
+use App\Models\Inventory\OrgStock;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -18,8 +20,14 @@ class DeleteBatchCode extends OrgAction
 {
     public function handle(BatchCode $batchCode): BatchCode
     {
+        $orgStockId = $batchCode->org_stock_id;
+
         $batchCode->deliveryNoteItems()->update(['batch_code_id' => null]);
         $batchCode->delete();
+
+        if ($orgStockId) {
+            OrgStockHydrateCurrentBatchCodes::dispatch(OrgStock::find($orgStockId))->delay($this->hydratorsDelay);
+        }
 
         return $batchCode;
     }

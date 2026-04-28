@@ -699,8 +699,6 @@ const onSetItemToUndoWaitingWarehouse = () => {
                             {{ picking.batch_code ?? ctrans('Batch code') }}
                         </button>
 
-                        <ExpiryDateLabel v-if="(picking.expiry_date || picking.batch_code)" :expiry_date="picking.expiry_date" :batch_code="picking.batch_code" />
-
                     </div>
 
                     <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')"

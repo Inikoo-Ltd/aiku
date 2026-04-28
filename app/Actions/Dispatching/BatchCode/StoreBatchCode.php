@@ -8,8 +8,10 @@
 
 namespace App\Actions\Dispatching\BatchCode;
 
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentBatchCodes;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\BatchCode;
+use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -22,7 +24,11 @@ class StoreBatchCode extends OrgAction
         data_set($modelData, 'group_id', $warehouse->group_id);
         data_set($modelData, 'organisation_id', $warehouse->organisation_id);
 
-        return BatchCode::create($modelData);
+        $batchCode = BatchCode::create($modelData);
+
+        OrgStockHydrateCurrentBatchCodes::dispatch(OrgStock::find($batchCode->org_stock_id))->delay($this->hydratorsDelay);
+
+        return $batchCode;
     }
 
     public function rules(): array
