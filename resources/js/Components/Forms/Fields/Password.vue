@@ -21,10 +21,6 @@ const handleChange = (form) => {
     }
 }
 
-// let type = 'text'
-// if (props.options !== undefined && props.options.type) {
-//     type = props.options.type;
-// }
 
 const showPassword = ref(true);
 

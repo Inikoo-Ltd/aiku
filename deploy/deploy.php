@@ -58,6 +58,16 @@ task('deploy:migrate', function () {
 
     artisan('migrate --force', ['skipIfNoEnv', 'showOutput'])();
 });
+
+task('npm:install', function () {
+    if ( currentHost()->getAlias() !== 'staging') {
+        set('use_nvm', 'source ~/.nvm/nvm.sh && nvm use');
+        run("cd {{release_path}} && {{use_nvm}} && npm ci");
+    }else {
+        run('cd {{release_path}} && {{bin/npm}} ci');
+    }
+});
+
 desc('🏗️ Build vue app');
 task('deploy:build', function () {
 
