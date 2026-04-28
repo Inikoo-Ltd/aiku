@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentBatchCodes;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
@@ -36,6 +37,7 @@ class HydrateOrgStock
 
     public function handle(OrgStock $orgStock): void
     {
+        OrgStockHydrateCurrentBatchCodes::run($orgStock);
         OrgStockHydrateLocations::run($orgStock);
         OrgStockHydrateQuantityInLocations::run($orgStock);
         OrgStockHydrateValueInLocations::run($orgStock);
