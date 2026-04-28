@@ -9,7 +9,6 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Enums\Comms\Mailshot\MailshotMergeContentsEnum;
-use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -19,11 +18,9 @@ class GetMailshotMergeContents
     use WithAttributes;
 
 
-    public function handle(?Shop $shop = null): array
+    public function handle(): array
     {
-        $contents = MailshotMergeContentsEnum::contents();
-
-        return $contents;
+        return MailshotMergeContentsEnum::contents();
     }
 
     public function asController(): array

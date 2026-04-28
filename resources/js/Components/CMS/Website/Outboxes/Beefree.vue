@@ -19,10 +19,7 @@ const props = withDefaults(defineProps<{
     organisationSlug: string
     shopSlug?: string
     shopId?: number
-    isEditMailshot?: boolean
-}>(), {
-    isEditMailshot: false
-});
+}>(), {});
 
 const locale = inject('locale', aikuLocaleStructure)
 
