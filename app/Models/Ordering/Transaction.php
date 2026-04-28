@@ -135,6 +135,10 @@ class Transaction extends Model
         'offers_data' => '{}',
     ];
 
+    protected $casts = [
+        'offers_data' => 'array',
+    ];
+
     protected $guarded = [];
 
 
