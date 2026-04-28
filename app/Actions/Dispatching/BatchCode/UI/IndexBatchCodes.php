@@ -2,7 +2,7 @@
 
 /*
  * Author: stewicca <stewicalf@gmail.com>
- * Created: Mon, 21 Apr 2026, Kuala Lumpur, Malaysia
+ * Created: Mon, 21 Apr 2026, Bali, Indonesia
  * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
@@ -107,12 +107,59 @@ class IndexBatchCodes extends OrgAction
                     'model'     => __('Warehouse'),
                     'actions'   => [
                         [
-                            'type'   => 'button',
-                            'style'  => 'create',
-                            'label'  => __('Batch Code'),
-                            'route'  => [
-                                'name'       => 'grp.org.warehouses.show.inventory.batch_codes.create',
-                                'parameters' => $request->route()->originalParameters(),
+                            'type'   => 'buttonGroup',
+                            'key'    => 'upload-add',
+                            'button' => [
+                                app()->isLocal() ? [
+                                    'type'  => 'button',
+                                    'style' => 'primary',
+                                    'icon'  => ['fal', 'fa-upload'],
+                                    'label' => __('Upload'),
+                                    'route' => [
+                                        'name'       => 'grp.models.warehouse.batch_codes.upload',
+                                        'parameters' => [$this->warehouse->id],
+                                    ],
+                                ] : [],
+                                [
+                                    'type'  => 'button',
+                                    'style' => 'create',
+                                    'label' => __('Batch Code'),
+                                    'route' => [
+                                        'name'       => 'grp.org.warehouses.show.inventory.batch_codes.create',
+                                        'parameters' => $request->route()->originalParameters(),
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'upload_batch_codes' => [
+                    'title' => [
+                        'label'       => __('Upload Batch Codes'),
+                        'information' => __('The list of column file:'),
+                    ],
+                    'progressDescription' => __('Importing batch codes'),
+                    'preview_template'    => [
+                        'header' => ['code', 'expiry_date', 'sku'],
+                        'rows'   => [
+                            [
+                                'code'        => 'BC-001',
+                                'expiry_date' => '2027-12-31',
+                                'sku'         => 'SKU-001',
+                            ],
+                        ],
+                    ],
+                    'upload_spreadsheet' => [
+                        'event'           => 'action-progress',
+                        'channel'         => 'grp.personal.'.$request->user()->id,
+                        'required_fields' => ['code', 'expiry_date', 'sku'],
+                        'template'        => [
+                            'label' => 'Download template (.xlsx)',
+                        ],
+                        'route' => [
+                            'upload' => [
+                                'name'       => 'grp.models.warehouse.batch_codes.upload',
+                                'parameters' => [$this->warehouse->id],
                             ],
                         ],
                     ],

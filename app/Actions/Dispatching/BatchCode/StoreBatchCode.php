@@ -41,6 +41,14 @@ class StoreBatchCode extends OrgAction
         return $this->handle($warehouse, $this->validatedData);
     }
 
+    public function action(Warehouse $warehouse, array $modelData): BatchCode
+    {
+        $this->asAction = true;
+        $this->initialisationFromWarehouse($warehouse, $modelData);
+
+        return $this->handle($warehouse, $this->validatedData);
+    }
+
     public function htmlResponse(BatchCode $batchCode, ActionRequest $request): RedirectResponse
     {
         return Redirect::route('grp.org.warehouses.show.inventory.batch_codes.show', [
