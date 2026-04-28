@@ -294,9 +294,9 @@ const searchCollectionFamilyProductsAPI = async (page: number = 1) => {
         params: {
             search: productSearchQuery.value.trim(),
             tab_type: 'collection_family',
-            collection_id: selectedCollection.value || null,
-            family_id: selectedFamily.value || null,
-            sub_department_id: selectedSubDepartment.value || null,
+            collection_id: selectedCollection.value ? parseInt(selectedCollection.value) : null,
+            family_id: selectedFamily.value ? parseInt(selectedFamily.value) : null,
+            sub_department_id: selectedSubDepartment.value ? parseInt(selectedSubDepartment.value) : null,
             per_page: 10,
             page: page
         }
@@ -313,6 +313,10 @@ const onSearchInput = () => {
     searchDebounceTimeout = setTimeout(() => {
         searchProducts(1)
     }, 300)
+}
+
+const hasActiveFilters = () => {
+    return selectedCollection.value || selectedFamily.value || selectedSubDepartment.value
 }
 
 const generateProductHtmlValue = (product: any, shopSlug: string): string => {
@@ -501,11 +505,12 @@ defineExpose({
 
                 <!-- Time Filter (for Trending only) -->
                 <div v-if="activeTab === PRODUCT_TABS.TRENDING" class="sm:w-32">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ trans('Filter by') }}</label>
                     <select v-model="timeFilter" @change="changeTimeFilter(timeFilter)"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        <option :value="TIME_FILTERS.WEEK">{{ trans('Week') }}</option>
-                        <option :value="TIME_FILTERS.MONTH">{{ trans('Month') }}</option>
-                        <option :value="TIME_FILTERS.YEAR">{{ trans('Year') }}</option>
+                        <option :value="TIME_FILTERS.WEEK">{{ trans('Weekly') }}</option>
+                        <option :value="TIME_FILTERS.MONTH">{{ trans('monthly') }}</option>
+                        <option :value="TIME_FILTERS.YEAR">{{ trans('Yearly') }}</option>
                     </select>
                 </div>
 
@@ -601,25 +606,14 @@ defineExpose({
             </div>
 
             <!-- Empty State -->
-            <div v-else-if="productSearchQuery.trim() && !productSearchLoading && productSearchResults.length === 0"
+            <div v-else-if="(productSearchQuery.trim() || hasActiveFilters()) && !productSearchLoading && productSearchResults.length === 0"
                 class="text-center py-8 text-gray-500">
-                {{ trans('No products found matching') }} "{{ productSearchQuery }}"
-            </div>
-
-            <!-- Initial State -->
-            <div v-else-if="productSearchResults.length === 0" class="text-center py-8 text-gray-400">
-                <div v-if="activeTab === PRODUCT_TABS.PRODUCTS">
-                    {{ trans('Type a SKU or product name to search') }}
-                </div>
-                <div v-else-if="activeTab === PRODUCT_TABS.NEW_IN">
-                    {{ trans('Showing new products for selected time period') }}
-                </div>
-                <div v-else-if="activeTab === PRODUCT_TABS.TRENDING">
-                    {{ trans('Showing trending products for selected time period') }}
-                </div>
-                <div v-else-if="activeTab === PRODUCT_TABS.COLLECTION_FAMILY">
-                    {{ trans('Select a collection to browse products') }}
-                </div>
+                <template v-if="productSearchQuery.trim()">
+                    {{ trans('No products found matching') }} "{{ productSearchQuery }}"
+                </template>
+                <template v-else>
+                    {{ trans('No Products found matching with the filter') }}
+                </template>
             </div>
 
             <!-- Cancel Button -->
