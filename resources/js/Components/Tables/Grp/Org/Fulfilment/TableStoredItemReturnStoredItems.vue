@@ -369,6 +369,10 @@ const getRequiredPalletStoredItems = (item: any) => {
 }
 
 const getRequestedPalletStoredItems = (item: any) => {
+    if (['in_process', 'submitted'].includes(props.palletReturn.state)) {
+        return item.pallet_stored_items || []
+    }
+
     return (item.pallet_stored_items || []).filter((palletStoredItem: any) => {
         return Number(palletStoredItem.selected_quantity || 0) > 0
             || Number(palletStoredItem.picked_quantity || 0) > 0
