@@ -536,7 +536,7 @@ class EditProduct extends OrgAction
                     'fields' => [
                         'price'            => [
                             'type'     => 'input_number',
-                            'label'    => __('Price'),
+                            'label'    => __('Price').'/'.__('outer'),
                             'required' => true,
                             'bind'     => [
                                 'minFractionDigits' => 0,
@@ -546,7 +546,7 @@ class EditProduct extends OrgAction
                         ],
                         'rrp_per_unit'  => [
                             'type'     => 'input_number',
-                            'label'    => __('RRP/Unit'),
+                            'label'    => __('RRP').'/'.__('unit'),
                             'required' => true,
                             'bind'     => [
                                 'minFractionDigits' => 0,
