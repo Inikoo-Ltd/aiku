@@ -59,8 +59,10 @@ task('deploy:migrate', function () {
     artisan('migrate --force', ['skipIfNoEnv', 'showOutput'])();
 });
 
-task('npm:install', function () {
-    if ( currentHost()->getAlias() !== 'staging') {
+
+desc('Modified npm:install');
+task('npm:my_install', function () {
+    if ( currentHost()->getAlias() == 'staging') {
         set('use_nvm', 'source ~/.nvm/nvm.sh && nvm use');
         run("cd {{release_path}} && {{use_nvm}} && npm ci");
     }else {
@@ -75,7 +77,7 @@ task('deploy:build', function () {
 
     $frontEndChanged = get('front_end_changed');
     if ($frontEndChanged) {
-        if ( currentHost()->getAlias() !== 'staging') {
+        if ( currentHost()->getAlias() == 'staging') {
             set('use_nvm', 'source ~/.nvm/nvm.sh && nvm use');
             run("cd {{release_path}} && {{use_nvm}} && npm run build");
         }else{
