@@ -205,14 +205,14 @@ class ProposeAllegroProduct
     {
         $keywordMap = [
             'brand' => ['brand', 'manufacturer', 'marka', 'producent'],
-            'type'     => ['type', 'rodzaj', 'typ'],
+            'type'      => ['type', 'rodzaj', 'typ', 'kind'],
             'size'     => ['size', 'rozmiar'],
             'weight'   => ['weight', 'waga', 'masa'],
             'width'    => ['width', 'szerokosc', 'szerokość'],
             'height'   => ['height', 'wysokosc', 'wysokość'],
             'depth'    => ['depth', 'glebokosc', 'głębokość', 'length', 'dlugosc'],
             'material'   => ['material', 'materiał', 'skład', 'sklad', 'composition', 'ingredients'],
-            'model'    => ['model', 'nazwa handlowa'],
+            'model'     => ['model', 'nazwa handlowa', 'trade name'],
             'mpn'      => ['mpn', 'part number', 'numer katalogowy'],
             'sku'      => ['sku', 'code', 'reference'],
             'condition' => ['stan'],
