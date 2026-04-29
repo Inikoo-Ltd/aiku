@@ -12,7 +12,9 @@ namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
 use App\Actions\Web\Redirect\StoreRedirect;
+use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
 use App\Actions\Web\Webpage\Luigi\DeleteReindexWebpageLuigiData;
+use App\Actions\Web\Website\HydrateRedirect;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\Webpage;
@@ -84,6 +86,13 @@ class DeleteWebpage extends OrgAction
                     'type'              => RedirectTypeEnum::PERMANENT,
                     'to_webpage_id'     => $redirect
                 ]);
+
+                HydrateRedirect::run($webpage);
+                
+                $redirectedWebpage = Webpage::find($redirect);
+                if ($redirectedWebpage) {
+                    WebpageHydrateRedirects::run($redirectedWebpage);
+                }
             }
         }
 

@@ -35,12 +35,20 @@ class GetWebBlockFamilies
                 $hasOverviewPage = $model->webpages()->where('layout_style', 'families-overview')->exists();
             }
 
+            $yearlySalesSubquery = DB::table('product_category_time_series_records as ptsr')
+                ->join('product_category_time_series as pts', 'ptsr.product_category_time_series_id', '=', 'pts.id')
+                ->where('pts.frequency', 'yearly')
+                ->where('ptsr.frequency', 'Y')
+                ->selectRaw('pts.product_category_id, SUM(ptsr.sales_org_currency_external) as total_sales')
+                ->groupBy('pts.product_category_id');
+
             $families = DB::table('product_categories')
                 ->leftJoin('webpages', function ($join) {
                     $join->on('product_categories.id', '=', 'webpages.model_id')
                         ->where('webpages.model_type', 'ProductCategory');
                 })
-                ->select(['product_categories.code', 'product_categories.web_images','product_categories.offers_data', 'name', 'image_id', 'webpages.url', 'webpages.canonical_url', 'title'])
+                ->leftJoinSub($yearlySalesSubquery, 'yearly_sales', 'yearly_sales.product_category_id', '=', 'product_categories.id')
+                ->select(['product_categories.code', 'product_categories.web_images', 'product_categories.offers_data', 'name', 'image_id', 'webpages.url', 'webpages.canonical_url', 'title'])
                 ->selectRaw('\''.request()->path().'\' as parent_url')
                 ->where(function ($query) use ($webpage) {
                     if ($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
@@ -69,11 +77,18 @@ class GetWebBlockFamilies
                 ->when(
                     ($hasOverviewPage),
                     function ($query) {
-                        $query->limit(3);
+                        $query->limit(20);
                     }
-                )
+                )->orderByRaw('yearly_sales.total_sales DESC NULLS LAST')
                 ->get();
         } elseif ($webpage->model instanceof Collection) {
+            $yearlySalesSubquery = DB::table('product_category_time_series_records as ptsr')
+                ->join('product_category_time_series as pts', 'ptsr.product_category_time_series_id', '=', 'pts.id')
+                ->where('pts.frequency', 'yearly')
+                ->where('ptsr.frequency', 'Y')
+                ->selectRaw('pts.product_category_id, SUM(ptsr.sales_org_currency_external) as total_sales')
+                ->groupBy('pts.product_category_id');
+
             $families = DB::table('product_categories')
                 ->leftJoin('collection_has_models', function ($join) {
                     $join->on('collection_has_models.model_id', '=', 'product_categories.id')
@@ -83,7 +98,8 @@ class GetWebBlockFamilies
                     $join->on('product_categories.id', '=', 'webpages.model_id')
                         ->where('webpages.model_type', '=', 'ProductCategory');
                 })
-                ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.web_images','product_categories.offers_data', 'webpages.url', 'webpages.url', 'webpages.canonical_url', 'title'])
+                ->leftJoinSub($yearlySalesSubquery, 'yearly_sales', 'yearly_sales.product_category_id', '=', 'product_categories.id')
+                ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.web_images', 'product_categories.offers_data', 'webpages.url', 'webpages.canonical_url', 'title'])
                 ->selectRaw('\''.request()->path().'\' as parent_url')
                 ->where('collection_has_models.collection_id', $webpage->model_id)
                 ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
@@ -91,6 +107,7 @@ class GetWebBlockFamilies
                 ->where('show_in_website', true)
                 ->whereNull('product_categories.deleted_at')
                 ->whereNull('webpages.deleted_at')
+                ->orderByRaw('yearly_sales.total_sales DESC NULLS LAST')
                 ->get();
         } else {
             return $webBlock;

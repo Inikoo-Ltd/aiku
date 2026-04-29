@@ -12,6 +12,7 @@ use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Dispatching\BatchCode;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\Procurement\OrgSupplierProduct;
@@ -70,6 +71,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $quantity_in_submitted_orders
  * @property numeric $quantity_to_be_picked
  * @property numeric $quantity_available
+ * @property int|null $current_batch_codes
+ * @property int|null $main_batch_code_id
  * @property numeric $source_quantity_in_submitted_orders
  * @property numeric $source_quantity_to_be_picked
  * @property bool $is_on_demand
@@ -83,7 +86,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Location> $locations
+ * @property-read BatchCode|null $mainBatchCode
  * @property-read \App\Models\Inventory\OrgStockFamily|null $orgStockFamily
+ * @property-read \App\Models\Inventory\OrgStockFamily|null $orgStockFamily
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\BatchCode> $batchCodes
+ * @property-read \App\Models\Dispatching\BatchCode|null $mainBatchCode
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockMovement> $orgStockMovements
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OrgSupplierProduct> $orgSupplierProducts
  * @property-read Organisation $organisation
@@ -239,6 +246,16 @@ class OrgStock extends Model implements Auditable
     {
         return $this->belongsToMany(Location::class, 'location_org_stocks')
             ->withPivot(['type', 'picking_priority', 'value', 'dropshipping_pipe', 'quantity', 'notes']);
+    }
+
+    public function batchCodes(): HasMany
+    {
+        return $this->hasMany(BatchCode::class);
+    }
+
+    public function mainBatchCode(): BelongsTo
+    {
+        return $this->belongsTo(BatchCode::class, 'main_batch_code_id');
     }
 
 }

@@ -185,6 +185,12 @@ class ShowDeliveryNote extends OrgAction
 
     public function wrappedActions(DeliveryNote $deliveryNote): array
     {
+        $isEditable = false;
+        if ($this->parent instanceof Warehouse) {
+            $isEditable = true;
+        }
+
+
         $showCancel = true;
 
         if (in_array($deliveryNote->state, [
@@ -200,7 +206,7 @@ class ShowDeliveryNote extends OrgAction
         }
 
         $actions = [];
-        if ($showCancel) {
+        if ($showCancel && $isEditable) {
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'cancel',
@@ -216,7 +222,7 @@ class ShowDeliveryNote extends OrgAction
             ];
         }
 
-        if (in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKED, DeliveryNoteStateEnum::FINALISED])) {
+        if ($isEditable && in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKED, DeliveryNoteStateEnum::FINALISED])) {
             $actions[] = [
                 'type'    => 'button',
                 'style'   => 'save',
@@ -239,6 +245,14 @@ class ShowDeliveryNote extends OrgAction
 
     public function getActions(DeliveryNote $deliveryNote, ActionRequest $request): array
     {
+        $isEditable = false;
+        if ($this->parent instanceof Warehouse) {
+            $isEditable = true;
+        }
+        if (!$isEditable) {
+            return [];
+        }
+
         $startPickingLabel    = __('Start picking');
         $generateInvoiceLabel = __('Generate Invoice');
 
@@ -673,6 +687,11 @@ class ShowDeliveryNote extends OrgAction
 
     public function htmlResponse(DeliveryNote $deliveryNote, ActionRequest $request): Response
     {
+        $isEditable = false;
+        if ($this->parent instanceof Warehouse) {
+            $isEditable = true;
+        }
+
         $actions = $this->getActions($deliveryNote, $request);
 
         $warning = null;
@@ -739,6 +758,7 @@ class ShowDeliveryNote extends OrgAction
                 'wrapped_actions' => $this->wrappedActions($deliveryNote),
             ],
             'warning'       => $warning,
+            'isEditable'    => $isEditable,
             'tabs'          => [
                 'current'    => $deliveryNote->state == DeliveryNoteStateEnum::PACKING ? DeliveryNoteTabsEnum::PENDING_ITEMS->value : $this->tab,
                 'navigation' => $deliveryNote->state == DeliveryNoteStateEnum::PACKING || $deliveryNote->state == DeliveryNoteStateEnum::PACKED
@@ -833,11 +853,11 @@ class ShowDeliveryNote extends OrgAction
                 'slug' => $deliveryNote->warehouse->slug,
             ],
 
-            'is_faire_order'                        => ($deliveryNote->shop->engine == ShopEngineEnum::FAIRE),
+            'is_faire_order' => ($deliveryNote->shop->engine == ShopEngineEnum::FAIRE),
 
-            'allow_waiting'                         => $allowWaiting,
-            'allow_picker_set_not_picked'           => !$allowWaiting || (data_get($this->organisation->settings, 'orders.allow_picker_set_not_picked', false)),
-            'showChangePickerPacker'                => $showChangePickerPacker,
+            'allow_waiting'               => $allowWaiting,
+            'allow_picker_set_not_picked' => !$allowWaiting || (data_get($this->organisation->settings, 'orders.allow_picker_set_not_picked', false)),
+            'showChangePickerPacker'      => $showChangePickerPacker,
 
             DeliveryNoteTabsEnum::HISTORY->value => $this->tab == DeliveryNoteTabsEnum::HISTORY->value ?
                 fn () => HistoryResource::collection(IndexHistory::run($deliveryNote, DeliveryNoteTabsEnum::HISTORY->value))

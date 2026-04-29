@@ -180,6 +180,10 @@ const showDiscount = computed(() => {
     )
 })
 
+
+
+
+
 watch([variantPrevEl, variantNextEl], () => {
   if (variantPrevEl.value && variantNextEl.value) {
     varinatNavigation.value = {
@@ -189,13 +193,14 @@ watch([variantPrevEl, variantNextEl], () => {
   }
 })
 
+
+
 onMounted(async () => {
   await nextTick()
   varinatNavigation.value.prevEl = variantPrevEl.value
   varinatNavigation.value.nextEl = variantNextEl.value
 })
-
-console.log('props', props)
+console.log(props)
 </script>
 
 
@@ -220,7 +225,7 @@ console.log('props', props)
                         <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
                         <Image v-else :src="tag.image" :alt="`Thumbnail tag ${index}`"
                             class="w-[15px] h-[15px] object-cover" />
-                        <span>{{ tag.name }}</span>
+                        <span>{{ trans(tag?.label) || tag?.label }}</span>
                     </div>
                 </div>
             </div>

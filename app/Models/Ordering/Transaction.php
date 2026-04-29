@@ -80,7 +80,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $platform_transaction_id
  * @property numeric|null $quantity_picked
  * @property numeric $submitted_quantity_ordered
- * @property string|null $offers_data
+ * @property array<array-key, mixed>|null $offers_data
  * @property string|null $dispatched_at
  * @property string|null $cancelled_at
  * @property int|null $family_id

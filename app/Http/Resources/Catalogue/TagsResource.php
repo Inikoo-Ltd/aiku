@@ -26,6 +26,7 @@ class TagsResource extends JsonResource
             'slug'  => $this->slug,
             'name'  => $this->name,
             'scope' => $this->scope?->pretty(),
+            'image' => $this->web_image,
         ];
     }
 }

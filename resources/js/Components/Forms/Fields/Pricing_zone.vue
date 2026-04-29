@@ -5,8 +5,6 @@
   -->
 
 <script setup lang="ts">
-import PureInput from "@/Components/Pure/PureInput.vue"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faCopy } from '@fal'
 import { faSpinnerThird } from '@fad'

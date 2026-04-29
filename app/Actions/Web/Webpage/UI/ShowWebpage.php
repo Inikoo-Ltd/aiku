@@ -115,7 +115,7 @@ class ShowWebpage extends OrgAction
             $actions[] = [
                 'type'    => 'button',
                 'style'   => 'edit',
-                'icon'    => ["fal", "fa-directions"],
+                'icon'    => ["fal", "fa-terminal"],
                 'tooltip' => __('New Redirect'),
                 'route'   => $redirectRoute
             ];
