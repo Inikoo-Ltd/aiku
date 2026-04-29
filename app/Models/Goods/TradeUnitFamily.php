@@ -9,13 +9,17 @@
 namespace App\Models\Goods;
 
 use App\Enums\Catalogue\HealthRankEnum;
+use App\Models\Helpers\Brand;
+use App\Models\Helpers\Tag;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Laravel\Scout\Searchable;
@@ -137,5 +141,27 @@ class TradeUnitFamily extends Model implements Auditable, HasMedia
     public function timeSeries(): HasMany
     {
         return $this->hasMany(TradeUnitFamilyTimeSeries::class);
+    }
+
+    public function brands(): MorphToMany
+    {
+        return $this->morphToMany(Brand::class, 'model', 'model_has_brands');
+    }
+    
+    public function brand(): ?Brand
+    {
+        /** @var Brand $brand */
+        $brand = $this->brands()->first();
+
+        return $brand;
+    }
+    
+    public function tags(): MorphToMany
+    {
+        return $this->morphToMany(
+            Tag::class,
+            'model',
+            'model_has_tags'
+        )->withTimestamps();
     }
 }

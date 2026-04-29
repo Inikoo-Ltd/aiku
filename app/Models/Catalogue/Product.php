@@ -204,6 +204,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Catalogue\ProductCategory|null $family
  * @property-read LaravelCollection<int, Favourite> $favourites
  * @property-read Media|null $frontImage
+ * @property-read array $translatable_columns_from
  * @property-read Group|null $group
  * @property-read \App\Models\Catalogue\HistoricAsset|null $historicAsset
  * @property-read LaravelCollection<int, \App\Models\Catalogue\HistoricAsset> $historicAssets

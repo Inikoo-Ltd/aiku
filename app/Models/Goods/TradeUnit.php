@@ -139,6 +139,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $bottomImage
  * @property-read Collection<int, Brand> $brands
  * @property-read Media|null $frontImage
+ * @property-read array $translatable_columns_from
  * @property-read Group|null $group
  * @property-read Media|null $image
  * @property-read MediaCollection<int, Media> $images

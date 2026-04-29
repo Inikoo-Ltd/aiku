@@ -107,6 +107,7 @@ class UpdateTag extends OrgAction
     public function handle(Tag $tag, array $modelData): Tag
     {
         $image = Arr::pull($modelData, 'image');
+        $labelTranslations = Arr::pull($modelData, 'label');
 
         if ($image) {
             $imageData = [
@@ -131,6 +132,26 @@ class UpdateTag extends OrgAction
         }
 
         $tag->update($modelData);
+
+        if (is_array($labelTranslations)) {
+            $filteredTranslations = collect($labelTranslations)
+                ->filter(fn ($translation, $locale) => is_string($locale) && filled($translation))
+                ->map(fn ($translation) => (string) $translation)
+                ->all();
+
+            $currentLocales = array_keys($tag->getTranslations('label'));
+            $newLocales = array_keys($filteredTranslations);
+
+            foreach (array_diff($currentLocales, $newLocales) as $locale) {
+                $tag->forgetTranslation('label', $locale);
+            }
+
+            if ($filteredTranslations !== []) {
+                $tag->setTranslations('label', $filteredTranslations);
+            }
+
+            $tag->save();
+        }
 
         return $tag;
     }
@@ -157,6 +178,15 @@ class UpdateTag extends OrgAction
 
         return [
             'name'  => $nameRules,
+            'label' => [
+                'sometimes',
+                'array',
+            ],
+            'label.*' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
             'scope' => [
                 'sometimes',
                 'nullable',

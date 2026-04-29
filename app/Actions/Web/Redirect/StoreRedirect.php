@@ -10,7 +10,6 @@
 namespace App\Actions\Web\Redirect;
 
 use App\Actions\OrgAction;
-use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
 use App\Actions\Web\Website\HydrateRedirect;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebpageTabsEnum;
@@ -22,7 +21,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect as FacadesRedirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
-use Lorisleiva\Actions\ActionRequest;
 
 class StoreRedirect extends OrgAction
 {
@@ -39,7 +37,7 @@ class StoreRedirect extends OrgAction
 
         $webpage->update(['redirect_webpage_id' => data_get($modelData, 'to_webpage_id')]);
 
-        
+
         $redirect = $webpage->redirectedTo()->create($modelData);
         HydrateRedirect::run($webpage);
 

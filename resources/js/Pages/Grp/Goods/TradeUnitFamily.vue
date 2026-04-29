@@ -20,9 +20,11 @@ import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue"
 import Image from "@/Components/Image.vue"
-import { faPlus } from "@far"
+import { faHandHoldingMagic, faPlus } from "@far"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import Tag from '@/Components/Tag.vue'
+import { Message } from "primevue"
+import { faWarning } from "@fortawesome/free-solid-svg-icons"
 
 library.add(
     faAtomAlt,faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube,
@@ -39,6 +41,7 @@ const props = defineProps<{
   routes?: {
     trade_units_route: routeType
     attach_route: routeType
+    assign_brand_tags_route: routeType
   }
   showcase?: object,
   trade_units?: Object
@@ -50,6 +53,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const tradeUnits = ref<any[]>([])
 const loadingAttach = ref(false)
+const loadingMassAssign = ref(false)
 const isModalOpen = ref(false)
 const isModalOpenMassAssign = ref(false)
 
@@ -61,7 +65,6 @@ const component = computed(() => {
   }
   return components[currentTab.value]
 })
-
 
 
 /**
@@ -98,28 +101,37 @@ const attachTradeUnit = () => {
 }
 
 
-const brands = ref<any | null>(null)
-const tags = ref<any[]>([])
+const brands = ref<any | null>(props.showcase.brand ?? null)
+const tags = ref<any[]>(props.showcase.tags ?? [])
+
+const isModified = computed(() => {
+  const brandsChanged = brands.value !== props.showcase.brand
+
+  const tagsChanged =
+    tags.value.length !== props.showcase.tags.length ||
+    tags.value.some((tag, i) => tag !== props.showcase.tags[i])
+
+  return brandsChanged || tagsChanged
+})
 
 const handleMassAssign = () => {
   const payload = {
-    brands: brands.value.id,
-    tags: tags.value.map(item => item.id),
+    brands: brands.value?.id ?? null,
+    tags: tags.value.map(item => item.id) ?? [],
   }
 
   router.post(
-    route(props.routes.attach_route.name, props.routes.attach_route.parameters),
+    route(props.routes.assign_brand_tags_route.name, props.routes.assign_brand_tags_route.parameters),
     payload,
     {
       onStart: () => {
-        loadingAttach.value = true
+        loadingMassAssign.value = true
       },
       onSuccess: () => {
         isModalOpenMassAssign.value = false
-        brands.value = null
-        tags.value = []
       },
       onError: (error) => {
+        console.error("ERR", error)
         notify({
           title: trans("Something went wrong"),
           text: error?.response?.data?.message || trans("Please try again"),
@@ -127,7 +139,7 @@ const handleMassAssign = () => {
         })
       },
       onFinish: () => {
-        loadingAttach.value = false
+        loadingMassAssign.value = false
       }
     }
   )
@@ -138,20 +150,24 @@ const handleMassAssign = () => {
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
     <template #otherBefore>
-      <Button @click="isModalOpenMassAssign = true" :icon="faPlus" label="Mass Assign Brand/Tag" :style="'secondary'"/>
+      <Button @click="isModalOpenMassAssign = true" :icon="faHandHoldingMagic" label="Edit Brand/Tag" :style="'secondary'"/>
       <Button @click="isModalOpen = true" :icon="faPlus" label="Trade Unit"/>
     </template>
   </PageHeading>
 
   <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-
   <component :is="component" :data="props[currentTab]" :tab="currentTab" />
-
   
   <!-- PrimeVue Dialog -->
-  <Dialog v-model:visible="isModalOpenMassAssign" modal header="Attach Brands & Tags" :style="{ width: '20vw',  }"
+  <Dialog v-model:visible="isModalOpenMassAssign" modal header="Attach Brands & Tags" :contentClass="'w-[40vw] lg:w-[35vw]'"
     :dismissableMask="true" :contentStyle="{ maxHeight: 'auto', overflowY: 'visible' }">
     <!-- BRANDS -->
+    <Message :severity="'warn'" xclosable="true" class="mb-3 !bg-yellow-100 !text-sm">
+      <span class="!text-sm">
+        <FontAwesomeIcon :icon="faWarning" />
+        {{ trans('Modifying this value would affect all of the corresponding children Trade Units') }}
+      </span>
+    </Message>
     <div class="mb-3 font-medium">Brands</div>
     <PureMultiselectInfiniteScroll v-model="brands" :fetchRoute="{ name: 'grp.json.brands.index', parameters: {} }"
       :placeholder="trans('Select brand')" valueProp="id" :mode="'single'" :object="true" />
@@ -178,7 +194,7 @@ const handleMassAssign = () => {
     <template #footer>
       <div class="flex justify-end gap-3 w-full">
         <Button label="Cancel" type="negative" @click="isModalOpenMassAssign = false" />
-        <Button type="save" label="Save" @click="handleMassAssign" />
+        <Button type="save" label="Save" @click="handleMassAssign" :loading="loadingMassAssign" :disabled="!isModified"/>
       </div>
     </template>
   </Dialog>

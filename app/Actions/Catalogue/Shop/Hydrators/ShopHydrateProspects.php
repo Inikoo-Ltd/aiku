@@ -32,11 +32,11 @@ class ShopHydrateProspects implements ShouldBeUnique
     public function handle(Shop $shop): void
     {
         $stats = [
-            'number_prospects'                 => $shop->prospects()->where('shop_id', $shop->id)->count(),
-            'number_opt_in_prospects'                 => $shop->prospects()->where('shop_id', $shop->id)->where('is_opt_in', true)->count(),
+            'number_prospects'                         => $shop->prospects()->where('shop_id', $shop->id)->count(),
+            'number_opt_in_prospects'                  => $shop->prospects()->where('shop_id', $shop->id)->where('is_opt_in', true)->count(),
             'number_opt_out_prospects'                 => $shop->prospects()->where('shop_id', $shop->id)->where('is_opt_in', false)->count(),
-            'number_prospects_dont_contact_me' => $shop->prospects()->where('shop_id', $shop->id)->where('dont_contact_me', true)->count(),
-            'number_opt_in_prospects_dont_contact_me' => $shop->prospects()->where('shop_id', $shop->id)->where('dont_contact_me', true)->where('is_opt_in', true)->count(),
+            'number_prospects_dont_contact_me'         => $shop->prospects()->where('shop_id', $shop->id)->where('dont_contact_me', true)->count(),
+            'number_opt_in_prospects_dont_contact_me'  => $shop->prospects()->where('shop_id', $shop->id)->where('dont_contact_me', true)->where('is_opt_in', true)->count(),
             'number_opt_out_prospects_dont_contact_me' => $shop->prospects()->where('shop_id', $shop->id)->where('dont_contact_me', true)->where('is_opt_in', false)->count(),
 
         ];
@@ -203,6 +203,5 @@ class ShopHydrateProspects implements ShouldBeUnique
         $crmStats = $shop->crmStats;
         $crmStats->update($stats);
         BroadcastProspectsDashboard::dispatch($crmStats->getChanges());
-
     }
 }

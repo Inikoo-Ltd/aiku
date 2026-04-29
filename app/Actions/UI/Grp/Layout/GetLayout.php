@@ -29,12 +29,12 @@ class GetLayout
             'organisations'  => UserOrganisationResource::collectionForUser($user->authorisedShopOrganisations, $user),
             'agents'         => UserOrganisationResource::collectionForUser($user->authorisedAgentsOrganisations, $user),
             'digital_agency' => UserOrganisationResource::collectionForUser($user->authorisedDigitalAgencyOrganisations, $user),
-
-            'navigation' => [
+            'bookmarks'      => $user->bookmarks,
+            'navigation'     => [
                 'grp' => GetGroupNavigation::run($user),
                 'org' => GetOrganisationsLayout::run($user),
             ],
-            'app_theme' => $user->settings['app_theme'] ?? null,
+            'app_theme'      => $user->settings['app_theme'] ?? null,
 
 
         ];
