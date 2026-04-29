@@ -158,6 +158,15 @@ class GetGroupNavigation
                             'parameters' => []
                         ]
                     ],
+                    [
+                        'label' => 'Tags',
+                        'icon'  => ['fal', 'fa-copyright'],
+                        'root'  => 'grp.trade_units.tags.',
+                        'route' => [
+                            'name'       => 'grp.trade_units.tags.index',
+                            'parameters' => []
+                        ]
+                    ],
                 ]
             ]
         ];
