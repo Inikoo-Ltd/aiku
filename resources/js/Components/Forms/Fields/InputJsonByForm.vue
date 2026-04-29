@@ -47,27 +47,27 @@ onMounted(normalizeFieldValue)
 
 <template>
     <div class="flex flex-wrap items-start gap-6 mb-5">
-    <div
-        v-for="(field, findex) in fieldData.fields"
-        :key="findex"
-        class="flex flex-col"
-        :style="field.column
-            ? { width: `calc(${field.column} - 12px)` }
-            : undefined"
-    >
-        <label v-if="field.label" class="mb-1 text-sm font-medium text-gray-700">
-            {{ field.label }}
-        </label>
-
-        <component
-            :is="getComponent(field.type)"
-            :model-value="get(form[fieldName], field.key)"
-            @update:model-value="val => set(form[fieldName], field.key, val)"
-            v-bind="field"
-            class="p-0"
-        />
+        <div
+            v-for="(field, findex) in fieldData.fields"
+            :key="findex"
+            class="flex flex-col"
+            :style="field.column
+                ? { width: `calc(${field.column} - 12px)` }
+                : undefined"
+        >
+            <label v-if="field.label" class="mb-1 text-sm font-medium text-gray-700">
+                {{ field.label }}
+            </label>
+        
+            <component
+                :is="getComponent(field.type)"
+                :model-value="get(form[fieldName], field.key)"
+                @update:model-value="val => set(form[fieldName], field.key, val)"
+                v-bind="field"
+                class="p-0"
+            />
+        </div>
     </div>
-</div>
 
     <p v-if="get(form, ['errors', fieldName])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
         {{ form.errors[fieldName] }}
