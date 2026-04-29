@@ -160,7 +160,7 @@ class GetGroupNavigation
                     ],
                     [
                         'label' => 'Tags',
-                        'icon'  => ['fal', 'fa-copyright'],
+                        'icon'  => ['fal', 'fa-tags'],
                         'root'  => 'grp.trade_units.tags.',
                         'route' => [
                             'name'       => 'grp.trade_units.tags.index',
