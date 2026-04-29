@@ -130,7 +130,7 @@ trait WithAllegroOAuth
                 'Content-Type' => 'application/x-www-form-urlencoded',
             ])->asForm();
 
-            if(app()->isLocal()) {
+            if (app()->isLocal()) {
                 $baseHttp->withOptions([
                     'verify' => false
                 ]);

@@ -84,7 +84,7 @@ class IndexTradeUnitsInTradeUnitFamily extends GrpAction
 
             $table->column(key: 'brands', label: __('Brands'), canBeHidden: false, sortable: false, searchable: false);
             $table->column(key: 'tags', label: __('Tags'), canBeHidden: false, sortable: false, searchable: false);
-            
+
         };
     }
 
