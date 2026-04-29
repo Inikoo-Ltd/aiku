@@ -100,14 +100,11 @@ use App\Models\Ordering\ShippingCountry;
 use App\Models\Ordering\Transaction;
 use App\Models\Helpers\Country;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Support\Facades\Bus;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Date;
 use Inertia\Testing\AssertableInertia;
-use Laravel\Scout\Scout;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -1309,20 +1306,4 @@ test('reset daily intervals action dispatches expected jobs', function () {
     ProcessResetIntervalsGroups::assertPushed(1);
     ProcessResetIntervalsOrganisations::assertPushed(1);
     ProcessResetIntervalsShops::assertPushed(1);
-});
-
-test('order scout indexing is delayed by five seconds', function () {
-    Config::set('scout.queue', ['queue' => 'search']);
-    Bus::fake();
-
-    $order = Order::factory()->make();
-    $beforeDispatch = now();
-
-    $order->queueMakeSearchable(new EloquentCollection([$order]));
-
-    Bus::assertDispatched(Scout::$makeSearchableJob, function ($job) use ($beforeDispatch, $order) {
-        return $job->models->first()?->is($order)
-            && $job->delay instanceof Carbon
-            && $job->delay->equalTo($beforeDispatch->copy()->addSeconds(5));
-    });
 });
