@@ -31,11 +31,13 @@ class TimeTrackersResource extends JsonResource
         }
 
         return [
-            'id'        => $this->id,
-            'starts_at' => $startsAt,
-            'ends_at'   => $endsAt,
-            'duration'  => $this->duration,
-            'status'    => $this->status->statusIcon()[$this->status->value],
+            'id'           => $this->id,
+            'starts_at'    => $startsAt,
+            'ends_at'      => $endsAt,
+            'duration'     => $this->duration,
+            'status'       => $this->status->statusIcon()[$this->status->value],
+            'status_value' => $this->status->value,
+            'can_add_clock_out' => $this->status === TimeTrackerStatusEnum::OPEN,
             'action'    => match (true) {
                 (bool) $this->starts_at => [
                     'tooltip' => __('Clock In'),
@@ -48,7 +50,10 @@ class TimeTrackersResource extends JsonResource
                     'class'   => 'text-red-500'
                 ],
                 default => []
-            }
+            },
+            'clock_out_route' => $this->status === TimeTrackerStatusEnum::OPEN
+                ? route('grp.models.time-tracker.clock-out', ['timeTracker' => $this->id])
+                : null
         ];
     }
 }
