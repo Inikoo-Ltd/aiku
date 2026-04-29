@@ -24,10 +24,11 @@ class SearchSysAdmin
         $guests = Guest::search($query)->get();
 
         return [
+            'scope'   => 'sysadmin',
             'results' => [
                 'users'  => UserSearchResultResource::collection($users),
                 'guests' => GuestSearchResultResource::collection($guests),
-            ]
+            ],
         ];
     }
 
