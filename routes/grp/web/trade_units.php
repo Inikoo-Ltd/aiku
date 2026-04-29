@@ -20,6 +20,7 @@ use App\Actions\Helpers\Brand\UI\CreateBrand;
 use App\Actions\Helpers\Brand\UI\EditBrand;
 use App\Actions\Helpers\Brand\UI\IndexBrands;
 use App\Actions\Helpers\Brand\UI\ShowBrand;
+use App\Actions\Helpers\Tag\UpdateTag;
 use App\Actions\Helpers\Tag\UI\EditTag;
 use App\Actions\Helpers\Tag\UI\IndexTagsProductProperty;
 use Illuminate\Support\Facades\Route;
@@ -59,7 +60,8 @@ Route::prefix('brands')->as('brands.')->group(function () {
 
 Route::prefix('tags')->as('tags.')->group(function () {
     Route::get('/', IndexTagsProductProperty::class)->name('index');
+    Route::patch('update/{tag:id}', [UpdateTag::class, 'inProductProperty'])->name('update')->withoutScopedBindings();
     Route::prefix('{tag:slug}')->group(function () {
-         Route::get('edit', EditTag::class)->name('edit');
+        Route::get('edit', [EditTag::class, 'inProductProperty'])->name('edit');
     });
 });

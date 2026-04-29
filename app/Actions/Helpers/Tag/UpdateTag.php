@@ -16,6 +16,7 @@ use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
+use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Exception;
 use Illuminate\Http\RedirectResponse;
@@ -27,6 +28,14 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTag extends OrgAction
 {
+    public function inProductProperty(Tag $tag, ActionRequest $request): void
+    {
+        $group = Group::query()->findOrFail($tag->group_id);
+        $this->initialisationFromGroup($group, $request);
+
+        $this->handle($tag, $this->validatedData);
+    }
+
     public function inTradeUnit(TradeUnit $tradeUnit, Tag $tag, ActionRequest $request): void
     {
         $this->initialisationFromGroup($tradeUnit->group, $request);

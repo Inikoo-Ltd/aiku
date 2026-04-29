@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Tag;
+use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -38,20 +39,21 @@ class EditTag extends OrgAction
         return $this->handle($tag, $request);
     }
 
-    /*  public function inProductProperty(Tag $tag, ActionRequest $request): Response
-     {
-        $this->forcedScope = TagScopeEnum::ADMIN_CUSTOMER;
-        $this->initialisationFromShop($shop, $request);
+    public function inProductProperty(Tag $tag, ActionRequest $request): Response
+    {
+        $this->forcedScope = TagScopeEnum::PRODUCT_PROPERTY;
+        $group = Group::query()->findOrFail($tag->group_id);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($tag, $request);
-     } */
+    }
 
     public function handle(Tag $tag, ActionRequest $request): Response
     {
-       $routeName = match ($this->forcedScope) {
+        $routeName = match ($this->forcedScope) {
             TagScopeEnum::USER_CUSTOMER    => 'grp.org.shops.show.crm.self_filled_tags.update',
             TagScopeEnum::ADMIN_CUSTOMER   => 'grp.models.trade-unit.tags.update',
-            TagScopeEnum::PRODUCT_PROPERTY =>'grp.trade_units.tags.edit',
+            TagScopeEnum::PRODUCT_PROPERTY => 'grp.trade_units.tags.update',
             default                        => 'grp.org.shops.show.crm.self_filled_tags.update',
         };
 
@@ -66,6 +68,40 @@ class EditTag extends OrgAction
             ],
         };
 
+        $exitRoute = $this->forcedScope === TagScopeEnum::PRODUCT_PROPERTY
+            ? [
+                'name'       => preg_replace('/edit$/', 'index', $request->route()->getName()),
+                'parameters' => [],
+            ]
+            : [
+                'name'       => preg_replace('/edit$/', 'index', $request->route()->getName()),
+                'parameters' => [
+                    $this->organisation->slug,
+                    $this->shop->slug
+                ],
+            ];
+
+        $breadcrumbs = $this->forcedScope === TagScopeEnum::PRODUCT_PROPERTY
+            ? array_merge(
+                IndexTagsProductProperty::make()->getBreadcrumbs(
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => $request->route()->getName(),
+                                'parameters' => $request->route()->originalParameters(),
+                            ],
+                            'label' => __('Edit'),
+                        ],
+                    ],
+                ]
+            )
+            : $this->getBreadcrumbs($request->route()->originalParameters());
+
         $updateRoute = [
             'name'       => $routeName,
             'parameters' => $parameters,
@@ -74,7 +110,7 @@ class EditTag extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'breadcrumbs' => $breadcrumbs,
                 'title'       => __('Edit Tag'),
                 'pageHead'    => [
                     'title'   => $tag->name,
@@ -86,13 +122,7 @@ class EditTag extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
-                            'route' => [
-                                'name'       => preg_replace('/edit$/', 'index', $request->route()->getName()),
-                                'parameters' => [
-                                    $this->organisation->slug,
-                                    $this->shop->slug
-                                ]
-                            ]
+                            'route' => $exitRoute
                         ]
                     ]
                 ],
