@@ -637,7 +637,12 @@ const onSetItemToUndoWaitingWarehouse = () => {
                 {{ Number(item.quantity_not_picked) }}
             </span>
 
-            <span v-if="Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')"  class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
+            <Link v-if="isEditable && Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')" :href="routeItemsWaitingWarehouse(item)" class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
+                {{ Number(item.quantity_waiting_warehouse) }}
+                <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px]" fixed-width aria-hidden="true" />
+            </Link>
+            <span v-else-if="Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')"  class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
                 {{ Number(item.quantity_waiting_warehouse) }}
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px]" fixed-width aria-hidden="true" />
@@ -730,6 +735,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                         </span>
                     </div>
 
+                    <!-- Button: Undo Pick from Pickings -->
                     <div v-if="isEditable" class="">
                         <ButtonWithLink
                             v-if="item.quantity_picked!=0 || item.quantity_not_picked!=0"
@@ -748,6 +754,11 @@ const onSetItemToUndoWaitingWarehouse = () => {
 
             <div v-else class="text-xs text-gray-400 italic">
                 {{ trans("No item picked yet") }}
+            </div>
+
+            <!-- Section: items are waiting for warehouse -->
+            <div v-if="!isEditable && Number(item.quantity_waiting_warehouse) > 0" class="mt-2 xmx-auto w-fit flex gap-x-2">
+                <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(item.quantity_waiting_warehouse)" />
             </div>
         </template>
 
@@ -911,14 +922,14 @@ const onSetItemToUndoWaitingWarehouse = () => {
 
 
                         </div>
-                        </div>
+                    </div>
                         
-                        <!-- Section: Errors list -->
-                        <div v-if="proxyItem.errors?.length" class="">
-                            <p v-for="error in proxyItem.errors" class="text-xs text-red-500 italic">
-                                *{{ error }}
-                            </p>
-                        </div>
+                    <!-- Section: Errors list -->
+                    <div v-if="proxyItem.errors?.length" class="">
+                        <p v-for="error in proxyItem.errors" class="text-xs text-red-500 italic">
+                            *{{ error }}
+                        </p>
+                    </div>
                 </div>
 
                 <div v-else class="flex justify-between gap-x-2">
