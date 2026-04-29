@@ -90,6 +90,10 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.google_tag_id", Arr::pull($modelData, "google_tag_id"));
         }
 
+        if (Arr::has($modelData, "gsc_content")) {
+            data_set($modelData, "settings.gsc_content", Arr::pull($modelData, "gsc_content"));
+        }
+
         if (Arr::has($modelData, "catalogue_template")) {
             data_set($modelData, "settings.catalogue_template", Arr::pull($modelData, "catalogue_template"));
         }
@@ -208,6 +212,12 @@ class UpdateWebsite extends OrgAction
                 'nullable',
                 'string',
                 'regex:/^GTM-[A-Z0-9]+$/'
+            ],
+           'gsc_content' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'regex:/^[A-Za-z0-9_\-]+$/',
             ],
             'catalogue_template'       => ['sometimes', 'array'],
             'luigisbox_tracker_id'     => [
