@@ -54,6 +54,18 @@ class GetRetinaPaymentAccountShopData
                         'iban'           => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.iban'),
                     ]
                 ];
+        }  elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::PASTPAY) {
+            return
+                [
+                    'label' => __('Pastpay'),
+                    'key'   => 'pastpay',
+                    'icon'  => 'fal fa-hand-holding-usd',
+                    'data'  => [
+                        'bank_name'      => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.name'),
+                        'account_number' => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.account'),
+                        'iban'           => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.iban'),
+                    ]
+                ];
         } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::CASH_ON_DELIVERY) {
             if (!in_array($order->deliveryAddress->country_id, Arr::get($paymentAccountShop->paymentAccount->data, 'countries', []))) {
                 return null;
