@@ -140,6 +140,7 @@ const props = defineProps<{
     allowActions: boolean
     quick_pickers : any
     showChangePickerPacker: boolean
+    isEditable: boolean
 }>()
 
 const emit = defineEmits<{
@@ -532,12 +533,12 @@ console.log(layout)
                         />
 
                         <Button
-                            v-if="['handling'].includes(deliveryNote?.state) && showChangePickerPacker"
+                            v-if="isEditable && ['handling'].includes(deliveryNote?.state) && showChangePickerPacker"
                             @click="isModalToQueue = true" :label="trans('Change Picker')"  :icon="faExchangeAlt" type="tertiary" size="xs" />
 
 
                         <Button
-                            v-if="['packing', 'packed'].includes(deliveryNote?.state) && showChangePickerPacker"
+                            v-if="isEditable && ['packing', 'packed'].includes(deliveryNote?.state) && showChangePickerPacker"
                             @click="isModalToQueue = true" :label="trans('Change Packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
 
 
@@ -550,6 +551,7 @@ console.log(layout)
                         :deliveryNote
                         :trolleys="boxStats.trolleys"
                         :warehouse
+                        :isEditable
                     />
                     
                     <!-- Section: Picked Bays -->
@@ -558,7 +560,7 @@ console.log(layout)
                             <dt class="flex-none">
                                 {{ trans("Picked bays") }}:
                             </dt>
-                            <dd v-if="boxStats?.picked_bays?.length" class="text-gray-500">
+                            <dd v-if="boxStats?.picked_bays?.length" class="font-bold xtext-gray-500">
                                 <span
                                     v-for="bay in boxStats?.picked_bays"
                                     :key="bay.id"
@@ -574,7 +576,7 @@ console.log(layout)
                         </dl>
 
                         <ChangePickedBays
-                            v-if="['picked'].includes(deliveryNote.state)"
+                            v-if="isEditable && ['picked'].includes(deliveryNote.state)"
                             :warehouse="warehouse"
                             :deliveryNote="deliveryNote"
                             :pickedBays="boxStats?.picked_bays"

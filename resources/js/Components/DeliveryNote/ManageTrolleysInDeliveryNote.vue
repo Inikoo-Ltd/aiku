@@ -20,6 +20,7 @@ const props = defineProps<{
     warehouse: {
         slug: string
     }
+    isEditable: boolean
 }>()
 </script>
 
@@ -49,7 +50,7 @@ const props = defineProps<{
                         }"
                     >
                         <template #default="{ changeModel }">
-                            <span @click="changeModel" class="text-red-400 hover:text-red-600 cursor-pointer">
+                            <span v-if="isEditable" @click="changeModel" class="text-red-400 hover:text-red-600 cursor-pointer">
                                 <FontAwesomeIcon icon="fal fa-times" class="" fixed-width aria-hidden="true" />
                             </span>
                         </template>
@@ -58,7 +59,7 @@ const props = defineProps<{
                 <!-- <Button type="dashed" :label="trans('Select new trolley')" icon="far fa-plus" size="xxs" /> -->
                 
                 <AttachTrolleyToDeliverynote
-                    v-if="['handling', 'picked'].includes(deliveryNote.state)"
+                    v-if="isEditable && ['handling', 'picked'].includes(deliveryNote.state)"
                     :warehouse="warehouse"
                     :deliveryNote="deliveryNote"
                 />
