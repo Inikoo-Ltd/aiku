@@ -87,7 +87,7 @@ console.log(props)
           v-if="showImage"
           :style="getStyles(fieldValue?.image?.container?.properties, screenType)"
           class="relative w-full overflow-hidden
-                 aspect-[3/2]
+                 aspect-[4/]
                  max-h-[500px] md:max-h-[550px] xl:max-h-[600px] 2xl:max-h-[650px]"
           :class="imageOrder"
         >
