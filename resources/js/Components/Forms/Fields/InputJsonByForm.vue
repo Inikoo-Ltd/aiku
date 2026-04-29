@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Component, onMounted, watch } from "vue"
+import { onMounted, watch } from "vue"
 import { cloneDeep, isPlainObject, get, set } from 'lodash-es'
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faCopy } from '@fal'
