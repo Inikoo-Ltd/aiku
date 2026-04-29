@@ -25,8 +25,10 @@ const props = defineProps<{
             item_quantity: number
         }
         duration: string  // 'permanent'
+        duration_label: string  // 'Bis Mi., 01 Jul'
         created_at: string
         end_at: string
+        start_at: string
         data_allowance_signature: {
             percentage_off: string
         }
@@ -93,7 +95,9 @@ const isOfferExpired = (endAt: string) => {
                 </div>
             </div>
 
-            <span class="xmt-2 text-xxs italic font-normal opacity-70">{{ useFormatTime(offer.created_at)}} - {{ offer.end_at ? useFormatTime(offer.end_at) : trans('No Expiration') }}</span>
+            <!-- Section: Duration -->
+            <span v-if="offer.duration_label" class="xmt-2 text-xxs italic font-normal opacity-70">{{ offer.duration_label }}</span>
+            <span v-else class="xmt-2 text-xxs italic font-normal opacity-70">{{ useFormatTime(offer.start_at)}} - {{ offer.end_at ? useFormatTime(offer.end_at) : trans('No Expiration') }}</span>
         </div>
     </section>
 </template>

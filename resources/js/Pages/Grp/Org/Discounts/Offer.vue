@@ -92,7 +92,8 @@ const getOfferCampaignLink = (offerCampaign: {}) => {
             </div>
         </template>
     </PageHeading>
-    
+    <!-- <pre>{{ data.offer }}</pre> -->
+
     <!-- Section: Preview label -->
     <div class="p-5 border-b border-gray-300 mb-4 flex flex-col items-center offer">
         <div class="mb-2">
@@ -194,18 +195,20 @@ const getOfferCampaignLink = (offerCampaign: {}) => {
             (typeof data.offer.trigger_data?.item_quantity !== 'undefined')
             || (typeof data.offer.trigger_data?.min_amount !== 'undefined')
             || (typeof data.offer.trigger_data?.order_number !== 'undefined')
+            || (typeof data.offer.trigger_data?.item_amount !== 'undefined')
         "
             class="max-w-lg first:pt-0 pr-2 flex flex-col first:border-t-0 gap-y-1 pt-1 pb-1.5">
             <div class="bg-amber-100 font-bold border-b border-gray-200 text-amber-700 text-center mb-1 py-1 px-2">
                 {{ ctrans("Trigger") }}
             </div>
+            
             <!-- Trigger: Item Quantity -->
             <div v-if="(typeof data.offer.trigger_data?.item_quantity !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
                 <dt class="col-span-4 flex flex-col">
                     <div class="flex items-center leading-none">
                         <span>{{ ctrans("Item quantity") }}</span>
                     </div>
-                    <span v-tooltip="'fieldSummary.information'" class="text-xs text-gray-400 truncate">
+                    <span v-tooltip="ctrans('Minimum of quantity the item ordered')" class="text-xs text-gray-400 truncate">
                         {{ ctrans("Minimum of quantity the item ordered") }}
                     </span>
                 </dt>
@@ -216,15 +219,33 @@ const getOfferCampaignLink = (offerCampaign: {}) => {
                     </dd>
                 </div>
             </div>
-
-            <!-- Trigger: Item Quantity -->
+            
+            <!-- Trigger: item amount -->
+            <div v-if="(typeof data.offer.trigger_data?.item_amount !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
+                <dt class="col-span-4 flex flex-col">
+                    <div class="flex items-center leading-none">
+                        <span>{{ ctrans("Item amount") }}</span>
+                    </div>
+                    <span v-tooltip="ctrans('Minimum of amount the item ordered')" class="text-xs text-gray-400 truncate">
+                        {{ ctrans("Minimum of amount the item ordered") }}
+                    </span>
+                </dt>
+        
+                <div class="relative col-span-3 justify-self-end font-medium overflow-hidden">
+                    <dd class="">
+                        {{ locale.currencyFormat(currency_code, data.offer.trigger_data.item_amount)}}
+                    </dd>
+                </div>
+            </div>
+            
+            <!-- Trigger: Min amount -->
             <div v-if="(typeof data.offer.trigger_data?.min_amount !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
                 <dt class="col-span-4 flex flex-col">
                     <div class="flex items-center leading-none">
-                        <span>{{ ctrans("Order amount") }}</span>
+                        <span>{{ ctrans("Minimum amount") }}</span>
                     </div>
-                    <span v-tooltip="'fieldSummary.information'" class="text-xs text-gray-400 truncate">
-                        {{ ctrans("Minimum of amount of the order") }}
+                    <span v-tooltip="ctrans('Minimum of amount the item ordered')" class="text-xs text-gray-400 truncate">
+                        {{ ctrans("Minimum of amount the item ordered") }}
                     </span>
                 </dt>
         
@@ -235,7 +256,7 @@ const getOfferCampaignLink = (offerCampaign: {}) => {
                 </div>
             </div>
 
-            <!-- Trigger: Item Quantity -->
+            <!-- Trigger: Order number -->
             <div v-if="(typeof data.offer.trigger_data?.order_number !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
                 <dt class="col-span-4 flex flex-col">
                     <div class="flex items-center leading-none">
