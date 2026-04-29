@@ -758,7 +758,7 @@ class ShowDeliveryNote extends OrgAction
                 'wrapped_actions' => $this->wrappedActions($deliveryNote),
             ],
             'warning'       => $warning,
-            'isEditable'    => $isEditable,
+            'is_editable'    => $isEditable,
             'tabs'          => [
                 'current'    => $deliveryNote->state == DeliveryNoteStateEnum::PACKING ? DeliveryNoteTabsEnum::PENDING_ITEMS->value : $this->tab,
                 'navigation' => $deliveryNote->state == DeliveryNoteStateEnum::PACKING || $deliveryNote->state == DeliveryNoteStateEnum::PACKED

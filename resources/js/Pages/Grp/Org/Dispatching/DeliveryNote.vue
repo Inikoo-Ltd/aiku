@@ -142,6 +142,7 @@ const props = defineProps<{
 	shop_type : string
 	is_faire_order : boolean
 	showChangePickerPacker: boolean
+	is_editable: boolean  // To distinguish DN in Shops and DN in Wwarehouse
 }>();
 
 
@@ -383,8 +384,9 @@ onMounted(() => {
 			<!-- toggle picking view -->
 			<div
 				v-if="
-					delivery_note_state.value !== 'dispatched' &&
-					delivery_note_state.value !== 'cancelled'
+					is_editable
+					&& delivery_note_state.value !== 'dispatched'
+					&& delivery_note_state.value !== 'cancelled'
 				"
 				class="flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2 rounded-md">
 				<FontAwesomeIcon :icon="faBoxOpen" class="text-gray-400" fixed-width />
@@ -594,6 +596,7 @@ onMounted(() => {
 		:shipments
 		:warehouse
 		:quick_pickers
+		:isEditable="is_editable"
 	/>
 
 	<Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
