@@ -13,6 +13,7 @@ use App\Models\Inventory\OrgStockFamily;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
+use App\Models\Traits\HasSearch;
 use App\Models\Traits\InGroup;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -23,7 +24,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -78,7 +78,7 @@ class StockFamily extends Model implements HasMedia, Auditable
     use InGroup;
     use HasHistory;
     use HasFactory;
-    use Searchable;
+    use HasSearch;
 
     protected $casts = [
         'data'            => 'array',

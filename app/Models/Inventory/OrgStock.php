@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -113,7 +113,7 @@ class OrgStock extends Model implements Auditable
     use HasSlug;
     use InOrganisation;
     use SoftDeletes;
-    use Searchable;
+    use HasSearch;
 
     protected $casts = [
         'data'                             => 'array',

@@ -43,7 +43,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -197,7 +197,7 @@ class DeliveryNote extends Model implements Auditable
     use InCustomer;
     use HasAddresses;
     use HasHistory;
-    use Searchable;
+    use HasSearch;
 
     protected $casts = [
         'data'                    => 'array',

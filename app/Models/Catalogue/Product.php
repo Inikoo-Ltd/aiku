@@ -43,7 +43,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -256,7 +256,7 @@ class Product extends Model implements Auditable, HasMedia
     use HasImage;
     use HasTranslations;
     use HasAttachments;
-    use Searchable;
+    use HasSearch;
 
     protected $guarded = [];
 

@@ -13,6 +13,7 @@ use App\Models\Helpers\Brand;
 use App\Models\Helpers\Tag;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasSearch;
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -21,7 +22,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -64,7 +64,7 @@ class TradeUnitFamily extends Model implements Auditable, HasMedia
     use HasHistory;
     use HasFactory;
     use HasAttachments;
-    use Searchable;
+    use HasSearch;
 
     protected $table = 'trade_unit_families';
 

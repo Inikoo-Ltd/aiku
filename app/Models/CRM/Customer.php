@@ -70,7 +70,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
@@ -221,7 +221,7 @@ class Customer extends Model implements HasMedia, Auditable
     use HasApiTokens;
     use Notifiable;
     use HasSearchableText;
-    use Searchable;
+    use HasSearch;
 
     protected $casts = [
         'data'                        => 'array',
