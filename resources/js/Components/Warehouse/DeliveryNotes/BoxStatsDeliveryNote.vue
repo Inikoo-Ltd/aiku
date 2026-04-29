@@ -560,7 +560,7 @@ console.log(layout)
                             <dt class="flex-none">
                                 {{ trans("Picked bays") }}:
                             </dt>
-                            <dd v-if="boxStats?.picked_bays?.length" class="text-gray-500">
+                            <dd v-if="boxStats?.picked_bays?.length" class="font-bold xtext-gray-500">
                                 <span
                                     v-for="bay in boxStats?.picked_bays"
                                     :key="bay.id"
@@ -576,7 +576,7 @@ console.log(layout)
                         </dl>
 
                         <ChangePickedBays
-                            v-if="['picked'].includes(deliveryNote.state)"
+                            v-if="isEditable && ['picked'].includes(deliveryNote.state)"
                             :warehouse="warehouse"
                             :deliveryNote="deliveryNote"
                             :pickedBays="boxStats?.picked_bays"
