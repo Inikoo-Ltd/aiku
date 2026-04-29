@@ -58,11 +58,33 @@ task('deploy:migrate', function () {
 
     artisan('migrate --force', ['skipIfNoEnv', 'showOutput'])();
 });
+
+
+desc('Modified npm:install');
+task('npm:my_install', function () {
+    if (currentHost()->getAlias() == 'staging') {
+        set('use_nvm', 'source ~/.nvm/nvm.sh && nvm use --lts');
+        run("cd {{release_path}} && {{use_nvm}} && npm ci");
+    } else {
+        run('cd {{release_path}} && {{bin/npm}} ci');
+    }
+});
+
 desc('🏗️ Build vue app');
 task('deploy:build', function () {
+
+
+
     $frontEndChanged = get('front_end_changed');
     if ($frontEndChanged) {
-        run("cd {{release_path}} && {{bin/npm}} run build");
+        if (currentHost()->getAlias() == 'staging') {
+            set('use_nvm', 'source ~/.nvm/nvm.sh && nvm use --lts');
+            run("cd {{release_path}} && {{use_nvm}} && npm run build");
+        } else {
+            run("cd {{release_path}} && {{bin/npm}} run build");
+        }
+
+
     } else {
         // No FE changes: reuse built assets from the previous release
         writeln('No front-end changes detected. Reusing built assets from previous release if available.');

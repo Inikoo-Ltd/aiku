@@ -5,10 +5,10 @@
   -->
 
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3"
+import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal } from "@fal"
+import { faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal, faAtomAlt } from "@fal"
 import { computed, defineAsyncComponent, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -27,6 +27,7 @@ import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue"
 import TableMasterProducts from "@/Components/Tables/Grp/Goods/TableMasterProducts.vue"
 import TableOrgStocks from "@/Components/Tables/Grp/Org/Inventory/TableOrgStocks.vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal)
 
@@ -64,6 +65,7 @@ const props = defineProps<{
     }[]
     images_update_route: routeType
     id: number | string
+    tradeUnitFamilySlug?: string
 }>()
 
 
@@ -86,19 +88,33 @@ const component = computed(() => {
 
 })
 
-
+const visitTradeUnitFamily = () => {
+    router.visit(route('grp.trade_units.families.show', {
+        tradeUnitFamily: props.tradeUnitFamilySlug
+    }));
+}
 
 </script>
 
 
 <template>
-
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <!-- <template #other>
             <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                 icon="upload" />
         </template> -->
+        <template #afterTitle>
+            <FontAwesomeIcon 
+                v-if="tradeUnitFamilySlug"
+                @click="visitTradeUnitFamily"
+                :icon="faAtomAlt"
+                class="cursor-pointer hover:text-black transition ease-in-out"
+            />
+            <span class="font-normal text-lg leading-none">
+                {{ props.pageHead.afterTitle?.label }}
+            </span>
+        </template>
     </PageHeading>
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />

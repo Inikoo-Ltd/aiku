@@ -22,8 +22,6 @@ if (props.options !== undefined && props.options.defaultCountry) {
     defaultCountry = props.options.defaultCountry
 }
 
-// const initialRaw = 'xxxxxx'
-
 const phone = ref(props.form[props.fieldName] || '')
 const phoneError = ref('')
 const isInitialInvalid = ref(false)

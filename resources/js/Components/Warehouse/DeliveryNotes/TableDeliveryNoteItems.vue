@@ -50,6 +50,7 @@ const props = defineProps<{
     shop_type : string
     allowWaiting: boolean
     allowPickerSetNotPicked: boolean
+    isEditable: boolean
 }>();
 
 const emit = defineEmits<{
@@ -109,8 +110,8 @@ onMounted(() => {
 
 
 const generateLocationRoute = (location: any) => {
-    if (!location.location_slug) {
-        return "#";
+    if (!location.location_slug || !(route().params["organisation"]) || !(route().params["warehouse"])) {
+        return "";
     }
 
     if (route().current() === "grp.org.warehouses.show.dispatching.delivery_notes.show") {
@@ -132,7 +133,7 @@ const generateLocationRoute = (location: any) => {
             ]
         )
     } else {
-        return "#";
+        return "";
     }
 
 };
@@ -636,7 +637,12 @@ const onSetItemToUndoWaitingWarehouse = () => {
                 {{ Number(item.quantity_not_picked) }}
             </span>
 
-            <span v-if="Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')"  class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
+            <Link v-if="isEditable && Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')" :href="routeItemsWaitingWarehouse(item)" class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
+                {{ Number(item.quantity_waiting_warehouse) }}
+                <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px]" fixed-width aria-hidden="true" />
+            </Link>
+            <span v-else-if="Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')"  class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
                 {{ Number(item.quantity_waiting_warehouse) }}
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px]" fixed-width aria-hidden="true" />
@@ -673,9 +679,12 @@ const onSetItemToUndoWaitingWarehouse = () => {
                 <div v-for="picking in item.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
                     <!-- {{ picking.location_code }} -->
                     <div v-if="picking.type === 'pick'" class="flex gap-x-2 items-center flex-wrap">
-                        <Link :href="generateLocationRoute(picking)" class="secondaryLink">
-                        {{ picking.location_code }}
+                        <Link v-if="!!(generateLocationRoute(picking))" :href="generateLocationRoute(picking)" class="secondaryLink">
+                            {{ picking.location_code }}
                         </Link>
+                        <span v-else>
+                            {{ picking.location_code }}
+                        </span>
 
                         <div v-tooltip="trans('Total picked quantity in this location')"
                             class="text-gray-500 whitespace-nowrap">
@@ -726,7 +735,8 @@ const onSetItemToUndoWaitingWarehouse = () => {
                         </span>
                     </div>
 
-                    <div class="">
+                    <!-- Button: Undo Pick from Pickings -->
+                    <div v-if="isEditable" class="">
                         <ButtonWithLink
                             v-if="item.quantity_picked!=0 || item.quantity_not_picked!=0"
                             v-tooltip="ctrans('Undo pick :qtyPicked items', { qtyPicked: Number(picking.quantity_picked).toString()})"
@@ -744,6 +754,11 @@ const onSetItemToUndoWaitingWarehouse = () => {
 
             <div v-else class="text-xs text-gray-400 italic">
                 {{ trans("No item picked yet") }}
+            </div>
+
+            <!-- Section: items are waiting for warehouse -->
+            <div v-if="!isEditable && Number(item.quantity_waiting_warehouse) > 0" class="mt-2 xmx-auto w-fit flex gap-x-2">
+                <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(item.quantity_waiting_warehouse)" />
             </div>
         </template>
 
@@ -907,14 +922,14 @@ const onSetItemToUndoWaitingWarehouse = () => {
 
 
                         </div>
-                        </div>
+                    </div>
                         
-                        <!-- Section: Errors list -->
-                        <div v-if="proxyItem.errors?.length" class="">
-                            <p v-for="error in proxyItem.errors" class="text-xs text-red-500 italic">
-                                *{{ error }}
-                            </p>
-                        </div>
+                    <!-- Section: Errors list -->
+                    <div v-if="proxyItem.errors?.length" class="">
+                        <p v-for="error in proxyItem.errors" class="text-xs text-red-500 italic">
+                            *{{ error }}
+                        </p>
+                    </div>
                 </div>
 
                 <div v-else class="flex justify-between gap-x-2">

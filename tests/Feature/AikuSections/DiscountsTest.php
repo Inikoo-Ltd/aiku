@@ -92,13 +92,13 @@ test('seed offer campaigns', function () {
 
     expect($this->group->discountsStats->number_offer_campaigns)->toBe(11)
         ->and($this->group->discountsStats->number_current_offer_campaigns)->toBe(10)
-        ->and($this->group->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(10)
+        ->and($this->group->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(11)
         ->and($this->organisation->discountsStats->number_offer_campaigns)->toBe(11)
         ->and($this->organisation->discountsStats->number_current_offer_campaigns)->toBe(10)
-        ->and($this->organisation->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(10)
+        ->and($this->organisation->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(11)
         ->and($shop->discountsStats->number_offer_campaigns)->toBe(11)
         ->and($shop->discountsStats->number_current_offer_campaigns)->toBe(10)
-        ->and($shop->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(10);
+        ->and($shop->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(11);
 });
 
 test('update offer campaign', function () {
@@ -207,7 +207,7 @@ test('UI show offer campaigns', function () {
 
     $response->assertInertia(function (AssertableInertia $page) use ($offerCampaign) {
         $page
-            ->component('Org/Discounts/VolumeDiscountCampaign')
+            ->component('Org/Discounts/OrderRecursionCampaign')
             ->has('title')
             ->has(
                 'pageHead',

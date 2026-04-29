@@ -153,6 +153,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $backImage
  * @property-read Media|null $bottomImage
  * @property-read Media|null $frontImage
+ * @property-read array $translatable_columns_from
  * @property-read Group|null $group
  * @property-read Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images

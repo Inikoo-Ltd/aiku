@@ -20,7 +20,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\Dispatching\BatchCode;
 
 /**
  * App\Models\Dispatching\DeliveryNoteItem
@@ -89,7 +88,7 @@ use App\Models\Dispatching\BatchCode;
  * @property bool $has_waiting_warehouse
  * @property bool $has_waiting_crm
  * @property int|null $batch_code_id
- * @property-read \App\Models\Dispatching\BatchCode|null $batchCode
+ * @property-read BatchCode|null $batchCode
  * @property-read \App\Models\Dispatching\DeliveryNote|null $deliveryNote
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read OrgStock|null $orgStock

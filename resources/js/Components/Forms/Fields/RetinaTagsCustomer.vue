@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, watch } from 'vue'
 import { trans } from 'laravel-vue-i18n'
-import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import { routeType } from '@/types/route'

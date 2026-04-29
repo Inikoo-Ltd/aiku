@@ -110,7 +110,7 @@ class CreateRedirect extends OrgAction
                     ],
                     'route'      => $route,
                     'additionalSubmitButton' => [
-                        'label' => 'Save & Create Another One', 
+                        'label' => 'Save & Create Another One',
                         'param' => [
                             'disableReload' => true
                         ],

@@ -88,7 +88,7 @@ class DeleteWebpage extends OrgAction
                 ]);
 
                 HydrateRedirect::run($webpage);
-                
+
                 $redirectedWebpage = Webpage::find($redirect);
                 if ($redirectedWebpage) {
                     WebpageHydrateRedirects::run($redirectedWebpage);
