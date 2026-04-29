@@ -53,7 +53,7 @@ class EditTag extends OrgAction
     {
         $routeName = match ($this->forcedScope) {
             TagScopeEnum::USER_CUSTOMER    => 'grp.org.shops.show.crm.self_filled_tags.update',
-            TagScopeEnum::ADMIN_CUSTOMER   => 'grp.models.trade-unit.tags.update',
+            TagScopeEnum::ADMIN_CUSTOMER   => 'grp.org.shops.show.crm.internal_tags.update',
             TagScopeEnum::PRODUCT_PROPERTY => 'grp.trade_units.tags.update',
             default                        => 'grp.org.shops.show.crm.self_filled_tags.update',
         };
@@ -108,6 +108,24 @@ class EditTag extends OrgAction
             'parameters' => $parameters,
         ];
 
+        $fields = [
+            'name' => [
+                'type'  => 'input',
+                'label' => __('Name'),
+                'value' => $tag->name
+            ],
+        ];
+
+        if ($this->forcedScope === TagScopeEnum::PRODUCT_PROPERTY) {
+            $fields['label'] = [
+                'type'          => 'input_translation_use_option',
+                'label'         => __('Label'),
+                'language_from' => 'en',
+                'languages'     => GetLanguagesOptions::make()->all(),
+                'value'         => $tag->getTranslations('label')
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
@@ -132,21 +150,7 @@ class EditTag extends OrgAction
                         [
                             'label'  => __('Name'),
                             'title'  => __('Edit Name'),
-                            'fields' => [
-                                'name' => [
-                                    'type'  => 'input',
-                                    'label' => __('Name'),
-                                    'value' => $tag->name
-                                ],
-                                'translation' =>  [
-                                    'label' =>  'translation',
-                                    'type'  => 'input_translation_use_option',
-                                    'label' => __('Label'),
-                                    'language_from' => 'en',
-                                    'languages'  => GetLanguagesOptions::make()->all(),
-                                    'value' => data_get($tag->getTranslations(), 'label', [])
-                                ]
-                            ],
+                            'fields' => $fields,
                         ],
                     ],
                     'args' => [

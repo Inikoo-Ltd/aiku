@@ -257,10 +257,6 @@ class ShowIrisWebpage
                     ->where('from_path', $path)
                     ->where('website_id', $website->id)
                     ->first()?->to_webpage_id;
-
-                Log::error('Initial WebpageID failed');
-                Log::error("Path: {$path}");
-                Log::error("WebpageID: {$webpageID}");
             }
 
         }
