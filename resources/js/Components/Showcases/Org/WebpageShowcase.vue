@@ -11,13 +11,16 @@ import {
   faDesktop,
   faTabletAlt,
   faMobileAlt,
-  faGlobe, faLink, faSearch, faFragile
+  faGlobe, faLink, faSearch, faFragile,
+  faExternalLink
 } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { trans } from "laravel-vue-i18n"
 import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
+import { Message } from 'primevue'
+import { router } from "@inertiajs/vue3"
 
 library.add(faUser, faUserSlash, faDesktop, faTabletAlt, faMobileAlt, faGlobe, faLink, faSearch, faFragile)
 
@@ -44,7 +47,7 @@ const props = defineProps<{
       luigisbox_lbx_code: string
     }
   },
-  
+  redirected_to?: {}
 }>()
 
 const filterBlock = ref<Boolean>(true)
@@ -83,13 +86,40 @@ const screenModeOptions = [
 
 //   return lastReindexed30Minutes < new Date()
 // })
+
+const visitRedirect = () => {
+  router.visit(route('grp.org.shops.show.web.webpages.show', {
+    organisation: route().params['organisation'],
+    shop: route().params['shop'],
+    website: route().params['website'],
+    webpage: props.redirected_to.slug,
+  }))
+}
+
 </script>
 
 <template>
+  <Message v-if="redirected_to" :severity="'error'" class="!bg-red-100">
+    <div class="px-2 font-normal hover:underline cursor-pointer grid" @click="visitRedirect">
+      <span class="!no-underline">
+        {{ trans('This webpage is being redirected to another page') }}:
+      </span>
+      <span>
+        [ <span class="font-semibold italic"> {{ redirected_to.code }} </span> | ../{{ redirected_to.url }} ]
+        <FontAwesomeIcon 
+          v-tooltip="trans('Click here to view page')"
+          :icon="faExternalLink" 
+          class="ml-1 !no-underline"
+        />
+      </span>
+    </div> 
+  </Message>
   <div class="px-4 sm:px-6 lg:px-8 py-6 space-y-6">
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div v-if="redirected_to" class="grid grid-cols-2 align-items-center">
+      </div>
       <!-- Left: Controls + Preview -->
-      <div class="space-y-4">
+      <div class="space-y-4" v-else>
         <div class="flex flex-wrap items-center justify-between gap-4">
           <!-- Logged In / Logged Out Switch -->
           <div class="flex items-center gap-3">
@@ -99,7 +129,6 @@ const screenModeOptions = [
               {{ filterBlock ? 'Logged In' : 'Logged Out' }}
             </span>
           </div>
-
           <!-- Screen Mode SelectButton -->
           <div class="flex items-center">
             <SelectButton v-model="screenMode" :options="screenModeOptions" optionLabel="label" optionValue="value"
@@ -113,7 +142,6 @@ const screenModeOptions = [
             </SelectButton>
           </div>
         </div>
-
         <!-- Browser View -->
         <div class="relative">
           <BrowserView :screenMode="screenMode" :tab="{ icon: data.typeIcon, label: data.title }"
@@ -146,6 +174,7 @@ const screenModeOptions = [
         <div class="w-64 border border-gray-300 rounded-md p-2 h-fit">
           <div class="space-y-2">
             <ModalConfirmationDelete
+              v-if="data.state == 'live'"
               :description="trans('Purge all cached files. Purging your cache may slow your website temporarily')"
               :title="trans('Break cache')" :noLabel="trans('Confirm')" noIcon="" :routeDelete="{
                 name: 'grp.models.webpage.break_cache',
