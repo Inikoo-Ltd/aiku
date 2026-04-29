@@ -63,7 +63,7 @@ const generateLocationRoute = (palletStoredItem: any): string | null => {
                     <Link
                         v-if="generateLocationRoute(palletStoredItem)"
                         :href="generateLocationRoute(palletStoredItem)!"
-                        class="bg-gradient-to-t from-yellow-300/50 to-yellow-200/50 px-1 secondaryLink"
+                        class="px-1 font-medium text-gray-900 border-b border-yellow-400 hover:bg-gradient-to-t hover:from-yellow-300/60 hover:to-yellow-200/60 transition-all duration-300 ease-out"
                     >
                         {{ palletStoredItem.location?.code || "-" }}
                     </Link>
@@ -74,7 +74,7 @@ const generateLocationRoute = (palletStoredItem: any): string | null => {
                     <Link
                         v-if="generatePalletRoute(palletStoredItem)"
                         :href="generatePalletRoute(palletStoredItem)!"
-                        class="px-1 secondaryLink"
+                        class="px-1 font-medium text-gray-900 border-b border-yellow-400 hover:bg-gradient-to-t hover:from-yellow-300/60 hover:to-yellow-200/60 transition-all duration-300 ease-out"
                     >
                         {{ palletStoredItem.reference || "-" }}
                     </Link>
