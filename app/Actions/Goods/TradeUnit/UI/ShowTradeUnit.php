@@ -85,7 +85,7 @@ class ShowTradeUnit extends GrpAction
                     'current'    => $this->tab,
                     'navigation' => TradeUnitTabsEnum::navigation()
                 ],
-
+                'tradeUnitFamilySlug'   => $tradeUnit->tradeUnitFamily->slug,
                 TradeUnitTabsEnum::SHOWCASE->value => $this->tab == TradeUnitTabsEnum::SHOWCASE->value ?
                     fn () => GetTradeUnitShowcase::run($tradeUnit)
                     : Inertia::lazy(fn () => GetTradeUnitShowcase::run($tradeUnit)),
