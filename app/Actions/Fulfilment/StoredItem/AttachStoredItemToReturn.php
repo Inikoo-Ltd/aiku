@@ -11,10 +11,12 @@ namespace App\Actions\Fulfilment\StoredItem;
 
 use App\Actions\Fulfilment\PalletReturn\SetStoredItemReturnAutoServices;
 use App\Actions\OrgAction;
+use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\PalletReturnItem;
 use App\Models\Fulfilment\PalletStoredItem;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class AttachStoredItemToReturn extends OrgAction
@@ -24,15 +26,19 @@ class AttachStoredItemToReturn extends OrgAction
     public function handle(PalletReturn $palletReturn, PalletStoredItem $palletStoredItem, array $modelData)
     {
         $quantityOrdered = Arr::pull($modelData, 'quantity_ordered');
-        if ($quantityOrdered == 0) {
-            $palletReturn->storedItems()->detach($palletStoredItem->storedItem->id);
-        } else {
+        $existingPalletReturnItem = PalletReturnItem::where('pallet_return_id', $palletReturn->id)
+            ->where('pallet_stored_item_id', $palletStoredItem->id)
+            ->first();
 
-            if ($palletReturnItem = PalletReturnItem::where('pallet_return_id', $palletReturn->id)->where('pallet_stored_item_id', $palletStoredItem->id)->first()) {
-                $palletReturnItem->update([
+        if ($quantityOrdered == 0) {
+            if ($existingPalletReturnItem) {
+                $existingPalletReturnItem->delete();
+            }
+        } else {
+            if ($existingPalletReturnItem) {
+                $existingPalletReturnItem->update([
                     'quantity_ordered' => $quantityOrdered
                 ]);
-
             } else {
                 $palletReturn->storedItems()->attach(
                     [
@@ -74,13 +80,44 @@ class AttachStoredItemToReturn extends OrgAction
         $this->handle($palletReturn, $palletStoredItem, $this->validatedData);
     }
 
-    public function action(PalletReturn $palletReturn, PalletStoredItem $palletStoredItem, array $modelData, int $hydratorsDelay = 0)
+    public function action(PalletReturn $palletReturn, PalletStoredItem|array $palletStoredItem, array $modelData = [], int $hydratorsDelay = 0)
     {
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
+
+        if (is_array($palletStoredItem)) {
+            $modelData = $palletStoredItem;
+            $palletStoredItem = $this->resolvePalletStoredItemFromImport($palletReturn, $modelData);
+        }
+
         $this->palletStoredItem = $palletStoredItem;
         $this->initialisationFromFulfilment($palletReturn->fulfilment, $modelData);
 
         $this->handle($palletReturn, $palletStoredItem, $this->validatedData);
+    }
+
+    private function resolvePalletStoredItemFromImport(PalletReturn $palletReturn, array $modelData): PalletStoredItem
+    {
+        $reference = Arr::get($modelData, 'reference');
+
+        $palletStoredItem = PalletStoredItem::query()
+            ->whereHas('storedItem', function ($query) use ($reference, $palletReturn) {
+                $query
+                    ->where('reference', $reference)
+                    ->where('fulfilment_customer_id', $palletReturn->fulfilment_customer_id);
+            })
+            ->whereHas('pallet', function ($query) {
+                $query->where('status', PalletStatusEnum::STORING);
+            })
+            ->orderByDesc('quantity')
+            ->first();
+
+        if (!$palletStoredItem) {
+            throw ValidationException::withMessages([
+                'message' => ['reference' => 'stored item does not exist'],
+            ]);
+        }
+
+        return $palletStoredItem;
     }
 }

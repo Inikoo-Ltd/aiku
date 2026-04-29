@@ -2,7 +2,7 @@
 import Table from '@/Components/Table/Table.vue';
 import Icon from "@/Components/Icon.vue";
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue';
-import { computed, ref, watch, onBeforeMount,reactive, inject, onMounted} from 'vue';
+import { computed, ref, onBeforeMount,reactive, inject, onMounted} from 'vue';
 import { notify } from "@kyvg/vue3-notification";
 import { debounce, set, get } from 'lodash-es';
 import { Link, router } from "@inertiajs/vue3"
@@ -19,6 +19,9 @@ import { Collapse } from 'vue-collapsed'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import axios from 'axios'
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
+import Modal from '@/Components/Utils/Modal.vue'
+import LabelPalletStoredItemLocation from '@/Components/Fulfilment/PalletReturns/LabelPalletStoredItemLocation.vue'
+import SelectPalletStoredItemLocation from '@/Components/Fulfilment/PalletReturns/SelectPalletStoredItemLocation.vue'
 library.add(faCheck, faUndoAlt, faArrowDown, faDebug)
 
 const props = defineProps<{
@@ -262,6 +265,125 @@ const notifyRequestError = (error: unknown) => {
 const isLoadingUndoPick = reactive({})
 const isLoadingSetNotPicked = reactive({})
 const isLoadingSetPicked = reactive({})
+const isSwitchingPalletStoredItem = ref(false)
+const isModalLocation = ref(false)
+const selectedStoredItemValue = ref<any>(null)
+const selectedCurrentPalletStoredItem = ref<any>(null)
+
+const generateLinkLocationInWarehouse = (palletStoredItem: any): string | undefined => {
+    const locationSlug = palletStoredItem.location?.slug
+    const params = route().params as Record<string, string | undefined>
+
+    if (!locationSlug || !params.organisation || !params.warehouse) {
+        return undefined
+    }
+
+    return String(route('grp.org.warehouses.show.infrastructure.locations.show', {
+        organisation: params.organisation,
+        warehouse: params.warehouse,
+        location: locationSlug,
+    }))
+}
+
+const getAllPalletStoredItems = (item: any): any[] => {
+    return item?.pallet_stored_items || []
+}
+
+const getRequestedPalletStoredItemIds = (item: any): number[] => {
+    return getAllPalletStoredItems(item)
+        .filter((palletStoredItem: any) => Number(palletStoredItem.selected_quantity || 0) > 0)
+        .map((palletStoredItem: any) => Number(palletStoredItem.id))
+}
+
+const getRequestedPalletStoredItemsForAction = (item: any): any[] => {
+    return getAllPalletStoredItems(item).filter((palletStoredItem: any) => {
+        return Number(palletStoredItem.selected_quantity || 0) > 0 && getRemainingActionQuantity(palletStoredItem) > 0
+    })
+}
+
+const getOtherPalletStoredItems = (item: any, currentPalletStoredItemId: number): any[] => {
+    const requestedIds = getRequestedPalletStoredItemIds(item)
+
+    return getAllPalletStoredItems(item).filter((palletStoredItem: any) => {
+        if (Number(palletStoredItem.id) === Number(currentPalletStoredItemId)) {
+            return false
+        }
+
+        return !requestedIds.includes(Number(palletStoredItem.id))
+    })
+}
+
+const switchPalletStoredItemForRequestedItem = async (item: any, currentPalletStoredItem: any, targetPalletStoredItemId: number) => {
+    const currentPalletStoredItems = getAllPalletStoredItems(item)
+    const targetPalletStoredItem = currentPalletStoredItems.find((palletStoredItem: any) => Number(palletStoredItem.id) === Number(targetPalletStoredItemId))
+
+    if (!targetPalletStoredItem) {
+        return
+    }
+
+    if (Number(currentPalletStoredItem?.id) === Number(targetPalletStoredItemId)) {
+        return
+    }
+
+    const hasProcessedQuantity = Number(currentPalletStoredItem?.picked_quantity || 0) > 0 || Number(currentPalletStoredItem?.not_picked_quantity || 0) > 0
+    if (hasProcessedQuantity) {
+        notify({
+            title: trans('Cannot change location'),
+            text: trans('This requested pallet already has picked/not picked quantity.'),
+            type: 'warn',
+        })
+        return
+    }
+
+    const selectedQuantityToMove = Number(currentPalletStoredItem?.selected_quantity || 0)
+    const targetMaxQuantity = Number(targetPalletStoredItem.max_quantity || targetPalletStoredItem.quantity_in_pallet || 0)
+
+    if (selectedQuantityToMove > targetMaxQuantity) {
+        notify({
+            title: trans('Cannot change location'),
+            text: trans('Insufficient stock in selected pallet location.'),
+            type: 'warn',
+        })
+        return
+    }
+
+    try {
+        isSwitchingPalletStoredItem.value = true
+
+        await submitRouteRequest(currentPalletStoredItem.syncRoute, {
+            quantity_ordered: 0
+        })
+
+        await submitRouteRequest(targetPalletStoredItem.syncRoute, {
+            quantity_ordered: selectedQuantityToMove
+        })
+
+        isModalLocation.value = false
+
+        router.reload({
+            only: ['stored_items', 'box_stats', 'pageHead', 'data']
+        })
+    } catch (error) {
+        notifyRequestError(error)
+    } finally {
+        isSwitchingPalletStoredItem.value = false
+    }
+}
+
+const openModalLocation = (item: any, currentPalletStoredItem: any) => {
+    selectedStoredItemValue.value = item
+    selectedCurrentPalletStoredItem.value = currentPalletStoredItem
+    isModalLocation.value = true
+}
+
+const onSelectPalletStoredItem = async (palletStoredItemId: number) => {
+    if (!selectedStoredItemValue.value || !selectedCurrentPalletStoredItem.value) {
+        return
+    }
+
+    await switchPalletStoredItemForRequestedItem(selectedStoredItemValue.value, selectedCurrentPalletStoredItem.value, palletStoredItemId)
+}
+
 const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadingKey: string) => {
     try {
         pallet_stored_item.isLoadingUndo = true
@@ -341,34 +463,34 @@ const onSetAsPicked = async (pallet_stored_item: any, quantity: number, loadingK
     }
 }
 
-const getProcessedQuantity = (palletStoredItem: any): number => {
+function getProcessedQuantity(palletStoredItem: any): number {
     return Number(palletStoredItem?.picked_quantity || 0) + Number(palletStoredItem?.not_picked_quantity || 0)
 }
 
-const getRemainingActionQuantity = (palletStoredItem: any): number => {
+function getRemainingActionQuantity(palletStoredItem: any): number {
     const orderedQuantity = Number(palletStoredItem?.selected_quantity || 0)
     return Math.max(0, orderedQuantity - getProcessedQuantity(palletStoredItem))
 }
 
-const getPickedPalletStoredItems = (item: any) => {
+function getPickedPalletStoredItems(item: any) {
     return (item.pallet_stored_items || []).filter((palletStoredItem: any) => {
         return Number(palletStoredItem.picked_quantity || 0) > 0
     })
 }
 
-const getNotPickedPalletStoredItems = (item: any) => {
+function getNotPickedPalletStoredItems(item: any) {
     return (item.pallet_stored_items || []).filter((palletStoredItem: any) => {
         return Number(palletStoredItem.not_picked_quantity || 0) > 0
     })
 }
 
-const getRequiredPalletStoredItems = (item: any) => {
+function getRequiredPalletStoredItems(item: any) {
     return (item.pallet_stored_items || []).filter((palletStoredItem: any) => {
         return Number(palletStoredItem.selected_quantity || 0) > 0
     })
 }
 
-const getRequestedPalletStoredItems = (item: any) => {
+function getRequestedPalletStoredItems(item: any) {
     if (['in_process', 'submitted'].includes(props.palletReturn.state)) {
         return item.pallet_stored_items || []
     }
@@ -725,68 +847,81 @@ const getRequestedPalletStoredItems = (item: any) => {
         </template>
 
         <!-- Column: Actions -->
-        <template #cell(actions)="{ item: pallet }" v-if="props.state == 'picking'">
+        <template #cell(actions)="{ item: stored_item }" v-if="props.state == 'picking'">
             <div class="grid gap-y-1">
-                <template v-for="pallet_stored_item in pallet.pallet_stored_items" :key="pallet_stored_item.id">
-                    <div
-                        v-if="Number(pallet_stored_item.selected_quantity || 0) > 0 && getRemainingActionQuantity(pallet_stored_item) > 0"
-                        class="flex items-center justify-between gap-x-3"
-                    >
-                        <div class="text-sm tabular-nums">
-                            <Link
-                                v-if="generateLinkPalletLocationHref(pallet_stored_item)"
-                                :href="generateLinkPalletLocationHref(pallet_stored_item)"
-                                class="secondaryLink"
-                            >
-                                {{ pallet_stored_item.location?.code || pallet_stored_item.reference }}
-                            </Link>
-                            <span v-else>{{ pallet_stored_item.location?.code || pallet_stored_item.reference || '-' }}</span>
-                            <span class="text-gray-700"> (<span class="font-bold">{{ locale.number(pallet_stored_item.quantity_in_pallet || 0) }}</span> {{ trans("Stocks") }})</span>
-                        </div>
+                <div
+                    v-for="pallet_stored_item in getRequestedPalletStoredItemsForAction(stored_item)"
+                    :key="`action-${stored_item.id}-${pallet_stored_item.id}`"
+                    class="flex items-center justify-between gap-x-3"
+                >
+                    <LabelPalletStoredItemLocation
+                        :palletStoredItems="[pallet_stored_item, ...getOtherPalletStoredItems(stored_item, pallet_stored_item.id)]"
+                        :selectedPalletStoredItemId="pallet_stored_item.id"
+                        :locationHref="generateLinkLocationInWarehouse(pallet_stored_item)"
+                        @openLocationModal="openModalLocation(stored_item, pallet_stored_item)"
+                    />
 
-                        <NumberWithButtonSave
-                            :key="`pickingpicked-action_${pallet.id}_${pallet_stored_item.id}_${getRemainingActionQuantity(pallet_stored_item)}`"
-                            noUndoButton
-                            :modelValue="getRemainingActionQuantity(pallet_stored_item)"
-                            :bindToTarget="{
-                                step: 1,
-                                min: 1,
-                                max: getRemainingActionQuantity(pallet_stored_item)
-                            }"
-                            :xxparentClass="''"
-                        >
-                            <template #save="{ quantity }">
-                                <div class="flex items-center gap-x-1">
-                                    <Button
-                                        v-if="pallet_stored_item.selected_quantity > 0"
-                                        @click="() => onSetAsPicked(pallet_stored_item, Number(quantity || 0), `picked_${pallet.id}_${pallet_stored_item.id}`)"
-                                        icon="fal fa-clipboard-list-check"
-                                        :label="locale.number(quantity || 0)"
-                                        :key="1"
-                                        size="xs"
-                                        type="secondary"
-                                        :loading="get(isLoadingSetPicked, `picked_${pallet.id}_${pallet_stored_item.id}`, false)"
-                                        class="py-0"
-                                    />
-                                    <Button
-                                        v-if="pallet_stored_item.selected_quantity > 0"
-                                        @click="() => onSetAsNotPicked(pallet_stored_item, Number(quantity || 0), `not-picked_${pallet.id}_${pallet_stored_item.id}`)"
-                                        iconRight="fal fa-debug"
-                                        :label="locale.number(quantity || 0)"
-                                        :key="2"
-                                        size="xs"
-                                        type="negative"
-                                        :loading="get(isLoadingSetNotPicked, `not-picked_${pallet.id}_${pallet_stored_item.id}`, false)"
-                                        class="py-0"
-                                    />
-                                </div>
-                            </template>
-                        </NumberWithButtonSave>
-                    </div>
-                </template>
+                    <NumberWithButtonSave
+                        :key="`pickingpicked-action_${stored_item.id}_${pallet_stored_item.id}_${getRemainingActionQuantity(pallet_stored_item)}`"
+                        noUndoButton
+                        :modelValue="getRemainingActionQuantity(pallet_stored_item)"
+                        :bindToTarget="{
+                            step: 1,
+                            min: 1,
+                            max: getRemainingActionQuantity(pallet_stored_item)
+                        }"
+                        :xxparentClass="''"
+                    >
+                        <template #save="{ quantity }">
+                            <div class="flex items-center gap-x-1">
+                                <Button
+                                    @click="() => onSetAsPicked(pallet_stored_item, Number(quantity || 0), `picked_${stored_item.id}_${pallet_stored_item.id}`)"
+                                    icon="fal fa-clipboard-list-check"
+                                    :label="locale.number(quantity || 0)"
+                                    :key="1"
+                                    size="xs"
+                                    type="secondary"
+                                    :loading="get(isLoadingSetPicked, `picked_${stored_item.id}_${pallet_stored_item.id}`, false)"
+                                    class="py-0"
+                                />
+                                <Button
+                                    @click="() => onSetAsNotPicked(pallet_stored_item, Number(quantity || 0), `not-picked_${stored_item.id}_${pallet_stored_item.id}`)"
+                                    iconRight="fal fa-debug"
+                                    :label="locale.number(quantity || 0)"
+                                    :key="2"
+                                    size="xs"
+                                    type="negative"
+                                    :loading="get(isLoadingSetNotPicked, `not-picked_${stored_item.id}_${pallet_stored_item.id}`, false)"
+                                    class="py-0"
+                                />
+                            </div>
+                        </template>
+                    </NumberWithButtonSave>
+                </div>
             </div>
         </template>
 
 
     </Table>
+
+    <Modal :isOpen="isModalLocation" @onClose="isModalLocation = false" width="w-full max-w-5xl" xdialogStyle="{ background: '#ffffff' }">
+        <SelectPalletStoredItemLocation
+            v-if="selectedStoredItemValue && selectedCurrentPalletStoredItem"
+            :item="{
+                reference: selectedStoredItemValue.reference,
+                pallet_stored_items: getOtherPalletStoredItems(selectedStoredItemValue, selectedCurrentPalletStoredItem.id)
+            }"
+            :selectedPalletStoredItemId="null"
+            @select="onSelectPalletStoredItem"
+        />
+
+        <div class="mt-6 flex justify-end">
+            <Button
+                :label="trans('Close')"
+                type="tertiary"
+                @click="isModalLocation = false"
+                :loading="isSwitchingPalletStoredItem"
+            />
+        </div>
+    </Modal>
 </template>
