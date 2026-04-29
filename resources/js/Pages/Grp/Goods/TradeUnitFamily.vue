@@ -21,6 +21,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue"
 import Image from "@/Components/Image.vue"
 import { faPlus } from "@far"
+import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
+import Tag from '@/Components/Tag.vue'
 
 library.add(
     faAtomAlt,faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube,
@@ -94,11 +96,46 @@ const attachTradeUnit = () => {
     }
   )
 }
+
+
+const brands = ref<any | null>(null)
+const tags = ref<any[]>([])
+
+const handleMassAssign = () => {
+  const payload = {
+    brands: brands.value.id,
+    tags: tags.value.map(item => item.id),
+  }
+
+  router.post(
+    route(props.routes.attach_route.name, props.routes.attach_route.parameters),
+    payload,
+    {
+      onStart: () => {
+        loadingAttach.value = true
+      },
+      onSuccess: () => {
+        isModalOpenMassAssign.value = false
+        brands.value = null
+        tags.value = []
+      },
+      onError: (error) => {
+        notify({
+          title: trans("Something went wrong"),
+          text: error?.response?.data?.message || trans("Please try again"),
+          type: "error",
+        })
+      },
+      onFinish: () => {
+        loadingAttach.value = false
+      }
+    }
+  )
+}
 </script>
 
 <template>
   <Head :title="capitalize(title)" />
-
   <PageHeading :data="pageHead">
     <template #otherBefore>
       <Button @click="isModalOpenMassAssign = true" :icon="faPlus" label="Mass Assign Brand/Tag" :style="'secondary'"/>
@@ -112,12 +149,39 @@ const attachTradeUnit = () => {
 
   
   <!-- PrimeVue Dialog -->
-  <Dialog v-model:visible="isModalOpenMassAssign" modal header="Attach Brands & Tags" :style="{ width: '50vw' }" :dismissableMask="true">
-    PureInput for Brand/Tag 
-    Kinda like this '@/Components/Forms/Fields/BrandsTradeUnit.vue'
-    Kinda like this '@/Components/Forms/Fields/TagsTradeUnits.vue'  
-  </Dialog>
+  <Dialog v-model:visible="isModalOpenMassAssign" modal header="Attach Brands & Tags" :style="{ width: '20vw',  }"
+    :dismissableMask="true" :contentStyle="{ maxHeight: 'auto', overflowY: 'visible' }">
+    <!-- BRANDS -->
+    <div class="mb-3 font-medium">Brands</div>
+    <PureMultiselectInfiniteScroll v-model="brands" :fetchRoute="{ name: 'grp.json.brands.index', parameters: {} }"
+      :placeholder="trans('Select brand')" valueProp="id" :mode="'single'" :object="true" />
 
+    <!-- TAGS -->
+    <div class="mt-5 mb-3 font-medium">Tags</div>
+
+    <!-- Selected Tags -->
+    <div class="flex flex-wrap gap-2 mb-3">
+      <Tag v-for="tag in tags" :key="tag.id" :label="tag.name" stringToColor>
+        <template #closeButton>
+          <div class="cursor-pointer px-1 text-red-500" @click="tags = tags.filter(t => t.id !== tag.id)">
+            <FontAwesomeIcon icon="fal fa-trash-alt" class="text-xs" />
+          </div>
+        </template>
+      </Tag>
+    </div>
+
+    <!-- Tag Selector -->
+    <PureMultiselectInfiniteScroll v-model="tags" :fetchRoute="{ name: 'grp.trade_units.tags.index', parameters: {} }"
+      :placeholder="trans('Select tag')" :mode="'multiple'" :object="true" />
+
+    <!-- Footer -->
+    <template #footer>
+      <div class="flex justify-end gap-3 w-full">
+        <Button label="Cancel" type="negative" @click="isModalOpenMassAssign = false" />
+        <Button type="save" label="Save" @click="handleMassAssign" />
+      </div>
+    </template>
+  </Dialog>
   <!-- PrimeVue Dialog -->
   <Dialog v-model:visible="isModalOpen" modal header="Attach Trade Units" :style="{ width: '50vw' }" :dismissableMask="true">
     <ListSelector
@@ -127,7 +191,7 @@ const attachTradeUnit = () => {
       head_label="Selected Trade Units"
       :enable_search="true"
     >
-      <template #committed-list="{ list, deleteFormCommited }">
+      <template #committed-list="{ committedProducts : list, deleteFormCommited }">
         <div class="h-full md:h-[400px] overflow-auto relative">
           <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pb-2">
             <div
