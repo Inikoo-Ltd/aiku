@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { TradeUnit } from "@/types/trade-unit"
 import Icon from "@/Components/Icon.vue"
@@ -29,6 +29,13 @@ function tradeUnitRoute(tradeUnit: TradeUnit) {
     return route(
         "grp.trade_units.units.show",
         [tradeUnit.slug])
+}
+
+
+const visitBrand = (tradeUnit: TradeUnit) => {
+    router.visit(route('grp.trade_units.brands.trade_units.index', {
+        brand: tradeUnit.brands?.slug,
+    }));
 }
 
 const getIntervalChangesIcon = (isPositive: boolean) => {
@@ -114,6 +121,30 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 <FontAwesomeIcon :icon="faMinus" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon :icon="faMinus" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon :icon="faEquals" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
+            </div>
+        </template>
+
+        <template #cell(brands)="{ item }">
+            <span 
+                v-if="item.brands?.name"
+                class="border border-gray-400 bg-gray-200 rounded-md px-2 py-1 font-light cursor-pointer hover:opacity-[80%] transition ease-in-out whitespace-nowrap"
+                @click="visitBrand(item)"
+            >
+                {{ item.brands?.name }}
+            </span>
+            <span v-else />
+        </template>
+
+        <template #cell(tags)="{ item }">
+            <div class="flex gap-x-1 gap-y-1 flex-wrap">
+                <span 
+                    v-for="tag in item.tags"
+                    :style="'background-color:'+tag.class_color"
+                    class="px-2 py-1 border rounded-md text-white"
+                >
+                    {{ tag.name }}
+                </span>
+                <span v-if="!item.tags.length" />
             </div>
         </template>
     </Table>

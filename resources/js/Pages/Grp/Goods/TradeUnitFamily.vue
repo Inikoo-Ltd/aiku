@@ -20,6 +20,7 @@ import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue"
 import Image from "@/Components/Image.vue"
+import { faPlus } from "@far"
 
 library.add(
     faAtomAlt,faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube,
@@ -48,6 +49,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const tradeUnits = ref<any[]>([])
 const loadingAttach = ref(false)
 const isModalOpen = ref(false)
+const isModalOpenMassAssign = ref(false)
 
 const component = computed(() => {
   const components = {
@@ -98,8 +100,9 @@ const attachTradeUnit = () => {
   <Head :title="capitalize(title)" />
 
   <PageHeading :data="pageHead">
-    <template #other>
-      <Button @click="isModalOpen = true" label="Add Trade Unit" />
+    <template #otherBefore>
+      <Button @click="isModalOpenMassAssign = true" :icon="faPlus" label="Mass Assign Brand/Tag" :style="'secondary'"/>
+      <Button @click="isModalOpen = true" :icon="faPlus" label="Trade Unit"/>
     </template>
   </PageHeading>
 
@@ -107,8 +110,16 @@ const attachTradeUnit = () => {
 
   <component :is="component" :data="props[currentTab]" :tab="currentTab" />
 
+  
   <!-- PrimeVue Dialog -->
-  <Dialog v-model:visible="isModalOpen" modal header="Attach Trade Units" :style="{ width: '50vw' }">
+  <Dialog v-model:visible="isModalOpenMassAssign" modal header="Attach Brands & Tags" :style="{ width: '50vw' }" :dismissableMask="true">
+    PureInput for Brand/Tag 
+    Kinda like this '@/Components/Forms/Fields/BrandsTradeUnit.vue'
+    Kinda like this '@/Components/Forms/Fields/TagsTradeUnits.vue'  
+  </Dialog>
+
+  <!-- PrimeVue Dialog -->
+  <Dialog v-model:visible="isModalOpen" modal header="Attach Trade Units" :style="{ width: '50vw' }" :dismissableMask="true">
     <ListSelector
       v-model="tradeUnits"
       :routeFetch="props.routes.trade_units_route"
