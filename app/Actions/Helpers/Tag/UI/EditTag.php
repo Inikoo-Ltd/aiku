@@ -18,6 +18,7 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditTag extends OrgAction
 {
@@ -137,6 +138,14 @@ class EditTag extends OrgAction
                                     'label' => __('Name'),
                                     'value' => $tag->name
                                 ],
+                                'translation' =>  [
+                                    'label' =>  'translation',
+                                    'type'  => 'input_translation_use_option',
+                                    'label' => __('Label'),
+                                    'language_from' => 'en',
+                                    'languages'  => GetLanguagesOptions::make()->all(),
+                                    'value' => data_get($tag->getTranslations(), 'label', [])
+                                ]
                             ],
                         ],
                     ],

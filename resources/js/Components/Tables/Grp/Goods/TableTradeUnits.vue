@@ -127,6 +127,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
         <template #cell(brands)="{ item }">
             <span 
                 v-if="item.brands?.name"
+                v-tooltip="'Click to go to Brand'"
                 class="border border-gray-400 bg-gray-200 rounded-md px-2 py-1 font-light cursor-pointer hover:opacity-[80%] transition ease-in-out whitespace-nowrap"
                 @click="visitBrand(item)"
             >
