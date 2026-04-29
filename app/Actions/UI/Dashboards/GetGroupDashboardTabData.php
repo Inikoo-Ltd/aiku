@@ -4,6 +4,7 @@ namespace App\Actions\UI\Dashboards;
 
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Enums\Dashboards\GroupDashboardSalesTableTabsEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use Illuminate\Http\JsonResponse;
@@ -12,6 +13,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetGroupDashboardTabData extends OrgAction
 {
+    use WithPerformanceDateResolution;
     public function asController(ActionRequest $request): JsonResponse
     {
         $group = group();
@@ -38,38 +40,5 @@ class GetGroupDashboardTabData extends OrgAction
             'table' => $table,
             'table_2' => empty($tableSecondBlock) ? null : $tableSecondBlock,
         ]);
-    }
-
-    private function resolvePerformanceDates(DateIntervalEnum $savedInterval, array $userSettings): array
-    {
-        $performanceDates = [null, null];
-
-        if ($savedInterval === DateIntervalEnum::CUSTOM) {
-            $rangeInterval = Arr::get($userSettings, 'range_interval', '');
-            if ($rangeInterval) {
-                $dates = explode('-', $rangeInterval);
-                if (count($dates) === 2) {
-                    $performanceDates = [$dates[0], $dates[1]];
-                }
-            }
-
-            return $performanceDates;
-        }
-
-        if ($savedInterval === DateIntervalEnum::ALL) {
-            return $performanceDates;
-        }
-
-        $intervalString = DashboardIntervalFilters::run($savedInterval);
-        if (!$intervalString) {
-            return $performanceDates;
-        }
-
-        $dates = explode('-', $intervalString);
-        if (count($dates) !== 2) {
-            return $performanceDates;
-        }
-
-        return [$dates[0], $dates[1]];
     }
 }

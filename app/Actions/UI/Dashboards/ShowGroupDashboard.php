@@ -14,6 +14,7 @@ use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\Dashboards\WithLatestStockHistory;
+use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
 use App\Enums\Dashboards\GroupDashboardSalesTableTabsEnum;
@@ -32,6 +33,7 @@ class ShowGroupDashboard extends OrgAction
     use WithDashboardCurrencyTypeSettings;
     use WithLatestStockHistory;
     use WithTabsBox;
+    use WithPerformanceDateResolution;
 
     public function handle(Group $group, ActionRequest $request): Response
     {
@@ -114,39 +116,6 @@ class ShowGroupDashboard extends OrgAction
         $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $request);
-    }
-
-    private function resolvePerformanceDates(DateIntervalEnum $savedInterval, array $userSettings): array
-    {
-        $performanceDates = [null, null];
-
-        if ($savedInterval === DateIntervalEnum::CUSTOM) {
-            $rangeInterval = Arr::get($userSettings, 'range_interval', '');
-            if ($rangeInterval) {
-                $dates = explode('-', $rangeInterval);
-                if (count($dates) === 2) {
-                    $performanceDates = [$dates[0], $dates[1]];
-                }
-            }
-
-            return $performanceDates;
-        }
-
-        if ($savedInterval === DateIntervalEnum::ALL) {
-            return $performanceDates;
-        }
-
-        $intervalString = DashboardIntervalFilters::run($savedInterval);
-        if (!$intervalString) {
-            return $performanceDates;
-        }
-
-        $dates = explode('-', $intervalString);
-        if (count($dates) !== 2) {
-            return $performanceDates;
-        }
-
-        return [$dates[0], $dates[1]];
     }
 
     public function getBreadcrumbs($label = null): array
