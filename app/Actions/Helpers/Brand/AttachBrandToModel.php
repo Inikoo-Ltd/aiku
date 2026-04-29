@@ -14,14 +14,15 @@ use App\Actions\Helpers\Brand\Hydrators\BrandHydrateProducts;
 use App\Actions\Helpers\Brand\Hydrators\BrandHydrateTradeUnits;
 use App\Actions\OrgAction;
 use App\Models\Goods\TradeUnit;
+use App\Models\Goods\TradeUnitFamily;
 use App\Models\Helpers\Brand;
 use Lorisleiva\Actions\ActionRequest;
 
 class AttachBrandToModel extends OrgAction
 {
-    protected TradeUnit $parent;
+    protected TradeUnit|TradeUnitFamily $parent;
 
-    public function handle(TradeUnit $model, array $modelData): void
+    public function handle(TradeUnit|TradeUnitFamily $model, array $modelData): void
     {
         $previousBrandIds = $model->brands()->pluck('brands.id')->toArray();
 
@@ -60,11 +61,11 @@ class AttachBrandToModel extends OrgAction
         $this->handle($tradeUnit, $this->validatedData);
     }
 
-    public function action(TradeUnit $tradeUnit, array $modelData)
+    public function action(TradeUnit|TradeUnitFamily $parent, array $modelData)
     {
-        $this->parent = $tradeUnit;
-        $this->initialisationFromGroup($tradeUnit->group, $modelData);
+        $this->parent = $parent;
+        $this->initialisationFromGroup($parent->group, $modelData);
 
-        $this->handle($tradeUnit, $this->validatedData);
+        $this->handle($parent, $this->validatedData);
     }
 }
