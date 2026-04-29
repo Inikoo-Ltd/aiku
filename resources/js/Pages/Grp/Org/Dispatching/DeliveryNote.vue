@@ -606,6 +606,7 @@ onMounted(() => {
 			:is="component"
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
+			:isEditable="is_editable"
 			:routes
 			:state="delivery_note.state"
 			:shop_type="shop_type"

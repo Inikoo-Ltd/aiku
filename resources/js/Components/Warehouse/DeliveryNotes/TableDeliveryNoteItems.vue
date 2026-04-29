@@ -50,6 +50,7 @@ const props = defineProps<{
     shop_type : string
     allowWaiting: boolean
     allowPickerSetNotPicked: boolean
+    isEditable: boolean
 }>();
 
 const emit = defineEmits<{
@@ -109,8 +110,8 @@ onMounted(() => {
 
 
 const generateLocationRoute = (location: any) => {
-    if (!location.location_slug) {
-        return "#";
+    if (!location.location_slug || !(route().params["organisation"]) || !(route().params["warehouse"])) {
+        return "";
     }
 
     if (route().current() === "grp.org.warehouses.show.dispatching.delivery_notes.show") {
@@ -132,7 +133,7 @@ const generateLocationRoute = (location: any) => {
             ]
         )
     } else {
-        return "#";
+        return "";
     }
 
 };
@@ -673,9 +674,12 @@ const onSetItemToUndoWaitingWarehouse = () => {
                 <div v-for="picking in item.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
                     <!-- {{ picking.location_code }} -->
                     <div v-if="picking.type === 'pick'" class="flex gap-x-2 items-center flex-wrap">
-                        <Link :href="generateLocationRoute(picking)" class="secondaryLink">
-                        {{ picking.location_code }}
+                        <Link v-if="!!(generateLocationRoute(picking))" :href="generateLocationRoute(picking)" class="secondaryLink">
+                            {{ picking.location_code }}
                         </Link>
+                        <span v-else>
+                            {{ picking.location_code }}
+                        </span>
 
                         <div v-tooltip="trans('Total picked quantity in this location')"
                             class="text-gray-500 whitespace-nowrap">
@@ -726,7 +730,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                         </span>
                     </div>
 
-                    <div class="">
+                    <div v-if="isEditable" class="">
                         <ButtonWithLink
                             v-if="item.quantity_picked!=0 || item.quantity_not_picked!=0"
                             v-tooltip="ctrans('Undo pick :qtyPicked items', { qtyPicked: Number(picking.quantity_picked).toString()})"
