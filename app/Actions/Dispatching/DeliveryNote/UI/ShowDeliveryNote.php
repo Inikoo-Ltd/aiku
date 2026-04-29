@@ -883,11 +883,11 @@ class ShowDeliveryNote extends OrgAction
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING) {
             $inertiaResponse->table(IndexDeliveryNoteItemsStateHandling::make()->tableStructure(prefix: DeliveryNoteTabsEnum::ITEMS->value, deliveryNote: $deliveryNote, isEditable: $isEditable));
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::PACKING || $deliveryNote->state == DeliveryNoteStateEnum::PACKED) {
-            $inertiaResponse->table(IndexDeliveryNoteItems::make()->tableStructure($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value));
-            $inertiaResponse->table(IndexDeliveryNoteItems::make()->tableStructure($deliveryNote, DeliveryNoteTabsEnum::PENDING_ITEMS->value));
-            $inertiaResponse->table(IndexDeliveryNoteItems::make()->tableStructure($deliveryNote, DeliveryNoteTabsEnum::DONE_ITEMS->value));
+            $inertiaResponse->table(IndexDeliveryNoteItems::make()->tableStructure($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value, $isEditable));
+            $inertiaResponse->table(IndexDeliveryNoteItems::make()->tableStructure($deliveryNote, DeliveryNoteTabsEnum::PENDING_ITEMS->value, $isEditable));
+            $inertiaResponse->table(IndexDeliveryNoteItems::make()->tableStructure($deliveryNote, DeliveryNoteTabsEnum::DONE_ITEMS->value, $isEditable));
         } else {
-            $inertiaResponse->table(IndexDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value));
+            $inertiaResponse->table(IndexDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value, isEditable: $isEditable));
         }
 
         $inertiaResponse->table(IndexHistory::make()->tableStructure(DeliveryNoteTabsEnum::HISTORY->value));
