@@ -108,6 +108,7 @@ class UpdateTradeUnit extends GrpAction
                 'brand_id' => Arr::pull($modelData, 'brands')
             ]);
         }
+        
         $oldTradeUnitFamily = null;
         if (Arr::has($modelData, 'trade_unit_family_id')) {
             $oldTradeUnitFamily = $tradeUnit->tradeUnitFamily;

@@ -280,7 +280,8 @@ class EditTradeUnit extends OrgAction
                                     'type'  => 'brands-trade-unit',
                                     'label' => __('Brands'),
                                     'value' => $tradeUnit->brand()?->id,
-                                    'brand_routes' =>  $brandRoute
+                                    'brand_routes' =>  $brandRoute,
+                                    'noSaveButton' => true,
                                 ],
                             ],
                         ],
