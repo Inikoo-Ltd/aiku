@@ -38,21 +38,37 @@ class EditTag extends OrgAction
         return $this->handle($tag, $request);
     }
 
+    /*  public function inProductProperty(Tag $tag, ActionRequest $request): Response
+     {
+        $this->forcedScope = TagScopeEnum::ADMIN_CUSTOMER;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($tag, $request);
+     } */
+
     public function handle(Tag $tag, ActionRequest $request): Response
     {
-        $routeName = match ($this->forcedScope) {
-            TagScopeEnum::USER_CUSTOMER  => 'grp.org.shops.show.crm.self_filled_tags.update',
-            TagScopeEnum::ADMIN_CUSTOMER => 'grp.org.shops.show.crm.internal_tags.update',
-            default                      => 'grp.org.shops.show.crm.self_filled_tags.update',
+       $routeName = match ($this->forcedScope) {
+            TagScopeEnum::USER_CUSTOMER    => 'grp.org.shops.show.crm.self_filled_tags.update',
+            TagScopeEnum::ADMIN_CUSTOMER   => 'grp.models.trade-unit.tags.update',
+            TagScopeEnum::PRODUCT_PROPERTY =>'grp.trade_units.tags.edit',
+            default                        => 'grp.org.shops.show.crm.self_filled_tags.update',
         };
 
-        $updateRoute = [
-            'name'       => $routeName,
-            'parameters' => [
+        $parameters = match ($this->forcedScope) {
+            TagScopeEnum::PRODUCT_PROPERTY => [
+                $tag->id
+            ],
+            default => [
                 $this->organisation->slug,
                 $this->shop->slug,
                 $tag->id
             ],
+        };
+
+        $updateRoute = [
+            'name'       => $routeName,
+            'parameters' => $parameters,
         ];
 
         return Inertia::render(

@@ -90,10 +90,9 @@ const cleanedDescription = computed(() => {
         <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
             class="flex flex-col md:flex-row gap-x-4 mt-4 gap-y-1 md:gap-y-2 mb-3 offers"
         >
-
                 <DiscountByType 
-                   :offers_data="fieldValue?.family?.offers_data"
-                   :template="bestOffer.type == 'Category Quantity Ordered Order Interval' ? 'active-inactive-gr' : 'max_discount'"
+                    :offers_data="fieldValue?.family?.offers_data"
+                    :template="bestOffer.type == 'Category Quantity Ordered Order Interval' ? 'active-inactive-gr' : 'max_discount'"
                 />
                 <DiscountByType
                    v-if="!(layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr) && bestOffer.type == 'Category Quantity Ordered Order Interval'"

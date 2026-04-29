@@ -100,6 +100,22 @@ class ShowCreateMasterVariant extends OrgAction
                 'title'       => __('Create Master Variant'),
                 'pageHead'    => [
                     'title'   => __('Create Master Variant'),
+                    'icon'       => [
+                        'icon'  => ['fal', 'fa-folder'],
+                        'title' => __("Master Family")
+                    ],
+                    'model'   => $masterFamily->code,
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'exit',
+                            'label' => __('Exit create variant'),
+                            'route' => [
+                                'name'       => preg_replace('/master_variants.create$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ],
+                        ]
+                    ]
                 ],
                 'master_family' => MasterProductCategoryResource::make($masterFamily),
                 'master_assets_route' => [

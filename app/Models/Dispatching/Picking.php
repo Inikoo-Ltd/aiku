@@ -18,6 +18,7 @@ use App\Models\SysAdmin\User;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Dispatching\BatchCode;
 
 /**
  * @property int $id
@@ -31,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric $quantity
  * @property int|null $org_stock_movement_id
  * @property int $org_stock_id
+ * @property int|null $batch_code_id
  * @property int|null $picker_user_id
  * @property PickingEngineEnum $engine
  * @property int|null $location_id
@@ -45,6 +47,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read Location|null $location
  * @property-read OrgStock|null $orgStock
  * @property-read OrgStockMovement|null $orgStockMovement
+ * @property-read BatchCode|null $batchCode
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read User|null $picker
  * @property-read \App\Models\Catalogue\Shop|null $shop
@@ -99,6 +102,11 @@ class Picking extends Model
     public function orgStockMovement(): BelongsTo
     {
         return $this->belongsTo(OrgStockMovement::class, 'org_stock_movement_id');
+    }
+
+    public function batchCode(): BelongsTo
+    {
+        return $this->belongsTo(BatchCode::class);
     }
 
 

@@ -109,6 +109,7 @@ class AuthenticateAllegroAccount extends OrgAction
                 }
 
             } catch (\Exception $e) {
+                dd($e->getMessage());
                 Log::error('Allegro authentication failed: ' . $e->getMessage());
 
                 \Sentry::captureException($e);

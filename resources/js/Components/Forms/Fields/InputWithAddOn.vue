@@ -8,14 +8,13 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import PureInputWithAddOn from '@/Components/Pure/PureInputWithAddOn.vue'
-
 import { faDollarSign } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faSpinnerThird } from '@fad'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faDollarSign)
 
-const props = defineProps<{
+defineProps<{
     form: any,
     fieldName: string,
     options?: any,
@@ -36,7 +35,7 @@ const props = defineProps<{
 
 <template>
     <div>
-        <!-- <label :for="fieldName" class="block text-sm font-medium leading-6">{{ fieldData.label }}</label> -->
+
       <PureInputWithAddOn
             v-model="form[fieldName]"
             @update:modelValue="() => form.errors[fieldName] = null"
@@ -57,11 +56,6 @@ const props = defineProps<{
                     class="h-5 w-5 text-green-500"
                     aria-hidden="true"
                 />
-                <!-- <FontAwesomeIcon
-                    v-if="form.processing"
-                    icon="fad fa-spinner-third"
-                    class="h-5 w-5 animate-spin"
-                /> -->
             </div>
         </PureInputWithAddOn>
 

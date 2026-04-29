@@ -5,23 +5,24 @@
   -->
 
 <script setup lang="ts">
-import { faExclamationCircle, faCheckCircle, faExchangeAlt, faExclamation } from '@fas'
-import { faCopy } from '@fal'
-import { faSpinnerThird } from '@fad'
+import { faExclamationCircle, faCheckCircle } from "@fas"
+import { faCopy } from "@fal"
+import { faSpinnerThird } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { set, get } from 'lodash-es'
-import ListSelector from "@/Components/ListSelectorForCreateMasterProduct.vue";
+import { set, get } from "lodash-es"
+import ListSelector from "@/Components/ListSelectorForCreateMasterProduct.vue"
 import { watch, ref } from "vue"
-import { trans } from "laravel-vue-i18n";
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faSave as fadSave, } from '@fad'
-import { faSave as falSave, faInfoCircle } from '@fal'
-import { notify } from '@kyvg/vue3-notification'
-import axios from 'axios'
-import Dialog from 'primevue/dialog'
-import Button from '@/Components/Elements/Buttons/Button.vue'
+import { trans } from "laravel-vue-i18n"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faSave as fadSave } from "@fad"
+import { faSave as falSave, faInfoCircle } from "@fal"
+import { notify } from "@kyvg/vue3-notification"
+import axios from "axios"
+import Dialog from "primevue/dialog"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { routeType } from "@/types/route"
 
-library.add(fadSave,  falSave, faInfoCircle)
+library.add(fadSave, falSave, faInfoCircle)
 
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 
@@ -59,50 +60,50 @@ const getNestedValue = (obj: Object, keys: Array) => {
         if (acc && typeof acc === "object" && key in acc) return acc[key]
         return null
     }, obj)
-};
+}
 
-const value = ref(setFormValue(props.form, props.fieldName));
+const value = ref(setFormValue(props.form, props.fieldName))
 
 watch(value, (newValue) => {
-    updateFormValue(newValue);
-    props.form.errors[props.fieldName] = ''
-});
+    updateFormValue(newValue)
+    props.form.errors[props.fieldName] = ""
+})
 
 const updateFormValue = (newValue) => {
-    let target = props.form;
+    let target = props.form
     if (Array.isArray(props.fieldName)) {
-        set(target, props.fieldName, newValue);
+        set(target, props.fieldName, newValue)
     } else {
-        target[props.fieldName] = newValue;
+        target[props.fieldName] = newValue
     }
-    emits("update:form", target);
-};
+    emits("update:form", target)
+}
 
 const checkValidation = async () => {
     loadingValidation.value = true
     try {
-        const response = await axios.post(route('grp.json.master_product.check_org_stock_existence', { masterAsset : route().params['masterProduct']}),{
-            trade_units : value.value
+        const response = await axios.post(route("grp.json.master_product.check_org_stock_existence", { masterAsset: route().params["masterProduct"] }), {
+            trade_units: value.value
         })
 
-        if(response.data.status) emits("submit");
+        if (response.data.status) emits("submit")
         else showValidationDialog.value = true
 
     } catch (error) {
         console.log(error)
         notify({
-            title: trans('Something went wrong.'),
-            text: trans('Failed to get the options list'),
-            type: 'error',
+            title: trans("Something went wrong."),
+            text: trans("Failed to get the options list"),
+            type: "error"
         })
-    }finally{
-         loadingValidation.value = false
+    } finally {
+        loadingValidation.value = false
     }
 }
 
 const onSave = () => {
     showValidationDialog.value = false
-    emits("submit");
+    emits("submit")
 }
 
 </script>
@@ -118,9 +119,9 @@ const onSave = () => {
                     <template v-if="form.isDirty">
                         <div @click="checkValidation">
                             <FontAwesomeIcon v-if="form.processing || loadingValidation" icon="fad fa-spinner-third"
-                                class="text-2xl animate-spin" fixed-width aria-hidden="true" />
+                                             class="text-2xl animate-spin" fixed-width aria-hidden="true" />
                             <FontAwesomeIcon v-else icon="fad fa-save" class="h-8"
-                                :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+                                             :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
                         </div>
                     </template>
                     <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
@@ -138,13 +139,13 @@ const onSave = () => {
         <template #header>
             <div class="flex items-center gap-4 text-[20px]">
                 <FontAwesomeIcon :icon="faExclamationCircle" class="text-orange-500" />
-                <span class="font-medium ">{{ trans('Are you sure?') }}</span>
+                <span class="font-medium ">{{ trans("Are you sure?") }}</span>
             </div>
         </template>
 
         <div class="text-sm">
             <span>
-                {{ trans('Product quantity will be set to 0 due to no available organization stock')}} 
+                {{ trans("Product quantity will be set to 0 due to no available organization stock") }}
             </span>
         </div>
 

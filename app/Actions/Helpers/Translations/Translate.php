@@ -33,7 +33,8 @@ class Translate extends OrgAction
                 return $text ?? '';
             }
 
-            if (!config('app.sandbox.translate')) {
+
+            if (app()->environment('local') && !config('app.sandbox.translate')) {
                 return $text;
             }
 

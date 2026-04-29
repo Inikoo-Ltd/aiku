@@ -536,7 +536,7 @@ class EditProduct extends OrgAction
                     'fields' => [
                         'price'            => [
                             'type'     => 'input_number',
-                            'label'    => __('Price'),
+                            'label'    => __('Price').'/'.__('outer'),
                             'required' => true,
                             'bind'     => [
                                 'minFractionDigits' => 0,
@@ -544,15 +544,15 @@ class EditProduct extends OrgAction
                             ],
                             'value'    => $product->price,
                         ],
-                        'rrp'              => [
+                        'rrp_per_unit'  => [
                             'type'     => 'input_number',
-                            'label'    => __('RRP'),
+                            'label'    => __('RRP').'/'.__('unit'),
                             'required' => true,
                             'bind'     => [
                                 'minFractionDigits' => 0,
                                 'maxFractionDigits' => 2,
                             ],
-                            'value'    => $product->rrp,
+                            'value'    => ($product->rrp / trimDecimalZeros($product->units)),
                             'min'      => 0.01
                         ],
                         'cost_price_ratio' => [

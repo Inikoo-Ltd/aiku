@@ -108,6 +108,7 @@ class WaitingDeliveryNoteItemsGroupedByItemDeliveryNoteResource extends JsonReso
             'quantity_dispatched'               => $this->quantity_dispatched,
             'quantity_waiting_warehouse'        => $this->quantity_waiting_warehouse,
             'quantity_waiting_crm'              => $this->quantity_waiting_crm,
+            'trolley_names'                     => $deliveryNote->trolleys?->pluck('name')->join(', ') ?: null,
 
             'is_handled'                        => $this->is_handled,
             'notes'                             => $this->notes,

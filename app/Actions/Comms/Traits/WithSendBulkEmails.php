@@ -39,7 +39,7 @@ trait WithSendBulkEmails
         bool $debug = false
     ): DispatchedEmail {
         $html = $emailHtmlBody;
-        $html = $this->processStyles($html);
+        // $html = $this->processStyles($html);
 
         // Remove MSO conditional comments temporarily
         // 's' flag = dot matches newline, 'u' flag = UTF-8 safe
