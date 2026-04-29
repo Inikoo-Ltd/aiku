@@ -128,8 +128,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $amount_off
  * @property string|null $email
  * @property string|null $phone
- * @property string|null $contact_name
- * @property string|null $company_name
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress

@@ -40,8 +40,8 @@ trait WithPlaceOrderByPaymentMethod
             ];
         }
 
-        $hasProducts=DB::table('transactions')->where('order_id',$order->id)->whereNull('deleted_at')->where('model_type','Product')->where('quantity_ordered','>',0)->exists();
-        if(!$hasProducts){
+        $hasProducts = DB::table('transactions')->where('order_id', $order->id)->whereNull('deleted_at')->where('model_type', 'Product')->where('quantity_ordered', '>', 0)->exists();
+        if (!$hasProducts) {
             return [
                 'success' => false,
                 'reason'  => 'Order has not items',

@@ -16,7 +16,6 @@ use App\Models\Traits\HasHistory;
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -42,9 +41,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property HealthRankEnum|null $health_rank
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Brand> $brands
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Goods\TradeUnitFamilyStats|null $stats
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Tag> $tags
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\TradeUnitFamilyTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\TradeUnit> $tradeUnits
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily newModelQuery()
@@ -147,7 +148,7 @@ class TradeUnitFamily extends Model implements Auditable, HasMedia
     {
         return $this->morphToMany(Brand::class, 'model', 'model_has_brands');
     }
-    
+
     public function brand(): ?Brand
     {
         /** @var Brand $brand */
@@ -155,7 +156,7 @@ class TradeUnitFamily extends Model implements Auditable, HasMedia
 
         return $brand;
     }
-    
+
     public function tags(): MorphToMany
     {
         return $this->morphToMany(
