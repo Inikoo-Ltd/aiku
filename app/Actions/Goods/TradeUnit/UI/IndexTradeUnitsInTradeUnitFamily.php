@@ -30,8 +30,8 @@ class IndexTradeUnitsInTradeUnitFamily extends GrpAction
         $queryBuilder = $this->baseTradeUnitIndexBuilder();
         $queryBuilder->where('trade_units.trade_unit_family_id', $tradeUnitFamily->id);
         $queryBuilder->leftJoin('trade_unit_stats', 'trade_unit_stats.trade_unit_id', 'trade_units.id');
-
-
+        $queryBuilder->with('brands');
+        $queryBuilder->with('tags');
 
         $queryBuilder
             ->defaultSort('trade_units.code')
@@ -81,6 +81,10 @@ class IndexTradeUnitsInTradeUnitFamily extends GrpAction
             $this->addColumnNumberCurrentProducts($table);
             $this->addColumnNetWeight($table, 'Weight');
             $this->addColumnType($table, 'Unit label');
+
+            $table->column(key: 'brands', label: __('Brands'), canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'tags', label: __('Tags'), canBeHidden: false, sortable: false, searchable: false);
+            
         };
     }
 
