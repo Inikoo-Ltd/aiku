@@ -69,8 +69,6 @@ if (import.meta.env.VITE_NEW_RELIC_BROWSER_ENABLED) {
 
 }
 
-
-
 const MyPreset = definePreset(Aura, {
   semantic: {
       primary: {
@@ -146,3 +144,4 @@ createInertiaApp(
         color: '#4B5563',
       },
     });
+
