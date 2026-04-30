@@ -2,6 +2,7 @@
 
 namespace App\Actions\Accounting\PaymentGateway\Pastpay;
 
+use App\Models\Accounting\PaymentAccount;
 use App\Models\Catalogue\Shop;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
@@ -11,7 +12,7 @@ use App\Models\Ordering\Order;
 
 trait WithPastpayConfiguration
 {
-    public Shop $shop;
+    public PaymentAccount $paymentAccount;
 
     protected function pastpayClient(): PendingRequest
     {
@@ -33,17 +34,12 @@ trait WithPastpayConfiguration
 
     protected function getApiKey(): string
     {
-        return config('pastpay.api_key', $this->shop->id);
-    }
-
-    protected function getWebhookSecret(): string
-    {
-        return config('pastpay.webhook_secret');
+        return config('pastpay.api_key', Arr::get($this->paymentAccount->data, 'credentials.api_key'));
     }
 
     protected function getShopId(): string
     {
-        return config('pastpay.shop_id');
+        return Arr::get($this->paymentAccount->data, 'tax_number');
     }
 
     protected function pastpayPost(string $endpoint, array $payload): array

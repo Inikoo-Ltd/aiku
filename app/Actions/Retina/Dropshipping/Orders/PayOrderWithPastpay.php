@@ -42,23 +42,18 @@ class PayOrderWithPastpay
     {
         /** @var PaymentAccountShop $paymentAccountShop */
         $paymentAccountShop = $order->shop->paymentAccountShops()
-            ->where('type', PaymentAccountTypeEnum::CHECKOUT)
+            ->where('type', PaymentAccountTypeEnum::PASTPAY)
             ->where('state', PaymentAccountShopStateEnum::ACTIVE)->first();
 
-
-        $secretKey = $paymentAccountShop->getCredentials()[1];
-
+        $this->paymentAccount = $paymentAccountShop->paymentAccount;
 
         $paymentAmounts = $this->calculatePaymentWithBalance(
             $order->total_amount,
             $order->customer->balance
         );
 
-
         $toPay = $paymentAmounts['total'];
         $toPay = (int)round((float)$toPay * 100);
-
-
 
         if ($toPay == 0) {
             return [
