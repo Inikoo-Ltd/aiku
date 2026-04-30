@@ -97,7 +97,7 @@ class CalculateDayOrgStockHistory implements ShouldBeUnique
 
     public function getCommandSignature(): string
     {
-        return 'calculate:org_stock_history_date {date} {organisationId}';
+        return 'calculate:org_stock_history_date {organisationId} {date}';
     }
 
     public function asCommand(Command $command): int
