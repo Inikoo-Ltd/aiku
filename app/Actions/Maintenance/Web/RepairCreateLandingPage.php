@@ -17,9 +17,9 @@ class RepairCreateLandingPage
     protected function handle(Website $website, Command $command): void
     {
         $landingPage = StoreWebpage::make()->action($website, [
-            'url'           => 'landing-page',
-            'code'          => 'landing-page',
-            'title'         => 'Landing Page',
+            'url'           => 'welcome',
+            'code'          => 'welcome',
+            'title'         => 'Welcome',
             'type'          => WebpageTypeEnum::LANDING_PAGE,
             'sub_type'      => WebpageSubTypeEnum::LANDING_PAGE,
         ]);
