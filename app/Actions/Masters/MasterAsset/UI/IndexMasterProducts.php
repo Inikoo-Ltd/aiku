@@ -105,6 +105,7 @@ class IndexMasterProducts extends GrpAction
         $isSalesTab = $prefix === MasterProductsTabsEnum::SALES->value;
 
         $queryBuilder = QueryBuilder::for(MasterAsset::class)
+            ->with(['products.shop'])
             ->leftJoin(
                 'master_asset_stats',
                 'master_assets.id',
