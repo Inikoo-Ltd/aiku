@@ -97,14 +97,14 @@ class CalculateDayOrgStockHistory implements ShouldBeUnique
 
     public function getCommandSignature(): string
     {
-        return 'calculate:org_stock_history_date {date}';
+        return 'calculate:org_stock_history_date {date} {organisationId}';
     }
 
     public function asCommand(Command $command): int
     {
         $date = Carbon::parse($command->argument('date'));
 
-        $orgStocks   = OrgStock::orderBy('id')->get();
+        $orgStocks   = OrgStock::where('organisation_id', $command->argument('organisationId'))->orderBy('id')->get();
         $progressBar = $command->getOutput()->createProgressBar($orgStocks->count());
         $progressBar->setFormat('debug');
         $progressBar->start();
