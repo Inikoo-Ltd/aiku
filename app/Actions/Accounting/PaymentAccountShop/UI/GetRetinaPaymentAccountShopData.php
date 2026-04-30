@@ -60,6 +60,7 @@ class GetRetinaPaymentAccountShopData
                     'label' => __('Pastpay'),
                     'key'   => 'pastpay',
                     'icon'  => 'fal fa-hand-holding-usd',
+                    'order_payment_api_point' => $orderPaymentApiPoint->ulid,
                     'data'  => [
                         'charges'      => Arr::get($paymentAccountShop->paymentAccount->data, 'charges.options')
                     ]
