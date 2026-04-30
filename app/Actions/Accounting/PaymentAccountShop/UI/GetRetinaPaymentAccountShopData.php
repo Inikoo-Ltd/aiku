@@ -61,9 +61,7 @@ class GetRetinaPaymentAccountShopData
                     'key'   => 'pastpay',
                     'icon'  => 'fal fa-hand-holding-usd',
                     'data'  => [
-                        'bank_name'      => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.name'),
-                        'account_number' => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.account'),
-                        'iban'           => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.iban'),
+                        'charges'      => Arr::get($paymentAccountShop->paymentAccount->data, 'charges.options')
                     ]
                 ];
         } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::CASH_ON_DELIVERY) {
