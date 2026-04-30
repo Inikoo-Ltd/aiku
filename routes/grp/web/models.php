@@ -230,6 +230,7 @@ use App\Actions\Goods\StockFamily\UpdateStockFamily;
 use App\Actions\Goods\TradeUnit\AttachTradeUnitsToTradeUnitFamily;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnitTranslations;
 use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
+use App\Actions\Goods\TradeUnitFamily\UI\AssignBrandTagsToTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UpdateTradeUnitFamily;
 use App\Actions\Helpers\AwsEmail\SendIdentityEmailVerification;
 use App\Actions\Helpers\Brand\AttachBrandToModel;
@@ -399,6 +400,7 @@ use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\StoreClocking
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\UpdateClockingMachineCoordinatePolicyRule;
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\DeleteClockingMachineCoordinatePolicyRule;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetIndex;
+use App\Actions\Web\Redirect\DeleteRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
@@ -964,6 +966,7 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
 
 Route::name('redirect.')->prefix('redirect/{redirect:id}')->group(function () {
     Route::patch('', UpdateRedirect::class)->name('update');
+    Route::delete('', DeleteRedirect::class)->name('delete');
 });
 
 Route::name('model_has_web_block.')->prefix('model-has-web-block')->group(function () {
@@ -1192,6 +1195,8 @@ Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function (
     Route::post('{tradeUnitFamily:id}/attach-trade-units', AttachTradeUnitsToTradeUnitFamily::class)->name('attach_trade_units')->withoutScopedBindings();
     Route::post('{tradeUnitFamily:id}/attachment/attach', [AttachAttachmentToModel::class, 'inTradeUnitFamily'])->name('attachment.attach');
     Route::delete('{tradeUnitFamily:id}/attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inTradeUnitFamily'])->name('attachment.detach')->withoutScopedBindings();
+
+    Route::post('{tradeUnitFamily:id}/mass-assign-brand-tags', AssignBrandTagsToTradeUnitFamily::class)->name('mass_assign_brand_tags')->withoutScopedBindings();
 });
 
 Route::prefix('customer-comms/{customerComms:id}')->name('customer_comms.')->group(function () {

@@ -10,8 +10,8 @@
 namespace App\Actions\Web\Redirect;
 
 use App\Actions\OrgAction;
-use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
 use App\Actions\Web\Website\HydrateRedirect;
+use App\Actions\Web\Redirect\Traits\WithStoreRedirect;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebpageTabsEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
@@ -25,6 +25,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreRedirectFromWebpage extends OrgAction
 {
+    use WithStoreRedirect;
+
     private Webpage $webpage;
 
     public function handle(Webpage $webpage, array $modelData): Redirect
@@ -36,17 +38,6 @@ class StoreRedirectFromWebpage extends OrgAction
         data_set($modelData, 'website_id', $website->id);
 
         data_set($modelData, 'type', RedirectTypeEnum::PERMANENT->value); // Todo: check this
-
-        $fromUrl = Arr::get($modelData, 'from_url', '');
-
-        if (str_starts_with($fromUrl, '/')) {
-            $fromUrl = ltrim($fromUrl, '/');
-        }
-
-        $url = 'https://' . $website->domain . '/' . $fromUrl;
-
-        data_set($modelData, 'from_url', $url);
-        data_set($modelData, 'from_path', $fromUrl);
         data_set($modelData, 'to_webpage_id', $webpage->id);
 
         $this->disableReload = Arr::pull($modelData, 'disableReload', false);
@@ -65,11 +56,20 @@ class StoreRedirectFromWebpage extends OrgAction
                 'required',
                 Rule::enum(RedirectTypeEnum::class)
             ],
+            'from_path'                => [
+                'required',
+                'string',
+                'max:2048',
+                Rule::unique(Webpage::class, 'url')
+                    ->where(fn ($query) => $query->where('website_id', $this->shop->website->id)->where('state', 'live')),
+                Rule::unique(Redirect::class, 'from_path')
+                    ->where(fn ($query) => $query->where('website_id', $this->shop->website->id))
+            ],
             'from_url'                => [
                 'required',
                 'string',
                 'max:2048',
-                Rule::unique(Redirect::class, 'from_path')
+                Rule::unique(Redirect::class, 'from_url')
                     ->where(fn ($query) => $query->where('website_id', $this->shop->website->id)),
             ],
             'disableReload'            => [

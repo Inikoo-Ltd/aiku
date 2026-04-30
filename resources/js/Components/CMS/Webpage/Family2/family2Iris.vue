@@ -87,7 +87,7 @@ console.log(props)
           v-if="showImage"
           :style="getStyles(fieldValue?.image?.container?.properties, screenType)"
           class="relative w-full overflow-hidden
-                 aspect-[3/2]
+                 aspect-[4/]
                  max-h-[500px] md:max-h-[550px] xl:max-h-[600px] 2xl:max-h-[650px]"
           :class="imageOrder"
         >
@@ -145,12 +145,12 @@ console.log(props)
            <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"  class="discount-wrapper">
 
               <div
-                :class="bestOffer.type === 'Category Quantity Ordered Order Interval' ? 'flex gap-3' : 'discount-grid'">
+                :class="bestOffer?.type === 'Category Quantity Ordered Order Interval' ? 'flex gap-3' : 'discount-grid'">
 
                 <DiscountByType v-if="showTriggers" :offers_data="fieldValue?.family?.offers_data"
                   template="triggers_labels" class="discount-item discount-span" />
 
-                <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="bestOffer.type === 'Category Quantity Ordered Order Interval'
+                <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="bestOffer?.type === 'Category Quantity Ordered Order Interval'
                   ? 'active-inactive-gr'
                   : 'max_discount'" class="discount-item" />
               </div>

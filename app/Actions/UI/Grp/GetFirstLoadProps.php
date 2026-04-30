@@ -50,13 +50,13 @@ class GetFirstLoadProps
                     'languageAssetsOptions' => GetLanguagesOptions::make()->translated(),
                 ],
 
-                'layout'           => GetLayout::run($user),
-                'environment'      => app()->environment(),
-                'help_portal_url'  => config('app.help_portal_url'),
-                'avatar_thumbnail' => $image,
-                'notifications'                  => $user ? NotificationsResource::collection($user->notifications()->orderBy('created_at', 'desc')->limit(10)->get())->collection : null,
-                'dispatching_waiting_count'      => $user ? GetDispatchingWaitingBadgeData::make()->totalCount($user) : 0,
-                'crm_waiting_count'              => $user ? GetCrmWaitingBadgeData::make()->totalCount($user) : 0,
+                'layout'                    => GetLayout::run($user),
+                'environment'               => app()->environment(),
+                'help_portal_url'           => config('app.help_portal_url'),
+                'avatar_thumbnail'          => $image,
+                'notifications'             => $user ? NotificationsResource::collection($user->notifications()->orderBy('created_at', 'desc')->limit(10)->get())->collection : null,
+                'dispatching_waiting_count' => $user ? GetDispatchingWaitingBadgeData::make()->totalCount($user) : 0,
+                'crm_waiting_count'         => $user ? GetCrmWaitingBadgeData::make()->totalCount($user) : 0,
             ];
     }
 }

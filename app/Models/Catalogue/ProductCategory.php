@@ -36,7 +36,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -114,6 +114,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $descArt4Image
  * @property-read Media|null $descArt5Image
  * @property-read Media|null $extraDescArt1Image
+ * @property-read array $translatable_columns_from
  * @property-read Group|null $group
  * @property-read Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
@@ -151,7 +152,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
     use InShop;
     use HasImage;
     use HasTranslations;
-    use Searchable;
+    use HasSearch;
 
     protected $guarded = [];
 

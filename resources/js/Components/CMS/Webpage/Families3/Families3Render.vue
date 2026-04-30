@@ -53,9 +53,9 @@ defineProps<{
 
     <!-- TITLE -->
     <div class="h-[70px] px-3 flex items-center justify-center">
-      <p class="text-start text-sm line-clamp-3 leading-tight">
+      <h2 class="text-start !text-sm line-clamp-3 leading-tight">
         {{ data?.name }}
-      </p>
+      </h2>
     </div>
 
   </div>

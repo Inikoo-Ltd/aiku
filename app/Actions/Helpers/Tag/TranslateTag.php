@@ -21,7 +21,7 @@ class TranslateTag
 
     public string $jobQueue = 'low-priority';
 
-    public function handle(Tag $tag):Tag
+    public function handle(Tag $tag): Tag
     {
         $english          = Language::where('code', 'en')->first();
         $shopLanguages = Shop::pluck('language_id')->unique()->toArray();

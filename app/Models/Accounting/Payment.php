@@ -31,7 +31,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -102,7 +102,7 @@ class Payment extends Model implements Auditable
     use HasFactory;
     use InCustomer;
     use HasHistory;
-    use Searchable;
+    use HasSearch;
 
     protected $casts = [
         'data'              => 'array',
