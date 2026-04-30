@@ -17,6 +17,7 @@ use App\Actions\Dispatching\Shipment\ApiCalls\CallApiGlsEsShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiGlsSkShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiItdShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping;
+use App\Actions\Dispatching\Shipment\ApiCalls\CallApiCttEsShipping;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -65,6 +66,7 @@ class StoreShipment extends OrgAction
                 'dpd-gb' => CallApiDpdGbShipping::run($parent, $shipper),
                 'dpd-sk' => CallApiDpdSkShipping::run($parent, $shipper),
                 'itd' => CallApiItdShipping::run($parent, $shipper),
+                'ctt-es' => CallApiCttEsShipping::run($parent, $shipper),
                 default => [
                     'status'    => 'error',
                     'errorData' => [
