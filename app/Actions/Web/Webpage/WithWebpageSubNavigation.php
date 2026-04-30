@@ -22,7 +22,7 @@ trait WithWebpageSubNavigation
         }
 
 
-        return [
+        return array_filter([
             [
                 "route"    => [
                     "name"       => "grp.org.shops.show.web.webpages.show",
@@ -38,6 +38,21 @@ trait WithWebpageSubNavigation
                     "tooltip" => __("Homepage"),
                 ],
             ],
+            $website->landingPage ? [
+                "route"    => [
+                    "name"       => "grp.org.shops.show.web.webpages.show",
+                    "parameters" => [
+                        $shop->organisation->slug,
+                        $shop->slug,
+                        $website->slug,
+                        $website->landingPage->slug,
+                    ],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-plane-arrival"],
+                    "tooltip" => __("Landing Page"),
+                ],
+            ] : null,
             // [
             //     "isAnchor" => true,
             //     "label"    => __("Structure"),
@@ -126,7 +141,7 @@ trait WithWebpageSubNavigation
                     "tooltip" => __("All Webpages"),
                 ],
             ],
-        ];
+        ]);
     }
 
     protected function getFulfilmentWebpageNavigation(Website $website): array
