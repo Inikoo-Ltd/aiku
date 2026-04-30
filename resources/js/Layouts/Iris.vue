@@ -129,7 +129,9 @@ provide('screenType', screenType)
 const handleTabFocus = () => {
     if (document.visibilityState === 'visible') {
         checkScreenType()
-        fetchHasInBasket()
+        if (layout?.iris?.is_logged_in) {
+            fetchHasInBasket()
+        }
     }
 }
 
