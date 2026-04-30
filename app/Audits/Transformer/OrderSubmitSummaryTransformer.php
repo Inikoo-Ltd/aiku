@@ -31,9 +31,6 @@ class OrderSubmitSummaryTransformer
         $data['old_values']['total_qty_items'] = null;
         $data['new_values']['total_qty_items'] = $totalQtyItems;
 
-        $data['old_values']['order_total_amount'] = null;
-        $data['new_values']['order_total_amount'] = $order->total_amount;
-
         $data['old_values']['shipping_amount'] = null;
         $data['new_values']['shipping_amount'] = $order->shipping_amount;
 
