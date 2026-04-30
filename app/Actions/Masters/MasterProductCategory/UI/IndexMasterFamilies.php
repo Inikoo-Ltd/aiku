@@ -66,6 +66,7 @@ class IndexMasterFamilies extends OrgAction
                         $discontinuedMasterProducts
                     ],
                 ],
+                'default' => 'active',
 
                 'engine' => function ($query, $elements) {
                     if (in_array('discontinued', $elements)) {
@@ -198,7 +199,8 @@ class IndexMasterFamilies extends OrgAction
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
                 engine: $elementGroup['engine'],
-                prefix: $prefix
+                prefix: $prefix,
+                default: $elementGroup['default'] ?? null,
             );
         }
 
@@ -319,7 +321,8 @@ class IndexMasterFamilies extends OrgAction
                 $table->elementGroup(
                     key: $key,
                     label: $elementGroup['label'],
-                    elements: $elementGroup['elements']
+                    elements: $elementGroup['elements'],
+                    default: $elementGroup['default'] ?? null,
                 );
             }
 
