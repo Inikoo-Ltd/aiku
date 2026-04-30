@@ -170,7 +170,7 @@ class RetinaLogin
             $storeFront = Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('state', WebpageStateEnum::LIVE)->where('website_id', $request->input('website')->id)->first();
             $webpage = $landingPage ?? $storeFront ?? null;
             if ($webpage) {
-                $retinaHome = ShowIrisWebpage::make()->getEnvironmentUrl($storeFront->canonical_url);
+                $retinaHome = ShowIrisWebpage::make()->getEnvironmentUrl($webpage->canonical_url);
             }
         }
 
