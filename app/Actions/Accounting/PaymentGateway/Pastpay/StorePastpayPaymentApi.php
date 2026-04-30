@@ -20,6 +20,8 @@ class StorePastpayPaymentApi
     public function handle(Order $order, array $modelData)
     {
         $this->shop = $order->shop;
+
+        return $this->pastpayInitiateOrder($order, $modelData);
     }
 }
 
