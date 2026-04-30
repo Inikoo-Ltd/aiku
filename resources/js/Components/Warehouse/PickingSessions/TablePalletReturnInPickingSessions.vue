@@ -10,7 +10,7 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faStickyNote, faUndo, faCheck, faDebug, faSave, faArrowAltLeft, faSkull, faHandHoldingBox } from "@fal"
-import { ref, computed, watch } from "vue"
+import { ref, computed, watch, nextTick } from "vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import InputNumber from "primevue/inputnumber"
 import Fieldset from "primevue/fieldset"
@@ -179,8 +179,29 @@ const onOpenSetAsPickedModal = (item: any) => {
 const onCloseSetAsPickedModal = () => {
     isModalSetAsPicked.value = false
     isModalPickingUsers.value = false
+    isModalShipment.value = false
+    isModalParcels.value = false
     selectedDispatchableReturn.value = null
     selectedPicker.value = null
+    shouldReopenSetAsPickedModal.value = false
+}
+const shouldReopenSetAsPickedModal = ref(false)
+const openChildModalFromSetAsPicked = async (openModal: () => void): Promise<void> => {
+    shouldReopenSetAsPickedModal.value = isModalSetAsPicked.value
+    if (isModalSetAsPicked.value) {
+        isModalSetAsPicked.value = false
+        await nextTick()
+    }
+
+    openModal()
+}
+const maybeReopenSetAsPickedModal = (): void => {
+    const shouldReopen = shouldReopenSetAsPickedModal.value && Boolean(selectedDispatchableReturn.value)
+    shouldReopenSetAsPickedModal.value = false
+
+    if (shouldReopen) {
+        isModalSetAsPicked.value = true
+    }
 }
 
 const onSetAsPicked = () => {
@@ -242,9 +263,15 @@ const onDispatchPalletReturn = async () => {
     }
 }
 
-const onOpenModalPickingUsers = () => {
+const onOpenModalPickingUsers = async () => {
     selectedPicker.value = selectedDispatchableReturn.value?.picker ?? null
-    isModalPickingUsers.value = true
+    await openChildModalFromSetAsPicked(() => {
+        isModalPickingUsers.value = true
+    })
+}
+const onCloseModalPickingUsers = (): void => {
+    isModalPickingUsers.value = false
+    maybeReopenSetAsPickedModal()
 }
 
 const onUpdatePickingUsers = async () => {
@@ -273,7 +300,7 @@ const onUpdatePickingUsers = async () => {
             ...dispatchableReturn,
             picker: selectedPicker.value,
         }
-        isModalPickingUsers.value = false
+        onCloseModalPickingUsers()
         notify({
             title: trans("Success"),
             text: trans("Picker updated successfully"),
@@ -296,6 +323,7 @@ const onOpenModalTrackingNumber = async () => {
         return
     }
 
+    await openChildModalFromSetAsPicked(() => {})
     isLoadingData.value = "addTrackingNumber"
     try {
         const response = await axios.get(buildUrl(fetchRoute.name, fetchRoute.parameters))
@@ -310,6 +338,10 @@ const onOpenModalTrackingNumber = async () => {
     } finally {
         isLoadingData.value = false
     }
+}
+const onCloseModalShipment = (): void => {
+    isModalShipment.value = false
+    maybeReopenSetAsPickedModal()
 }
 
 const onSubmitShipment = () => {
@@ -329,7 +361,7 @@ const onSubmitShipment = () => {
                 isLoadingButton.value = "addTrackingNumber"
             },
             onSuccess: () => {
-                isModalShipment.value = false
+                onCloseModalShipment()
                 formTrackingNumber.reset()
                 router.reload()
             },
@@ -380,6 +412,16 @@ const onDeleteShipment = async (shipmentId: number) => {
 const onDeleteParcel = (index: number) => {
     parcelsCopy.value.splice(index, 1)
 }
+const onOpenModalParcels = async (): Promise<void> => {
+    parcelsCopy.value = [...(selectedDispatchableReturn.value?.parcels || [])]
+    await openChildModalFromSetAsPicked(() => {
+        isModalParcels.value = true
+    })
+}
+const onCloseModalParcels = (): void => {
+    isModalParcels.value = false
+    maybeReopenSetAsPickedModal()
+}
 
 const onSubmitParcels = () => {
     const updateRoute = selectedDispatchableReturn.value?.updateRoute
@@ -396,7 +438,7 @@ const onSubmitParcels = () => {
                 isLoadingSubmitParcels.value = true
             },
             onSuccess: () => {
-                isModalParcels.value = false
+                onCloseModalParcels()
                 selectedDispatchableReturn.value = {
                     ...selectedDispatchableReturn.value,
                     parcels: [...parcelsCopy.value],
@@ -519,7 +561,7 @@ const locationRoute = (item: any) => {
 
                         <div class="min-w-[160px]">
                             <div>
-                                {{ pallet.customer_reference || "-" }}
+                                <span class="text-gray-400">{{ pallet.customer_reference || "-" }}</span>
                                 <div v-if="pallet.notes" class="text-gray-400">
                                     <FontAwesomeIcon icon="fal fa-sticky-note" fixed-width aria-hidden="true" />
                                     <span>{{ pallet.notes }}</span>
@@ -661,8 +703,8 @@ const locationRoute = (item: any) => {
                         v-if="canRowSetAsPicked(item)"
                         icon="fal fa-save"
                         :label="trans('Set as packed')"
-                        type="secondary"
-                        size="xs"
+                        type="save"
+                        size="sm"
                         class="py-0"
                         @click="onOpenSetAsPickedModal(item)"
                     />
@@ -671,8 +713,8 @@ const locationRoute = (item: any) => {
                     v-if="canRowDispatch(item)"
                     icon="fal fa-pencil"
                     :label="trans('Edit Detail')"
-                    type="secondary"
-                    size="xs"
+                    type="save"
+                    size="sm"
                     class="py-0"
                     @click="onOpenSetAsPickedModal(item)"
                 />
@@ -966,7 +1008,7 @@ const locationRoute = (item: any) => {
                             </li>
                         </ul>
                         <Button v-if="canEditParcels && selectedDispatchableReturn?.parcels?.length"
-                            @click="() => (isModalParcels = true, parcelsCopy = [...(selectedDispatchableReturn?.parcels || [])])"
+                            @click="onOpenModalParcels"
                             :label="trans('Edit')" icon="fal fa-pencil" type="tertiary" size="xs" />
                         <Button v-else-if="canEditParcels"
                             @click="() => (parcelsCopy = [{ weight: 1, dimensions: [5, 5, 5] }], onSubmitParcels())"
@@ -1013,7 +1055,7 @@ const locationRoute = (item: any) => {
         </div>
     </Modal>
 
-    <Modal :isOpen="isModalPickingUsers" @onClose="() => (isModalPickingUsers = false)" width="w-full max-w-xl" :isClosableInBackground="false" closeButton>
+    <Modal :isOpen="isModalPickingUsers" @onClose="onCloseModalPickingUsers" width="w-full max-w-xl" :isClosableInBackground="false" closeButton>
         <div class="flex flex-col gap-4">
             <div class="text-center text-lg font-semibold">{{ trans("Return Customer's SKUs") }}</div>
             <div v-if="canChangePicker" class="flex flex-col gap-2">
@@ -1053,7 +1095,7 @@ const locationRoute = (item: any) => {
     <Modal
         v-if="!selectedDispatchableReturn?.isCollection"
         :isOpen="isModalShipment"
-        @onClose="isModalShipment = false"
+        @onClose="onCloseModalShipment"
         width="w-full max-w-2xl"
         closeButton>
         <div class="text-center font-bold mb-4">
@@ -1114,7 +1156,7 @@ const locationRoute = (item: any) => {
         </div>
     </Modal>
 
-    <Modal :isOpen="isModalParcels" @onClose="isModalParcels = false" width="w-full max-w-lg" closeButton>
+    <Modal :isOpen="isModalParcels" @onClose="onCloseModalParcels" width="w-full max-w-lg" closeButton>
         <div class="text-center font-bold mb-4">{{ trans('Add Parcels') }}</div>
         <Fieldset :legend="`${trans('Parcels')} (${parcelsCopy?.length})`">
             <div class="grid grid-cols-12 items-center gap-x-6 mb-2">
