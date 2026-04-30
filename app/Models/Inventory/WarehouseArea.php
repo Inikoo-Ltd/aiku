@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -68,7 +68,7 @@ class WarehouseArea extends Model implements Auditable
     use HasFactory;
     use HasHistory;
     use InWarehouse;
-    use Searchable;
+    use HasSearch;
 
     protected $casts = [
         'unit_quantity'   => 'decimal:2',

@@ -100,9 +100,6 @@ use App\Models\SysAdmin\User;
  * @property int|null $shipping_zone_schema_id
  * @property int|null $shipping_zone_id
  * @property string|null $platform_order_id
- * @property int|null $picker_user_id
- * @property int|null $packer_user_id
- * @property int $number_items_waiting_crm
  * @property PalletReturnItemNoSetReasonStateEnum $not_setup_reason
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses

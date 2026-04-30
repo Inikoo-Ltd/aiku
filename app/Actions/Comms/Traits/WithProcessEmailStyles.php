@@ -28,6 +28,8 @@ trait WithProcessEmailStyles
         }, $html);
 
         // Remove <style> tags and their content
-        return preg_replace('/<style(.*?)>(.*?)<\/style>/is', '', $html);
+        // return preg_replace('/<style(.*?)>(.*?)<\/style>/is', '', $html);
+
+        return $html;
     }
 }

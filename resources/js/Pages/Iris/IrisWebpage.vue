@@ -128,7 +128,7 @@ onBeforeUnmount(() => {
           v-if="(webpage_data.type == 'storefront' || webpage_data.model_type == 'ProductCategory') && (review?.enabled ?? true)"
           class="my-10 2xl:my-16"
         >
-          <div class="mx-auto max-w-5xl 2xl:max-w-6xl">
+          <div class="">
             <ReviewByStore :code="'review-by-store'" />
           </div>
         </div>

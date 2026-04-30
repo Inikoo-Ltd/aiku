@@ -99,6 +99,12 @@
     <!-- End Google Tag Manager (noscript) -->
 @endif
 
+@if(request()->input('website') && Arr::get(request()->input('website')->settings, 'gsc_content', ''))
+    <!-- Google search console  -->
+  <meta name="google-site-verification" content="{{ Arr::get(request()->input('website')->settings, 'gsc_content', '') }}" />
+    <!-- End Google search console -->
+@endif
+
 @inertia
 </body>
 
