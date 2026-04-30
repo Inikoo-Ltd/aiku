@@ -637,6 +637,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                 {{ Number(item.quantity_not_picked) }}
             </span>
 
+            <!-- Number: waiting warehouse -->
             <Link v-if="isEditable && Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')" :href="routeItemsWaitingWarehouse(item)" class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
                 {{ Number(item.quantity_waiting_warehouse) }}
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
@@ -649,6 +650,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
             </span>
 
 
+            <!-- Number: waiting CRM -->
             <Link
                 v-if="Number(item.quantity_waiting_crm) > 0"
                 :href="routeItemsWaitingCrm(item)"
@@ -1377,7 +1379,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
         </div>
     </Modal>
 
-    <!-- Modal: Set batch code per picking -->
+    <!-- Modal: Set batch code per picking (2) -->
     <Modal :isOpen="isModalPickingBatchCode" @onClose="onCloseModalPickingBatchCode" width="w-full max-w-lg">
         <div class="text-center mb-4">
             <div class="font-semibold text-2xl">{{ trans('Batch Code') }}</div>
