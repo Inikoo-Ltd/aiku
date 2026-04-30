@@ -109,7 +109,7 @@ onBeforeUnmount(() => {
         <div
           v-for="(web_block_data, index) in props.web_blocks"
           :key="'block-' + web_block_data.id"
-          class="w-full 2xl:mb-12"
+          class="w-full"
           :id="`v-${web_block_data.type}-${index}`"
         >
           <component

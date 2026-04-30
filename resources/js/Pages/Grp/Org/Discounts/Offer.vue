@@ -20,6 +20,10 @@ import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/
 import BasicDiscount from '@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue'
 import { OfferResource } from '@/types/Catalogue/Offers'
 import { useFormatTime } from '@/Composables/useFormatTime'
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faFlagCheckered } from "@fortawesome/free-solid-svg-icons"
+
+library.add(faFlagCheckered)
 
 const props = defineProps<{
     title: string
@@ -75,6 +79,7 @@ const getOfferCampaignLink = (offerCampaign: {}) => {
     }
     return '#'
 }
+console.log("props data offer", props.data.offer)
 </script>
 
 <template>
@@ -95,32 +100,68 @@ const getOfferCampaignLink = (offerCampaign: {}) => {
     <!-- <pre>{{ data.offer }}</pre> -->
 
     <!-- Section: Preview label -->
-    <div class="p-5 border-b border-gray-300 mb-4 flex flex-col items-center offer">
-        <div class="mb-2">
-            {{ ctrans("Type") }}: <span class="font-bold">{{ data.offer.type }}</span>
+    <div class="p-5 border-b border-gray-300 mb-4 offer">
+        <div class="grid grid-cols-3 items-center gap-4">
+            <!-- Left: Duration & State -->
+            <div class="flex flex-col gap-3 ml-4">
+                <div v-if="data.offer.start_at || data.offer.end_at" class="flex flex-col gap-1 text-lg text-gray-600">
+                    <div class="flex items-center gap-2">
+                        <span class="w-16 text-xs text-gray-400 uppercase tracking-wide">{{ ctrans("Start") }}</span>
+                        <span class="font-medium">{{ useFormatTime(data.offer.start_at ?? undefined, { formatTime: 'hm' }) }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-16 text-xs text-gray-400 uppercase tracking-wide">{{ ctrans("End") }}</span>
+                        <span class="font-medium">{{ data.offer.end_at ? useFormatTime(data.offer.end_at, { formatTime: 'hm' }) : ctrans('Permanent') }}</span>
+                    </div>
+                </div>
+
+                <div v-if="data.offer.state" class="inline-flex items-center text-sm capitalize rounded-full px-3 py-0.5 font-medium w-fit"
+                    :class="{
+                        'bg-green-50 text-green-700 border border-green-300': data.offer.state === 'active',
+                        'bg-gray-100 text-gray-600 border border-gray-300': data.offer.state === 'inactive',
+                        'bg-yellow-50 text-yellow-700 border border-yellow-300': data.offer.state === 'suspended',
+                        'bg-blue-50 text-blue-700 border border-blue-300': !['active','inactive','suspended'].includes(data.offer.state),
+                    }"
+                >
+                    {{ data.offer.state }}
+                </div>
+            </div>
+
+            <!-- Center: Type & Preview -->
+            <div class="flex flex-col items-center gap-2">
+                <div class="text-sm text-gray-600 gap-2">
+                    {{ ctrans("Type") }}: <span class="font-bold">{{ data.offer.type }}</span>
+                    <!-- <div v-if="data.offer.end_at && new Date() > new Date(data.offer.end_at)" class="inline-flex items-center gap-2 bg-red-50 border border-red-300 text-red-700 rounded-full px-3 py-1 text-sm font-medium ml-2">
+                    <FontAwesomeIcon icon="fa-flag-checkered" class="text-red-500" fixed-width />
+                    {{ ctrans("Offer Finished") }}
+                </div> -->
+                </div>
+                <FamilyOfferLabelDiscount v-if="data.offer.type == 'Category Quantity Ordered Order Interval'" :offer="data.offer" />
+                <BasicDiscount v-else-if="data.offer.type == 'GR Amnesty'"
+                    :offers_data="{
+                        o: {
+                            p: (data.offer.max_percentage_discount || 0 )*100 + '%',
+                            l: data.offer.label ?? '',
+                            st: 'a'
+                        }
+                    }"
+                    class="!text-xl"
+                />
+                <BasicDiscount v-else-if="data.offer.type == 'Category Ordered'"
+                    :offers_data="{
+                        o: {
+                            p: (data.offer.max_percentage_discount || 0 )*100 + '%',
+                            l: data.offer.label ?? ''
+                        }
+                    }"
+                    class="!text-3xl"
+                />
+                <Coupon v-else :offer="data.offer" :currency_code="currency_code" />
+            </div>
+
+            <!-- Right: empty placeholder for balance -->
+            <div></div>
         </div>
-        <!-- {{ data.offer.type }} -->
-        <FamilyOfferLabelDiscount v-if="data.offer.type == 'Category Quantity Ordered Order Interval'" :offer="data.offer" />
-        <BasicDiscount v-else-if="data.offer.type == 'GR Amnesty'"
-            :offers_data="{
-                o: {
-                    p: (data.offer.max_percentage_discount || 0 )*100 + '%',
-                    l: data.offer.label,
-                    st: 'a'
-                }
-            }"
-            class="!text-xl"
-        />
-        <BasicDiscount v-else-if="data.offer.type == 'Category Ordered'"
-            :offers_data="{
-                o: {
-                    p: (data.offer.max_percentage_discount || 0 )*100 + '%',
-                    l: data.offer.label
-                }
-            }"
-            class="!text-3xl"
-        />
-        <Coupon v-else :offer="data.offer" :currency_code="currency_code" />
     </div>
     
     <div class="flex justify-between gap-8 mx-8">
@@ -152,14 +193,14 @@ const getOfferCampaignLink = (offerCampaign: {}) => {
                 </dt>
         
                 <div class="relative col-span-3 justify-self-end font-medium overflow-hidden text-right">
-                    <Link :href="getOfferCampaignLink(data.offer.offer_campaign)" class="secondaryLink">
+                    <Link :href="getOfferCampaignLink(data.offer.offer_campaign)" class="secondaryLink capitalize">
                         {{ data.offer.offer_campaign.name }}
                     </Link>
                 </div>
             </div>
 
             <!-- Detail: Duration -->
-            <div v-if="data.offer.start_at || data.offer.end_at" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
+            <!-- <div v-if="data.offer.start_at || data.offer.end_at" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
                 <dt class="col-span-4 flex flex-col">
                     <div class="flex items-center leading-none">
                         <span>{{ ctrans("Duration") }}</span>
@@ -169,7 +210,7 @@ const getOfferCampaignLink = (offerCampaign: {}) => {
                 <div class="relative col-span-3 justify-self-end font-medium overflow-hidden text-right">
                     {{ useFormatTime(data.offer.start_at, { formatTime: 'hm' }) }} - {{ data.offer.end_at ? useFormatTime(data.offer.end_at, { formatTime: 'hm' }) : ctrans('Permanent') }}
                 </div>
-            </div>
+            </div> -->
 
             <!-- Detail: Product category -->
             <div v-if="data.offer.data_allowance_signature?.product_category" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
