@@ -18,12 +18,12 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class RunMailshotHourlyHydrator
+class RunMailshotTrackingUpdates
 {
     use AsAction;
 
     public string $jobQueue = 'ses-analytics';
-    public string $commandSignature = 'run-mailshot-hourly-hydrator {organisation?} {--s|shop=}';
+    public string $commandSignature = 'run-mailshot-tracking-updates {organisation?} {--s|shop=}';
 
     public function handle(?string $organisationSlug = null, ?string $shopSlug = null): void
     {
