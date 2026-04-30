@@ -22,7 +22,7 @@ trait WithWebpageSubNavigation
         }
 
 
-        return array_filter([
+        return array_values(array_filter([
             [
                 "route"    => [
                     "name"       => "grp.org.shops.show.web.webpages.show",
@@ -141,7 +141,7 @@ trait WithWebpageSubNavigation
                     "tooltip" => __("All Webpages"),
                 ],
             ],
-        ]);
+        ]));
     }
 
     protected function getFulfilmentWebpageNavigation(Website $website): array

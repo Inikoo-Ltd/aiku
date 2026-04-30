@@ -141,7 +141,7 @@ const links = computed(() => {
                             :label="trans('Storefront')" full />
                     </div>
                     
-                    <div class="p-2" v-if="route_landing_page">
+                    <div class="p-2" v-if="route_landing_page.length">
                         <ButtonWithLink :routeTarget="route_landing_page" icon="fal fa-plane-arrival" type="tertiary"
                             :label="trans('Landing Page')" full />
                     </div>
