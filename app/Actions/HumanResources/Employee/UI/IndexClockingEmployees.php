@@ -223,14 +223,6 @@ class IndexClockingEmployees extends OrgAction
                 ]
             );
 
-            $defaultAnnualDays = $organisation->getDefaultAnnualLeaveDays();
-            if ((int) $balance->annual_days !== $defaultAnnualDays) {
-                $balance->updateQuietly([
-                    'annual_days' => $defaultAnnualDays,
-                ]);
-                $balance->refresh();
-            }
-
             $annualSubmittedDays = $this->sumLeaveDaysByBucket($submittedLeaves, 'annual');
 
             $annualRemainingAfterSubmission = max(0, (float) $balance->annual_days - (float) $annualSubmittedDays);
