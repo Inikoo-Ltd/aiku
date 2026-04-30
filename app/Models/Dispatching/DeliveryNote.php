@@ -416,7 +416,7 @@ class DeliveryNote extends Model implements Auditable
     {
         $weight     = 0;
         $hasParcels = false;
-        foreach ($this->parcels as $parcel) {
+        foreach ($this->parcels ?? [] as $parcel) {
             $weight     += $parcel['weight'] * 1000;
             $hasParcels = true;
         }
