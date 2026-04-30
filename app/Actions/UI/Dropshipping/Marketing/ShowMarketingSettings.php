@@ -70,7 +70,7 @@ class ShowMarketingSettings extends OrgAction
                                     'type'  => 'input_number',
                                     'label' => __('Tracking Interval (Hours)'),
                                     'value' => Arr::get($this->shop->settings, 'marketing.hours'),
-                                    'information' => __('Defines how often the system checks for tracking events (e.g., every 2 hours). default value if empty is 24 hours'),
+                                    'information' => __('Defines how often the system checks for tracking events (e.g., every 2 hours). default value if empty is 3 hours'),
                                 ],
                             ]
                         ]

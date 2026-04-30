@@ -47,7 +47,7 @@ class RunMailshotTrackingUpdates
 
         // TODO: need default value or not, if setting not exist
         foreach ($shops as $shop) {
-            $marketingHours = $shop->settings['marketing']['hours'] ?? 24; // default 24 hours
+            $marketingHours = $shop->settings['marketing']['hours'] ?? 3; // default 3 hours
             $marketingDays = $shop->settings['marketing']['days'] ?? 30; // default 30 days
 
             // Calculate date range: now - X days
@@ -68,7 +68,7 @@ class RunMailshotTrackingUpdates
 
             foreach ($mailshots as $mailshot) {
                 $data = $mailshot->data ?? [];
-                $lastHydrateAt = $data['last_hourly_hydrate_at'] ?? null;
+                $lastHydrateAt = $data['last_tracking_update_at'] ?? null;
 
                 // Check if enough hours have passed since last hydration
                 if ($lastHydrateAt) {
@@ -85,7 +85,7 @@ class RunMailshotTrackingUpdates
                 // Update last hydration timestamp
                 $mailshot->update([
                     'data' => array_merge($data, [
-                        'last_hourly_hydrate_at' => Carbon::now()->utc()->toIso8601String()
+                        'last_tracking_update_at' => Carbon::now()->utc()
                     ])
                 ]);
             }
