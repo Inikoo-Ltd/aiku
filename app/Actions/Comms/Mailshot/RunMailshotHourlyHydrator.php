@@ -22,7 +22,7 @@ class RunMailshotHourlyHydrator
 {
     use AsAction;
 
-    public string $jobQueue = 'analytics';
+    public string $jobQueue = 'ses-analytics';
     public string $commandSignature = 'run-mailshot-hourly-hydrator {organisation?} {--s|shop=}';
 
     public function handle(?string $organisationSlug = null, ?string $shopSlug = null): void
@@ -56,7 +56,10 @@ class RunMailshotHourlyHydrator
             // Find mailshots in state 'sending' or 'sent' within the date range
             $mailshots = Mailshot::where('shop_id', $shop->id)
                 ->whereIn('state', [MailshotStateEnum::SENDING, MailshotStateEnum::SENT])
-                ->where('sent_at', '>=', $startDate)
+                ->where(function ($query) use ($startDate) {
+                    $query->where('sent_at', '>=', $startDate)
+                        ->orWhere('start_sending_at', '>=', $startDate);
+                })
                 ->whereNull('deleted_at')
                 ->whereNull('source_id') // to avoid resending newsletter that imported from Aurora
                 ->whereNull('source_alt_id') // to avoid resending newsletter that imported from Aurora

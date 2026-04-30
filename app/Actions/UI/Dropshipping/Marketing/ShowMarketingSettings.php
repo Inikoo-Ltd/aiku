@@ -58,17 +58,19 @@ class ShowMarketingSettings extends OrgAction
                     'fullLayout' => true,
                     'blueprint' => [
                         [
-                            'title'  => __('Marketing Schedule Settings'),
+                            'title'  => __('Tracking Event Settings'),
                             'fields' => [
                                 'marketing_days' => [
                                     'type'  => 'input_number',
-                                    'label' => __('Number of Days'),
+                                    'label' => __('Tracking Duration (Days)'),
                                     'value' => Arr::get($this->shop->settings, 'marketing.days'),
+                                    'information' => __('Defines how many days an mailshot/newsletter will continue to be tracked after it is start sending. default value if empty is 30 days'),
                                 ],
                                 'marketing_hours' => [
                                     'type'  => 'input_number',
-                                    'label' => __('Number of Hours'),
+                                    'label' => __('Tracking Interval (Hours)'),
                                     'value' => Arr::get($this->shop->settings, 'marketing.hours'),
+                                    'information' => __('Defines how often the system checks for tracking events (e.g., every 2 hours). default value if empty is 24 hours'),
                                 ],
                             ]
                         ]
