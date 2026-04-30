@@ -23,7 +23,8 @@ import {
 	faBoxes,
     faPause,
     faPlay,
-	faStore
+	faStore,
+	faExchange
 } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import MetaLabel from "@/Components/Headings/MetaLabel.vue"
@@ -64,7 +65,8 @@ library.add(
 	faBoxes,
     faPause,
     faPlay,
-	faStore
+	faStore,
+	faExchange
 )
 
 const props = defineProps<{

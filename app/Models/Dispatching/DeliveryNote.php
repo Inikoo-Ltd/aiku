@@ -154,6 +154,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $sort_picked_bays Used only for UI tables sorting
  * @property int $number_items_waiting_warehouse
  * @property int $number_items_waiting_crm
+ * @property bool $is_returned
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -217,7 +218,8 @@ class DeliveryNote extends Model implements Auditable
         'cancelled_at'            => 'datetime',
         'fetched_at'              => 'datetime',
         'last_fetched_at'         => 'datetime',
-        'is_shipping_by_external' => 'boolean'
+        'is_shipping_by_external' => 'boolean',
+        'is_returned'             => 'boolean'
     ];
 
     protected $attributes = [
@@ -431,6 +433,11 @@ class DeliveryNote extends Model implements Auditable
     {
         // AIKU-13ZJ Fallback needed
         return count($this->parcels ?? []);
+    }
+
+    public function returnedDeliveryNote(): HasMany
+    {
+        return $this->hasMany(ReturnDeliveryNote::class);
     }
 
 }

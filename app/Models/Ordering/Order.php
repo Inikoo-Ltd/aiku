@@ -54,6 +54,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use App\Audits\Transformer\RelationTransformer;
+use App\Models\Dispatching\ReturnDeliveryNote;
 
 /**
  * @property int $id
@@ -501,5 +502,9 @@ class Order extends Model implements HasMedia, Auditable
         return $this->belongsTo(ShippingZone::class);
     }
 
+    public function returnedDeliveryNote(): HasMany
+    {
+        return $this->hasMany(ReturnDeliveryNote::class);
+    }
 
 }
