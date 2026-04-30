@@ -329,22 +329,26 @@ defineExpose({
         <div class="mt-auto">
             <Prices v-if="layout?.iris?.is_logged_in" :product="product" :currency="currency" :basketButton />
             <div v-else class="text-xs leading-tight space-y-1">
+
                 <!-- CODE + RRP -->
-                <div class="flex items-center justify-between text-gray-600 py-1">
-                    <span class="text-gray-400">
+                <div class="flex items-center text-gray-600 text-xs py-1 min-w-0">
+
+                    <!-- CODE (tidak boleh terpotong) -->
+                    <span class="text-gray-400 whitespace-nowrap mr-2 shrink-0">
                         {{ product.code }}
                     </span>
 
-                    <span class="text-primary">
-                        RRP : <span class="font-semibold">{{ locale.currencyFormat(currency?.code, product.rrp)}}</span>
+                    <!-- RRP + UNIT (truncate di sini) -->
+                    <span class="truncate min-w-0 overflow-hidden text-primary">
+                        RRP : {{ locale.currencyFormat(currency?.code, product.rrp_per_unit) }}/{{ product.unit }}
                     </span>
-                </div>
 
-                <!-- CTA -->
+                </div> <!-- CTA -->
                 <a :href="urlLoginWithRedirect()" class="block w-full">
                     <Button :label="trans('Login or Register for Wholesale Prices')"
                         class="w-full rounded-none text-xs py-2" full :injectStyle="buttonStyleLogin" />
                 </a>
+
             </div>
         </div>
 
