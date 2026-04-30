@@ -37,7 +37,7 @@ class ReturnDeliveryNote extends Model implements Auditable
     protected $table = 'return_delivery_notes';
 
     protected $casts = [
-        'state'         => ReturnDeliveryNoteStateEnum::class,
+        'return_state'         => ReturnDeliveryNoteStateEnum::class,
         'queued_at'     => 'datetime',
         'handling_at'   => 'datetime',
         'picked_at'     => 'datetime',
@@ -52,7 +52,7 @@ class ReturnDeliveryNote extends Model implements Auditable
     protected $guarded = [];
 
     protected array $auditInclude = [
-        'state',
+        'return_state',
         'reference',
         'queued_at',
         'handling_at',
@@ -74,9 +74,9 @@ class ReturnDeliveryNote extends Model implements Auditable
         return 'slug';
     }
 
-    public function orders(): BelongsToMany
+    public function order(): BelongsTo
     {
-        return $this->belongsToMany(Order::class, 'order_id')->withTimestamps();
+        return $this->belongsTo(Order::class, 'order_id');
     }
 
     public function warehouse(): BelongsTo
@@ -113,4 +113,15 @@ class ReturnDeliveryNote extends Model implements Auditable
     {
         return $this->belongsTo(User::class, 'packer_user_id');
     }
+
+    // TODO
+    // public function trolleys(): BelongsToMany
+    // {
+    //     return $this->belongsToMany(Trolley::class, 'delivery_note_has_trolleys');
+    // }
+
+    // public function pickedBays(): BelongsToMany
+    // {
+    //     return $this->belongsToMany(PickedBay::class, 'picked_bay_has_delivery_notes');
+    // }
 }

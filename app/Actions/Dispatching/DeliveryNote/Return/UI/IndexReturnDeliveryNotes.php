@@ -61,7 +61,7 @@ class IndexReturnDeliveryNotes extends OrgAction
             'return_delivery_notes.id',
             'return_delivery_notes.reference',
             'return_delivery_notes.queued_at as date',
-            'return_delivery_notes.return_state as state',
+            'return_delivery_notes.return_state',
             'return_delivery_notes.created_at',
             'return_delivery_notes.updated_at',
             'return_delivery_notes.slug',

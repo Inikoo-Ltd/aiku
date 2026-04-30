@@ -90,6 +90,12 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
 				deliveryNote.customer_slug,
 				deliveryNote.slug,
 			])
+		case "grp.org.warehouses.show.dispatching.return-delivery-notes":
+			return route('grp.org.warehouses.show.dispatching.return-delivery-notes.show', [
+				route().params["organisation"],
+				route().params["warehouse"],
+				deliveryNote.slug,
+			])
 		default:
 			return route("grp.helpers.redirect_delivery_notes", [deliveryNote.id])
 	}
