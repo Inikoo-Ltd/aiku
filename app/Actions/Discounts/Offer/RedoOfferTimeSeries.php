@@ -40,8 +40,16 @@ class RedoOfferTimeSeries implements ShouldBeUnique
         return $offerID.'_'.$from.'_'.$to;
     }
 
-    public function handle(Offer $offer, ?string $from = null, ?string $to = null, bool $async = false): void
+    public function handle(?int  $offerId, ?string $from = null, ?string $to = null, bool $async = false): void
     {
+        if (!$offerId) {
+            return;
+        }
+        $offer = Offer::find($offerId);
+        if (!$offer) {
+            return;
+        }
+
         if ($offer->state == OfferStateEnum::IN_PROCESS) {
             return;
         }
@@ -77,7 +85,7 @@ class RedoOfferTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessOfferTimeSeriesRecords::dispatch($offer->id, $frequency, $from, $to)->onQueue('low-priority');
+                ProcessOfferTimeSeriesRecords::dispatch($offer->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
             } else {
                 ProcessOfferTimeSeriesRecords::run($offer->id, $frequency, $from, $to);
             }
