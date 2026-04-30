@@ -579,16 +579,28 @@ const onSetItemToUndoWaitingWarehouse = () => {
         <!-- Section: Pickings -->
         <template #cell(picking_locations)="{ item }">
             <div v-if="item.picking_locations && item.picking_locations.length > 0" class="flex flex-col gap-1">
-                <div v-for="picking in item.picking_locations" :key="picking.id" class="text-sm flex items-center gap-2">
-                    <Link v-if="picking.location_code" 
+                <div v-for="picking in item.picking_locations" :key="picking.id" class="text-sm flex items-center gap-2 flex-wrap">
+                    <Link v-if="picking.location_code"
                           :href="route('grp.org.warehouses.show.infrastructure.locations.show', [route().params.organisation, picking.warehouse_slug, picking.location_slug])"
                           :class="['primaryLink font-medium', picking.location_code ? '' : 'text-gray-400 italic']">
                         {{ picking.location_code }}
                     </Link>
                     <span v-else class="text-gray-400 italic">No Location</span>
                     <div class="px-2 py-0.5 bg-gray-100 rounded-full text-xs font-medium">
-                        {{ picking.quantity }}
+                        {{ picking.quantity_picked }}
                     </div>
+
+                    <!-- Batch code display and edit -->
+                    <button
+                        v-if="picking.show_batch_code_ui"
+                        @click="() => (isModalPickingBatchCode = true, selectedPickingForBatchCode = picking)"
+                        v-tooltip="picking.batch_code ? ctrans('Change batch code: :code', { code: picking.batch_code }) : ctrans('Set batch code')"
+                        class="text-xs px-1.5 py-0.5 rounded border transition-colors"
+                        :class="picking.batch_code ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100' : 'border-dashed border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600'"
+                    >
+                        <FontAwesomeIcon icon="fal fa-barcode" class="mr-1" fixed-width aria-hidden="true" />
+                        {{ picking.batch_code ?? ctrans('Batch code') }}
+                    </button>
                 </div>
             </div>
             <div v-else class="text-gray-400 italic text-sm">No items picked yet</div>
@@ -637,6 +649,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                 {{ Number(item.quantity_not_picked) }}
             </span>
 
+            <!-- Number: waiting warehouse -->
             <Link v-if="isEditable && Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')" :href="routeItemsWaitingWarehouse(item)" class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
                 {{ Number(item.quantity_waiting_warehouse) }}
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
@@ -649,6 +662,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
             </span>
 
 
+            <!-- Number: waiting CRM -->
             <Link
                 v-if="Number(item.quantity_waiting_crm) > 0"
                 :href="routeItemsWaitingCrm(item)"
@@ -1377,7 +1391,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
         </div>
     </Modal>
 
-    <!-- Modal: Set batch code per picking -->
+    <!-- Modal: Set batch code per picking (2) -->
     <Modal :isOpen="isModalPickingBatchCode" @onClose="onCloseModalPickingBatchCode" width="w-full max-w-lg">
         <div class="text-center mb-4">
             <div class="font-semibold text-2xl">{{ trans('Batch Code') }}</div>

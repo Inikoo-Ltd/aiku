@@ -67,9 +67,6 @@ trait WithMasterCatalogueSubNavigation
                     'name'       => 'grp.masters.master_shops.show.master_families.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug,
-                        '_query' => [
-                            'index_elements[status]' => 'active'
-                        ]
                     ]
                 ],
                 'leftIcon' => [
@@ -85,9 +82,6 @@ trait WithMasterCatalogueSubNavigation
                     'name'       => 'grp.masters.master_shops.show.master_products.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug,
-                        '_query' => [
-                            'index_elements[status]' => 'active'
-                        ]
                     ]
                 ],
                 'leftIcon' => [

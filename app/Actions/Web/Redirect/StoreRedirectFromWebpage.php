@@ -61,7 +61,7 @@ class StoreRedirectFromWebpage extends OrgAction
                 'string',
                 'max:2048',
                 Rule::unique(Webpage::class, 'url')
-                    ->where(fn ($query) => $query->where('website_id', $this->shop->website->id)->where('state', 'live')),
+                    ->where(fn ($query) => $query->where('website_id', $this->shop->website->id)->where('state', 'live')->where('deleted_at')),
                 Rule::unique(Redirect::class, 'from_path')
                     ->where(fn ($query) => $query->where('website_id', $this->shop->website->id))
             ],

@@ -59,7 +59,7 @@
         "@inertiajs/vue3": "^2.0.2",
         "@kyvg/vue3-notification": "^3.1.2",
         "@mailupinc/bee-plugin": "^2.3.0",
-        "@newrelic/browser-agent": "^1.282.0",
+        "@newrelic/browser-agent": "^1.313.1",
         "@primevue/themes": "^4.0.4",
         "@sentry/vue": "^7.120.2",
         "@tiptap/extension-bubble-menu": "^2.2.4",

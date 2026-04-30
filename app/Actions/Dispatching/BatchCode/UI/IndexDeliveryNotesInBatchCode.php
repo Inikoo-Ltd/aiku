@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\BatchCode\UI;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\BatchCode;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\Picking;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -48,7 +49,11 @@ class IndexDeliveryNotesInBatchCode
         return QueryBuilder::for(DeliveryNote::class)
             ->whereIn(
                 'delivery_notes.id',
-                $batchCode->deliveryNoteItems()->select('delivery_note_id')->distinct()
+                Picking::query()
+                    ->join('delivery_note_items', 'pickings.delivery_note_item_id', '=', 'delivery_note_items.id')
+                    ->where('pickings.batch_code_id', $batchCode->id)
+                    ->select('delivery_note_items.delivery_note_id')
+                    ->distinct()
             )
             ->leftJoin('customers', 'delivery_notes.customer_id', '=', 'customers.id')
             ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
@@ -88,16 +93,22 @@ class IndexDeliveryNotesInBatchCode
             ->withQueryString();
     }
 
-    public function tableStructure(?string $prefix = null): Closure
+    public function tableStructure(?string $prefix = null, ?array $exportLinks = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($prefix, $exportLinks) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
 
             $table
                 ->withGlobalSearch()
-                ->withEmptyState(['title' => __('No delivery notes found')])
+                ->withEmptyState(['title' => __('No delivery notes found')]);
+
+            if ($exportLinks) {
+                $table->withExportLinks($exportLinks);
+            }
+
+            $table
                 ->column(key: 'state', label: '', type: 'icon')
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, align: 'right')

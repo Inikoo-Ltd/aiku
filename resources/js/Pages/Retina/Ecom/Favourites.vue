@@ -212,7 +212,7 @@ const fetchHasInBasket = async () => {
 
 const handleTabFocus = () => {
     if (document.visibilityState === 'visible') {
-        fetchHasInBasket()
+        if(layout?.iris?.is_logged_in) fetchHasInBasket()
     }
 }
 
