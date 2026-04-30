@@ -58,10 +58,35 @@ const formatKey = (key: string): string => {
     .replace(/\b\w/g, char => char.toUpperCase());
 };
 
-const formatValue = (value: any) => {
+const formatValue = (value: any, key?: string) => {
   if (typeof value === 'boolean') {
     return value ? 'Active' : 'Inactive';
   }
+
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numericValue = typeof value === 'number'
+    ? value
+    : (typeof value === 'string' && /^-?\d+(?:\.\d+)?$/.test(value.trim()) ? Number(value) : null);
+
+  if (numericValue !== null && Number.isFinite(numericValue)) {
+    const fieldKey = (key || '').toLowerCase();
+    const isAmountLikeField = fieldKey.includes('amount')
+      || fieldKey.includes('exchange')
+      || fieldKey.includes('commission')
+      || fieldKey.includes('margin');
+
+    if (isAmountLikeField) {
+      return numericValue.toFixed(2);
+    }
+
+    if (!Number.isInteger(numericValue) && String(value).includes('.')) {
+      return Number(numericValue.toFixed(6)).toString();
+    }
+  }
+
   return value;
 };
 
@@ -110,9 +135,9 @@ const clickExpand = (id: string) => {
                     class="flex items-center space-x-2 text-sm"
                     >
                         <span class="font-bold text-gray-700">{{ formatKey(key) }}:</span>
-                        <span class="text-gray-600">{{ formatValue(user.old_values[key]) }}</span>
+                        <span class="text-gray-600">{{ formatValue(user.old_values[key], key) }}</span>
                             <FontAwesomeIcon :icon="faArrowRight" aria-hidden="true" size="xs" />
-                        <span class="text-gray-800">{{ formatValue(user.new_values[key]) }}</span>
+                        <span class="text-gray-800">{{ formatValue(user.new_values[key], key) }}</span>
                     </div>
                 </div>
                 <div 
