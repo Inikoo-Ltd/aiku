@@ -183,24 +183,31 @@ class IndexClockingEmployees extends OrgAction
 
             $organisation = $this->employee->organisation;
             $leaveTypeOptions = LeaveTypeResolver::optionsForOrganisation($organisation->id, true, $organisation->country?->code);
-            $leaveRequests = Leave::query()
+            $leaveRequestsThisYear = Leave::query()
                 ->where('employee_id', $this->employee->id)
                 ->whereYear('start_date', now()->year)
                 ->with('leaveType')
                 ->get();
 
-            $submittedLeaves = $leaveRequests->filter(function (Leave $leave) {
-                return $leave->status?->value !== LeaveStatusEnum::REJECTED->value;
-            });
-            $approvedLeaves = $leaveRequests->filter(function (Leave $leave) {
-                return $leave->status?->value === LeaveStatusEnum::APPROVED->value;
-            });
-            $pendingLeaves = $leaveRequests->filter(function (Leave $leave) {
-                return $leave->status?->value === LeaveStatusEnum::PENDING->value;
+            $leaveRequestsThisMonth = $leaveRequestsThisYear->filter(function (Leave $leave) {
+                return $leave->start_date->month === now()->month;
             });
 
-            $medicalRequestCount = $this->countLeavesByBucket($submittedLeaves, 'medical');
-            $unpaidRequestCount = $this->countLeavesByBucket($submittedLeaves, 'unpaid');
+            $submittedLeaves = $leaveRequestsThisYear->filter(function (Leave $leave) {
+                return $leave->status?->value !== LeaveStatusEnum::REJECTED->value;
+            });
+            $approvedLeaves = $leaveRequestsThisYear->filter(function (Leave $leave) {
+                return $leave->status?->value === LeaveStatusEnum::APPROVED->value;
+            });
+            $submittedLeavesThisMonth = $leaveRequestsThisMonth->filter(function (Leave $leave) {
+                return $leave->status?->value !== LeaveStatusEnum::REJECTED->value;
+            });
+            $approvedLeavesThisMonth = $leaveRequestsThisMonth->filter(function (Leave $leave) {
+                return $leave->status?->value === LeaveStatusEnum::APPROVED->value;
+            });
+
+            $medicalRequestCount = $this->countLeavesByBucket($submittedLeavesThisMonth, 'medical');
+            $unpaidRequestCount = $this->sumLeaveDaysByBucket($submittedLeavesThisMonth, 'unpaid');
             $balance = EmployeeLeaveBalance::firstOrCreate(
                 [
                     'employee_id' => $this->employee->id,
@@ -229,8 +236,8 @@ class IndexClockingEmployees extends OrgAction
             $annualRemainingAfterSubmission = max(0, (float) $balance->annual_days - (float) $annualSubmittedDays);
 
             $approvedAnnualDays = $this->sumLeaveDaysByBucket($approvedLeaves, 'annual');
-            $approvedMedicalDays = $this->sumLeaveDaysByBucket($approvedLeaves, 'medical');
-            $approvedUnpaidDays = $this->sumLeaveDaysByBucket($approvedLeaves, 'unpaid');
+            $approvedMedicalDays = $this->sumLeaveDaysByBucket($approvedLeavesThisMonth, 'medical');
+            $approvedUnpaidDays = $this->sumLeaveDaysByBucket($approvedLeavesThisMonth, 'unpaid');
 
             if ((float) $balance->annual_used !== $approvedAnnualDays
                 || (float) $balance->medical_used !== $approvedMedicalDays
