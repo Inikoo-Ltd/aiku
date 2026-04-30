@@ -9,6 +9,7 @@
 namespace App\Exports\Dispatching;
 
 use App\Models\Dispatching\BatchCode;
+use App\Models\Dispatching\Picking;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
@@ -42,7 +43,11 @@ class BatchCodeDeliveryNotesExport implements FromQuery, WithMapping, WithHeadin
         return \App\Models\Dispatching\DeliveryNote::query()
             ->whereIn(
                 'delivery_notes.id',
-                $this->batchCode->deliveryNoteItems()->select('delivery_note_id')->distinct()
+                Picking::query()
+                    ->join('delivery_note_items', 'pickings.delivery_note_item_id', '=', 'delivery_note_items.id')
+                    ->where('pickings.batch_code_id', $this->batchCode->id)
+                    ->select('delivery_note_items.delivery_note_id')
+                    ->distinct()
             )
             ->leftJoin('customers', 'delivery_notes.customer_id', '=', 'customers.id')
             ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
