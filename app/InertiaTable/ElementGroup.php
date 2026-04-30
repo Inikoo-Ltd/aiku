@@ -17,6 +17,7 @@ use Illuminate\Contracts\Support\Arrayable;
         public string $key,
         public string|array $label,
         public array $elements,
+        public ?string $default = null,
     ) {
     }
 
@@ -26,6 +27,7 @@ use Illuminate\Contracts\Support\Arrayable;
             'key'      => $this->key,
             'label'    => $this->label,
             'elements' => $this->elements,
+            'default'  => $this->default,
         ];
     }
 }

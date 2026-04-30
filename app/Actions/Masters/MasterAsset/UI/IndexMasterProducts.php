@@ -74,6 +74,7 @@ class IndexMasterProducts extends GrpAction
                         $discontinuedMasterProducts
                     ],
                 ],
+                'default' => 'active',
 
                 'engine' => function ($query, $elements) {
                     if (in_array('discontinued', $elements)) {
@@ -146,7 +147,8 @@ class IndexMasterProducts extends GrpAction
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
                 engine: $elementGroup['engine'],
-                prefix: $prefix
+                prefix: $prefix,
+                default: $elementGroup['default'] ?? null,
             );
         }
 
@@ -335,7 +337,8 @@ class IndexMasterProducts extends GrpAction
                 $table->elementGroup(
                     key: $key,
                     label: $elementGroup['label'],
-                    elements: $elementGroup['elements']
+                    elements: $elementGroup['elements'],
+                    default: $elementGroup['default'] ?? null,
                 );
             }
 
