@@ -30,7 +30,7 @@ import { ctrans } from "@/Composables/useTrans";
 if (import.meta.env.VITE_NEW_RELIC_BROWSER_ENABLED) {
   const options = {
     "info": {
-      "applicationID": import.meta.env.VITE_NEW_RELIC_BROWSER_APPLICATION_ID,
+      "applicationID": import.meta.env.VITE_NEW_RELIC_BROWSER_IRIS,
       "beacon": "bam.nr-data.net",
       "errorBeacon": "bam.nr-data.net",
       "licenseKey": import.meta.env.VITE_NEW_RELIC_BROWSER_LICENCE_KEY,
@@ -59,8 +59,8 @@ if (import.meta.env.VITE_NEW_RELIC_BROWSER_ENABLED) {
     },
     "loader_config": {
       "accountID": import.meta.env.VITE_NEW_RELIC_BROWSER_ACCOUNT_ID,
-      "agentID": import.meta.env.VITE_NEW_RELIC_BROWSER_APPLICATION_ID,
-      "applicationID": import.meta.env.VITE_NEW_RELIC_BROWSER_APPLICATION_ID,
+      "agentID": import.meta.env.VITE_NEW_RELIC_BROWSER_IRIS,
+      "applicationID": import.meta.env.VITE_NEW_RELIC_BROWSER_IRIS,
       "licenseKey": import.meta.env.VITE_NEW_RELIC_BROWSER_LICENCE_KEY,
       "trustKey":  import.meta.env.VITE_NEW_RELIC_BROWSER_ACCOUNT_ID
     }
