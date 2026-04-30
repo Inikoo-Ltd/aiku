@@ -3,7 +3,7 @@ import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faAtomAlt, faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal, faTrashAlt } from "@fal"
-import { computed, ref } from "vue"
+import { computed, onMounted, ref } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -43,7 +43,10 @@ const props = defineProps<{
     attach_route: routeType
     assign_brand_tags_route: routeType
   }
-  showcase?: object,
+  showcase?: {
+    brand?: {}
+    tags?: []
+  },
   trade_units?: Object
   attachments?:any
 }>()
@@ -66,6 +69,15 @@ const component = computed(() => {
   return components[currentTab.value]
 })
 
+onMounted(() => {
+  if (props.showcase?.tags) {
+    tags.value = props.showcase.tags;
+  }
+
+  if (props.showcase?.brand) {
+    brands.value = props.showcase.brand;
+  }
+})
 
 /**
  * Attach selected trade units
@@ -101,8 +113,8 @@ const attachTradeUnit = () => {
 }
 
 
-const brands = ref<any | null>(props.showcase.brand ?? null)
-const tags = ref<any[]>(props.showcase.tags ?? [])
+const brands = ref<any | null>(null)
+const tags = ref<any[]>([])
 
 const isModified = computed(() => {
   const brandsChanged = brands.value !== props.showcase.brand
