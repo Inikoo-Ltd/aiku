@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
+use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
 use App\Enums\Dashboards\ShopDashboardSalesTableTabsEnum;
@@ -31,6 +32,7 @@ class ShowShop extends OrgAction
     use WithDashboardCurrencyTypeSettings;
     use WithDashboardIntervalOption;
     use WithDashboardSettings;
+    use WithPerformanceDateResolution;
     use WithTabsBox;
 
     public function handle(Shop $shop): Shop
@@ -49,21 +51,10 @@ class ShowShop extends OrgAction
             $currentTab = Arr::first($validTabs);
         }
 
-        $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
+        $saved_interval   = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
+        $performanceDates = $this->resolvePerformanceDates($saved_interval, $userSettings);
 
-        $performanceDates = [null, null];
-
-        if ($saved_interval === DateIntervalEnum::CUSTOM) {
-            $rangeInterval = Arr::get($userSettings, 'range_interval', '');
-            if ($rangeInterval) {
-                $dates = explode('-', $rangeInterval);
-                if (count($dates) === 2) {
-                    $performanceDates = [$dates[0], $dates[1]];
-                }
-            }
-        }
-
-        $timeSeriesData = GetShopDashboardTimeSeriesData::run($shop, $performanceDates[0], $performanceDates[1]);
+        $timeSeriesData      = GetShopDashboardTimeSeriesData::run($shop, $performanceDates[0], $performanceDates[1]);
         $shopTimeSeriesStats = $timeSeriesData['shops'];
 
         $waitingItemsData = $this->buildWaitingItemsData($shop, $request);
@@ -97,14 +88,21 @@ class ShowShop extends OrgAction
             ],
         ];
 
+        $currentTabEnum = ShopDashboardSalesTableTabsEnum::from($currentTab);
+        $primaryTables  = ShopDashboardSalesTableTabsEnum::tablesForTabs($shop, $timeSeriesData, [$currentTabEnum]);
+
         $dashboard['super_blocks'][0]['blocks'] = [
             [
-                'id'          => 'sales_table',
-                'type'        => 'table',
-                'current_tab' => $currentTab,
-                'tabs'        => ShopDashboardSalesTableTabsEnum::navigation($shop),
-                'tables'      => ShopDashboardSalesTableTabsEnum::tables($shop, $timeSeriesData),
-                'charts'      => [],
+                'id'              => 'sales_table',
+                'type'            => 'table',
+                'current_tab'     => $currentTab,
+                'tabs'            => ShopDashboardSalesTableTabsEnum::navigation($shop),
+                'tables'          => $primaryTables,
+                'charts'          => [],
+                'tab_fetch_route' => [
+                    'name'       => 'grp.org.shops.show.dashboard.tab-data',
+                    'parameters' => ['organisation' => $this->organisation->slug, 'shop' => $shop->slug],
+                ],
             ],
         ];
 

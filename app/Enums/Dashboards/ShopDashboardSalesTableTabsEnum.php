@@ -86,4 +86,19 @@ enum ShopDashboardSalesTableTabsEnum: string
             ->mapWithKeys(fn ($case) => [$case->value => $case->table($shop, $timeSeriesData)])
             ->all();
     }
+
+    public static function tablesForTabs(Shop $shop, array $timeSeriesData, array $tabs): array
+    {
+        return collect($tabs)
+            ->map(function ($tab) {
+                if ($tab instanceof self) {
+                    return $tab;
+                }
+                return self::tryFrom((string) $tab);
+            })
+            ->filter()
+            ->mapWithKeys(fn (self $tab) => [$tab->value => $tab->table($shop, $timeSeriesData)])
+            ->filter()
+            ->all();
+    }
 }
