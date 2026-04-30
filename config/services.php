@@ -91,6 +91,16 @@ return [
     'google_maps' => [
         'api_key' => env('GOOGLE_MAPS_API_KEY'),
     ],
+
+    'ctt' => [
+        'base_url'              => env('CTT_BASE_URL'),
+        'client_id'             => env('CTT_CLIENT_ID'),
+        'client_secret'         => env('CTT_CLIENT_SECRET'),
+        'grant_type'            => env('CTT_GRANT_TYPE', 'client_credentials'),
+        'scope'                 => env('CTT_SCOPE', ''),
+        'client_center_code'    => env('CTT_ES_CLIENT_CENTER_NUMBER'),
+    ],
+
     'openai' => [
         'api_key' => env('CHATGPT_TRANSLATIONS_API_KEY')
     ]

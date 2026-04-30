@@ -289,12 +289,16 @@ return [
     'sandbox' => [
         'translate' => env('TRANSLATE_ON_LOCAL', false),
 
-        'shipper_itd_token'            => env('ITD_TOKEN'),
-        'shipper_apc_token'            => env('APC_TOKEN'),
-        'shipper_dpd_gb_token'         => env('DPD_GB_TOKEN'),
-        'shipper_gls_sk_token'         => env('GLS_SK_TOKEN'),
-        'shipper_gls_es_token'         => env('GLS_ES_TOKEN'),
-        'shipper_packeta_access_token' => env('PACKETA_ACCESS_TOKEN'),
+        'shipper_itd_token'                     => env('ITD_TOKEN'),
+        'shipper_apc_token'                     => env('APC_TOKEN'),
+        'shipper_dpd_gb_token'                  => env('DPD_GB_TOKEN'),
+        'shipper_gls_sk_token'                  => env('GLS_SK_TOKEN'),
+        'shipper_gls_es_token'                  => env('GLS_ES_TOKEN'),
+        'shipper_packeta_access_token'          => env('PACKETA_ACCESS_TOKEN'),
+        'shipper_ctt_es_token'                  => env('CTT_ES_TOKEN'),
+        'shipper_ctt_es_username'               => env('CTT_ES_USERNAME'),
+        'shipper_ctt_es_password'               => env('CTT_ES_PASSWORD'),
+        'shipper_ctt_es_client_center_number'   => env('CTT_ES_CLIENT_CENTER_NUMBER'),
 
 
         'local_share_url' => env('SANDBOX_SHARE_URL'),
