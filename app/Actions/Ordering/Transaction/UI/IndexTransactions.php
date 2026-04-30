@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\Transaction\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use Illuminate\Support\Facades\DB;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\InertiaTable\InertiaTable;
@@ -100,7 +101,15 @@ class IndexTransactions extends OrgAction
                 'products.available_quantity as available_quantity',
                 'currencies.code as currency_code',
                 'orders.id as order_id',
-                'transactions.offers_data'
+                'transactions.offers_data',
+                DB::raw("(
+                    SELECT STRING_AGG(DISTINCT bc.code, ', ')
+                    FROM delivery_note_items dni2
+                    JOIN pickings p ON p.delivery_note_item_id = dni2.id
+                    JOIN batch_codes bc ON bc.id = p.batch_code_id
+                    WHERE dni2.transaction_id = transactions.id
+                    AND p.batch_code_id IS NOT NULL
+                ) as batch_codes")
             ])
             ->allowedSorts(['asset_code', 'asset_name', 'net_amount', 'quantity_ordered'])
             ->allowedFilters([$globalSearch])
@@ -131,6 +140,7 @@ class IndexTransactions extends OrgAction
             $table->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
 
             $table->column(key: 'quantity_ordered', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            app()->isLocal() ? $table->column(key: 'batch_codes', label: __('Batch Codes'), canBeHidden: false, sortable: false, searchable: false) : '';
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
             if (
                 $parent instanceof Order

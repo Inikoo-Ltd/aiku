@@ -37,7 +37,7 @@ class IndexDeliveryNoteItems extends OrgAction
 
         $query->where('delivery_note_items.delivery_note_id', $parent->id);
 
-        $query->with(['pickings.location.warehouse']);
+        $query->with(['pickings.location.warehouse', 'pickings.batchCode', 'pickings.orgStock.mainBatchCode']);
 
         $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
         $query->leftJoin('batch_codes', 'delivery_note_items.batch_code_id', '=', 'batch_codes.id');

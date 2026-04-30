@@ -88,16 +88,22 @@ class IndexDeliveryNotesInBatchCode
             ->withQueryString();
     }
 
-    public function tableStructure(?string $prefix = null): Closure
+    public function tableStructure(?string $prefix = null, ?array $exportLinks = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($prefix, $exportLinks) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
 
             $table
                 ->withGlobalSearch()
-                ->withEmptyState(['title' => __('No delivery notes found')])
+                ->withEmptyState(['title' => __('No delivery notes found')]);
+
+            if ($exportLinks) {
+                $table->withExportLinks($exportLinks);
+            }
+
+            $table
                 ->column(key: 'state', label: '', type: 'icon')
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, align: 'right')
