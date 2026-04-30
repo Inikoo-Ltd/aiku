@@ -10,8 +10,8 @@ import { Collapse } from "vue-collapsed"
 import { get, set } from "lodash-es"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faArrowDown, faExchange, faArrowAltLeft } from "@fal"
-import { ref, computed, watch } from "vue"
+import { faArrowDown, faExchange, faArrowAltLeft, faDebug, faSave } from "@fal"
+import { ref, computed, watch, reactive, nextTick } from "vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import axios from "axios"
@@ -20,9 +20,11 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import InputNumber from "primevue/inputnumber"
 import Fieldset from "primevue/fieldset"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import LabelPalletStoredItemLocation from "@/Components/Fulfilment/PalletReturns/LabelPalletStoredItemLocation.vue"
+import SelectPalletStoredItemLocation from "@/Components/Fulfilment/PalletReturns/SelectPalletStoredItemLocation.vue"
 import "@/Composables/Icon/PalletReturnStateEnum"
 
-library.add(faArrowDown, faExchange, faArrowAltLeft)
+library.add(faArrowDown, faExchange, faArrowAltLeft, faDebug, faSave)
 
 const props = defineProps<{
     data: TableTS
@@ -31,28 +33,7 @@ const props = defineProps<{
     dispatchableReturns?: any[]
 }>()
 
-const isLoadingUndoPick = ref<Record<number, boolean>>({})
 const buildUrl = (name: any, parameters?: any) => String(route(name, parameters))
-
-const onUndoPick = (undoRoute: any, palletStoredItem: any) => {
-    const id = palletStoredItem?.id
-    if (!id || !undoRoute?.name) {
-        return
-    }
-
-    isLoadingUndoPick.value[id] = true
-
-    router.patch(
-        buildUrl(undoRoute.name, undoRoute.parameters),
-        {},
-        {
-            preserveScroll: true,
-            onFinish: () => {
-                isLoadingUndoPick.value[id] = false
-            },
-        }
-    )
-}
 
 const returnRoute = (item: any) => {
     if (!item?.pallet_return_slug) {
@@ -209,6 +190,212 @@ const getHiddenPallets = (storedItem: any) => {
     const items = storedItem?.pallet_stored_items || []
     return items.filter((ps: any) => !((ps?.selected_quantity ?? 0) > 0 || (ps?.available_to_pick_quantity ?? 0) > 0))
 }
+const getPickedPalletStoredItems = (storedItem: any) => {
+    const items = storedItem?.pallet_stored_items || []
+    return items.filter((ps: any) => Number(ps?.picked_quantity || 0) > 0)
+}
+const getNotPickedPalletStoredItems = (storedItem: any) => {
+    const items = storedItem?.pallet_stored_items || []
+    return items.filter((ps: any) => Number(ps?.not_picked_quantity || 0) > 0)
+}
+const getRemainingActionQuantity = (palletStoredItem: any): number => {
+    const selectedQuantity = Number(palletStoredItem?.selected_quantity || 0)
+    const pickedQuantity = Number(palletStoredItem?.picked_quantity || 0)
+    const notPickedQuantity = Number(palletStoredItem?.not_picked_quantity || 0)
+
+    return Math.max(0, selectedQuantity - pickedQuantity - notPickedQuantity)
+}
+const getRequestedPalletStoredItemsForAction = (storedItem: any) => {
+    const items = storedItem?.pallet_stored_items || []
+    return items.filter((palletStoredItem: any) => {
+        return Number(palletStoredItem?.selected_quantity || 0) > 0 && getRemainingActionQuantity(palletStoredItem) > 0
+    })
+}
+const getOtherPalletStoredItems = (storedItem: any, selectedPalletStoredItemId: number) => {
+    const items = storedItem?.pallet_stored_items || []
+    return items.filter((ps: any) => Number(ps?.id) !== Number(selectedPalletStoredItemId))
+}
+const generateLinkLocationInWarehouse = (palletStoredItem: any): string | undefined => {
+    const locationSlug = palletStoredItem?.location?.slug
+    const params = route().params as Record<string, string | undefined>
+
+    if (!locationSlug || !params.organisation || !params.warehouse) {
+        return undefined
+    }
+
+    return String(route("grp.org.warehouses.show.infrastructure.locations.show", {
+        organisation: params.organisation,
+        warehouse: params.warehouse,
+        location: locationSlug,
+    }))
+}
+const isLoadingSetPicked = reactive<Record<string, boolean>>({})
+const isLoadingSetNotPicked = reactive<Record<string, boolean>>({})
+const isLoadingUndoPick = reactive<Record<string, boolean>>({})
+const isSwitchingPalletStoredItem = ref(false)
+const isModalLocation = ref(false)
+const selectedStoredItemValue = ref<any>(null)
+const selectedCurrentPalletStoredItem = ref<any>(null)
+
+const notifyRequestError = (error: any) => {
+    const message =
+        error?.response?.data?.message ||
+        Object.values(error?.response?.data?.errors ?? {}).flat()?.[0] ||
+        trans("Request failed")
+
+    notify({
+        title: trans("Something went wrong."),
+        text: String(message),
+        type: "error",
+    })
+}
+
+const submitRouteRequest = async (routeTarget: any, payload: Record<string, any> = {}) => {
+    const method = String(routeTarget?.method || "post").toLowerCase()
+    const url = buildUrl(routeTarget?.name, routeTarget?.parameters)
+
+    return axios.request({
+        method,
+        url,
+        data: payload,
+    })
+}
+
+const switchPalletStoredItemForRequestedItem = async (storedItem: any, currentPalletStoredItem: any, targetPalletStoredItemId: number) => {
+    const allPalletStoredItems = storedItem?.pallet_stored_items || []
+    const targetPalletStoredItem = allPalletStoredItems.find((item: any) => Number(item.id) === Number(targetPalletStoredItemId))
+
+    if (!targetPalletStoredItem || Number(currentPalletStoredItem?.id) === Number(targetPalletStoredItemId)) {
+        return
+    }
+
+    const hasProcessedQuantity =
+        Number(currentPalletStoredItem?.picked_quantity || 0) > 0 ||
+        Number(currentPalletStoredItem?.not_picked_quantity || 0) > 0
+    if (hasProcessedQuantity) {
+        notify({
+            title: trans("Cannot change location"),
+            text: trans("This requested pallet already has picked/not picked quantity."),
+            type: "warn",
+        })
+        return
+    }
+
+    const selectedQuantityToMove = Number(currentPalletStoredItem?.selected_quantity || 0)
+    const targetMaxQuantity = Number(targetPalletStoredItem?.max_quantity || targetPalletStoredItem?.quantity_in_pallet || 0)
+    if (selectedQuantityToMove > targetMaxQuantity) {
+        notify({
+            title: trans("Cannot change location"),
+            text: trans("Insufficient stock in selected pallet location."),
+            type: "warn",
+        })
+        return
+    }
+
+    try {
+        isSwitchingPalletStoredItem.value = true
+
+        await submitRouteRequest(currentPalletStoredItem.syncRoute, {
+            quantity_ordered: 0,
+        })
+        await submitRouteRequest(targetPalletStoredItem.syncRoute, {
+            quantity_ordered: selectedQuantityToMove,
+            picking_session_id: currentPalletStoredItem?.picking_session_id || props.pickingSession?.id || null,
+        })
+
+        isModalLocation.value = false
+        router.reload()
+    } catch (error) {
+        notifyRequestError(error)
+    } finally {
+        isSwitchingPalletStoredItem.value = false
+    }
+}
+
+const openModalLocation = (storedItem: any, currentPalletStoredItem: any) => {
+    selectedStoredItemValue.value = storedItem
+    selectedCurrentPalletStoredItem.value = currentPalletStoredItem
+    isModalLocation.value = true
+}
+
+const onSelectPalletStoredItem = async (palletStoredItemId: number) => {
+    if (!selectedStoredItemValue.value || !selectedCurrentPalletStoredItem.value) {
+        return
+    }
+
+    await switchPalletStoredItemForRequestedItem(
+        selectedStoredItemValue.value,
+        selectedCurrentPalletStoredItem.value,
+        palletStoredItemId
+    )
+}
+
+const onUndoLinePick = (undoRoute: any, loadingKey: string) => {
+    if (!undoRoute?.name) {
+        return
+    }
+
+    set(isLoadingUndoPick, loadingKey, true)
+    router.patch(
+        buildUrl(undoRoute.name, undoRoute.parameters),
+        {},
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                set(isLoadingUndoPick, loadingKey, false)
+            },
+        }
+    )
+}
+
+const onSetLineAsNotPicked = (palletStoredItem: any, quantity: number, loadingKey: string) => {
+    if (!palletStoredItem?.notPickedRoute?.name || !palletStoredItem?.pallet_return_item_id) {
+        return
+    }
+
+    set(isLoadingSetNotPicked, loadingKey, true)
+    router.patch(
+        buildUrl(palletStoredItem.notPickedRoute.name, palletStoredItem.notPickedRoute.parameters),
+        {
+            quantity_not_picked: Number(quantity || 0),
+        },
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                set(isLoadingSetNotPicked, loadingKey, false)
+            },
+        }
+    )
+}
+
+const onSetLineAsPicked = (palletStoredItem: any, quantity: number, loadingKey: string) => {
+    const remaining = getRemainingActionQuantity(palletStoredItem)
+    if (remaining <= 0) {
+        return
+    }
+
+    const quantityToPick = Math.min(Math.max(Number(quantity || 0), 1), remaining)
+    set(isLoadingSetPicked, loadingKey, true)
+
+    const routeTarget = palletStoredItem?.pallet_return_item_id
+        ? palletStoredItem.updateRoute
+        : palletStoredItem.newPickRoute
+
+    const payload = palletStoredItem?.pallet_return_item_id
+        ? { quantity_picked: Number(palletStoredItem?.picked_quantity || 0) + quantityToPick }
+        : { quantity_ordered: quantityToPick }
+
+    router.patch(
+        buildUrl(routeTarget.name, routeTarget.parameters),
+        payload,
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                set(isLoadingSetPicked, loadingKey, false)
+            },
+        }
+    )
+}
 
 const isModalSetAsPicked = ref(false)
 const isModalPickingUsers = ref(false)
@@ -245,6 +432,25 @@ const onCloseSetAsPickedModal = () => {
     isModalPickingUsers.value = false
     selectedDispatchableReturn.value = null
     selectedPicker.value = null
+    shouldReopenSetAsPickedModal.value = false
+}
+const shouldReopenSetAsPickedModal = ref(false)
+const openChildModalFromSetAsPicked = async (openModal: () => void): Promise<void> => {
+    shouldReopenSetAsPickedModal.value = isModalSetAsPicked.value
+    if (isModalSetAsPicked.value) {
+        isModalSetAsPicked.value = false
+        await nextTick()
+    }
+
+    openModal()
+}
+const maybeReopenSetAsPickedModal = (): void => {
+    const shouldReopen = shouldReopenSetAsPickedModal.value && Boolean(selectedDispatchableReturn.value)
+    shouldReopenSetAsPickedModal.value = false
+
+    if (shouldReopen) {
+        isModalSetAsPicked.value = true
+    }
 }
 
 const isStoredItemReturn = computed(() => selectedDispatchableReturn.value?.type === "stored_item")
@@ -307,13 +513,19 @@ const canSubmitModalPrimaryButton = computed(() => {
     return hasShipmentRequirementMet.value
 })
 
-const onOpenModalPickingUsers = () => {
+const onOpenModalPickingUsers = async () => {
     if (canChangePacker.value) {
         selectedPicker.value = selectedDispatchableReturn.value?.packer ?? null
     } else {
         selectedPicker.value = selectedDispatchableReturn.value?.picker ?? null
     }
-    isModalPickingUsers.value = true
+    await openChildModalFromSetAsPicked(() => {
+        isModalPickingUsers.value = true
+    })
+}
+const onCloseModalPickingUsers = (): void => {
+    isModalPickingUsers.value = false
+    maybeReopenSetAsPickedModal()
 }
 
 const onUpdatePickingUsers = async () => {
@@ -349,7 +561,7 @@ const onUpdatePickingUsers = async () => {
             ...(canChangePacker.value ? { packer: selectedPicker.value } : { picker: selectedPicker.value }),
         }
 
-        isModalPickingUsers.value = false
+        onCloseModalPickingUsers()
         notify({
             title: trans("Success"),
             text: canChangePacker.value ? trans("Packer updated successfully") : trans("Picker updated successfully"),
@@ -388,6 +600,7 @@ const onOpenModalTrackingNumber = async () => {
         return
     }
 
+    await openChildModalFromSetAsPicked(() => {})
     isLoadingData.value = "addTrackingNumber"
     try {
         const response = await axios.get(buildUrl(fetchRoute.name, fetchRoute.parameters))
@@ -402,6 +615,10 @@ const onOpenModalTrackingNumber = async () => {
     } finally {
         isLoadingData.value = false
     }
+}
+const onCloseModalShipment = (): void => {
+    isModalShipment.value = false
+    maybeReopenSetAsPickedModal()
 }
 
 const onSubmitShipment = () => {
@@ -421,7 +638,7 @@ const onSubmitShipment = () => {
                 isLoadingButton.value = "addTrackingNumber"
             },
             onSuccess: () => {
-                isModalShipment.value = false
+                onCloseModalShipment()
                 formTrackingNumber.reset()
                 router.reload()
             },
@@ -472,6 +689,16 @@ const onDeleteShipment = async (shipmentId: number) => {
 const onDeleteParcel = (index: number) => {
     parcelsCopy.value.splice(index, 1)
 }
+const onOpenModalParcels = async (): Promise<void> => {
+    parcelsCopy.value = [...(selectedDispatchableReturn.value?.parcels || [])]
+    await openChildModalFromSetAsPicked(() => {
+        isModalParcels.value = true
+    })
+}
+const onCloseModalParcels = (): void => {
+    isModalParcels.value = false
+    maybeReopenSetAsPickedModal()
+}
 
 const onSubmitParcels = () => {
     const updateRoute = selectedDispatchableReturn.value?.updateRoute
@@ -488,7 +715,7 @@ const onSubmitParcels = () => {
                 isLoadingSubmitParcels.value = true
             },
             onSuccess: () => {
-                isModalParcels.value = false
+                onCloseModalParcels()
                 selectedDispatchableReturn.value = {
                     ...selectedDispatchableReturn.value,
                     parcels: [...parcelsCopy.value],
@@ -650,7 +877,6 @@ const onDispatchPalletReturn = async () => {
                                     :key="palletStoredItem.id"
                                     class="flex items-center gap-x-4"
                                 >
-                                    <!-- Stored item reference -->
                                     <div class="min-w-[150px]">
                                         <Link
                                             v-if="storedItemRoute(storedItem)"
@@ -664,109 +890,173 @@ const onDispatchPalletReturn = async () => {
                                         </div>
                                     </div>
 
-                                    <!-- Pallet reference + location -->
-                                    <div class="min-w-[190px]">
-                                        <Link
-                                            v-if="palletRoute(palletStoredItem)"
-                                            :href="palletRoute(palletStoredItem)"
-                                            class="secondaryLink"
+                                    <div class="min-w-[220px]">
+                                        <div class="flex items-center justify-between gap-x-3">
+                                            <div class="flex items-center gap-x-1 whitespace-nowrap">
+                                                <Link
+                                                    v-if="palletRoute(palletStoredItem)"
+                                                    :href="palletRoute(palletStoredItem)"
+                                                    class="secondaryLink"
+                                                >
+                                                    {{ palletStoredItem.reference }}
+                                                </Link>
+                                                <span v-else>
+                                                    {{ palletStoredItem.reference || "-" }}
+                                                </span>
+                                            </div>
+
+                                        </div>
+                                        <div
+                                            v-if="
+                                                !isPackingFinished() &&
+                                                storedItem.pallet_return_state !== 'picked' &&
+                                                !isRowPicking(storedItem) &&
+                                                (
+                                                    getPickedPalletStoredItems(storedItem).length ||
+                                                    getNotPickedPalletStoredItems(storedItem).length
+                                                )
+                                            "
+                                            class="grid gap-y-1"
                                         >
-                                            {{ palletStoredItem.reference }}
-                                        </Link>
-                                        <span v-else>
-                                            {{ palletStoredItem.reference || "-" }}
-                                        </span>
-                                        <span
-                                            v-if="palletStoredItem.location?.code"
-                                            class="text-gray-400"
-                                        >
-                                            [{{ palletStoredItem.location.code }}]
-                                        </span>
-                                        <div class="text-gray-400 tabular-nums text-xs">
-                                            {{ trans("Stocks in pallet") }}:
-                                            {{ palletStoredItem.quantity_in_pallet ?? 0 }}
+                                            <div
+                                                v-for="pickedPalletStoredItem in getPickedPalletStoredItems(storedItem)"
+                                                :key="`picked-${storedItem.id}-${pickedPalletStoredItem.id}`"
+                                                class="flex items-center gap-x-2 whitespace-nowrap"
+                                            >
+                                                <Link
+                                                    v-if="palletRoute(pickedPalletStoredItem)"
+                                                    :href="palletRoute(pickedPalletStoredItem)"
+                                                    class="secondaryLink"
+                                                >
+                                                    {{ pickedPalletStoredItem.location?.code || pickedPalletStoredItem.reference }}
+                                                </Link>
+                                                <span v-else>
+                                                    {{ pickedPalletStoredItem.location?.code || pickedPalletStoredItem.reference || "-" }}
+                                                </span>
+                                                <div class="text-gray-500 tabular-nums whitespace-nowrap">
+                                                    <FontAwesomeIcon icon="fal fa-hand-holding-box" fixed-width aria-hidden="true" />
+                                                    {{ pickedPalletStoredItem.picked_quantity ?? 0 }}
+                                                </div>
+                                            </div>
+
+                                            <div
+                                                v-for="notPickedPalletStoredItem in getNotPickedPalletStoredItems(storedItem)"
+                                                :key="`not-picked-${storedItem.id}-${notPickedPalletStoredItem.id}`"
+                                                class="text-red-500 tabular-nums flex items-center gap-x-2 whitespace-nowrap"
+                                            >
+                                                <Link
+                                                    v-if="palletRoute(notPickedPalletStoredItem)"
+                                                    :href="palletRoute(notPickedPalletStoredItem)"
+                                                    class="secondaryLink"
+                                                >
+                                                    {{ notPickedPalletStoredItem.reference || "-" }}
+                                                </Link>
+                                                <span v-else>
+                                                    {{ notPickedPalletStoredItem.reference || "-" }}
+                                                </span>
+                                                <div>
+                                                    <FontAwesomeIcon icon="fas fa-skull" fixed-width aria-hidden="true" />
+                                                    {{ notPickedPalletStoredItem.not_picked_quantity ?? 0 }}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <!-- Current stock / Requested quantity / pick controls -->
                                     <div
                                         v-if="
                                             isRowPicking(storedItem) ||
-                                            isPickingFinished() ||
-                                            isPackingFinished()
+                                            (isPickingFinished() && storedItem.pallet_return_state !== 'picked')
                                         "
                                         class="flex items-center gap-x-4 ml-auto"
                                     >
-                                        <div class="tabular-nums text-xs text-gray-500 min-w-[150px] text-right">
-                                            <span class="text-[10px] uppercase text-gray-400 mr-1">
-                                                {{ trans("Current stock") }}
-                                            </span>
-                                            {{ storedItem.total_quantity ?? 0 }}
-                                        </div>
-                                        <div class="tabular-nums text-xs text-gray-500 min-w-[180px] text-right">
-                                            <span class="text-[10px] uppercase text-gray-400 mr-1">
-                                                {{ trans("Requested") }}
-                                            </span>
-                                            {{ storedItem.total_quantity_ordered ?? 0 }}
-                                        </div>
-
                                         <div class="shrink-0">
                                             <template v-if="isRowPicking(storedItem)">
-                                                <div
-                                                    v-if="palletStoredItem.state === 'picked'"
-                                                    class="flex items-center gap-x-2 tabular-nums"
-                                                >
-                                                    <Button
-                                                        @click="() => onUndoPick(palletStoredItem.undoRoute, palletStoredItem)"
-                                                        icon="fal fa-undo-alt"
-                                                        :label="trans('Undo pick')"
-                                                        size="xs"
-                                                        type="tertiary"
-                                                        :loading="get(isLoadingUndoPick, palletStoredItem.id, false)"
-                                                        class="py-0"
-                                                    />
-                                                    <span class="text-gray-500 text-xs">
-                                                        {{ palletStoredItem.picked_quantity ?? 0
-                                                        }}/{{ palletStoredItem.selected_quantity ?? 0 }}
-                                                    </span>
-                                                </div>
-
-                                                <NumberWithButtonSave
-                                                    v-else
-                                                    noUndoButton
-                                                    :modelValue="palletStoredItem.selected_quantity ?? 0"
-                                                    saveOnForm
-                                                    :routeSubmit="
-                                                        palletStoredItem.pallet_return_item_id
-                                                            ? palletStoredItem.updateRoute
-                                                            : palletStoredItem.newPickRoute
-                                                    "
-                                                    :keySubmit="
-                                                        palletStoredItem.pallet_return_item_id
-                                                            ? 'quantity_picked'
-                                                            : 'quantity_ordered'
-                                                    "
-                                                    :bindToTarget="{
-                                                        step: 1,
-                                                        min: 0,
-                                                        max: palletStoredItem.max_quantity ?? 0,
-                                                    }"
-                                                >
-                                                    <template #save="{ isProcessing, onSaveViaForm }">
-                                                        <Button
-                                                            v-if="(palletStoredItem.selected_quantity ?? 0) > 0"
-                                                            @click="() => onSaveViaForm()"
-                                                            icon="fal fa-save"
-                                                            :label="trans('pick')"
-                                                            size="xs"
-                                                            type="secondary"
-                                                            :loading="isProcessing"
-                                                            class="py-0"
+                                                <div class="grid gap-y-1">
+                                                    <div
+                                                        v-for="palletStoredItemAction in getRequestedPalletStoredItemsForAction(storedItem)"
+                                                        :key="`action-${storedItem.id}-${palletStoredItemAction.id}`"
+                                                        class="flex items-center justify-between gap-x-3"
+                                                    >
+                                                        <LabelPalletStoredItemLocation
+                                                            :palletStoredItems="[palletStoredItemAction, ...getOtherPalletStoredItems(storedItem, palletStoredItemAction.id)]"
+                                                            :selectedPalletStoredItemId="palletStoredItemAction.id"
+                                                            :locationHref="generateLinkLocationInWarehouse(palletStoredItemAction)"
+                                                            @openLocationModal="openModalLocation(storedItem, palletStoredItemAction)"
                                                         />
-                                                    </template>
-                                                </NumberWithButtonSave>
+
+                                                        <NumberWithButtonSave
+                                                            :key="`picking-action_${storedItem.id}_${palletStoredItemAction.id}_${getRemainingActionQuantity(palletStoredItemAction)}`"
+                                                            noUndoButton
+                                                            :modelValue="getRemainingActionQuantity(palletStoredItemAction)"
+                                                            :bindToTarget="{
+                                                                step: 1,
+                                                                min: 1,
+                                                                max: getRemainingActionQuantity(palletStoredItemAction),
+                                                            }"
+                                                            :xxparentClass="''"
+                                                        >
+                                                            <template #save="{ quantity }">
+                                                                <div class="flex items-center gap-x-1">
+                                                                    <Button
+                                                                        @click="() => onSetLineAsPicked(palletStoredItemAction, Number(quantity || 0), `picked_${storedItem.id}_${palletStoredItemAction.id}`)"
+                                                                        icon="fal fa-clipboard-list-check"
+                                                                        :label="String(Number(quantity || 0))"
+                                                                        size="xs"
+                                                                        type="secondary"
+                                                                        :loading="get(isLoadingSetPicked, `picked_${storedItem.id}_${palletStoredItemAction.id}`, false)"
+                                                                        class="py-0"
+                                                                    />
+                                                                    <Button
+                                                                        @click="() => onSetLineAsNotPicked(palletStoredItemAction, Number(quantity || 0), `not-picked_${storedItem.id}_${palletStoredItemAction.id}`)"
+                                                                        iconRight="fal fa-debug"
+                                                                        :label="String(Number(quantity || 0))"
+                                                                        size="xs"
+                                                                        type="negative"
+                                                                        :loading="get(isLoadingSetNotPicked, `not-picked_${storedItem.id}_${palletStoredItemAction.id}`, false)"
+                                                                        class="py-0"
+                                                                    />
+                                                                </div>
+                                                            </template>
+                                                        </NumberWithButtonSave>
+                                                    </div>
+                                                    <div class="ml-auto flex items-center justify-end gap-x-2">
+                                                        <Link
+                                                            v-if="palletStoredItem.location?.code && Number(palletStoredItem.picked_quantity || 0) > 0"
+                                                            :href="generateLinkLocationInWarehouse(palletStoredItem) || '#'"
+                                                            class="primaryLink text-gray-400 whitespace-nowrap"
+                                                        >
+                                                            {{ palletStoredItem.location.code }}
+                                                        </Link>
+                                                        <span
+                                                            v-if="Number(palletStoredItem.picked_quantity || 0) > 0"
+                                                            class="text-gray-500 tabular-nums whitespace-nowrap flex items-center gap-x-1"
+                                                        >
+                                                            <FontAwesomeIcon icon="fal fa-hand-holding-box" fixed-width aria-hidden="true" />
+                                                            {{ palletStoredItem.picked_quantity ?? 0 }}
+                                                        </span>
+                                                        <span
+                                                            v-if="Number(palletStoredItem.not_picked_quantity || 0) > 0"
+                                                            class="text-red-500 tabular-nums whitespace-nowrap flex items-center gap-x-1"
+                                                        >
+                                                            <FontAwesomeIcon icon="fas fa-skull" fixed-width aria-hidden="true" />
+                                                            {{ palletStoredItem.not_picked_quantity ?? 0 }}
+                                                        </span>
+                                                        <Button
+                                                            v-if="
+                                                                Number(palletStoredItem.picked_quantity || 0) > 0 ||
+                                                                Number(palletStoredItem.not_picked_quantity || 0) > 0
+                                                            "
+                                                            @click="() => onUndoLinePick(palletStoredItem.undoRoute, `undo_${storedItem.id}_${palletStoredItem.id}`)"
+                                                            icon="fal fa-undo-alt"
+                                                            size="xxs"
+                                                            :loading="get(isLoadingUndoPick, `undo_${storedItem.id}_${palletStoredItem.id}`, false)"
+                                                            type="negative"
+                                                            class="shrink-0"
+                                                        />
+                                                    </div>
+                                                </div>
                                             </template>
-                                            <template v-else-if="isPickingFinished() || isPackingFinished()">
+                                            <template v-else-if="isPickingFinished() && storedItem.pallet_return_state !== 'picked'">
                                                 <span
                                                     v-if="storedItem.pallet_return_state === 'cancel'"
                                                     class="tabular-nums text-xs text-red-500 flex items-center gap-x-1"
@@ -779,16 +1069,21 @@ const onDispatchPalletReturn = async () => {
                                                     </span>
                                                 </span>
                                                 <span
-                                                    v-else
+                                                    v-else-if="(palletStoredItem.not_picked_quantity ?? 0) > 0"
+                                                    class="text-red-500 w-fit mr-auto tabular-nums flex items-center gap-x-2"
+                                                >
+                                                    <FontAwesomeIcon icon="fas fa-skull" fixed-width aria-hidden="true" />
+                                                    {{ palletStoredItem.not_picked_quantity ?? 0 }}
+                                                </span>
+                                                <span
+                                                    v-else-if="(palletStoredItem.picked_quantity ?? 0) > 0"
                                                     class="tabular-nums text-xs text-gray-500"
                                                 >
-                                                    {{ palletStoredItem.picked_quantity ?? 0
-                                                    }}/{{ palletStoredItem.selected_quantity ?? 0 }}
-                                                    <span
-                                                        class="text-emerald-500 ml-1"
-                                                    >
-                                                        ✓
-                                                    </span>
+                                                    <FontAwesomeIcon icon="fal fa-hand-holding-box" fixed-width aria-hidden="true" />
+                                                    {{ palletStoredItem.picked_quantity ?? 0 }}
+                                                </span>
+                                                <span v-else class="text-xs text-gray-400 italic">
+                                                    {{ trans('No item picked yet') }}
                                                 </span>
                                             </template>
                                         </div>
@@ -840,52 +1135,36 @@ const onDispatchPalletReturn = async () => {
                             {{ palletStoredItem.reference || "-" }}
                         </span>
                         <span v-if="palletStoredItem.location?.code" class="text-gray-400"> [{{ palletStoredItem.location.code }}]</span>
-
-                        <div class="text-gray-400 tabular-nums">
-                            {{ trans('Stocks in pallet') }}: {{ palletStoredItem.quantity_in_pallet ?? 0 }}
-                        </div>
                     </div>
 
                     <div v-if="isRowPicking(storedItem)" class="shrink-0">
-                        <div v-if="palletStoredItem.state === 'picked'" class="flex items-center gap-x-2 tabular-nums">
-                            <Button
-                                @click="() => onUndoPick(palletStoredItem.undoRoute, palletStoredItem)"
-                                icon="fal fa-undo-alt"
-                                :label="trans('Undo pick')"
-                                size="xs"
-                                type="tertiary"
-                                :loading="get(isLoadingUndoPick, palletStoredItem.id, false)"
-                                class="py-0"
-                            />
-                            <span class="text-gray-500">
-                                {{ palletStoredItem.picked_quantity ?? 0 }}/{{ palletStoredItem.selected_quantity ?? 0 }}
-                            </span>
-                        </div>
-
                         <NumberWithButtonSave
-                            v-else
                             noUndoButton
-                            :modelValue="palletStoredItem.selected_quantity ?? 0"
-                            saveOnForm
-                            :routeSubmit="palletStoredItem.pallet_return_item_id ? palletStoredItem.updateRoute : palletStoredItem.newPickRoute"
-                            :keySubmit="palletStoredItem.pallet_return_item_id ? 'quantity_picked' : 'quantity_ordered'"
-                            :bindToTarget="{
-                                step: 1,
-                                min: 0,
-                                max: palletStoredItem.max_quantity ?? 0
-                            }"
+                            :modelValue="getRemainingActionQuantity(palletStoredItem)"
+                            :bindToTarget="{ step: 1, min: 1, max: getRemainingActionQuantity(palletStoredItem) }"
+                            :xxparentClass="''"
                         >
-                            <template #save="{ isProcessing, onSaveViaForm }">
-                                <Button
-                                    v-if="(palletStoredItem.selected_quantity ?? 0) > 0"
-                                    @click="() => onSaveViaForm()"
-                                    icon="fal fa-save"
-                                    :label="trans('pick')"
-                                    size="xs"
-                                    type="secondary"
-                                    :loading="isProcessing"
-                                    class="py-0"
-                                />
+                            <template #save="{ quantity }">
+                                <div class="flex items-center gap-x-1">
+                                    <Button
+                                        @click="() => onSetLineAsPicked(palletStoredItem, Number(quantity || 0), `picked_${storedItem.id}_${palletStoredItem.id}`)"
+                                        icon="fal fa-clipboard-list-check"
+                                        :label="String(Number(quantity || 0))"
+                                        size="xs"
+                                        type="secondary"
+                                        :loading="get(isLoadingSetPicked, `picked_${storedItem.id}_${palletStoredItem.id}`, false)"
+                                        class="py-0"
+                                    />
+                                    <Button
+                                        @click="() => onSetLineAsNotPicked(palletStoredItem, Number(quantity || 0), `not-picked_${storedItem.id}_${palletStoredItem.id}`)"
+                                        iconRight="fal fa-debug"
+                                        :label="String(Number(quantity || 0))"
+                                        size="xs"
+                                        type="negative"
+                                        :loading="get(isLoadingSetNotPicked, `not-picked_${storedItem.id}_${palletStoredItem.id}`, false)"
+                                        class="py-0"
+                                    />
+                                </div>
                             </template>
                         </NumberWithButtonSave>
                     </div>
@@ -906,9 +1185,6 @@ const onDispatchPalletReturn = async () => {
                                     {{ palletStoredItem.reference || "-" }}
                                 </span>
                                 <span v-if="palletStoredItem.location?.code" class="text-gray-400"> [{{ palletStoredItem.location.code }}]</span>
-                                <div class="text-gray-400 tabular-nums">
-                                    {{ trans('Stocks in pallet') }}: {{ palletStoredItem.quantity_in_pallet ?? 0 }}
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -953,38 +1229,27 @@ const onDispatchPalletReturn = async () => {
             <div v-if="isFirstReturnRow(item) && (isPickingFinished() || isPackingFinished())" class="flex justify-end gap-x-2">
                 <template v-if="item?.pallet_return_state === 'picking'">
                     <Button
-                        v-if="canRowSetAsPicked(item)"
                         icon="fal fa-save"
                         :label="trans('Set as Picked')"
-                        type="secondary"
-                        size="xs"
+                        type="save"
+                        size="sm"
                         class="py-0"
                         @click="onOpenSetAsPickedModal(item)"
                     />
-                    <Button
-                        v-else
-                        icon="fal fa-save"
-                        :label="trans('Set as Picked')"
-                        type="secondary"
-                        size="xs"
-                        class="py-0"
-                        :disabled="true"
-                        v-tooltip="trans('Set all items as picked or not picked first')"
-                    />
                 </template>
                 <Button
-                    v-if="isPackingFinished() && canRowDispatch(item)"
+                    v-if="(isPackingFinished() || item?.pallet_return_state === 'picked') && canRowDispatch(item)"
                     icon="fal fa-pencil"
                     :label="trans('Edit Detail')"
-                    type="secondary"
-                    size="xs"
+                    type="save"
+                    size="sm"
                     class="py-0"
                     @click="onOpenSetAsPickedModal(item)"
                 />
                 <Link
                     v-if="canRowRevertToPicking(item)"
                     as="div"
-                    :href="route(getDispatchableReturn(item).revertToPickingRoute.name, getDispatchableReturn(item).revertToPickingRoute.parameters)"
+                    :href="buildUrl(getDispatchableReturn(item).revertToPickingRoute.name, getDispatchableReturn(item).revertToPickingRoute.parameters)"
                     :method="getDispatchableReturn(item).revertToPickingRoute.method || 'post'"
                     preserveScroll
                     v-tooltip="trans('Revert to Picking')"
@@ -993,7 +1258,7 @@ const onDispatchPalletReturn = async () => {
                         icon="fal fa-arrow-alt-left"
                         :label="trans('Revert to Picking')"
                         type="negative"
-                        size="xs"
+                        size="sm"
                         class="py-0"
                     />
                 </Link>
@@ -1109,7 +1374,7 @@ const onDispatchPalletReturn = async () => {
                             </li>
                         </ul>
                          <Button v-if="canEditParcels && selectedDispatchableReturn?.parcels?.length"
-                            @click="() => (isModalParcels = true, parcelsCopy = [...(selectedDispatchableReturn?.parcels || [])])"
+                            @click="onOpenModalParcels"
                             :label="trans('Edit')" icon="fal fa-pencil" type="tertiary" size="xs" />
                         <Button v-else-if="canEditParcels"
                             @click="() => (parcelsCopy = [{ weight: 1, dimensions: [5, 5, 5] }], onSubmitParcels())"
@@ -1156,7 +1421,28 @@ const onDispatchPalletReturn = async () => {
         </div>
     </Modal>
 
-    <Modal :isOpen="isModalPickingUsers" @onClose="() => (isModalPickingUsers = false)" width="w-full max-w-xl" :isClosableInBackground="false" closeButton>
+    <Modal :isOpen="isModalLocation" @onClose="isModalLocation = false" width="w-full max-w-5xl" xdialogStyle="{ background: '#ffffff' }">
+        <SelectPalletStoredItemLocation
+            v-if="selectedStoredItemValue && selectedCurrentPalletStoredItem"
+            :item="{
+                reference: selectedStoredItemValue.reference,
+                pallet_stored_items: getOtherPalletStoredItems(selectedStoredItemValue, selectedCurrentPalletStoredItem.id)
+            }"
+            :selectedPalletStoredItemId="null"
+            @select="onSelectPalletStoredItem"
+        />
+
+        <div class="mt-6 flex justify-end">
+            <Button
+                :label="trans('Close')"
+                type="tertiary"
+                @click="isModalLocation = false"
+                :loading="isSwitchingPalletStoredItem"
+            />
+        </div>
+    </Modal>
+
+    <Modal :isOpen="isModalPickingUsers" @onClose="onCloseModalPickingUsers" width="w-full max-w-xl" :isClosableInBackground="false" closeButton>
         <div class="flex flex-col gap-4">
             <div class="text-center text-lg font-semibold">{{ trans("Return Customer's SKUs") }}</div>
             <div v-if="canChangePicker || canChangePacker" class="flex flex-col gap-2">
@@ -1196,7 +1482,7 @@ const onDispatchPalletReturn = async () => {
     <Modal
         v-if="!selectedDispatchableReturn?.isCollection"
         :isOpen="isModalShipment"
-        @onClose="isModalShipment = false"
+        @onClose="onCloseModalShipment"
         width="w-full max-w-2xl"
     closeButton>
         <div class="text-center font-bold mb-4">
@@ -1256,7 +1542,7 @@ const onDispatchPalletReturn = async () => {
         </div>
     </Modal>
 
-    <Modal :isOpen="isModalParcels" @onClose="isModalParcels = false" width="w-full max-w-lg" closeButton>
+    <Modal :isOpen="isModalParcels" @onClose="onCloseModalParcels" width="w-full max-w-lg" closeButton>
         <div class="text-center font-bold mb-4">{{ trans('Add Parcels') }}</div>
         <Fieldset :legend="`${trans('Parcels')} (${parcelsCopy?.length})`">
             <div class="grid grid-cols-12 items-center gap-x-6 mb-2">

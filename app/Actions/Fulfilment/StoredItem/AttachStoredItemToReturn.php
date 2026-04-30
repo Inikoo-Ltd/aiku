@@ -26,9 +26,17 @@ class AttachStoredItemToReturn extends OrgAction
     public function handle(PalletReturn $palletReturn, PalletStoredItem $palletStoredItem, array $modelData)
     {
         $quantityOrdered = Arr::pull($modelData, 'quantity_ordered');
+        $pickingSessionId = Arr::pull($modelData, 'picking_session_id');
         $existingPalletReturnItem = PalletReturnItem::where('pallet_return_id', $palletReturn->id)
             ->where('pallet_stored_item_id', $palletStoredItem->id)
             ->first();
+
+        if (!$pickingSessionId) {
+            $pickingSessionId = PalletReturnItem::query()
+                ->where('pallet_return_id', $palletReturn->id)
+                ->whereNotNull('picking_session_id')
+                ->value('picking_session_id');
+        }
 
         if ($quantityOrdered == 0) {
             if ($existingPalletReturnItem) {
@@ -36,9 +44,15 @@ class AttachStoredItemToReturn extends OrgAction
             }
         } else {
             if ($existingPalletReturnItem) {
-                $existingPalletReturnItem->update([
+                $updateData = [
                     'quantity_ordered' => $quantityOrdered
-                ]);
+                ];
+
+                if ($pickingSessionId && !$existingPalletReturnItem->picking_session_id) {
+                    $updateData['picking_session_id'] = $pickingSessionId;
+                }
+
+                $existingPalletReturnItem->update($updateData);
             } else {
                 $palletReturn->storedItems()->attach(
                     [
@@ -47,7 +61,8 @@ class AttachStoredItemToReturn extends OrgAction
                         'pallet_id'            => $palletStoredItem->pallet_id,
                         'pallet_stored_item_id' => $palletStoredItem->id,
                         'quantity_ordered'      => $quantityOrdered,
-                        'picking_location_id'   => $palletStoredItem->pallet->location_id
+                        'picking_location_id'   => $palletStoredItem->pallet->location_id,
+                        'picking_session_id'    => $pickingSessionId,
                         ]
                     ]
                 );
@@ -68,7 +83,8 @@ class AttachStoredItemToReturn extends OrgAction
     public function rules(): array
     {
         return [
-            'quantity_ordered' => ['required', 'numeric', 'min:0', 'max:'.$this->palletStoredItem->quantity]
+            'quantity_ordered' => ['required', 'numeric', 'min:0', 'max:'.$this->palletStoredItem->quantity],
+            'picking_session_id' => ['sometimes', 'nullable', 'integer'],
         ];
     }
 
