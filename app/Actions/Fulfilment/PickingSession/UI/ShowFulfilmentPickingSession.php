@@ -19,6 +19,7 @@ use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -271,6 +272,15 @@ class ShowFulfilmentPickingSession extends OrgAction
             ->selectRaw('distinct pallet_returns.type as type')
             ->pluck('type')
             ->first();
+
+        if (!is_string($type) || $type === '') {
+            $type = DB::table('pallet_return_items')
+                ->join('pallet_returns', 'pallet_returns.id', '=', 'pallet_return_items.pallet_return_id')
+                ->where('pallet_return_items.picking_session_id', $pickingSession->id)
+                ->whereNotNull('pallet_return_items.pallet_return_id')
+                ->selectRaw('distinct pallet_returns.type as type')
+                ->value('type');
+        }
 
         if (!is_string($type) || $type === '') {
             return PalletReturnTypeEnum::PALLET->value;
