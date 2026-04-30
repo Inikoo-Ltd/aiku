@@ -60,6 +60,7 @@ class BatchCodeDeliveryNotesExport implements FromQuery, WithMapping, WithHeadin
                 'delivery_notes.slug',
                 'delivery_notes.number_items',
                 'customers.name as customer_name',
+                'customers.phone as customer_phone',
                 'shops.name as shop_name',
                 'organisations.name as organisation_name',
             ])
@@ -73,8 +74,10 @@ class BatchCodeDeliveryNotesExport implements FromQuery, WithMapping, WithHeadin
         return [
             __('State'),
             __('Reference'),
+            __('Batch Code'),
             __('Date'),
             __('Customer'),
+            __('Phone'),
             __('Items'),
             __('Picking Sessions Count'),
             __('Picking Session IDs'),
@@ -95,6 +98,8 @@ class BatchCodeDeliveryNotesExport implements FromQuery, WithMapping, WithHeadin
             'G' => NumberFormat::FORMAT_TEXT,
             'H' => NumberFormat::FORMAT_TEXT,
             'I' => NumberFormat::FORMAT_TEXT,
+            'J' => NumberFormat::FORMAT_TEXT,
+            'K' => NumberFormat::FORMAT_TEXT,
         ];
     }
 
@@ -103,8 +108,10 @@ class BatchCodeDeliveryNotesExport implements FromQuery, WithMapping, WithHeadin
         return [
             (string)$row->state?->value ?? '',
             (string)$row->reference,
+            (string)$this->batchCode->code,
             (string)($row->date ? $row->date->format('Y-m-d') : ''),
             (string)($row->customer_name ?? ''),
+            (string)($row->customer_phone ?? ''),
             (string)$row->number_items,
             (string)$row->picking_sessions_count,
             (string)$row->picking_session_ids,
