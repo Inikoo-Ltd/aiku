@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\BatchCode\UI;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\BatchCode;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\Picking;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -48,7 +49,11 @@ class IndexDeliveryNotesInBatchCode
         return QueryBuilder::for(DeliveryNote::class)
             ->whereIn(
                 'delivery_notes.id',
-                $batchCode->deliveryNoteItems()->select('delivery_note_id')->distinct()
+                Picking::query()
+                    ->join('delivery_note_items', 'pickings.delivery_note_item_id', '=', 'delivery_note_items.id')
+                    ->where('pickings.batch_code_id', $batchCode->id)
+                    ->select('delivery_note_items.delivery_note_id')
+                    ->distinct()
             )
             ->leftJoin('customers', 'delivery_notes.customer_id', '=', 'customers.id')
             ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
@@ -75,6 +80,7 @@ class IndexDeliveryNotesInBatchCode
                 'delivery_notes.shipping_notes',
                 'customers.slug as customer_slug',
                 'customers.name as customer_name',
+                'customers.phone as customer_phone',
                 'shops.slug as shop_slug',
                 'shops.name as shop_name',
                 'organisations.slug as organisation_slug',
@@ -82,6 +88,10 @@ class IndexDeliveryNotesInBatchCode
             ])
             ->selectSub($pickingSessionsCount, 'picking_sessions_count')
             ->selectSub($pickingSessionIds, 'picking_session_ids')
+            ->selectSub(
+                BatchCode::query()->select('code')->where('id', $batchCode->id)->limit(1),
+                'batch_code'
+            )
             ->allowedSorts(['reference', 'date', 'number_items'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -106,8 +116,10 @@ class IndexDeliveryNotesInBatchCode
             $table
                 ->column(key: 'state', label: '', type: 'icon')
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'batch_code', label: __('Batch Code'), canBeHidden: false, sortable: false)
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true)
+                ->column(key: 'customer_phone', label: __('Phone'), canBeHidden: false, sortable: false)
                 ->column(key: 'number_items', label: __('Items'), canBeHidden: false, sortable: true);
         };
     }

@@ -9,6 +9,7 @@
 namespace App\Exports\Dispatching;
 
 use App\Models\Dispatching\BatchCode;
+use App\Models\Dispatching\Picking;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
@@ -42,7 +43,11 @@ class BatchCodeDeliveryNotesExport implements FromQuery, WithMapping, WithHeadin
         return \App\Models\Dispatching\DeliveryNote::query()
             ->whereIn(
                 'delivery_notes.id',
-                $this->batchCode->deliveryNoteItems()->select('delivery_note_id')->distinct()
+                Picking::query()
+                    ->join('delivery_note_items', 'pickings.delivery_note_item_id', '=', 'delivery_note_items.id')
+                    ->where('pickings.batch_code_id', $this->batchCode->id)
+                    ->select('delivery_note_items.delivery_note_id')
+                    ->distinct()
             )
             ->leftJoin('customers', 'delivery_notes.customer_id', '=', 'customers.id')
             ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
@@ -55,6 +60,7 @@ class BatchCodeDeliveryNotesExport implements FromQuery, WithMapping, WithHeadin
                 'delivery_notes.slug',
                 'delivery_notes.number_items',
                 'customers.name as customer_name',
+                'customers.phone as customer_phone',
                 'shops.name as shop_name',
                 'organisations.name as organisation_name',
             ])
@@ -68,8 +74,10 @@ class BatchCodeDeliveryNotesExport implements FromQuery, WithMapping, WithHeadin
         return [
             __('State'),
             __('Reference'),
+            __('Batch Code'),
             __('Date'),
             __('Customer'),
+            __('Phone'),
             __('Items'),
             __('Picking Sessions Count'),
             __('Picking Session IDs'),
@@ -90,6 +98,8 @@ class BatchCodeDeliveryNotesExport implements FromQuery, WithMapping, WithHeadin
             'G' => NumberFormat::FORMAT_TEXT,
             'H' => NumberFormat::FORMAT_TEXT,
             'I' => NumberFormat::FORMAT_TEXT,
+            'J' => NumberFormat::FORMAT_TEXT,
+            'K' => NumberFormat::FORMAT_TEXT,
         ];
     }
 
@@ -98,8 +108,10 @@ class BatchCodeDeliveryNotesExport implements FromQuery, WithMapping, WithHeadin
         return [
             (string)$row->state?->value ?? '',
             (string)$row->reference,
+            (string)$this->batchCode->code,
             (string)($row->date ? $row->date->format('Y-m-d') : ''),
             (string)($row->customer_name ?? ''),
+            (string)($row->customer_phone ?? ''),
             (string)$row->number_items,
             (string)$row->picking_sessions_count,
             (string)$row->picking_session_ids,
