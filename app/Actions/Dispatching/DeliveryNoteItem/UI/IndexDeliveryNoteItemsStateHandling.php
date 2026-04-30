@@ -84,9 +84,9 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure($prefix = null, ?DeliveryNote $deliveryNote = null): Closure
+    public function tableStructure($prefix = null, ?DeliveryNote $deliveryNote = null, bool $isEditable = false): Closure
     {
-        return function (InertiaTable $table) use ($prefix, $deliveryNote) {
+        return function (InertiaTable $table) use ($prefix, $deliveryNote, $isEditable) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -122,7 +122,9 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                 $table->column(key: 'quantity_picked_readonly', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             } else {
                 $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
-                $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false, sortable: true);
+                if ($isEditable) {
+                    $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false, sortable: true);
+                }
             }
         };
     }

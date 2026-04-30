@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -71,8 +71,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $quantity_in_submitted_orders
  * @property numeric $quantity_to_be_picked
  * @property numeric $quantity_available
- * @property int|null $current_batch_codes
- * @property int|null $main_batch_code_id
  * @property numeric $source_quantity_in_submitted_orders
  * @property numeric $source_quantity_to_be_picked
  * @property bool $is_on_demand
@@ -81,16 +79,16 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $movements_fixed
  * @property numeric|null $sku_value
  * @property numeric|null $current_supplier_sku_cost
+ * @property int $current_batch_codes
+ * @property int|null $main_batch_code_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, BatchCode> $batchCodes
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Location> $locations
  * @property-read BatchCode|null $mainBatchCode
  * @property-read \App\Models\Inventory\OrgStockFamily|null $orgStockFamily
- * @property-read \App\Models\Inventory\OrgStockFamily|null $orgStockFamily
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\BatchCode> $batchCodes
- * @property-read \App\Models\Dispatching\BatchCode|null $mainBatchCode
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockMovement> $orgStockMovements
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OrgSupplierProduct> $orgSupplierProducts
  * @property-read Organisation $organisation
@@ -115,7 +113,7 @@ class OrgStock extends Model implements Auditable
     use HasSlug;
     use InOrganisation;
     use SoftDeletes;
-    use Searchable;
+    use HasSearch;
 
     protected $casts = [
         'data'                             => 'array',

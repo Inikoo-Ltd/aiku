@@ -28,7 +28,7 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     boxStats: {
         customer: {
             reference: string
@@ -140,7 +140,10 @@ const props = defineProps<{
     allowActions: boolean
     quick_pickers : any
     showChangePickerPacker: boolean
-}>()
+    isEditable: boolean
+}>(), {
+    isEditable: true
+})
 
 const emit = defineEmits<{
     'replace-all': []
@@ -532,12 +535,12 @@ console.log(layout)
                         />
 
                         <Button
-                            v-if="['handling'].includes(deliveryNote?.state) && showChangePickerPacker"
+                            v-if="isEditable && ['handling'].includes(deliveryNote?.state) && showChangePickerPacker"
                             @click="isModalToQueue = true" :label="trans('Change Picker')"  :icon="faExchangeAlt" type="tertiary" size="xs" />
 
 
                         <Button
-                            v-if="['packing', 'packed'].includes(deliveryNote?.state) && showChangePickerPacker"
+                            v-if="isEditable && ['packing', 'packed'].includes(deliveryNote?.state) && showChangePickerPacker"
                             @click="isModalToQueue = true" :label="trans('Change Packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
 
 
@@ -550,6 +553,7 @@ console.log(layout)
                         :deliveryNote
                         :trolleys="boxStats.trolleys"
                         :warehouse
+                        :isEditable
                     />
                     
                     <!-- Section: Picked Bays -->
@@ -558,7 +562,7 @@ console.log(layout)
                             <dt class="flex-none">
                                 {{ trans("Picked bays") }}:
                             </dt>
-                            <dd v-if="boxStats?.picked_bays?.length" class="text-gray-500">
+                            <dd v-if="boxStats?.picked_bays?.length" class="font-bold xtext-gray-500">
                                 <span
                                     v-for="bay in boxStats?.picked_bays"
                                     :key="bay.id"
@@ -574,7 +578,7 @@ console.log(layout)
                         </dl>
 
                         <ChangePickedBays
-                            v-if="['picked'].includes(deliveryNote.state)"
+                            v-if="isEditable && ['picked'].includes(deliveryNote.state)"
                             :warehouse="warehouse"
                             :deliveryNote="deliveryNote"
                             :pickedBays="boxStats?.picked_bays"
@@ -615,30 +619,31 @@ console.log(layout)
                             <div class="leading-4 xtext-base flex justify-between w-full py-1">
                                 <div class="text-gray-500">{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
 
-                                <!-- Can't edit Parcels if Shipment has set AND already dispatched-->
-                                <template v-if="!(boxStats?.shipments?.length >= 1) && (deliveryNote?.state === 'packed' || deliveryNote?.state === 'packing'  || deliveryNote?.state === 'handling')">
-                                    <div v-if="boxStats?.parcels?.length"
-                                        @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])"
-                                        class="cursor-pointer text-gray-400 hover:text-gray-600">
-                                        {{ trans("Edit") }}
-                                        <FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400"
-                                            fixed-width aria-hidden="true" />
-                                    </div>
-                                    <div v-else-if="!isLoadingSubmitParcels"
-                                        @click="async () => (parcelsCopy = [{ weight: 1, dimensions: [5, 5, 5] }], onSubmitParcels())"
-                                        class="cursor-pointer text-gray-400 hover:text-gray-600">
-                                        {{ trans("Add") }}
-                                        <FontAwesomeIcon icon="fas fa-plus" size="sm" class="text-gray-400" fixed-width
-                                            aria-hidden="true" />
-                                    </div>
-                                    <div v-else>
-                                        <LoadingIcon />
+                                <template v-if="isEditable">
+                                    <!-- Can't edit Parcels if Shipment has set AND already dispatched-->
+                                    <template v-if="!(boxStats?.shipments?.length >= 1) && (deliveryNote?.state === 'packed' || deliveryNote?.state === 'packing'  || deliveryNote?.state === 'handling')">
+                                        <div v-if="boxStats?.parcels?.length"
+                                            @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])"
+                                            class="cursor-pointer text-gray-400 hover:text-gray-600">
+                                            {{ trans("Edit") }}
+                                            <FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400"
+                                                fixed-width aria-hidden="true" />
+                                        </div>
+                                        <div v-else-if="!isLoadingSubmitParcels"
+                                            @click="async () => (parcelsCopy = [{ weight: 1, dimensions: [5, 5, 5] }], onSubmitParcels())"
+                                            class="cursor-pointer text-gray-400 hover:text-gray-600">
+                                            {{ trans("Add") }}
+                                            <FontAwesomeIcon icon="fas fa-plus" size="sm" class="text-gray-400" fixed-width
+                                                aria-hidden="true" />
+                                        </div>
+                                        <div v-else>
+                                            <LoadingIcon />
+                                        </div>
+                                    </template>
+                                    <div v-else-if="deliveryNote?.state === 'packed'" class="text-xs text-gray-400 italic" v-tooltip="trans('Remove shipment to edit parcels')">
+                                        {{ trans("Not editable") }}
                                     </div>
                                 </template>
-
-                                <div v-else-if="deliveryNote?.state === 'packed'" class="text-xs text-gray-400 italic" v-tooltip="trans('Remove shipment to edit parcels')">
-                                    {{ trans("Not editable") }}
-                                </div>
                             </div>
 
                             <ul v-if="boxStats?.parcels?.length" class="list-disc pl-4 ">
@@ -676,6 +681,7 @@ console.log(layout)
                                 :customer="boxStats?.shop_type === 'dropshipping' ? boxStats.customer : undefined"
                                 :currencyCode="boxStats?.currency_code"
                                 :external_shop="boxStats?.external_shop"
+                                :isEditable
                             />
                         </dd>
                     </dl>

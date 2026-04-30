@@ -18,7 +18,6 @@ use App\Models\SysAdmin\User;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\Dispatching\BatchCode;
 
 /**
  * @property int $id
@@ -32,7 +31,6 @@ use App\Models\Dispatching\BatchCode;
  * @property numeric $quantity
  * @property int|null $org_stock_movement_id
  * @property int $org_stock_id
- * @property int|null $batch_code_id
  * @property int|null $picker_user_id
  * @property PickingEngineEnum $engine
  * @property int|null $location_id
@@ -41,13 +39,14 @@ use App\Models\Dispatching\BatchCode;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property PickingTypeEnum|null $type
  * @property string|null $last_picked_at
+ * @property int|null $batch_code_id
+ * @property-read \App\Models\Dispatching\BatchCode|null $batchCode
  * @property-read \App\Models\Dispatching\DeliveryNote|null $deliveryNote
  * @property-read \App\Models\Dispatching\DeliveryNoteItem $deliveryNoteItem
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Location|null $location
  * @property-read OrgStock|null $orgStock
  * @property-read OrgStockMovement|null $orgStockMovement
- * @property-read BatchCode|null $batchCode
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read User|null $picker
  * @property-read \App\Models\Catalogue\Shop|null $shop

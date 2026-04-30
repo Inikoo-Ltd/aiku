@@ -113,12 +113,12 @@ class StoreShopifyProductVariant extends RetinaAction
 
             $currentVariant = FindSpecificShopifyProductVariant::run($customerSalesChannel, $portfolio->platform_product_id);
 
-            if (Arr::get($currentVariant, 'price') > 0 && Arr::get($currentVariant, 'price') !== $product->rrp) {
+            if (Arr::get($currentVariant, 'price') > 0 && Arr::get($currentVariant, 'price') !== $portfolio->customer_price) {
                 data_set($variants[0], 'price', Arr::get($currentVariant, 'price'));
                 data_set($variants[0], 'compareAtPrice', Arr::get($currentVariant, 'price'));
             } else {
-                data_set($variants[0], 'price', $product->rrp);
-                data_set($variants[0], 'compareAtPrice', $product->rrp);
+                data_set($variants[0], 'price', $portfolio->customer_price);
+                data_set($variants[0], 'compareAtPrice', $portfolio->customer_price);
             }
 
             $isOnDemand = false;

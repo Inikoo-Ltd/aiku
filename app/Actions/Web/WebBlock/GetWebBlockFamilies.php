@@ -27,6 +27,12 @@ class GetWebBlockFamilies
     {
         $hasOverviewPage = false;
 
+        $limit = data_get(
+            $webBlock,
+            'web_block.layout.data.fieldValue.department.number_visible',
+            20
+        );
+
         if ($webpage->model instanceof ProductCategory) {
 
             if ($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT && $webpage->layout_style == 'main_page') {
@@ -75,9 +81,9 @@ class GetWebBlockFamilies
                 ->whereNull('product_categories.deleted_at')
                 ->whereNull('webpages.deleted_at')
                 ->when(
-                    ($hasOverviewPage),
-                    function ($query) {
-                        $query->limit(20);
+                    $hasOverviewPage,
+                    function ($query) use ($limit) {
+                        $query->limit($limit);
                     }
                 )->orderByRaw('yearly_sales.total_sales DESC NULLS LAST')
                 ->get();

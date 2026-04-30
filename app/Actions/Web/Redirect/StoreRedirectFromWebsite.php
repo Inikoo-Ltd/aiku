@@ -3,8 +3,8 @@
 namespace App\Actions\Web\Redirect;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Redirect\Traits\WithStoreRedirect;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
-use App\Actions\Web\Website\HydrateRedirect;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -19,6 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreRedirectFromWebsite extends OrgAction
 {
+    use WithStoreRedirect;
+
     public function handle(Website $website, array $modelData): Redirect
     {
         data_set($modelData, 'group_id', $website->group_id);
@@ -28,37 +30,46 @@ class StoreRedirectFromWebsite extends OrgAction
 
         data_set($modelData, 'type', RedirectTypeEnum::PERMANENT->value); // Todo: check this
 
-        $fromUrl = Arr::get($modelData, 'from_url', '');
-
-        if (str_starts_with($fromUrl, '/')) {
-            $fromUrl = ltrim($fromUrl, '/');
-        }
+        $fromUrl = preg_replace('/\s+/', '', (Arr::get($modelData, 'from_url', ''))); // Sanitize whitespace
+        $fromUrl = preg_replace('#/+#', '/', $fromUrl); // Collapse slash
+        $fromUrl = trim($fromUrl, '/'); // Sanitize start & end slash
 
         $url = 'https://' . $website->domain . '/' . $fromUrl;
+        $fromPath = array_last(explode('/', $fromUrl)); // Get last path
+
         $toUrl = Arr::pull($modelData, 'to_url');
 
         data_set($modelData, 'from_url', $url);
-        data_set($modelData, 'from_path', $fromUrl);
+        data_set($modelData, 'from_path', $fromPath);
         data_set($modelData, 'to_webpage_id', $toUrl);
 
         $redirect = Redirect::create($modelData);
-    
+
         $redirectedWebpage = Webpage::find($toUrl);
         if ($redirectedWebpage) {
             WebpageHydrateRedirects::run($redirectedWebpage);
         }
-        
+
         return $redirect;
     }
 
     public function rules(): array
     {
         return [
+            'from_path'                => [
+                'required',
+                'string',
+                'max:2048',
+                Rule::unique(Webpage::class, 'url')
+                    ->where(fn ($query) => $query->where('website_id', $this->shop->website->id)->where('state', 'live')),
+                Rule::unique(Redirect::class, 'from_path')
+                    ->where(fn ($query) => $query->where('website_id', $this->shop->website->id))
+            ],
             'from_url'                => [
                 'required',
                 'string',
                 'max:2048',
-                Rule::unique(Redirect::class, 'from_path')
+                Rule::unique(Redirect::class, 'from_url')
                     ->where(fn ($query) => $query->where('website_id', $this->shop->website->id)),
             ],
             'to_url' => [

@@ -16,6 +16,7 @@ use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
+use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Exception;
 use Illuminate\Http\RedirectResponse;
@@ -27,6 +28,14 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTag extends OrgAction
 {
+    public function inProductProperty(Tag $tag, ActionRequest $request): void
+    {
+        $group = Group::query()->findOrFail($tag->group_id);
+        $this->initialisationFromGroup($group, $request);
+
+        $this->handle($tag, $this->validatedData);
+    }
+
     public function inTradeUnit(TradeUnit $tradeUnit, Tag $tag, ActionRequest $request): void
     {
         $this->initialisationFromGroup($tradeUnit->group, $request);
@@ -98,6 +107,7 @@ class UpdateTag extends OrgAction
     public function handle(Tag $tag, array $modelData): Tag
     {
         $image = Arr::pull($modelData, 'image');
+        $labelTranslations = Arr::pull($modelData, 'label');
 
         if ($image) {
             $imageData = [
@@ -122,6 +132,26 @@ class UpdateTag extends OrgAction
         }
 
         $tag->update($modelData);
+
+        if (is_array($labelTranslations)) {
+            $filteredTranslations = collect($labelTranslations)
+                ->filter(fn ($translation, $locale) => is_string($locale) && filled($translation))
+                ->map(fn ($translation) => (string) $translation)
+                ->all();
+
+            $currentLocales = array_keys($tag->getTranslations('label'));
+            $newLocales = array_keys($filteredTranslations);
+
+            foreach (array_diff($currentLocales, $newLocales) as $locale) {
+                $tag->forgetTranslation('label', $locale);
+            }
+
+            if ($filteredTranslations !== []) {
+                $tag->setTranslations('label', $filteredTranslations);
+            }
+
+            $tag->save();
+        }
 
         return $tag;
     }
@@ -148,6 +178,15 @@ class UpdateTag extends OrgAction
 
         return [
             'name'  => $nameRules,
+            'label' => [
+                'sometimes',
+                'array',
+            ],
+            'label.*' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
             'scope' => [
                 'sometimes',
                 'nullable',

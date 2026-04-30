@@ -71,8 +71,12 @@ class ShowClockingEmployee extends OrgAction
                 'timesheet' => GetTimesheetShowcase::run($timesheet),
 
                 TimesheetTabsEnum::TIME_TRACKERS->value => $this->tab == TimesheetTabsEnum::TIME_TRACKERS->value ?
-                    fn () => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))
-                    : Inertia::lazy(fn () => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))),
+                    fn () => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))->additional([
+                        'can_edit_time_trackers' => false,
+                    ])
+                    : Inertia::lazy(fn () => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))->additional([
+                        'can_edit_time_trackers' => false,
+                    ])),
 
 
                 TimesheetTabsEnum::CLOCKINGS->value => $this->tab == TimesheetTabsEnum::CLOCKINGS->value ?
@@ -97,7 +101,8 @@ class ShowClockingEmployee extends OrgAction
         )->table(
             IndexTimeTrackers::make()->tableStructure(
                 parent: $timesheet,
-                prefix: TimesheetTabsEnum::TIME_TRACKERS->value
+                prefix: TimesheetTabsEnum::TIME_TRACKERS->value,
+                showActions: false
             )
         );
     }

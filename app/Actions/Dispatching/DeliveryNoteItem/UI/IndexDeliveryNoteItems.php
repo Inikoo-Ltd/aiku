@@ -92,9 +92,9 @@ class IndexDeliveryNoteItems extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(DeliveryNote $parent, $prefix = null): Closure
+    public function tableStructure(DeliveryNote $parent, $prefix = null, bool $isEditable = false): Closure
     {
-        return function (InertiaTable $table) use ($parent, $prefix) {
+        return function (InertiaTable $table) use ($parent, $prefix, $isEditable) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -132,7 +132,9 @@ class IndexDeliveryNoteItems extends OrgAction
                 $table->column(key: 'quantity_required', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_picked', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_packed', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-                $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false, className: 'w-[250px]');
+                if ($isEditable) {
+                    $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false, className: 'w-[250px]');
+                }
             }
         };
     }

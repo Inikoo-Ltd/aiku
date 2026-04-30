@@ -38,6 +38,7 @@ import KarnaPaymentBadge from '@/../art/payment_service_providers/Klarna_Payment
 import KarnaLogo from '@/../art/payment_service_providers/Klarna-Logo.wine.png'
 import KarnaPaylater from '@/../art/payment_service_providers/png-clipart-pay-later-with-klarna-logo-tech-companies.png'
 import PastPayWhite from '@/../art/payment_service_providers/past_pay_white.png'
+import GooglePayMark from '@/../art/payment_service_providers/google-pay-mark.png'
 
 library.add(
   faFacebookF, faInstagram, faTiktok, faPinterest,
@@ -94,6 +95,7 @@ const payments = ref<PaymentItem[]>([
   { name: 'Karna', value: 'Karna', image: KarnaLogo },
   { name: 'Karna Paylater', value: 'Karna Paylater', image: KarnaPaylater },
   { name: 'PastPay white', value: 'PastPay white', image: PastPayWhite },
+  { name: 'Google Pay Mark', value: 'Google Pay Mark', image: GooglePayMark },
 ])
 
 const _addop = ref<any>(null);

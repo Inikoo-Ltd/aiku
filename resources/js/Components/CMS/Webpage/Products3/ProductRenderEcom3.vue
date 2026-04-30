@@ -315,10 +315,10 @@ defineExpose({
                     :type="typeOfLink" :id="product?.url?.id" @start="() => idxSlideLoading = true"
                     @finish="() => idxSlideLoading = false">
                     <template #default>
-                        <p class="inline-block leading-4">
+                        <h3 class="inline-block leading-4 !text-sm">
                             <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span>
                             {{ product.name }}
-                        </p>
+                        </h3>
                     </template>
                 </LinkIris>
             </div>

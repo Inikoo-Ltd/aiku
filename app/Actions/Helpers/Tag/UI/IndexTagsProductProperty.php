@@ -53,7 +53,7 @@ class IndexTagsProductProperty extends OrgAction
             }
 
             $table
-                ->column(key: 'image', label: __(''), sortable: true, searchable: true , type: 'avatar')
+                ->column(key: 'image', label: __(''), sortable: true, searchable: true, type: 'avatar')
                 ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
                 ->column(key: 'scope', label: __('Scope'), canBeHidden: false)
                 ->column(key: 'action', label: __('Action'))

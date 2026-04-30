@@ -118,6 +118,14 @@ class EditWebsite extends OrgAction
                     'placeholder' => 'GTM-ABC456GH',
                     'required'    => false,
                 ],
+               /*  'gsc_content' => [
+                    'type'        => 'input',
+                    'information' => __('Paste your Google Search Console verification code (meta tag content only, not the full tag).'),
+                    'label'       => __('GSC Content'),
+                    'value'       => Arr::get($website->settings, "gsc_content"),
+                    'placeholder' => 'ilqmL8SuzLUaiOmvUCGdfIsgSfsROt96bIdbgZVazFa',
+                    'required'    => false,
+                ], */
                 'luigisbox_tracker_id'  => [
                     'type'        => 'input',
                     'label'       => __('Luigi Search Tracker ID'),

@@ -9,16 +9,19 @@
 namespace App\Models\Goods;
 
 use App\Enums\Catalogue\HealthRankEnum;
+use App\Models\Helpers\Brand;
+use App\Models\Helpers\Tag;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasSearch;
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -38,9 +41,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property HealthRankEnum|null $health_rank
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Brand> $brands
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Goods\TradeUnitFamilyStats|null $stats
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Tag> $tags
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\TradeUnitFamilyTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\TradeUnit> $tradeUnits
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily newModelQuery()
@@ -59,7 +64,7 @@ class TradeUnitFamily extends Model implements Auditable, HasMedia
     use HasHistory;
     use HasFactory;
     use HasAttachments;
-    use Searchable;
+    use HasSearch;
 
     protected $table = 'trade_unit_families';
 
@@ -137,5 +142,27 @@ class TradeUnitFamily extends Model implements Auditable, HasMedia
     public function timeSeries(): HasMany
     {
         return $this->hasMany(TradeUnitFamilyTimeSeries::class);
+    }
+
+    public function brands(): MorphToMany
+    {
+        return $this->morphToMany(Brand::class, 'model', 'model_has_brands');
+    }
+
+    public function brand(): ?Brand
+    {
+        /** @var Brand $brand */
+        $brand = $this->brands()->first();
+
+        return $brand;
+    }
+
+    public function tags(): MorphToMany
+    {
+        return $this->morphToMany(
+            Tag::class,
+            'model',
+            'model_has_tags'
+        )->withTimestamps();
     }
 }

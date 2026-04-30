@@ -81,14 +81,19 @@ class ShowTradeUnitFamily extends GrpAction
                         ],
                         'method' => 'get'
                     ],
-
-
                     'attach_route' => [
                         'name' => 'grp.models.trade_unit_family.attach_trade_units',
                         'parameters' => [
                             'tradeUnitFamily' => $tradeUnitFamily->id, // the key must match your route {trade_unit_family}
                         ],
                         'method' => 'post'
+                    ],
+                    'assign_brand_tags_route' => [
+                        'name'  => 'grp.models.trade_unit_family.mass_assign_brand_tags',
+                        'parameters' => [
+                            'tradeUnitFamily' => $tradeUnitFamily->id,
+                        ],
+
                     ]
                 ],
                 'tabs' => [
@@ -137,8 +142,10 @@ class ShowTradeUnitFamily extends GrpAction
     public function getShowcase(TradeUnitFamily $tradeUnitFamily): array
     {
         return [
-            'tradeUnitFamily' => TradeUnitFamilyResource::make($tradeUnitFamily)->resolve(),
-            'attachment_box' =>  $this->getAttachmentData($tradeUnitFamily),
+            'tradeUnitFamily'   => TradeUnitFamilyResource::make($tradeUnitFamily)->resolve(),
+            'attachment_box'    => $this->getAttachmentData($tradeUnitFamily),
+            'tags'              => $tradeUnitFamily->tags,
+            'brand'             => $tradeUnitFamily->brand(),
         ];
     }
 

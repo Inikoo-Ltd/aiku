@@ -196,7 +196,7 @@ const submitNotes = async () => {
                         type="primary"
                         :label="isSubmitting ? trans('Saving...') : trans('Save')"
                         :disabled="isSubmitting"
-                        submit
+                        nativeType="submit"
                     />
                 </div>
             </form>

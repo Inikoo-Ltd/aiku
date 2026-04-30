@@ -92,10 +92,10 @@ const cleanedDescription = computed(() => {
         >
                 <DiscountByType 
                     :offers_data="fieldValue?.family?.offers_data"
-                    :template="bestOffer.type == 'Category Quantity Ordered Order Interval' ? 'active-inactive-gr' : 'max_discount'"
+                    :template="bestOffer?.type == 'Category Quantity Ordered Order Interval' ? 'active-inactive-gr' : 'max_discount'"
                 />
                 <DiscountByType
-                   v-if="!(layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr) && bestOffer.type == 'Category Quantity Ordered Order Interval'"
+                   v-if="!(layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr) && bestOffer?.type == 'Category Quantity Ordered Order Interval'"
                    :offers_data="fieldValue?.family?.offers_data"
                    :template="'triggers_labels'"
                 />

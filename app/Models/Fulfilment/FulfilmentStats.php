@@ -122,23 +122,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_spaces_state_finished
  * @property int $number_customers_status_pending_approval
  * @property int $number_customers_status_pre_registration
- * @property int $number_pallet_returns_items
- * @property int $number_pallet_returns_items_state_in_process
- * @property int $number_pallet_returns_items_state_submitted
- * @property int $number_pallet_returns_items_state_confirmed
- * @property int $number_pallet_returns_items_state_picking
- * @property int $number_pallet_returns_items_state_picked
- * @property int $number_pallet_returns_items_state_dispatched
- * @property int $number_pallet_returns_items_state_cancel
- * @property int $number_pallet_returns_pallet
- * @property int $number_pallet_returns_pallet_state_in_process
- * @property int $number_pallet_returns_pallet_state_submitted
- * @property int $number_pallet_returns_pallet_state_confirmed
- * @property int $number_pallet_returns_pallet_state_picking
- * @property int $number_pallet_returns_pallet_state_picked
- * @property int $number_pallet_returns_pallet_state_dispatched
- * @property int $number_pallet_returns_pallet_state_cancel
- * @property int $number_pallets_state_not_picked
  * @property-read \App\Models\Fulfilment\Fulfilment|null $fulfilment
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentStats newQuery()
