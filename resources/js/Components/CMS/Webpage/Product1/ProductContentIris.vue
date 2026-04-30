@@ -20,7 +20,7 @@ const props = defineProps<{
         product_specs : boolean,
         faqs : boolean
     }
-    styleData : object
+    styleData?: object
     fullWidth?: boolean
 }>()
 

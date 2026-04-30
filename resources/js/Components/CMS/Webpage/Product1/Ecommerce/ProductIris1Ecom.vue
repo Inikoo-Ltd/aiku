@@ -100,15 +100,14 @@ const props = withDefaults(
         blockData?: object
         screenType: "mobile" | "tablet" | "desktop"
         validImages: object
-        customerData: {  // \Json\GetIrisProductEcomOrdering  (no cache)
-
-        }
+        customerData: any
         product: ProductResource  // Catalogue\GetProductDetail (no cache)
         isLoadingRemindBackInStock: boolean
         isLoadingFavourite: boolean
         videoSetup: { url: string }
         listProducts: ProductResource[]
         indexBlock:number
+        theme?: string[]
     }>(),
     {}
 )
