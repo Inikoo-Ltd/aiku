@@ -171,7 +171,7 @@ const visitRedirect = () => {
       <!-- Right Panel (Optional) -->
       <div class="row-start-1 xl:row-start-auto flex justify-end w-full">
         <!-- Optional sidebar -->
-        <div class="w-64 border border-gray-300 rounded-md p-2 h-fit">
+        <div class="w-64 border border-gray-300 rounded-md p-2 h-fit" v-if="data.luigi_data && data.state == 'live'">
           <div class="space-y-2">
             <ModalConfirmationDelete
               v-if="data.state == 'live'"

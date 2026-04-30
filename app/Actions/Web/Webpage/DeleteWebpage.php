@@ -105,7 +105,7 @@ class DeleteWebpage extends OrgAction
     {
         return [
             'redirects'  => [
-                'required',
+                'sometimes',
                 Rule::exists(Webpage::class, 'id')->where('website_id', $this->webpage->website->id)->where('state', WebpageStateEnum::LIVE),
             ],
         ];

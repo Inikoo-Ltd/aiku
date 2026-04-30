@@ -5,6 +5,7 @@ namespace App\Actions\Helpers\Dashboard;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Lorisleiva\Actions\Concerns\AsObject;
 use Illuminate\Support\Number;
 
@@ -69,6 +70,19 @@ class CalculateTimeSeriesStats
         $bindings = [];
         $intervals = DateIntervalEnum::cases();
         $now = now();
+        $cacheHash = $this->buildAggregateCacheHash(
+            $timeSeriesIds,
+            $metricsMapping,
+            $tableName,
+            $foreignKey,
+            $from_date,
+            $to_date,
+            $additionalWhere
+        );
+        $cachedResults = $this->getCachedAggregates($cacheHash);
+        if ($cachedResults !== null) {
+            return $cachedResults;
+        }
 
         if ($from_date && $to_date) {
             $start = Carbon::parse($from_date)->startOfDay();
@@ -122,7 +136,20 @@ class CalculateTimeSeriesStats
 
         $results = $query->groupBy($foreignKey)->get();
 
-        return $results->keyBy($foreignKey)->map(fn ($item) => (array) $item)->toArray();
+        $mappedResults = $results->keyBy($foreignKey)->map(fn ($item) => (array) $item)->toArray();
+        $this->storeCachedAggregates(
+            $cacheHash,
+            $timeSeriesIds,
+            $metricsMapping,
+            $tableName,
+            $foreignKey,
+            $from_date,
+            $to_date,
+            $additionalWhere,
+            $mappedResults
+        );
+
+        return $mappedResults;
     }
 
     public function format(array $stats, array $metricsMapping, ?string $currencyCode = null): array
@@ -227,5 +254,85 @@ class CalculateTimeSeriesStats
             'all'   => [Carbon::create(1970, 1, 1), $now->copy()->endOfDay()],
             default => null
         };
+    }
+
+    private function buildAggregateCacheHash(
+        array $timeSeriesIds,
+        array $metricsMapping,
+        string $tableName,
+        string $foreignKey,
+        $fromDate,
+        $toDate,
+        array $additionalWhere
+    ): string {
+        sort($timeSeriesIds);
+        ksort($metricsMapping);
+        ksort($additionalWhere);
+
+        return hash('sha256', json_encode([
+            'table' => $tableName,
+            'foreign_key' => $foreignKey,
+            'ids' => $timeSeriesIds,
+            'metrics' => $metricsMapping,
+            'from_date' => $fromDate ? Carbon::parse((string) $fromDate)->toDateString() : 'all',
+            'to_date' => $toDate ? Carbon::parse((string) $toDate)->toDateString() : 'all',
+            'where' => $additionalWhere,
+        ]));
+    }
+
+    private function getCachedAggregates(string $cacheHash): ?array
+    {
+        if (!Schema::hasTable('dashboard_time_series_aggregates')) {
+            return null;
+        }
+
+        $cached = DB::table('dashboard_time_series_aggregates')
+            ->where('cache_hash', $cacheHash)
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$cached) {
+            return null;
+        }
+
+        $payload = json_decode((string) $cached->payload, true);
+        if (!is_array($payload)) {
+            return null;
+        }
+
+        return $payload;
+    }
+
+    private function storeCachedAggregates(
+        string $cacheHash,
+        array $timeSeriesIds,
+        array $metricsMapping,
+        string $tableName,
+        string $foreignKey,
+        $fromDate,
+        $toDate,
+        array $additionalWhere,
+        array $payload
+    ): void {
+        if (!Schema::hasTable('dashboard_time_series_aggregates')) {
+            return;
+        }
+
+        DB::table('dashboard_time_series_aggregates')->updateOrInsert(
+            ['cache_hash' => $cacheHash],
+            [
+                'table_name' => $tableName,
+                'foreign_key' => $foreignKey,
+                'time_series_ids_hash' => hash('sha256', json_encode(array_values($timeSeriesIds))),
+                'metrics_hash' => hash('sha256', json_encode($metricsMapping)),
+                'additional_where_hash' => hash('sha256', json_encode($additionalWhere)),
+                'from_date' => $fromDate ? Carbon::parse((string) $fromDate)->toDateString() : null,
+                'to_date' => $toDate ? Carbon::parse((string) $toDate)->toDateString() : null,
+                'payload' => json_encode($payload),
+                'expires_at' => now()->addMinutes(30),
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
     }
 }

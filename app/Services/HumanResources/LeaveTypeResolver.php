@@ -71,6 +71,27 @@ class LeaveTypeResolver
             return self::BUCKET_CODE_MAP[$leaveTypeCode];
         }
 
+        if (
+            ($normalizedTypeCode && str_contains($normalizedTypeCode, 'unpaid'))
+            || ($leaveTypeCode && str_contains($leaveTypeCode, 'unpaid'))
+        ) {
+            return 'unpaid';
+        }
+
+        if (
+            ($normalizedTypeCode && (str_contains($normalizedTypeCode, 'medical') || str_contains($normalizedTypeCode, 'sick')))
+            || ($leaveTypeCode && (str_contains($leaveTypeCode, 'medical') || str_contains($leaveTypeCode, 'sick')))
+        ) {
+            return 'medical';
+        }
+
+        if (
+            ($normalizedTypeCode && (str_contains($normalizedTypeCode, 'annual') || str_contains($normalizedTypeCode, 'holiday')))
+            || ($leaveTypeCode && (str_contains($leaveTypeCode, 'annual') || str_contains($leaveTypeCode, 'holiday')))
+        ) {
+            return 'annual';
+        }
+
         if ($leaveType?->category) {
             return match ($leaveType->category) {
                 LeaveCategoryEnum::ANNUAL => 'annual',

@@ -66,4 +66,19 @@ enum MastersDashboardSalesTableTabsEnum: string
             return [$case->value => $case->table($group, $timeSeriesData)];
         })->all();
     }
+
+    public static function tablesForTabs(Group $group, array $timeSeriesData, array $tabs): array
+    {
+        return collect($tabs)
+            ->map(function ($tab) {
+                if ($tab instanceof self) {
+                    return $tab;
+                }
+                return self::tryFrom((string) $tab);
+            })
+            ->filter()
+            ->mapWithKeys(fn (self $tab) => [$tab->value => $tab->table($group, $timeSeriesData)])
+            ->filter()
+            ->all();
+    }
 }

@@ -3,7 +3,6 @@
  * Created: Tue, 12 Sep 2023 21:16:54 Malaysia Time, Sanur, Bali, Indonesia
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
-
 import { createSSRApp, h } from "vue"
 import { renderToString } from "@vue/server-renderer"
 import { createInertiaApp } from "@inertiajs/vue3"
@@ -20,7 +19,6 @@ import { definePreset } from "@primevue/themes"
 
 const pinia = createPinia()
 
-const appName = "iris"
 
 const MyPreset = definePreset(Aura, {
 	semantic: {
