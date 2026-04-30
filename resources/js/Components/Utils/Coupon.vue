@@ -25,7 +25,7 @@ const props = defineProps<{
             item_quantity: number
         }
         duration: string  // 'permanent'
-        duration_label: string  // 'Bis Mi., 01 Jul'
+        duration_label?: string  // 'Bis Mi., 01 Jul'
         created_at: string
         end_at: string
         start_at: string

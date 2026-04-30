@@ -3,7 +3,6 @@
  * Created: Sun, 04 Feb 2024 09:03:58 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
-
 import './bootstrap';
 import '../css/app.css';
 
