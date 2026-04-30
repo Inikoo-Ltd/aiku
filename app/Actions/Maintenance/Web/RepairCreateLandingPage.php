@@ -36,7 +36,8 @@ class RepairCreateLandingPage
     public function asCommand(Command $command): void
     {
         $websites = Website::where('status', true)
-            ->when($command->option('website_id'), 
+            ->when(
+                $command->option('website_id'),
                 fn ($q) => $q->where('id', $command->option('website_id'))
             )
             ->get();
