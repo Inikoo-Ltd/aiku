@@ -13,7 +13,7 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 import Coupon from '@/Components/Utils/Coupon.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { inject } from 'vue'
+import { inject, computed } from 'vue'
 import { routeType } from '@/types/route'
 import { trans } from 'laravel-vue-i18n'
 import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue'
@@ -79,7 +79,30 @@ const getOfferCampaignLink = (offerCampaign: {}) => {
     }
     return '#'
 }
-console.log("props data offer", props.data.offer)
+
+const isExpired = computed(() => {
+    const now = new Date()
+    const end = props.data.offer.end_at ? new Date(props.data.offer.end_at) : null
+
+    return end && now > end
+})
+
+const stateClass = computed(() => {
+    if(isExpired.value) return 'bg-red-200 text-red-800 border'
+
+    switch(props.data.offer.state) {
+        case 'active':
+            return 'bg-green-50 text-green-700 border border-green-300'
+        case 'in_process':
+            return 'bg-grey-100 text-gray-600 border border-gray-300'
+        case 'suspended':
+            return 'bg-yellow-50 text-yellow-700 border border-yellow-300'
+        case 'finished':
+            return 'bg-red-200 text-red-800 border border'
+        default:
+            return 'bg-blue-50 text-blue-700 border border-blue-300'
+    }
+})
 </script>
 
 <template>
@@ -115,15 +138,9 @@ console.log("props data offer", props.data.offer)
                     </div>
                 </div>
 
-                <div v-if="data.offer.state" class="inline-flex items-center text-sm capitalize rounded-full px-3 py-0.5 font-medium w-fit"
-                    :class="{
-                        'bg-green-50 text-green-700 border border-green-300': data.offer.state === 'active',
-                        'bg-gray-100 text-gray-600 border border-gray-300': data.offer.state === 'inactive',
-                        'bg-yellow-50 text-yellow-700 border border-yellow-300': data.offer.state === 'suspended',
-                        'bg-blue-50 text-blue-700 border border-blue-300': !['active','inactive','suspended'].includes(data.offer.state),
-                    }"
+                <div v-if="data.offer.state" class="inline-flex items-center text-sm capitalize rounded-full px-3 py-0.5 font-medium w-fit" :class="stateClass"
                 >
-                    {{ data.offer.state }}
+                    {{ (data.offer.end_at && new Date() > new Date(data.offer.end_at)) ? ctrans('finished') : data.offer.state }}
                 </div>
             </div>
 
