@@ -40,7 +40,7 @@ class GetFirstLoadProps
 
         $cacheKey          = 'grp-first-load-props:'.($user?->id ?? 'guest').':'.$language->code;
         $ttl               = now()->addDays(7);
-        $compute           = fn() => $this->getProps($user, $language);
+        $compute           = fn () => $this->getUserUiProps($user, $language);
         $shouldCacheLayout = (bool)config('ui.cache.layout');
 
         try {
@@ -62,7 +62,7 @@ class GetFirstLoadProps
         return $props;
     }
 
-    private function getProps(?User $user, Language $language): array
+    public function getUserUiProps(?User $user, Language $language): array
     {
         $availableLanguages = Language::where('status', true)->pluck('id')->toArray();
 
