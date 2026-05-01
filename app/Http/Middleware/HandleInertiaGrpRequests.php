@@ -9,8 +9,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Actions\SysAdmin\User\UI\GetLoggedUser;
 use App\Actions\UI\Grp\GetFirstLoadProps;
-use App\Http\Resources\UI\LoggedUserResource;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
@@ -23,13 +23,10 @@ class HandleInertiaGrpRequests extends Middleware
 
     public function share(Request $request): array
     {
-
-
         $routeName = $request->route()->getName();
         if (str_starts_with($routeName, 'grp.json.')) {
             return [];
         }
-
 
         /** @var User $user */
         $user = $request->user();
@@ -38,7 +35,6 @@ class HandleInertiaGrpRequests extends Middleware
 
 
         if (!$request->inertia() || Session::get('reloadLayout')) {
-
             $firstLoadOnlyProps          = GetFirstLoadProps::run($user);
             $firstLoadOnlyProps['ziggy'] = function () use ($request) {
                 return array_merge((new Ziggy('grp'))->toArray(), [
@@ -58,7 +54,7 @@ class HandleInertiaGrpRequests extends Middleware
             $firstLoadOnlyProps,
             [
                 'auth'  => [
-                    'user' => $request->user() ? LoggedUserResource::make($request->user())->getArray() : null,
+                    'user' => $request->user() ? GetLoggedUser::run($request->user()) : null,
                 ],
                 'flash' => [
                     'notification' => fn () => $request->session()->get('notification'),

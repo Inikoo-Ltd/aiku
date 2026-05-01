@@ -3,8 +3,8 @@
 namespace App\Exceptions;
 
 use App\Actions\Retina\UI\GetRetinaFirstLoadProps;
+use App\Actions\SysAdmin\User\UI\GetLoggedUser;
 use App\Actions\UI\Grp\GetFirstLoadProps;
-use App\Http\Resources\UI\LoggedUserResource;
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -207,7 +207,7 @@ class Handler extends ExceptionHandler
                 'datetime'  => now()->tz('UTC')->toDateTimeString(),
                 'routeName' => $routeName,
                 'auth'      => [
-                    'user' => $request->user() ? LoggedUserResource::make($request->user())->getArray() : null,
+                    'user' => $request->user() ? GetLoggedUser::run($request->user()) : null,
                 ],
                 'ziggy'     => [
                     'location' => $request->url(),
