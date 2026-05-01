@@ -18,7 +18,6 @@ use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Throwable;
-use Tighten\Ziggy\Ziggy;
 
 class Handler extends ExceptionHandler
 {
@@ -69,7 +68,7 @@ class Handler extends ExceptionHandler
     {
         $middleware = (\Route::getMiddlewareGroups()['web_errors']);
 
-        return (new Pipeline($this->container))
+        return new Pipeline($this->container)
             ->send($request)
             ->through($middleware)
             ->then($callback);
@@ -187,11 +186,8 @@ class Handler extends ExceptionHandler
                 default => [],
             };
 
-            $firstLoadOnlyProps['ziggy'] = function () use ($request) {
-                return array_merge((new Ziggy())->toArray(), [
-                    'location' => $request->url(),
-                ]);
-            };
+            data_set($firstLoadOnlyProps, 'ziggy.location', $request->url());
+
         }
 
         $routeName = '';

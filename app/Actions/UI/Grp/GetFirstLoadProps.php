@@ -18,6 +18,7 @@ use App\Models\Helpers\Language;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\App;
 use Lorisleiva\Actions\Concerns\AsObject;
+use Tighten\Ziggy\Ziggy;
 
 class GetFirstLoadProps
 {
@@ -57,6 +58,7 @@ class GetFirstLoadProps
                 'notifications'             => $user ? NotificationsResource::collection($user->notifications()->orderBy('created_at', 'desc')->limit(10)->get())->collection : null,
                 'dispatching_waiting_count' => $user ? GetDispatchingWaitingBadgeData::make()->totalCount($user) : 0,
                 'crm_waiting_count'         => $user ? GetCrmWaitingBadgeData::make()->totalCount($user) : 0,
+                'ziggy'                     => new Ziggy('grp')->toArray()
             ];
     }
 }

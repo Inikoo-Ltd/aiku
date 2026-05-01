@@ -15,7 +15,6 @@ use App\Models\SysAdmin\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
-use Tighten\Ziggy\Ziggy;
 
 class HandleInertiaGrpRequests extends Middleware
 {
@@ -36,11 +35,6 @@ class HandleInertiaGrpRequests extends Middleware
 
         if (!$request->inertia() || Session::get('reloadLayout')) {
             $firstLoadOnlyProps          = GetFirstLoadProps::run($user);
-            $firstLoadOnlyProps['ziggy'] = function () use ($request) {
-                return array_merge((new Ziggy('grp'))->toArray(), [
-                    'location' => $request->url(),
-                ]);
-            };
             if (Session::get('reloadLayout') == 'remove') {
                 Session::forget('reloadLayout');
             }
