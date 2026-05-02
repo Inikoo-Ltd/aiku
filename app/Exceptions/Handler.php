@@ -187,7 +187,6 @@ class Handler extends ExceptionHandler
             };
 
             data_set($firstLoadOnlyProps, 'ziggy.location', $request->url());
-
         }
 
         $routeName = '';
@@ -203,7 +202,7 @@ class Handler extends ExceptionHandler
                 'datetime'  => now()->tz('UTC')->toDateTimeString(),
                 'routeName' => $routeName,
                 'auth'      => [
-                    'user' => $request->user() ? GetLoggedUser::run($request->user()) : null,
+                    'user' => ($request->user() && $request->user() instanceof User) ? GetLoggedUser::run($request->user()) : null,
                 ],
                 'ziggy'     => [
                     'location' => $request->url(),
