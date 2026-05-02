@@ -13,7 +13,6 @@ use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Dropshipping\DropshippingPortfolioResource;
-use App\Http\Resources\Dropshipping\DropshippingPortfoliosResource;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\DownloadPortfolioCustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;

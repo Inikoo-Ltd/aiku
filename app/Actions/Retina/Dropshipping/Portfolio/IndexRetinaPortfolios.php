@@ -18,13 +18,11 @@ use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Portfolio\CustomerSalesChannelPortfolioTabsEnum;
 use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
-use App\Http\Resources\Dropshipping\DropshippingBundlesResource;
 use App\Http\Resources\Dropshipping\DropshippingPortfoliosResource;
 use App\Http\Resources\Dropshipping\EbayOverseasWarehousePolicy;
 use App\Http\Resources\Dropshipping\PlatformPortfolioLogsResource;
 use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\MagentoUser;
@@ -78,19 +76,38 @@ class IndexRetinaPortfolios extends RetinaAction
             $query->where('portfolios.status', true);
         }
 
-        if ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $query->with(['customerSalesChannel']);
-        }
-        $query->with(['item']);
+        //        if ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
+        //            $query->with(['customerSalesChannel']);
+        //        }
 
-        $query->where('portfolios.item_type', class_basename(Product::class))
-            ->leftJoin('products', 'products.id', 'portfolios.item_id')
-            ->select(
-                'portfolios.*',
-                'products.rrp',
-                'products.state as product_state',
-                'products.is_for_sale',
-            );
+        //item_type is always Product, so this is safe
+        $query->leftJoin('products', 'products.id', 'portfolios.item_id');
+
+        $query->leftJoin('platforms', 'platforms.id', 'portfolios.platform_id');
+        $query->leftJoin('customer_sales_channels', 'customer_sales_channels.id', 'portfolios.customer_sales_channel_id');
+
+        $query->select(
+            'portfolios.*',
+            'products.rrp',
+            'products.code as product_code',
+            'products.name as product_name',
+            'products.description as product_description',
+            'products.web_images',
+            'products.state as product_state',
+            'products.is_for_sale',
+            'products.available_quantity',
+            'products.current_historic_asset_id',
+            'products.gross_weight',
+            'products.marketing_weight',
+            'products.marketing_dimensions',
+            'products.price',
+            'products.rrp',
+            'platforms.type as platform_type',
+            'customer_sales_channels.name as customer_sales_channel_name',
+            'customer_sales_channels.platform_user_id',
+            'customer_sales_channels.platform_status as customer_sales_channels_platform_status'
+        );
+        $query->selectRaw("'{$customerSalesChannel->shop->currency->code}' as currency_code");
 
         if ($this->tab === CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value) {
             $query->where('portfolios.is_bundle', true);
@@ -305,8 +322,8 @@ class IndexRetinaPortfolios extends RetinaAction
         }
 
         $groupedPortfolios = $this->customerSalesChannel->portfolios
-            ->groupBy(fn(Portfolio $portfolio): string => Str::upper(Str::substr((string)$portfolio->item_code, 0, 1)))
-            ->map(fn(Collection $group, string $char): array => [
+            ->groupBy(fn (Portfolio $portfolio): string => Str::upper(Str::substr((string)$portfolio->item_code, 0, 1)))
+            ->map(fn (Collection $group, string $char): array => [
                 'char'  => $char,
                 'count' => $group->count(),
                 'ids'   => $group->pluck('id')->implode(','),
@@ -581,13 +598,25 @@ class IndexRetinaPortfolios extends RetinaAction
 
                 'product_count' => $this->customerSalesChannel->number_portfolios,
 
-                'logs' => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($this->customerSalesChannel, 'logs')),
 
-                'count_product_not_synced'                                  => $countProductsNotSync,
-                'platform_user_id'                                          => $platformUser?->id,
-                'platform_data'                                             => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
-                'products'                                                  => DropshippingPortfoliosResource::collection($portfolios),
-                'bundles'                                                   => DropshippingBundlesResource::collection($portfolios),// Is this correct?
+                'count_product_not_synced' => $countProductsNotSync,
+                'platform_user_id'         => $platformUser?->id,
+                'platform_data'            => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
+
+                CustomerSalesChannelPortfolioTabsEnum::PRODUCTS->value => $this->tab == CustomerSalesChannelPortfolioTabsEnum::PRODUCTS->value ?
+                    fn () => DropshippingPortfoliosResource::collection($portfolios)
+                    : Inertia::lazy(fn () => DropshippingPortfoliosResource::collection(IndexPlatformPortfolioLogs::run($portfolios))),
+
+                CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value => $this->tab == CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value ?
+                    fn () => DropshippingPortfoliosResource::collection($portfolios)
+                    : Inertia::lazy(fn () => DropshippingPortfoliosResource::collection(IndexPlatformPortfolioLogs::run($portfolios))),
+
+
+                CustomerSalesChannelPortfolioTabsEnum::LOGS->value => $this->tab == CustomerSalesChannelPortfolioTabsEnum::LOGS->value ?
+                    fn () => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($this->customerSalesChannel, CustomerSalesChannelPortfolioTabsEnum::LOGS->value))
+                    : Inertia::lazy(fn () => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($this->customerSalesChannel, CustomerSalesChannelPortfolioTabsEnum::LOGS->value))),
+
+
                 'is_platform_connected'                                     => $this->customerSalesChannel->platform_status,
                 'customer_sales_channel'                                    => RetinaCustomerSalesChannelResource::make($this->customerSalesChannel)->toArray(request()),
                 'channels'                                                  => CustomerSalesChannelsResourceTOFIX::collection($channels), //  Do now use the resource. Use an array of necessary data
@@ -599,9 +628,9 @@ class IndexRetinaPortfolios extends RetinaAction
                 ],
             ]
         )
-            ->table($this->tableStructure(prefix: 'products'))
-            ->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, 'logs'))
-            ->table(IndexRetinaBundles::make()->tableStructure($this->customerSalesChannel, null, 'bundles'));
+            ->table($this->tableStructure(prefix: CustomerSalesChannelPortfolioTabsEnum::PRODUCTS->value))
+            ->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, CustomerSalesChannelPortfolioTabsEnum::LOGS->value))
+            ->table(IndexRetinaBundles::make()->tableStructure($this->customerSalesChannel, null, CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value));
     }
 
     public function tableStructure(?array $modelOperations = null, $prefix = null): \Closure

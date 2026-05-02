@@ -46,7 +46,7 @@ use Illuminate\Support\Arr;
  *
  */
 
-//Todo: refactor this
+//Todo: refactor this following DropshippingPortfoliosResource
 class DropshippingBundlesResource extends JsonResource
 {
     public function toArray($request): array

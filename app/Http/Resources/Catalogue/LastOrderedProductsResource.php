@@ -9,7 +9,6 @@
 
 namespace App\Http\Resources\Catalogue;
 
-
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 
@@ -22,7 +21,6 @@ use Illuminate\Support\Arr;
  */
 class LastOrderedProductsResource extends JsonResource
 {
-
     public function toArray($request): array
     {
         $webImages = json_decode($this->web_images, true);
