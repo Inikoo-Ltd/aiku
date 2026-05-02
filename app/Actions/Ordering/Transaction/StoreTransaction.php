@@ -43,15 +43,17 @@ class StoreTransaction extends OrgAction
 
     public function handle(Order $order, HistoricAsset $historicAsset, array $modelData, $calculateShipping = true): Transaction
     {
-        if (in_array($order->state, [
-            OrderStateEnum::CREATING,
-            OrderStateEnum::SUBMITTED
-        ])) {
-            $transaction = $order->transactions->where('model_type', 'Product')->where('model_id', $historicAsset->asset->model_id)->where('is_gift', false)->first();
-            if ($transaction) {
-                return UpdateTransaction::make()->action($transaction, [
-                    'quantity_ordered' => data_get($modelData, 'quantity')
-                ]);
+        if ($this->strict) {
+            if (in_array($order->state, [
+                OrderStateEnum::CREATING,
+                OrderStateEnum::SUBMITTED
+            ])) {
+                $transaction = $order->transactions->where('model_type', 'Product')->where('model_id', $historicAsset->asset->model_id)->where('is_gift', false)->first();
+                if ($transaction) {
+                    return UpdateTransaction::make()->action($transaction, [
+                        'quantity_ordered' => (float)data_get($modelData, 'quantity')
+                    ]);
+                }
             }
         }
 
