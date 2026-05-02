@@ -1,9 +1,9 @@
 <?php
 
 /*
- *  Author: Jonathan lopez <raul@inikoo.com>
- *  Created: Sat, 22 Oct 2022 18:53:15 British Summer Time, Sheffield, UK
- *  Copyright (c) 2022, inikoo
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 02 May 2026 15:14:40 Nepal Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
 namespace App\Http\Resources\Dropshipping;
@@ -45,7 +45,7 @@ use Illuminate\Support\Arr;
  * @property mixed $rrp
  *
  */
-class DropshippingPortfoliosResource extends JsonResource
+class DropshippingPortfolioResource extends JsonResource
 {
     public function toArray($request): array
     {

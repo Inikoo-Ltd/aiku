@@ -10,21 +10,17 @@ namespace App\Actions\Retina\Dropshipping\Bundle\UI;
 
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
-use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Actions\Traits\WithPlatformStatusCheck;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Portfolio\CustomerSalesChannelPortfolioTabsEnum;
 use App\Http\Resources\Dropshipping\DropshippingBundlesResource;
+use App\Http\Resources\Dropshipping\DropshippingJsonBundlesResource;
 use App\Http\Resources\Dropshipping\DropshippingPortfoliosResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Bundle;
 use App\Models\Catalogue\Product;
-use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\MagentoUser;
-use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Dropshipping\WooCommerceUser;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -136,7 +132,7 @@ class IndexRetinaBundles extends RetinaAction
 
     public function jsonResponse(LengthAwarePaginator $bundles): AnonymousResourceCollection
     {
-        return DropshippingBundlesResource::collection($bundles);
+        return DropshippingJsonBundlesResource::collection($bundles);
     }
 
     public function htmlResponse(LengthAwarePaginator $bundles, ActionRequest $request): Response
@@ -146,30 +142,9 @@ class IndexRetinaBundles extends RetinaAction
             $manual = true;
         }
 
-        $title = __('My Products');
+        $title = __('My Bundles');
 
-        $channels = $this->customer->customerSalesChannels()
-            ->whereNot('id', $this->customerSalesChannel->id)
-            ->whereNot('number_portfolios', 0)
-            ->get();
 
-        /** @var ShopifyUser|WooCommerceUser|AmazonUser|MagentoUser $platformUser */
-        $platformUser = $this->customerSalesChannel->user;
-
-        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
-            $countProductsNotSync = 0;
-        } else {
-            $countProductsNotSync = $this->customerSalesChannel->bundles()->where('bundles.status', true)
-                ->whereExists(function ($q) {
-                    $q->selectRaw(1)
-                        ->from('products as p')
-                        ->whereColumn('p.id', 'products.item_id')
-                        ->whereNot('p.state', ProductStateEnum::DISCONTINUED->value)
-                        ->where('p.is_for_sale', true);
-                })
-                ->where('bundles.platform_status', false)
-                ->count();
-        }
 
         return Inertia::render(
             'Dropshipping/Bundles',
@@ -190,7 +165,7 @@ class IndexRetinaBundles extends RetinaAction
                     'current'    => $this->tab,
                     'navigation' => CustomerSalesChannelPortfolioTabsEnum::navigation()
                 ],
-                'bundles' => DropshippingPortfoliosResource::collection($bundles)
+                'bundles' => DropshippingBundlesResource::collection($bundles)
             ]
         )->table($this->tableStructure($this->customerSalesChannel, prefix: 'bundles'));
     }
@@ -227,7 +202,7 @@ class IndexRetinaBundles extends RetinaAction
                 $table->column(key: 'status', label: __('Status'));
                 $table->column(key: 'message', label: '', canBeHidden: false);
 
-                $matchesLabel = __($parent->platform->name . ' product');
+                $matchesLabel = $parent->platform->name.' '.__( 'product');
 
                 $table->column(key: 'matches', label: $matchesLabel, canBeHidden: false);
                 $table->column(key: 'create_new', label: '', canBeHidden: false);
@@ -253,7 +228,7 @@ class IndexRetinaBundles extends RetinaAction
                                     $customerSalesChannel->slug
                                 ]
                             ],
-                            'label' => __('My Products'),
+                            'label' => __('My Bundles'),
                         ]
                     ]
                 ]

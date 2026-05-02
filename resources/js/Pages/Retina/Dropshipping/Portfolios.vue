@@ -148,7 +148,7 @@ const props = defineProps<{
 	last_created_at_download_portfolio_customer_sales_channel: string | null
 	ebay_warehouse_policy_msg: {
 		show_msg: boolean
-		cust_country: string
+		customer_country: string
 	}
 	bundle_routes: any
 	shop_data: {
@@ -1277,7 +1277,7 @@ const layout = inject("layout", layoutStructure)
 					<p class="text-sm text-red-700">
 						<strong class="hidden sm:inline">{{ trans("Important Notice:") }}</strong>
 						{{ trans("We noticed your account is registered in") }}
-						<strong> {{ ebay_warehouse_policy_msg?.cust_country + "." }} </strong>
+						<strong> {{ ebay_warehouse_policy_msg?.customer_country + "." }} </strong>
 						{{
 							trans(
 								"In accordance to eBay’s Overseas Warehouse Block Policy, listings from this region may be blocked when the item is stored overseas."
