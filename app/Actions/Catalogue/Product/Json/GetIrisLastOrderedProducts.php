@@ -16,6 +16,7 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -23,6 +24,18 @@ class GetIrisLastOrderedProducts extends IrisAction
 {
     public function handle(ProductCategory $productCategory, array $modelData): \Illuminate\Support\Collection
     {
+        $ignoredProductId = Arr::get($modelData, 'ignoredProductId');
+        $cacheKey = sprintf(
+            'iris:last_ordered_products:%s:%s',
+            $productCategory->id,
+            $ignoredProductId ?? 'none'
+        );
+
+        $cachedProducts = Cache::get($cacheKey);
+        if ($cachedProducts !== null) {
+            return $cachedProducts;
+        }
+
         $query = DB::table('transactions')
             ->select([
                 'products.code',
@@ -39,13 +52,31 @@ class GetIrisLastOrderedProducts extends IrisAction
             ->where('transactions.state', '!=', TransactionStateEnum::CREATING);
 
 
-        if (Arr::pull($modelData, 'ignoredProductId')) {
-            $query->where('products.id', '!=', Arr::pull($modelData, 'ignoredProductId'));
+        if ($ignoredProductId) {
+            $query->where('products.id', '!=', $ignoredProductId);
         }
 
-        return $query->orderBy('date', 'desc')->limit(10)->get();
+        $itemsInQuery = (clone $query)->count();
+        $products = $query->orderBy('date', 'desc')->limit(10)->get();
+
+        Cache::put($cacheKey, $products, $this->cacheTtl($itemsInQuery));
+
+        return $products;
 
 
+    }
+
+    public function cacheTtl(int $itemsInQuery): \DateTimeInterface
+    {
+        if ($itemsInQuery < 4) {
+            return now()->addMinutes(30);
+        }
+
+        if ($itemsInQuery < 10) {
+            return now()->addHours(6);
+        }
+
+        return now()->addDay();
     }
 
     public function rules(): array
