@@ -88,19 +88,21 @@ class UnsubscribeAurora extends IrisAction
                 $prospect = Prospect::where('post_source_id', $source_id)->first();
             }
 
-            UpdateProspect::make()->run(
-                $prospect,
-                [
-                    'dont_contact_me'        => true,
-                    'can_contact_by_email'   => false,
-                    'can_contact_by_phone'   => false,
-                    'can_contact_by_address' => false,
-                    'fail_status'            => ProspectFailStatusEnum::UNSUBSCRIBED,
-                    'success_status'         => ProspectSuccessStatusEnum::NA,
-                    'contacted_state'        => ProspectContactedStateEnum::OPEN,
-                ],
-                false,
-            );
+            if($prospect) {
+                UpdateProspect::make()->run(
+                    $prospect,
+                    [
+                        'dont_contact_me'        => true,
+                        'can_contact_by_email'   => false,
+                        'can_contact_by_phone'   => false,
+                        'can_contact_by_address' => false,
+                        'fail_status'            => ProspectFailStatusEnum::UNSUBSCRIBED,
+                        'success_status'         => ProspectSuccessStatusEnum::NA,
+                        'contacted_state'        => ProspectContactedStateEnum::OPEN,
+                    ],
+                    false,
+                );
+            }
         }
 
 
