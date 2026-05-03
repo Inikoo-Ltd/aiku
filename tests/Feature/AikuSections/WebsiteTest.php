@@ -46,6 +46,7 @@ use App\Models\Web\Website;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 use function Pest\Laravel\actingAs;
 
@@ -368,5 +369,14 @@ test('store redirect', function (Webpage $webpage) {
 
 
 test('web sitemap creation', function () {
+    $website = StoreWebsite::make()->action(
+        $this->shop,
+        Website::factory()->definition()
+    );
+
+    $website = LaunchWebsite::make()->action($website);
+
     $this->artisan('sitemaps:create')->assertExitCode(0);
+
+    expect(Storage::disk('local')->exists("sitemaps/sitemap_{$website->id}.xml"))->toBeTrue();
 });
