@@ -135,10 +135,10 @@ class IndexRetinaPortfolios extends RetinaAction
     {
         return AllowedFilter::callback('platform_status', function ($query, $value) {
             if ($value === 'true' || $value === true) {
-                $query->where('platform_status', true)
+                $query->where('portfolios.platform_status', true)
                     ->orWhere('products.state', true);
             } elseif ($value === 'false' || $value === false) {
-                $query->where('platform_status', false)
+                $query->where('portfolios.platform_status', false)
                     ->orWhere('products.state', true);
             }
         });
@@ -313,7 +313,7 @@ class IndexRetinaPortfolios extends RetinaAction
                         ->whereNot('p.state', ProductStateEnum::DISCONTINUED->value)
                         ->where('p.is_for_sale', true);
                 })
-                ->where('platform_status', false)
+                ->where('portfolios.platform_status', false)
                 ->count();
         }
 
