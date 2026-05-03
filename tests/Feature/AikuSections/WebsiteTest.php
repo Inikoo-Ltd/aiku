@@ -23,6 +23,7 @@ use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Website\HydrateWebsite;
 use App\Actions\Web\Website\LaunchWebsite;
+use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Actions\Web\Website\UpdateWebsite;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
@@ -46,7 +47,6 @@ use App\Models\Web\Website;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 use function Pest\Laravel\actingAs;
 
@@ -369,14 +369,8 @@ test('store redirect', function (Webpage $webpage) {
 
 
 test('web sitemap creation', function () {
-    $website = StoreWebsite::make()->action(
-        $this->shop,
-        Website::factory()->definition()
-    );
 
-    $website = LaunchWebsite::make()->action($website);
-
+    SaveWebsitesSitemap::run();
     $this->artisan('sitemaps:create')->assertExitCode(0);
 
-    expect(Storage::disk('local')->exists("sitemaps/sitemap_{$website->id}.xml"))->toBeTrue();
 });

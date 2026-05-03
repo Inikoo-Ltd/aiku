@@ -88,7 +88,7 @@ class UnsubscribeAurora extends IrisAction
                 $prospect = Prospect::where('post_source_id', $source_id)->first();
             }
 
-            if($prospect) {
+            if ($prospect) {
                 UpdateProspect::make()->run(
                     $prospect,
                     [

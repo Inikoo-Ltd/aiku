@@ -76,10 +76,6 @@ class IndexRetinaPortfolios extends RetinaAction
             $query->where('portfolios.status', true);
         }
 
-        //        if ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-        //            $query->with(['customerSalesChannel']);
-        //        }
-
         //item_type is always Product, so this is safe
         $query->leftJoin('products', 'products.id', 'portfolios.item_id');
 
@@ -322,8 +318,8 @@ class IndexRetinaPortfolios extends RetinaAction
         }
 
         $groupedPortfolios = $this->customerSalesChannel->portfolios
-            ->groupBy(fn(Portfolio $portfolio): string => Str::upper(Str::substr((string)$portfolio->item_code, 0, 1)))
-            ->map(fn(Collection $group, string $char): array => [
+            ->groupBy(fn (Portfolio $portfolio): string => Str::upper(Str::substr((string)$portfolio->item_code, 0, 1)))
+            ->map(fn (Collection $group, string $char): array => [
                 'char'  => $char,
                 'count' => $group->count(),
                 'ids'   => $group->pluck('id')->implode(','),
@@ -604,17 +600,17 @@ class IndexRetinaPortfolios extends RetinaAction
                 'platform_data'            => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
 
                 CustomerSalesChannelPortfolioTabsEnum::PRODUCTS->value => $this->tab == CustomerSalesChannelPortfolioTabsEnum::PRODUCTS->value ?
-                    fn() => DropshippingPortfoliosResource::collection($portfolios)
-                    : Inertia::lazy(fn() => DropshippingPortfoliosResource::collection($portfolios)),
+                    fn () => DropshippingPortfoliosResource::collection($portfolios)
+                    : Inertia::lazy(fn () => DropshippingPortfoliosResource::collection($portfolios)),
 
                 CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value => $this->tab == CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value ?
-                    fn() => DropshippingPortfoliosResource::collection($portfolios)
-                    : Inertia::lazy(fn() => DropshippingPortfoliosResource::collection($portfolios)),
+                    fn () => DropshippingPortfoliosResource::collection($portfolios)
+                    : Inertia::lazy(fn () => DropshippingPortfoliosResource::collection($portfolios)),
 
 
                 CustomerSalesChannelPortfolioTabsEnum::LOGS->value => $this->tab == CustomerSalesChannelPortfolioTabsEnum::LOGS->value ?
-                    fn() => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($this->customerSalesChannel, CustomerSalesChannelPortfolioTabsEnum::LOGS->value))
-                    : Inertia::lazy(fn() => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($this->customerSalesChannel, CustomerSalesChannelPortfolioTabsEnum::LOGS->value))),
+                    fn () => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($this->customerSalesChannel, CustomerSalesChannelPortfolioTabsEnum::LOGS->value))
+                    : Inertia::lazy(fn () => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($this->customerSalesChannel, CustomerSalesChannelPortfolioTabsEnum::LOGS->value))),
 
 
                 'is_platform_connected'                                     => $this->customerSalesChannel->platform_status,
