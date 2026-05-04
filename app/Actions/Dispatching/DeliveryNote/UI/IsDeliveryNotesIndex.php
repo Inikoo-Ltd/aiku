@@ -208,6 +208,7 @@ trait IsDeliveryNotesIndex
         }
 
         return $query->defaultSort('-delivery_notes.date')
+            ->with('trolleys')
             ->select($selectColumns)
             ->selectRaw(
                 "

@@ -198,7 +198,7 @@ export const initialiseApp = () => {
         }
 
 
-        // Set data of User (comes from app/Http/Resources/UI/LoggedUserResource.php)
+        // Set data of User (comes from app/Http/Resources/UI/GetLoggedUser.php)
         if (usePage().props.auth.user) {
             layout.user = usePage().props.auth.user
         }

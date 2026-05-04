@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 15-10-2024-16h-24m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2024
 */
 

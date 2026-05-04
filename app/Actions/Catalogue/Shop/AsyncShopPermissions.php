@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Seeders\SeedAikuScopedSections;
 use App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions;
 use App\Actions\SysAdmin\User\UserAddRoles;
+use App\Actions\UI\Grp\RecacheUserUiProps;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Role;
@@ -42,6 +43,7 @@ class AsyncShopPermissions extends OrgAction
                 Role::where('name', RolesEnum::getRoleName(RolesEnum::SHOP_ADMIN->value, $shop))->first()
             ]);
         }
+        RecacheUserUiProps::make()->redoAllUsers();
     }
 
     public function getCommandSignature(): string

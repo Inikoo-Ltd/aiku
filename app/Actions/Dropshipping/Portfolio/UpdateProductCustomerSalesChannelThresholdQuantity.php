@@ -17,12 +17,14 @@ use App\Models\Catalogue\Product;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 
+// todo: delete this?? it used to be called in UpdateProduct on available_quantity changed, no anymore since Jan 2026
 class UpdateProductCustomerSalesChannelThresholdQuantity implements ShouldBeUnique
 {
     use WithActionUpdate;
 
+    public string $jobQueue = 'hydrators-slave';
+
     public string $commandSignature = 'csc:threshold {productId}';
-    public string $jobQueue = 'ds';
 
     public function getJobUniqueId(int|null $productId): string
     {
@@ -31,8 +33,6 @@ class UpdateProductCustomerSalesChannelThresholdQuantity implements ShouldBeUniq
 
     public function handle(int|null $productId): void
     {
-        return;
-
         if (!$productId) {
             return;
         }

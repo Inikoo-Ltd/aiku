@@ -18,23 +18,22 @@ class BreakWebsiteVarnishCache extends OrgAction
 {
     use WithVarnishBan;
 
-    public function handle(Website $website, ?Command $command = null): array
+    public function handle(Website $website, ?Command $command = null): void
     {
-
-        return $this->sendVarnishBanHttp([
+        $this->sendVarnishBanHttp([
             'x-ban-website' => $website->id,
         ], $command);
-
-
     }
 
     public function asController(Website $website, ActionRequest $request): array
     {
         $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website);
 
-        return $this->handle($website);
+        return [
+            'status' => 'success',
+        ];
     }
-
 
 
     public function getCommandSignature(): string

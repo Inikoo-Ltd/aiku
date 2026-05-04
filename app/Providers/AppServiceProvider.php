@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Lorisleiva\Actions\Facades\Actions;
 use App\Services\GeocoderService;
+use App\Services\Translation;
+use Vemcogroup\Translation\Translation as BaseTranslation;
 
 /**
  * @method forPage(mixed $page, mixed $perPage)
@@ -33,6 +35,10 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(GeocoderService::class, function ($app) {
             return new GeocoderService();
+        });
+
+        $this->app->singleton(BaseTranslation::class, function () {
+            return new Translation();
         });
 
         if ($this->app->environment('local')) {

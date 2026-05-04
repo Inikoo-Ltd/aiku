@@ -7,6 +7,7 @@ import Tag from "@/Components/Tag.vue"
 import { routeType } from "@/types/route"
 import { Table as TableTS } from "@/types/Table"
 import { faPencil, faTimes, faTrashAlt, faMoneyCheckEditAlt } from "@far"
+import { faBarcode } from "@fal"
 import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
@@ -26,7 +27,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import BasicDiscount from "@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue"
 
-library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt)
+library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt, faBarcode)
 
 type ProductRow = {
     id: number
@@ -480,6 +481,20 @@ const isOffersData = (offersData: any): boolean => {
                         <NumberWithButtonSave v-model="createNewQty[item.id].quantity_ordered"
                                               :bindToTarget="{ min: 0 }" noUndoButton noSaveButton class="w-24" />
                     </div>
+                </div>
+            </template>
+
+            <!-- Column: Batch Codes -->
+            <template #cell(batch_codes)="{ item }">
+                <div class="flex flex-wrap gap-1">
+                    <span
+                        v-for="code in (item.batch_codes ? item.batch_codes.split(', ') : [])"
+                        :key="code"
+                        class="text-xs px-1.5 py-0.5 rounded border border-blue-300 bg-blue-50 text-blue-700"
+                    >
+                        <FontAwesomeIcon icon="fal fa-barcode" class="mr-1" fixed-width aria-hidden="true" />
+                        {{ code }}
+                    </span>
                 </div>
             </template>
 

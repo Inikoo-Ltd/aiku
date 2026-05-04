@@ -68,10 +68,10 @@ class StoreAsset extends OrgAction
         }
 
 
-        AssetHydrateHistoricAssets::dispatch($asset)->delay($hydratorsDelay);
-        ShopHydrateAssets::dispatch($asset->shop)->delay($hydratorsDelay);
-        OrganisationHydrateAssets::dispatch($asset->organisation)->delay($hydratorsDelay);
-        GroupHydrateAssets::dispatch($asset->group)->delay($hydratorsDelay);
+        AssetHydrateHistoricAssets::dispatch($asset)->delay(5);
+        ShopHydrateAssets::dispatch($asset->shop)->delay(5);
+        OrganisationHydrateAssets::dispatch($asset->organisation)->delay(5);
+        GroupHydrateAssets::dispatch($asset->group)->delay(10);
         if ($asset->master_asset_id) {
             MasterAssetHydrateAssets::run($asset->master_asset_id);
         }

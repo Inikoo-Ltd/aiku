@@ -53,6 +53,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Audits\Transformer\OrderSubmitSummaryTransformer;
 use App\Audits\Transformer\RelationTransformer;
 use App\Models\Dispatching\ReturnDeliveryNote;
 
@@ -386,7 +387,26 @@ class Order extends Model implements HasMedia, Auditable
             attributes: ['name']
         );
 
+        $data = OrderSubmitSummaryTransformer::execute($this, $data);
+
         return $data;
+    }
+
+    public function readyForAuditing(): bool
+    {
+        if ($this->state === OrderStateEnum::CREATING) {
+            return false;
+        }
+
+        if ($this->isAuditingDisabled()) {
+            return false;
+        }
+
+        if ($this->isCustomEvent) {
+            return true;
+        }
+
+        return $this->isEventAuditable($this->auditEvent);
     }
 
     public function getRouteKeyName(): string

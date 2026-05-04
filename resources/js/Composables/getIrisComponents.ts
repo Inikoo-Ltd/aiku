@@ -52,6 +52,7 @@ import SeeAlso1Iris from "@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Iris.vue"
 
 import family1Iris from "@/Components/CMS/Webpage/Family-1/family1Iris.vue"
 import family2Iris from "@/Components/CMS/Webpage/Family2/family2Iris.vue"
+import family3Iris from "@/Components/CMS/Webpage/Family3/family3Iris.vue"
 import FamiliesIris1 from "@/Components/CMS/Webpage/Families1/FamiliesIris1.vue"
 import FamiliesIris2 from "@/Components/CMS/Webpage/Families2/FamiliesIris2.vue"
 import FamiliesIris3 from "@/Components/CMS/Webpage/Families3/FamiliesIris3.vue"
@@ -134,8 +135,6 @@ const components = (shop_type?: string): Record<string, Component> => {
 		'collection-description-1' : CollectionDescriptionIris,
 		'department-description-1' : DepartmentDescriptionIris,
 		'sub-department-description-1' : SubDepartmentDesciptionIris,
-		'family-1': family1Iris,
-		'family-2': family2Iris,
 
 		//sub-department	
 		"sub-departments-1": SubDepartment1Iris,
@@ -150,8 +149,14 @@ const components = (shop_type?: string): Record<string, Component> => {
 		//family
 		"families-1-overview": Families1Overview,
 
+		// family-description
+		'family-1': family1Iris,
+		'family-2': family2Iris,
+		'family-3': family3Iris,
+
 		 //family-extra-description
 		'family-2-extra-description' : Family2ExtraDescriptionIris,
+		'family-3-extra-description' : Family2ExtraDescriptionIris,
 
 		//product
 		"product-1": shop_type === "b2b" ? RenderEcommerceProduct : RenderDropshippingProduct,
@@ -215,7 +220,7 @@ export const getIrisComponent = (
 		shop_type?: string // 'b2b' | 'dropshipping'
 	}
 ) => {
-	return components(options?.shop_type)[componentName] ?? NotFoundComponent
+	return components(options?.shop_type)[componentName] ?? NotFoundComponentwo
 }
 
 export const getProductsRenderDropshippingComponent = (

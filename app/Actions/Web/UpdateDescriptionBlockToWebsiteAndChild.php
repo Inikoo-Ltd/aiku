@@ -94,6 +94,9 @@ class UpdateDescriptionBlockToWebsiteAndChild
         if ($familyWebBlockCode == 'family-2') {
             $familyExtraDesc = $this->getWebpageBlocksByType($webpage, 'family-2-extra-description')->first()->model_has_web_blocks_id;
         }
+        if ($familyWebBlockCode == 'family-3') {
+            $familyExtraDesc = $this->getWebpageBlocksByType($webpage, 'family-3-extra-description')->first()->model_has_web_blocks_id;
+        }
 
         $website = $webpage->website;
         $liveProductsSnapshot = $website->liveProductsSnapshot;

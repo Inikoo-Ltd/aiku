@@ -8,6 +8,7 @@ import { getStyles } from "@/Composables/styles"
 
 import Image from "@/Components/Image.vue"
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
+import LinkIris from "@/Components/Iris/LinkIris.vue"
 import { getBestOffer } from "@/Composables/useOffers"
 
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"
@@ -17,7 +18,6 @@ import { Navigation } from "swiper/modules"
 
 import "swiper/css"
 import "swiper/css/navigation"
-import LinkIris from "@/Components/Iris/LinkIris.vue"
 
 library.add(faChevronCircleLeft, faChevronCircleRight)
 
@@ -72,7 +72,7 @@ console.log(props)
 </script>
 
 <template>
-  <div class="w-full" :style="{
+  <div class="w-full"  :id="fieldValue?.id ? fieldValue?.id : 'family-2'+indexBlock"  :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue?.container?.properties, screenType)
     }">

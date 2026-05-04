@@ -24,6 +24,7 @@ const props = defineProps<{
   }
   colorThemed: object
   screenType?: "mobile" | "tablet" | "desktop"
+  customSidebar?:any
 }>();
 
 

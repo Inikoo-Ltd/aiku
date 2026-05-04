@@ -6,21 +6,18 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Http\Resources\UI;
+namespace App\Actions\SysAdmin\User\UI;
 
-use App\Http\Resources\HasSelfCall;
 use App\Models\SysAdmin\User;
-use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\Concerns\AsObject;
 
-class LoggedUserResource extends JsonResource
+class GetLoggedUser
 {
-    use HasSelfCall;
+    use AsObject;
 
-    public function toArray($request): array
+    public function handle(User $user): array
     {
-        /** @var User $user */
-        $user = $this;
 
         $isAgent = false;
         $agentShops = [];

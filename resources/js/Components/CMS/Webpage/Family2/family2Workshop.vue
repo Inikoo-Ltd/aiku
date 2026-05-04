@@ -139,7 +139,7 @@ console.log("Family2 Workshop Props:", props)
 </script>
 
 <template>
-  <div class="w-full" :style="{
+  <div class="w-full"  :id="modelValue?.id ? modelValue?.id : 'family-3'+indexBlock"  :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(modelValue?.container?.properties, screenType)
     }">

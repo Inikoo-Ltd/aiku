@@ -16,6 +16,7 @@ use App\Actions\Catalogue\Collection\Search\ReindexCollectionSearch;
 use App\Actions\Catalogue\Product\Search\ReindexProductSearch;
 use App\Actions\Catalogue\ProductCategory\Search\ReindexProductCategorySearch;
 use App\Actions\CRM\Customer\Search\ReindexCustomerSearch;
+use App\Actions\CRM\Prospect\Search\ReindexProspectSearch;
 use App\Actions\Dispatching\DeliveryNote\Search\ReindexDeliveryNotesSearch;
 use App\Actions\Goods\Stock\Search\ReindexStockSearch;
 use App\Actions\Goods\StockFamily\Search\ReindexStockFamilySearch;
@@ -231,7 +232,6 @@ class ReindexSearch extends HydrateModel
         }
         ReindexWarehouseAreaSearch::run(reset: $command->option('reset'));
         ReindexLocationsSearch::run(reset: $command->option('reset'));
-
     }
 
     protected function reindexInventory(Command $command): void
@@ -251,7 +251,7 @@ class ReindexSearch extends HydrateModel
             $command->warn('Resetting search indexes');
         }
         ReindexCustomerSearch::run(reset: $command->option('reset'));
-        //        $command->call('search:prospects');
+        ReindexProspectSearch::run(reset: $command->option('reset'));
     }
 
     protected function reindexFulfilment(Command $command): void

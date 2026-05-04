@@ -68,7 +68,7 @@ class RedoShopTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessShopTimeSeriesRecords::dispatch($shop->id, $frequency, $from, $to)->onQueue('low-priority');
+                ProcessShopTimeSeriesRecords::dispatch($shop->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
             } else {
                 ProcessShopTimeSeriesRecords::run($shop->id, $frequency, $from, $to);
             }
