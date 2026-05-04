@@ -478,7 +478,7 @@ class ShowReturnDeliveryNote extends OrgAction
 
 
         $inertiaResponse = Inertia::render(
-            'Devel/Dummy',
+            'Org/Dispatching/ReturnDN',
             $props
         );
 
