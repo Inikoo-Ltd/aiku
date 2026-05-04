@@ -110,7 +110,6 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
                 $this->deleteWebBlocksByCode($webpage, 'family-1');
                 $this->deleteWebBlocksByCode($webpage, 'family-3');
                 $this->deleteWebBlocksByCode($webpage, 'family-3-extra-description');
-                
                 $this->createWebBlock($webpage, 'family-2');
                 $this->createWebBlock($webpage, 'family-2-extra-description');
             }

@@ -52,7 +52,7 @@ class OfferResource extends JsonResource
             'type'                     => $this->type,
             'code'                     => $this->code,
             'name'                     => $this->name,
-            'duration'                 => $this->duration?->value,            
+            'duration'                 => $this->duration?->value,
             'start_at'                 => $this->start_at,
             'end_at'                   => $this->end_at,
             'data'                     => $this->data,

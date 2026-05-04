@@ -245,7 +245,7 @@ class ShowOffer extends OrgAction
             OfferTabsEnum::VOUCHERS,
             OfferTabsEnum::SETTINGS,
             OfferTabsEnum::CHANGELOG,
-        ]));    
+        ]));
 
         return $this->handle($offer);
     }
