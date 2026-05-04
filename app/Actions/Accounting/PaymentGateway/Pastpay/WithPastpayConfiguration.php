@@ -18,7 +18,7 @@ trait WithPastpayConfiguration
     {
         return Http::baseUrl($this->getBaseUrl())
             ->withHeaders([
-                'Authorization' => 'Bearer ' . $this->getApiKey(),
+                'X-Api-Key' => $this->getApiKey(),
                 'Accept'        => 'application/json',
                 'Content-Type'  => 'application/json',
             ])
@@ -92,7 +92,7 @@ trait WithPastpayConfiguration
     protected function pastpayBuildOrderPayload(Order $order, array $extra = []): array
     {
         return array_merge([
-            'debtorTaxNumber' => $order->customer->taxNumber,
+            'debtorTaxNumber' => $order->customer->taxNumber->number,
             'orderId'         => (string) $order->reference,
             'totalPrice'       => [
                 'amount' => (float) $order->net_amount,
@@ -100,8 +100,8 @@ trait WithPastpayConfiguration
             ],
             'termDays'  => Arr::get($extra, 'termDays', 30),
             'paymentRedirectUrl' => [
-                'successUrl'      => route('orders.show', $order),
-                'failUrl'         => route('checkout.payment-failed', $order),
+                'success'      => route('retina.ecom.orders.show', $order->slug),
+                'failure'         => route('retina.ecom.orders.show', $order->slug),
             ],
         ], $extra);
     }
@@ -123,7 +123,7 @@ trait WithPastpayConfiguration
 
     protected function pastpayInitiateOrder(Order $order, array $extra = []): array
     {
-        return $this->pastpayPost('/order', $this->pastpayBuildOrderPayload($order, $extra));
+        return $this->pastpayPost('store/order', $this->pastpayBuildOrderPayload($order, $extra));
     }
 
     protected function pastpayFinalizeOrder(Order $order, array $extra = []): array

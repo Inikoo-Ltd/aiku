@@ -38,7 +38,7 @@ class PayOrderWithPastpay
     /**
      * @throws \Checkout\CheckoutArgumentException
      */
-    public function handle(Order $order): array
+    public function handle(Order $order, array $modelData): array
     {
         /** @var PaymentAccountShop $paymentAccountShop */
         $paymentAccountShop = $order->shop->paymentAccountShops()
@@ -66,42 +66,13 @@ class PayOrderWithPastpay
                 'totalPrice'       => [
                     'amount' => (float) $toPay,
                     'currency' => $order->currency->code
-                ]
+                ],
+                'termDays' => Arr::get($modelData, 'charges', 30),
             ]);
 
-            $amount = Arr::get($response, 'amount', 0) / 100;
-
-            if (in_array(Arr::get($response, 'status'), ["Authorized", "Paid", "Captured"]) && Arr::get($response, 'approved')) {
-                $status = PaymentStatusEnum::SUCCESS;
-                $state  = PaymentStateEnum::COMPLETED;
-            } else {
-                $status = PaymentStatusEnum::FAIL;
-                $state  = PaymentStateEnum::DECLINED;
-            }
-
-            $paymentData = [
-                'reference'               => Arr::get($response, 'id'),
-                'amount'                  => $amount,
-                'status'                  => $status,
-                'state'                   => $state,
-                'type'                    => PaymentTypeEnum::PAYMENT,
-                'is_mit'                  => false,
-                'debug_mit_status'        => Arr::get($response, 'status'),
-                'debug_mit_is_approved'   => (bool)Arr::get($response, 'approved', false),
-                'payment_account_shop_id' => $paymentAccountShop->id,
-                'source'                  => Arr::get($response, 'source'),
-                'data'                    => [
-                    'pastpay' => $response
-                ]
-            ];
-            $payment     = StorePayment::make()->action($order->customer, $paymentAccountShop->paymentAccount, $paymentData);
-
-            AttachPaymentToOrder::make()->action($order, $payment, [
-                'amount' => $payment->amount
-            ]);
-
-            $result = [
+            return [
                 'status' => 'ok',
+                'data' => Arr::get($response, 'data.redirectUrl')
             ];
         } catch (CheckoutApiException $e) {
             // API error
@@ -128,9 +99,11 @@ class PayOrderWithPastpay
      */
     public function asCommand(): int
     {
-        $order = Order::find(1195254);
+        $order = Order::where('slug', 'awp31048')->first();
 
-        $this->handle($order);
+        $this->handle($order, [
+            'charges' => 30
+        ]);
 
 
         return 1;

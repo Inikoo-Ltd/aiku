@@ -46,7 +46,16 @@ const selectedOption = ref<{ days: number; charge: string } | null>(null)
 
 const isLoading = ref(false)
 const onSubmitPlaceOrder = () => {
-    console.log('Place order with method:', selectedOption.value)
+	router.post(route("retina.models.place_order_pay_by_pastpay"), {
+		charges: selectedOption.value,
+	}, {
+		onStart: () => {
+			isLoading.value = true
+		},
+		onFinish: () => {
+			isLoading.value = false
+		}
+	})
 }
 </script>
 
