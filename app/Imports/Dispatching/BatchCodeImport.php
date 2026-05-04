@@ -41,10 +41,15 @@ class BatchCodeImport implements ToCollection, WithHeadingRow, SkipsOnFailure, W
                 ->where('code', $row->get('sku'))
                 ->first();
 
+            if (!$orgStock) {
+                $this->setRecordAsFailed($uploadRecord, ["SKU '{$row->get('sku')}' not found."]);
+                return;
+            }
+
             $modelData = [
                 'code'         => $row->get('code'),
                 'expiry_date'  => $row->get('expiry_date') ?: null,
-                'org_stock_id' => $orgStock?->id,
+                'org_stock_id' => $orgStock->id,
             ];
 
             data_set($modelData, 'data.bulk_import', [
