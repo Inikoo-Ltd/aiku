@@ -30,11 +30,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $last_fetched_at
  * @property string|null $source_id
  * @property string|null $source_alt_id
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Model|\Eloquent $model
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Comms\Outbox $outbox
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Comms\Outbox|null $outbox
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SubscriptionEvent newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SubscriptionEvent newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SubscriptionEvent query()

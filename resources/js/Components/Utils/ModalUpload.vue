@@ -152,6 +152,7 @@ const clearAll = () => {
     selectedFile.value = null
     csvData.value = []
     errorMessage.value = null
+    failedRecords.value = []
 }
 
 const closeModal = () =>{
@@ -186,15 +187,10 @@ watch(model, async (newVal) => {
 
 // Watch the recently uploaded data, if complete then reload the table
 watch(() => selectedEchopersonal?.recentlyUploaded?.find((upload: {id: number}) => upload.id == idRecentUpload.value), (newVal) => {
-    console.log('newVal', newVal)
-
     if(newVal?.total && (newVal?.done == newVal?.total)) {
-        console.log('done', newVal?.done)
-        console.log('total', newVal?.total)
-
         if (newVal?.number_success > 0) {
             router.reload({
-                only: props.propsRefreshAfterFinish ?? ['pallets','goods'],  // Only reload the props with dynamic name tabSlug (i.e props.showcase, props.menu)
+                only: props.propsRefreshAfterFinish ?? ['pallets','goods'],
                 onSuccess: () => {
                     notify({
                         title: trans('Upload finish'),
@@ -203,19 +199,13 @@ watch(() => selectedEchopersonal?.recentlyUploaded?.find((upload: {id: number}) 
                     })
                     model.value = false
                 },
-                onError: (e) => {
-                    // console.log('eeerr', e)
-                }
-            })
-        } else {
-            notify({
-                title: trans('Upload finish'),
-                text: trans('0 data added. See upload page for details.'),
-                type: 'info',
+                onError: () => {}
             })
         }
 
-
+        if (newVal?.number_fails > 0 && newVal?.show_route?.name) {
+            fetchFailedRecords(newVal.show_route)
+        }
     }
 })
 
@@ -225,6 +215,19 @@ const compHistoryList = computed(() => {
 })
 
 const isLoadingVisitHistory = ref<string | null>(null)
+
+const failedRecords = ref<{ row_number: number | null; errors: string[] }[]>([])
+
+const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) => {
+    try {
+        const res = await axios.get(route(showRoute.name, showRoute.parameters), {
+            headers: { Accept: 'application/json' },
+        })
+        failedRecords.value = res.data.data ?? []
+    } catch {
+        failedRecords.value = []
+    }
+}
 
 </script>
 
@@ -403,6 +406,19 @@ const isLoadingVisitHistory = ref<string | null>(null)
 
                 </div>
             </div>
+
+            <!-- Section: failed records -->
+            <Transition name="headlessui">
+                <div v-if="failedRecords.length" class="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2">
+                    <p class="text-xs font-semibold text-red-600 mb-1">{{ trans('Upload errors') }} ({{ failedRecords.length }})</p>
+                    <ul class="space-y-0.5 max-h-40 overflow-y-auto">
+                        <li v-for="(record, i) in failedRecords" :key="i" class="text-xs text-red-700 flex gap-x-2">
+                            <span v-if="record.row_number" class="shrink-0 text-red-400">{{ trans('Row') }} {{ record.row_number }}:</span>
+                            <span>{{ Array.isArray(record.errors) ? record.errors.join(', ') : record.errors }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </Transition>
 
             <!-- Section: table history -->
             <div class="flex items-start gap-x-2 gap-y-2 flex-col mt-4">

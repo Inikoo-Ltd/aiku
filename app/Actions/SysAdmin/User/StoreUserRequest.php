@@ -1,11 +1,10 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 20-11-2024-16h-30m
- * github: https://github.com/KirinZero0
- * copyright 2024
-*/
+ * Author: Arya Permana - Kirin <raul@inikoo.com>
+ * Created: Wed, 20 Nov 2024 16:30
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\SysAdmin\User;
 
@@ -22,7 +21,7 @@ class StoreUserRequest extends GrpAction
         data_set($modelData, 'group_id', $user->group_id);
         /** @var UserRequest $userRequest */
         $userRequest = $user->userRequests()->create($modelData);
-        GroupHydrateUserRequests::dispatch($user->group)->delay($this->hydratorsDelay);
+        GroupHydrateUserRequests::dispatch($user->group)->delay(now()->addMinutes(10));
 
         return $userRequest;
     }

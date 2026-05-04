@@ -73,7 +73,7 @@ class ShowMarketplaceSupplierProduct extends InertiaAction
                 [
                     "label"       => __("Delivery Instructions"),
                     "note"        => '',
-                    "information" => __("This note is from the customer. Will be printed in the shipping label."),
+                    "information" => __("Note from crm. First 34 char. Will be printed on the shipping label."),
                     "editable"    => true,
                     "bgColor"     => "#38bdf8",
                     "field"       => "shipping_notes"

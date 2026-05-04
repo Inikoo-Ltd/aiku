@@ -13,6 +13,8 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
+use App\Actions\Traits\Dashboards\WithLatestStockHistory;
+use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
 use App\Enums\Dashboards\GroupDashboardSalesTableTabsEnum;
@@ -29,7 +31,9 @@ class ShowGroupDashboard extends OrgAction
     use WithDashboardSettings;
     use WithDashboardIntervalOption;
     use WithDashboardCurrencyTypeSettings;
+    use WithLatestStockHistory;
     use WithTabsBox;
+    use WithPerformanceDateResolution;
 
     public function handle(Group $group, ActionRequest $request): Response
     {
@@ -42,27 +46,12 @@ class ShowGroupDashboard extends OrgAction
         }
 
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
-
-        $performanceDates = [null, null];
-        if ($saved_interval === DateIntervalEnum::CUSTOM) {
-            $rangeInterval = Arr::get($userSettings, 'range_interval', '');
-            if ($rangeInterval) {
-                $dates = explode('-', $rangeInterval);
-                if (count($dates) === 2) {
-                    $performanceDates = [$dates[0], $dates[1]];
-                }
-            }
-        } elseif ($saved_interval !== DateIntervalEnum::ALL) {
-            $intervalString = DashboardIntervalFilters::run($saved_interval);
-            if ($intervalString) {
-                $dates = explode('-', $intervalString);
-                if (count($dates) === 2) {
-                    $performanceDates = [$dates[0], $dates[1]];
-                }
-            }
-        }
+        $performanceDates = $this->resolvePerformanceDates($saved_interval, $userSettings);
 
         $timeSeriesData = GetGroupDashboardTimeSeriesData::run($group, $performanceDates[0], $performanceDates[1]);
+        $currentTabEnum = GroupDashboardSalesTableTabsEnum::from($currentTab);
+        $primaryTables = GroupDashboardSalesTableTabsEnum::tablesForTabs($group, $timeSeriesData, [$currentTabEnum]);
+        $secondaryTables = GroupDashboardSalesTableTabsEnum::tablesForTabs($group, $timeSeriesData, [$currentTabEnum], true);
 
         $tabsBox = $this->getTabsBox($group);
 
@@ -86,7 +75,10 @@ class ShowGroupDashboard extends OrgAction
                             'type'        => 'table',
                             'current_tab' => $currentTab,
                             'tabs'        => GroupDashboardSalesTableTabsEnum::navigation(),
-                            'tables'      => GroupDashboardSalesTableTabsEnum::tables($group, $timeSeriesData),
+                            'tables'      => $primaryTables,
+                            'tab_fetch_route' => [
+                                'name' => 'grp.dashboard.tab-data',
+                            ],
                             'charts'      => [],
                         ]
                     ],
@@ -95,7 +87,7 @@ class ShowGroupDashboard extends OrgAction
                             'id'          => 'sales_table_2',
                             'type'        => 'table',
                             'tabs'        => GroupDashboardSalesTableTabsEnum::navigation(),
-                            'tables'      => GroupDashboardSalesTableTabsEnum::tables($group, $timeSeriesData, true),
+                            'tables'      => $secondaryTables,
                         ]
                     ],
                     'tabs_box'    => [
@@ -109,9 +101,10 @@ class ShowGroupDashboard extends OrgAction
         return Inertia::render(
             'Dashboard/GrpDashboard',
             [
-                'title'       => __('Dashboard Group'),
-                'breadcrumbs' => $this->getBreadcrumbs(__('Dashboard')),
-                'dashboard'   => $dashboard
+                'title'              => __('Dashboard Group'),
+                'breadcrumbs'        => $this->getBreadcrumbs(__('Dashboard')),
+                'dashboard'          => $dashboard,
+                'stockHistoryGroup'  => $this->getGroupStockHistoryData($group),
             ]
         );
     }

@@ -4,7 +4,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import { capitalize } from "@/Composables/capitalize";
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import type { Component } from "vue";
 import EmailPreview from "@/Components/Showcases/Org/Mailshot/EmailPreview.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
@@ -56,6 +56,11 @@ const props = defineProps<{
     isHasParentMailshot: boolean
     numberSecondWaveRecipients?: number
     isSecondWave: boolean
+    mailshotId: number
+    groupId: number
+    ownShopTemplates?: { templates: any[], shop_name: string }
+    otherShopTemplates?: { templates: any[] }
+    workshopRoute?: routeType
 }>();
 
 const currentTab = ref(props.tabs.current);
@@ -217,23 +222,6 @@ const confirmSchedule = async () => {
         })
 };
 
-// Function to get dynamic min time based on selected date
-const getMinTime = () => {
-    const now = new Date();
-    const selectedDate = scheduleDateTime.value;
-
-    // If selected date is today, set min time to current time
-    if (selectedDate && selectedDate.toDateString() === now.toDateString()) {
-        return {
-            hours: now.getHours(),
-            minutes: now.getMinutes(),
-            seconds: now.getSeconds()
-        };
-    }
-
-    // Otherwise, allow any time from start of day
-    return { hours: 0, minutes: 0, seconds: 0 };
-};
 
 // Function to cancel schedule
 const cancelSchedule = () => {
@@ -247,6 +235,41 @@ const cancelSchedule = () => {
 const formatNumber = (num: number | null | undefined) => {
     return new Intl.NumberFormat('en-GB').format(num ?? 0)
 }
+
+// Live stats for showcase (updated via broadcast)
+const liveStats = ref<any[]>(
+    (props.showcase as any)?.mailshot?.data?.stats ?? []
+)
+
+onMounted(() => {
+    if (!props.groupId || !props.mailshotId || !(window as any).Echo) {
+        return
+    }
+
+    ; (window as any).Echo
+        .private(`grp.${props.groupId}.mailshots.${props.mailshotId}`)
+        .listen(".mailshot.stats.updated", (e: any) => {
+            const mailshotId = e.mailshot_id ?? e.data?.mailshot_id
+            if (mailshotId && mailshotId !== props.mailshotId) {
+                return
+            }
+
+            const stats = e.stats ?? e.data?.stats
+            if (Array.isArray(stats)) {
+                liveStats.value = stats
+            }
+        })
+})
+
+onUnmounted(() => {
+    if (!props.groupId || !props.mailshotId || !(window as any).Echo) {
+        return
+    }
+
+    ; (window as any).Echo
+        .private(`grp.${props.groupId}.mailshots.${props.mailshotId}`)
+        .stopListening(".mailshot.stats.updated")
+})
 
 const component = computed(() => {
     const components: Component = {
@@ -562,11 +585,11 @@ watch(
                     :description="trans('Please make sure your data or design is correct. This action will send an email to all customers')"
                     isFullLoading>
                     <template #default="{ isOpenModal, changeModel }">
-                        <Button :label="trans('send now')" :disabled="inProgress" class="!border-r-none !rounded-r-none"
+                        <Button :label="trans('Send now')" :disabled="inProgress" class="!border-r-none !rounded-r-none"
                             icon="fal fa-paper-plane" type="secondary" @click="changeModel" />
                     </template>
                     <template #btn-yes>
-                        <Button :label="trans('send now')" :loading="inProgress" :disabled="inProgress"
+                        <Button :label="trans('Send now')" :loading="inProgress" :disabled="inProgress"
                             @click="handleSendNow" type="secondary" icon="fal fa-paper-plane" />
                     </template>
                 </ModalConfirmation>
@@ -612,10 +635,10 @@ watch(
             <h3 class="text-lg font-semibold mb-4 text-gray-900"> {{ trans('Timezone') }}: <span
                     class="text-red-600">(Europe/London)</span> </h3>
             <div class="mb-4 flex justify-center">
-                <VueDatePicker v-model="scheduleDateTime" :min-date="minDateTime" :min-time="getMinTime()"
-                    :text-input="true" :inline="true" :enable-time-picker="true" :is-24="true" :minutes-increment="1"
-                    :seconds-increment="1" :auto-apply="true" :open-on-focus="true" :time-picker-inline="true"
-                    class="w-full" placeholder="" :teleport="true" />
+                <VueDatePicker v-model="scheduleDateTime" :min-date="minDateTime" :text-input="true" :inline="true"
+                    :enable-time-picker="true" :is-24="true" :minutes-increment="1" :seconds-increment="1"
+                    :auto-apply="true" :open-on-focus="true" :time-picker-inline="true" class="w-full" placeholder=""
+                    :teleport="true" />
             </div>
             <div class="flex gap-2 justify-end w-full">
                 <Button :label="trans('Cancel')" @click="cancelSchedule"
@@ -665,5 +688,10 @@ watch(
         </div>
 
     </div>
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
+    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" v-bind="currentTab === 'showcase' ? {
+        liveStats,
+        ownShopTemplates: props.ownShopTemplates,
+        otherShopTemplates: props.otherShopTemplates,
+        workshopRoute: props.workshopRoute
+    } : {}" />
 </template>

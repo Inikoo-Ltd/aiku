@@ -20,9 +20,9 @@ export interface Location {
     has_stock_slots: boolean
     has_fulfilment: boolean
     has_dropshipping_slots: boolean
-    organisation_slug: null
-    organisation_name: null
-    warehouse_slug: null
+    organisation_slug: string
+    organisation_name: string
+    warehouse_slug: string
     max_weight: number
     max_volume: number
 }
@@ -40,10 +40,15 @@ export interface StockLocation {
     data: []
     settings: {
         min_stock: number
+        max_stock: number
+        replenishment_stock: number
     },
     created_at: string
     updated_at: string
     location: Location
+    default_wholesale_picking_location: boolean
+    default_dropshipping_picking_location: boolean
+    enabled_on_dropshipping: boolean
 }
 
 export interface StockManagementRoutes {
@@ -62,5 +67,12 @@ export interface StocksManagementTS {
             value: number
         }
     }
+    stock_cost : {
+        cost_stock_price_per_unit : number
+        cost_stock_price_outer : number
+        cost_current_price_per_unit : number
+        cost_current_price_outer : number
+    }
     locations: StockLocation[]
+    qty_in_location: number
 }

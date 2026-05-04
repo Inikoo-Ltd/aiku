@@ -141,7 +141,7 @@ console.log('banner', props)
 </script>
 
 <template>
-	<div id="banner">
+	<div :id="fieldValue?.id ? fieldValue?.id : 'banner'+indexBlock" >
 		<div v-if="isLoading" class="flex justify-center h-36 items-center">
 			<LoadingIcon class="text-4xl" />
 		</div>
@@ -149,6 +149,7 @@ console.log('banner', props)
 
 		<section v-else-if="data && activeSlug" class="relative mx-auto" :style="bannerDimensionStyle">
 			<div v-if="data.state !== 'switch_off'" class="pointer-events-none select-none" :style="{
+				...(screenType === 'mobile' ? { height: '300px', width: '100%' } : {}),
 				...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 				...getStyles(modelValue.container?.properties, screenType)
 			}">

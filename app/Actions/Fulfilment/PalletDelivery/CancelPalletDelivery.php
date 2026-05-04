@@ -12,7 +12,6 @@ use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletDeliverie
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletDeliveries;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
 use App\Actions\Fulfilment\PalletDelivery\Notifications\SendPalletDeliveryNotification;
-use App\Actions\Fulfilment\PalletDelivery\Search\PalletDeliveryRecordSearch;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePalletDeliveries;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletDeliveries;
@@ -50,11 +49,6 @@ class CancelPalletDelivery extends OrgAction
         FulfilmentCustomerHydratePalletDeliveries::dispatch($palletDelivery->fulfilmentCustomer);
         FulfilmentCustomerHydratePallets::dispatch($palletDelivery->fulfilmentCustomer);
         FulfilmentHydratePalletDeliveries::dispatch($palletDelivery->fulfilment);
-
-
-
-        PalletDeliveryRecordSearch::dispatch($palletDelivery);
-
         return $palletDelivery;
     }
 

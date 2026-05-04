@@ -4,12 +4,13 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import { ref, reactive, inject, computed, watch } from 'vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
-import { InputNumber, RadioButton, Checkbox } from 'primevue'
+import { InputNumber, RadioButton, Checkbox, DatePicker } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { trans } from 'laravel-vue-i18n'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
+import Multiselect from "@vueform/multiselect"
 
 const props = defineProps<{
     shop_data: {
@@ -19,38 +20,33 @@ const props = defineProps<{
 }>()
 
 const layout = inject('layout', {})
+const currentParams = layout?.currentParams ?? {}
 const isOpenModal = ref(false)
-
-const offerLabel = ref('')
-const typeOffer = ref('quantity')
-const offerQtyItems = ref<number | null>(null)
-const offerAmount = ref<number | null>(0)
-const discountPercentage = ref<number | null>(null)
-const offerCategoryId = ref(null)
-
 const isLoadingSubmit = ref(false)
 
-const currentParams = layout?.currentParams ?? {}
+const offerAmount = ref<number | null>(0)
+const discountPercentage = ref<number | null>(null)
 
 const organisation = currentParams.organisation
 const shopCode = currentParams.shop
 const offerCampaign = currentParams.offerCampaign
 
-
+const selectedFilters = ref<number[]>([])
+const selectedShops = ref([])
+const categoryType = ref<'department' | 'subdepartment' | 'family' | null>(null)
 const categoryFilters = ref<number[]>([])
 const collectionFilters = ref<number[]>([])
 const productFilters = ref<number[]>([])
+const dateType = ref<'permanent' | 'interval'>('permanent')
+const startDate = ref<Date | null>(null)
+const endDate = ref<Date | null>(null)
 
 const target = reactive({
-    shop: true,
+    shop: false,
     category: false,
     collection: false,
     product: false
 })
-
-const categoryType = ref<'department' | 'subdepartment' | 'family' | null>(null)
-
-const selectedFilters = ref<number[]>([])
 
 const shopId = layout?.group?.id
 const shopSlug = props.shop_data.slug
@@ -76,29 +72,80 @@ const activeCategoryRoute = computed(() => {
 })
 
 const productFetchRoute = {
-    name: 'grp.json.shop.products_for_website_workshop',
+    name: 'grp.json.shop.products',
     parameters: {
         shop: (route().params as any).shop
     }
 }
 
+const today = new Date(new Date().setHours(0, 0, 0, 0))
+
+function formatDate(date: Date | null) {
+    if (!date) return null
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+}
+
 const submitCategoryOffer = () => {
-    // Section: Submit
+    const targets: any[] = []
+    
+    if (target.product && productFilters.value.length) {
+            targets.push({
+                type: 'product',
+                ids: productFilters.value,
+            })
+    
+        } else {
+            if (target.category && categoryFilters.value.length) {
+                targets.push({
+                type: 'category',
+                category_type: categoryType.value,
+                ids: categoryFilters.value,
+                })
+            }
+    
+            if (target.collection && collectionFilters.value.length) {
+                targets.push({
+                type: 'collection',
+                ids: collectionFilters.value,
+                })
+            }
+    
+            if (target.shop && selectedShops.value.length) {
+                targets.push({
+                type: 'shop',
+                ids: selectedShops.value,
+                })
+            }
+    }
+    const payload = {
+        target,
+        category_type: categoryType.value,
+        category_ids: categoryFilters.value,
+        collection_ids: collectionFilters.value,
+        product_ids: productFilters.value,
+        offer_amount: offerAmount.value,
+        discount_percentage: discountPercentage.value,
+        shops: selectedShops.value,
+        targets: targets, 
+        date_type: dateType.value,
+        start_at: formatDate(startDate.value),
+        end_at: formatDate(endDate.value)
+    }
+
+    console.log("SUBMIT PAYLOAD:", payload)
+    // return
     router.post(
-        route('grp.org.shops.show.discounts.campaigns.campaigns.store_customer', {
+        route('grp.org.shops.show.discounts.campaigns.store_customer', {
             organisation: 'sk',
             shop: 'se',
             offerCampaign: 'co-se',
-        }),
-        {
-            target,
-            category_type: categoryType.value,
-            category_ids: categoryFilters.value,
-            collection_ids: collectionFilters.value,
-            product_ids: productFilters.value,
-            offer_amount: offerAmount.value,
-            discount_percentage: discountPercentage.value
-        },
+        }), 
+        payload,
         {
             preserveScroll: true,
             preserveState: true,
@@ -128,12 +175,19 @@ const submitCategoryOffer = () => {
 }
 
 const resetForm = () => {
-    offerLabel.value = ''
-    typeOffer.value = 'quantity'
-    offerQtyItems.value = null
-    offerAmount.value = null
+    offerAmount.value = 0
     discountPercentage.value = null
-    offerCategoryId.value = null
+    categoryType.value = null
+    categoryFilters.value = []
+    collectionFilters.value = []
+    productFilters.value = []
+    target.category = false
+    target.collection = false
+    target.shop = false
+    target.product = false
+    dateType.value = 'permanent'
+    startDate.value = null
+    endDate.value = null
 }
 
 const isFormInvalid = computed(() => {
@@ -144,6 +198,15 @@ const isFormInvalid = computed(() => {
         return true
     }
 
+    if (target.product) {
+        if (!productFilters.value.length) return true
+        return false
+    }
+
+    if (target.shop && !selectedShops.value.length) {
+        return true
+    }
+
     if (target.category) {
 
         if (!categoryType.value) return true
@@ -151,16 +214,13 @@ const isFormInvalid = computed(() => {
         if (!categoryFilters.value.length) return true
     }
 
-    if (target.collection) {
-
-        if (!collectionFilters.value.length) return true
+    if (target.collection && !collectionFilters.value.length) {
+        return true
     }
 
-    if (target.product) {
+    if (!startDate.value) return true
 
-        if (!productFilters.value.length) return true
-    }
-
+    if (dateType.value === 'interval' && !endDate.value) return true
     return false
 })
 
@@ -203,36 +263,22 @@ watch(() => target.category, (val) => {
     }
 
 })
+
+const authorisedShops =
+    layout.organisations.data
+        .find((o: any) => o.slug === organisation)
+        ?.authorised_shops ?? []
+        
+resetForm()
 </script>
 
 <template>
     <div>
-        <Button :label="trans('Create Customer Offer')" @click="isOpenModal = true" icon="fas fa-badge-percent" />
+        <Button :label="trans('Create Customer Offer')" @click="isOpenModal = true; resetForm();" icon="fas fa-badge-percent" />
 
-        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
+        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false; resetForm();">
             <div class="p-1 space-y-3">
                 <h2 class="text-2xl font-bold mb-4 text-center">{{ trans('Create Customer Offer') }}</h2>
-
-                <div class="bg-gray-50 border rounded-lg p-3 text-sm">
-                    <div class="flex gap-4 flex-wrap">
-
-                        <div>
-                            <span class="font-medium">Organisation:</span>
-                            {{ organisation }}
-                        </div>
-
-                        <div>
-                            <span class="font-medium">Shop:</span>
-                            {{ shopCode }}
-                        </div>
-
-                        <div>
-                            <span class="font-medium">Campaign:</span>
-                            {{ offerCampaign }}
-                        </div>
-
-                    </div>
-                </div>
 
                 <div class="space-y-2">
                     <label class="font-medium flex items-center gap-x-1">
@@ -253,10 +299,10 @@ watch(() => target.category, (val) => {
 
                     <div class="flex flex-wrap gap-4">
 
-                        <div class="flex items-center gap-2">
+                        <!-- <div class="flex items-center gap-2">
                             <Checkbox v-model="target.shop" binary />
                             <label>{{ trans('Shop') }}</label>
-                        </div>
+                        </div> -->
 
                         <div class="flex items-center gap-2">
                             <Checkbox v-model="target.category" :disabled="target.product" binary />
@@ -316,6 +362,25 @@ watch(() => target.category, (val) => {
 
                 </div>
 
+                <div v-if="target.shop">
+
+                    <label class="font-medium">
+                        {{ trans('Select Shop') }}
+                    </label>
+                    <Multiselect v-model="selectedShops" :options="authorisedShops" valueProp="slug" label="label"
+                        mode="multiple" :closeOnSelect="false" :searchable="true" placeholder="Select shops">
+
+                        <template #option="{ option }">
+                            <div class="flex justify-between w-full">
+                                <span>{{ option.label }}</span>
+                                <span class="text-gray-400 text-sm">{{ option.code }}</span>
+                            </div>
+                        </template>
+
+                    </Multiselect>
+
+                </div>
+
                 <div v-if="target.collection && collectionRoute">
 
                     <label class="font-medium">
@@ -352,11 +417,62 @@ watch(() => target.category, (val) => {
                         class="w-full" :placeholder="trans('Enter percentage')" />
                 </div>
 
+                <!-- Section: Offer Duration -->
+                <div class="space-y-3">
+
+                    <div class="font-medium flex items-center gap-x-1">
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        {{ trans('Offer Duration') }}:
+                    </div>
+
+                    <div class="flex gap-x-4">
+                        <div class="flex items-center gap-x-2">
+                            <RadioButton v-model="dateType" inputId="permanent" value="permanent" />
+                            <label for="permanent">{{ trans('Permanent') }}</label>
+                        </div>
+
+                        <div class="flex items-center gap-x-2">
+                            <RadioButton v-model="dateType" inputId="interval" value="interval" />
+                            <label for="interval">{{ trans('Interval') }}</label>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Start Date -->
+                        <div class="space-y-2">
+                            <label class="font-medium mb-2 block">
+                                <FontAwesomeIcon icon="fas fa-asterisk"
+                                    class="font-light text-xs text-red-400 align-middle" />
+                                {{ trans('Start Date') }}
+                                <InformationIcon
+                                    :information="trans('If start date is empty, will start immediately')" />:
+                            </label>
+
+                            <DatePicker v-model="startDate" :minDate="today" showIcon dateFormat="yy-mm-dd" class="w-full"
+                                :placeholder="trans('Select start date')" />
+                        </div>
+
+                        <!-- End Date (Only for Interval) -->
+                        <div v-if="dateType === 'interval'" class="space-y-2">
+                            <label class="font-medium mb-2 block">
+                                {{ trans('End Date') }}
+                                <InformationIcon
+                                    :information="trans('If start date is empty, will start immediately')" />:
+                            </label>
+
+                            <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"
+                                :minDate="startDate" :placeholder="trans('Select end date')" />
+                        </div>
+                    </div>
+
+                </div>
+
+
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />
-                    <Button full icon=" fad fa-save" :label="trans('Save')" @click="submitCategoryOffer" class="w-full"
-                        :isLoading="isLoadingSubmit" :disabled="isFormInvalid">
-                    </Button>
+                    <Button full icon="fad fa-save" :label="isLoadingSubmit ? trans('Loading') : trans('Save')" @click="submitCategoryOffer"
+                                           :loading="isLoadingSubmit" :disabled="isFormInvalid">
+                                       </Button>
                 </div>
             </div>
         </Modal>

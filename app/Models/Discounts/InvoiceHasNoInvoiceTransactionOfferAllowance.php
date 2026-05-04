@@ -20,10 +20,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $offer_campaign_id
  * @property int $offer_id
  * @property int $offer_allowance_id
- * @property string $discounted_amount
- * @property string|null $discounted_percentage
- * @property string $free_items_value
- * @property string $number_of_free_items
+ * @property numeric $discounted_amount
+ * @property numeric|null $discounted_percentage
+ * @property numeric $free_items_value
+ * @property numeric $number_of_free_items
  * @property string|null $info
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -31,10 +31,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $fetched_at
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
- * @property-read Invoice $invoice
- * @property-read \App\Models\Discounts\Offer $offer
- * @property-read \App\Models\Discounts\OfferAllowance $offerAllowance
- * @property-read \App\Models\Discounts\OfferCampaign $offerCampaign
+ * @property-read Invoice|null $invoice
+ * @property-read \App\Models\Discounts\Offer|null $offer
+ * @property-read \App\Models\Discounts\OfferAllowance|null $offerAllowance
+ * @property-read \App\Models\Discounts\OfferCampaign|null $offerCampaign
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceHasNoInvoiceTransactionOfferAllowance newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceHasNoInvoiceTransactionOfferAllowance newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceHasNoInvoiceTransactionOfferAllowance query()

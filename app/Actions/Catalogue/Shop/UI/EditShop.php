@@ -90,7 +90,7 @@ class EditShop extends OrgAction
         if ($shop->website) {
             $helpPortalFields['widget_key'] = [
                 'type'          => 'input',
-                'placeholder'   => 'keyExample',
+                'placeholder'   => 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
                 'label'         => __('Widget Key'),
                 'value'         => Arr::get($shop->website->settings, 'jira_help_desk_widget'),
             ];
@@ -250,6 +250,13 @@ class EditShop extends OrgAction
                             'information'   => __('This would force all Products under this shop to follow any updates done on master'),
                             'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
+                        'family_indexing_follow_master' => [
+                            'label'         => 'Family Page Product Index Follow Master',
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'catalog.family_indexing_follow_master', true),
+                            'information'   => __('This would force all Products under this shop to follow the family indexing updates done on master'),
+                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        ],
                     ]
                 ] : [],
                 [
@@ -376,6 +383,18 @@ class EditShop extends OrgAction
                     ],
                 ],
                 [
+                    'label'  => __('Proforma footer'),
+                    'icon'   => 'fa-light fa-shoe-prints',
+                    'fields' => [
+                        'proforma_footer' => [
+                            'type'  => 'textEditor',
+                            'label' => __('Proforma footer'),
+                            'full'  => true,
+                            'value' => $shop->proforma_footer
+                        ],
+                    ],
+                ],
+                                [
                     'label'  => __('Invoices footer'),
                     'icon'   => 'fa-light fa-shoe-prints',
                     'fields' => [
@@ -392,14 +411,14 @@ class EditShop extends OrgAction
                     'icon'   => 'fal fa-columns',
                     'fields' => [
                         'download_pdf_columns' => [
-                            'type'  => 'checkbox',
-                            'label' => __('Data to display in PDF'),
+                            'type'        => 'checkbox',
+                            'label'       => __('Data to display in PDF'),
                             'information' => __('Default data to include in invoice PDF'),
-                            'value' => (function () use ($shop): array {
+                            'value'       => (function () use ($shop): array {
                                 $savedColumns = Arr::get($shop->settings, 'invoicing.download_pdf_columns', []);
                                 $columns      = [
                                     ['label' => __('Pro mode'), 'key' => 'pro_mode'],
-                                    ['label' => __('Recommended retail prices') . ' ' . __('(RRP)'), 'key' => 'rrp'],
+                                    ['label' => __('Recommended retail prices'), 'key' => 'rrp'],
                                     ['label' => __('Parts'), 'key' => 'parts'],
                                     ['label' => __('Commodity Codes'), 'key' => 'commodity_codes'],
                                     ['label' => __('Barcode'), 'key' => 'barcode'],
@@ -575,6 +594,32 @@ class EditShop extends OrgAction
                     'label'  => __('Sales Channels'),
                     'icon'   => 'fal fa-shopping-cart',
                     'fields' => $salesChannelFields,
+                ],
+                [
+                    'label'  => __('Bundle Discount'),
+                    'icon'   => 'fal fa-shopping-cart',
+                    'fields' => [
+                        'bundle_discount_percentage' => [
+                            'type'  => 'input',
+                            'label' => __('Bundle Discount Percentage'),
+                            'value' => Arr::get($shop->settings, 'discount.bundle_discount_percentage', ''),
+                        ],
+                    ],
+                ],
+                [
+                    'label'  => __('Reviews'),
+                    'icon'   => 'fal fa-star',
+                    'fields' => [
+                        'reviews' => [
+                            'type'  => 'website_reviews',
+                            'label' => __('review'),
+                            'value' => [
+                                'provider' => $shop->settings['reviews']['provider'] ?? null,
+                                'data' =>  $shop->settings['reviews']['data'] ?? null,
+                                'enabled' => $shop->settings['reviews']['enabled'] ?? true,
+                            ],
+                        ],
+                    ],
                 ]
             ],
             'args' => [

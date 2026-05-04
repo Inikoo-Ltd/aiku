@@ -88,8 +88,12 @@ class ShowTimesheet extends OrgAction
                 'timesheet' => GetTimesheetShowcase::run($timesheet),
 
                 TimesheetTabsEnum::TIME_TRACKERS->value => $this->tab == TimesheetTabsEnum::TIME_TRACKERS->value ?
-                    fn () => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))
-                    : Inertia::lazy(fn () => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))),
+                    fn () => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))->additional([
+                        'can_edit_time_trackers' => $this->canEdit,
+                    ])
+                    : Inertia::lazy(fn () => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))->additional([
+                        'can_edit_time_trackers' => $this->canEdit,
+                    ])),
 
 
                 TimesheetTabsEnum::CLOCKINGS->value => $this->tab == TimesheetTabsEnum::CLOCKINGS->value ?
@@ -115,7 +119,8 @@ class ShowTimesheet extends OrgAction
         )->table(
             IndexTimeTrackers::make()->tableStructure(
                 parent: $timesheet,
-                prefix: TimesheetTabsEnum::TIME_TRACKERS->value
+                prefix: TimesheetTabsEnum::TIME_TRACKERS->value,
+                showActions: $this->canEdit
             )
         );
     }
@@ -172,7 +177,7 @@ class ShowTimesheet extends OrgAction
                                     'label' => __('Timesheets')
                                 ],
                                 'model' => [
-                                    'label' => $timesheet->date->format('Y-m-d'),
+                                    'label' => $timesheet->start_at->format('Y-m-d'),
                                 ],
                             ],
                             'suffix'         => $suffix,

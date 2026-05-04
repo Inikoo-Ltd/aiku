@@ -10,15 +10,18 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryImages;
+use App\Actions\Catalogue\WithUpdateWebImages;
 use App\Actions\Concerns\CanUpdateImages;
 use App\Actions\GrpAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Masters\MasterProductCategory;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterProductCategoryImages extends GrpAction
 {
     use WithActionUpdate;
+    use WithUpdateWebImages;
     use CanUpdateImages;
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData, bool $updateDependants = false): MasterProductCategory
@@ -26,6 +29,17 @@ class UpdateMasterProductCategoryImages extends GrpAction
         $this->updateImages($masterProductCategory, $modelData);
 
         $this->update($masterProductCategory, $modelData);
+
+        if (Arr::hasAny($modelData, [
+            'desc_art1',
+            'desc_art2',
+            'desc_art3',
+            'desc_art4',
+            'desc_art5',
+            'extra_desc_art1',
+        ])) {
+            $this->updateWebImages($masterProductCategory);
+        }
 
         if ($updateDependants) {
             $this->updateDependants($masterProductCategory, $modelData);
@@ -45,6 +59,13 @@ class UpdateMasterProductCategoryImages extends GrpAction
     {
         return [
             'image_id' => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art1' => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art2' => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art3' => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art4' => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art5' => ['sometimes', 'nullable', 'exists:media,id'],
+            'extra_desc_art1' => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_video_url' => ['sometimes', 'nullable'],
         ];
     }
 

@@ -8,241 +8,36 @@
 
 namespace App\Actions\Comms\Outbox\BackInStockNotification;
 
-use App\Actions\Comms\Email\SendBackToStockToCustomerEmail;
-use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateDispatchedEmails;
-use App\Actions\Comms\Outbox\WithGenerateEmailBulkRuns;
-use App\Actions\Traits\WithActionUpdate;
+use App\Services\QueryBuilder;
+use App\Models\Comms\Outbox;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePendingBackInStockReminders;
-use App\Models\Catalogue\Product;
-use App\Models\Comms\Outbox;
-use App\Models\CRM\Customer;
-use App\Services\QueryBuilder;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Illuminate\Support\Arr;
 
 class RunBackInStockEmailBulkRuns
 {
     use AsAction;
-    use WithGenerateEmailBulkRuns;
-    use WithActionUpdate;
 
-    public string $commandSignature = 'hydrate:back-in-stock-reminder';
-    public string $jobQueue = 'low-priority';
-
+    public string $commandSignature = 'run:back-in-stock-reminder';
+    public string $jobQueue = 'ses';
 
     public function handle(): void
     {
-
         $queryOutbox = QueryBuilder::for(Outbox::class);
         $queryOutbox->whereIn('code', [OutboxCodeEnum::OOS_NOTIFICATION]);
         $queryOutbox->where('state', OutboxStateEnum::ACTIVE);
         $queryOutbox->whereNotNull('shop_id');
-        // $queryOutbox->whereIn('id', [826]); //test for bulgaria
         $queryOutbox->select('outboxes.id', 'outboxes.shop_id', 'outboxes.code', 'outboxes.last_sent_at');
         $outboxes = $queryOutbox->get();
 
-        $currentDateTime = Carbon::now()->utc();
-
         /** @var Outbox $outbox */
         foreach ($outboxes as $outbox) {
-            $shop = $outbox->shop;
-            if (!$shop->is_aiku) {
-                continue;
-            }
-
-            $lastOutBoxSent = $outbox->last_sent_at;
-            // make customers as the main table
-            $baseQuery = QueryBuilder::for(Customer::class);
-            $baseQuery->join('back_in_stock_reminders', 'customers.id', '=', 'back_in_stock_reminders.customer_id');
-            $baseQuery->join('products', 'back_in_stock_reminders.product_id', '=', 'products.id');
-            // select options
-            $baseQuery->select('customers.id', 'customers.shop_id', 'back_in_stock_reminders.product_id as product_id', 'back_in_stock_reminders.id as reminder_id');
-
-            // where conditions
-            $baseQuery->where('back_in_stock_reminders.shop_id', $outbox->shop_id);
-            $baseQuery->where('products.available_quantity', '>', 0);
-            $baseQuery->where('products.back_in_stock_since', '>', DB::raw('back_in_stock_reminders.created_at'));
-            if ($lastOutBoxSent) {
-                $baseQuery->where('back_in_stock_reminders.created_at', '>', $lastOutBoxSent);
-                $baseQuery->where('products.back_in_stock_since', '>', $lastOutBoxSent);
-            }
-            // check another customers condition
-            $baseQuery->whereNull('customers.deleted_at');
-            // check another product condition
-            $baseQuery->whereNull('products.deleted_at');
-            // order by customer id
-            $baseQuery->orderBy('customers.id');
-
-            $lastBulkRun = null;
-            $updateLastOutBoxSent = null;
-
-            // Get count before iterating
-            $totalCustomers = (clone $baseQuery)->count() ?? 0;
-
-            $processedCount = 0;
-            $productData = [];
-            $lastCustomerId = null;
-            $lastCustomer = null;
-            $deleteBackInStockReminderIds = [];
-            foreach ($baseQuery->cursor() as $customer) {
-                $processedCount++;
-
-                if ($lastCustomerId === null) {
-                    $lastCustomerId = $customer->id;
-                    $lastCustomer = $customer;
-                }
-
-
-                // running code for sending email
-                if ($lastCustomerId !== $customer->id) {
-                    $bulkRun = $this->upsertEmailBulkRuns($lastCustomer, $outbox->code, $currentDateTime->toDateTimeString());
-                    $additionalData = [
-                        'products' => $this->generateProductLinks($productData),
-                    ];
-                    SendBackToStockToCustomerEmail::dispatch($lastCustomer, $outbox->code, $additionalData, $bulkRun);
-
-                    $lastBulkRun = $bulkRun;
-
-                    $lastCustomerId = $customer->id;
-                    $lastCustomer = $customer;
-                    $productData = []; // Reset for new customer
-
-                    // Update last sent time for this outbox
-                    $updateLastOutBoxSent = $currentDateTime;
-                }
-
-                $productData[] = [
-                    'product_id' => $customer->product_id,
-                ];
-
-                if ($processedCount === $totalCustomers) {
-                    // Process the last batch
-                    $bulkRun = $this->upsertEmailBulkRuns($lastCustomer, $outbox->code, $currentDateTime->toDateTimeString());
-                    $additionalData = [
-                        'products' => $this->generateProductLinks($productData),
-                    ];
-                    SendBackToStockToCustomerEmail::dispatch($lastCustomer, $outbox->code, $additionalData, $bulkRun);
-                    // reset product data
-                    $productData = [];
-                    $lastBulkRun = $bulkRun;
-
-                    // Update last sent time for this outbox
-                    $updateLastOutBoxSent = $currentDateTime;
-                }
-
-                // Track reminder IDs to delete
-                $deleteBackInStockReminderIds[] = $customer->reminder_id;
-            }
-
-            // Note: Make sure this runs only once at the end
-            // check Job Chaining Bus::chain
-            if ($lastBulkRun) {
-                EmailBulkRunHydrateDispatchedEmails::dispatch($lastBulkRun);
-            }
-
-            if ($updateLastOutBoxSent) {
-                // update last_sent_at for this outbox
-                $this->update($outbox, ['last_sent_at' => $updateLastOutBoxSent]);
-            }
-
-            // Delete processed back_in_stock_reminders
-            if (!empty($deleteBackInStockReminderIds)) {
-                BulkDeleteBackInStockReminder::run($deleteBackInStockReminderIds);
-                ShopHydratePendingBackInStockReminders::run($shop);
-                // reset array to avoid re-deleting the same IDs
-                $deleteBackInStockReminderIds = [];
-            }
+            ProcessBackInStockPerOutbox::dispatch($outbox);
         }
     }
 
     public function asCommand(): void
     {
         $this->run();
-    }
-
-    public function generateProductLinks(array $productData): string
-    {
-        $date = Carbon::now()->format('d M y');
-
-        $html = '';
-
-        $html .= '<table width="100%" cellpadding="8" cellspacing="0"
-        style="font-family: Helvetica, Arial, sans-serif;
-               font-size: 14px;
-               border-collapse: collapse;">';
-
-
-        $html .= '
-        <tr style="border-bottom:1px solid #e5e7eb;">
-            <th align="left" style="color:#555;">' . __('Product') . '</th>
-            <th align="center" style="color:#555;">' . __('New stock') . ' (' . $date . ')</th>
-        </tr>';
-
-        foreach ($productData as $product) {
-            $dataProduct = Product::find($product['product_id']);
-
-            if (!$dataProduct) {
-                continue;
-            }
-
-            $productImage = Arr::get(
-                $dataProduct->imageSources(200, 200),
-                'png'
-            );
-
-            $stock = $dataProduct->available_quantity ?? 0;
-
-
-            if ($dataProduct->webpage) {
-                $url  = $dataProduct->webpage->getCanonicalUrl();
-                $name = $dataProduct->name;
-
-                $html .= '
-                <tr style="border-bottom:1px solid #f1f5f9;">
-                    <td style="vertical-align:middle;">
-                        <table cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td style="padding-right:12px;">';
-
-                if ($productImage) {
-                    $html .= '
-                    <img src="' . $productImage . '"
-                         width="60"
-                         height="60"
-                         style="display:block;
-                                border-radius:6px;
-                                object-fit:cover;" />';
-                }
-
-                $html .= '
-                                </td>
-                                <td style="vertical-align:middle;">
-                                    <a ses:no-track href="' . $url . '"
-                                       style="color:#2563eb;
-                                        text-decoration:underline;
-                                        font-weight:600;">'
-                    . $name .
-                    '</a>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-
-                    <td align="center"
-                        style="font-weight:600;
-                               color:#16a34a;">'
-                    . $stock .
-                    '</td>
-                </tr>';
-            }
-        }
-
-        $html .= '</table>';
-
-        return $html;
     }
 }

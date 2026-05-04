@@ -51,6 +51,7 @@ class GetWebBlockProduct
 
         $resourceWebBlockProduct = WebBlockProductResource::make($webpage->model)->toArray(request());
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
+        data_set($webBlock, 'show', true);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['product']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product', $resourceWebBlockProduct);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', IrisAttachmentsResource::collection($attachments)->resolve());

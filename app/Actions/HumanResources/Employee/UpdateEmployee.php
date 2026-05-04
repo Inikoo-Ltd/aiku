@@ -9,7 +9,6 @@
 namespace App\Actions\HumanResources\Employee;
 
 use App\Actions\Helpers\Address\UpdateAddress;
-use App\Actions\HumanResources\Employee\Search\EmployeeRecordSearch;
 use App\Actions\HumanResources\JobPosition\SyncEmployeeJobPositions;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateEmployees;
@@ -23,14 +22,17 @@ use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Traits\WithReorganisePositions;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Enums\SysAdmin\User\UserAuthTypeEnum;
 use App\Http\Resources\HumanResources\EmployeeResource;
 use App\Models\HumanResources\Employee;
+use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use App\Rules\PinRule;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Rules\Password;
@@ -55,6 +57,13 @@ class UpdateEmployee extends OrgAction
             $contactAddressData = Arr::get($modelData, 'contact_address');
             Arr::forget($modelData, 'contact_address');
 
+            // Extract religion if it's nested inside contact_address
+            if (Arr::has($contactAddressData, 'religion')) {
+                $religion = Arr::pull($contactAddressData, 'religion');
+                if ($religion) {
+                    Arr::set($modelData, 'religion', $religion);
+                }
+            }
 
             if (!blank($contactAddressData)) {
                 if ($employee->address) {
@@ -75,10 +84,43 @@ class UpdateEmployee extends OrgAction
             );
         }
 
+        // Handle religion if it's nested in personal section
+        if (Arr::has($modelData, 'personal.religion')) {
+            $religion = Arr::pull($modelData, 'personal.religion');
+            if ($religion) {
+                Arr::set($modelData, 'religion', $religion);
+            }
+        }
+
         if (Arr::has($modelData, 'job_positions')) {
             $jobPositions = Arr::pull($modelData, 'job_positions', []);
             $jobPositions = $this->reorganisePositionsSlugsToIds($jobPositions);
             SyncEmployeeJobPositions::run($employee, $jobPositions);
+        }
+
+        if (Arr::has($modelData, 'annual_days')) {
+            $annualDays = Arr::pull($modelData, 'annual_days');
+
+            $leaveBalance = EmployeeLeaveBalance::firstOrCreate(
+                [
+                    'employee_id' => $employee->id,
+                    'year'        => now()->year,
+                ],
+                [
+                    'annual_days' => $employee->organisation->getDefaultAnnualLeaveDays(),
+                    'annual_used' => 0,
+                    'unpaid_days' => 0,
+                    'unpaid_used' => 0,
+                ]
+            );
+
+            $updateData = [];
+            if ($annualDays !== null) {
+                $updateData['annual_days'] = $annualDays;
+            }
+            if (!empty($updateData)) {
+                $leaveBalance->update($updateData);
+            }
         }
 
         $credentials = Arr::only($modelData, ['username', 'password', 'auth_type', 'user_model_status']);
@@ -89,10 +131,6 @@ class UpdateEmployee extends OrgAction
         data_forget($modelData, 'user_model_status');
 
         $employee = $this->update($employee, $modelData, ['data', 'salary']);
-
-        if (Arr::hasAny($employee->getChanges(), ['worker_number', 'worker_number', 'contact_name', 'work_email', 'job_title', 'email'])) {
-            EmployeeRecordSearch::dispatch($employee);
-        }
 
         if (Arr::hasAny($employee->getChanges(), ['state'])) {
             GroupHydrateEmployees::dispatch($employee->group)->delay($this->hydratorsDelay);
@@ -180,13 +218,26 @@ class UpdateEmployee extends OrgAction
             'job_positions.*.scopes.fulfilments.slug.*' => ['sometimes', Rule::exists('fulfilments', 'slug')->where('organisation_id', $this->organisation->id)],
             'job_positions.*.scopes.shops.slug.*'       => ['sometimes', Rule::exists('shops', 'slug')->where('organisation_id', $this->organisation->id)],
             'email'                                     => ['sometimes', 'nullable', 'email'],
-            'emergency_contact'                         => ['sometimes', 'nullable', 'string', 'max:1024'],
+            'emergency_contact'                         => ['sometimes', 'nullable', 'array'],
+            'emergency_contact.contact'                 => ['sometimes', 'nullable', 'string', 'max:255'],
+            'emergency_contact.phone_number'            => ['sometimes', 'nullable', 'string', 'max:50'],
+            'emergency_contact.address'                 => ['sometimes', 'nullable', 'string', 'max:512'],
+            'emergency_contact.status'                  => ['sometimes', 'nullable', 'string', 'max:512'],
             'type'                                      => ['sometimes', Rule::enum(EmployeeTypeEnum::class)],
+            'employment_type'                           => ['sometimes', Rule::enum(EmploymentTypeEnum::class)],
             'contact_address'                           => ['sometimes', 'nullable', new ValidAddress()],
             'notes'                                     => ['sometimes', 'nullable', 'string', 'max:4000'],
             'identity_document_type'                    => ['sometimes', 'nullable', 'string', 'max:256'],
             'identity_document_number'                  => ['sometimes', 'nullable', 'string', 'max:256'],
-
+            'contract_start_date'                       => ['sometimes', 'nullable', 'date'],
+            'contract_end_date'                         => ['sometimes', 'nullable', 'date', 'after_or_equal:contract_start_date'],
+            'religion'                                  => ['sometimes', 'nullable', 'string', 'max:50'],
+            'bank_account_number'                       => ['sometimes', 'nullable', 'string', 'max:50'],
+            'bank_account_name'                         => ['sometimes', 'nullable', 'string', 'max:100'],
+            'insurance_number'                          => ['sometimes', 'nullable', 'string', 'max:50'],
+            'annual_days'                               => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
+            'gender'                                    => ['sometimes', 'nullable', 'string', 'max:20'],
+            'probation_period_days'                     => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
 
         ];
 
@@ -248,23 +299,90 @@ class UpdateEmployee extends OrgAction
             }
         }
 
+        $this->normaliseEmploymentDate('employment_start_at');
+
+        if ($this->has('contract_start_date')) {
+            $this->set('contract_start_date', $this->get('contract_start_date'));
+        }
+
+        $this->normaliseEmploymentDate('employment_end_at');
+
         if ($this->has('cluster.state')) {
-            {
-                $this->set('state', $this->get('cluster.state'));
+            $this->set('state', $this->normaliseEmployeeState($this->get('cluster.state')));
+        }
+
+        if ($this->has('state')) {
+            $this->set('state', $this->normaliseEmployeeState($this->get('state')));
+        }
+    }
+
+    private function normaliseEmployeeState(mixed $state): mixed
+    {
+        if (is_object($state) && method_exists($state, 'toArray')) {
+            $state = $state->toArray();
+        }
+
+        if (is_object($state) && !($state instanceof EmployeeStateEnum)) {
+            $state = (array) $state;
+        }
+
+        if (is_array($state)) {
+            return Arr::get($state, 'value', Arr::get($state, 'state'));
+        }
+
+        if ($state instanceof EmployeeStateEnum) {
+            return $state->value;
+        }
+
+        if (is_string($state)) {
+            $normalisedState = Str::of($state)->trim()->toString();
+            if (str_contains($normalisedState, '::')) {
+                $normalisedState = Str::afterLast($normalisedState, '::');
+            }
+
+            foreach (EmployeeStateEnum::cases() as $case) {
+                if (Str::lower($normalisedState) === Str::lower($case->value) || Str::lower($normalisedState) === Str::lower($case->name)) {
+                    return $case->value;
+                }
             }
         }
 
-        if ($this->has('cluster.employment_start_at')) {
-            {
-                $this->set('employment_start_at', $this->get('cluster.employment_start_at'));
+        return $state;
+    }
+
+    private function normaliseEmploymentDate(string $field): void
+    {
+
+        foreach (["cluster.$field", "state.$field", $field] as $source) {
+            if (!$this->has($source)) {
+                continue;
             }
+
+            $this->set($field, $this->normaliseDateValue($this->get($source)));
+
+            return;
+        }
+    }
+
+    private function normaliseDateValue(mixed $value): mixed
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d');
         }
 
-        if ($this->has('cluster.employment_end_at')) {
-            {
-                $this->set('employment_end_at', $this->get('cluster.employment_end_at'));
-            }
+        if (is_object($value) && method_exists($value, 'toArray')) {
+            $value = $value->toArray();
         }
+
+        if (is_object($value)) {
+            $value = (array) $value;
+        }
+
+        if (is_array($value)) {
+            $value = Arr::get($value, 'value', Arr::get($value, 'date', Arr::get($value, 'formatted')));
+        }
+
+        return blank($value) ? null : $value;
     }
 
     public function asController(Employee $employee, ActionRequest $request): Employee

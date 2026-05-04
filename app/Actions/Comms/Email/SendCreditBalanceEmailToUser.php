@@ -11,6 +11,7 @@ namespace App\Actions\Comms\Email;
 
 use App\Actions\OrgAction;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Models\Comms\Outbox;
 use App\Models\CRM\Customer;
 use App\Actions\Comms\Traits\WithSendSubscribersOutboxEmail;
 
@@ -22,7 +23,9 @@ class SendCreditBalanceEmailToUser extends OrgAction
 
     public function handle(Customer $customer, array $additionalData = []): void
     {
+        /** @var Outbox $outbox */
         $outbox = $customer->shop->outboxes()->where('code', OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER)->first();
+        data_set($additionalData, "customer_name", $customer->name);
         $this->sendOutboxEmailToSubscribers($outbox, $additionalData);
     }
 }

@@ -7,7 +7,7 @@ import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
-import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch } from 'vue'
+import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, onUnmounted, computed } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { trans } from 'laravel-vue-i18n'
@@ -16,7 +16,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
 import { faHome, faImage, faSparkles, faSignIn, faPlusCircle, faMedal } from '@fal'
-import { faMedal as fasMedal, faCandleHolder, faCircle } from '@fas'
+import { faMedal as fasMedal, faCandleHolder, faCircle, faBoxFull } from '@fas'
 import { faMedal as fadMedal } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -30,6 +30,8 @@ import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
 import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 import axios from 'axios'
 import { CustomerIdCollector } from '@/Composables/Unique/LuigiDataCollector'
+import BundleSidebar from '@/Components/Dropshipping/BundleSidebar.vue'
+import { useBundle } from '@/Composables/useBundle'
 
 interface ChatConfig {
     is_online: boolean
@@ -40,7 +42,8 @@ interface ChatConfig {
     }
 }
 
-library.add(faHome, faImage, faSparkles, faSignIn, faPlusCircle, faCandleHolder, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp)
+const bundle = useBundle()
+library.add(faBoxFull, faHome, faImage, faSparkles, faSignIn, faPlusCircle, faCandleHolder, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp)
 
 initialiseIrisApp()
 
@@ -48,6 +51,17 @@ const layout = useIrisLayoutStore()
 const isOpenMenuMobile = ref(false)
 provide('layout', layout)
 provide('isOpenMenuMobile', isOpenMenuMobile)
+const BUNDLE_PANEL_WIDTH = 320
+const bundleToggleStyle = computed(() => {
+    const gap = 16
+    const openOffset = BUNDLE_PANEL_WIDTH + gap
+    const right = bundle.open.value ? openOffset : gap
+    return {
+        top: '60%',
+        right: `${right}px`,
+        color: layout.app.theme[1]
+    }
+})
 
 const propsAnnouncementsTopbar = ref([])
 const propsAnnouncementsBottomMenu =  ref([])
@@ -60,6 +74,9 @@ const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const customSidebar = usePage().props?.iris?.sidebar
 const useChat = usePage().props?.use_chat
 const chatConfig = usePage().props?.chat_config as ChatConfig
+
+/* if(layout?.rightbasket?.show) set(layout, ['rightbasket', 'show'], false) */
+
 const isFirstVisit = () => {
     if (typeof window !== "undefined") {
         const irisData = localStorage.getItem('iris');
@@ -108,18 +125,25 @@ const getAnnouncements = async () => {
 
 provide('screenType', screenType)
 
+
+const handleTabFocus = () => {
+    if (document.visibilityState === 'visible') {
+        checkScreenType()
+        if (layout?.iris?.is_logged_in) {
+            fetchHasInBasket()
+        }
+    }
+}
+
 onMounted(() => {
-    CustomerIdCollector(layout.iris_variables?.customer_id?.toString())  // Luigi: to set customer_id
+    CustomerIdCollector(layout.iris_variables?.customer_id?.toString())
 
     checkScreenType()
     setColorStyleRoot(theme?.color)
     layout.app.webpage_layout = theme
     window.addEventListener('resize', checkScreenType)
 
-    // Print log only in local
-    if (layout.app.environment === 'local') {
-        console.log('----- Iris Layout -----', layout)
-    }
+    document.addEventListener('visibilitychange', handleTabFocus)
 
     irisStyleVariables(theme?.color)
 
@@ -130,6 +154,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
+    document.removeEventListener('visibilitychange', handleTabFocus)
 })
 
 const isSidebarFetching = ref(false)
@@ -172,9 +197,6 @@ const fetchHasInBasket = async () => {
     }
 };
 
-
-
-
 onBeforeMount(()=>{
 initialiseIrisVarnish(useIrisLayoutStore)
 getAnnouncements()
@@ -185,6 +207,12 @@ fetchSidebarOnce()
 watch(() => layout.iris_variables?.cart_amount, (newVal) => {
     if (typeof layout.rightbasket?.show === 'undefined') {
         set(layout, 'rightbasket.show', true)
+    }
+})
+
+watch(() => layout.iris_variables?.cart_count, (newVal) => {
+    if (newVal <= 0) {
+        set(layout, 'rightbasket.show', false)
     }
 })
 
@@ -280,16 +308,36 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
                 <div
                     v-if="layout?.iris?.is_logged_in && screenType !== 'mobile'"
                     class="sticky z-[51] border-l top-0 pointer-events-auto max-h-screen w-screen transition-all"
-                    :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'border-l-gray-300 max-w-lg' : 'border-transparent max-w-0'"
+                    :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'border-l-gray-300 max-w-md' : 'border-transparent max-w-0'"
                 >
                     <IrisRightsideBasket
                         v-if="layout.iris_variables?.cart_count > 0"
                         :isOpen="layout.rightbasket?.show"
-                    />
+                    />  
+                </div>
+
+                <div
+                    v-if="bundle.open.value"
+                    :class="bundle.open.value
+                        ? 'w-[350px] border-l-gray-300 sticky z-[52] border-l top-0 pointer-events-auto h-screen transition-all'
+                        : 'w-0 border-transparent'"
+                    >
+                    <BundleSidebar :symbol="layout.iris.currency?.symbol" :code="layout.iris.currency?.code"/>
+                </div>
+
+                <div
+                    v-if="layout?.iris?.is_logged_in && screenType !== 'mobile' && layout.app.name === 'iris' && layout.retina.type === 'dropshipping'"
+                    @click="bundle.open.value = !bundle.open.value"
+                    class="fixed z-[60] w-8 aspect-square rounded-full flex items-center justify-center cursor-pointer
+                        bg-[var(--theme-color-0)]
+                        hover:bg-[color-mix(in_srgb,var(--theme-color-0)75%,black)]"
+                    :style="bundleToggleStyle"
+                    v-tooltip="'Toggle Bundle'"
+                >
+                <FontAwesomeIcon :icon="faBoxFull" class='text-md' fixed-width
+                            aria-hidden='true' />
                 </div>
             </main>
-
-
             <template v-if="propsAnnouncementsTopFooter?.length">
                 <template v-for="announcement in propsAnnouncementsTopFooter">
                     <IrisAnnouncement
@@ -300,7 +348,7 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
 
             <Footer
                 v-if="footer && !isArray(footer)"
-                v-once
+                v-once  
                 :data="footer"
                 :colorThemed="theme"
             />
@@ -316,8 +364,6 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
 
 
     <ChatButton data="null" v-if="useChat" :chatConfig="chatConfig" />
-
-
 </template>
 
 <style lang="scss">

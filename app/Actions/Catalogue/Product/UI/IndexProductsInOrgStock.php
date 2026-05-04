@@ -37,7 +37,6 @@ class IndexProductsInOrgStock extends OrgAction
         $queryBuilder->leftjoin('product_has_org_stocks', 'products.id', 'product_has_org_stocks.product_id');
         $queryBuilder->leftjoin('shops', 'shops.id', 'products.shop_id');
         $queryBuilder->leftjoin('organisations', 'organisations.id', 'products.organisation_id');
-
         $queryBuilder->leftjoin('currencies', 'currencies.id', 'shops.currency_id');
 
 
@@ -52,6 +51,7 @@ class IndexProductsInOrgStock extends OrgAction
                 'products.name',
                 'products.state',
                 'products.price',
+                'products.is_for_sale',
                 'products.created_at',
                 'products.updated_at',
                 'products.asset_id',
@@ -63,13 +63,12 @@ class IndexProductsInOrgStock extends OrgAction
                 'organisations.code as organisation_code',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
-
                 'product_has_org_stocks.quantity',
                 'trade_units_per_org_stock',
                 'currencies.code as currency_code',
             ]);
 
-        return $queryBuilder->allowedSorts(['code', 'name', 'price'])
+        return $queryBuilder->allowedSorts(['shop_code','code', 'name', 'price'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

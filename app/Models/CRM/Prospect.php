@@ -15,23 +15,25 @@ use App\Enums\CRM\Prospect\ProspectFailStatusEnum;
 use App\Enums\CRM\Prospect\ProspectStateEnum;
 use App\Enums\CRM\Prospect\ProspectSuccessStatusEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\SubscriptionEvent;
 use App\Models\Helpers\Address;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
+use App\Models\Traits\HasSearch;
 use App\Models\Traits\InCustomer;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -84,15 +86,16 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_opt_in
  * @property array<array-key, mixed>|null $contact_name_components
  * @property string|null $post_source_id
+ * @property int $number_dispatched_emails
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\CRM\Customer|null $customer
- * @property-read Group $group
+ * @property-read Collection<int, DispatchedEmail> $dispatchedEmails
+ * @property-read Group|null $group
  * @property-read Organisation $organisation
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @property-read Collection<int, SubscriptionEvent> $subscriptionEvents
- * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\CRM\ProspectFactory factory($count = null, $state = [])
  * @method static Builder<static>|Prospect newModelQuery()
  * @method static Builder<static>|Prospect newQuery()
@@ -106,12 +109,12 @@ class Prospect extends Model implements Auditable
 {
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use HasFactory;
     use InCustomer;
     use HasAddress;
     use HasAddresses;
     use HasHistory;
+    use HasSearch;
 
     protected $casts = [
         'data'                    => 'array',
@@ -142,6 +145,38 @@ class Prospect extends Model implements Auditable
     ];
 
     protected $guarded = [];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'shop_id',
+                'state',
+                'name',
+                'contact_name',
+                'company_name',
+                'email',
+                'phone',
+                'contact_website',
+                'created_at'
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'              => (string)$this->id,
+            'shop_id'         => $this->shop_id,
+            'state'           => $this->state->value,
+            'name'            => (string)$this->name,
+            'contact_name'    => (string)$this->contact_name,
+            'company_name'    => (string)$this->company_name,
+            'email'           => (string)$this->email,
+            'phone'           => (string)$this->phone,
+            'contact_website' => (string)$this->contact_website,
+            'created_at'      => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {
@@ -218,6 +253,11 @@ class Prospect extends Model implements Auditable
     public function subscriptionEvents(): MorphMany
     {
         return $this->morphMany(SubscriptionEvent::class, 'model');
+    }
+
+    public function dispatchedEmails(): BelongsToMany
+    {
+        return $this->belongsToMany(DispatchedEmail::class, 'prospect_has_dispatched_emails');
     }
 
 

@@ -31,6 +31,11 @@ class IndexProductsInMasterProduct extends OrgAction
 {
     use WithMasterProductSubNavigation;
 
+    /**
+     * @var \App\Models\Masters\MasterAsset
+     */
+    private MasterAsset $parent;
+
     public function handle(MasterAsset $masterAsset, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -126,7 +131,7 @@ class IndexProductsInMasterProduct extends OrgAction
                 ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'actions', label: __(''), canBeHidden: false);
+                ->column(key: 'actions', label: '', canBeHidden: false);
         };
     }
 
@@ -135,7 +140,7 @@ class IndexProductsInMasterProduct extends OrgAction
         return ProductsResource::collection($products);
     }
 
-    public function htmlResponse(LengthAwarePaginator $products)
+    public function htmlResponse(LengthAwarePaginator $products): \Illuminate\Http\Response|\Inertia\Response
     {
         $subNavigation   = $this->getMasterProductsSubNavigation($this->parent);
         $title           = $this->parent->name;
@@ -150,6 +155,13 @@ class IndexProductsInMasterProduct extends OrgAction
         $iconRight       = [
             'icon' => 'fal fa-store',
         ];
+
+        $hasMismatch = false;
+
+        // TODO REMOVE PLEASE TO SHOW ON PRODUCTION
+        if (app()->isLocal()) {
+            $hasMismatch = $this->parent?->mismatch_detected;
+        }
 
         return Inertia::render(
             'Org/Catalogue/Products',
@@ -166,12 +178,24 @@ class IndexProductsInMasterProduct extends OrgAction
                         'afterTitle'    => $afterTitle,
                         'iconRight'     => $iconRight,
                         'subNavigation' => $subNavigation,
+                        'actions'   => [
+                            $hasMismatch ? [
+                                'key'   => 'repair-mismatch',
+                                'type'  => 'button',
+                                'style' => 'delete',
+                                'route' => [
+                                    'name'       => 'grp.models.master_asset.repair_mismatch_trade_units',
+                                    'parameters' => request()->route()->originalParameters()
+                                ]
+                            ] : false,
+                        ],
                     ],
-                    'data'                         => ProductsResource::collection($products),
-                    'editable_table'               => false,
+                    'data'                              => ProductsResource::collection($products),
+                    'editable_table'                    => true,
+                    'mismatch_trade_unit_with_master'   => $hasMismatch,
                     'tabs'                         => [
                         'current'    => $this->tab,
-                        'navigation' => ProductsTabsEnum::navigationExcept([ProductsTabsEnum::SALES]),
+                        'navigation' => ProductsTabsEnum::navigationExcept([ProductsTabsEnum::SALES, ProductsTabsEnum::INDEX_ORDERING]),
                     ],
                     ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                         fn () => ProductsResource::collection($products)
@@ -240,7 +264,7 @@ class IndexProductsInMasterProduct extends OrgAction
         return $this->handle($masterProduct, ProductsTabsEnum::INDEX->value);
     }
 
-    public function inMasterFamilyInMasterShop(MasterShop $masterShop, MasterAsset $masterProduct, ActionRequest $request)
+    public function inMasterFamilyInMasterShop(MasterShop $masterShop, MasterProductCategory $masterFamily, MasterAsset $masterProduct, ActionRequest $request)
     {
         $this->initialisationFromGroup($masterProduct->group, $request)->withTab(ProductsTabsEnum::valuesExcept([ProductsTabsEnum::SALES]));
         $this->parent = $masterProduct;

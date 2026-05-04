@@ -68,6 +68,7 @@ class IndexTradeUnitFamilies extends GrpAction
             'trade_unit_family_stats.number_trade_units_status_active',
             'trade_unit_family_stats.number_trade_units_status_discontinued',
             'trade_unit_family_stats.number_trade_units_status_anomality',
+            'trade_unit_families.health_rank',
         ];
 
         if ($prefix === TradeUnitFamiliesTabsEnum::SALES->value) {
@@ -97,6 +98,7 @@ class IndexTradeUnitFamilies extends GrpAction
             'number_trade_units_status_active',
             'number_trade_units_status_discontinued',
             'number_trade_units_status_anomality',
+            'health_rank',
         ];
 
         if ($prefix === TradeUnitFamiliesTabsEnum::SALES->value) {
@@ -143,7 +145,8 @@ class IndexTradeUnitFamilies extends GrpAction
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right');
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table
                     ->column(key: 'number_trade_units_status_active', label: __('Active'), canBeHidden: false, sortable: true, searchable: true)

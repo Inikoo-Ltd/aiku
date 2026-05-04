@@ -1,27 +1,10 @@
-<!--
-  - Author: Steven Wicca stewicalf@gmail.com
-  - Created: Fri, 07 Nov 2025 13:35:07 Western Indonesia Time, Lembeng Beach, Bali, Indonesia
-  - Copyright (c) 2025, Steven Wicca Alfredo
-  -->
-
 <script setup lang="ts">
-import MultiSelect from 'primevue/multiselect'
 import { onMounted, ref, computed, watch } from 'vue'
 import { trans } from 'laravel-vue-i18n'
-import { router } from '@inertiajs/vue3'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { library } from '@fortawesome/fontawesome-svg-core'
-import Button from '@/Components/Elements/Buttons/Button.vue'
 import { notify } from '@kyvg/vue3-notification'
-import Tag from '@/Components/Tag.vue'
 import axios from 'axios'
 import { routeType } from '@/types/route'
-import { faPlus } from '@fas'
-import { faTrashAlt } from '@fal'
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
-import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
-
-library.add(faPlus, faTrashAlt)
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 const props = defineProps<{
     form: any
@@ -36,22 +19,31 @@ const props = defineProps<{
     }
 }>()
 
-const _multiselect_tags = ref(null)
-
-// Fetch tags
+// state
 const isLoadingMultiselect = ref(false)
-
 const optionsList = ref<any[]>([])
+const search = ref('')
+const pagination = ref<any>(null)
 
+// fetch tags
 const fetchTags = async (url?: string) => {
     isLoadingMultiselect.value = true
 
-    const urlToFetch = url || route(props.fieldData?.tag_routes?.index_tag.name, props.fieldData?.tag_routes?.index_tag.parameters)
+    const urlToFetch = url || route(
+        props.fieldData?.tag_routes?.index_tag.name,
+        props.fieldData?.tag_routes?.index_tag.parameters
+    )
 
     try {
         const res = await axios.get(urlToFetch)
 
-        optionsList.value = res?.data?.data
+        if (url) {
+            optionsList.value = [...optionsList.value, ...res.data.data]
+        } else {
+            optionsList.value = res.data.data
+        }
+
+        pagination.value = res.data.meta
     } catch {
         notify({
             title: trans('Something went wrong.'),
@@ -63,113 +55,170 @@ const fetchTags = async (url?: string) => {
     isLoadingMultiselect.value = false
 }
 
-// Attach/Detach tags directly on parent form
+// selected tags
 const formSelectedTags = computed({
     get: () => props.form[props.fieldName] || [],
-    set: (newVal) => {
-        const oldVal = props.form[props.fieldName] || []
-
-        // Find newly added tag (user checked a tag)
-        const addedTags = newVal.filter((id: number) => !oldVal.includes(id))
-
-        // Prevent removal via multiselect - only allow adding
-        if (addedTags.length > 0) {
-            // Attach the new tag (single tag)
-            onAttachTag(addedTags[0])
-        } else {
-            // If user tried to uncheck, revert to old value
-            props.form[props.fieldName] = oldVal
-        }
+    set: (val) => {
+        props.form[props.fieldName] = val
     }
 })
 
-watch(() => props.fieldData?.tags, (newTags) => { optionsList.value = newTags || [] })
+// attach
+const onAttachTag = async (tagId: number) => {
+    props.form[props.fieldName] = [
+        ...(props.form[props.fieldName] || []),
+        tagId
+    ]
 
-// Utility: find tag by ID safely
-const findTagById = (id: number) => {
-    return optionsList.value.find((t) => t.id === id)
-}
+    if (!props.fieldData?.tag_routes?.attach_tag?.name) return
 
-// Attach single tag function
-const onAttachTag = (tagId: number) => {
-    if (!props.fieldData?.tag_routes?.attach_tag?.name) {
-        // Fallback: just update form value if no attach route
-        props.form[props.fieldName] = [...(props.form[props.fieldName] || []), tagId]
-        return
+    try {
+        await axios.post(
+            route(
+                props.fieldData.tag_routes.attach_tag.name,
+                props.fieldData.tag_routes.attach_tag.parameters
+            ),
+            { tags_id: [tagId] }
+        )
+    } catch (error) {
+        props.form[props.fieldName] =
+            (props.form[props.fieldName] || []).filter((id: number) => id !== tagId)
+
+        notify({
+            title: trans('Error'),
+            text: trans('Failed to attach tag'),
+            type: 'error'
+        })
     }
-
-    router[props.fieldData.tag_routes.attach_tag.method || 'post'](
-        route(props.fieldData.tag_routes.attach_tag.name, props.fieldData.tag_routes.attach_tag.parameters), { tags_id: [tagId] }
-    )
 }
 
+// detach
+const onDetachTag = async (tagId: number) => {
+    // optimistic update
+    props.form[props.fieldName] =
+        (props.form[props.fieldName] || []).filter((id: number) => id !== tagId)
+
+    if (!props.fieldData?.tag_routes?.detach_tag?.name) return
+
+    try {
+        await axios.delete(
+            route(
+                props.fieldData.tag_routes.detach_tag.name,
+                {
+                    ...props.fieldData.tag_routes.detach_tag.parameters,
+                    tag: tagId
+                }
+            )
+        )
+    } catch (error) {
+        props.form[props.fieldName] = [
+            ...(props.form[props.fieldName] || []),
+            tagId
+        ]
+
+        notify({
+            title: trans('Error'),
+            text: trans('Failed to detach tag'),
+            type: 'error'
+        })
+    }
+}
+
+// toggle
+const toggleTag = (tagId: number) => {
+    const current = props.form[props.fieldName] || []
+
+    if (current.includes(tagId)) {
+        onDetachTag(tagId)
+    } else {
+        onAttachTag(tagId)
+    }
+}
+
+// filter
+const filteredOptions = computed(() => {
+    if (!search.value) return optionsList.value
+
+    return optionsList.value.filter((tag) =>
+        tag.name.toLowerCase().includes(search.value.toLowerCase())
+    )
+})
+
+// fallback
+watch(() => props.fieldData?.tags, (newTags) => {
+    if (!optionsList.value.length) {
+        optionsList.value = newTags || []
+    }
+})
+
+// init
 onMounted(() => {
     fetchTags()
 })
 </script>
 
 <template>
-    <div class="w-full max-w-md ">
+    <div class="w-full max-w-md">
 
-        <!-- Tags list (sync with form value) -->
-        <div v-if="formSelectedTags.length" class="flex flex-wrap mb-2 gap-x-2 gap-y-1">
-            <Tag
-                v-for="tagId in formSelectedTags"
-                :key="tagId"
-                :label="findTagById(tagId)?.name"
-                stringToColor
-                style="cursor: pointer"
-            >
-                <template #closeButton>
-                    <ModalConfirmationDelete
-                        :routeDelete="{ name: fieldData?.tag_routes?.detach_tag.name ?? '', parameters: { ...fieldData?.tag_routes?.detach_tag.parameters, tag: tagId } }"
-                        :title="trans('Are you sure you want to detach this tag?')"
-                        :description="trans('This tag will be removed from this item.')"
-                        :noLabel="trans('Detach')"
-                        noIcon="fal fa-trash-alt"
-                    >
-                        <template #default="{ changeModel }">
-                            <div @click="changeModel" class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-sm">
-                                <FontAwesomeIcon icon="fal fa-trash-alt" class="text-xs" aria-hidden="true" />
-                            </div>
-                        </template>
-                    </ModalConfirmationDelete>
-                </template>
-            </Tag>
+        <!-- Search -->
+        <div class="mb-3">
+            <input
+                v-model="search"
+                type="text"
+                placeholder="Search tags..."
+                class="w-full px-3 py-1.5 text-xs rounded-md bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
+            />
         </div>
 
-        <!-- Multiselect tags -->
-        <div v-if="props.fieldData?.tag_routes?.index_tag?.name" class="w-full max-w-64">
-            <MultiSelect
-                ref="_multiselect_tags"
-                v-model="formSelectedTags"
-                :options="optionsList.length ? optionsList : props.fieldData?.tags"
-                optionLabel="name"
-                optionValue="id"
-                :optionDisabled="(option) => formSelectedTags.includes(option.id)"
-                :placeholder="trans('Select tags')"
-                :maxSelectedLabels="3"
-                filter
-                class="w-full md:w-80"
-                :showClear="false"
-            >
-                <template #footer="{ value, options }">
-                    <div v-if="isLoadingMultiselect" class="absolute inset-0 bg-black/30 rounded flex justify-center items-center text-white text-4xl">
-                        <LoadingIcon></LoadingIcon>
-                    </div>
-
-                    <div class="cursor-pointer border-t border-gray-300 p-2 flex flex-col gap-y-2 justify-center items-center text-center">
-                        <Button
-                            @click="() => (_multiselect_tags?.hide())"
-                            :label="formSelectedTags.isDirty ? trans('Save and close') : trans('Close')"
-                            xicon="fas fa-plus"
-                            full
-                            :key="`${formSelectedTags.isDirty}`"
-                            :type="formSelectedTags.isDirty ? 'secondary' : 'tertiary'"
-                        />
-                    </div>
-                </template>
-            </MultiSelect>
+        <!-- Loading -->
+        <div v-if="isLoadingMultiselect" class="flex justify-center py-4">
+            <LoadingIcon />
         </div>
+
+        <!-- Options -->
+        <div v-else class="flex flex-wrap gap-2">
+
+            <label
+                v-for="tag in filteredOptions"
+                :key="tag.id"
+                class="flex items-center gap-2 cursor-pointer px-2 py-1 rounded-md text-xs transition border"
+                :class="formSelectedTags.includes(tag.id)
+                    ? 'bg-blue-50 border-gray-400'
+                    : 'bg-white border-gray-200 hover:bg-gray-50'"
+            >
+                <!-- Checkbox -->
+                <input
+                    type="checkbox"
+                    class="w-3.5 h-3.5 accent-blue-600"
+                    :checked="formSelectedTags.includes(tag.id)"
+                    @change="toggleTag(tag.id)"
+                />
+
+                <!-- Label -->
+                <span class="text-gray-700 leading-none">
+                    {{ tag.name }}
+                </span>
+            </label>
+
+        </div>
+
+        <!-- Empty -->
+        <div
+            v-if="!filteredOptions.length && !isLoadingMultiselect"
+            class="text-center text-gray-400 py-4 text-xs"
+        >
+            {{ ctrans("No tags found") }}
+        </div>
+
+        <!-- Load More -->
+        <div v-if="pagination?.next_page_url" class="mt-3 text-center">
+            <button
+                @click="fetchTags(pagination.next_page_url)"
+                class="text-xs text-blue-600 hover:underline"
+            >
+                {{ ctrans("Load more") }}
+            </button>
+        </div>
+
     </div>
 </template>

@@ -37,6 +37,8 @@ use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaProductsForBasket;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaProductsForEmptyBasket;
 use App\Actions\Retina\Dropshipping\BackInStock\UI\IndexRetinaDropshippingBackInStocks;
+use App\Actions\Retina\Dropshipping\Bundle\UI\IndexRetinaBulkProductImages;
+use App\Actions\Retina\Dropshipping\Bundle\UI\ShowRetinaBundle;
 use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
@@ -57,18 +59,22 @@ use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfoliosCSV;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Portfolio\ShowRetinaDropshippingPortfolio;
 use App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs;
+use App\Actions\Dropshipping\Shopify\Fulfilment\UI\SyncOrderCancellationToShopify;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaFilteredProducts;
 use App\Actions\Retina\Ebay\StoreRetinaEbayUser;
 use App\Actions\Retina\Ebay\UpdateRetinaEbayUser;
 use App\Actions\Retina\Platform\EditRetinaCustomerSalesChannel;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use Illuminate\Support\Facades\Route;
+use App\Actions\Accounting\Invoice\ExportDropshippingInvoicesByDate;
+use App\Actions\Retina\Dropshipping\DeliveryNotes\UI\PdfRetinaDropshippingPackingList;
 
 Route::get('select-products-for-empty-basket', IndexRetinaProductsForEmptyBasket::class)->name('select_products_for_empty_basket');
 Route::get('select-products-for-basket/{order:id}', IndexRetinaProductsForBasket::class)->name('select_products_for_basket');
 
-Route::get('export-template-portfolios', ExportTemplateRetinaPortfolios::class)->name('portfolio_template.export');
+Route::get('bulk-products-images', IndexRetinaBulkProductImages::class)->name('products.images.index');
 
+Route::get('export-template-portfolios', ExportTemplateRetinaPortfolios::class)->name('portfolio_template.export');
 
 Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function () {
     Route::get('{customerSalesChannel}/upload-portfolio-history', IndexRetinaRecentCustomerSalesChannelPortfolioUploads::class)
@@ -89,6 +95,8 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
 Route::prefix('platform')->as('platform.')->group(function () {
     Route::post('shopify-user', StoreShopifyUser::class)->name('shopify_user.store');
     Route::delete('shopify-user', DeleteShopifyUser::class)->name('shopify_user.delete');
+    Route::patch('shopify-user/{order:id}/sync-cancelled-status', SyncOrderCancellationToShopify::class)->name('shopify_user.order.sync-cancellation');
+
 
     Route::post('wc-user/authorize', AuthorizeRetinaWooCommerceUser::class)->name('wc.authorize');
     Route::post('wc-user/{customerSalesChannel}/test-connection', TestConnectionWooCommerceUser::class)->name('wc.test_connection');
@@ -113,6 +121,7 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
     Route::get('/edit', EditRetinaCustomerSalesChannel::class)->name('edit');
     Route::get('filtered-products', IndexRetinaFilteredProducts::class)->name('filtered_products.index');
 
+    Route::get('bundles/{bundle:id}', ShowRetinaBundle::class)->name('bundles.show')->withoutScopedBindings();
 
     Route::prefix('basket')->as('basket.')->group(function () {
         Route::get('/', IndexRetinaBaskets::class)->name('index');
@@ -156,8 +165,13 @@ Route::get('order-transaction-templates', DownloadOrderTransactionsTemplate::cla
 
 Route::prefix('invoices')->name('invoices.')->group(function () {
     Route::get('', IndexRetinaDropshippingInvoices::class)->name('index');
+    Route::get('export', ExportDropshippingInvoicesByDate::class)->name('export');
     Route::get('{invoice}', ShowRetinaDropshippingInvoice::class)->name('show');
     Route::get('{invoice}/pdf', RetinaPdfInvoice::class)->name('pdf');
+});
+
+Route::prefix('packing-lists')->name('packing_lists.')->group(function () {
+    Route::get('{deliveryNote}/pdf', PdfRetinaDropshippingPackingList::class)->name('pdf');
 });
 
 Route::prefix('saved-credit-cards')->name('mit_saved_cards.')->group(function () {

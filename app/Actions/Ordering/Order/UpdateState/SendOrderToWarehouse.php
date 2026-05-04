@@ -8,6 +8,8 @@
 
 namespace App\Actions\Ordering\Order\UpdateState;
 
+use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
+use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDeliveryNoteItemsSalesType;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
@@ -19,6 +21,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Catalogue\Product;
@@ -76,6 +79,8 @@ class SendOrderToWarehouse extends OrgAction
             'contact_name'              => $this->getContactName($order),
             'shipping_zone_schema_id'   => $order->shipping_zone_schema_id,
             'shipping_zone_id'          => $order->shipping_zone_id,
+            'is_shipping_by_external'   => $order->is_shipping_by_external,
+            'internal_notes'            => $order->internal_notes
 
         ];
 
@@ -111,7 +116,6 @@ class SendOrderToWarehouse extends OrgAction
                         'transaction_id'             => $transaction->id,
                         'quantity_required'          => $quantity,
                         'original_quantity_required' => $quantity,
-                        'xx'                         => $orgStock->organisation_id
                     ];
 
                     StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);
@@ -123,8 +127,25 @@ class SendOrderToWarehouse extends OrgAction
         });
 
         DeliveryNoteHydrateDeliveryNoteItemsSalesType::run($deliveryNote);
+
+        if ($order->customer) {
+            $modelData['email']        = $order->customer->email;
+            $modelData['phone']        = $order->customer->phone;
+            $modelData['contact_name'] = $order->customer->contact_name;
+            $modelData['company_name'] = $order->customer->company_name;
+        }
         UpdateOrder::make()->action($order, $modelData);
 
+
+        if (in_array($order->salesChannel?->type, [
+            SalesChannelTypeEnum::PHONE,
+            SalesChannelTypeEnum::SHOWROOM,
+            SalesChannelTypeEnum::EMAIL,
+            SalesChannelTypeEnum::OTHER
+        ])) {
+            SendNewOrderEmailToSubscribers::dispatch($order->id);
+            SendNewOrderEmailToCustomer::dispatch($order->id);
+        }
 
         return $deliveryNote;
     }
@@ -269,6 +290,4 @@ class SendOrderToWarehouse extends OrgAction
 
         return 0;
     }
-
-
 }

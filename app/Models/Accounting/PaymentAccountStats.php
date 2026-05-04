@@ -39,12 +39,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_payments_type_refund_state_cancelled
  * @property int $number_payments_type_refund_state_error
  * @property int $number_payments_type_refund_state_declined
- * @property string $org_amount_paid_balance organisation currency, amount_successfully_paid-amount_returned
- * @property string $org_amount_successfully_paid
- * @property string $org_amount_refunded
- * @property string $grp_amount_paid_balance Group currency, amount_successfully_paid-amount_returned
- * @property string $grp_amount_successfully_paid
- * @property string $grp_amount_refunded
+ * @property numeric $org_amount_paid_balance organisation currency, amount_successfully_paid-amount_returned
+ * @property numeric $org_amount_successfully_paid
+ * @property numeric $org_amount_refunded
+ * @property numeric $grp_amount_paid_balance Group currency, amount_successfully_paid-amount_returned
+ * @property numeric $grp_amount_successfully_paid
+ * @property numeric $grp_amount_refunded
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_pas Number of Payment Account Shops
@@ -52,7 +52,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_pas_state_active Number of Payment Account Shops in active
  * @property int $number_pas_state_inactive Number of Payment Account Shops in inactive
  * @property int $number_customers Number distinct customer with successful payments
- * @property-read \App\Models\Accounting\PaymentAccount $paymentAccount
+ * @property-read \App\Models\Accounting\PaymentAccount|null $paymentAccount
  * @method static Builder<static>|PaymentAccountStats newModelQuery()
  * @method static Builder<static>|PaymentAccountStats newQuery()
  * @method static Builder<static>|PaymentAccountStats query()

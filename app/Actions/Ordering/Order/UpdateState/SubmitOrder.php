@@ -23,6 +23,7 @@ use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
+use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Catalogue\Product;
@@ -32,6 +33,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -53,14 +55,23 @@ class SubmitOrder extends OrgAction
         $oldState = $order->state;
 
         $modelData = [
-            'state'  => OrderStateEnum::SUBMITTED,
-            'status' => OrderStatusEnum::PROCESSING,
+            'state'          => OrderStateEnum::SUBMITTED,
+            'status'         => OrderStatusEnum::PROCESSING,
+            'internal_notes' => $order->customer->warehouse_internal_notes,
         ];
 
         $date = now();
 
         if ($order->state == OrderStateEnum::CREATING || $order->submitted_at == null) {
             data_set($modelData, 'submitted_at', $date);
+        } else {
+            throw ValidationException::withMessages(
+                [
+                    'order' => [
+                        'favourite' => 'Order has been submitted and cannot be submitted again',
+                    ]
+                ]
+            );
         }
 
         $this->processGrGift($order);
@@ -73,14 +84,13 @@ class SubmitOrder extends OrgAction
                 if ($transaction->submitted_at == null) {
                     data_set($transactionData, 'submitted_at', $date);
                     data_set($transactionData, 'status', TransactionStatusEnum::PROCESSING);
-                    data_set($transactionData, 'submitted_quantity_ordered', $transaction->quantity_ordered); //Copy quantity
+                    data_set($transactionData, 'submitted_quantity_ordered', $transaction->quantity_ordered);
+                    data_set($transactionData, 'submitted_gross_amount', $transaction->gross_amount);
+                    data_set($transactionData, 'submitted_net_amount', $transaction->net_amount);
+                    data_set($transactionData, 'submitted_discount_factor', $transaction->current_discount_factor);
                 }
 
                 $transaction->update($transactionData);
-
-                if ($transaction->asset) {
-                    $transaction->asset->orderingStats()->update(['last_order_submitted_at' => $transaction->submitted_at]);
-                }
             }
         }
 
@@ -105,8 +115,15 @@ class SubmitOrder extends OrgAction
         $this->orderHandlingHydrators($order, $oldState);
         $this->orderHandlingHydrators($order, OrderStateEnum::SUBMITTED);
 
-        SendNewOrderEmailToSubscribers::dispatch($order->id);
-        SendNewOrderEmailToCustomer::dispatch($order->id);
+        if (!in_array($order->salesChannel?->type, [
+            SalesChannelTypeEnum::PHONE,
+            SalesChannelTypeEnum::SHOWROOM,
+            SalesChannelTypeEnum::EMAIL,
+            SalesChannelTypeEnum::OTHER
+        ])) {
+            SendNewOrderEmailToSubscribers::dispatch($order->id);
+            SendNewOrderEmailToCustomer::dispatch($order->id);
+        }
 
         if ($order->pay_status == OrderPayStatusEnum::PAID || $order->to_be_paid_by == OrderToBePaidByEnum::CASH_ON_DELIVERY) {
             SendOrderToWarehouse::make()->action($order, []);
@@ -133,7 +150,17 @@ class SubmitOrder extends OrgAction
             $grGiftOffer = Offer::find($grGiftOfferId);
         }
 
+        $eligible = false;
+
         if ($grGiftOffer) {
+            $minAmount = Arr::get($grGiftOffer->trigger_data, 'min_amount', 100000);
+            if ($order->gross_amount >= $minAmount) {
+                $eligible = true;
+            }
+        }
+
+
+        if ($grGiftOffer && $eligible) {
             $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');
             if (!$selectedGrGift) {
                 $grGiftsData = Arr::get($offersData, 'gr.gifts_products');

@@ -19,7 +19,6 @@ use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
 use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\CRM\Customer\HydrateCustomers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
-use App\Actions\CRM\Customer\Search\ReindexCustomerSearch;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\CustomerNote\StoreCustomerNote;
 use App\Actions\CRM\CustomerNote\UpdateCustomerNote;
@@ -32,7 +31,6 @@ use App\Actions\CRM\PollOption\StorePollOption;
 use App\Actions\CRM\PollOption\UpdatePollOption;
 use App\Actions\CRM\PollReply\StorePollReply;
 use App\Actions\CRM\PollReply\UpdatePollReply;
-use App\Actions\CRM\Prospect\Search\ReindexProspectSearch;
 use App\Actions\CRM\Prospect\StoreProspect;
 use App\Actions\CRM\Prospect\UpdateProspect;
 use App\Actions\CRM\Prospect\UpdateProspectEmailClicked;
@@ -662,6 +660,46 @@ test('UI show customer', function () {
     });
 });
 
+test('UI show customer showcase tab has stats for KPI cards', function () {
+    $customer = $this->shop->customers()->first();
+    $response = get(route('grp.org.shops.show.crm.customers.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $customer->slug,
+        'tab' => 'showcase',
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Shop/CRM/Customer')
+            ->has('tabs')
+            ->has('showcase')
+            ->has('showcase.stats')
+            ->where(
+                'showcase.stats',
+                fn ($stats) => isset($stats['historic_clv_amount'])
+                && isset($stats['average_order_value'])
+                && isset($stats['churn_risk_prediction'])
+                && isset($stats['number_orders'])
+            );
+    });
+});
+
+test('UI show customer timeline tab', function () {
+    $customer = Customer::first();
+    $response = get(route('grp.org.shops.show.crm.customers.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $customer->slug,
+        'tab' => 'timeline',
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Shop/CRM/Customer')
+            ->has('tabs')
+            ->has('timeline');
+    });
+});
+
 test('UI edit customer', function () {
     $customer = Customer::first();
     $response = get(route('grp.org.shops.show.crm.customers.edit', [$this->organisation->slug, $this->shop->slug, $customer->slug]));
@@ -881,22 +919,6 @@ test('UI get section route marketing mailshots index', function () {
         ->and($sectionScope->model_slug)->toBe($this->shop->slug);
 });
 
-
-test('customers search', function () {
-    $this->artisan('search:customers')->assertExitCode(0);
-
-    $customers = Customer::first();
-    ReindexCustomerSearch::run($customers);
-    expect($customers->universalSearch()->count())->toBe(1);
-});
-
-test('prospects search', function () {
-    $this->artisan('search:prospects')->assertExitCode(0);
-
-    $prospects = Prospect::first();
-    ReindexProspectSearch::run($prospects);
-    expect($prospects->universalSearch()->count())->toBe(1);
-});
 
 test('create 3rd prospect (Email Clicked)', function () {
     $shop      = $this->shop;

@@ -16,6 +16,10 @@ import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { faEnvelope } from '@far'
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import LoadingOverlay2 from "@/Components/Utils/LoadingOverlay2.vue"
+import { faLayerGroup, faSparkles, faTrash } from '@fas'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { useBundle } from "@/Composables/useBundle"
+library.add(faLayerGroup, faSparkles, faTrash)
 
 const layout = inject("layout", retinaLayoutStructure)
 
@@ -106,7 +110,9 @@ const images = computed(() => {
         arr.push(props.product.web_images.main.gallery)
     }
 
-    if (props.product?.web_images?.all?.length) {
+    if (props.product?.web_images?.secondary?.gallery) {
+        arr.push(props.product.web_images.secondary.gallery)
+    }else if (props.product?.web_images?.all?.length) {
         props.product.web_images.all.slice(1).forEach(img => {
             if (img?.original) arr.push(img.original)
         })
@@ -166,6 +172,22 @@ const onScroll = () => {
 }
 
 
+const bundle = useBundle()
+
+const canOpenBundlePanel = computed(() => {
+    return Boolean(
+        layout?.iris?.is_logged_in &&
+        layout?.app?.name === 'iris' &&
+        !(
+            !props.product?.stock
+        )
+    )
+})
+
+const openBundlePanel = (product:any) => {
+    if (!canOpenBundlePanel.value) return
+    bundle.addProduct(product)
+}
 </script>
 
 <template>
@@ -266,8 +288,24 @@ const onScroll = () => {
                             fixed-width :class="[product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
                     </button>
                 </div>
-            </component>
 
+                <div class="absolute right-2 bottom-2 z-20 group" v-if="canOpenBundlePanel">
+
+                    <Button
+                        @click.prevent="openBundlePanel(product)"
+                        class="rounded-full h-8 w-8 flex items-center justify-center transition"
+                        type="primary"
+                        v-tooltip="trans('Create bundle')"
+                    >
+                        <FontAwesomeIcon
+                            icon="fas fa-layer-group"
+                            class="text-white text-md"
+                            fixed-width
+                        />
+                    </Button>
+
+                </div>
+            </component>
             <!-- Title -->
             <LinkIris v-if="product.url" :href="product.url" type="internal"
                 class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">

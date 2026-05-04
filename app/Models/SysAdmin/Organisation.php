@@ -33,7 +33,6 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Subscription;
-use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\OrgPostRoom;
 use App\Models\Comms\Outbox;
@@ -68,6 +67,7 @@ use App\Models\Helpers\Upload;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Holiday;
+use App\Models\HumanResources\HolidayYear;
 use App\Models\HumanResources\JobPosition;
 use App\Models\HumanResources\Workplace;
 use App\Models\Inventory\Location;
@@ -145,6 +145,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property string|null $colour
  * @property array<array-key, mixed>|null $forbidden_dispatch_countries
  * @property array<array-key, mixed> $opening_hours
+ * @property int $late_grace_period_minutes
  * @property-read \App\Models\SysAdmin\OrganisationAccountingStats|null $accountingStats
  * @property-read LaravelCollection<int, Shop> $activeShops
  * @property-read Address|null $address
@@ -162,14 +163,13 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, ClockingMachine> $clockingMachines
  * @property-read LaravelCollection<int, Collection> $collections
  * @property-read \App\Models\SysAdmin\OrganisationCommsStats|null $commsStats
- * @property-read Country $country
+ * @property-read Country|null $country
  * @property-read LaravelCollection<int, CreditTransaction> $creditTransactions
  * @property-read \App\Models\SysAdmin\OrganisationCRMStats|null $crmStats
  * @property-read Currency $currency
  * @property-read LaravelCollection<int, Customer> $customers
  * @property-read LaravelCollection<int, DeliveryNote> $deliveryNotes
  * @property-read \App\Models\SysAdmin\OrganisationDiscountsStats|null $discountsStats
- * @property-read LaravelCollection<int, DispatchedEmail> $dispatchedEmails
  * @property-read \App\Models\SysAdmin\OrganisationDropshippingStat|null $dropshippingStats
  * @property-read LaravelCollection<int, Employee> $employees
  * @property-read LaravelCollection<int, Favourite> $favourites
@@ -177,7 +177,8 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, FulfilmentCustomer> $fulfilmentCustomers
  * @property-read \App\Models\SysAdmin\OrganisationFulfilmentStats|null $fulfilmentStats
  * @property-read LaravelCollection<int, Fulfilment> $fulfilments
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read LaravelCollection<int, HolidayYear> $holidayYears
  * @property-read LaravelCollection<int, Holiday> $holidays
  * @property-read \App\Models\SysAdmin\OrganisationHumanResourcesStats|null $humanResourcesStats
  * @property-read Media|null $image
@@ -237,7 +238,6 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Redirect> $redirects
  * @property-read LaravelCollection<int, Rental> $rentals
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\Role> $roles
- * @property-read \App\Models\SysAdmin\OrganisationSalesIntervals|null $salesIntervals
  * @property-read Media|null $seoImage
  * @property-read LaravelCollection<int, SerialReference> $serialReferences
  * @property-read LaravelCollection<int, Service> $services
@@ -391,11 +391,6 @@ class Organisation extends Model implements HasMedia, Auditable
     public function manufactureStats(): HasOne
     {
         return $this->hasOne(OrganisationManufactureStats::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(OrganisationSalesIntervals::class);
     }
 
     public function orderingIntervals(): HasOne
@@ -891,11 +886,6 @@ class Organisation extends Model implements HasMedia, Auditable
         return $this->hasMany(Adjustment::class);
     }
 
-    public function dispatchedEmails(): HasMany
-    {
-        return $this->hasMany(DispatchedEmail::class);
-    }
-
     public function webUserRequests(): HasMany
     {
         return $this->hasMany(WebUserRequest::class);
@@ -911,6 +901,11 @@ class Organisation extends Model implements HasMedia, Auditable
         return $this->hasMany(Holiday::class);
     }
 
+    public function holidayYears(): HasMany
+    {
+        return $this->hasMany(HolidayYear::class);
+    }
+
     public function trolleys(): HasMany
     {
         return $this->hasMany(Trolley::class);
@@ -924,5 +919,28 @@ class Organisation extends Model implements HasMedia, Auditable
     public function workSchedules(): MorphMany
     {
         return $this->morphMany(WorkSchedule::class, 'schedulable');
+    }
+
+    public function getDefaultWorkSchedule(): ?WorkSchedule
+    {
+        return $this->workSchedules()->where('type', 'default')->where('is_active', true)->first();
+    }
+
+    public function getDefaultAnnualLeaveDays(): int
+    {
+        return $this->settings['hr']['leave_quota']['annual_leave_days'] ?? 10;
+    }
+
+    public function getDefaultProbationDays(): int
+    {
+        return $this->settings['hr']['probation_period_days'] ?? 90;
+    }
+
+    public function setDefaultLeaveQuota(array $quota): void
+    {
+        $settings = $this->settings ?? [];
+        $settings['hr']['leave_quota'] = $quota;
+        $this->settings = $settings;
+        $this->save();
     }
 }

@@ -76,6 +76,7 @@ class ShowOrgStock extends OrgAction
                     ],
                     'model'         => __('SKU'),
                     'title'         => $orgStock->code,
+                    'iconRight'          => $orgStock->state->stateIcon()[$orgStock->state->value],
                     'actions'       => [
                         [
                             'type'  => 'button',
@@ -93,7 +94,6 @@ class ShowOrgStock extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => OrgStockTabsEnum::navigation()
                 ],
-
                 'master'      => $hasMaster,
                 'masterRoute' => $hasMaster ? [
                     'name'       => 'grp.goods.stocks.show',
@@ -101,8 +101,6 @@ class ShowOrgStock extends OrgAction
                         'stock' => $orgStock->stock->slug
                     ]
                 ] : null,
-
-
                 OrgStockTabsEnum::SHOWCASE->value => $this->tab == OrgStockTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)
                     : Inertia::lazy(fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)),

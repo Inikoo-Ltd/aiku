@@ -25,10 +25,13 @@ class ApproveCustomer extends OrgAction
 {
     use WithActionUpdate;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Customer $customer): Customer
     {
         $customer = $this->update($customer, [
-            'status' => CustomerStatusEnum::APPROVED,
+            'status'      => CustomerStatusEnum::APPROVED,
             'approved_at' => now()
         ]);
 
@@ -40,7 +43,7 @@ class ApproveCustomer extends OrgAction
         if ($customer->fulfilmentCustomer) {
             StoreRentalAgreement::make()->action($customer->fulfilmentCustomer, [
                 'billing_cycle' => RentalAgreementBillingCycleEnum::MONTHLY,
-                'state' => RentalAgreementStateEnum::ACTIVE
+                'state'         => RentalAgreementStateEnum::ACTIVE
             ]);
             FulfilmentHydrateCustomers::dispatch($customer->fulfilmentCustomer->fulfilment);
         } else {
@@ -50,9 +53,13 @@ class ApproveCustomer extends OrgAction
         }
 
         ShopHydrateCrmStats::dispatch($customer->shop);
+
         return $customer;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Customer $customer, ActionRequest $request): Customer
     {
         $this->initialisation($customer->organisation, $request);
@@ -60,6 +67,9 @@ class ApproveCustomer extends OrgAction
         return $this->handle($customer);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(Customer $customer, array $modelData): Customer
     {
         $this->asAction = true;

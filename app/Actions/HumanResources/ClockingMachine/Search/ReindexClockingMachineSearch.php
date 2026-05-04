@@ -22,7 +22,6 @@ class ReindexClockingMachineSearch extends HydrateModel
 
     public function handle(ClockingMachine $clockingMachine): void
     {
-        ClockingMachineRecordSearch::run($clockingMachine);
     }
 
 

@@ -20,7 +20,7 @@ class RedoTradeUnitTimeSeries implements ShouldBeUnique
 {
     use WithHydrateCommand;
 
-    public string $jobQueue         = 'default-long';
+    public string $jobQueue         = 'default-long-slave';
     public string $commandSignature = 'trade-units:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -36,28 +36,24 @@ class RedoTradeUnitTimeSeries implements ShouldBeUnique
     public function handle(TradeUnit $tradeUnit, bool $async = false, ?string $from = null, ?string $to = null): void
     {
         if (!$from || !$to) {
-            $firstInvoicedDate = DB::table('invoice_transactions')
+            $dateRange = DB::connection('aiku_no_sticky')->table('invoice_transactions')
                 ->join('invoice_transaction_has_trade_units', 'invoice_transaction_has_trade_units.invoice_transaction_id', '=', 'invoice_transactions.id')
                 ->where('invoice_transaction_has_trade_units.trade_unit_id', $tradeUnit->id)
                 ->whereNull('invoice_transactions.deleted_at')
-                ->min('invoice_transactions.date');
-            $lastInvoicedDate = DB::table('invoice_transactions')
-                ->join('invoice_transaction_has_trade_units', 'invoice_transaction_has_trade_units.invoice_transaction_id', '=', 'invoice_transactions.id')
-                ->where('invoice_transaction_has_trade_units.trade_unit_id', $tradeUnit->id)
-                ->whereNull('invoice_transactions.deleted_at')
-                ->max('invoice_transactions.date');
+                ->selectRaw('MIN(invoice_transactions.date) as first_date, MAX(invoice_transactions.date) as last_date')
+                ->first();
 
-            if (!$firstInvoicedDate) {
+            if (!$dateRange?->first_date) {
                 return;
             }
 
-            $from = $from ?? Carbon::parse($firstInvoicedDate)->toDateString();
-            $to   = $to ?? Carbon::parse($lastInvoicedDate ?? now())->toDateString();
+            $from = $from ?? Carbon::parse($dateRange->first_date)->toDateString();
+            $to   = $to ?? Carbon::parse($dateRange->last_date ?? now())->toDateString();
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessTradeUnitTimeSeriesRecords::dispatch($tradeUnit->id, $frequency, $from, $to)->onQueue('low-priority');
+                ProcessTradeUnitTimeSeriesRecords::dispatch($tradeUnit->id, $frequency, $from, $to)->delay(300);
             } else {
                 ProcessTradeUnitTimeSeriesRecords::run($tradeUnit->id, $frequency, $from, $to);
             }
@@ -70,11 +66,17 @@ class RedoTradeUnitTimeSeries implements ShouldBeUnique
         $query     = DB::table($tableName)->select('id')->orderBy('id', 'desc');
 
         $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($from, $to) {
+            $ids   = $modelsData->pluck('id')->all();
+            $model = new $this->model();
+            $instances = $this->hasSoftDeletes($model)
+                ? $model->withTrashed()->whereIn('id', $ids)->get()->keyBy('id')
+                : $model->whereIn('id', $ids)->get()->keyBy('id');
+
             foreach ($modelsData as $modelId) {
-                $model    = (new $this->model());
-                $instance = $this->hasSoftDeletes($model)
-                    ? $model->withTrashed()->find($modelId->id)
-                    : $model->find($modelId->id);
+                $instance = $instances->get($modelId->id);
+                if (!$instance) {
+                    continue;
+                }
 
                 try {
                     $this->handle($instance, false, $from, $to);
@@ -96,11 +98,18 @@ class RedoTradeUnitTimeSeries implements ShouldBeUnique
         $bar->start();
 
         $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($bar, $command) {
+            $ids   = $modelsData->pluck('id')->all();
+            $model = new $this->model();
+            $instances = $this->hasSoftDeletes($model)
+                ? $model->withTrashed()->whereIn('id', $ids)->get()->keyBy('id')
+                : $model->whereIn('id', $ids)->get()->keyBy('id');
+
             foreach ($modelsData as $modelId) {
-                $model    = (new $this->model());
-                $instance = $this->hasSoftDeletes($model)
-                    ? $model->withTrashed()->find($modelId->id)
-                    : $model->find($modelId->id);
+                $instance = $instances->get($modelId->id);
+                if (!$instance) {
+                    $bar->advance();
+                    continue;
+                }
 
                 try {
                     $this->handle($instance, (bool) $command->option('async'), $command->option('from'), $command->option('to'));

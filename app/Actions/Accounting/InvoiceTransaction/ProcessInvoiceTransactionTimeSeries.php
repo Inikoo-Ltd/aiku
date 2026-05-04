@@ -19,12 +19,12 @@ use App\Actions\Masters\MasterProductCategoryTimeSeries\ProcessMasterProductCate
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Accounting\InvoiceTransaction;
 use Carbon\Carbon;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProcessInvoiceTransactionTimeSeries implements ShouldQueue
+class ProcessInvoiceTransactionTimeSeries
 {
     use AsAction;
+    public string $jobQueue = 'sales_slave';
 
     public function handle(
         InvoiceTransaction $invoiceTransaction,

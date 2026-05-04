@@ -8,7 +8,6 @@
 
 namespace App\Actions\HumanResources\Workplace;
 
-use App\Actions\HumanResources\Workplace\Search\WorkplaceRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWorkplaces;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
@@ -44,9 +43,6 @@ class UpdateWorkplace extends OrgAction
             OrganisationHydrateWorkplaces::run($workplace->organisation);
         }
         $workplace = $this->updateModelAddress($workplace, $addressData);
-
-
-        WorkplaceRecordSearch::dispatch($workplace);
 
         return $workplace;
     }

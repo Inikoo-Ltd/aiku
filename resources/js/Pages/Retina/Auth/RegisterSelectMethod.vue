@@ -18,8 +18,6 @@ import { GoogleLogin  } from 'vue3-google-login'
 import RetinaShowIris from "@/Layouts/RetinaShowIris.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import Modal from "@/Components/Utils/Modal.vue"
-import Register from "@/Pages/Retina/Auth/Register.vue";
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { getRefRedirect } from "@/Composables/Retina/useGetRedirectUrl"
@@ -84,6 +82,11 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
         })
     }
 }
+const goToRegister = () => {
+    window.location.href = route('retina.register_standalone', {
+        tiktok_code: route().queryParams?.tiktok_code
+    })
+}
 </script>
 
 <template>
@@ -109,7 +112,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 				>
                     <template #default="{ isLoadingVisit }">
                         <button
-                            aclick.prevent="submit"
+                            @click="goToRegister"
                             class="w-full relative flex items-center justify-center gap-2 bg-[#1D252E] disabled:bg-[#393e49] text-white disabled:text-gray-300 hover:bg-black font-normal border border-[#1D252E] rounded-sm px-16 py-2 cursor-pointer transition duration-75 ease-in-out"
                             :disabled="isLoadingVisit"
                         >

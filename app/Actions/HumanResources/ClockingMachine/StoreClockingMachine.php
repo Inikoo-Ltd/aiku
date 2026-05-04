@@ -8,7 +8,6 @@
 
 namespace App\Actions\HumanResources\ClockingMachine;
 
-use App\Actions\HumanResources\ClockingMachine\Search\ClockingMachineRecordSearch;
 use App\Actions\HumanResources\Workplace\Hydrators\WorkplaceHydrateClockingMachines;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateClockingMachines;
@@ -72,8 +71,6 @@ class StoreClockingMachine extends OrgAction
         OrganisationHydrateClockingMachines::dispatch($workplace->organisation);
         GroupHydrateClockingMachines::dispatch($clockingMachine->group);
         WorkplaceHydrateClockingMachines::dispatch($workplace);
-
-        ClockingMachineRecordSearch::dispatch($clockingMachine);
 
         return $clockingMachine;
     }

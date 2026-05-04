@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property string $translated_text
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\CRM\Livechat\ChatMessage $chatMessage
+ * @property-read \App\Models\CRM\Livechat\ChatMessage|null $chatMessage
  * @property-read Language $targetLanguage
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessageTranslation newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessageTranslation newQuery()

@@ -15,15 +15,13 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import AddPortfoliosWithUpload from "@/Components/Dropshipping/AddPortfoliosWithUpload.vue"
 import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue"
-import { ColorPickerStyle, InputNumber, InputText, Message, Popover } from "primevue"
+import AddBundles from "@/Components/Dropshipping/AddBundles.vue"
+import { Message, Popover } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faSyncAlt, faHandPointer, faBan } from "@fas"
-import { useFormatTime, useTimeCountdown } from "@/Composables/useFormatTime"
-import Icon from "@/Components/Icon.vue"
-import LoadingText from "@/Components/Utils/LoadingText.vue"
-import { differenceInHours, differenceInMinutes, differenceInSeconds, addDays } from "date-fns"
+import { faSyncAlt, faHandPointer } from "@fas"
+import { useTimeCountdown } from "@/Composables/useFormatTime"
+import { addDays } from "date-fns"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-
 import {
 	faBracketsCurly,
 	faPawClaws,
@@ -36,6 +34,7 @@ import {
 	faEllipsisV,
 	faDownload,
 	faTimes,
+	faPencilAlt
 } from "@fal"
 import { faCheck } from "@fas"
 import axios from "axios"
@@ -53,11 +52,9 @@ import { useTabChange } from "@/Composables/tab-change"
 import TableRetinaPlatformPortfolioLogs from "@/Components/Tables/Retina/TableRetinaPlatformPortfolioLogs.vue"
 import { useEchoRetinaPersonal } from "@/Stores/echo-retina-personal"
 import PureProgressBar from "@/Components/PureProgressBar.vue"
-import { set } from "lodash-es"
-import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
-import { EditorContent } from "@tiptap/vue-3"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import { UploadPallet } from "@/types/Pallet"
+import RetinaTablePortfoliosBundles from "@/Components/Tables/Retina/RetinaTablePortfoliosBundles.vue"
 
 interface UploadSection {
 	title: {
@@ -84,7 +81,8 @@ library.add(
 	faBox,
 	faArrowLeft,
 	faArrowRight,
-	faUpload
+	faUpload,
+	faPencilAlt
 )
 
 const props = defineProps<{
@@ -105,6 +103,7 @@ const props = defineProps<{
 	}
 	bulk_import_product: UploadSection
 	products: TableTS
+	bundles: TableTS
 	logs: {}
 	routes: {
 		batch_upload: routeType
@@ -116,6 +115,7 @@ const props = defineProps<{
 		addPortfolioRoute: routeType
 		bulk_upload: routeType
 		bulk_unlink: routeType
+		batch_all_dimensions_update: routeType
 		itemRoute: routeType
 		updatePortfolioRoute: routeType
 		batchDeletePortfolioRoute: routeType
@@ -142,13 +142,19 @@ const props = defineProps<{
 	last_created_at_download_portfolio_customer_sales_channel: string | null
 	ebay_warehouse_policy_msg: {
 		show_msg: boolean
-		cust_country: string
+		customer_country: string
 	}
+	bundle_routes: any
+	shop_data: {
+        currency_code: string
+		currency_symbol: string
+    }
 }>()
 
 const step = ref(props.step)
 const isPlatformManual = computed(() => props.platform_data.type === "manual")
 const isOpenModalPortfolios = ref(false)
+const isOpenModalCreateBundle = ref(false)
 const isOpenModalCloneProgress = ref(false)
 const isOpenModalFetchProgress = ref(false)
 const isOpenModalUploadProgress = ref(false)
@@ -902,6 +908,57 @@ const onDownloadExtendedProperties = () => {
 	}, 400)
 }
 
+const modalUpdateDimension = ref(false)
+const isLoadingUpdateDimension = ref(false)
+const totalProductsForDimensionUpdate = computed(
+	() => props.products?.meta?.total ?? props.products?.data?.length ?? 0
+)
+
+const openUpdateDimension = () => {
+	modalUpdateDimension.value = true
+}
+
+const submitBatchAllDimensionsUpdate = () => {
+	if (!props.routes.batch_all_dimensions_update?.name) {
+		notify({
+			title: trans("No route defined"),
+			type: "error",
+		})
+		return
+	}
+
+	router.post(
+		route(
+			props.routes.batch_all_dimensions_update.name,
+			props.routes.batch_all_dimensions_update.parameters
+		),
+		{},
+		{
+			preserveScroll: true,
+			onBefore: () => {
+				isLoadingUpdateDimension.value = true
+			},
+			onSuccess: () => {
+				modalUpdateDimension.value = false
+				notify({
+					title: trans("Success!"),
+					text: trans("Products dimensions update has been started."),
+					type: "success",
+				})
+			},
+			onError: () => {
+				notify({
+					title: trans("Something went wrong"),
+					type: "error",
+				})
+			},
+			onFinish: () => {
+				isLoadingUpdateDimension.value = false
+			},
+		}
+	)
+}
+
 const layout = inject("layout", layoutStructure)
 </script>
 
@@ -922,7 +979,7 @@ const layout = inject("layout", layoutStructure)
 				" />
 		</template>
 
-		<template v-if="!props.is_closed" #other>
+		<template v-if="!props.is_closed && currentTab !== 'bundles'" #other>
 			<div
 				class="inline-flex items-center rounded-md border overflow-hidden"
 				v-if="props.product_count">
@@ -1176,6 +1233,13 @@ const layout = inject("layout", layoutStructure)
 				</Popover>
 			</div>
 		</template>
+		<template v-if="currentTab === 'bundles'" #other>
+			<Button
+				@click="() => (isOpenModalCreateBundle = true)"
+				:label="trans('Create bundle')"
+				:icon="'fas fa-plus'"
+				 />
+		</template>
 	</PageHeading>
 	<Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
@@ -1207,7 +1271,7 @@ const layout = inject("layout", layoutStructure)
 					<p class="text-sm text-red-700">
 						<strong class="hidden sm:inline">{{ trans("Important Notice:") }}</strong>
 						{{ trans("We noticed your account is registered in") }}
-						<strong> {{ ebay_warehouse_policy_msg?.cust_country + "." }} </strong>
+						<strong> {{ ebay_warehouse_policy_msg?.customer_country + "." }} </strong>
 						{{
 							trans(
 								"In accordance to eBay’s Overseas Warehouse Block Policy, listings from this region may be blocked when the item is stored overseas."
@@ -1293,6 +1357,17 @@ const layout = inject("layout", layoutStructure)
 				size="xs" />
 		</div>
 	</div>
+	<div v-if="platform_data.type === 'shopify' && currentTab === 'products'" class="pt-2 grid justify-items-end mr-4">
+		<div class="gap-x-3 flex">
+			<Button
+				v-tooltip="trans('Update all dimensions ')"
+				:type="'tertiary'"
+				:label="trans('Update all dimensions')"
+				@click="openUpdateDimension()"
+				:icon="['fal', 'fa-pencil-alt']"
+				size="xs" />
+		</div>
+	</div>
 	<Message
 		v-if="
 			is_platform_connected &&
@@ -1374,7 +1449,6 @@ const layout = inject("layout", layoutStructure)
 			</div>
 		</div>
 	</Message>
-
 	<!-- retina.models.dropshipping.ebay.batch_upload -->
 	<div v-if="(is_platform_connected || isPlatformManual) && currentTab === 'products'">
 		<div
@@ -1463,6 +1537,61 @@ const layout = inject("layout", layoutStructure)
 	<div v-else-if="currentTab === 'logs'">
 		<TableRetinaPlatformPortfolioLogs :data="logs" :tab="currentTab" />
 	</div>
+	<div v-else-if="currentTab === 'bundles'">
+		<div
+			v-if="props.product_count < 1"
+			class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
+			<h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
+				{{ content?.portfolio_empty?.title || trans(`You don't have a single bundles`) }}
+			</h1>
+			<p class="mt-4 text-xl">
+				{{
+					content?.portfolio_empty?.description ||
+					trans(
+						"To get started, add bundles to your shop. You can sync from your inventory or create a new one."
+					)
+				}}
+			</p>
+			<div class="mt-6 space-y-4">
+				<ButtonWithLink
+					v-if="routes?.syncAllRoute"
+					:routeTarget="routes?.syncAllRoute"
+					isWithError
+					:label="content?.portfolio_empty?.sync_button"
+					icon="fas fa-sync-alt"
+					xtype="tertiary"
+					size="xl" />
+				<div v-if="routes?.syncAllRoute && routes?.addPortfolioRoute" class="text-gray-500">
+					{{ content?.portfolio_empty?.separation || trans("or") }}
+				</div>
+				<Button
+					v-if="routes?.addPortfolioRoute"
+					@click="isOpenModalPortfolios = true"
+					:label="content?.portfolio_empty?.add_button || trans('Add products')"
+					icon="fas fa-plus"
+					size="xl" />
+			</div>
+		</div>
+
+		<RetinaTablePortfoliosBundles
+		v-else
+				@showBulkButton="showBulkButton()"
+				@hideBulkButton="hideBulkButton()"
+				:data="props.bundles"
+				:bundle_routes="props.bundle_routes"
+				:tab="'bundles'"
+				:selectedData
+				:platform_data
+				:platform_user_id
+				:is_platform_connected
+				:progressToUploadToShopify
+				:customerSalesChannel="customer_sales_channel"
+				:progressToUploadToEcom="progessbar"
+				v-model:selectedProducts="selectedProducts"
+				:key="key + 'table-bundles'"
+				:routes="props.routes"
+				:count_product_not_synced="count_product_not_synced" />
+	</div>
 
 	<Modal
 		:isOpen="isOpenModalPortfolios"
@@ -1484,6 +1613,30 @@ const layout = inject("layout", layoutStructure)
 			@onDone="
 				() => {
 					;((isOpenModalPortfolios = false), (key = ulid()))
+				}
+			"
+			:platform_user_id
+			:is_platform_connected
+			:customerSalesChannel="customer_sales_channel"
+			:onClickReconnect />
+	</Modal>
+
+	<Modal
+		:isOpen="isOpenModalCreateBundle"
+		@onClose="isOpenModalCreateBundle = false"
+		:isClosableInBackground="step.current !== 1"
+		width="w-full max-w-7xl max-h-[600px] md:max-h-[85vh] overflow-y-auto">
+		<AddBundles
+			:step="step"
+			:customer_id="layout.user.customer_id"
+			:routes="props.routes"
+			:bundle_routes="props.bundle_routes"
+			:platform_data
+			:shop_data="props.shop_data"
+			@onClose="isOpenModalCreateBundle = false"
+			@onDone="
+				() => {
+					;((isOpenModalCreateBundle = false), (key = ulid()))
 				}
 			"
 			:platform_user_id
@@ -2140,4 +2293,35 @@ const layout = inject("layout", layoutStructure)
 		:progressDescription="bulk_import_product.progressDescription"
 		:preview_template="bulk_import_product.preview_template"
 		:upload_spreadsheet="bulk_import_product.upload_spreadsheet" />
+
+	<!-- Modal: Update All Dimension Shopify -->
+	<Modal
+		:isOpen="modalUpdateDimension"
+		width="w-full max-w-md"
+		@onClose="modalUpdateDimension = false">
+		<div class="text-xl font-semibold text-center">
+			{{ trans("Update All Dimension") }}
+		</div>
+
+		<div class="mt-4 text-center text-sm text-gray-600">
+			{{
+				trans(`This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?`)
+			}}
+		</div>
+
+		<div class="mt-6 flex gap-2">
+			<Button
+				type="tertiary"
+				@click="modalUpdateDimension = false"
+				:label="trans('Close')"
+				full
+				:disabled="isLoadingUpdateDimension" />
+			<Button
+				@click="submitBatchAllDimensionsUpdate()"
+				:label="trans('Submit')"
+				full
+				:disabled="totalProductsForDimensionUpdate === 0 || isLoadingUpdateDimension"
+				:loading="isLoadingUpdateDimension" />
+		</div>
+	</Modal>
 </template>

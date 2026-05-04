@@ -18,7 +18,9 @@ import "swiper/css"
 import { faImage } from "@far"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
-
+import ReviewsProduct from "@/Components/CMS/Reviews/ReviewsProduct.vue"
+import { useBundle } from "@/Composables/useBundle"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
@@ -56,6 +58,7 @@ const props = withDefaults(defineProps<{
     productExistenceInChannels: Number[]
     listProducts?: object
     isLoadingRemindBackInStock? : boolean
+    indexBlock:number
 }>(), {})
 
 const emits = defineEmits<{
@@ -77,10 +80,15 @@ const toggleExpanded = () => {
     expanded.value = !expanded.value
 }
 
+const bundle = useBundle()
+
+const openBundlePanel = (product:any) => {
+    bundle.addProduct(product)
+}
 </script>
 
 <template>
-    <div v-if="screenType != 'mobile'" :id="fieldValue?.id ? fieldValue?.id  : 'product-ds-1'"  component="product-ds-1" :style="{
+    <div v-if="screenType != 'mobile'" :id="fieldValue?.id ? fieldValue?.id  : 'product-ds-1'+indexBlock"  component="product-ds-1" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         marginLeft: 'auto',
         marginRight: 'auto'
@@ -98,7 +106,7 @@ const toggleExpanded = () => {
                             <Image :src="tag?.image" :alt="`Thumbnail tag ${index}`"
                                 class="w-full h-full object-cover" />
                         </div>
-                        <span>{{ tag.name }}</span>
+                        <span>{{ tag.label }}</span>
                     </div>
                 </div>
             </div>
@@ -197,6 +205,21 @@ const toggleExpanded = () => {
                         :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
                         :productHasPortfolio="productExistenceInChannels"
                         :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)" />
+                    
+                    <Button
+                        v-if="layout?.iris?.is_logged_in && props.product.stock > 0"
+                        @click.prevent="openBundlePanel(product)"
+                        class="flex items-center justify-center transition rounded-md"
+                        type="primary"
+                        size="sm"
+                        v-tooltip="trans('Add to bundle')"
+                    >
+                        <FontAwesomeIcon
+                            icon="fas fa-layer-group"
+                            class="text-white text-md"
+                            fixed-width
+                        />
+                    </Button>
                     <!-- <div v-if="isLoadingFetchExistenceChannels" class="absolute h-full w-full z-10">
                         <div class="h-full w-full skeleton rounded" />
                     </div> -->
@@ -321,6 +344,8 @@ const toggleExpanded = () => {
             </div>
         </div>
     </div>
+
+      <ReviewsProduct :product="product" class="mt-10" />
 </template>
 
 

@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_snapshots_state_historic
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Web\Banner $banner
+ * @property-read \App\Models\Web\Banner|null $banner
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BannerStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BannerStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BannerStats query()

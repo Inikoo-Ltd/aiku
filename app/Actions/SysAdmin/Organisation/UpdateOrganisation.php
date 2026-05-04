@@ -54,6 +54,18 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, "settings.invoicing.show_tax_liability_date", Arr::pull($modelData, 'show_tax_liability_date'));
         }
 
+        if (Arr::has($modelData, 'allow_waiting')) {
+            data_set($modelData, 'settings.orders.allow_waiting', Arr::pull($modelData, 'allow_waiting'));
+        }
+
+        if (Arr::has($modelData, 'allow_picker_set_not_picked')) {
+            data_set($modelData, 'settings.orders.allow_picker_set_not_picked', Arr::pull($modelData, 'allow_picker_set_not_picked'));
+        }
+
+        if (Arr::has($modelData, 'allow_stock_controller_set_not_picked')) {
+            data_set($modelData, 'settings.orders.allow_stock_controller_set_not_picked', Arr::pull($modelData, 'allow_stock_controller_set_not_picked'));
+        }
+
 
         if (Arr::has($modelData, 'address')) {
             $addressData = Arr::get($modelData, 'address');
@@ -83,9 +95,19 @@ class UpdateOrganisation extends OrgAction
         }
 
         if (Arr::has($modelData, 'working_hours')) {
-            data_set($modelData, "working_hours", Arr::pull($modelData, 'working_hours'));
-            UpdateWorkSchedule::run($organisation, $modelData);
-            data_forget($modelData, 'working_hours');
+            $workingHours = Arr::pull($modelData, 'working_hours');
+            $workSchedule = $organisation->workSchedules()->first();
+            if ($workSchedule) {
+                app(UpdateWorkSchedule::class)->action($organisation, $workSchedule, ['working_hours' => $workingHours]);
+            }
+        }
+
+        if (Arr::has($modelData, 'hr_annual_leave_days')) {
+            data_set($modelData, "settings.hr.leave_quota.annual_leave_days", Arr::pull($modelData, 'hr_annual_leave_days'));
+        }
+
+        if (Arr::has($modelData, 'hr_probation_period_days')) {
+            data_set($modelData, "settings.hr.probation_period_days", Arr::pull($modelData, 'hr_probation_period_days'));
         }
 
 
@@ -93,6 +115,7 @@ class UpdateOrganisation extends OrgAction
 
         $organisation->refresh();
 
+        $this->updateEmployeeLeaveBalances($organisation);
 
         return $organisation;
     }
@@ -114,30 +137,36 @@ class UpdateOrganisation extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'name'                         => ['sometimes', 'required', 'string', 'max:255'],
-            'ui_name'                      => ['sometimes', 'required', 'string', 'max:32'],
-            'contact_name'                 => ['sometimes', 'string', 'max:255'],
-            'google_client_id'             => ['sometimes', 'string'],
-            'google_client_secret'         => ['sometimes', 'string'],
-            'show_omega'                   => ['sometimes', 'boolean'],
-            'attach_isdoc_to_pdf'          => ['sometimes', 'boolean'],
-            'show_tax_liability_date'      => ['sometimes', 'boolean'],
-            'google_drive_folder_key'      => ['sometimes', 'string'],
-            'address'                      => ['sometimes', 'required', new ValidAddress()],
-            'language_id'                  => ['sometimes', 'exists:languages,id'],
-            'timezone_id'                  => ['sometimes', 'exists:timezones,id'],
-            'currency_id'                  => ['sometimes', 'exists:currencies,id'],
-            'email'                        => ['sometimes', 'nullable', 'email'],
-            'phone'                        => ['sometimes', 'nullable', new Phone()],
-            'forbidden_dispatch_countries' => ['sometimes', 'array', 'nullable'],
-            'logo'                         => [
+            'name'                                  => ['sometimes', 'required', 'string', 'max:255'],
+            'ui_name'                               => ['sometimes', 'required', 'string', 'max:32'],
+            'contact_name'                          => ['sometimes', 'string', 'max:255'],
+            'google_client_id'                      => ['sometimes', 'string'],
+            'google_client_secret'                  => ['sometimes', 'string'],
+            'show_omega'                            => ['sometimes', 'boolean'],
+            'attach_isdoc_to_pdf'                   => ['sometimes', 'boolean'],
+            'show_tax_liability_date'               => ['sometimes', 'boolean'],
+            'google_drive_folder_key'               => ['sometimes', 'string'],
+            'address'                               => ['sometimes', 'required', new ValidAddress()],
+            'language_id'                           => ['sometimes', 'exists:languages,id'],
+            'timezone_id'                           => ['sometimes', 'exists:timezones,id'],
+            'currency_id'                           => ['sometimes', 'exists:currencies,id'],
+            'email'                                 => ['sometimes', 'nullable', 'email'],
+            'phone'                                 => ['sometimes', 'nullable', new Phone()],
+            'forbidden_dispatch_countries'          => ['sometimes', 'array', 'nullable'],
+            'logo'                                  => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
-            'colour'                       => ['sometimes', 'string'],
-            'working_hours'                => ['sometimes', 'array'],
+            'colour'                                => ['sometimes', 'string'],
+            'working_hours'                         => ['sometimes', 'array'],
+            'hr_annual_leave_days'                  => ['sometimes', 'required', 'integer', 'min:0', 'max:365'],
+            'hr_probation_period_days'              => ['sometimes', 'required', 'integer', 'min:0', 'max:365'],
+            'allow_waiting'                         => ['sometimes', 'boolean'],
+            'allow_picker_set_not_picked'           => ['sometimes', 'boolean'],
+            'allow_stock_controller_set_not_picked' => ['sometimes', 'boolean'],
+
 
         ];
 
@@ -149,6 +178,21 @@ class UpdateOrganisation extends OrgAction
         return $rules;
     }
 
+    protected function updateEmployeeLeaveBalances(Organisation $organisation): void
+    {
+        $newAnnualDays = $organisation->getDefaultAnnualLeaveDays();
+
+        $organisation->employees()->each(function ($employee) use ($newAnnualDays) {
+            $balance = \App\Models\HumanResources\EmployeeLeaveBalance::where('employee_id', $employee->id)
+                ->where('year', now()->year)
+                ->first();
+
+            if ($balance && $balance->annual_days != $newAnnualDays) {
+                $balance->annual_days = $newAnnualDays;
+                $balance->saveQuietly();
+            }
+        });
+    }
 
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
     {

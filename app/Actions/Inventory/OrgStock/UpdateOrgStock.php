@@ -12,7 +12,6 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateStatusFromOrgStocks;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateOrgStocks;
-use App\Actions\Inventory\OrgStock\Search\OrgStockRecordSearch;
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStocks;
@@ -54,10 +53,6 @@ class UpdateOrgStock extends OrgAction
             }
         }
 
-        if (Arr::hasAny($changes, ['code', 'name', 'state'])) {
-            OrgStockRecordSearch::dispatch($orgStock);
-        }
-
         if (Arr::hasAny($changes, ['is_on_demand'])) {
             foreach ($orgStock->products as $product) {
                 ProductHydrateAvailableQuantity::run($product);
@@ -72,7 +67,6 @@ class UpdateOrgStock extends OrgAction
     {
         $rules = [
             'state'        => ['sometimes', Rule::enum(OrgStockStateEnum::class)],
-            'unit_cost'    => ['sometimes', 'numeric', 'min:0'],
             'is_on_demand' => ['sometimes', 'boolean'],
             'name'         => ['sometimes', 'string', 'max:255'],
             'packed_in'    => ['sometimes', 'nullable', 'numeric', 'min:0'],

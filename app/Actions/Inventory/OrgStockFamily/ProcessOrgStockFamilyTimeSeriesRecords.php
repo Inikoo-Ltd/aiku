@@ -23,6 +23,8 @@ class ProcessOrgStockFamilyTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
 
+    public string $jobQueue = 'sales_slave';
+
     public function getJobUniqueId(int $orgStockFamilyId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
         return "$orgStockFamilyId:$frequency->value:$from:$to";
@@ -52,20 +54,14 @@ class ProcessOrgStockFamilyTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(OrgStockFamilyTimeSeries $timeSeries, string $from, string $to): void
     {
-        $processedPeriods = [];
-
-        $query = DB::table('invoice_transactions')
-            ->whereExists(function ($query) use ($timeSeries) {
-                $query->select(DB::raw(1))
-                      ->from('invoice_transaction_has_org_stocks')
-                      ->whereColumn('invoice_transaction_has_org_stocks.invoice_transaction_id', 'invoice_transactions.id')
-                      ->where('invoice_transaction_has_org_stocks.org_stock_family_id', $timeSeries->org_stock_family_id);
-            })
+        $query = DB::connection('aiku_no_sticky')->table('invoice_transaction_has_org_stocks as pivot')
+            ->join('invoice_transactions', 'invoice_transactions.id', '=', 'pivot.invoice_transaction_id')
+            ->where('pivot.org_stock_family_id', $timeSeries->org_stock_family_id)
             ->where('invoice_transactions.date', '>=', $from)
             ->where('invoice_transactions.date', '<=', $to)
             ->whereNull('invoice_transactions.deleted_at');
 
-        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency)->get();
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, $this->pivotBasedSelects())->get();
 
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
@@ -92,42 +88,6 @@ class ProcessOrgStockFamilyTimeSeriesRecords implements ShouldBeUnique
                     'invoices'                    => $result->invoices,
                     'refunds'                     => $result->refunds,
                     'orders'                      => $result->orders,
-                ]
-            );
-
-            $processedPeriods[] = $period;
-        }
-
-        $this->processPeriodsWithoutInvoices($timeSeries, $from, $to, $processedPeriods);
-    }
-
-    protected function processPeriodsWithoutInvoices(OrgStockFamilyTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
-    {
-        $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
-
-        foreach ($nonInvoicePeriods as $periodData) {
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'org_stock_family_time_series_id' => $timeSeries->id,
-                    'period'                          => $periodData['period'],
-                    'frequency'                       => $timeSeries->frequency->singleLetter(),
-                ],
-                [
-                    'from'                        => $periodData['from'],
-                    'to'                          => $periodData['to'],
-                    'sales_external'              => 0,
-                    'sales_org_currency_external' => 0,
-                    'sales_grp_currency_external' => 0,
-                    'sales_internal'              => 0,
-                    'sales_org_currency_internal' => 0,
-                    'sales_grp_currency_internal' => 0,
-                    'lost_revenue'                => 0,
-                    'lost_revenue_org_currency'   => 0,
-                    'lost_revenue_grp_currency'   => 0,
-                    'customers_invoiced'          => 0,
-                    'invoices'                    => 0,
-                    'refunds'                     => 0,
-                    'orders'                      => 0,
                 ]
             );
         }

@@ -12,7 +12,6 @@ namespace App\Actions\Retina\Fulfilment\PalletDelivery;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletDeliveries;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletDeliveries;
 use App\Actions\Fulfilment\PalletDelivery\Notifications\SendPalletDeliveryNotification;
-use App\Actions\Fulfilment\PalletDelivery\Search\PalletDeliveryRecordSearch;
 use App\Actions\Fulfilment\PalletDelivery\SetPalletDeliveryDate;
 use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePalletDeliveries;
@@ -57,8 +56,6 @@ class SubmitRetinaPalletDelivery extends RetinaAction
         WarehouseHydratePalletDeliveries::dispatch($palletDelivery->warehouse);
         FulfilmentCustomerHydratePalletDeliveries::dispatch($palletDelivery->fulfilmentCustomer);
         FulfilmentHydratePalletDeliveries::dispatch($palletDelivery->fulfilment);
-
-        PalletDeliveryRecordSearch::dispatch($palletDelivery);
 
         return $palletDelivery;
     }

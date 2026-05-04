@@ -16,6 +16,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
+use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +41,8 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
 
     protected function processFamilyWebpages(Webpage $webpage, Command $command): void
     {
+        $shop = $webpage->shop;
+
         /** @var ProductCategory $family */
         $family = $webpage->model;
 
@@ -81,7 +84,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
                 }
                 $description = trim($description);
 
-                if ($description) {
+                if ($description && !$shop->is_aiku) {
                     $command->line('F: '.$family->id.' Family description updated');
                     $family->update(['description' => $description]);
                 }
@@ -96,14 +99,35 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             };
         }
 
+        $countFamilyDescriptionBlock = null;
+        $familyDescriptionBlock = 'family-1';
 
-        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'family-1');
-        if (count($countFamilyWebBlock) == 0) {
-            $this->createWebBlock($webpage, 'family-1');
+        if ($command->option('alternative-design')) {
+            $familyDescriptionBlock = 'family-2';
+
+            $countFamilyDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'family-2');
+            if (count($countFamilyDescriptionBlock) == 0) {
+                $this->deleteWebBlocksByCode($webpage, 'family-1');
+                $this->deleteWebBlocksByCode($webpage, 'family-3');
+                $this->deleteWebBlocksByCode($webpage, 'family-3-extra-description');
+                
+                $this->createWebBlock($webpage, 'family-2');
+                $this->createWebBlock($webpage, 'family-2-extra-description');
+            }
+        } else {
+            $countFamilyDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'family-1');
+            if (count($countFamilyDescriptionBlock) == 0) {
+                $this->deleteWebBlocksByCode($webpage, 'family-2');
+                $this->deleteWebBlocksByCode($webpage, 'family-2-extra-description');
+                $this->deleteWebBlocksByCode($webpage, 'family-3');
+                $this->deleteWebBlocksByCode($webpage, 'family-3-extra-description');
+
+                $this->createWebBlock($webpage, 'family-1');
+            }
         }
 
         // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
-        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS->value);
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
 
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1');
         if (count($countFamilyWebBlock) == 0) {
@@ -122,8 +146,13 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
 
         $webpage->refresh();
 
+        if (count($countFamilyDescriptionBlock) == 0) {
+            $this->setFamilyWebBlockOnTop($webpage, $familyDescriptionBlock);
+        }
 
-        $this->setFamilyWebBlockOnTop($webpage);
+        if ($command->option('hide-description')) {
+            $this->setDescriptionWebBlockHidden($webpage);
+        }
         $webpage->refresh();
         UpdateWebpageContent::run($webpage);
 
@@ -148,11 +177,37 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         }
     }
 
-
-    public function setFamilyWebBlockOnTop(Webpage $webpage): void
+    public function setDescriptionWebBlockHidden(Webpage $webpage): void
     {
-        $familyWebBlock = $this->getWebpageBlocksByType($webpage, 'family-1')->first()->model_has_web_blocks_id;
+        $familyDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'family-1')->first();
 
+        if ($familyDescriptionWebBlock) {
+            DB::table('model_has_web_blocks')
+                ->where('id', $familyDescriptionWebBlock->model_has_web_blocks_id)
+                ->update(['show' => false]);
+        }
+
+        UpdateWebpageContent::run($webpage);
+    }
+
+    public function setFamilyWebBlockOnTop(Webpage $webpage, $familyWebBlockCode = 'family-1'): void
+    {
+        $familyWebBlock = $this->getWebpageBlocksByType($webpage, $familyWebBlockCode)->first()->model_has_web_blocks_id;
+        $familyExtraDesc = null;
+
+        if ($familyWebBlockCode == 'family-2') {
+            $familyExtraDesc = $this->getWebpageBlocksByType($webpage, 'family-2-extra-description')->first()->model_has_web_blocks_id;
+        } elseif ($familyWebBlockCode == 'family-3') {
+            $familyExtraDesc = $this->getWebpageBlocksByType($webpage, 'family-3-extra-description')->first()->model_has_web_blocks_id;
+        }
+
+        $website = $webpage->website;
+        $liveProductsSnapshot = $website->liveProductsSnapshot;
+        $unpublishedProductsSnapshot = $website->unpublishedProductsSnapshot;
+
+        $usedWebBlockTemplateCodes = data_get($liveProductsSnapshot?->layout, 'code', data_get($unpublishedProductsSnapshot?->layout, 'code', array_first(WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes())));
+
+        $productList = $this->getWebpageBlocksByType($webpage, $usedWebBlockTemplateCodes)->first()->model_has_web_blocks_id;
 
         $trendsWebBlock     = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()->model_has_web_blocks_id;
         $lastSeenWebBlock   = $this->getWebpageBlocksByType($webpage, 'luigi-last-seen-1')->first()->model_has_web_blocks_id;
@@ -168,10 +223,14 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         $lastSeenWebBlockPosition   = $count + 103;
 
 
-        $runningPosition = 2;
+        $runningPosition = 4;
         foreach ($webBlocks as $key => $position) {
             if ($key == $familyWebBlock) {
                 $webBlocks[$key] = 1;
+            } elseif ($key == $productList) {
+                $webBlocks[$key] = 2;
+            } elseif ($key == $familyExtraDesc) {
+                $webBlocks[$key] = 3;
             } elseif ($key == $trendsWebBlock) {
                 $webBlocks[$key] = $trendsWebBlockPosition;
             } elseif ($key == $lastSeenWebBlock) {
@@ -194,19 +253,20 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
     }
 
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_families_webpages {--website_id=} {--webpage_id=}';
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_families_webpages {website?} {--webpage_id=} {--hide-description} {--a|alternative-design}';
 
     public function asCommand(Command $command): void
     {
-        $websiteId       = $command->option('website_id');
         $singleWebpageId = $command->option('webpage_id');
 
         if ($singleWebpageId) {
             $webpagesID = collect([(object)['id' => (int)$singleWebpageId]]);
         } else {
-            $query = DB::table('webpages')->select('id')->where('sub_type', 'family');
-            if ($websiteId) {
-                $query->where('website_id', $websiteId);
+            $query = DB::table('webpages')->select('id')
+            ->where('sub_type', 'family');
+            if ($command->argument('website')) {
+                $website   = Website::where('slug', $command->argument('website'))->first();
+                $query->where('website_id', $website->id);
             }
             $webpagesID = $query->get();
         }

@@ -65,7 +65,7 @@ const compSwiperOptions = computed(() => {
 </script>
 
 <template>
-  <div id="see-also-1-workshop" class="w-full pb-6" :style="{
+  <div  :id="modelValue?.id ? modelValue?.id  : 'see-also-1'+indexBlock" class="w-full pb-6" :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(modelValue.container?.properties, screenType),
     width: 'auto'
@@ -86,8 +86,9 @@ const compSwiperOptions = computed(() => {
     <div v-if="['luigi-trends', 'luigi-recently_ordered', 'luigi-last_seen', 'luigi-item_detail_alternatives'].includes(modelValue.settings.products_data.type)">
         <div class="py-4">
             <div class="h-48 px-12 text-center flex text-lg font-semibold flex-col items-center justify-center  w-full bg-gray-200 border border-gray-300">
-                <div>{{ trans("Will not showed in live website") }}</div>
-                <div class="text-sm italic text-gray-500 font-normal">{{ trans("Luigi: Top Trending, Luigi: Customer Recently Ordered, Luigi: Recently Viewed, and Luigi: You might also like is no longer supported. Please change to another type.") }}</div>
+                <!-- <div>{{ trans("Will not showed in live website") }}</div> -->
+                 <div>{{ trans("No recommendations to preview") }}</div>
+             <!--    <div class="text-sm italic text-gray-500 font-normal">{{ trans("Luigi: Top Trending, Luigi: Customer Recently Ordered, Luigi: Recently Viewed, and Luigi: You might also like is no longer supported. Please change to another type.") }}</div> -->
             </div>
         </div>
         <!-- <RecommendersLuigi1Workshop recommendation_type="trends" :slidesPerView /> -->

@@ -56,7 +56,7 @@ class AttachMasterCollectionToModel extends GrpAction
                 }
             }
 
-            MasterProductCategoryHydrateMasterCollections::dispatch($parent);
+            MasterProductCategoryHydrateMasterCollections::run($parent);
         }
         if ($parent instanceof MasterShop) {
             // Avoid attaching if already linked

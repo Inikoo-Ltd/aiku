@@ -11,7 +11,6 @@ namespace App\Actions\Web\Banner;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Web\Banner\Search\BannerRecordSearch;
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Http\Resources\Web\BannerResource;
 use App\Models\Catalogue\Shop;
@@ -32,7 +31,6 @@ class ShutdownBanner extends OrgAction
 
         $this->update($banner, $modelData, ['data']);
 
-        BannerRecordSearch::dispatch($banner);
 
         return $banner;
     }

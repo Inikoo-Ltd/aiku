@@ -13,6 +13,8 @@ use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\Goods\Stock\StockStateEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\UI\Goods\StocksTabsEnum;
 use App\Http\Resources\Goods\StocksResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\Stock;
@@ -39,54 +41,54 @@ class IndexStocks extends OrgAction
     {
         $this->bucket = 'all';
         $this->parent = group();
-        $this->initialisationFromGroup($this->parent, $request);
+        $this->initialisationFromGroup($this->parent, $request)->withTab(StocksTabsEnum::values());
 
-        return $this->handle($this->parent);
+        return $this->handle($this->parent, prefix: StocksTabsEnum::INDEX->value);
     }
 
     public function active(ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'active';
         $this->parent = group();
-        $this->initialisationFromGroup($this->parent, $request);
+        $this->initialisationFromGroup($this->parent, $request)->withTab(StocksTabsEnum::values());
 
-        return $this->handle($this->parent);
+        return $this->handle($this->parent, prefix: StocksTabsEnum::INDEX->value);
     }
 
     public function inProcess(ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'in_process';
         $this->parent = group();
-        $this->initialisationFromGroup($this->parent, $request);
+        $this->initialisationFromGroup($this->parent, $request)->withTab(StocksTabsEnum::values());
 
-        return $this->handle($this->parent);
+        return $this->handle($this->parent, prefix: StocksTabsEnum::INDEX->value);
     }
 
     public function discontinuing(ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'discontinuing';
         $this->parent = group();
-        $this->initialisationFromGroup($this->parent, $request);
+        $this->initialisationFromGroup($this->parent, $request)->withTab(StocksTabsEnum::values());
 
-        return $this->handle($this->parent);
+        return $this->handle($this->parent, prefix: StocksTabsEnum::INDEX->value);
     }
 
     public function discontinued(ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'discontinued';
         $this->parent = group();
-        $this->initialisationFromGroup($this->parent, $request);
+        $this->initialisationFromGroup($this->parent, $request)->withTab(StocksTabsEnum::values());
 
-        return $this->handle($this->parent);
+        return $this->handle($this->parent, prefix: StocksTabsEnum::INDEX->value);
     }
 
     public function inStockFamily(StockFamily $stockFamily, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'all';
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisationFromGroup(group(), $request)->withTab(StocksTabsEnum::values());
         $this->parent = $stockFamily;
 
-        return $this->handle(parent: $stockFamily);
+        return $this->handle(parent: $stockFamily, prefix: StocksTabsEnum::INDEX->value);
     }
 
     protected function getElementGroups(Group|StockFamily $parent): array
@@ -127,7 +129,6 @@ class IndexStocks extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Stock::class);
-        $queryBuilder->leftJoin('stock_sales_intervals', 'stock_sales_intervals.stock_id', 'stocks.id');
 
         if ($parent instanceof StockFamily) {
             $queryBuilder->where('stock_family_id', $parent->id);
@@ -136,7 +137,6 @@ class IndexStocks extends OrgAction
             $queryBuilder->where('stocks.group_id', $this->group->id);
             $group = $parent;
         }
-
 
         if ($this->bucket == 'active') {
             $queryBuilder->where('stocks.state', StockStateEnum::ACTIVE);
@@ -157,49 +157,70 @@ class IndexStocks extends OrgAction
             }
         }
 
+        $selects = [
+            'stocks.code',
+            'stocks.slug',
+            'stocks.name',
+            'stocks.state',
+            'stocks.value_in_warehouses',
+        ];
 
-        $queryBuilder
-            ->defaultSort('stocks.code')
-            ->select([
-                'stocks.code',
-                'stocks.slug',
-                'stocks.name',
-                'stocks.state',
-                'stocks.unit_value',
-                'stock_sales_intervals.*',
-                'stock_sales_intervals.revenue_grp_currency_'.$this->dateInterval->value.' as revenue_grp_currency',
+        $allowedSorts = ['code', 'name'];
 
-            ])
-            ->selectRaw(
-                "'".$group->currency->code."' as grp_currency_code"
-            )
-            ->leftJoin('stock_stats', 'stock_stats.stock_id', 'stocks.id');
+        if ($prefix === StocksTabsEnum::SALES->value) {
+            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+                timeSeriesTable: 'stock_time_series',
+                timeSeriesRecordsTable: 'stock_time_series_records',
+                foreignKey: 'stock_id',
+                aggregateColumns: [
+                    'sales_grp_currency_external' => 'sales_grp_currency_external',
+                    'invoices'                    => 'invoices',
+                ],
+                frequency: TimeSeriesFrequencyEnum::DAILY->value,
+                prefix: $prefix
+            );
+
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+            $allowedSorts = array_merge($allowedSorts, ['sales_grp_currency_external', 'invoices']);
+        } else {
+            $queryBuilder->leftJoin('stock_sales_intervals', 'stock_sales_intervals.stock_id', 'stocks.id');
+            $selects[] = 'stock_sales_intervals.*';
+            $selects[] = 'stock_sales_intervals.revenue_grp_currency_'.$this->dateInterval->value.' as revenue_grp_currency';
+            $allowedSorts[] = 'revenue_grp_currency';
+        }
+
+        $queryBuilder->leftJoin('stock_stats', 'stock_stats.stock_id', 'stocks.id');
 
         if ($parent instanceof Group) {
             $queryBuilder->leftJoin('stock_families', 'stock_families.id', 'stocks.stock_family_id');
-            $queryBuilder->addSelect([
-                'stock_families.slug as family_slug',
-                'stock_families.code as family_code',
-            ]);
+            $selects[] = 'stock_families.slug as family_slug';
+            $selects[] = 'stock_families.code as family_code';
+            $allowedSorts[] = 'family_code';
         }
 
-
-        return $queryBuilder->allowedSorts(['code', 'family_code', 'name', 'revenue_grp_currency'])
+        return $queryBuilder
+            ->defaultSort('stocks.code')
+            ->select($selects)
+            ->selectRaw("'".$group->currency->code."' as grp_currency_code")
+            ->allowedSorts($allowedSorts)
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(Group|StockFamily $parent, ?array $modelOperations = null, $prefix = null, $bucket = 'all'): Closure
+    public function tableStructure(Group|StockFamily $parent, ?array $modelOperations = null, $prefix = null, $bucket = 'all', bool $sales = false): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $bucket) {
+        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $bucket, $sales) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
 
-            if ($bucket == 'all') {
+            if ($bucket == 'all' && !$sales) {
                 foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                     $table->elementGroup(
                         key: $key,
@@ -208,18 +229,30 @@ class IndexStocks extends OrgAction
                     );
                 }
             }
+
             $table
                 ->defaultSort('code')
                 ->withGlobalSearch()
-                ->dateInterval($this->dateInterval)
                 ->withModelOperations($modelOperations)
                 ->withEmptyState($this->getEmptyState($parent))
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+
             if ($parent instanceof Group) {
                 $table->column(key: 'family_code', label: __('Family'), canBeHidden: false, sortable: true, searchable: true);
             }
-            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), sortable: true, align: 'right', isInterval: true);
+
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($sales) {
+                $table->betweenDates(['date'])
+                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right')
+                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right');
+            } else {
+                $table->dateInterval($this->dateInterval)
+                    ->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), sortable: true, align: 'right', isInterval: true);
+            }
         };
     }
 
@@ -373,10 +406,21 @@ class IndexStocks extends OrgAction
                     ],
                     'subNavigation' => $subNavigation
                 ],
-                'data'        => StocksResource::collection($stocks),
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => StocksTabsEnum::navigation(),
+                ],
 
+                StocksTabsEnum::INDEX->value => $this->tab == StocksTabsEnum::INDEX->value
+                    ? fn () => StocksResource::collection($stocks)
+                    : Inertia::lazy(fn () => StocksResource::collection($stocks)),
+
+                StocksTabsEnum::SALES->value => $this->tab == StocksTabsEnum::SALES->value
+                    ? fn () => StocksResource::collection($this->handle(parent: $this->parent, prefix: StocksTabsEnum::SALES->value, bucket: $this->bucket))
+                    : Inertia::lazy(fn () => StocksResource::collection($this->handle(parent: $this->parent, prefix: StocksTabsEnum::SALES->value, bucket: $this->bucket))),
             ]
-        )->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket));
+        )->table($this->tableStructure(parent: $this->parent, prefix: StocksTabsEnum::INDEX->value, bucket: $this->bucket))
+         ->table($this->tableStructure(parent: $this->parent, prefix: StocksTabsEnum::SALES->value, bucket: $this->bucket, sales: true));
     }
 
 

@@ -8,7 +8,6 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
-use App\Actions\Accounting\Invoice\Search\ReindexInvoiceSearch;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
 use App\Actions\Billables\ShippingZone\HydrateShippingZones;
@@ -20,18 +19,9 @@ use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
 use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipper\StoreShipper;
-use App\Actions\Helpers\Intervals\ProcessResetIntervalsCharges;
-use App\Actions\Helpers\Intervals\ProcessResetIntervalsCollections;
 use App\Actions\Helpers\Intervals\ProcessResetIntervalsGroups;
-use App\Actions\Helpers\Intervals\ProcessResetIntervalsInvoiceCategories;
-use App\Actions\Helpers\Intervals\ProcessResetIntervalsMasterShops;
 use App\Actions\Helpers\Intervals\ProcessResetIntervalsOrganisations;
-use App\Actions\Helpers\Intervals\ProcessResetIntervalsPlatforms;
-use App\Actions\Helpers\Intervals\ProcessResetIntervalsProductCategories;
-use App\Actions\Helpers\Intervals\ProcessResetIntervalsProducts;
 use App\Actions\Helpers\Intervals\ProcessResetIntervalsShops;
-use App\Actions\Helpers\Intervals\ProcessResetIntervalsStockFamilies;
-use App\Actions\Helpers\Intervals\ProcessResetIntervalsStocks;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
@@ -54,21 +44,18 @@ use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\CRM\Customer\StoreCustomer;
-use App\Actions\Dispatching\DeliveryNote\Search\ReindexDeliveryNotesSearch;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Ordering\Adjustment\StoreAdjustment;
 use App\Actions\Ordering\Adjustment\UpdateAdjustment;
 use App\Actions\Ordering\Order\HydrateOrders;
-use App\Actions\Ordering\Order\Search\ReindexOrdersSearch;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateState\FinaliseOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandling;
-use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacked;
 use App\Actions\Ordering\Purge\HydratePurges;
 use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
@@ -522,14 +509,6 @@ test('update order state to Handling', function (Order $order) {
     return $order;
 })->depends('update order state to in warehouse');
 
-test('update order state to Packed ', function (Order $order) {
-    $order = UpdateOrderStateToPacked::make()->action($order, false);
-    $order->refresh();
-    expect($order)->toBeInstanceOf(Order::class)
-        ->and($order->state)->toEqual(OrderStateEnum::PACKED);
-
-    return $order;
-})->depends('update order state to Handling');
 
 test('update order state to Finalised ', function (Order $order) {
     $shipper = StoreShipper::make()->action($order->organisation, [
@@ -799,10 +778,29 @@ test('UI show ordering backlog', function () {
             ->component('Ordering/OrdersBacklog')
             ->where('title', 'Orders backlog')
             ->has('breadcrumbs', 4)
+            ->has('tabs')
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
                     ->where('title', 'Orders backlog')
+                    ->etc()
+            );
+    });
+});
+
+test('UI show ordering backlog waiting crm items', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $this->shop]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Ordering/WaitingCrmItems')
+            ->where('title', 'Waiting Items (CRM)')
+            ->has('breadcrumbs', 5)
+            ->has('waiting_crm_items')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Waiting Items')
                     ->etc()
             );
     });
@@ -887,30 +885,6 @@ test('UI get section route index', function () {
         ->and($sectionScope->organisation_id)->toBe($this->organisation->id)
         ->and($sectionScope->code)->toBe(AikuSectionEnum::SHOP_ORDERING->value)
         ->and($sectionScope->model_slug)->toBe($this->shop->slug);
-});
-
-test('orders search', function () {
-    $this->artisan('search:orders')->assertExitCode(0);
-
-    $order = Order::first();
-    ReindexOrdersSearch::run($order);
-    expect($order->universalSearch()->count())->toBe(1);
-});
-
-test('invoices search', function () {
-    $this->artisan('search:invoices')->assertExitCode(0);
-
-    $invoice = Invoice::first();
-    ReindexInvoiceSearch::run($invoice);
-    expect($invoice->universalSearch()->count())->toBe(1);
-});
-
-test('delivery notes search', function () {
-    $this->artisan('search:delivery_notes')->assertExitCode(0);
-
-    $deliveryNote = DeliveryNote::first();
-    ReindexDeliveryNotesSearch::run($deliveryNote);
-    expect($deliveryNote->universalSearch()->count())->toBe(1);
 });
 
 test('test reset intervals', function () {
@@ -1331,14 +1305,5 @@ test('reset daily intervals action dispatches expected jobs', function () {
 
     ProcessResetIntervalsGroups::assertPushed(1);
     ProcessResetIntervalsOrganisations::assertPushed(1);
-    ProcessResetIntervalsMasterShops::assertPushed(1);
     ProcessResetIntervalsShops::assertPushed(1);
-    ProcessResetIntervalsProducts::assertPushed(1);
-    ProcessResetIntervalsCharges::assertPushed(1);
-    ProcessResetIntervalsPlatforms::assertPushed(1);
-    ProcessResetIntervalsInvoiceCategories::assertPushed(1);
-    ProcessResetIntervalsProductCategories::assertPushed(1);
-    ProcessResetIntervalsCollections::assertPushed(1);
-    ProcessResetIntervalsStocks::assertPushed(1);
-    ProcessResetIntervalsStockFamilies::assertPushed(1);
 });

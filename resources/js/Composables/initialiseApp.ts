@@ -32,13 +32,13 @@ export const initialiseApp = () => {
         echoPersonal.subscribe(usePage().props.auth.user.id)
 
         router.on('navigate', (event) => {
-            
+
             // To see Vue filename in console (component.vue)
             if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
                 if (window.component.vue !== '') {
                     if (window.component.vue !== usePage().component) {
                         window.component.php = ''
-                    }                    
+                    }
                 }
                 window.component.vue = usePage().component
             }
@@ -119,7 +119,6 @@ export const initialiseApp = () => {
 
             const dataActiveUser = {
                 ...usePage().props.auth.user,
-                name: null,
                 last_active: new Date(),
                 action: 'navigate',
                 current_page: {
@@ -199,7 +198,7 @@ export const initialiseApp = () => {
         }
 
 
-        // Set data of User (comes from app/Http/Resources/UI/LoggedUserResource.php)
+        // Set data of User (comes from app/Http/Resources/UI/GetLoggedUser.php)
         if (usePage().props.auth.user) {
             layout.user = usePage().props.auth.user
         }
@@ -211,7 +210,14 @@ export const initialiseApp = () => {
         if (usePage().props.avatar_thumbnail) {
             layout.avatar_thumbnail = usePage().props.avatar_thumbnail
         }
-        
+
+        if (usePage().props.dispatching_waiting_count !== undefined) {
+            layout.dispatching_waiting_count = usePage().props.dispatching_waiting_count as number
+        }
+
+        if (usePage().props.crm_waiting_count !== undefined) {
+            layout.crm_waiting_count = usePage().props.crm_waiting_count as number
+        }
 
         layout.app.name = "Aiku"
     })

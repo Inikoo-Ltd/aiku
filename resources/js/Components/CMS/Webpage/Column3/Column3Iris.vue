@@ -11,6 +11,7 @@ library.add(faCube, faLink, faImage)
 const props = defineProps<{
     fieldValue: any
     screenType: "mobile" | "tablet" | "desktop"
+    indexBlock:number
 }>()
 
 const key = ref(ulid())
@@ -25,7 +26,7 @@ watch(
 </script>
 
 <template>
-    <div :id="fieldValue?.id ? fieldValue?.id  : 'column-3'"  component="column-3"  class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center"
+    <div :id="fieldValue?.id ? fieldValue?.id  : 'column-3'+indexBlock"  component="column-3"  class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center"
         :style="getStyles(fieldValue?.container?.properties,screenType)"
     >
         <ColumnWebppage :fieldValue="fieldValue.column_1" :screenType="screenType"  :key="`col-1-${key}`"/>

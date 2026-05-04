@@ -29,6 +29,9 @@ class OfferCampaignHydrateOffersState implements ShouldBeUnique
 
     public function handle(OfferCampaign $offerCampaign): void
     {
+        // todo this is wrong in so many levels
+        return;
+
         $hasActive    = false;
         $hasFinished  = false;
         $hasSuspended = false;
@@ -54,9 +57,14 @@ class OfferCampaignHydrateOffersState implements ShouldBeUnique
             $state = OfferCampaignOffersStateEnum::SUSPENDED;
         }
 
+        $status = false;
+        if ($state == OfferCampaignOffersStateEnum::ACTIVE) {
+            $status = true;
+        }
 
         $modelData = [
             'offers_state' => $state,
+            'status'       => $status,
         ];
 
         if (!$offerCampaign->start_at && $state == OfferCampaignOffersStateEnum::ACTIVE) {

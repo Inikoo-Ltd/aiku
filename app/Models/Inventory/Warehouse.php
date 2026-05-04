@@ -18,13 +18,11 @@ use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Helpers\Address;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Role;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InOrganisation;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -71,8 +69,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, DeliveryNote> $deliveryNotes
  * @property-read Collection<int, Fulfilment> $fulfilments
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Collection<int, \App\Models\Inventory\Location> $locations
+ * @property-read Collection<int, \App\Models\Inventory\OrgStockHistory> $orgStockHistories
  * @property-read Organisation $organisation
  * @property-read Collection<int, PalletDelivery> $palletDeliveries
  * @property-read Collection<int, PalletReturn> $palletReturns
@@ -84,9 +83,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Inventory\WarehouseStats|null $stats
  * @property-read Collection<int, \App\Models\Inventory\WarehouseTimeSeries> $timeSeries
  * @property-read Collection<int, Trolley> $trolleys
- * @property-read UniversalSearch|null $universalSearch
- * @property-read Collection<int, UniversalSearch> $universalSearches
  * @property-read Collection<int, \App\Models\Inventory\WarehouseArea> $warehouseAreas
+ * @property-read Collection<int, \App\Models\Inventory\OrganisationStockHistory> $warehouseStockHistories
  * @method static \Database\Factories\Inventory\WarehouseFactory factory($count = null, $state = [])
  * @method static Builder<static>|Warehouse newModelQuery()
  * @method static Builder<static>|Warehouse newQuery()
@@ -100,7 +98,6 @@ class Warehouse extends Model implements Auditable
 {
     use HasSlug;
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasFactory;
     use HasHistory;
     use InOrganisation;
@@ -204,11 +201,6 @@ class Warehouse extends Model implements Auditable
         return $this->hasMany(DeliveryNote::class);
     }
 
-    public function universalSearches(): HasMany
-    {
-        return $this->hasMany(UniversalSearch::class);
-    }
-
     public function pickingRoutes(): HasMany
     {
         return $this->hasMany(PickingRoute::class);
@@ -239,4 +231,13 @@ class Warehouse extends Model implements Auditable
         return $this->hasMany(PickedBay::class);
     }
 
+    public function warehouseStockHistories(): HasMany
+    {
+        return $this->hasMany(OrganisationStockHistory::class);
+    }
+
+    public function orgStockHistories(): HasMany
+    {
+        return $this->hasMany(OrgStockHistory::class);
+    }
 }

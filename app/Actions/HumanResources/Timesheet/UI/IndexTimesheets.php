@@ -155,12 +155,15 @@ class IndexTimesheets extends OrgAction
         $noClockOut = (clone $baseQuery)->where('number_open_time_trackers', '>', 0)->count();
 
         $organisationId = null;
+        $shouldSubHour = false;
         if ($this->parent instanceof Organisation) {
             $organisationId = $this->parent->id;
             $timezone = $this->parent->timezone->name ?? 'UTC';
+            $shouldSubHour = $this->parent->code === 'SK';
         } elseif ($this->parent instanceof Employee) {
             $organisationId = $this->parent->organisation_id;
             $timezone = $this->parent->organisation->timezone->name ?? 'UTC';
+            $shouldSubHour = $this->parent->organisation?->code === 'SK';
         } else {
             $timezone = 'UTC';
         }
@@ -224,10 +227,12 @@ class IndexTimesheets extends OrgAction
 
             $startAt = $ts->start_at
                 ?->copy()
+                ->when($shouldSubHour, fn ($dt) => $dt->subHour())
                 ->setTimezone($timezone);
 
             $endAt = $ts->end_at
                 ?->copy()
+                ->when($shouldSubHour, fn ($dt) => $dt->subHour())
                 ->setTimezone($timezone);
 
             $scheduledStart = null;
@@ -312,10 +317,13 @@ class IndexTimesheets extends OrgAction
                 $table->periodFilters($periodFilter['elements']);
             }
 
-            $table->column(key: 'working_duration', label: __('Working'), sortable: true)
+            $table->column(key: 'start_at', label: __('Start At'))
+                ->column(key: 'end_at', label: __('End At'))
+                ->column(key: 'working_duration', label: __('Working'), sortable: true)
                 ->column(key: 'breaks_duration', label: __('Breaks'), sortable: true)
                 ->column(key: 'clock_in_count', label: __('Clock In'))
                 ->column(key: 'clock_out_count', label: __('Clock Out'));
+
 
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('Organisation'), searchable: true);
@@ -474,11 +482,14 @@ class IndexTimesheets extends OrgAction
         }
 
         $organisationId = null;
+        $shouldSubHour = false;
 
         if ($parent instanceof Organisation) {
             $organisationId = $parent->id;
+            $shouldSubHour = $parent->code === 'SK';
         } elseif ($parent instanceof Employee) {
             $organisationId = $parent->organisation_id;
+            $shouldSubHour = $parent->organisation?->code === 'SK';
         }
 
         if (!$organisationId) {
@@ -519,10 +530,12 @@ class IndexTimesheets extends OrgAction
 
             $startAt = $ts->start_at
                 ?->copy()
+                ->when($shouldSubHour, fn ($dt) => $dt->subHour())
                 ->setTimezone($timezone);
 
             $endAt = $ts->end_at
                 ?->copy()
+                ->when($shouldSubHour, fn ($dt) => $dt->subHour())
                 ->setTimezone($timezone);
 
             $scheduledStart = null;

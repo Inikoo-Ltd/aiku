@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailshot\UI;
 
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
+use App\Actions\Comms\EmailTemplate\GetEmailTemplates;
 use App\Actions\Comms\Mailshot\GetMailshotRecipientsQueryBuilder;
 use App\Actions\Comms\MailshotRecipient\UI\IndexMailshotRecipients;
 use App\Actions\OrgAction;
@@ -67,8 +68,10 @@ class ShowMailshot extends OrgAction
 
         $isShowResume = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::STOPPED]);
 
+        $isShowEditName = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::SENT]);
+
         $estimatedRecipients = ($mailshot->type === MailshotTypeEnum::MARKETING && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY, MailshotStateEnum::SCHEDULED]))
-            ? (GetMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count() ?? 0)
+            ? (GetMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count('customers.id') ?? 0)
             : 0;
 
         $isSecondWaveActive = $mailshot->secondWave()->exists() && $mailshot->is_second_wave_enabled;
@@ -78,6 +81,7 @@ class ShowMailshot extends OrgAction
         }
         $isHasParentMailshot = $mailshot->parentMailshot()->exists();
 
+        $canLoadTemplates = in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS]);
         /* NOTE:
          * is_second_wave_enabled is perspective from parent mailshot
          * is_second_wave  is perspective from child mailshot
@@ -129,7 +133,7 @@ class ShowMailshot extends OrgAction
                                 ]
                             ]
                         ] : [],
-                        $isShowActions ? [
+                        $isShowActions || $isShowEditName ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => __('Edit'),
@@ -285,6 +289,18 @@ class ShowMailshot extends OrgAction
                 'isHasParentMailshot' => $isHasParentMailshot,
                 'isSecondWave' => $mailshot->is_second_wave,
                 'numberSecondWaveRecipients' => $mailshotSecondWave?->recipients?->count() ?? 0,
+                'mailshotId' => $mailshot->id,
+                'groupId' => $mailshot->group_id,
+                'ownShopTemplates' => $canLoadTemplates ? GetEmailTemplates::make()->action($this->shop, 'own') : [],
+                'otherShopTemplates' => $canLoadTemplates ? GetEmailTemplates::make()->action($this->shop, 'other') : [],
+                'workshopRoute' => [
+                    'name' => $mailshot->type === MailshotTypeEnum::MARKETING ? "grp.org.shops.show.marketing.mailshots.workshop" : "grp.org.shops.show.marketing.newsletters.workshop",
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'shop' => $this->shop->slug,
+                        'mailshot' => $mailshot->slug
+                    ]
+                ],
 
             ]
         )->table(

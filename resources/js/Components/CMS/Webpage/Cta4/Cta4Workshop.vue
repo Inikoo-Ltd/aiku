@@ -54,7 +54,7 @@ const isImageRight = computed(() => valueForField.value === 'Image-right')
 </script>
 
 <template>
-	<div id="cta4" class="w-full">
+	<div :id="modelValue?.id ? modelValue?.id  : 'cta4'+indexBlock" class="w-full">
 		<div :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(modelValue.container?.properties, screenType),

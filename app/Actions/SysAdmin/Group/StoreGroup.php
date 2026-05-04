@@ -21,6 +21,7 @@ use App\Actions\SysAdmin\Group\Seeders\SeedPostRooms;
 use App\Actions\SysAdmin\Group\Seeders\SeedSalesChannels;
 use App\Actions\SysAdmin\Group\Seeders\SeedStockImages;
 use App\Actions\SysAdmin\Group\Seeders\SeedWebBlockTypes;
+use App\Actions\UI\Grp\RecacheUserUiProps;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\Currency;
@@ -42,7 +43,6 @@ class StoreGroup
     {
         data_set($modelData, 'ulid', Str::ulid());
 
-        /** @var Group $group */
         $group = Group::create($modelData);
 
         app()->instance('group', $group);
@@ -59,7 +59,6 @@ class StoreGroup
         $group->catalogueStats()->create();
         $group->fulfilmentStats()->create();
         $group->orderingStats()->create();
-        $group->salesIntervals()->create();
         $group->orderHandlingStats()->create();
         $group->mailshotsIntervals()->create();
         $group->manufactureStats()->create();
@@ -67,7 +66,6 @@ class StoreGroup
         $group->dropshippingStats()->create();
         $group->commsStats()->create();
         $group->discountsStats()->create();
-        $group->orderingIntervals()->create();
         $group->sysadminIntervals()->create();
 
         $group->outboxNewsletterIntervals()->create();
@@ -100,6 +98,7 @@ class StoreGroup
 
 
         GroupHydrateJobPositions::run($group);
+        RecacheUserUiProps::make()->redoAllUsers();
 
         return $group;
     }

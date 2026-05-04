@@ -13,7 +13,6 @@ use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Ordering\Transaction;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -64,17 +63,16 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $last_suspended_at
  * @property string|null $label
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferAllowance> $offerAllowances
- * @property-read \App\Models\Discounts\OfferCampaign $offerCampaign
+ * @property-read \App\Models\Discounts\OfferCampaign|null $offerCampaign
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Discounts\OfferStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Transaction> $transactions
  * @property-read Model|\Eloquent|null $trigger
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Discounts\OfferFactory factory($count = null, $state = [])
  * @method static Builder<static>|Offer newModelQuery()
  * @method static Builder<static>|Offer newQuery()
@@ -91,7 +89,6 @@ class Offer extends Model implements Auditable
     use HasFactory;
     use InShop;
     use HasHistory;
-    use HasUniversalSearch;
 
     protected $casts = [
         'data'              => 'array',

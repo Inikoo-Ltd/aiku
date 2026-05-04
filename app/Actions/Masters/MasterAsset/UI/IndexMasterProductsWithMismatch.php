@@ -52,8 +52,8 @@ class IndexMasterProductsWithMismatch extends GrpAction
         $discontinuedMasterProducts = 0;
 
         if ($parent instanceof MasterShop || $parent instanceof MasterProductCategory) {
-            $activeMasterProducts       = $parent->stats->number_current_master_assets;
-            $discontinuedMasterProducts = $parent->stats->number_master_assets - $parent->stats->number_current_master_assets;
+            $activeMasterProducts       = $parent->stats->number_mismatched_master_products_active;
+            $discontinuedMasterProducts = $parent->stats->number_mismatched_master_products_inactive;
         }
 
 
@@ -392,7 +392,7 @@ class IndexMasterProductsWithMismatch extends GrpAction
                 'shopsData'               => $shopsData,
                 'tabs' => [
                     'current'    => $this->tab,
-                    'navigation' => MasterProductsTabsEnum::navigationExcept([MasterProductsTabsEnum::SALES]),
+                    'navigation' => MasterProductsTabsEnum::navigationExcept([MasterProductsTabsEnum::SALES, MasterProductsTabsEnum::INDEX_ORDERING]),
                 ],
                 MasterProductsTabsEnum::INDEX->value => $this->tab == MasterProductsTabsEnum::INDEX->value ?
                     fn () => MasterProductsResource::collection($masterAssets)

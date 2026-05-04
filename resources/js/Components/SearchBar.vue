@@ -5,206 +5,146 @@
   -->
 
 <script setup lang="ts">
-import { inject, ref } from 'vue'
-import { Combobox, ComboboxOptions, ComboboxOption, Dialog, DialogPanel, TransitionChild, TransitionRoot, } from '@headlessui/vue'
-import { Link } from '@inertiajs/vue3'
+import { inject, ref, computed, defineAsyncComponent } from 'vue'
+import { Dialog, DialogPanel, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { trans } from 'laravel-vue-i18n'
 import { debounce } from 'lodash-es'
-import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
-import SearchResultDefault from '@/Components/Search/SearchResultDefault.vue'
-import SearchResultPallet from '@/Components/Search/SearchResultPallet.vue'
-import SearchResultCustomer from '@/Components/Search/SearchResultCustomer.vue'
-import SearchResultFulfilmentCustomer from '@/Components/Search/SearchResultFulfilmentCustomer.vue'
-import SearchResult from '@/Components/Search/SearchResult.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-
-
-import { faPallet, faReceipt } from '@fal'
+import { faTimes, faSearch } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import Icon from '@/Components/Icon.vue'
-library.add(faPallet, faReceipt)
+import Skeleton from 'primevue/skeleton'
+
+library.add(faTimes, faSearch)
+
+const scopeComponents: Record<string, ReturnType<typeof defineAsyncComponent>> = {
+    sysadmin: defineAsyncComponent(() => import('@/Components/Search/SearchResultSysAdmin.vue')),
+}
 
 const isOpen = defineModel<boolean>()
-
-const emits = defineEmits<{
-    (e: 'close', data: boolean): void
-}>()
 
 const layout = inject('layout', layoutStructure)
 const isLoadingSearch = ref(false)
 const searchValue = ref('')
-const resultsSearch = ref()
-const selectedTab = ref(null)
+const scope = ref<string | null>(null)
+const resultsSearch = ref<Record<string, any> | null>(null)
+let abortController: AbortController | null = null
 
-// Method: parameter to string '&organisation=aw&fulfilment=idf'
+const activeComponent = computed(() => {
+    return scope.value ? scopeComponents[scope.value] ?? null : null
+})
+
 const paramsToString = () => {
-    return route().routeParams ? '&' + Object.entries(route().routeParams).map(([key, value]) => `${key}=${value}`).join('&') : ''
+    return route().routeParams
+        ? '&' + Object.entries(route().routeParams).map(([key, value]) => `${key}=${value}`).join('&')
+        : ''
 }
 
-
-// Method: Fetch result
 const urlSearch = () => {
     return layout.app.name == 'retina'
         ? `${location.origin}/app/search`
         : `${location.origin}/search`
-} 
+}
+
 const fetchApi = debounce(async (query: string) => {
-    isOnTyping.value = false
-    if (query !== '') {
+    if (!query) return
+
+    abortController?.abort()
+    abortController = new AbortController()
+
+    resultsSearch.value = null
+    isLoadingSearch.value = true
+
+    try {
+        const url = `${urlSearch()}?q=${query}&route_src=${route().current()}${paramsToString()}`
+        const response = await fetch(url, { signal: abortController.signal })
+        const data = await response.json()
+        scope.value = data.scope ?? null
+        resultsSearch.value = data.results ?? null
+    } catch (e) {
+        if ((e as DOMException).name === 'AbortError') return
         resultsSearch.value = null
-        isLoadingSearch.value = true
-        await fetch(`${urlSearch()}?q=${query}&route_src=${route().current()}${paramsToString()}`)
-            .then(response => {
-                response.json().then((data: { data: {} }) => {
-                    resultsSearch.value = data.data
-                    console.log('query:', query, resultsSearch.value)
-                    isLoadingSearch.value = false
-                    selectedTab.value = null
-                })
-            })
-            .catch(err => console.log(err))
+        scope.value = null
+    } finally {
+        isLoadingSearch.value = false
     }
-}, 700)
-const isOnTyping = ref(false)
+}, 400)
+
 const onTypeSearch = () => {
-    // searchValue.value = e.target.value
-    isOnTyping.value = true
     fetchApi(searchValue.value)
 }
 
-function countModelTypes(data) {
-    // Initialize an empty object to store counts
-    const counts = {}
-
-    // Iterate over the array
-    data.forEach(item => {
-        // Get the model_type from each item
-        const modelType = item.model_type
-
-        // If the model_type exists in the counts object, increment its count
-        if (counts[modelType]) {
-            counts[modelType]++
-        } else {
-            // If the model_type doesn't exist, initialize its count to 1
-            counts[modelType] = 1
-        }
-    })
-
-    // Return the counts object
-    return counts
+const closeModal = () => {
+    isOpen.value = false
+    searchValue.value = ''
+    resultsSearch.value = null
+    scope.value = null
 }
 </script>
 
 <template>
-    <TransitionRoot :show="isOpen" as="template" @after-leave="() => (searchValue = '', resultsSearch = [])" appear>
-        <Dialog as="div" class="relative z-[21]" @close="() => isOpen = false">
-            <TransitionChild as="template" enter="ease-out duration-300" enter-from="opacity-0" enter-to="opacity-100"
-                leave="ease-in duration-200" leave-from="opacity-100" leave-to="opacity-0">
-                <div class="fixed inset-0 bg-slate-700/25" />
+    <TransitionRoot :show="isOpen" as="template" @after-leave="() => { searchValue = ''; resultsSearch = null }" appear>
+        <Dialog as="div" class="relative z-50" @close="closeModal">
+
+            <TransitionChild enter="ease-out duration-200" enter-from="opacity-0" enter-to="opacity-100"
+                leave="ease-in duration-150" leave-from="opacity-100" leave-to="opacity-0">
+                <div class="fixed inset-0 bg-black/30 backdrop-blur-sm" />
             </TransitionChild>
 
-            <div class="fixed inset-0 z-10 pt-20 px-12">
-                <TransitionChild as="template" enter="ease-out duration-300" enter-from="opacity-0 scale-95"
-                    enter-to="opacity-100 scale-100" leave="ease-in duration-200" leave-from="opacity-100 scale-100"
+            <div class="fixed inset-0 flex items-start justify-center pt-16 px-4">
+                <TransitionChild enter="ease-out duration-200" enter-from="opacity-0 scale-95"
+                    enter-to="opacity-100 scale-100" leave="ease-in duration-150" leave-from="opacity-100 scale-100"
                     leave-to="opacity-0 scale-95">
-                    <DialogPanel class="bg-white shadow-2xl mx-auto max-w-3xl h-[80vh] overflow-y-auto transform overflow-hidden rounded-xl ring-1 ring-black ring-opacity-5 transition-all">
-                        <!-- Section: Search input -->
-                        <div class="relative border-b border-gray-300">
-                            <FontAwesomeIcon class="pointer-events-none absolute top-3.5 left-4 h-5 w-5 text-gray-400"
-                                aria-hidden="true" icon="fa-regular fa-search" size="lg" />
+                    <DialogPanel
+                        class="w-full max-w-lg sm:max-w-2xl md:min-w-[60vw] lg:max-w-4xl xl:max-w-[1200px] h-[75vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+
+                        <div class="border-b p-3 flex items-center gap-2">
+                            <FontAwesomeIcon icon="fal fa-search" class="text-gray-400" />
                             <input
                                 v-model="searchValue"
-                                @input="() => onTypeSearch()"
+                                @input="onTypeSearch"
                                 type="text"
-                                class="h-12 w-full border-0 bg-transparent pl-11 pr-4 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm"
-                                placeholder="Search..."
-                            >
+                                class="h-12 w-full border-0 bg-transparent text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm"
+                                :placeholder="trans('Search...')"
+                            />
+                            <button @click="closeModal">
+                                <FontAwesomeIcon icon="fal fa-times" class="text-lg" />
+                            </button>
                         </div>
 
-                        <!-- Section: Search is 0 data -->
-                        <div v-if="!searchValue.length" class="py-4 text-center italic text-gray-400">
-                            {{ trans('Nothing to show') }}
+                        <div v-if="!searchValue" class="flex flex-1 items-center justify-center text-center text-gray-400 p-6">
+                            <div class="space-y-2">
+                                <p class="text-base font-medium text-gray-500">{{ trans('Type to search...') }}</p>
+                                <p class="text-sm">{{ trans('Search across orders, customers, prospects and more') }}</p>
+                            </div>
                         </div>
 
-                        <!-- Section: Search result -->
-                        <TabGroup v-else-if="searchValue">
-                            <!-- Section: Tabs -->
-                            <TabList v-if="isLoadingSearch || resultsSearch?.length" class="flex gap-x-2 px-4 py-2 overflow-x-auto w-full" v-slot="{ selectedIndex }">
-                                <!-- Tabs: Skeleton -->
-                                <div v-if="isLoadingSearch" class="flex gap-x-2">
-                                    <div v-for=" of 3" class="h-10 skeleton min-w-28 w-min rounded-lg" />
-                                </div>
+                        <div v-else-if="!isLoadingSearch && !activeComponent" class="flex flex-1 items-center justify-center text-gray-400 p-6">
+                            <p class="text-sm">{{ trans('No results found') }}</p>
+                        </div>
 
-                                <!-- Tab: Show all -->
-                                <button v-else as="button"
-                                    @click="() => selectedTab = null"
-                                    key="All"
-                                    class="min-w-28 w-min rounded py-2.5 px-2 text-sm leading-5 whitespace-nowrap ring-1 ring-slate-200 focus:ring-transparent focus:ring-offset-2 focus:ring-offset-slate-500 focus:outline-none focus:ring-2 transition-all"
-                                    :class="[
-                                        !selectedTab
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'text-slate-500 hover:bg-slate-50',
-                                        ]">
-                                    {{ trans('Show all') }} (<span class="font-bold">{{ resultsSearch?.length || 0}}</span>)
-                                </button>
-
-                                <template v-if="!isLoadingSearch && resultsSearch">
-                                    <button v-for="(tabCount, tabName, tabIdx) in countModelTypes(resultsSearch)" as="button"
-                                        @click="() => selectedTab = tabName"
-                                        :key="tabName+tabIdx"
-                                        class="w-fit w rounded py-2.5 pl-7 pr-8 text-sm leading-5 whitespace-nowrap ring-1 ring-slate-200 focus:ring-transparent focus:ring-offset-2 focus:ring-offset-slate-500 focus:outline-none focus:ring-2 transition-all"
-                                        :class="[
-                                            tabName == selectedTab
-                                                ? 'bg-indigo-600 text-white'
-                                                : 'text-slate-500 hover:bg-slate-50',
-                                            ]"
-                                        >
-                                        <Icon :data="resultsSearch.find(result => result.model_type === tabName).model_icon" />
-                                        {{tabName}} (<span class="font-bold">{{ tabCount }}</span>)
-                                    </button>
-                                </template>
-                            </TabList>
-
-                            
-                            <div v-else-if="isOnTyping" class="py-4 text-center text-gray-400 italic">
-                                {{ trans("Waiting to finish typing") }}..
+                        <div v-else-if="isLoadingSearch && !activeComponent" class="grid grid-cols-12 flex-1 min-h-0">
+                            <div class="col-span-3 border-r p-4 bg-gray-50 space-y-2">
+                                <Skeleton height="2.5rem" borderRadius="0.75rem" />
+                                <Skeleton height="2.5rem" borderRadius="0.75rem" />
                             </div>
-                            
-                            <div v-else class="py-4 text-center text-gray-600">
-                                No result to show for <span class="font-bold">{{ searchValue }}</span>
-                            </div>
-
-                            <!-- Section: Skeleton -->
-                            <div v-if="isLoadingSearch" class="border-t-2 border-slate-300">
-                                <div class="flex flex-auto flex-col justify-between gap-y-4 p-6">
-                                    <div v-for=" of 3" class="flex gap-x-2 h-11 rounded overflow-hidden">
-                                        <div class="skeleton h-full aspect-square rounded-md" />
-                                        <div class="flex flex-col h-full w-full gap-y-1">
-                                            <div class="skeleton h-2/3 max-w-56 rounded" />
-                                            <div class="skeleton h-1/3 max-w-40 rounded" />
-                                        </div>
-                                    </div>
+                            <div class="col-span-9 p-4 space-y-4">
+                                <div v-for="i in 5" :key="i" class="p-4 rounded-xl border bg-white">
+                                    <Skeleton width="60%" height="1rem" class="mb-2" />
+                                    <Skeleton width="80%" height="0.75rem" />
                                 </div>
                             </div>
-                            
-                            <!-- Section: Results -->
-                            <TransitionGroup name="list" tag="ul" v-if="resultsSearch?.length" class="border-t-2 pt-4 border-slate-300">
-                                <template v-for="(result, resultIdx) in resultsSearch"
-                                    :key="result.model_type + result.model_id">
-                                    <li v-if="selectedTab ? result.model_type === selectedTab : true"
-                                        class="bg-white hover:bg-slate-100 border-l-4 border-transparent hover:border-yellow-500  pt-0 pb-0 pl-6 mr-6 transition-none ring-white/60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2 cursor-pointer"
-                                    >
-                                        <!-- <SearchResultPallet v-if="result.model_type == 'Pallet'" :data="result.model" /> -->
-                                        <!-- <SearchResultCustomer v-else-if="result.model_type == 'Customer'" :data="result.model" />
-                                        <SearchResultFulfilmentCustomer v-else-if="result.model_type == 'FulfilmentCustomer'" :data="result.model" /> -->
-                                        <SearchResultDefault :data="result.result" :modelType="result.model_type" @finishVisit="() => isOpen = false" />
-                                    </li>
-                                </template>
-                            </TransitionGroup >
-                        </TabGroup>
+                        </div>
 
-                        
+                        <div v-else class="grid grid-cols-12 flex-1 min-h-0">
+                            <component
+                                :is="activeComponent"
+                                :results="resultsSearch"
+                                :is-loading="isLoadingSearch"
+                                :query="searchValue"
+                            />
+                        </div>
+
                     </DialogPanel>
                 </TransitionChild>
             </div>

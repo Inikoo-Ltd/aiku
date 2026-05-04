@@ -13,8 +13,9 @@ use App\Actions\Accounting\IntrastatImportTimeSeries\ProcessIntrastatImportTimeS
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePacker;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePicker;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
-use App\Actions\Dispatching\DeliveryNote\Search\DeliveryNoteRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
@@ -32,6 +33,8 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\SysAdmin\User;
+use App\Actions\Audits\DispatchedCustomAudit;
 
 class UpdateDeliveryNote extends OrgAction
 {
@@ -44,24 +47,49 @@ class UpdateDeliveryNote extends OrgAction
 
     public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
     {
-        $oldState     = $deliveryNote->state;
-        $deliveryNote = $this->update($deliveryNote, $modelData, ['data']);
-        $changes      = Arr::except($deliveryNote->getChanges(), ['updated_at', 'last_fetched_at']);
+        $oldState           = $deliveryNote->state;
+        $oldPickerUserId    = $deliveryNote->picker_user_id;
+        $oldPackerUserId    = $deliveryNote->packer_user_id;
+        $deliveryNote       = $this->update($deliveryNote, $modelData, ['data']);
+        $changes            = Arr::except($deliveryNote->getChanges(), ['updated_at', 'last_fetched_at']);
 
         $deliveryNote->refresh();
 
         if (count($changes) > 0) {
-            DeliveryNoteRecordSearch::dispatch($deliveryNote)->delay($this->hydratorsDelay);
 
             if (Arr::has($changes, 'type')) {
-                GroupHydrateDeliveryNotes::dispatch($deliveryNote->group_id, DeliveryNoteTypeEnum::ORDER)->delay($this->hydratorsDelay);
-                GroupHydrateDeliveryNotes::dispatch($deliveryNote->group_id, DeliveryNoteTypeEnum::REPLACEMENT)->delay($this->hydratorsDelay);
+                GroupHydrateDeliveryNotes::dispatch($deliveryNote->group_id, DeliveryNoteTypeEnum::ORDER)->delay(60);
+                GroupHydrateDeliveryNotes::dispatch($deliveryNote->group_id, DeliveryNoteTypeEnum::REPLACEMENT)->delay(60);
                 OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation_id, DeliveryNoteTypeEnum::ORDER)->delay($this->hydratorsDelay);
                 OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation_id, DeliveryNoteTypeEnum::REPLACEMENT)->delay($this->hydratorsDelay);
                 ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop_id, DeliveryNoteTypeEnum::ORDER)->delay($this->hydratorsDelay);
                 ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop_id, DeliveryNoteTypeEnum::REPLACEMENT)->delay($this->hydratorsDelay);
                 CustomerHydrateDeliveryNotes::dispatch($deliveryNote->customer_id, DeliveryNoteTypeEnum::ORDER)->delay($this->hydratorsDelay);
                 CustomerHydrateDeliveryNotes::dispatch($deliveryNote->customer_id, DeliveryNoteTypeEnum::REPLACEMENT)->delay($this->hydratorsDelay);
+            }
+
+            if (Arr::has($changes, 'picker_user_id')) {
+                DispatchedCustomAudit::run(
+                    auditableModel      : $deliveryNote,
+                    relationModelClass  : User::class,
+                    oldId               : $oldPickerUserId,
+                    newId               : $deliveryNote->picker_user_id,
+                    attributes          : ['contact_name'],
+                    logKey              : 'picker_name'
+                );
+                DeliveryNoteHydratePicker::dispatch($deliveryNote->id);
+            }
+
+            if (Arr::has($changes, 'packer_user_id')) {
+                DispatchedCustomAudit::run(
+                    auditableModel      : $deliveryNote,
+                    relationModelClass  : User::class,
+                    oldId               : $oldPackerUserId,
+                    newId               : $deliveryNote->packer_user_id,
+                    attributes          : ['contact_name'],
+                    logKey              : 'packer_name'
+                );
+                DeliveryNoteHydratePacker::dispatch($deliveryNote->id);
             }
 
             if (Arr::has($changes, 'collection_address_id')) {

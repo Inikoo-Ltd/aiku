@@ -60,7 +60,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_clocking_machines_type_qr_code
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property int $number_employees_type_internship
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupHumanResourcesStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupHumanResourcesStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupHumanResourcesStats query()

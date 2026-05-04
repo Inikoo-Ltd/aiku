@@ -23,6 +23,7 @@ const props = defineProps<{
     }
   }
   screenType: "mobile" | "tablet" | "desktop"
+  indexBlock : number
 }>();
 
 const layout = inject("layout");
@@ -120,15 +121,16 @@ onMounted(() => {
 
 <template>
 
-  <div :id="fieldValue?.id ? fieldValue?.id : 'banner'" component="banner">
+  <div :id="fieldValue?.id ? fieldValue?.id : 'banner'+indexBlock" component="banner">
     <div v-if="isLoading" class="flex justify-center h-36 items-center">
       <LoadingIcon class="text-4xl" />
     </div>
 
     <section v-else-if="data" class="relative mx-auto" :style="bannerDimensionStyle">
       <div :style="{
+        ...(screenType === 'mobile' ? { height: '300px', width: '100%' } : {}),
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-        ...getStyles(fieldValue.container?.properties, screenType)
+        ...getStyles(fieldValue.container?.properties, screenType),
       }">
 
         <div v-if="data?.compiled_layout?.type === 'landscape'" :class="[

@@ -22,12 +22,22 @@ class TimeTrackersResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $startsAt = $this->starts_at;
+        $endsAt = $this->ends_at;
+
+        if (($this->organisation_code ?? null) === 'SK') {
+            $startsAt = $startsAt?->copy()->subHour();
+            $endsAt = $endsAt?->copy()->subHour();
+        }
+
         return [
-            'id'        => $this->id,
-            'starts_at' => $this->starts_at,
-            'ends_at'   => $this->ends_at,
-            'duration'  => $this->duration,
-            'status'    => $this->status->statusIcon()[$this->status->value],
+            'id'           => $this->id,
+            'starts_at'    => $startsAt,
+            'ends_at'      => $endsAt,
+            'duration'     => $this->duration,
+            'status'       => $this->status->statusIcon()[$this->status->value],
+            'status_value' => $this->status->value,
+            'can_add_clock_out' => $this->status === TimeTrackerStatusEnum::OPEN,
             'action'    => match (true) {
                 (bool) $this->starts_at => [
                     'tooltip' => __('Clock In'),
@@ -40,7 +50,10 @@ class TimeTrackersResource extends JsonResource
                     'class'   => 'text-red-500'
                 ],
                 default => []
-            }
+            },
+            'clock_out_route' => $this->status === TimeTrackerStatusEnum::OPEN
+                ? route('grp.models.time-tracker.clock-out', ['timeTracker' => $this->id])
+                : null
         ];
     }
 }

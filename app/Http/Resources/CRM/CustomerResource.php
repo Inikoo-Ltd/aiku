@@ -28,7 +28,7 @@ class CustomerResource extends JsonResource
         /** @var Customer $customer */
         $customer = $this;
 
-        // Temp fix || Need to redo later, some payment have invalid customer id
+        // Temp fix || Need to redo later, some payment has invalid customer id
         if (!$customer->resource) {
             return [];
         }
@@ -108,12 +108,15 @@ class CustomerResource extends JsonResource
             'delivery_address_id' => $customer->delivery_address_id,
             'email'               => $customer->email,
             'phone'               => $customer->phone,
+            'contact_website'     => $customer->contact_website,
             'created_at'          => $customer->created_at,
             'balance'             => $customer->balance,
             'tax_number'          => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : [],
             'state'               => $customer->state,
             'status'              => $customer->status,
             'currency_code'       => $customer->shop?->currency?->code,
+            'eori'                => $customer->eori,
+            'ukims'               => $customer->ukims,
             'email_subscriptions' => [
                 'update_route'  => [
                     'method'     => 'patch',
@@ -134,7 +137,7 @@ class CustomerResource extends JsonResource
                 'subscriptions' => $subscriptions
 
             ],
-            'tags' => TagsResource::collection($customer->tags)->toArray(request())
+            'tags'                => TagsResource::collection($customer->tags)->toArray(request())
         ];
     }
 }

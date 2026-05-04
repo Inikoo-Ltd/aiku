@@ -12,7 +12,6 @@ Disallow: /*.sys$
 Disallow: /ethics
 Disallow: /image_root*
 Disallow: /app/login
-Disallow: /app/register
 Disallow: /app/favourites
 Disallow: /app/dashboard
 Disallow: /app/basket

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3'
+import { Head, Link, router } from '@inertiajs/vue3'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {
     faBox, faBullhorn, faCameraRetro, faCube, faFolder,
@@ -7,17 +7,17 @@ import {
     faStream, faUsers, faHeart, faMinus,
     faFolderTree, faBrowser, faLanguage,faFolders, faPaperclip,
     faFolderDownload,faQuoteLeft,
-    faSync,
-    faSearch
+    faSearch,
+    faBadgePercent,
+    faTools,
 } from '@fal'
-import { ref, computed } from 'vue'
+import { ref, computed, inject } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import Breadcrumb from 'primevue/breadcrumb'
-import Message from 'primevue/message'
-import { FontAwesomeIcon, FontAwesomeLayers } from '@fortawesome/vue-fontawesome'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import type { PageHeadingTypes } from '@/types/PageHeading'
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableOrders from "@/Components/Tables/Grp/Org/Ordering/TableOrders.vue"
@@ -39,11 +39,12 @@ import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategory
 import { trans } from "laravel-vue-i18n"
 import ProductContent from '@/Components/Showcases/Grp/ProductContent.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { faMagnifyingGlass, faMagnifyingGlassArrowRight } from '@fortawesome/free-solid-svg-icons'
-import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
+import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
 import { faShapes, faStar } from '@fas'
+import { faHatCowboy } from "@far"
 import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
-
+import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
+import ModalCreateGiftOffers from '@/Components/Offers/ModalCreateGiftOffers.vue'
 
 library.add(
     faFolder,
@@ -66,7 +67,9 @@ library.add(
     faFolderTree,
     faFolderDownload,
     faQuoteLeft,
-    faMagnifyingGlass
+    faMagnifyingGlass,
+    faBadgePercent,
+    faTools
 )
 
 const props = defineProps<{
@@ -102,6 +105,7 @@ const props = defineProps<{
     masterRoute?: routeType
     is_external_shop?: boolean
     product_state?: boolean
+    is_dependent_trade_unit?: boolean
     variant?: {}
     is_variant_leader?: boolean
    /*  taxonomy: {
@@ -128,6 +132,12 @@ const props = defineProps<{
     is_single_trade_unit?: boolean
     reminders?: {}
     trade_unit_slug?: string
+    shop_data: {
+        id: number
+        slug: string
+        currency_code: string
+    }
+    product_id: number
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -152,6 +162,7 @@ const component = computed(() => {
         attachments: AttachmentManagement,
         sales: ProductCategoryTimeSeriesTable,
         content: ProductContent,
+        offers: TableOffers,
     }
     return components[currentTab.value]
 })
@@ -164,8 +175,7 @@ const component = computed(() => {
     return !props.taxonomy?.department && !props.taxonomy?.family
 })
  */
-
-
+const layout = inject("layout", {})
 const routeVariant = () => {
     return route(
         'grp.org.shops.show.catalogue.families.show.variants.show',
@@ -178,7 +188,16 @@ const routeVariant = () => {
     )
 }
 
+const goToEdit = () => {
+    let editBtn = props.pageHead.actions.find((item) => item.label === 'Edit');
 
+    if (editBtn?.route) {
+        router.visit(route(editBtn.route?.name, {
+            ...editBtn.route?.parameters,
+            section: 5
+        }));
+    }
+}
 </script>
 
 <template>
@@ -198,6 +217,14 @@ const routeVariant = () => {
                     icon="fal fa-atom"
                 />
             </Link>
+            
+            <FontAwesomeIcon
+                v-if="is_dependent_trade_unit"
+                v-tooltip="trans('This product have independent Trade Unit setting')"
+                @click="goToEdit"
+                :icon="faHatCowboy"
+                class="text-red-500 cursor-pointer"
+            />
             <!-- TODO PLEASE CHANGE TO HAVE LINK TO VARIANT -->
             <Link  v-if="variant"  :href="routeVariant()" v-tooltip="trans('Go to Variant')">
                 <FontAwesomeIcon :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" />
@@ -237,6 +264,15 @@ const routeVariant = () => {
             </div>
         </template>
         <template #other>
+        </template>
+        <template #otherBefore>
+            
+            <ModalCreateGiftOffers 
+                v-if="currentTab === 'offers' && layout.app.environment === 'local'"
+                v-tooltip="'Create New Offer'"
+                :shop_data="props.shop_data"
+                :product_id="props.product_id"
+                 />
         </template>
     </PageHeading>
 

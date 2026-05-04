@@ -29,8 +29,7 @@ trait WithPrintNode
      */
     public function ensureClientInitialized(): void
     {
-        $isProduction = app()->isProduction();
-
+        $isProduction = true;
         if (!$this->clientInitialized) {
             if (!$isProduction) {
                 $driver = config('printing.driver');
@@ -52,7 +51,7 @@ trait WithPrintNode
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function isExistPrinter(int $printerId): bool
+    public function isExistPrinter(int|null $printerId): bool
     {
         $this->ensureClientInitialized();
         try {

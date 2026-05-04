@@ -99,7 +99,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_stock_delivery_items_state_not_received
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static Builder<static>|GroupProcurementStats newModelQuery()
  * @method static Builder<static>|GroupProcurementStats newQuery()
  * @method static Builder<static>|GroupProcurementStats query()

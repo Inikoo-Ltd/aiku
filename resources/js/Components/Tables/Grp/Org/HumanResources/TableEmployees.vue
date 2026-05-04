@@ -25,10 +25,7 @@ function employeeRoute(employee: Employee) {
 				employee.slug,
 			])
 		case "grp.overview.hr.employees.index":
-			return route("grp.org.hr.employees.show", [
-				employee.organisation_slug,
-				employee.slug,
-			])
+			return route("grp.org.hr.employees.show", [employee.organisation_slug, employee.slug])
 	}
 }
 </script>
@@ -37,6 +34,19 @@ function employeeRoute(employee: Employee) {
 	<Table :resource="data" :name="tab" class="mt-5">
 		<template #cell(state)="{ item: employee }">
 			<Icon :data="employee['state_icon']" />
+		</template>
+
+		<template #cell(is_on_probation)="{ item: employee }">
+			<Tag
+				v-if="employee.is_on_probation"
+				label="Probation"
+				class="bg-yellow-100 text-yellow-800" />
+		</template>
+
+		<template #cell(length_of_service)="{ item: employee }">
+			<span v-if="employee.length_of_service" class="text-sm text-gray-600">
+				{{ employee.length_of_service }}
+			</span>
 		</template>
 
 		<template #cell(slug)="{ item: employee }">

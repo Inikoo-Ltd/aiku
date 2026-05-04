@@ -9,11 +9,16 @@
 namespace App\Models\SysAdmin;
 
 use App\Models\Catalogue\Shop;
+use App\Models\Comms\DispatchedEmail;
 use App\Models\Traits\HasEmail;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasRoles;
 use App\Models\Traits\IsUserable;
+use App\Models\UserFailedLogIn;
+use App\Models\UserLogin;
+use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\Traits\HasSearch;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\SlugOptions;
 use Illuminate\Support\Collection;
@@ -31,7 +36,6 @@ use App\Models\Traits\WithPushNotifications;
 use App\Enums\SysAdmin\User\UserAuthTypeEnum;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Actions\SysAdmin\User\SendLinkResetPassword;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -66,17 +70,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property bool $reset_password
  * @property int $language_id
  * @property int|null $image_id
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property string|null $fetched_at
  * @property string|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $deleted_at
  * @property string|null $delete_comment
  * @property string|null $source_id
  * @property array<array-key, mixed> $sources
  * @property string|null $legacy_password source password
  * @property string|null $google2fa_secret
  * @property bool $is_two_factor_required
+ * @property array<array-key, mixed> $bookmarks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedAgentsOrganisations
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedDigitalAgencyOrganisations
@@ -87,10 +92,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Shop> $authorisedShops
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Warehouse> $authorisedWarehouses
  * @property-read ChatAgent|null $chatAgent
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, DispatchedEmail> $dispatchedEmails
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Employee> $employees
  * @property-read \App\Models\Notifications\FcmToken|null $fcmToken
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Notifications\FcmToken> $fcmTokens
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Guest> $guests
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
@@ -107,8 +113,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Task> $tasks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserHasAuthorisedModels> $userAuthorisedModels
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, UserFailedLogIn> $userFailedLogins
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, UserLogin> $userLogins
  * @property-read \Illuminate\Database\Eloquent\Collection<int, UserRequest> $userRequests
  * @method static \Database\Factories\SysAdmin\UserFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newModelQuery()
@@ -131,6 +138,7 @@ class User extends Authenticatable implements HasMedia, Auditable
     use IsUserable;
     use HasImage;
     use HasApiTokens;
+    use HasSearch;
 
     protected $guarded = [
     ];
@@ -144,6 +152,7 @@ class User extends Authenticatable implements HasMedia, Auditable
         'data'      => 'array',
         'settings'  => 'array',
         'sources'   => 'array',
+        'bookmarks' => 'array',
         'status'    => 'boolean',
         'auth_type' => UserAuthTypeEnum::class,
         'password'  => 'hashed',
@@ -151,10 +160,35 @@ class User extends Authenticatable implements HasMedia, Auditable
 
 
     protected $attributes = [
-        'data'     => '{}',
-        'settings' => '{}',
-        'sources'  => '{}',
+        'data'      => '{}',
+        'settings'  => '{}',
+        'sources'   => '{}',
+        'bookmarks' => '{}'
     ];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'username',
+                'email',
+                'contact_name',
+                'status',
+                'created_at'
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'           => (string)$this->id,
+            'username'     => $this->username,
+            'email'        => (string)$this->email,
+            'contact_name' => (string)$this->contact_name,
+            'status'       => $this->status,
+            'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {
@@ -187,12 +221,6 @@ class User extends Authenticatable implements HasMedia, Auditable
             })
             ->saveSlugsTo('slug')
             ->slugsShouldBeNoLongerThan(128);
-    }
-
-
-    public function sendPasswordResetNotification($token): void
-    {
-        SendLinkResetPassword::run($token, $this);
     }
 
     public function routeNotificationForFcm(): array
@@ -228,6 +256,15 @@ class User extends Authenticatable implements HasMedia, Auditable
         return $this->hasMany(UserRequest::class);
     }
 
+    public function userLogins(): HasMany
+    {
+        return $this->hasMany(UserLogin::class);
+    }
+
+    public function userFailedLogins(): HasMany
+    {
+        return $this->hasMany(UserFailedLogIn::class);
+    }
 
     public function userAuthorisedModels(): HasMany
     {
@@ -300,7 +337,6 @@ class User extends Authenticatable implements HasMedia, Auditable
      */
     public function getOrganisations(): Collection
     {
-
         return $this->employees->map(function ($employee) {
             return $employee->organisation;
         })->flatten();
@@ -308,7 +344,10 @@ class User extends Authenticatable implements HasMedia, Auditable
 
     public function getOrganisation(): ?Organisation
     {
-        return $this->getOrganisations()->first();
+        /** @var Organisation $organisation */
+        $organisation = $this->getOrganisations()->first();
+
+        return $organisation;
     }
 
 
@@ -325,6 +364,11 @@ class User extends Authenticatable implements HasMedia, Auditable
     public function chatAgent(): HasOne
     {
         return $this->hasOne(ChatAgent::class);
+    }
+
+    public function dispatchedEmails(): BelongsToMany
+    {
+        return $this->belongsToMany(DispatchedEmail::class, 'user_has_dispatched_emails');
     }
 
 

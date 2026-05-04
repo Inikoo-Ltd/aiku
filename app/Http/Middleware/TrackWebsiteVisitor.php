@@ -9,34 +9,42 @@ namespace App\Http\Middleware;
 
 use App\Actions\Web\WebsiteVisitor\ProcessWebsiteVisitorTracking;
 use Closure;
-use hisorange\BrowserDetect\Parser;
 use Illuminate\Http\Request;
 
 class TrackWebsiteVisitor
 {
     public function handle(Request $request, Closure $next)
     {
+
+        if ($this->shouldTrack($request)) {
+
+            $geoLocation = [
+                $request->header('CF-IPCountry') ?? 'XX',
+                $request->header('CF-Region'),
+                $request->header('CF-IPCity'),
+                $request->header('CF-IPLongitude'),
+                $request->header('CF-IPLatitude'),
+            ];
+
+            ProcessWebsiteVisitorTracking::dispatch(
+                $request->session()->getId(),
+                $request->input('website'),
+                $request->user('retina'),
+                $request->userAgent(),
+                request()->ip(),
+                $request->fullUrl(),
+                $request->header('referer'),
+                $geoLocation
+            )->delay(now()->addSeconds(5));
+        }
+
         return $next($request);
     }
 
-    public function terminate(Request $request, $response): void
-    {
-        if ($this->shouldTrack($request)) {
-            ProcessWebsiteVisitorTracking::dispatch(
-                sessionId: $request->session()->getId(),
-                website: $request->input('website'),
-                webUser: $request->user('retina'),
-                userAgent: $request->userAgent(),
-                ips: $request->ips(),
-                currentUrl: $request->fullUrl(),
-                referrer: $request->header('referer'),
-            );
-        }
-    }
 
     protected function shouldTrack(Request $request): bool
     {
-        if (app()->environment('local')) {
+        if (app()->isLocal()) {
             return false;
         }
 
@@ -48,11 +56,8 @@ class TrackWebsiteVisitor
             return false;
         }
 
-        if ($this->isBot($request)) {
-            return false;
-        }
-
         $routeName = $request->route()?->getName();
+
         if (!$routeName) {
             return false;
         }
@@ -67,19 +72,5 @@ class TrackWebsiteVisitor
         ];
 
         return array_all($excludedRoutes, fn ($excluded) => !str_starts_with($routeName, $excluded));
-    }
-
-    protected function isBot(Request $request): bool
-    {
-        $userAgent = $request->userAgent();
-
-        if (!$userAgent) {
-            return false;
-        }
-
-        $parsedUserAgent = new Parser()->parse($userAgent);
-        $deviceType = $parsedUserAgent->deviceType();
-
-        return strtolower($deviceType) === 'bot';
     }
 }

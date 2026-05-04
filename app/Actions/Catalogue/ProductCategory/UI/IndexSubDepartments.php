@@ -121,6 +121,7 @@ class IndexSubDepartments extends OrgAction
             'organisations.name as organisation_name',
             'product_category_stats.number_current_families as number_families',
             'product_category_stats.number_current_products as number_products',
+            'product_categories.health_rank',
         ];
 
         if ($prefix === ProductCategoryTabsEnum::SALES->value) {
@@ -157,7 +158,7 @@ class IndexSubDepartments extends OrgAction
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ->leftjoin('product_categories as departments', 'departments.id', 'product_categories.department_id')
-            ->allowedSorts(['code', 'name', 'shop_code', 'department_code', 'number_families', 'number_products', 'sales_grp_currency_external', 'invoices', 'dropshippers', 'listings', 'sold'])
+            ->allowedSorts(['code', 'name', 'shop_code', 'department_code', 'number_families', 'number_products', 'sales_grp_currency_external', 'invoices', 'dropshippers', 'listings', 'sold', 'health_rank'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -222,7 +223,8 @@ class IndexSubDepartments extends OrgAction
                     ->column(key: 'invoices', label: __('Invoices'), sortable: true, align: 'right')
                     ->column(key: 'sold', label: __('Sold'), sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), sortable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), align: 'right');
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 if ($parent instanceof Organisation) {
                     $table->column(key: 'shop_code', label: __('Shop'), sortable: true);

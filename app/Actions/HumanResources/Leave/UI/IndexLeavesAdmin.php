@@ -5,7 +5,6 @@ namespace App\Actions\HumanResources\Leave\UI;
 use App\Actions\OrgAction;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\HumanResources\Leave\LeaveStatusEnum;
-use App\Enums\HumanResources\Leave\LeaveTypeEnum;
 use App\Http\Resources\HumanResources\LeaveResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\HumanResources\Leave;
@@ -18,6 +17,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Services\HumanResources\LeaveTypeResolver;
 
 class IndexLeavesAdmin extends OrgAction
 {
@@ -46,7 +46,7 @@ class IndexLeavesAdmin extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Leave::class)
             ->where('organisation_id', $organisation->id)
-            ->with(['employee'])
+            ->with(['employee', 'leaveType'])
             ->allowedFilters([$globalSearch, $statusFilter, $typeFilter])
             ->allowedSorts(['start_date', 'end_date', 'created_at', 'employee_name'])
             ->defaultSort('-created_at');
@@ -83,7 +83,7 @@ class IndexLeavesAdmin extends OrgAction
                     'subNavigation' => $this->getLeaveSubNavigation($request),
                 ],
                 'leaves' => LeaveResource::collection($leaves),
-                'type_options' => LeaveTypeEnum::labels(),
+                'type_options' => LeaveTypeResolver::optionsForOrganisation($this->organisation->id, false, $this->organisation->country?->code),
                 'status_options' => LeaveStatusEnum::labels(),
             ]
         )->table($this->tableStructure());
@@ -133,6 +133,11 @@ class IndexLeavesAdmin extends OrgAction
                     label: __('Status'),
                     canBeHidden: false,
                     sortable: true
+                )
+                ->column(
+                    key: 'approval_progress',
+                    label: __('Approval'),
+                    canBeHidden: false
                 )
                 ->column(
                     key: 'reason',

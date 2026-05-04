@@ -12,6 +12,7 @@ use App\Actions\Utils\Abbreviate;
 use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Models\Bundle;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Ordering\Order;
@@ -85,15 +86,16 @@ use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
  * @property int $number_orders_state_picked
  * @property int $number_orders_state_packing
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Bundle> $bundles
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\CustomerClient> $clients
  * @property-read Customer|null $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, PalletReturn> $fulfilmentOrders
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Order> $orders
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
  * @property-read \App\Models\Dropshipping\Platform $platform
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\Portfolio> $portfolios
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read Model|\Eloquent|null $user
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel newModelQuery()
@@ -183,5 +185,10 @@ class CustomerSalesChannel extends Model implements Authenticatable, Auditable
     public function portfolios(): HasMany
     {
         return $this->hasMany(Portfolio::class);
+    }
+
+    public function bundles(): HasMany
+    {
+        return $this->hasMany(Bundle::class);
     }
 }

@@ -41,7 +41,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $customer_id
  * @property int|null $order_id
  * @property string|null $gateway_payment_id
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Payment|null $payment
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentGatewayLog newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentGatewayLog newQuery()

@@ -10,12 +10,12 @@ namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\StoreCollectionsFromMasterCollection;
 use App\Actions\GrpAction;
-use App\Actions\Masters\MasterCollection\Search\MasterCollectionRecordSearch;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterCollections;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterCollections;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterCollections;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
+use App\Enums\Catalogue\MasterCollection\MasterCollectionStateEnum;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -53,11 +53,13 @@ class StoreMasterCollection extends GrpAction
 
         data_set($modelData, 'group_id', $masterShop->group_id);
         data_set($modelData, 'master_shop_id', $masterShop->id);
+        data_set($modelData, 'status', true);
+        data_set($modelData, 'state', MasterCollectionStateEnum::ACTIVE);
+
 
         $masterCollection = DB::transaction(function () use ($parent, $modelData, $imageData, $createChildren) {
             $masterCollection = MasterCollection::create($modelData);
             $masterCollection->stats()->create();
-            $masterCollection->salesIntervals()->create();
             $masterCollection->orderingStats()->create();
 
             if ($imageData['image']) {
@@ -74,7 +76,6 @@ class StoreMasterCollection extends GrpAction
             return $masterCollection;
         });
 
-        MasterCollectionRecordSearch::dispatch($masterCollection);
         GroupHydrateMasterCollections::dispatch($masterCollection->group)->delay($this->hydratorsDelay);
         MasterShopHydrateMasterCollections::dispatch($masterShop)->delay($this->hydratorsDelay);
 

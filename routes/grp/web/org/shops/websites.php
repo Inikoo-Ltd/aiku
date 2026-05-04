@@ -26,6 +26,7 @@ use App\Actions\Web\Banner\UI\ShowBanner;
 use App\Actions\Web\Banner\UI\ShowBannerWorkshop;
 use App\Actions\Web\Redirect\UI\CreateRedirect;
 use App\Actions\Web\Redirect\UI\EditRedirect;
+use App\Actions\Web\Redirect\UI\IndexRedirects;
 use App\Actions\Web\Redirect\UI\ShowRedirect;
 use App\Actions\Web\Webpage\UI\CreateBlogWebpage;
 use App\Actions\Web\Webpage\UI\CreateWebpage;
@@ -88,12 +89,14 @@ Route::name('websites.')->group(function () {
                             Route::get('sidebar', [IndexSnapshots::class, 'inSidebarWorkshop'])->name('.sidebar');
                         });
                 });
-            Route::name('redirect')->prefix('redirect')
-                ->group(function () {
-                    Route::get('{redirect}', [ShowRedirect::class, 'inWebsite'])->name('.show');
-                    Route::get('{redirect}/edit', [EditRedirect::class, 'inWebpage'])->name('.edit');
-                });
         });
+});
+
+
+Route::name('redirect')->prefix('{website}/redirect')->group(function () {
+    Route::get('/', IndexRedirects::class)->name('.index');
+    Route::get('/{redirect}', [ShowRedirect::class, 'inWebsite'])->name('.show');
+    Route::get('/{redirect}/edit', [EditRedirect::class, 'inWebpage'])->name('.edit');
 });
 
 
@@ -106,6 +109,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
 
     Route::get('/type/operations', [IndexWebpages::class, 'operations'])->name('index.type.operations');
     Route::get('/sub-type/department', IndexDepartmentWebpages::class)->name('index.sub_type.department');
+    Route::get('/sub-type/department/families-overview', [IndexDepartmentWebpages::class, 'familiesOverviewPages'])->name('index.sub_type.department.families_overview');
     Route::get('/sub-type/department/{scope}/sub-departments', [IndexSubDepartmentWebpages::class, 'inDepartmentWebpages'])->name('index.sub_type.department.sub_departments');
     Route::get('/sub-type/department/{scope}/families', [IndexFamilyWebpages::class, 'inDepartmentWebpages'])->name('index.sub_type.department.families');
     Route::get('/sub-type/department/{scope}/products', [IndexProductWebpages::class, 'inDepartmentWebpages'])->name('index.sub_type.department.products');
@@ -116,7 +120,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
     Route::get('/sub-type/family/{scope}/products', [IndexProductWebpages::class, 'inFamilyWebpages'])->name('index.sub_type.family.products');
     Route::get('/sub-type/product', IndexProductWebpages::class)->name('index.sub_type.product');
 
-
+    Route::get('/{webpage}/redirect-options', [IndexWebpages::class, 'asRedirectOption'])->name('index.redirect-options');
 
     Route::get('create', CreateWebpage::class)->name('create');
     Route::prefix('{webpage}')

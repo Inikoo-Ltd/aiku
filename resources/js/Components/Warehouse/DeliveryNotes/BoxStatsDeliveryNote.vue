@@ -23,10 +23,12 @@ import ChangePickedBays from "@/Components/DeliveryNote/ChangePickedBays.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ManageTrolleysInDeliveryNote from "@/Components/DeliveryNote/ManageTrolleysInDeliveryNote.vue"
 import Select from 'primevue/select';
+import { faExchangeAlt, faLock , faLockOpen} from "@far"
+import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     boxStats: {
         customer: {
             reference: string
@@ -88,10 +90,6 @@ const props = defineProps<{
                 tracking: string
             }[]
         }[]
-		external_order: {
-			status: boolean
-			route_view_packing_slip: routeType
-		}
         platform?: {
             logo: string
             name: string
@@ -128,6 +126,7 @@ const props = defineProps<{
         pickers_list: routeType
         packers_list: routeType
         update: routeType
+        assignSelfTemporarily: routeType
     }
     deliveryNote: {
         state: string
@@ -138,7 +137,13 @@ const props = defineProps<{
     warehouse: {
         slug: string
     }
-}>()
+    allowActions: boolean
+    quick_pickers : any
+    showChangePickerPacker: boolean
+    isEditable: boolean
+}>(), {
+    isEditable: true
+})
 
 const emit = defineEmits<{
     'replace-all': []
@@ -150,6 +155,95 @@ const locale = inject('locale', aikuLocaleStructure)
 // Section: Replace All functionality
 const onReplaceAll = () => {
     emit('replace-all')
+}
+
+
+const isModalToQueue = ref(false);
+const selectedPicker = ref(props.boxStats.picker);
+const disable = ref(props.boxStats.state);
+const isLoading = ref<{ [key: string]: boolean }>({});
+const isLoadingToQueue = ref(false);
+
+
+
+const onUpdatePicker = () => {
+    const state = props.deliveryNote?.state;
+    const pickerId = selectedPicker.value?.id;
+
+    if (!pickerId) {
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Picker is not selected"),
+            type: "error"
+        });
+        return;
+    }
+
+    const isUnassigned = state === 'unassigned';
+
+    const routeConfig = props.routes[isUnassigned ? 'set_queue' : 'update'];
+
+    const routeName = routeConfig.name;
+    const routeParams = {
+        ...routeConfig.parameters,
+        ...(isUnassigned ? { user: pickerId } : {})
+    };
+
+    let payload = {};
+    if (!isUnassigned) {
+        payload = ['packing', 'packed'].includes(props.deliveryNote?.state)
+            ? { packer_user_id: pickerId }
+            : { picker_user_id: pickerId };
+    }
+
+    router.patch(route(routeName, routeParams), payload, {
+        onError: (error) => {
+            notify({
+                title: trans("Something went wrong"),
+                text: error?.message ?? trans("Unknown error"),
+                type: "error"
+            });
+        },
+        onSuccess: () => {
+            isModalToQueue.value = false;
+        },
+        onStart: () => {
+            isLoadingToQueue.value = true;
+        },
+        onFinish: () => {
+            isLoadingToQueue.value = false;
+        },
+        preserveScroll: true
+    });
+};
+
+const assignSelfTemporarily = () => {
+    
+    const routeName = props.routes.assignSelfTemporarily.name;
+    const routeParams = {
+        ...props.routes.assignSelfTemporarily.parameters,
+    };
+    const payload = {picker_user_id: selectedPicker.value.id};
+
+    router.patch(
+        route(routeName, routeParams),
+        payload,
+        {
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: error.message,
+                    type: "error"
+                });
+            },
+            onSuccess: () => {
+                isModalToQueue.value = false;
+            },
+            onStart: () => isLoadingToQueue.value = true,
+            onFinish: () => isLoadingToQueue.value = false,
+            preserveScroll: true
+        }
+    );
 }
 
 
@@ -253,6 +347,8 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
         parcel.weight = preset.weight
     }
 }
+
+console.log(layout)
 </script>
 
 <template>
@@ -363,13 +459,13 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
                                 <div class="xtext-xs text-gray-600 leading-snug">
                                     <div>
                                         <strong>{{ trans("Name") }}:</strong>
-                                        {{ boxStats.shipping_fields.contact_name || boxStats.customer_client.company_name }}
+                                        {{ boxStats.shipping_fields?.contact_name || boxStats.customer_client?.company_name }}
                                     </div>
                                     <div v-if="boxStats.customer_client.email">
-                                        <strong>{{ trans("Email") }}:</strong> {{ boxStats.shipping_fields.email }}
+                                        <strong>{{ trans("Email") }}:</strong> {{ boxStats.shipping_fields?.email }}
                                     </div>
                                     <div v-if="boxStats.customer_client.phone">
-                                        <strong>{{ trans("Phone") }}:</strong> {{ boxStats.shipping_fields.phone }}
+                                        <strong>{{ trans("Phone") }}:</strong> {{ boxStats.shipping_fields?.phone }}
                                     </div>
                                 </div>
                             </div>
@@ -428,23 +524,45 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
                                 </dd>
                             </dl>
                         </div>
+
+
+                        <FontAwesomeIcon
+                            v-if="boxStats?.picker?.id != layout?.user?.id && ['queued', 'packed', 'handling', 'packing'].includes(deliveryNote?.state)"
+                            v-tooltip="allowActions ? trans('Delivery note unlocked') : trans('Locked, only assigned picker can process this delivery note')"
+                            class="cursor-pointer focus:outline-none"
+                            :icon="allowActions ? faLockOpen : faLock"
+                            @click="assignSelfTemporarily()"
+                        />
+
+                        <Button
+                            v-if="isEditable && ['handling'].includes(deliveryNote?.state) && showChangePickerPacker"
+                            @click="isModalToQueue = true" :label="trans('Change Picker')"  :icon="faExchangeAlt" type="tertiary" size="xs" />
+
+
+                        <Button
+                            v-if="isEditable && ['packing', 'packed'].includes(deliveryNote?.state) && showChangePickerPacker"
+                            @click="isModalToQueue = true" :label="trans('Change Packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
+
+
+                     
                     </div>
 
                     <!-- Section: Trolleys -->
                     <ManageTrolleysInDeliveryNote
-                        v-if="!(['unassigned', 'queued'].includes(deliveryNote.state)) && boxStats?.shop_type !== 'dropshipping'"
+                        v-if="!(['unassigned', 'queued', 'dispatched', 'packed'].includes(deliveryNote.state)) && boxStats?.shop_type !== 'dropshipping'"
                         :deliveryNote
                         :trolleys="boxStats.trolleys"
                         :warehouse
+                        :isEditable
                     />
                     
                     <!-- Section: Picked Bays -->
-                    <div v-if="[ 'picked', 'packing'].includes(deliveryNote.state) || boxStats?.picked_bays?.length" class="!mt-1.5 flex gap-x-2 items-center">
+                    <div v-if="[ 'picked'].includes(deliveryNote.state) || boxStats?.picked_bays?.length" class="!mt-1.5 flex gap-x-2 items-center">
                         <dl class=" border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                             <dt class="flex-none">
                                 {{ trans("Picked bays") }}:
                             </dt>
-                            <dd v-if="boxStats?.picked_bays?.length" class="text-gray-500">
+                            <dd v-if="boxStats?.picked_bays?.length" class="font-bold xtext-gray-500">
                                 <span
                                     v-for="bay in boxStats?.picked_bays"
                                     :key="bay.id"
@@ -460,7 +578,7 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
                         </dl>
 
                         <ChangePickedBays
-                            v-if="['picked', 'packing'].includes(deliveryNote.state)"
+                            v-if="isEditable && ['picked'].includes(deliveryNote.state)"
                             :warehouse="warehouse"
                             :deliveryNote="deliveryNote"
                             :pickedBays="boxStats?.picked_bays"
@@ -501,30 +619,31 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
                             <div class="leading-4 xtext-base flex justify-between w-full py-1">
                                 <div class="text-gray-500">{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
 
-                                <!-- Can't edit Parcels if Shipment has set AND already dispatched-->
-                                <template v-if="!(boxStats?.shipments?.length >= 1) && (deliveryNote?.state === 'packed' || deliveryNote?.state === 'packing'  || deliveryNote?.state === 'handling')">
-                                    <div v-if="boxStats?.parcels?.length"
-                                        @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])"
-                                        class="cursor-pointer text-gray-400 hover:text-gray-600">
-                                        {{ trans("Edit") }}
-                                        <FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400"
-                                            fixed-width aria-hidden="true" />
-                                    </div>
-                                    <div v-else-if="!isLoadingSubmitParcels"
-                                        @click="async () => (parcelsCopy = [{ weight: 1, dimensions: [5, 5, 5] }], onSubmitParcels())"
-                                        class="cursor-pointer text-gray-400 hover:text-gray-600">
-                                        {{ trans("Add") }}
-                                        <FontAwesomeIcon icon="fas fa-plus" size="sm" class="text-gray-400" fixed-width
-                                            aria-hidden="true" />
-                                    </div>
-                                    <div v-else>
-                                        <LoadingIcon />
+                                <template v-if="isEditable">
+                                    <!-- Can't edit Parcels if Shipment has set AND already dispatched-->
+                                    <template v-if="!(boxStats?.shipments?.length >= 1) && (deliveryNote?.state === 'packed' || deliveryNote?.state === 'packing'  || deliveryNote?.state === 'handling')">
+                                        <div v-if="boxStats?.parcels?.length"
+                                            @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])"
+                                            class="cursor-pointer text-gray-400 hover:text-gray-600">
+                                            {{ trans("Edit") }}
+                                            <FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400"
+                                                fixed-width aria-hidden="true" />
+                                        </div>
+                                        <div v-else-if="!isLoadingSubmitParcels"
+                                            @click="async () => (parcelsCopy = [{ weight: 1, dimensions: [5, 5, 5] }], onSubmitParcels())"
+                                            class="cursor-pointer text-gray-400 hover:text-gray-600">
+                                            {{ trans("Add") }}
+                                            <FontAwesomeIcon icon="fas fa-plus" size="sm" class="text-gray-400" fixed-width
+                                                aria-hidden="true" />
+                                        </div>
+                                        <div v-else>
+                                            <LoadingIcon />
+                                        </div>
+                                    </template>
+                                    <div v-else-if="deliveryNote?.state === 'packed'" class="text-xs text-gray-400 italic" v-tooltip="trans('Remove shipment to edit parcels')">
+                                        {{ trans("Not editable") }}
                                     </div>
                                 </template>
-
-                                <div v-else-if="deliveryNote?.state === 'packed'" class="text-xs text-gray-400 italic" v-tooltip="trans('Remove shipment to edit parcels')">
-                                    {{ trans("Not editable") }}
-                                </div>
                             </div>
 
                             <ul v-if="boxStats?.parcels?.length" class="list-disc pl-4 ">
@@ -554,7 +673,6 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
                         </dt>
                         <dd class="text-gray-500 w-full">
                             <ShipmentSection
-								:external_order="boxStats.external_order"
                                 :shipping_fields="boxStats.shipping_fields"
                                 :shipping_fields_update_route="boxStats.shipping_fields_update_route"
                                 :shipments="boxStats.shipments"
@@ -563,6 +681,7 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
                                 :customer="boxStats?.shop_type === 'dropshipping' ? boxStats.customer : undefined"
                                 :currencyCode="boxStats?.currency_code"
                                 :external_shop="boxStats?.external_shop"
+                                :isEditable
                             />
                         </dd>
                     </dl>
@@ -730,6 +849,85 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
 
         <!-- Modal: change trolley -->
     </div>
+
+
+    <Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title>
+		<div class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
+			<div class="mx-auto font-semibold text-lg">
+				{{ ['packing', 'packed'].includes(deliveryNote?.state) ? trans("Select packer") : trans("Select picker") }} 
+			</div>
+			<div class="mt-4 flex items-center w-full gap-x-1.5">
+				<dd class="flex-1">
+					<!-- Label for Picker -->
+					<div class="flex justify-between text-sm font-medium py-2">
+						{{ ['packing', 'packed'].includes(deliveryNote?.state) ? trans("Select packer") : trans("Select picker") }} 
+                        <Button  v-if="boxStats?.picker?.id != layout?.user?.id" :loading="isLoadingToQueue" :label="trans('I will do the picking myself')" type="tertiary" size="xs" @click="()=>{selectedPicker = { id: layout.user.id}, onUpdatePicker()}"></Button>
+					</div>
+					<PureMultiselectInfiniteScroll
+						v-model="selectedPicker"
+						required
+						:fetchRoute="routes.pickers_list"
+						:placeholder="trans('Select picker')"
+						labelProp="contact_name"
+						valueProp="id"
+						object
+						clearOnBlur
+						:loading="isLoading['picker' + selectedPicker?.id]"
+						:disabled="
+							disable == 'picker_assigned' ||
+							disable == 'packing' ||
+							disable == 'packed' ||
+							disable == 'finalised' ||
+							disable == 'settled' ||
+                            isLoadingToQueue
+						">
+						<template #singlelabel="{ value }">
+							<div
+								class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
+								{{ value.contact_name }}
+							</div>
+						</template>
+						<template #option="{ option, isSelected, isPointed }">
+							<div class="w-full text-left text-sm whitespace-nowrap truncate">
+								{{ option.contact_name }}
+							</div>
+						</template>
+					</PureMultiselectInfiniteScroll>
+
+					<!-- Quick Pickers -->
+					<div v-if="quick_pickers && quick_pickers.length > 0" class="mt-3">
+						<div class="flex flex-wrap justify-center gap-2">
+							<button
+								v-for="picker in quick_pickers"
+								:key="picker.id"
+								@click="()=>{selectedPicker = picker, onUpdatePicker()}"
+								class="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm rounded-md border border-blue-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+								:class="{
+									'bg-blue-500 text-white': selectedPicker?.id === picker.id,
+								}">
+								{{ picker.contact_name }}
+							</button>
+						</div>
+					</div>
+				</dd>
+			</div>
+			<div class="w-full mt-2">
+				<Button
+					@click="onUpdatePicker()"
+					:label="
+						delivery_note_state === 'queued'
+							? trans('Change picker')
+							: trans('Set Picker')
+					"
+					:iconRight="['fas', 'fa-arrow-right']"
+					full
+					:loading="isLoadingToQueue"
+					:disabled="!selectedPicker"
+					v-tooltip="selectedPicker ? '' : trans('Select picker before set to queue')">
+				</Button>
+			</div>
+		</div>
+	</Modal>
 </template>
 
 <style scoped>

@@ -46,6 +46,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Record<string, any>
   screenType: 'mobile' | 'tablet' | 'desktop'
+  indexBlock:number
 }>()
 
 const layout: any = inject("layout", {})
@@ -80,7 +81,7 @@ const resolvedGap = computed(() => {
 </script>
 
 <template>
-  <div id="image">
+  <div :id="modelValue?.id ? modelValue?.id  : 'image_iris'+indexBlock">
     <section :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(modelValue.container?.properties, screenType),

@@ -23,12 +23,18 @@ class ClockingsResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $clockedAt = $this->clocked_at;
+
+        if (($this->organisation_code ?? null) === 'SK') {
+            $clockedAt = $clockedAt?->copy()->subHour();
+        }
+
         return [
             'id'                    => $this->id,
             'type'                  => $this->type,
             'notes'                 => $this->notes,
             'workplace_slug'        => $this->workplace_slug,
-            'clocked_at'            => $this->clocked_at,
+            'clocked_at'            => $clockedAt,
             'media_slug'            => $this->media_slug,
             'media_id'              => $this->media_id,
             'clocking_machine_slug' => $this->clocking_machine_slug

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, computed, watch } from "vue"
+import { ref, inject, computed, watch, onMounted } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
@@ -105,6 +105,7 @@ const props = defineProps<{
     isLoadingFavourite: boolean
     videoSetup: { url: string }
     listProducts: ProductResource[]
+    indexBlock:number
 }>()
 
 const emit = defineEmits<{
@@ -178,14 +179,19 @@ const getIcon = (type: string) => {
     return faFileCheck
 }
 
-const baseUrl = `${window.location.origin}/`
+const baseUrl = ref("")
+
+onMounted(() => {
+    baseUrl.value = `${window.location.origin}/`
+})
+
 </script>
 
 
 
 <template>
     <!-- DESKTOP -->
-    <div v-if="screenType !== 'mobile'"  :id="fieldValue?.id ? fieldValue?.id  : 'product-iris-2-ecom'"  component="product-iris-2-ecom"
+    <div v-if="screenType !== 'mobile'"  :id="fieldValue?.id ? fieldValue?.id  : 'product-iris-2-ecom'+indexBlock"  component="product-iris-2-ecom"
         class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft: 'auto',

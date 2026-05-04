@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Product\StoreProductFromMasterProduct;
+use App\Actions\Masters\MasterProductCategory\StoreFamilyFromMasterFamily;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -33,6 +34,20 @@ class CloneMasterAssetToOtherShop extends OrgAction
     public function handle(MasterProductCategory $masterFamily, array $modelData): MasterProductCategory
     {
         $shopProducts = Arr::pull($modelData, 'shop_products', []);
+
+        foreach (array_keys($shopProducts) as $shop_id) {
+            $haveChildFamily = $masterFamily->productCategories()->where('product_categories.shop_id', $shop_id)->exists();
+
+            if (!$haveChildFamily) {
+                StoreFamilyFromMasterFamily::make()->action($masterFamily, [
+                    'shop_family' => [
+                        $shop_id => [
+                            'create_webpage'    => true,
+                        ]
+                    ],
+                ]);
+            }
+        }
 
         StoreProductFromMasterProduct::make()->action($this->masterAsset, [
             'shop_products' => $shopProducts,

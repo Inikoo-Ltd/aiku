@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\Order\UpdateState;
 
 use App\Actions\Comms\Email\SendDispatchedOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendDispatchedOrderEmailToSubscribers;
+use App\Actions\Dropshipping\Allegro\Order\FulfilOrderToAllegro;
 use App\Actions\Dropshipping\Ebay\Orders\FulfillOrderToEbay;
 use App\Actions\Dropshipping\Magento\Orders\FulfillOrderToMagento;
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
@@ -56,9 +57,6 @@ class DispatchOrder extends OrgAction
                 ];
                 if ($transaction->quantity_picked > 0) {
                     data_set($dataToUpdate, 'dispatched_at', $date);
-                    if ($transaction->asset) {
-                        $transaction->asset->orderingStats()->update(['last_order_dispatched_at' => $date]);
-                    }
                 }
                 $transaction->update($dataToUpdate);
             }
@@ -85,6 +83,7 @@ class DispatchOrder extends OrgAction
                         // PlatformTypeEnum::TIKTOK => FulfillOrderToTiktok::run($order),
                         //                PlatformTypeEnum::AMAZON => FulfillOrderToAmazon::run($order),
                         PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($order, $deliveryNote),
+                        PlatformTypeEnum::ALLEGRO => FulfilOrderToAllegro::run($order),
                         default => null,
                     };
                 } elseif ($order->customerSalesChannel?->platform?->type !== PlatformTypeEnum::MANUAL) {

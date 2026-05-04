@@ -29,6 +29,7 @@ class RunMailshotScheduled
         $mailshotQuery = QueryBuilder::for(Mailshot::class);
         $mailshotQuery->where('type', MailshotTypeEnum::MARKETING);
         $mailshotQuery->where('state', MailshotStateEnum::SCHEDULED);
+
         $mailshotQuery->whereNull('deleted_at');
         $mailshotQuery->whereNull('cancelled_at');
         $mailshotQuery->whereNull('stopped_at');
@@ -40,7 +41,7 @@ class RunMailshotScheduled
         $mailshotQuery->whereRaw("scheduled_at AT TIME ZONE 'UTC' <= ?", [$currentDateTime]); // make sure have save time zone before compare
 
         foreach ($mailshotQuery->cursor() as $mailshot) {
-            ProcessSendMailshot::dispatch($mailshot);
+            PrepareMailshotRecipients::dispatch($mailshot);
             //TODO: update the mailshot state to Sending
             $mailshot->update([
                 'state' => MailshotStateEnum::SENDING,

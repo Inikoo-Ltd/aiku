@@ -8,15 +8,12 @@
 
 namespace App\Actions\Ordering\Transaction;
 
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrderIntervals;
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrdersStats;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithOrderExchanges;
 use App\Actions\Web\WebsiteConversionEvent\StoreWebsiteConversionEvent;
-use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionFailStatusEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
@@ -35,8 +32,31 @@ class StoreTransaction extends OrgAction
     use WithOrderExchanges;
 
 
+    /**
+     * @var \App\Models\Ordering\Order
+     */
+    private Order $order;
+    /**
+     * @var \App\Models\Catalogue\HistoricAsset
+     */
+    private HistoricAsset $historicAsset;
+
     public function handle(Order $order, HistoricAsset $historicAsset, array $modelData, $calculateShipping = true): Transaction
     {
+        if ($this->strict) {
+            if (in_array($order->state, [
+                OrderStateEnum::CREATING,
+                OrderStateEnum::SUBMITTED
+            ])) {
+                $transaction = $order->transactions->where('model_type', 'Product')->where('model_id', $historicAsset->asset->model_id)->where('is_gift', false)->first();
+                if ($transaction) {
+                    return UpdateTransaction::make()->action($transaction, [
+                        'quantity_ordered' => (float)data_get($modelData, 'quantity')
+                    ]);
+                }
+            }
+        }
+
         data_set($modelData, 'tax_category_id', $order->tax_category_id, overwrite: false);
         data_set($modelData, 'model_type', $historicAsset->asset->model_type);
         data_set($modelData, 'model_id', $historicAsset->asset->model_id);
@@ -116,11 +136,6 @@ class StoreTransaction extends OrgAction
             OrderHydrateTransactions::dispatch($order);
         }
 
-        $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
-        AssetHydrateOrderIntervals::dispatch($transaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-        AssetHydrateOrdersStats::dispatch($transaction->asset_id)->delay($this->hydratorsDelay);
-
-
         if (request()->hasSession() && request()->input('website')) {
             StoreWebsiteConversionEvent::dispatch(
                 sessionId: request()->session()->getId(),
@@ -129,13 +144,8 @@ class StoreTransaction extends OrgAction
                 url: request()->header('referer') ?? request()->fullUrl(),
                 productId: $transaction->asset_id,
                 quantity: 1
-            );
+            )->delay(now()->addSeconds(2));
         }
-
-        if ($transaction->submitted_at && $transaction->asset) {
-            $transaction->asset->orderingStats()->update(['last_order_submitted_at' => $transaction->submitted_at]);
-        }
-
 
         return $transaction;
     }
@@ -189,6 +199,10 @@ class StoreTransaction extends OrgAction
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
+
+        $this->order         = $order;
+        $this->historicAsset = $historicAsset;
+
         $this->initialisationFromShop($order->shop, $modelData);
 
         return $this->handle($order, $historicAsset, $this->validatedData);
@@ -196,6 +210,8 @@ class StoreTransaction extends OrgAction
 
     public function asController(Order $order, HistoricAsset $historicAsset, ActionRequest $request): void
     {
+        $this->order         = $order;
+        $this->historicAsset = $historicAsset;
         $this->initialisationFromShop($order->shop, $request);
         $this->handle($order, $historicAsset, $this->validatedData);
     }

@@ -77,12 +77,12 @@ class GetGroupOverview extends OrgAction
                 'route' => route('grp.sysadmin.guests.index'),
                 'count' => $group->sysadminStats->number_guests ?? 0
             ],
-            [
-                'name'  => __('User Requests'),
-                'icon'  => 'fal fa-road',
-                'route' => route('grp.sysadmin.analytics.request.index'),
-                'count' => $group->sysadminStats->number_user_requests ?? 0
-            ],
+//            [
+//                'name'  => __('User Requests'),
+//                'icon'  => 'fal fa-road',
+//                'route' => route('grp.sysadmin.analytics.request.index'),
+//                'count' => $group->sysadminStats->number_user_requests ?? 0
+//            ],
         ];
     }
 
@@ -140,7 +140,6 @@ class GetGroupOverview extends OrgAction
             [
                 'name'  => __('Dispatched Emails'),
                 'icon'  => 'fal fa-paper-plane',
-                'route' => route('grp.overview.comms-marketing.dispatched-emails.index'),
                 'count' => $group->commsStats->number_dispatched_emails ?? 0
             ],
 

@@ -5,19 +5,20 @@
   -->
 
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3";
-import PageHeading from "@/Components/Headings/PageHeading.vue";
-import { capitalize } from "@/Composables/capitalize";
-import Tabs from "@/Components/Navigation/Tabs.vue";
-import { computed, ref } from "vue";
-import type { Component } from "vue";
-import { useTabChange } from "@/Composables/tab-change";
-import { faHandsHelping, faBan, faCheckCircle, faList, faCheck } from "@fal";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import DispatchDashboard from "@/Components/Warehouse/DispatchDashboard.vue";
-import { PageHeadingTypes } from "@/types/PageHeading";
+import { Head } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import { capitalize } from "@/Composables/capitalize"
+import Tabs from "@/Components/Navigation/Tabs.vue"
+import { computed, ref } from "vue"
+import type { Component } from "vue"
+import { useTabChange } from "@/Composables/tab-change"
+import { faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import DispatchDashboard from "@/Components/Warehouse/DispatchDashboard.vue"
+import DispatchPersonnelDashboard from "@/Components/Warehouse/DispatchPersonnelDashboard.vue"
+import { PageHeadingTypes } from "@/types/PageHeading"
 
-library.add(faHandsHelping, faBan, faCheckCircle, faList, faCheck);
+library.add(faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry)
 
 const props = defineProps<{
     title: string
@@ -28,26 +29,32 @@ const props = defineProps<{
     }
     delivery_note: object
     picking_session: object
+    pickers: object[]
+    packers: object[]
     intervals: any
     settings: any
-}>();
+}>()
 
-let currentTab = ref(props.tabs.current);
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
+let currentTab = ref(props.tabs.current)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
     const components: Component = {
         delivery_note: DispatchDashboard,
         picking_session: DispatchDashboard,
-    };
+        pickers: DispatchPersonnelDashboard,
+        packers: DispatchPersonnelDashboard,
+    }
 
-    return components[currentTab.value];
-});
+    return components[currentTab.value]
+})
 
 const tabData = computed(() => {
-    if (currentTab.value === 'picking_session') return props.picking_session;
-    return props.delivery_note;
-});
+    if (currentTab.value === "picking_session") return props.picking_session
+    if (currentTab.value === "pickers") return props.pickers
+    if (currentTab.value === "packers") return props.packers
+    return props.delivery_note
+})
 </script>
 
 <template>

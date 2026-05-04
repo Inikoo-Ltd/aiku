@@ -43,7 +43,7 @@ trait HasIrisUserData
         if ($webUser && $webUser->shop?->type->value == ShopTypeEnum::DROPSHIPPING->value) {
             $channels = DB::table('customer_sales_channels')
                 ->leftJoin('platforms', 'customer_sales_channels.platform_id', '=', 'platforms.id')
-                ->select('customer_sales_channels.id', 'customer_sales_channels.name as customer_sales_channel_name', 'platform_id', 'platforms.slug', 'platforms.code', 'platforms.name')
+                ->select('customer_sales_channels.id', 'customer_sales_channels.slug as customer_sales_channel_slug', 'customer_sales_channels.name as customer_sales_channel_name', 'platform_id', 'platforms.slug', 'platforms.code', 'platforms.name')
                 ->where('customer_id', $webUser->customer_id)
                 ->where('status', CustomerSalesChannelStatusEnum::OPEN->value)
                 ->whereNull('deleted_at')
@@ -53,6 +53,7 @@ trait HasIrisUserData
                 $customerSalesChannels[$channel->id] = [
                     'customer_sales_channel_id'   => $channel->id,
                     'customer_sales_channel_name' => $channel->customer_sales_channel_name,
+                    'customer_sales_channel_slug' => $channel->customer_sales_channel_slug,
                     'platform_id'                 => $channel->platform_id,
                     'platform_slug'               => $channel->slug,
                     'platform_code'               => $channel->code,

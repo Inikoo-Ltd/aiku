@@ -11,7 +11,6 @@
 namespace App\Actions\Catalogue\Collection;
 
 use App\Actions\OrgAction;
-use App\Actions\Catalogue\Collection\Search\CollectionRecordSearch;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCollections;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Models\Catalogue\Shop;
@@ -45,10 +44,6 @@ class DeleteCollection extends OrgAction
                 $collection->stats->delete();
             }
 
-            if ($collection->salesIntervals) {
-                $collection->salesIntervals->delete();
-            }
-
             if ($collection->orderingStats) {
                 $collection->orderingStats->delete();
             }
@@ -66,8 +61,6 @@ class DeleteCollection extends OrgAction
             DeleteWebpage::make()->action(webpage: $collection->webpage, forceDelete: true);
         }
 
-
-        CollectionRecordSearch::run($collection);
         ShopHydrateCollections::dispatch($collection->shop);
 
         return $collection;

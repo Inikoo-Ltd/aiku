@@ -17,7 +17,7 @@ export const layoutStructure = {
         color: null as unknown | Colors,  // Styling layout color
         theme: useColorTheme[0] as string[],  // For styling app color
         url: null as string | null, // For url on logo top left
-        environment: null as string | null, // 'local' | 'staging' 
+        environment: null as string | null, // 'local' | 'staging'
     },
     currentModule: "",
     currentRoute: "grp.dashboard.show", // Define value to avoid route null at first load
@@ -67,4 +67,6 @@ export const layoutStructure = {
     isShopPage: false as boolean,
     isFulfilmentPage: false as boolean,
     // isShopPage: false as boolean,
+    dispatching_waiting_count: 0 as number,
+    crm_waiting_count: 0 as number,
 }

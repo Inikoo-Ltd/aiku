@@ -8,7 +8,6 @@
 
 namespace App\Actions\Accounting\Payment;
 
-use App\Actions\Accounting\Payment\Search\PaymentRecordSearch;
 use App\Actions\Accounting\PaymentAccount\Hydrators\PaymentAccountHydrateCustomers;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -31,11 +30,6 @@ class UpdatePayment extends OrgAction
 
         if (Arr::has($changes, 'status')) {
             PaymentAccountHydrateCustomers::dispatch($payment->paymentAccount)->delay($this->hydratorsDelay);
-        }
-
-
-        if (count($changes) > 0) {
-            PaymentRecordSearch::dispatch($payment);
         }
 
         return $payment;

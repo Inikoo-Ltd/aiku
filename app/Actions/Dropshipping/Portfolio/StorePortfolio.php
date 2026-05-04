@@ -120,7 +120,7 @@ class StorePortfolio extends OrgAction
         ShopPlatformStatsHydratePortfolios::dispatch($portfolio->shop, $portfolio->platform)->delay($this->hydratorsDelay);
 
         if ($portfolio->shop && $portfolio->platform->id) {
-            ShopHydratePlatformSalesIntervalsNewPortfolios::dispatch($portfolio->shop, $portfolio->platform->id)->delay($this->hydratorsDelay);
+            ShopHydratePlatformSalesIntervalsNewPortfolios::dispatch($portfolio->shop, $portfolio->platform->id)->delay(30);
         }
 
         return $portfolio;
@@ -178,6 +178,8 @@ class StorePortfolio extends OrgAction
                 ),
             ],
             'status'          => 'sometimes|boolean',
+            'is_bundle'       => 'sometimes|boolean',
+            'bundle_id'       => 'sometimes|integer',
             'platform_product_id'          => 'sometimes|string',
             'platform_product_variant_id'          => 'sometimes|string',
             'platform_handle' => 'sometimes|string',

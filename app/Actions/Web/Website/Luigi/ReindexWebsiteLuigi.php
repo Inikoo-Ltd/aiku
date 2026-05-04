@@ -37,7 +37,7 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
      */
     public function handle(Website $website, ?Command $command = null): void
     {
-
+        Log::info('Running ReindexWebsiteLuigi');
         $command?->info("Reindexing website ".$website->domain);
 
         $accessToken = $this->getAccessToken($website);
@@ -81,7 +81,7 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
                     }
                 } else {
                     foreach ($webpages as $webpage) {
-                        ReindexWebpageLuigi::dispatch($webpage);
+                        ReindexWebpageLuigi::dispatch($webpage)->delay(1);
                     }
 
                 }

@@ -21,6 +21,7 @@ import { Dashboard } from "@/types/Components/Dashboard"
 import DashboardShopWidget from "@/Components/DataDisplay/Dashboard/DashboardShopWidget.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
+import axios from "axios"
 library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faTriangle)
 
 const props = defineProps<{
@@ -30,8 +31,41 @@ const props = defineProps<{
 const dashboardTabActive = ref('')
 provide("dashboardTabActive", dashboardTabActive)
 
+const isLoadingOnTable = ref(false)
+provide("isLoadingOnTable", isLoadingOnTable)
+
 const currentTab = ref(props.dashboard?.super_blocks?.[0]?.tabs_box?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
+const fetchDashboardTabData = async (tabSlug: string): Promise<void> => {
+    const block = props.dashboard?.super_blocks?.[0]?.blocks?.[0]
+    const fetchRoute = block?.tab_fetch_route
+    if (!block?.tables || !fetchRoute?.name) {
+        return
+    }
+
+    if (block.tables[tabSlug]) {
+        return
+    }
+
+    isLoadingOnTable.value = true
+    try {
+        const { data } = await axios.get(route(fetchRoute.name, fetchRoute.parameters ?? {}), {
+            params: { tab: tabSlug },
+        })
+
+        if (data?.tab && data?.table) {
+            set(props, `dashboard.super_blocks[0].blocks[0].tables.${data.tab}`, data.table)
+        }
+    } finally {
+        isLoadingOnTable.value = false
+    }
+}
+
+const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
+    set(props, "dashboard.super_blocks[0].blocks[0].current_tab", tabSlug)
+    await fetchDashboardTabData(tabSlug)
+}
 </script>
 
 <template>
@@ -56,9 +90,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 			:settings="props.dashboard?.super_blocks?.[0].settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
-			@onChangeTab="(val) => {
-				set(props, 'dashboard.super_blocks[0].blocks[0].current_tab', val)
-			}"
+			@onChangeTab="onChangeDashboardTab"
 		/>
 
 		<DashboardTable
@@ -80,6 +112,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 		<DashboardWidget
             v-if="props.dashboard?.super_blocks?.[0]?.blocks"
+
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 		/>

@@ -80,7 +80,10 @@
 
     <style>
         #jsd-widget {
-            bottom: 44px !important;
+            min-width: 370px !important;
+            max-width: 370px !important;
+            margin-bottom: 44px !important;
+            margin-right: 22px !important;
         }
     </style>
 </head>
@@ -95,6 +98,7 @@
     </noscript>
     <!-- End Google Tag Manager (noscript) -->
 @endif
+
 
 @inertia
 </body>

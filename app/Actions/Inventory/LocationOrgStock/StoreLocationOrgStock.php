@@ -12,14 +12,21 @@ use App\Actions\Inventory\Location\Hydrators\LocationHydrateStocks;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
+use App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories;
+use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
+use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Http\Resources\Inventory\LocationOrgStockResource;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStock;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Validation\Validator;
@@ -27,11 +34,16 @@ use Illuminate\Validation\Validator;
 class StoreLocationOrgStock extends OrgAction
 {
     use WithLocationOrgStockActionAuthorisation;
+    use CalculatesOrgStockHistories;
 
     private Location $location;
     private OrgStock $orgStock;
+    private User|null $user = null;
 
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(OrgStock $orgStock, Location $location, array $modelData): LocationOrgStock
     {
         data_set($modelData, 'group_id', $location->group_id);
@@ -39,18 +51,40 @@ class StoreLocationOrgStock extends OrgAction
         data_set($modelData, 'warehouse_id', $location->warehouse_id);
         data_set($modelData, 'warehouse_area_id', $location->warehouse_area_id);
         data_set($modelData, 'org_stock_id', $orgStock->id);
+        $costPerSku = $this->getCostPerSku($orgStock, Carbon::now());
 
         if (!Arr::has($modelData, 'quantity')) {
             data_set($modelData, 'quantity', 0);
         }
 
-        /** @var LocationOrgStock $locationStock */
-        $locationStock = $location->locationOrgStocks()->create($modelData);
+        $locationStock = DB::transaction(function () use ($location, $orgStock, $modelData, $costPerSku) {
+            StoreOrgStockMovement::make()->action(
+                $orgStock,
+                $location,
+                [
+                    'quantity'         => 0,
+                    'audited_quantity' => 0,
+                    'org_amount'       => 0,
+                    'grp_amount'       => 0,
+                    'date'             => now()->format('Y-m-d H:i:s.u'),
+                    'type'             => OrgStockMovementTypeEnum::ASSOCIATE,
+                    'cost_per_sku'     => $costPerSku,
+                    'user_id'          => $this->user?->id,
+                ]
+            );
+
+            /** @var LocationOrgStock $locationStock */
+            $locationStock = $location->locationOrgStocks()->create($modelData);
+
+            return $locationStock;
+        });
+
         RepairOrgStockMissingLocationIds::dispatch($orgStock)->delay($this->hydratorsDelay);
         LocationHydrateStocks::dispatch($location)->delay($this->hydratorsDelay);
         LocationHydrateStockValue::dispatch($location)->delay($this->hydratorsDelay);
         OrgStockHydrateLocations::dispatch($orgStock)->delay($this->hydratorsDelay);
         OrgStockHydrateQuantityInLocations::dispatch($orgStock)->delay($this->hydratorsDelay);
+        CalculateOrgStockCurrentStockHistories::dispatch($orgStock->id);
 
         return $locationStock;
     }
@@ -98,15 +132,22 @@ class StoreLocationOrgStock extends OrgAction
         }
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(OrgStock $orgStock, Location $location, ActionRequest $request, int $hydratorsDelay = 0, bool $strict = true): void
     {
         $this->location = $location;
         $this->orgStock = $orgStock;
+        $this->user = request()->user();
         $this->initialisation($orgStock->organisation, $request);
 
         $this->handle($orgStock, $location, $this->validatedData);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(OrgStock $orgStock, Location $location, array $modelData, int $hydratorsDelay = 0, bool $strict = true): LocationOrgStock
     {
         $this->asAction       = true;

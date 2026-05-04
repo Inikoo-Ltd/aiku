@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Http\Resources\HumanResources\JobPositionResource;
 use App\Http\Resources\Inventory\WarehouseResource;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -91,9 +92,14 @@ class CreateEmployee extends OrgAction
                                     ]
                                 ],
                                 'emergency_contact'         => [
-                                    'type'  => 'textarea',
-                                    'label' => __('emergency contact'),
-                                    'value' => ''
+                                    'type'  => 'emergency_contact',
+                                    'label' => __('Emergency Contact'),
+                                    'value' => [
+                                        'contact' => '',
+                                        'phone_number' => '',
+                                        'address' => '',
+                                        'status'  => '',
+                                    ],
                                 ],
                                 'identity_document_type'         => [
                                     'type'  => 'input',
@@ -118,7 +124,7 @@ class CreateEmployee extends OrgAction
                             'fields' => [
 
                                 'type'               => [
-                                    'label'     => __('Type'),
+                                    'label'     => __('Worker Type'),
                                     'type'      => 'radio',
                                     'mode'      => 'compact',
                                     'valueProp' => 'value',
@@ -137,11 +143,25 @@ class CreateEmployee extends OrgAction
                                             'title'       => __('temporal worker'),
                                             'value'       => EmployeeTypeEnum::TEMPORAL_WORKER->value
                                         ],
-                                        [
-                                            'title'       => __('Work experience'),
-                                            'value'       => EmployeeTypeEnum::WORK_EXPERIENCE->value
-                                        ],
+                                    ]
+                                ],
 
+                                'employment_type'    => [
+                                    'label'     => __('Employment Type'),
+                                    'type'      => 'radio',
+                                    'mode'      => 'compact',
+                                    'valueProp' => 'value',
+                                    'required'  => true,
+                                    'value'     => EmploymentTypeEnum::FULL_TIME->value,
+                                    'options'   => [
+                                        [
+                                            'title'       => __('Full Time'),
+                                            'value'       => EmploymentTypeEnum::FULL_TIME->value
+                                        ],
+                                        [
+                                            'title'       => __('Part Time'),
+                                            'value'       => EmploymentTypeEnum::PART_TIME->value
+                                        ],
                                     ]
                                 ],
 

@@ -9,7 +9,7 @@ const location = layout?.app?.name || "iris"
 
 const props = withDefaults(
   defineProps<{
-    href: RouteType
+    href: any
     header?: Record<string, any>
     method?: string
     as?: string

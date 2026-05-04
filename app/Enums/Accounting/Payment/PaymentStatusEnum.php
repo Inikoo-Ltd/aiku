@@ -17,7 +17,7 @@ enum PaymentStatusEnum: string
     case SUCCESS    = 'success';
     case FAIL       = 'fail';
 
-    public static function stateIcon(): array
+    public static function statusIcon(): array
     {
         return [
             'in_process'   => [

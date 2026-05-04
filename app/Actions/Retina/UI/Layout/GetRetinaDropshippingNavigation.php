@@ -95,6 +95,14 @@ class GetRetinaDropshippingNavigation
                                     'name' => 'retina.catalogue.products.index'
                                 ]
                             ],
+                            [
+                                'label' => __('Bundles'),
+                                'icon'  => ['far', 'fa-layer-group'],
+                                'root'  => 'retina.catalogue.bundles.',
+                                'route' => [
+                                    'name' => 'retina.catalogue.bundles.index'
+                                ]
+                            ],
                         ]
                 ]
             ];
@@ -158,6 +166,15 @@ class GetRetinaDropshippingNavigation
                 'name' => 'retina.dropshipping.invoices.index'
             ],
         ];
+
+        // $groupNavigation['packing-list'] = [
+        //     'label' => __('Packing Lists'),
+        //     'icon'  => ['fal', 'fa-truck'],
+        //     'root'  => 'retina.dropshipping.packing_lists.',
+        //     'route' => [
+        //         'name' => 'retina.dropshipping.packing_lists.index'
+        //     ],
+        // ];
 
         $groupNavigation['top_up'] = [
             'label'   => __('Top Up'),
@@ -269,7 +286,7 @@ class GetRetinaDropshippingNavigation
         ];
 
         $groupNavigation['back-in-stocks'] = [
-                'label'   => __('Back In Stocks'),
+                'label'   => __('Back In Stock Reminders'),
                 'icon'    => ['fas', 'fa-envelope-circle-check'],
                 'root'    => 'retina.dropshipping.back_in_stock.',
                 'route'   => [

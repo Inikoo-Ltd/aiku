@@ -9,14 +9,13 @@
 namespace App\Actions\Inventory\OrgStockFamily\UI;
 
 use App\Actions\Helpers\History\UI\IndexHistory;
-use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Enums\UI\Inventory\OrgStockFamilyTabsEnum;
 use App\Http\Resources\Goods\StockFamilyResource;
 use App\Http\Resources\History\HistoryResource;
-use App\Http\Resources\Inventory\OrgStocksResource;
+use App\Http\Resources\Inventory\OrgStockFamilyTimeSeriesResource;
 use App\Models\Inventory\OrgStockFamily;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -34,7 +33,6 @@ class ShowOrgStockFamily extends OrgAction
         return $orgStockFamily;
     }
 
-
     public function asController(Organisation $organisation, Warehouse $warehouse, OrgStockFamily $orgStockFamily, ActionRequest $request): OrgStockFamily
     {
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStockFamilyTabsEnum::values());
@@ -50,6 +48,38 @@ class ShowOrgStockFamily extends OrgAction
         return $this->handle($orgStockFamily);
     }
 
+    private function getSubNavigation(OrgStockFamily $orgStockFamily, ActionRequest $request): array
+    {
+        $routeParameters = $request->route()->originalParameters();
+
+        return [
+            [
+                'isAnchor' => true,
+                'label'    => __('SKU Family'),
+                'route'    => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show',
+                    'parameters' => $routeParameters,
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-boxes-alt'],
+                    'tooltip' => __('SKU Family'),
+                ],
+            ],
+            [
+                'label'    => __('SKUs'),
+                'number'   => $orgStockFamily->stats->number_org_stocks ?? 0,
+                'route'    => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index',
+                    'parameters' => $routeParameters,
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-box'],
+                    'tooltip' => __('SKUs'),
+                ],
+            ],
+        ];
+    }
+
     public function htmlResponse(OrgStockFamily $orgStockFamily, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -62,69 +92,41 @@ class ShowOrgStockFamily extends OrgAction
                     'next'     => $this->getNext($orgStockFamily, $request),
                 ],
                 'pageHead'    => [
-                    // 'model'   => __('stock family'),
-                    'icon'       =>
-                        [
-                            'icon'  => ['fal', 'fa-boxes-alt'],
-                            'title' => __('Stock family')
-                        ],
-                    'title'      => $orgStockFamily->name,
-                    'afterTitle' => [
-                        'label'   => $orgStockFamily->code,
-                        'tooltip' => __('Reference')
+                    'icon'          => [
+                        'icon'  => ['fal', 'fa-boxes-alt'],
+                        'title' => __('Stock family'),
                     ],
-                    'meta'       => [
-                        [
-                            'name'     => trans_choice('stock | stocks', $orgStockFamily->stats->number_org_stocks),
-                            'number'   => $orgStockFamily->stats->number_org_stocks,
-                            'route'    => [
-                                'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index',
-                                'parameters' => $request->route()->originalParameters()
-                            ],
-                            'leftIcon' => [
-                                'icon'    => 'fal fa-box',
-                                'tooltip' => __('stocks')
-                            ]
-                        ],
-                    ]
+                    'title'         => $orgStockFamily->name,
+                    'afterTitle'    => [
+                        'label'   => $orgStockFamily->code,
+                        'tooltip' => __('Reference'),
+                    ],
+                    'subNavigation' => $this->getSubNavigation($orgStockFamily, $request),
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => OrgStockFamilyTabsEnum::navigation()
-
+                    'navigation' => OrgStockFamilyTabsEnum::navigation(),
                 ],
 
-                OrgStockFamilyTabsEnum::SHOWCASE->value   => $this->tab == OrgStockFamilyTabsEnum::SHOWCASE->value ?
+                OrgStockFamilyTabsEnum::SHOWCASE->value => $this->tab == OrgStockFamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockFamilyShowcase::run($orgStockFamily)
                     : Inertia::lazy(fn () => GetOrgStockFamilyShowcase::run($orgStockFamily)),
-                OrgStockFamilyTabsEnum::ORG_STOCKS->value => $this->tab == OrgStockFamilyTabsEnum::ORG_STOCKS->value
-                    ?
-                    fn () => OrgStocksResource::collection(
-                        IndexOrgStocks::run(
-                            parent: $orgStockFamily,
-                            prefix: OrgStockFamilyTabsEnum::ORG_STOCKS->value,
-                            bucket: 'all'
-                        )
-                    )
-                    : Inertia::lazy(fn () => OrgStocksResource::collection(
-                        IndexOrgStocks::run(
-                            parent: $orgStockFamily,
-                            prefix: OrgStockFamilyTabsEnum::ORG_STOCKS->value,
-                            bucket: 'all'
-                        )
-                    )),
-                OrgStockFamilyTabsEnum::HISTORY->value    => $this->tab == OrgStockFamilyTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily)))
-            ]
-        )->table(
-            IndexOrgStocks::make()->tableStructure(
-                parent: $orgStockFamily,
-                prefix: OrgStockFamilyTabsEnum::ORG_STOCKS->value,
-            )
-        )->table(IndexHistory::make()->tableStructure(prefix: OrgStockFamilyTabsEnum::HISTORY->value));
-    }
 
+                OrgStockFamilyTabsEnum::SALES->value => $this->tab == OrgStockFamilyTabsEnum::SALES->value ?
+                    fn () => OrgStockFamilyTimeSeriesResource::collection(IndexOrgStockFamilyTimeSeries::run($orgStockFamily, OrgStockFamilyTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => OrgStockFamilyTimeSeriesResource::collection(IndexOrgStockFamilyTimeSeries::run($orgStockFamily, OrgStockFamilyTabsEnum::SALES->value))),
+
+                OrgStockFamilyTabsEnum::HISTORY->value => $this->tab == OrgStockFamilyTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily))),
+
+                'salesData' => $this->tab == OrgStockFamilyTabsEnum::SHOWCASE->value ?
+                    fn () => GetOrgStockFamilyTimeSeriesData::run($orgStockFamily)
+                    : Inertia::lazy(fn () => GetOrgStockFamilyTimeSeriesData::run($orgStockFamily)),
+            ]
+        )->table(IndexHistory::make()->tableStructure(prefix: OrgStockFamilyTabsEnum::HISTORY->value))
+         ->table(IndexOrgStockFamilyTimeSeries::make()->tableStructure(prefix: OrgStockFamilyTabsEnum::SALES->value));
+    }
 
     public function jsonResponse(OrgStockFamily $orgStockFamily): StockFamilyResource
     {
@@ -145,22 +147,21 @@ class ShowOrgStockFamily extends OrgAction
                         'index' => [
                             'route' => [
                                 'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.index',
-                                'parameters' => Arr::except($routeParameters, ['orgStockFamily'])
+                                'parameters' => Arr::except($routeParameters, ['orgStockFamily']),
                             ],
                             'label' => __('SKUs families'),
-                            'icon'  => 'fal fa-bars'
+                            'icon'  => 'fal fa-bars',
                         ],
                         'model' => [
                             'route' => [
                                 'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show',
-                                'parameters' => $routeParameters
+                                'parameters' => $routeParameters,
                             ],
                             'label' => $orgStockFamily->code,
-                            'icon'  => 'fal fa-bars'
+                            'icon'  => 'fal fa-bars',
                         ],
                     ],
                     'suffix'         => $suffix,
-
                 ],
             ]
         );
@@ -194,11 +195,10 @@ class ShowOrgStockFamily extends OrgAction
                     'parameters' => [
                         'organisation'   => $this->organisation->slug,
                         'warehouse'      => $this->warehouse->slug,
-                        'orgStockFamily' => $orgStockFamily->slug
-                    ]
-
-                ]
-            ]
+                        'orgStockFamily' => $orgStockFamily->slug,
+                    ],
+                ],
+            ],
         };
     }
 }

@@ -9,7 +9,6 @@
 namespace App\Actions\Catalogue\Asset;
 
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateHistoricAssets;
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSalesIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAssets;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
 use App\Actions\OrgAction;
@@ -59,9 +58,6 @@ class StoreAsset extends OrgAction
         /** @var Asset $asset */
         $asset = $parent->asset()->create($modelData);
         $asset->stats()->create();
-        $asset->orderingIntervals()->create();
-        $asset->salesIntervals()->create();
-        $asset->orderingStats()->create();
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             $asset->timeSeries()->create(
                 [
@@ -72,11 +68,10 @@ class StoreAsset extends OrgAction
         }
 
 
-        AssetHydrateHistoricAssets::dispatch($asset)->delay($hydratorsDelay);
-        ShopHydrateAssets::dispatch($asset->shop)->delay($hydratorsDelay);
-        AssetHydrateSalesIntervals::dispatch($asset->id)->delay($hydratorsDelay);
-        OrganisationHydrateAssets::dispatch($asset->organisation)->delay($hydratorsDelay);
-        GroupHydrateAssets::dispatch($asset->group)->delay($hydratorsDelay);
+        AssetHydrateHistoricAssets::dispatch($asset)->delay(5);
+        ShopHydrateAssets::dispatch($asset->shop)->delay(5);
+        OrganisationHydrateAssets::dispatch($asset->organisation)->delay(5);
+        GroupHydrateAssets::dispatch($asset->group)->delay(10);
         if ($asset->master_asset_id) {
             MasterAssetHydrateAssets::run($asset->master_asset_id);
         }

@@ -17,17 +17,17 @@ class UpdateWebsiteVisitor
 
     public function handle(WebsiteVisitor $visitor, string $currentUrl): WebsiteVisitor
     {
-        $now = now();
+        $now      = now();
         $duration = $now->timestamp - $visitor->first_seen_at->timestamp;
 
-        $visitor->last_seen_at = $now;
-        $visitor->page_views = $visitor->page_views + 1;
+        $visitor->last_seen_at     = $now;
+        $visitor->page_views       = $visitor->page_views + 1;
         $visitor->duration_seconds = $duration;
-        $visitor->exit_page = $currentUrl;
-        $visitor->is_bounce = false;
+        $visitor->exit_page        = $currentUrl;
+        $visitor->is_bounce        = false;
         $visitor->save();
 
-        $cacheKey = "visitor:session:{$visitor->session_id}:{$visitor->website_id}";
+        $cacheKey = "visitor:session:$visitor->session_id:$visitor->website_id";
         Cache::put($cacheKey, $visitor, 1800);
 
         return $visitor;

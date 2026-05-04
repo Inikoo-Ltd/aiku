@@ -8,15 +8,16 @@
 
 namespace App\Models\Inventory;
 
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Dispatching\BatchCode;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,6 +28,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -43,54 +46,57 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $slug
  * @property string $code
  * @property string|null $name
- * @property string|null $unit_cost
- * @property string|null $unit_value
- * @property string $unit_commercial_value
+ * @property numeric $sku_commercial_value
  * @property bool $is_sellable_in_organisation
  * @property bool $is_raw_material_in_organisation
  * @property OrgStockStateEnum $state
  * @property OrgStockQuantityStatusEnum|null $quantity_status
  * @property numeric|null $quantity_in_locations stock quantity in units
- * @property string $value_in_locations
+ * @property numeric $value_in_locations
  * @property float|null $available_forecast days
  * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $activated_in_organisation_at
- * @property \Illuminate\Support\Carbon|null $discontinuing_in_organisation_at
- * @property \Illuminate\Support\Carbon|null $discontinued_in_organisation_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $activated_in_organisation_at
+ * @property Carbon|null $discontinuing_in_organisation_at
+ * @property Carbon|null $discontinued_in_organisation_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $source_id
  * @property int|null $picking_location_id
  * @property int|null $picking_dropshipping_location_id
  * @property int|null $packed_in Number of trade units usually packed together
  * @property bool $is_single_trade_unit Indicates if the org stock has a single trade unit
- * @property string $quantity_in_submitted_orders
- * @property string $quantity_to_be_picked
+ * @property numeric $quantity_in_submitted_orders
+ * @property numeric $quantity_to_be_picked
  * @property numeric $quantity_available
- * @property string $source_quantity_in_submitted_orders
- * @property string $source_quantity_to_be_picked
+ * @property numeric $source_quantity_in_submitted_orders
+ * @property numeric $source_quantity_to_be_picked
  * @property bool $is_on_demand
  * @property bool $has_been_in_warehouse
+ * @property HealthRankEnum|null $health_rank
+ * @property bool $movements_fixed
+ * @property numeric|null $sku_value
+ * @property numeric|null $current_supplier_sku_cost
+ * @property int $current_batch_codes
+ * @property int|null $main_batch_code_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, BatchCode> $batchCodes
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\InventoryDailySnapshot> $inventoryDailySnapshots
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Location> $locations
+ * @property-read BatchCode|null $mainBatchCode
  * @property-read \App\Models\Inventory\OrgStockFamily|null $orgStockFamily
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockMovement> $orgStockMovements
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OrgSupplierProduct> $orgSupplierProducts
  * @property-read Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
- * @property-read \App\Models\Inventory\OrgStockSalesInterval|null $salesIntervals
  * @property-read \App\Models\Inventory\OrgStockStats|null $stats
  * @property-read Stock|null $stock
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, TradeUnit> $tradeUnits
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Inventory\OrgStockFactory factory($count = null, $state = [])
  * @method static Builder<static>|OrgStock newModelQuery()
  * @method static Builder<static>|OrgStock newQuery()
@@ -105,9 +111,9 @@ class OrgStock extends Model implements Auditable
     use HasFactory;
     use HasHistory;
     use HasSlug;
-    use HasUniversalSearch;
     use InOrganisation;
     use SoftDeletes;
+    use HasSearch;
 
     protected $casts = [
         'data'                             => 'array',
@@ -115,6 +121,7 @@ class OrgStock extends Model implements Auditable
         'discontinuing_in_organisation_at' => 'datetime',
         'discontinued_in_organisation_at'  => 'datetime',
         'state'                            => OrgStockStateEnum::class,
+        'health_rank'                      => HealthRankEnum::class,
         'quantity_status'                  => OrgStockQuantityStatusEnum::class,
         'fetched_at'                       => 'datetime',
         'last_fetched_at'                  => 'datetime',
@@ -127,6 +134,28 @@ class OrgStock extends Model implements Auditable
     ];
 
     protected $guarded = [];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'code',
+                'state',
+                'name',
+                'created_at'
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'         => (string)$this->id,
+            'code'       => $this->code,
+            'name'       => $this->name,
+            'state'      => $this->state->value,
+            'created_at' => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function getRouteKeyName(): string
     {
@@ -186,47 +215,21 @@ class OrgStock extends Model implements Auditable
         return $this->hasOne(OrgStockIntervals::class);
     }
 
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(OrgStockSalesInterval::class);
-    }
-
     public function orgSupplierProducts(): BelongsToMany
     {
         return $this->belongsToMany(OrgSupplierProduct::class, 'org_stock_has_org_supplier_products')
-            ->withPivot(['status', 'local_priority'])->withTimestamps();
-    }
-
-    public function getMainOrgSupplierProduct(): OrgSupplierProduct
-    {
-        return $this->orgSupplierProducts()->where('status', true)->orderBy('local_priority', 'desc')->first();
+            ->withPivot(['status', 'local_priority'])->withTimestamps()
+            ->orderByPivot('local_priority', 'desc');
     }
 
     public function tradeUnits(): MorphToMany
     {
         return $this->morphToMany(TradeUnit::class, 'model', 'model_has_trade_units')->withPivot(['quantity', 'notes'])->withTimestamps();
-        //        return $this->morphToMany(
-        //            TradeUnit::class,
-        //            'model',
-        //            'model_has_trade_units',
-        //            'model_id',
-        //            null,
-        //            null,
-        //            null,
-        //            'trade_units',
-        //        )
-        //            ->withPivot(['quantity', 'notes'])
-        //            ->withTimestamps();
     }
 
     public function timeSeries(): HasMany
     {
         return $this->hasMany(OrgStockTimeSeries::class);
-    }
-
-    public function inventoryDailySnapshots(): HasMany
-    {
-        return $this->hasMany(InventoryDailySnapshot::class);
     }
 
     public function products(): BelongsToMany
@@ -242,4 +245,15 @@ class OrgStock extends Model implements Auditable
         return $this->belongsToMany(Location::class, 'location_org_stocks')
             ->withPivot(['type', 'picking_priority', 'value', 'dropshipping_pipe', 'quantity', 'notes']);
     }
+
+    public function batchCodes(): HasMany
+    {
+        return $this->hasMany(BatchCode::class);
+    }
+
+    public function mainBatchCode(): BelongsTo
+    {
+        return $this->belongsTo(BatchCode::class, 'main_batch_code_id');
+    }
+
 }

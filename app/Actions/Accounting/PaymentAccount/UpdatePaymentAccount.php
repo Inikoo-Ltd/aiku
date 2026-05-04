@@ -8,7 +8,6 @@
 
 namespace App\Actions\Accounting\PaymentAccount;
 
-use App\Actions\Accounting\PaymentAccount\Search\PaymentAccountRecordSearch;
 use App\Actions\Accounting\PaymentGateway\Paypal\Traits\WithPaypalConfiguration;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -63,8 +62,6 @@ class UpdatePaymentAccount extends OrgAction
             $provider = $this->getPaypalConfiguration($clientId, $secretKey);
             $provider->createWebHook(route('webhooks.paypal.payment_success', $paymentAccount->id), ['PAYMENT.CAPTURE.COMPLETED']);
         }
-
-        PaymentAccountRecordSearch::dispatch($paymentAccount);
 
         return $paymentAccount;
     }

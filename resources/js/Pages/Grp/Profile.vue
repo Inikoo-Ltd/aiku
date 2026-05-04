@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 
@@ -11,16 +11,12 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
-import TableTimesheets from "@/Components/Tables/Grp/Org/HumanResources/TableTimesheets.vue"
-import TableUserRequestLogs from "@/Components/Tables/Grp/SysAdmin/TableUserRequestLogs.vue"
 import ProfileShowcase from "@/Components/Profile/ProfileShowcase.vue"
-// import TableNotifications from "@/Components/Profile/TableNotifications.vue"
 import ProfileKPIs from "@/Components/Profile/ProfileKPIs.vue"
 import ProfileTimesheets from "@/Components/Profile/ProfileTimesheets.vue"
 import ProfileVisitLogs from "@/Components/Profile/ProfileVisitLogs.vue"
 import ProfileTodo from "@/Components/Profile/ProfileTodo.vue"
 import ProfileNotifications from "@/Components/Profile/ProfileNotifications.vue"
-// import ProfileDashboard from "@/Components/Profile/ProfileDashboard.vue"
 import EditProfile from "@/Pages/Grp/EditProfile.vue"
 import SettingProfile from "@/Pages/Grp/SettingProfile.vue"
 
@@ -39,7 +35,6 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { useLogoutAuth } from '@/Composables/useAppMethod'
 library.add(faIdCard, faClipboardListCheck, faRabbitFast, faSlidersV, faSpinnerThird, faInfoCircle)
 
-/* const EditProfile = defineAsyncComponent(() => import("@/Pages/Grp/EditProfile.vue")) */
 
 
 const props = defineProps<{
@@ -94,6 +89,19 @@ const handleTabUpdate = (newTabSlug: string) => {
         return
     }
 
+    // Clocking tab navigates to separate route
+    if (newTabSlug === 'clocking') {
+        layout.stackedComponents = []
+        router.visit(route('grp.clocking_employees.index'))
+        return
+    }
+
+    const tab = dataProfile.value?.tabs?.navigation[newTabSlug]
+    if (tab?.route?.name) {
+        router.visit(route(tab.route.name, tab.route.parameters))
+        return
+    }
+
     fetchTabData(newTabSlug)
 }
 const isTabLoading = ref(false)
@@ -112,7 +120,7 @@ const fetchTabData = async (tabSlug: string) => {
         case 'kpi':
             routeName = 'grp.profile.kpis.index'
             break
-        case 'visit_logs':
+		case 'visit_logs':
             routeName = 'grp.profile.visit-logs.index'
             break
         case 'timesheets':

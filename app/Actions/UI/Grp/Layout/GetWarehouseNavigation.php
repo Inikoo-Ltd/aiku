@@ -27,6 +27,21 @@ class GetWarehouseNavigation
             "stocks.$warehouse->id.view",
             "fulfilment.$warehouse->id.view",
         ])) {
+
+            $navigation['skus_families'] = [
+                'label'   => __('SKUs Families'),
+                'icon'    => ['fal', 'fa-boxes-alt'],
+                'route'   => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.index',
+                    'parameters' => [
+                        'organisation' => $warehouse->organisation->slug,
+                        'warehouse'    => $warehouse->slug,
+                        'tab'          => 'sales',
+                    ],
+                ],
+                'topMenu' => [],
+            ];
+
             $navigation["inventory"] = [
                 "root"    => "grp.org.warehouses.show.inventory.",
                 "label"   => __("Inventory"),
@@ -98,10 +113,37 @@ class GetWarehouseNavigation
                                 ],
                             ] : null,
 
+                        [
+                            "label" => __("Stock History"),
+                            "icon"  => ["fal", "fa-history"],
+                            'root'  => 'grp.org.warehouses.show.inventory.org_stock_histories.',
+                            "route" => [
+                                "name"       => "grp.org.warehouses.show.inventory.org_stock_histories.index",
+                                "parameters" => [$warehouse->organisation->slug, $warehouse->slug],
+                            ],
+                        ],
+
+                        [
+                            "label" => __("Batch Codes"),
+                            "icon"  => ["fal", "fa-barcode"],
+                            'root'  => 'grp.org.warehouses.show.inventory.batch_codes.',
+                            "route" => [
+                                "name"       => "grp.org.warehouses.show.inventory.batch_codes.index",
+                                "parameters" => [$warehouse->organisation->slug, $warehouse->slug],
+                            ],
+                        ]
                     ],
                 ],
             ];
+
+
+
+
+
         }
+
+
+
 
         $navigation = $this->getLocationsNavs($user, $warehouse, $navigation);
 

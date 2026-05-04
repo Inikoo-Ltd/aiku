@@ -60,48 +60,56 @@ class StoreOrderFromShopify extends OrgAction
         }
 
         if ($shopifyUserHasProductExists) {
-            $order = StoreOrder::make()->action($customerClient, [
-                'platform_id'               => $shopifyUser->platform_id,
-                'customer_sales_channel_id' => $shopifyUser->customer_sales_channel_id,
-                'date'                      => $modelData['created_at'],
-                'delivery_address'          => new Address($deliveryAddress),
-                'data'                      => ['shopify_data' => $modelData],
-                'platform_order_id'         => Arr::get($modelData, 'id'),
+            $order = DB::transaction(function () use ($shopifyUser, $customerClient, $modelData, $deliveryAddress, $shopifyProducts) {
+                $order = StoreOrder::make()->action($customerClient, [
+                    'platform_id'               => $shopifyUser->platform_id,
+                    'customer_sales_channel_id' => $shopifyUser->customer_sales_channel_id,
+                    'date'                      => $modelData['created_at'],
+                    'delivery_address'          => new Address($deliveryAddress),
+                    'data'                      => ['shopify_data' => $modelData],
+                    'platform_order_id'         => Arr::get($modelData, 'id'),
 
-            ]);
+                ]);
 
-            foreach ($shopifyProducts as $shopifyProduct) {
-                /** @var Portfolio $portfolio */
-                $portfolio = $shopifyUser->customerSalesChannel->portfolios()
-                    ->where('platform_product_id', $shopifyProduct['product_id'])->first();
+                foreach ($shopifyProducts as $shopifyProduct) {
+                    /** @var Portfolio $portfolio */
+                    $portfolio = $shopifyUser->customerSalesChannel->portfolios()
+                        ->where('platform_product_variant_id', Arr::get($shopifyProduct, 'product_variant_id'))->first();
 
-                if ($portfolio) {
-                    /** @var Product $product */
-                    $product = $portfolio->item;
-                    if (!$product) {
-                        \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a product');
-                        continue;
+                    if (! $portfolio) {
+                        /** @var Portfolio $portfolio */
+                        $portfolio = $shopifyUser->customerSalesChannel->portfolios()
+                            ->where('platform_product_id', $shopifyProduct['product_id'])->first();
                     }
 
-                    /** @var HistoricAsset $product */
-                    $historicAsset = $product->asset?->historicAsset;
-                    if (!$historicAsset) {
-                        \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a historic asset');
-                        continue;
-                    }
+                    if ($portfolio) {
+                        /** @var Product $product */
+                        $product = $portfolio->item;
+                        if (!$product) {
+                            \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a product');
+                            continue;
+                        }
 
-                    StoreTransaction::make()->action(
-                        order: $order,
-                        historicAsset: $historicAsset,
-                        modelData: [
-                            'quantity_ordered'        => $shopifyProduct['quantity'],
-                            'platform_transaction_id' => $shopifyProduct['id'],
-                        ]
-                    );
+                        /** @var HistoricAsset $product */
+                        $historicAsset = $product->asset?->historicAsset;
+                        if (!$historicAsset) {
+                            \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a historic asset');
+                            continue;
+                        }
+
+                        StoreTransaction::make()->action(
+                            order: $order,
+                            historicAsset: $historicAsset,
+                            modelData: [
+                                'quantity_ordered'        => $shopifyProduct['quantity'],
+                                'platform_transaction_id' => $shopifyProduct['id'],
+                            ]
+                        );
+                    }
                 }
-            }
 
-            $order->refresh();
+                return $order->refresh();
+            });
 
             try {
                 PayOrderAsync::run($order);
@@ -120,7 +128,7 @@ class StoreOrderFromShopify extends OrgAction
     {
         $receiverDetail = Arr::get($shopifyOrderData, 'shipping_address');
 
-        $reference = trim(Arr::get($receiverDetail, 'firstName') . ' ' . Arr::get($receiverDetail, 'lastName'));
+        $reference = trim(Arr::get($receiverDetail, 'firstName') . ' ' . Arr::get($receiverDetail, 'lastName') . ' ' . $shopifyUser->customer_sales_channel_id);
 
         $customerClientID = DB::table('customer_clients')
             ->select('id')

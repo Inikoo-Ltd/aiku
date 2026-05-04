@@ -176,9 +176,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_return_items_state_restocked
  * @property int $number_return_items_state_cancelled
  * @property int $pending_back_in_stock_products_count
- * @property string $average_clv
- * @property string $average_historic_clv
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property numeric $average_clv
+ * @property numeric $average_historic_clv
+ * @property int $number_products_with_rrp_violation Number of products with faulty RRP configuration
+ * @property int $number_bundles
+ * @property int $number_bundles_state_active
+ * @property int $number_bundles_state_discontinuing
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dDepartment
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dFamily
  * @property-read \App\Models\Catalogue\Product|null $top1dProduct

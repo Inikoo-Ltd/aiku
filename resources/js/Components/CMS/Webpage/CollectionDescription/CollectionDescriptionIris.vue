@@ -45,6 +45,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Object
   screenType: 'mobile' | 'tablet' | 'desktop'
+  indexBlock : Number
 }>()
 
 const showExtra = ref(false)
@@ -62,9 +63,7 @@ const _popoverInfoCircle = ref<InstanceType<any> | null>(null)
 const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
 
 const cleanedDescription = computed(() => {
-  const html = props.fieldValue.collection.description || ''
-
-  // remove <h1>...</h1>
+  const html = props.fieldValue?.collection?.description || ''
   return html.replace(/<h1[^>]*>.*?<\/h1>/gis, '')
 })
 
@@ -72,7 +71,7 @@ const cleanedDescription = computed(() => {
 </script>
 
 <template>
-  <div  :id="fieldValue?.id ? fieldValue?.id  : 'collection-1-iris'"  component="collection-1-iris" >
+  <div  :id="fieldValue?.id ? fieldValue?.id  : 'collection-1-iris' + indexBlock"  component="collection-1-iris" >
     <div :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), ...getStyles(fieldValue?.container?.properties), width : 'auto' }"  class="py-4 px-[10px] sm:px-[50px]"
       aria-label="collection Description Section">
       

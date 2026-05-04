@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_trade_units_status_discontinued
  * @property int $number_trade_units_status_anomality
  * @property int $number_trade_units_status_discontinuing
- * @property-read \App\Models\Goods\TradeUnitFamily $tradeUnitFamily
+ * @property-read \App\Models\Goods\TradeUnitFamily|null $tradeUnitFamily
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamilyStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamilyStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamilyStats query()

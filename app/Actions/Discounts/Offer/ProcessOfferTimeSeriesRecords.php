@@ -22,21 +22,31 @@ class ProcessOfferTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
 
-    public function getJobUniqueId(int $offerId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
+    public string $jobQueue = 'sales_slave';
+
+    public function getJobUniqueId(?int $offerId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
+        if (!$offerId) {
+            $offerId = 'empty';
+        }
+
         return "$offerId:$frequency->value:$from:$to";
     }
 
-    public function handle(int $offerId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
+    public function handle(?int $offerId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-        $from .= ' 00:00:00';
-        $to   .= ' 23:59:59';
+        if (!$offerId) {
+            return;
+        }
 
         $offer = Offer::find($offerId);
 
         if (!$offer) {
             return;
         }
+
+        $from .= ' 00:00:00';
+        $to   .= ' 23:59:59';
 
         $timeSeries = OfferTimeSeries::where('offer_id', $offer->id)->where('frequency', $frequency->value)->first();
 
@@ -53,12 +63,12 @@ class ProcessOfferTimeSeriesRecords implements ShouldBeUnique
     {
         $processedPeriods = [];
 
-        $query = DB::table('invoice_transactions')
+        $query = DB::connection('aiku_no_sticky')->table('invoice_transactions')
             ->whereExists(function ($query) use ($offerId) {
                 $query->select(DB::raw(1))
-                      ->from('transaction_has_offer_allowances')
-                      ->whereColumn('transaction_has_offer_allowances.transaction_id', 'invoice_transactions.transaction_id')
-                      ->where('transaction_has_offer_allowances.offer_id', $offerId);
+                    ->from('transaction_has_offer_allowances')
+                    ->whereColumn('transaction_has_offer_allowances.transaction_id', 'invoice_transactions.transaction_id')
+                    ->where('transaction_has_offer_allowances.offer_id', $offerId);
             })
             ->where('date', '>=', $from)
             ->where('date', '<=', $to)

@@ -8,11 +8,25 @@
 import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
-import { faFileImport } from "@fal"
+import { faFileImport, faFileExcel } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { capitalize } from "@/Composables/capitalize"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
-library.add(faFileImport)
+library.add(faFileImport, faFileExcel)
+
+const exportExcel = () => {
+    const params = route().params
+    const queryString = new URLSearchParams(window.location.search)
+
+    const exportParams: Record<string, string> = { ...params, type: 'xlsx' }
+
+    if (queryString.has('between[date]')) {
+        exportParams['between[date]'] = queryString.get('between[date]') as string
+    }
+
+    window.location.href = route('grp.org.reports.intrastat.imports.export-excel', exportParams)
+}
 
 const props = defineProps<{
     data: object
@@ -30,7 +44,16 @@ const props = defineProps<{
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
+    <PageHeading :data="pageHead">
+        <template #button>
+            <Button
+                @click="exportExcel"
+                :style="'secondary'"
+                icon="fal fa-file-excel"
+                label="Export Excel"
+            />
+        </template>
+    </PageHeading>
 
     <!-- Table -->
     <Table :resource="data" class="mt-5">

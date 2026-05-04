@@ -762,7 +762,7 @@ trait WithEbayApiRequest
 
             // If unauthorized, try to refresh the token once
             if ($response->status() === 401) {
-                $token    = $this->refreshEbayToken()['access_token'];
+                $token    = Arr::get($this->refreshEbayToken(), 'access_token');
                 $response = Http::withHeaders([
                     'Authorization'    => 'Bearer '.$token,
                     'Content-Type'     => 'application/json',

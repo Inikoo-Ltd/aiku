@@ -1,3 +1,4 @@
+import { Family2ExtraDescriptionWorkshop } from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionWorkshop.vue';
 import type { Component } from "vue"
 import { defineAsyncComponent } from "vue"
 
@@ -50,6 +51,8 @@ import Footer1Iris from "@/Components/CMS/Website/Footers/footerTheme1/Footer1Ir
 import SeeAlso1Iris from "@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Iris.vue"
 
 import family1Iris from "@/Components/CMS/Webpage/Family-1/family1Iris.vue"
+import family2Iris from "@/Components/CMS/Webpage/Family2/family2Iris.vue"
+import family3Iris from "@/Components/CMS/Webpage/Family3/family3Iris.vue"
 import FamiliesIris1 from "@/Components/CMS/Webpage/Families1/FamiliesIris1.vue"
 import FamiliesIris2 from "@/Components/CMS/Webpage/Families2/FamiliesIris2.vue"
 import FamiliesIris3 from "@/Components/CMS/Webpage/Families3/FamiliesIris3.vue"
@@ -90,11 +93,14 @@ import UserSubscribeIris from "@/Components/CMS/Webpage/UserSubscribe/UserSubscr
 import Cta4Iris from "@/Components/CMS/Webpage/Cta4/Cta4Iris.vue"
 import BlogIris from "@/Components/CMS/Webpage/Blog/BlogIris.vue"
 import Step2Iris from "@/Components/CMS/Webpage/Step2/Step2Iris.vue"
+import Step1Iris from "@/Components/CMS/Webpage/Step1/Step1Iris.vue"
 import Slider1Iris from "@/Components/CMS/Webpage/Slider-1/Slider1Iris.vue"
 import CollectionDescriptionIris from "@/Components/CMS/Webpage/CollectionDescription/CollectionDescriptionIris.vue"
 import DepartmentDescriptionIris from "@/Components/CMS/Webpage/DepartmentDescription/DepartmentDescriptionIris.vue"
 import SubDepartmentDesciptionIris from "@/Components/CMS/Webpage/SubDepartmentDesciption/SubDepartmentDesciptionIris.vue"
-
+import ProductRenderEcom3 from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
+import Family2ExtraDescriptionIris from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionIris.vue'
+import Families1Overview from '@/Components/CMS/Webpage/Families1Overview/FamiliesOverviewIris1.vue'
 
 const async = (loader: () => Promise<Component>) =>
 	defineAsyncComponent({
@@ -129,7 +135,6 @@ const components = (shop_type?: string): Record<string, Component> => {
 		'collection-description-1' : CollectionDescriptionIris,
 		'department-description-1' : DepartmentDescriptionIris,
 		'sub-department-description-1' : SubDepartmentDesciptionIris,
-		'family-1': family1Iris,
 
 		//sub-department	
 		"sub-departments-1": SubDepartment1Iris,
@@ -139,6 +144,19 @@ const components = (shop_type?: string): Record<string, Component> => {
 		"families-1": FamiliesIris1,
 		"families-2": FamiliesIris2,
 		"families-3": FamiliesIris3,
+
+
+		//family
+		"families-1-overview": Families1Overview,
+
+		// family-description
+		'family-1': family1Iris,
+		'family-2': family2Iris,
+		'family-3': family3Iris,
+
+		 //family-extra-description
+		'family-2-extra-description' : Family2ExtraDescriptionIris,
+		'family-3-extra-description' : Family2ExtraDescriptionIris,
 
 		//product
 		"product-1": shop_type === "b2b" ? RenderEcommerceProduct : RenderDropshippingProduct,
@@ -184,7 +202,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		"carousel-1": Carousel1Iris,
 		"carousel-cta": CarouselCtaIris,
 		"carousel-image-background": CarouselImageBackgroundIris,
-		"step-1": Step2Iris,
+		"step-1": Step1Iris,
 		"cta-video-1": CtaVideo1Iris,
 		video_1: Video1Iris,
 		"user-subscribe": UserSubscribeIris,
@@ -202,7 +220,7 @@ export const getIrisComponent = (
 		shop_type?: string // 'b2b' | 'dropshipping'
 	}
 ) => {
-	return components(options?.shop_type)[componentName] ?? NotFoundComponent
+	return components(options?.shop_type)[componentName] ?? NotFoundComponentwo
 }
 
 export const getProductsRenderDropshippingComponent = (
@@ -221,7 +239,8 @@ export const getProductsRenderB2bComponent = (
 	options: Record<string, any> = {}
 ) => {
 	const components: Record<string, any> = {
-		"products-1": ProductRenderEcom,
+		//"products-1": ProductRenderEcom, old
+		"products-1": ProductRenderEcom3,
 		"products-2": Products2Render,
 	}
 

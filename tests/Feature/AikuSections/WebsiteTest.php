@@ -9,7 +9,6 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Web\Banner\DeleteBanner;
-use App\Actions\Web\Banner\Search\ReindexBannerSearch;
 use App\Actions\Web\Banner\StoreBanner;
 use App\Actions\Web\Banner\UpdateBanner;
 use App\Actions\Web\ExternalLink\AttachExternalLinkToWebBlock;
@@ -21,11 +20,10 @@ use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Webpage\HydrateWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
-use App\Actions\Web\Webpage\Search\ReindexWebpageSearch;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Website\HydrateWebsite;
 use App\Actions\Web\Website\LaunchWebsite;
-use App\Actions\Web\Website\Search\ReindexWebsiteSearch;
+use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Actions\Web\Website\UpdateWebsite;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
@@ -38,7 +36,6 @@ use App\Enums\Web\Website\WebsiteTypeEnum;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Helpers\Snapshot;
 use App\Models\Helpers\SnapshotStats;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\Web\Banner;
 use App\Models\Web\ExternalLink;
 use App\Models\Web\Redirect;
@@ -319,41 +316,13 @@ test('update hello banner', function (Banner $banner) {
     return $banner;
 })->depends('store hello banner');
 
-test('banners search', function ($banner) {
-    $this->artisan('search:banners')->assertExitCode(0);
-    ReindexBannerSearch::run($banner);
-    $banner->refresh();
-    expect($banner->universalSearch()->count())->toBe(1);
-})->depends('store hello banner');
 
 test('delete hello banner', function (Banner $banner) {
     $banner = DeleteBanner::make()->action($banner);
 
     expect($banner)->toBeInstanceOf(Banner::class)
-        ->and($banner->trashed())->toBeTrue()
-        ->and(
-            UniversalSearch::where(
-                'model_type',
-                'Banner'
-            )->count()
-        )->toBe(0);
+        ->and($banner->trashed())->toBeTrue();
 })->depends('update hello banner');
-
-test('websites search', function () {
-    $this->artisan('search:websites')->assertExitCode(0);
-
-    $website = Website::first();
-    ReindexWebsiteSearch::run($website);
-    expect($website->universalSearch()->count())->toBe(1);
-});
-
-test('webpages search', function () {
-    $this->artisan('search:webpages')->assertExitCode(0);
-
-    $webpage = Webpage::first();
-    ReindexWebpageSearch::run($webpage);
-    expect($webpage->universalSearch()->count())->toBe(1);
-});
 
 
 test('hydrate website', function () {
@@ -400,5 +369,8 @@ test('store redirect', function (Webpage $webpage) {
 
 
 test('web sitemap creation', function () {
+
+    SaveWebsitesSitemap::run();
     $this->artisan('sitemaps:create')->assertExitCode(0);
+
 });

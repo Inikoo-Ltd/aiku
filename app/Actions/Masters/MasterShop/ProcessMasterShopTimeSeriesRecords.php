@@ -9,7 +9,6 @@ namespace App\Actions\Masters\MasterShop;
 
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopTimeSeriesHydrateNumberRecords;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Masters\MasterShop;
 use App\Models\Masters\MasterShopTimeSeries;
@@ -23,6 +22,8 @@ class ProcessMasterShopTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsInvoiceTimeSeriesQuery;
+
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(int $masterShopId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -55,7 +56,7 @@ class ProcessMasterShopTimeSeriesRecords implements ShouldBeUnique
     {
         $processedPeriods = [];
 
-        $query = DB::table('invoices')
+        $query = DB::connection('aiku_no_sticky')->table('invoices')
             ->where('invoices.master_shop_id', $timeSeries->master_shop_id)
             ->where('invoices.in_process', false)
             ->where('invoices.date', '>=', $from)
@@ -130,35 +131,9 @@ class ProcessMasterShopTimeSeriesRecords implements ShouldBeUnique
 
     protected function getMasterShopPeriodMetrics(int $masterShopId, Carbon $periodFrom, Carbon $periodTo): array
     {
-        $basketsCreated = DB::table('orders')
-            ->where('master_shop_id', $masterShopId)
-            ->where('state', OrderStateEnum::CREATING)
-            ->where('created_at', '>=', $periodFrom)
-            ->where('created_at', '<=', $periodTo)
-            ->whereNull('deleted_at')
-            ->selectRaw('sum(grp_net_amount) as grp_net_amount')
-            ->first();
 
-        $basketsUpdated = DB::table('orders')
-            ->where('master_shop_id', $masterShopId)
-            ->where('state', OrderStateEnum::CREATING)
-            ->where('updated_at', '>=', $periodFrom)
-            ->where('updated_at', '<=', $periodTo)
-            ->whereNull('deleted_at')
-            ->selectRaw('sum(grp_net_amount) as grp_net_amount')
-            ->first();
 
-        $deliveryNotes = DB::table('delivery_notes')
-            ->join('delivery_note_order', 'delivery_notes.id', '=', 'delivery_note_order.delivery_note_id')
-            ->join('orders', 'delivery_note_order.order_id', '=', 'orders.id')
-            ->where('orders.master_shop_id', $masterShopId)
-            ->where('delivery_notes.date', '>=', $periodFrom)
-            ->where('delivery_notes.date', '<=', $periodTo)
-            ->whereNull('delivery_notes.deleted_at')
-            ->distinct()
-            ->count('delivery_notes.id');
-
-        $registrationsBase = DB::table('customers')
+        $registrationsBase = DB::connection('aiku_no_sticky')->table('customers')
             ->join('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
             ->where('customers.master_shop_id', $masterShopId)
             ->where('customers.registered_at', '>=', $periodFrom)
@@ -169,9 +144,9 @@ class ProcessMasterShopTimeSeriesRecords implements ShouldBeUnique
         $registrationsWithoutOrders = (clone $registrationsBase)->where('customer_stats.number_orders', '=', 0)->count();
 
         return [
-            'baskets_created_grp_currency' => $basketsCreated->grp_net_amount,
-            'baskets_updated_grp_currency' => $basketsUpdated->grp_net_amount,
-            'delivery_notes'               => $deliveryNotes,
+            'baskets_created_grp_currency' => 0,
+            'baskets_updated_grp_currency' => 0,
+            'delivery_notes'               => 0,
             'registrations_with_orders'    => $registrationsWithOrders,
             'registrations_without_orders' => $registrationsWithoutOrders,
         ];

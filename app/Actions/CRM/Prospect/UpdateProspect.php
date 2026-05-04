@@ -9,7 +9,6 @@
 namespace App\Actions\CRM\Prospect;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProspects;
-use App\Actions\CRM\Prospect\Search\ProspectRecordSearch;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProspects;
@@ -61,11 +60,6 @@ class UpdateProspect extends OrgAction
 
         $prospect = $this->update($prospect, $modelData, ['data', 'contact_name_components']);
         $changes  = Arr::except($prospect->getChanges(), ['updated_at', 'last_fetched_at']);
-
-
-        if (Arr::hasAny($changes, ['name', 'contact_name', 'email', 'company_name', 'state'])) {
-            ProspectRecordSearch::dispatch($prospect);
-        }
 
 
         if (Arr::hasAny($changes, [

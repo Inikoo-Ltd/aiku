@@ -10,7 +10,6 @@ namespace App\Actions\Fulfilment\Pallet;
 
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePallets;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
-use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePallets;
 use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydratePallets;
@@ -85,7 +84,6 @@ class StorePallet extends OrgAction
         if ($pallet->location && $pallet->location->warehouseArea) {
             WarehouseAreaHydratePallets::dispatch($pallet->location->warehouseArea)->delay($this->hydratorsDelay);
         }
-        PalletRecordSearch::dispatch($pallet);
 
         return $pallet;
     }

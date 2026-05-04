@@ -17,7 +17,6 @@ use App\Actions\Dispatching\Shipment\ApiCalls\CallApiGlsEsShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiGlsSkShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiItdShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping;
-use App\Actions\Dispatching\Shipment\Hydrators\ShipmentHydrateUniversalSearch;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -93,8 +92,6 @@ class StoreShipment extends OrgAction
         $shipment = $shipper->shipments()->create($modelData);
         $shipment->refresh();
         $parent->shipments()->attach($shipment->id);
-
-        ShipmentHydrateUniversalSearch::dispatch($shipment);
 
         if ($parent instanceof DeliveryNote) {
             DeliveryNoteHydrateShipments::dispatch($parent->id);

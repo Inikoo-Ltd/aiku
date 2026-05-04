@@ -28,7 +28,6 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
 use App\Models\Web\WebpageHasProduct;
@@ -43,6 +42,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -67,7 +68,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $name
  * @property string|null $description
  * @property numeric|null $price
- * @property string $units
+ * @property numeric $units
  * @property string $unit
  * @property array<array-key, mixed> $data
  * @property array<array-key, mixed> $settings
@@ -83,11 +84,11 @@ use Spatie\Translatable\HasTranslations;
  * @property numeric $variant_ratio
  * @property bool $variant_is_visible
  * @property int|null $main_product_id
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $source_id
  * @property string|null $historic_source_id
  * @property bool $is_for_sale For-sale products including out of stock
@@ -135,18 +136,18 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $hts_us
  * @property string|null $marketing_ingredients
  * @property string|null $price_updated_at
- * @property \Illuminate\Support\Carbon|null $available_quantity_updated_at
+ * @property Carbon|null $available_quantity_updated_at
  * @property string|null $images_updated_at
- * @property string|null $unit_price price per unit
+ * @property numeric|null $unit_price price per unit
  * @property array<array-key, mixed>|null $name_i8n
  * @property array<array-key, mixed>|null $description_i8n
  * @property array<array-key, mixed>|null $description_title_i8n
  * @property array<array-key, mixed>|null $description_extra_i8n
  * @property bool $is_single_trade_unit Indicates if the product has a single trade unit
  * @property int|null $master_product_id
- * @property \Illuminate\Support\Carbon|null $mark_for_discontinued_at
- * @property \Illuminate\Support\Carbon|null $discontinued_at
- * @property string|null $cost_price_ratio
+ * @property Carbon|null $mark_for_discontinued_at
+ * @property Carbon|null $discontinued_at
+ * @property numeric|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
  * @property int|null $art1_image_id
@@ -166,7 +167,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $ufi_number
  * @property string|null $scpn_number
  * @property array<array-key, mixed>|null $offers_data
- * @property \Illuminate\Support\Carbon|null $not_for_sale_since
+ * @property Carbon|null $not_for_sale_since
  * @property bool $not_for_sale_from_master
  * @property bool $not_for_sale_from_trade_unit
  * @property bool|null $is_unit_reviewed
@@ -175,7 +176,12 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $is_minion_variant
  * @property bool $has_live_webpage
  * @property string|null $marketplace_id
- * @property string|null $margin
+ * @property numeric|null $margin
+ * @property string|null $marketplace_second_id
+ * @property bool $is_bundle
+ * @property bool|null $mismatch_with_master_detected
+ * @property bool $not_follow_master_trade_units
+ * @property int|null $index_under_family
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -198,7 +204,8 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Catalogue\ProductCategory|null $family
  * @property-read LaravelCollection<int, Favourite> $favourites
  * @property-read Media|null $frontImage
- * @property-read Group $group
+ * @property-read array $translatable_columns_from
+ * @property-read Group|null $group
  * @property-read \App\Models\Catalogue\HistoricAsset|null $historicAsset
  * @property-read LaravelCollection<int, \App\Models\Catalogue\HistoricAsset> $historicAssets
  * @property-read Media|null $image
@@ -223,7 +230,6 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $topImage
  * @property-read LaravelCollection<int, TradeUnit> $tradeUnits
  * @property-read mixed $translations
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read \App\Models\Catalogue\Variant|null $variant
  * @property-read Webpage|null $webpage
  * @property-read LaravelCollection<int, WebpageHasProduct> $webpageHasProducts
@@ -244,13 +250,13 @@ class Product extends Model implements Auditable, HasMedia
 {
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use InAssetModel;
     use HasHistory;
     use HasFactory;
     use HasImage;
     use HasTranslations;
     use HasAttachments;
+    use HasSearch;
 
     protected $guarded = [];
 
@@ -282,6 +288,7 @@ class Product extends Model implements Auditable, HasMedia
         'not_for_sale_since'            => 'datetime',
         'is_for_sale'                   => 'boolean',
         'not_for_sale_from_master'      => 'boolean',
+        'mismatch_with_master_detected' => 'boolean',
 
     ];
 
@@ -292,6 +299,36 @@ class Product extends Model implements Auditable, HasMedia
         'marketing_dimensions' => '{}',
         'offers_data'          => '{}',
     ];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'code',
+                'name',
+                'description',
+                'description_extra',
+                'state',
+                'is_for_sale',
+                'created_at'
+            ]);
+    }
+
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'                => (string)$this->id,
+            'shop_id'           => $this->shop_id,
+            'code'              => $this->code,
+            'name'              => (string)$this->name,
+            'description'       => (string)$this->description,
+            'description_extra' => (string)$this->description_extra,
+            'state'             => $this->state->value,
+            'is_for_sale'       => $this->is_for_sale,
+            'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {

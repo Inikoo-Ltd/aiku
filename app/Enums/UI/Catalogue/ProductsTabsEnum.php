@@ -17,8 +17,9 @@ enum ProductsTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case INDEX   = 'index';
-    case SALES      = 'sales';
+    case INDEX            = 'index';
+    case INDEX_ORDERING   = 'index_ordering';
+    case SALES            = 'sales';
 
     public function blueprint(): array
     {
@@ -26,6 +27,10 @@ enum ProductsTabsEnum: string
             ProductsTabsEnum::INDEX => [
                 'title' => __('Index'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            ProductsTabsEnum::INDEX_ORDERING => [
+                'title' => __('Index Ordering'),
+                'icon'  => 'fal fa-sort-shapes-up-alt',
             ],
             ProductsTabsEnum::SALES => [
                 'title' => __('Sales'),

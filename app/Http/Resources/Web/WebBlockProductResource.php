@@ -92,7 +92,8 @@ class WebBlockProductResource extends JsonResource
             'description_title' => $product->description_title,
             'description_extra' => $product->description_extra,
             'stock'             => $product->available_quantity,
-            'specifications'    => $product->is_single_trade_unit ? $specifications : null,
+            // Old logic (4 months ago) checked for is_single_trade_unit since they got their spec data from TradeUnits. Right now it fetches directly from product, so not needed anymore. This is correct
+            'specifications'    => $specifications,
             'contents'          => ModelHasContentsResource::collection($product->contents)->toArray($request),
             'id'                => $product->id,
             'image_id'          => $product->image_id,

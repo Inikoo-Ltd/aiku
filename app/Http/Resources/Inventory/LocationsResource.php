@@ -21,7 +21,7 @@ class LocationsResource extends JsonResource
     public function toArray($request): array
     {
         /** @var Location $location */
-        $location = $this;
+        $location = $this->resource;
 
         return [
             'id'                     => $location->id,

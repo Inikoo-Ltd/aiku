@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_items_state_cancelled
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\GoodsIn\OrderReturn $return
+ * @property-read \App\Models\GoodsIn\OrderReturn|null $return
  * @method static Builder<static>|ReturnStats newModelQuery()
  * @method static Builder<static>|ReturnStats newQuery()
  * @method static Builder<static>|ReturnStats query()

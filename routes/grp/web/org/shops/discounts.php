@@ -22,17 +22,33 @@ use App\Stubs\UIDummies\EditDummy;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Discounts\OfferCampaign\StoreDiscountShipping;
 use App\Actions\Discounts\OfferCampaign\StoreCustomerOffers;
+use App\Actions\Discounts\OfferCampaign\StoreVoucherOffers;
+use App\Actions\Discounts\OfferCampaign\StoreProductOffers;
+use App\Actions\Discounts\OfferCampaign\UI\IndexOrdersInOffer;
+use App\Actions\Discounts\OfferCampaign\UI\IndexCustomersInOffer;
+use App\Actions\Discounts\OfferCampaign\UI\IndexInvoicesInOffer;
+use App\Actions\Discounts\OfferCampaign\UI\IndexOrdersInOfferTotal;
+use App\Actions\Discounts\OfferCampaign\UI\IndexCustomersInOfferTotal;
+use App\Actions\Discounts\OfferCampaign\UI\IndexInvoicesInOfferTotal;
+use App\Actions\Discounts\Offer\UI\FinishOffer;
 
 Route::get('', ShowDiscountsDashboard::class)->name('dashboard');
 Route::name("campaigns.")->prefix('campaigns')
     ->group(function () {
         Route::get('', IndexOfferCampaigns::class)->name('index');
         Route::get('{offerCampaign}', ShowOfferCampaign::class)->name('show');
+        Route::get('{offerCampaign}/orders', IndexOrdersInOffer::class)->name('orders');
+        Route::get('{offerCampaign}/customers', IndexCustomersInOffer::class)->name('customers');
+        Route::get('{offerCampaign}/invoices', IndexInvoicesInOffer::class)->name('invoices');
+        Route::get('{offerCampaign}/totals/customers', IndexCustomersInOfferTotal::class)->name('totals.customers');
+        Route::get('{offerCampaign}/totals/orders', IndexOrdersInOfferTotal::class)->name('totals.orders');
+        Route::get('{offerCampaign}/totals/invoices', IndexInvoicesInOfferTotal::class)->name('totals.invoices');
 
         Route::name('offer.')->prefix('{offerCampaign}/offer')
             ->group(function () {
                 Route::get('{offer}', [ShowOffer::class, 'inOfferCampaign'])->name('show');
                 Route::get('{offer}/edit', [EditOffer::class, 'inOfferCampaign'])->name('edit');
+                Route::get('{offer}/edit-vol-gr-gift', [EditVolGrGift::class, 'inOffer'])->name('edit_vol_gr_gift');
             });
 
         Route::name('gift.')->prefix('{offerCampaign}/gift')
@@ -51,17 +67,29 @@ Route::name("campaigns.")->prefix('campaigns')
         Route::get('{offerCampaign}/create-vol-gr-gift', CreateVolGrGift::class)->name('create_vol_gr_gift');
         Route::get('{offerCampaign}/edit-vol-gr-gift', EditVolGrGift::class)->name('edit_vol_gr_gift')->withoutScopedBindings();
         Route::get('{offerCampaign}/create-gr-amnesty-offer', CreateGrAmnesty::class)->name('create_gr_amnesty_offer');
+
+        //todo
         Route::get('{offerCampaign}/edit-gr-amnesty', EditVolGrGift::class)->name('edit_current_gr_amnesty_offer')->withoutScopedBindings();
+
+        Route::post(
+            '{offerCampaign}/voucher',
+            StoreVoucherOffers::class
+        )->name('store_voucher');
 
         Route::post(
             '{offerCampaign}/shipping',
             StoreDiscountShipping::class
-        )->name('campaigns.store_shipping');
+        )->name('store_shipping');
 
         Route::post(
             '{offerCampaign}/customer',
             StoreCustomerOffers::class
-        )->name('campaigns.store_customer');
+        )->name('store_customer');
+
+        Route::post(
+            '{offerCampaign}/product',
+            StoreProductOffers::class
+        )->name('store_product');
     });
 
 Route::name("offers.")->prefix('offers')
@@ -70,6 +98,7 @@ Route::name("offers.")->prefix('offers')
         Route::get('create', CreateOffer::class)->name('create');
         Route::get('{offer}', ShowOffer::class)->name('show');
         Route::get('{offer}/edit', EditOffer::class)->name('edit');
+        Route::get('{offer}/finish', FinishOffer::class)->name('finish');
         Route::post('store', StoreOffer::class)->name('store');
         Route::patch('{offer}/update', [UpdateOffer::class, 'inShop'])->name('update');
     });

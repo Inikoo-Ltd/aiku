@@ -30,39 +30,43 @@ class MasterShopResource extends JsonResource
         $additionalStats = [];
 
         if ($masterShop->stats->number_mismatched_master_families) {
-            array_push(
-                $additionalStats,
-                [
-                    'label' => __('Master Families with Mismatch'),
-                    'is_negative'     => true,
-                    'route' => [
-                        'name'       => 'grp.masters.master_shops.show.master_family.mismatch_detected.index',
-                        'parameters' => [$masterShop->slug]
-                    ],
-                    'icon'  => 'fal fa-folder',
-                    'backgroundColor' => "#e879f91d",
-                    "color" => "#df1c1cff",
-                    'value' => $masterShop->stats->number_mismatched_master_families,
-                ]
-            );
+            $additionalStats[] = [
+                'label'           => __('Master Families with Mismatch'),
+                'is_negative'     => true,
+                'route'           => [
+                    'name'       => 'grp.masters.master_shops.show.master_family.mismatch_detected.index',
+                    'parameters' => [
+                        'masterShop' => $masterShop->slug,
+                        '_query'     => [
+                            'index_elements[status]' => 'active'
+                        ]
+                    ]
+                ],
+                'icon'            => 'fal fa-folder',
+                'backgroundColor' => "#e879f91d",
+                "color"           => "#df1c1cff",
+                'value'           => $masterShop->stats->number_mismatched_master_families_active,
+            ];
         }
 
         if ($masterShop->stats->number_mismatched_master_products) {
-            array_push(
-                $additionalStats,
-                [
-                   'label' => __('Master Products with Mismatch'),
-                   'is_negative'     => true,
-                   'route' => [
-                       'name'       => 'grp.masters.master_shops.show.master_products.mismatch_detected.index',
-                       'parameters' => [$masterShop->slug]
-                   ],
-                   'icon'            => 'fal fa-cube',
-                   'backgroundColor' => "#38bff81d",
-                   "color" => "#df1c1cff",
-                   'value' => $masterShop->stats->number_mismatched_master_products,
-                ]
-            );
+            $additionalStats[] = [
+                'label'           => __('Master Products with Mismatch'),
+                'is_negative'     => true,
+                'route'           => [
+                    'name'       => 'grp.masters.master_shops.show.master_products.mismatch_detected.index',
+                    'parameters' => [
+                        'masterShop' => $masterShop->slug,
+                        '_query'     => [
+                            'index_elements[status]' => 'active'
+                        ]
+                    ]
+                ],
+                'icon'            => 'fal fa-cube',
+                'backgroundColor' => "#38bff81d",
+                "color"           => "#df1c1cff",
+                'value'           => $masterShop->stats->number_mismatched_master_products_active,
+            ];
         }
 
         return [
@@ -79,19 +83,16 @@ class MasterShopResource extends JsonResource
                     'icon'  => 'fal fa-folder-tree',
                     "color" => "#a3e635",
                     'value' => $masterShop->stats->number_current_master_product_categories_type_department,
-
-                    'metaRight' => [
-                        'tooltip' => __('Master Sub Departments'),
-                        'icon'    => [
-                            'icon'  => 'fal fa-folder-download',
-                            'class' => ''
-                        ],
-                        'route'   => [
-                            'name'       => 'grp.masters.master_shops.show.master_sub_departments.index',
-                            'parameters' => [$masterShop->slug]
-                        ],
-                        'count'   => $masterShop->stats->number_current_master_product_categories_type_sub_department,
+                ],
+                [
+                    'label' => __('Master Sub Departments'),
+                    'route' => [
+                        'name'       => 'grp.masters.master_shops.show.master_sub_departments.index',
+                        'parameters' => [$masterShop->slug]
                     ],
+                    'icon'  => 'fal fa-folder-download',
+                    "color" => "#f1db0eff",
+                    'value' => $masterShop->stats->number_current_master_product_categories_type_sub_department,
                 ],
                 [
                     'label' => __('Master Families'),

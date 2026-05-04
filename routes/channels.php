@@ -18,6 +18,10 @@ Broadcast::channel('retina.pc-clone.{parentId}', function (int|string $shopifyUs
     return true;
 });
 
+Broadcast::channel('retina.image.generation.{userId}', function (int|string $shopifyUserId) {
+    return true;
+});
+
 Broadcast::channel('shopify.upload-product.{shopifyUserId}', function (WebUser|ShopifyUser $user, int|string $shopifyUserId) {
     return true;
 });
@@ -59,6 +63,10 @@ Broadcast::channel('grp.download-progress.{userID}', function (User $user, int $
 });
 
 Broadcast::channel('grp.{groupID}.general', function (User $user, int $groupID) {
+    return $user->group_id === $groupID;
+});
+
+Broadcast::channel('grp.{groupID}.mailshots.{mailshotId}', function (User $user, int $groupID, int $mailshotId) {
     return $user->group_id === $groupID;
 });
 

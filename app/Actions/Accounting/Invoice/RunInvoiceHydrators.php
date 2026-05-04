@@ -8,16 +8,11 @@
 
 namespace App\Actions\Accounting\Invoice;
 
-use App\Actions\Accounting\Invoice\Search\InvoiceRecordSearch;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
-use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
-use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSalesIntervals;
 use App\Actions\Accounting\InvoiceCategory\ProcessInvoiceCategoryTimeSeriesRecords;
 use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
 use App\Actions\Catalogue\Shop\ProcessShopTimeSeriesRecords;
 use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
@@ -29,16 +24,10 @@ use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesInt
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSales;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSalesGrpCurrency;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSalesOrgCurrency;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateSalesIntervals;
 use App\Actions\Masters\MasterShop\ProcessMasterShopTimeSeriesRecords;
 use App\Actions\Ordering\SalesChannel\ProcessSalesChannelTimeSeriesRecords;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesIntervals;
 use App\Actions\SysAdmin\Organisation\ProcessOrganisationTimeSeriesRecords;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
@@ -114,8 +103,7 @@ class RunInvoiceHydrators
         // --- Invoice Category ---
         if ($invoice->invoiceCategory) {
             $queueOrRun(InvoiceCategoryHydrateInvoices::class, [$invoice->invoiceCategory]);
-            $queueOrRun(InvoiceCategoryHydrateSalesIntervals::class, [$invoice->invoiceCategory, $intervalsExceptHistorical, []]);
-            $queueOrRun(InvoiceCategoryHydrateOrderingIntervals::class, [$invoice->invoiceCategory, $intervalsExceptHistorical, []]);
+
 
             // --- Invoice Category Time Series ---
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
@@ -134,15 +122,9 @@ class RunInvoiceHydrators
             }
         }
 
-        // --- Sales Intervals ---
-        $queueOrRun(ShopHydrateSalesIntervals::class, [$invoice->shop, $intervalsExceptHistorical, []]);
-        $queueOrRun(OrganisationHydrateSalesIntervals::class, [$invoice->organisation, $intervalsExceptHistorical, []]);
-        $queueOrRun(GroupHydrateSalesIntervals::class, [$invoice->group, $intervalsExceptHistorical, []]);
 
         // --- Master shop ---
         if ($invoice->master_shop_id) {
-            $queueOrRun(MasterShopHydrateSalesIntervals::class, [$invoice->master_shop_id, $intervalsExceptHistorical, []]);
-            $queueOrRun(MasterShopHydrateInvoiceIntervals::class, [$invoice->master_shop_id, $intervalsExceptHistorical, []]);
 
             // --- Master Shop Time Series ---
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
@@ -162,9 +144,6 @@ class RunInvoiceHydrators
         }
 
         // --- Invoice Intervals ---
-        $queueOrRun(ShopHydrateInvoiceIntervals::class, [$invoice->shop, $intervalsExceptHistorical, []]);
-        $queueOrRun(OrganisationHydrateInvoiceIntervals::class, [$invoice->organisation, $intervalsExceptHistorical, []]);
-        $queueOrRun(GroupHydrateInvoiceIntervals::class, [$invoice->group, $intervalsExceptHistorical, []]);
 
         // --- Platform intervals ---
         if ($invoice->platform_id) {
@@ -231,7 +210,6 @@ class RunInvoiceHydrators
         CustomerHydrateClv::dispatch($invoice->customer_id)->delay($hydratorsDelay);
         CustomerHydrateRevenue::dispatch($invoice->customer_id)->delay($hydratorsDelay);
 
-        InvoiceRecordSearch::dispatch($invoice);
     }
 
     public function getCommandSignature(): string

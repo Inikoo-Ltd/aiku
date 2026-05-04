@@ -66,6 +66,7 @@ function webpageRoute(webpage: Webpage) {
         case 'grp.org.shops.show.web.webpages.index.sub_type.sub_department':
         case 'grp.org.shops.show.web.webpages.index.sub_type.product':
         case 'grp.org.shops.show.web.webpages.index.sub_type.department':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview':
         case 'grp.org.shops.show.web.webpages.index':
             return route(
                 'grp.org.shops.show.web.webpages.show',
@@ -121,6 +122,9 @@ function webpageRoute(webpage: Webpage) {
                     route().params['website'],
                     webpage.slug
                 ]);
+
+        default: 
+            return ''
     }
 }
 
@@ -128,6 +132,7 @@ function subDepartmentsRoute(webpage: Webpage) {
     switch (route().current()) {
 
         case 'grp.org.shops.show.web.webpages.index.sub_type.department':
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview':
             return route(
                 'grp.org.shops.show.web.webpages.index.sub_type.department.sub_departments',
                 [
@@ -136,12 +141,16 @@ function subDepartmentsRoute(webpage: Webpage) {
                     route().params['website'],
                     webpage.slug
                 ]);
+
+        default: 
+            return ''
     }
 }
 
 function familiesRoute(webpage: Webpage) {
     switch (route().current()) {
 
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview':
         case 'grp.org.shops.show.web.webpages.index.sub_type.department':
             return route(
                 'grp.org.shops.show.web.webpages.index.sub_type.department.families',
@@ -161,12 +170,16 @@ function familiesRoute(webpage: Webpage) {
                     route().params['website'],
                     webpage.slug
                 ]);
+
+        default: 
+            return ''
     }
 }
 
 function productsRoute(webpage: Webpage) {
     switch (route().current()) {
 
+        case 'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview':
         case 'grp.org.shops.show.web.webpages.index.sub_type.department':
             return route(
                 'grp.org.shops.show.web.webpages.index.sub_type.department.products',
@@ -197,6 +210,8 @@ function productsRoute(webpage: Webpage) {
                     route().params['website'],
                     webpage.slug
                 ]);
+        default: 
+            return ''
     }
 }
 
@@ -207,9 +222,12 @@ function productsRoute(webpage: Webpage) {
     <Table :resource="data" :name="tab" class="mt-5">
         <!-- Column: Code -->
         <template #cell(code)="{ item: webpage }">
-            <Link :href="webpageRoute(webpage)" class="primaryLink">
+            <Link v-if="!!webpageRoute(webpage)" :href="webpageRoute(webpage)" class="primaryLink">
                 {{ webpage['code'] }}
             </Link>
+            <div v-else>
+                {{ webpage['code'] }}
+            </div>
         </template>
 
         <!-- Column: State -->
@@ -218,21 +236,30 @@ function productsRoute(webpage: Webpage) {
         </template>
 
         <template #cell(number_current_sub_departments)="{ item: webpage }">
-            <Link :href="subDepartmentsRoute(webpage)" class="primaryLink">
+            <Link v-if="!!subDepartmentsRoute(webpage)" :href="subDepartmentsRoute(webpage)" class="secondaryLink">
                 {{ webpage['number_current_sub_departments'] }}
             </Link>
+            <div v-else>
+                {{ webpage['number_current_sub_departments'] }}
+            </div>
         </template>
 
         <template #cell(number_current_families)="{ item: webpage }">
-            <Link :href="familiesRoute(webpage)" class="primaryLink">
+            <Link v-if="!!familiesRoute(webpage)" :href="familiesRoute(webpage)" class="secondaryLink">
                 {{ webpage['number_current_families'] }}
             </Link>
+            <div v-else>
+                {{ webpage['number_current_families'] }}
+            </div>
         </template>
 
         <template #cell(number_current_products)="{ item: webpage }">
-            <Link :href="productsRoute(webpage)" class="primaryLink">
+            <Link v-if="!!productsRoute(webpage)" :href="productsRoute(webpage)" class="secondaryLink">
                 {{ webpage['number_current_products'] }}
             </Link>
+            <div v-else>
+                {{ webpage['number_current_products'] }}
+            </div>
         </template>
 
         <template #cell(type)="{ item: webpage }">
@@ -254,7 +281,7 @@ function productsRoute(webpage: Webpage) {
             </a>
 
             <div v-else class="text-gray-400">
-                No canonical url
+                {{ ctrans("No canonical url") }}
             </div>
         </template>
 

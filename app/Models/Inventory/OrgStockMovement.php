@@ -8,8 +8,10 @@
 
 namespace App\Models\Inventory;
 
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
+use App\Models\SysAdmin\User;
 use App\Models\Traits\InWarehouse;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -23,7 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $warehouse_id
  * @property int|null $warehouse_area_id
  * @property \Illuminate\Support\Carbon $date
- * @property string $class
+ * @property OrgStockMovementClassEnum $class
  * @property OrgStockMovementTypeEnum $type
  * @property OrgStockMovementFlowEnum $flow
  * @property bool $is_delivered
@@ -35,7 +37,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $location_id
  * @property string|null $operation_type
  * @property int|null $operation_id
- * @property numeric $quantity
+ * @property numeric|null $quantity
  * @property numeric $org_amount
  * @property numeric $grp_amount
  * @property array<array-key, mixed> $data
@@ -44,11 +46,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $fetched_at
  * @property string|null $last_fetched_at
  * @property string|null $source_id
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property string|null $fixed
+ * @property numeric|null $audited_quantity
+ * @property numeric|null $running_quantity running quantity on org_stock/location
+ * @property numeric|null $running_quantity_org_stock running quantity on org_stock
+ * @property bool|null $fixed_internal_helper
+ * @property numeric|null $cost_per_sku
+ * @property int|null $user_id
+ * @property string|null $note
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Inventory\Location|null $location
- * @property-read \App\Models\Inventory\OrgStock $orgStock
+ * @property-read \App\Models\Inventory\OrgStock|null $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Inventory\Warehouse $warehouse
+ * @property-read User|null $user
+ * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static Builder<static>|OrgStockMovement newModelQuery()
  * @method static Builder<static>|OrgStockMovement newQuery()
  * @method static Builder<static>|OrgStockMovement query()
@@ -58,15 +69,21 @@ class OrgStockMovement extends Model
 {
     use InWarehouse;
 
+    protected $dateFormat = 'Y-m-d H:i:s.uP';
+
     protected $casts = [
         'data'       => 'array',
         'type'       => OrgStockMovementTypeEnum::class,
         'flow'       => OrgStockMovementFlowEnum::class,
+        'class'      => OrgStockMovementClassEnum::class,
         'date'       => 'datetime',
-        'quantity'   => 'decimal:3',
-        'amount'     => 'decimal:3',
+        'quantity'         => 'decimal:3',
+        'audited_quantity' => 'decimal:6',
+        'amount'           => 'decimal:3',
         'grp_amount' => 'decimal:3',
         'org_amount' => 'decimal:3',
+        'cost_per_sku' => 'decimal:6',
+        'fixed_internal_helper' => 'boolean',
     ];
 
     protected $attributes = [
@@ -83,5 +100,10 @@ class OrgStockMovement extends Model
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

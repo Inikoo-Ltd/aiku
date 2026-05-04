@@ -32,19 +32,16 @@ import {
 	faFolderTree,
 	faAlbumCollection,
 	faPenAlt,
-	faShapes
+	faShapes,
+	faLayerGroup,
+	faSortShapesUpAlt,
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import type { Navigation } from "@/types/Tabs"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import {
-  Listbox,
-  ListboxButton,
-  ListboxOptions,
-  ListboxOption
-} from "@headlessui/vue"
-
+import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from "@headlessui/vue"
+import { trans } from 'laravel-vue-i18n'
 library.add(
 	faShapes,
 	faInfoCircle,
@@ -70,10 +67,12 @@ library.add(
 	faAlbumCollection,
 	faUndo,
 	faPenAlt,
+	faLayerGroup,
+	faSortShapesUpAlt
 )
 
 const layoutStore = inject("layout", layoutStructure)
-const locale = inject('locale', aikuLocaleStructure)
+const locale = inject("locale", aikuLocaleStructure)
 
 const props = defineProps<{
 	navigation: Navigation
@@ -121,91 +120,71 @@ const tabIconClass = function (
 	<div>
 		<!-- Tabs: Mobile view -->
 		<div v-if="Object.keys(navigation ?? {})?.length > 1" class="sm:hidden px-3 pt-2">
-
 			<Listbox :model-value="currentTab" @update:modelValue="onChangeTab">
 				<div class="relative">
-
 					<!-- Button -->
 					<ListboxButton
 						class="relative w-full cursor-pointer rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 sm:text-sm">
-
 						<span class="flex items-center">
-
 							<!-- Loading spinner -->
 							<FontAwesomeIcon
 								v-if="tabLoading"
 								icon="fad fa-spinner-third"
-								class="animate-spin mr-2 h-5 w-5"
-							/>
+								class="animate-spin mr-2 h-5 w-5" />
 
 							<!-- Icon -->
 							<FontAwesomeIcon
 								v-else-if="navigation[currentTab]?.icon"
 								:icon="navigation[currentTab].icon"
-								class="mr-2 h-5 w-5"
-							/>
+								class="mr-2 h-5 w-5" />
 
 							<!-- Title -->
 							<span class="block truncate">
 								{{ navigation[currentTab]?.title }}
 							</span>
 						</span>
-
 					</ListboxButton>
 
 					<!-- Options -->
 					<ListboxOptions
 						class="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-
 						<ListboxOption
-						v-for="(tab, tabSlug) in navigation"
-						:key="tabSlug"
-						:value="tabSlug"
-						v-slot="{ active, selected }"
-						>
+							v-for="(tab, tabSlug) in navigation"
+							:key="tabSlug"
+							:value="tabSlug"
+							v-slot="{ active, selected }">
+							<li
+								:class="[
+									active ? 'bg-gray-100' : '',
+									'relative cursor-pointer select-none py-2 pl-3 pr-9',
+								]">
+								<div class="flex items-center">
+									<!-- Spinner -->
+									<FontAwesomeIcon
+										v-if="tabLoading === tabSlug"
+										icon="fad fa-spinner-third"
+										class="animate-spin mr-2 h-5 w-5" />
 
-						<li
-							:class="[
-							active ? 'bg-gray-100' : '',
-							'relative cursor-pointer select-none py-2 pl-3 pr-9'
-							]"
-						>
-							<div class="flex items-center">
+									<!-- Icon -->
+									<FontAwesomeIcon
+										v-else-if="tab.icon"
+										:icon="tab.icon"
+										class="mr-2 h-5 w-5" />
 
-								<!-- Spinner -->
-								<FontAwesomeIcon
-									v-if="tabLoading === tabSlug"
-									icon="fad fa-spinner-third"
-									class="animate-spin mr-2 h-5 w-5"
-								/>
-
-								<!-- Icon -->
-								<FontAwesomeIcon
-									v-else-if="tab.icon"
-									:icon="tab.icon"
-									class="mr-2 h-5 w-5"
-								/>
-
-								<!-- Title -->
-								<span
-									:class="[
-									selected ? 'font-semibold' : 'font-normal',
-									'block truncate'
-									]"
-								>
-									{{ tab.title }}
-								</span>
-
-							</div>
-						</li>
-
+									<!-- Title -->
+									<span
+										:class="[
+											selected ? 'font-semibold' : 'font-normal',
+											'block truncate',
+										]">
+										{{ tab.title }}
+									</span>
+								</div>
+							</li>
 						</ListboxOption>
-
 					</ListboxOptions>
-
 				</div>
 			</Listbox>
-
 		</div>
 		<!-- Tabs: Desktop view -->
 		<div class="hidden sm:block">
@@ -246,17 +225,35 @@ const tabIconClass = function (
 									)
 								"
 								aria-hidden="true"
-								:rotation="tab.icon_rotation"
-							/>
-							<span>{{ tab.title }}</span>
+								:rotation="tab.icon_rotation" />
+							<span class="relative">
+								{{ tab.title }}
+								<span
+									v-if="tabSlug === 'bundles'"
+									class="absolute -top-4 -right-12 text-[8px] px-1.5 py-[1px] rounded 
+										bg-red-500 text-white font-semibold tracking-wide
+										whitespace-nowrap scale-90 origin-left impulse"
+								>
+									{{trans('BETA VERSION')}}
+								</span>
+							</span>
 
-							<div v-if="typeof tab.number == 'number'"
-                                class="ml-2 inline-flex items-center w-fit rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
-                                :class="tabSlug === currentTab ? 'bg-[var(--theme-color-0)] text-[var(--theme-color-1)]' : 'bg-gray-200 '">
-                                {{ locale.number(tab.number || 0) }}
-                            </div>
+							<div
+								v-if="typeof tab.number == 'number'"
+								class="ml-2 inline-flex items-center w-fit rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
+								:class="
+									tabSlug === currentTab
+										? 'bg-[var(--theme-color-0)] text-[var(--theme-color-1)]'
+										: 'bg-gray-200 '
+								">
+								{{ locale.number(tab.number || 0) }}
+							</div>
 
-							<Icon v-if="tab.icon_right" :data="tab.icon_right" :class="tab.icon_right.class" style="margin-left: 4px" />
+							<Icon
+								v-if="tab.icon_right"
+								:data="tab.icon_right"
+								:class="tab.icon_right.class"
+								style="margin-left: 4px" />
 
 							<FontAwesomeIcon
 								v-if="tab.indicator"
@@ -294,13 +291,22 @@ const tabIconClass = function (
 								tab.title
 							}}</span>
 
-							<div v-if="typeof tab.number == 'number'"
-                                class="ml-0.5 inline-flex items-center w-fit rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
-                                :class="tabSlug === currentTab ? 'bg-[var(--theme-color-0)] text-[var(--theme-color-1)]' : 'bg-gray-200 '">
-                                {{ locale.number(tab.number || 0) }}
-                            </div>
+							<div
+								v-if="typeof tab.number == 'number'"
+								class="ml-0.5 inline-flex items-center w-fit rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
+								:class="
+									tabSlug === currentTab
+										? 'bg-[var(--theme-color-0)] text-[var(--theme-color-1)]'
+										: 'bg-gray-200 '
+								">
+								{{ locale.number(tab.number || 0) }}
+							</div>
 
-							<Icon v-if="tab.icon_right" :data="tab.icon_right" :class="tab.icon_right.class" style="margin-left: 4px" />
+							<Icon
+								v-if="tab.icon_right"
+								:data="tab.icon_right"
+								:class="tab.icon_right.class"
+								style="margin-left: 4px" />
 
 							<FontAwesomeIcon
 								v-if="tab.indicator"

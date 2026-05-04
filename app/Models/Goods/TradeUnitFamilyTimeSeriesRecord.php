@@ -13,15 +13,15 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property int $trade_unit_family_time_series_id
  * @property string $frequency
- * @property string|null $sales_external
- * @property string|null $sales_org_currency_external
- * @property string|null $sales_grp_currency_external
- * @property string|null $sales_internal
- * @property string|null $sales_org_currency_internal
- * @property string|null $sales_grp_currency_internal
- * @property string|null $lost_revenue
- * @property string|null $lost_revenue_org_currency
- * @property string|null $lost_revenue_grp_currency
+ * @property numeric|null $sales_external
+ * @property numeric|null $sales_org_currency_external
+ * @property numeric|null $sales_grp_currency_external
+ * @property numeric|null $sales_internal
+ * @property numeric|null $sales_org_currency_internal
+ * @property numeric|null $sales_grp_currency_internal
+ * @property numeric|null $lost_revenue
+ * @property numeric|null $lost_revenue_org_currency
+ * @property numeric|null $lost_revenue_grp_currency
  * @property int|null $invoices
  * @property int|null $refunds
  * @property int|null $orders

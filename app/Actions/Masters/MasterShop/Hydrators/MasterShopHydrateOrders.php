@@ -24,7 +24,7 @@ class MasterShopHydrateOrders implements ShouldBeUnique
     use WithEnumStats;
 
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(int $masterShopID): string
     {
@@ -41,7 +41,7 @@ class MasterShopHydrateOrders implements ShouldBeUnique
 
 
         $stats = [
-            'number_orders' => DB::table('orders')->where('master_shop_id', $masterShop->id)->count(),
+            'number_orders' => DB::connection('aiku_no_sticky')->table('orders')->where('master_shop_id', $masterShop->id)->count(),
         ];
 
         $stats = array_merge(

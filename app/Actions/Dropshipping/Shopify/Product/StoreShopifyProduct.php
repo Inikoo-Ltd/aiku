@@ -136,6 +136,8 @@ class StoreShopifyProduct extends RetinaAction
                 'media'   => $media,
             ];
 
+            Arr::forget($productData, ['customer_price', 'customer_product_name', 'customer_description']);
+
             // Merge any additional product data
             if (!empty($productData)) {
                 $variables['product'] = array_merge($variables['product'], $productData);
@@ -144,7 +146,6 @@ class StoreShopifyProduct extends RetinaAction
 
             // Make the GraphQL request
             $response = $client->request($mutation, $variables);
-
 
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors']);

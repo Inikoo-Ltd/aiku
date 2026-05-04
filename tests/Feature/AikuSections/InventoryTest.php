@@ -15,7 +15,6 @@ use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
 use App\Actions\Inventory\Location\DeleteLocation;
 use App\Actions\Inventory\Location\HydrateLocation;
-use App\Actions\Inventory\Location\Search\ReindexLocationSearch;
 use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Inventory\Location\UpdateLocation;
 use App\Actions\Inventory\LocationOrgStock\AuditLocationOrgStock;
@@ -26,19 +25,15 @@ use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\AddLostAndFoundOrgStock;
 use App\Actions\Inventory\OrgStock\HydrateOrgStock;
 use App\Actions\Inventory\OrgStock\RemoveLostAndFoundStock;
-use App\Actions\Inventory\OrgStock\Search\ReindexOrgStockSearch;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Inventory\OrgStock\DeleteOrgStock;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\Inventory\OrgStockFamily\HydrateOrgStockFamily;
-use App\Actions\Inventory\OrgStockFamily\Search\ReindexOrgStockFamilySearch;
 use App\Actions\Inventory\OrgStockFamily\StoreOrgStockFamily;
 use App\Actions\Inventory\Warehouse\HydrateWarehouse;
-use App\Actions\Inventory\Warehouse\Search\ReindexWarehouseSearch;
 use App\Actions\Inventory\Warehouse\StoreWarehouse;
 use App\Actions\Inventory\Warehouse\UpdateWarehouse;
 use App\Actions\Inventory\WarehouseArea\HydrateWarehouseArea;
-use App\Actions\Inventory\WarehouseArea\Search\ReindexWarehouseAreaSearch;
 use App\Actions\Inventory\WarehouseArea\StoreWarehouseArea;
 use App\Actions\Inventory\WarehouseArea\UpdateWarehouseArea;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
@@ -47,7 +42,6 @@ use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Inventory\OrgStock\LostAndFoundOrgStockStateEnum;
 use App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum;
 use App\Enums\UI\Inventory\LocationTabsEnum;
-use App\Enums\UI\Inventory\OrgStockFamilyTabsEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
@@ -153,14 +147,14 @@ test('create warehouse by command', function () {
 
     expect($organisation->inventoryStats->number_warehouses)->toBe(2)
         ->and($organisation->group->inventoryStats->number_warehouses)->toBe(2)
-        ->and($warehouse->roles()->count())->toBe(8);
+        ->and($warehouse->roles()->count())->toBe(9);
 });
 
 test('seed warehouse permissions', function () {
     setPermissionsTeamId($this->group->id);
     $this->artisan('warehouse:seed-permissions')->assertExitCode(0);
     $warehouse = Warehouse::where('code', 'AA')->first();
-    expect($warehouse->roles()->count())->toBe(8);
+    expect($warehouse->roles()->count())->toBe(9);
 });
 
 
@@ -254,7 +248,6 @@ test('create org stock', function () {
     expect($orgStock)->toBeInstanceOf($orgStock::class)
         ->and($orgStock->code)->toBe($stock->code)
         ->and($orgStock->name)->toBe($stock->name)
-        ->and($orgStock->unit_value)->toBe($stock->unit_value)
         ->and($this->organisation->inventoryStats->number_org_stocks)->toBe(1)
         ->and($this->organisation->inventoryStats->number_current_org_stocks)->toBe(1);
 
@@ -310,7 +303,7 @@ test('create org stock from 2nd stock (within stock family)', function () {
     $stockFamily = $stock->stockFamily;
     expect($stockFamily)->toBeInstanceOf(StockFamily::class);
 
-
+    /** @var OrgStockFamily $orgStockFamily */
     $orgStockFamily = $stockFamily->orgStockFamilies()->where('organisation_id', $this->organisation->id)->first();
     expect($orgStockFamily)->toBeInstanceOf(OrgStockFamily::class);
     $orgStock = StoreOrgStock::make()->action(
@@ -370,7 +363,8 @@ test('audit stock in location', function () {
     $locationOrgStock = AuditLocationOrgStock::run($locationOrgStock, [
         'quantity' => 2
     ]);
-    expect($locationOrgStock->quantity)->toBe(2);
+
+    expect($locationOrgStock->quantity)->toEqual(2);
 });
 
 test('move stock location', function () {
@@ -836,30 +830,6 @@ test("UI Show Org Stock Family", function (OrgStockFamily $orgStockFamily) {
     });
 })->depends('create org stock family');
 
-test("UI Show Org Stock Family (tab org stocks)", function (OrgStockFamily $orgStockFamily) {
-    $warehouse = Warehouse::first();
-    $this->withoutExceptionHandling();
-    $response = get(
-        route("grp.org.warehouses.show.inventory.org_stock_families.show", [
-            $this->organisation->slug,
-            $warehouse->slug,
-            $orgStockFamily->slug,
-            'tab' => OrgStockFamilyTabsEnum::ORG_STOCKS->value
-        ])
-    );
-    $response->assertInertia(function (AssertableInertia $page) use ($orgStockFamily) {
-        $page
-            ->component("Org/Inventory/OrgStockFamily")
-            ->has("title")
-            ->has("breadcrumbs", 3)
-            ->has(
-                "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", $orgStockFamily->name)->etc()
-            )
-            ->has("tabs");
-    });
-})->depends('create org stock family');
-
 test("UI Index Stock Families", function () {
     $this->withoutExceptionHandling();
     $response = get(
@@ -873,8 +843,7 @@ test("UI Index Stock Families", function () {
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", 'Master SKU Families')->etc()
-            )
-            ->has("data");
+            );
     });
 });
 
@@ -1024,47 +993,6 @@ test('delete org stock is blocked when linked to a location', function () {
     expect(function () use ($orgStock) {
         DeleteOrgStock::make()->action($orgStock);
     })->toThrow(HttpException::class);
-});
-
-
-test('warehouse search', function () {
-    $this->artisan('search:warehouses')->assertExitCode(0);
-
-    $warehouse = Warehouse::first();
-    ReindexWarehouseSearch::run($warehouse);
-    expect($warehouse->universalSearch()->count())->toBe(1);
-});
-
-test('warehouse area search', function () {
-    $this->artisan('search:warehouse_areas')->assertExitCode(0);
-
-    $warehouseArea = WarehouseArea::first();
-    ReindexWarehouseAreaSearch::run($warehouseArea);
-    expect($warehouseArea->universalSearch()->count())->toBe(1);
-});
-
-test('location search', function () {
-    $this->artisan('search:locations')->assertExitCode(0);
-
-    $location = Location::first();
-    ReindexLocationSearch::run($location);
-    expect($location->universalSearch()->count())->toBe(1);
-});
-
-test('org stocks search', function () {
-    $this->artisan('search:org_stocks')->assertExitCode(0);
-
-    $orgStock = OrgStock::first();
-    ReindexOrgStockSearch::run($orgStock);
-    expect($orgStock->universalSearch()->count())->toBe(1);
-});
-
-test('org stock families search', function () {
-    $this->artisan('search:org_stock_families')->assertExitCode(0);
-
-    $orgStockFamily = OrgStockFamily::first();
-    ReindexOrgStockFamilySearch::run($orgStockFamily);
-    expect($orgStockFamily->universalSearch()->count())->toBe(1);
 });
 
 test('org stock hydrator', function () {

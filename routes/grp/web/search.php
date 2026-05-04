@@ -6,7 +6,7 @@
  * Copyright (c) 2023, Inikoo LTD
  */
 
-use App\Actions\Helpers\UniversalSearch\UI\IndexUniversalSearch;
+use App\Actions\Search\Search;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', IndexUniversalSearch::class)->name('index');
+Route::get('/', Search::class)->name('index');

@@ -37,6 +37,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Record<string, any>
   screenType: 'mobile' | 'tablet' | 'desktop'
+  indexBlock : number
 }>()
 const emits = defineEmits<{ (e: 'autoSave'): void }>()
 const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
@@ -156,7 +157,7 @@ const onEditorBlur = () => {
 </script>
 
 <template>
-  <div :id="modelValue?.id ? modelValue?.id : 'carousel'" component="carousel" class="relative overflow-hidden">
+  <div :id="modelValue?.id ? modelValue?.id : 'carousel' + indexBlock" component="carousel" class="relative overflow-hidden">
     <div :data-refresh="refreshTrigger" :key="keySwiper" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(modelValue?.container?.properties, props.screenType)

@@ -21,10 +21,8 @@ class UpdateWebBlockToWebsiteAndChild implements ShouldBeUnique
     use AsAction;
     use WithWebEditAuthorisation;
 
-    public function getJobUniqueId($websiteId): string
-    {
-        return $websiteId;
-    }
+    // INI-1362: Moved job to sequential type by using low-priority queue to disable parallel run
+    public $queue = 'low-priority';
 
     public function handle(Website $website, WebBlockType $newWebBlock, string $marginal, array $fieldValue): WebBlockType
     {

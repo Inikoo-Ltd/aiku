@@ -22,6 +22,7 @@ use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebpageTabsEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Helpers\SnapshotResource;
 use App\Http\Resources\History\HistoryResource;
@@ -52,6 +53,11 @@ class ShowWebpage extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, ActionRequest $request): Webpage
     {
+        // HELP-1854 | Limiting people accessing other shops website from a different shop
+        if ($shop != $webpage->shop) {
+            abort(403);
+        }
+
         $this->initialisationFromShop($shop, $request)->withTab(WebpageTabsEnum::values());
         return $webpage;
     }
@@ -107,13 +113,15 @@ class ShowWebpage extends OrgAction
                 ];
             }
 
-            $actions[] = [
-                'type'    => 'button',
-                'style'   => 'edit',
-                'icon'    => ["fal", "fa-directions"],
-                'tooltip' => __('New Redirect'),
-                'route'   => $redirectRoute
-            ];
+            if ($webpage->state == WebpageStateEnum::LIVE) {
+                $actions[] = [
+                    'type'    => 'button',
+                    'style'   => 'edit',
+                    'icon'    => ["fal", "fa-terminal"],
+                    'tooltip' => __('New Redirect'),
+                    'route'   => $redirectRoute
+                ];
+            }
         }
 
 
@@ -276,6 +284,9 @@ class ShowWebpage extends OrgAction
 
         $canonicalPath = parse_url($webpage->canonical_url ?? '', PHP_URL_PATH);
 
+        $tabsNavigation = WebpageTabsEnum::navigation();
+        data_set($tabsNavigation, 'redirects.number', $webpage->stats->number_redirects);
+
         return Inertia::render(
             'Org/Web/Webpage',
             [
@@ -298,15 +309,14 @@ class ShowWebpage extends OrgAction
                     'actions'       => $actions,
                     'subNavigation' => $subNavigation,
                 ],
-
                 'tabs'                  => [
                     'current'    => $this->tab,
-                    'navigation' => WebpageTabsEnum::navigation()
+                    'navigation' => $tabsNavigation,
                 ],
                 'root_active'           => $subNavigationRoot,
                 'webpage_url'           => $webpage->getUrl(),
                 'webpage_canonical_url' => $webpage->canonical_url,
-
+                'redirected_to'         => $webpage->redirectedTo?->redirectTo?->only(['id', 'slug', 'code', 'url']),
                 WebpageTabsEnum::SHOWCASE->value => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()
                     : Inertia::lazy(fn () => WebpageResource::make($webpage)->getArray()),
@@ -361,24 +371,24 @@ class ShowWebpage extends OrgAction
                 prefix: 'snapshots'
             )
         )
-            ->table(
-                IndexSnapshots::make()->tableStructure(
-                    parent: $webpage,
-                    withLabel: true,
-                    prefix: WebpageTabsEnum::LABELED_SNAPSHOTS->value
-                )
+        ->table(
+            IndexSnapshots::make()->tableStructure(
+                parent: $webpage,
+                withLabel: true,
+                prefix: WebpageTabsEnum::LABELED_SNAPSHOTS->value
             )
-            ->table(
-                IndexRedirects::make()->tableStructure(
-                    parent: $webpage,
-                    prefix: WebpageTabsEnum::REDIRECTS->value
-                )
+        )
+        ->table(
+            IndexRedirects::make()->tableStructure(
+                parent: $webpage,
+                prefix: WebpageTabsEnum::REDIRECTS->value
             )
-            ->table(
-                IndexHistory::make()->tableStructure(
-                    prefix: WebpageTabsEnum::CHANGELOG->value
-                )
-            );
+        )
+        ->table(
+            IndexHistory::make()->tableStructure(
+                prefix: WebpageTabsEnum::CHANGELOG->value
+            )
+        );
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array

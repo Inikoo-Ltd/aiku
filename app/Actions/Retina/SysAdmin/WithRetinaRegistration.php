@@ -10,6 +10,7 @@ namespace App\Actions\Retina\SysAdmin;
 
 use App\Actions\CRM\Customer\RegisterCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\RegisterFulfilmentCustomer;
+use App\Actions\Web\WebsiteConversionEvent\ProcessRegistrationConversionEvent;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\CRM\Poll;
@@ -30,16 +31,22 @@ trait WithRetinaRegistration
 
     public function handle(array $modelData): void
     {
+        $sessionId = Arr::pull($modelData, 'session_id');
+
         if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
             RegisterFulfilmentCustomer::run(
                 $this->shop->fulfilment,
                 $modelData
             );
         } else {
-            RegisterCustomer::run(
+            $customer = RegisterCustomer::run(
                 $this->shop,
                 $modelData
             );
+
+            if ($sessionId) {
+                ProcessRegistrationConversionEvent::dispatch($customer, $sessionId);
+            }
         }
 
         Cookie::queue('aiku_tsd', '', 60);
@@ -120,6 +127,7 @@ trait WithRetinaRegistration
     {
         $this->sanitizeInputs();
         $this->set('traffic_sources', $request->cookie('aiku_tsd'));
+        $this->set('session_id', $request->session()->getId());
 
         if ($request->has('tax_number')) {
             $taxNumberValue = (string)Arr::get($request->input('tax_number'), 'value');
@@ -150,6 +158,7 @@ trait WithRetinaRegistration
 
         $rules = [
             'traffic_sources' => ['sometimes'],
+            'session_id'      => ['sometimes', 'nullable', 'string'],
             'contact_name'    => ['required', 'string', 'max:255'],
             'company_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
             'contact_website' => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -166,12 +175,12 @@ trait WithRetinaRegistration
                     ]
                 ),
             ],
-            'phone'           => ['required', 'max:255'],
+            'phone'           => [Arr::get($this->shop->settings, 'registration.require_phone_number', false) ? 'required' : 'nullable', 'max:255'],
             'tiktok_code'     => ['nullable', 'string', 'max:255'],
             'contact_address' => ['required', new ValidAddress()],
             'is_opt_in'       => ['required', 'boolean'],
             'poll_replies'    => ['sometimes', 'array'],
-            'tax_number'               => ['sometimes', 'nullable', 'array'],
+            'tax_number' => [ Arr::get($this->shop->settings, 'registration.tax_number_is_required', false) ? 'required' : 'nullable',  'array'],
             'password'        =>
                 [
                     'required',

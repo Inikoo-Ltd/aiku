@@ -11,8 +11,6 @@ namespace App\Models\Fulfilment;
 use App\Enums\Fulfilment\StoredItemAudit\StoredItemAuditStateEnum;
 use App\Models\Inventory\Warehouse;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasRetinaSearch;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InFulfilmentCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -40,12 +38,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $date
- * @property string $net_amount
- * @property string|null $grp_net_amount
- * @property string|null $org_net_amount
+ * @property numeric $net_amount
+ * @property numeric|null $grp_net_amount
+ * @property numeric|null $org_net_amount
  * @property int|null $tax_category_id
- * @property string|null $tax_amount
- * @property string|null $total_amount
+ * @property numeric|null $tax_amount
+ * @property numeric|null $total_amount
  * @property int $number_audited_pallets
  * @property int $number_audited_stored_items
  * @property int $number_audited_stored_items_with_additions Number of stored items with stock additions (found stock)
@@ -57,13 +55,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $scope_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\StoredItemAuditDelta> $deltas
- * @property-read \App\Models\Fulfilment\Fulfilment $fulfilment
- * @property-read \App\Models\Fulfilment\FulfilmentCustomer $fulfilmentCustomer
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\Fulfilment\Fulfilment|null $fulfilment
+ * @property-read \App\Models\Fulfilment\FulfilmentCustomer|null $fulfilmentCustomer
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Helpers\RetinaSearch|null $retinaSearch
  * @property-read Model|\Eloquent|null $scope
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Warehouse|null $warehouse
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StoredItemAudit newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StoredItemAudit newQuery()
@@ -73,8 +69,6 @@ use Spatie\Sluggable\SlugOptions;
 class StoredItemAudit extends Model implements Auditable
 {
     use HasSlug;
-    use HasUniversalSearch;
-    use HasRetinaSearch;
     use InFulfilmentCustomer;
     use HasHistory;
 

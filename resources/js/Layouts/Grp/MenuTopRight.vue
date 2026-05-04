@@ -1,25 +1,20 @@
 <script setup lang='ts'>
 import { trans } from 'laravel-vue-i18n'
-import { ref, onMounted, onUnmounted, inject, defineAsyncComponent } from 'vue'
+import { ref, onMounted, onUnmounted, inject, computed } from 'vue'
 import SearchBar from "@/Components/SearchBar.vue"
 import Image from '@/Components/Image.vue'
 import Popover from '@/Components/Popover.vue'
 import NotificationList from '@/Components/NotificationList/NotificationList.vue'
 import Profile from "@/Pages/Grp/Profile.vue"
+import WaitingWarehouseList from "@/Layouts/Grp/WaitingWarehouseList.vue"
+import WaitingCrmList from "@/Layouts/Grp/WaitingCrmList.vue"
 
-import Button from "@/Components/Elements/Buttons/Button.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCircle } from '@fas'
-import { faSparkles } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import AskBot from '@/Components/AskBot.vue'
-import { faLampDesk } from '@fal'
-library.add(faCircle, faLampDesk, faSparkles)
-
-/* const Profile = defineAsyncComponent(() => import("@/Pages/Grp/Profile.vue")) */
-
+library.add(faCircle)
 
 const props = defineProps<{
     urlPrefix: string
@@ -27,14 +22,13 @@ const props = defineProps<{
 
 const layout = inject('layout', layoutStructure)
 const isAskBotEnabled =  import.meta.env.VITE_ASK_BOT_UI;
-// const layoutStore = useLayoutStore()
 const showSearchDialog = ref(false)
 const showAskBot = ref(false)
 
 onMounted(() => {
     if (typeof window !== 'undefined') {
         document.addEventListener('keydown', (event) => {
-            
+
             if( ( isUserMac ? event.metaKey : event.ctrlKey ) && event.key === 'k') {
                 event.preventDefault()
                 showSearchDialog.value = !showSearchDialog.value
@@ -51,8 +45,7 @@ onUnmounted(() => {
     document.removeEventListener('keydown', () => false)
 })
 
-const isUserMac = navigator.platform.includes('Mac')  // To check the user's Operating System
-
+const isUserMac = navigator.platform.includes('Mac')
 </script>
 
 <template>
@@ -71,9 +64,9 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
                 </div>
                 <SearchBar v-model="showSearchDialog" />
             </button>
-            
+
             <!-- Search: AI -->
-            <button v-if="true" @click="showAskBot = !showAskBot" id="ask-bot"
+            <!-- <button v-if="true" @click="showAskBot = !showAskBot" id="ask-bot"
                 class="bg-gradient-to-tr from-pink-200 xvia-pink-200 to-pink-100 border-none ring-1 ring-fuchsia-400 h-7 w-fit flex items-center justify-center gap-x-3 rounded-md px-3">
                 <div class="flex gap-x-1 items-center ">
                     <FontAwesomeIcon icon="fas fa-sparkles" class="text-pink-500" fixed-width aria-hidden="true" />
@@ -81,8 +74,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
                         <span class="">AI</span>
                     </h1>
                 </div>
-                
-                <!-- <FontAwesomeIcon icon='fal fa-lamp-desk' size="sm" class='ml-1 text-gray-600' fixed-width aria-hidden='true' /> -->
+
                 <div class="hidden whitespace-nowrap md:flex items-center justify-end text-gray-500/80 tracking-tight space-x-1">
                     <span v-if="isUserMac" class="ring-1 ring-fuchsia-400 bg-fuchsia-50 text-fuchsia-500 px-2 leading-none text-xl rounded">⌘</span>
                     <span v-else class="ring-1 ring-fuchsia-400 bg-fuchsia-50 text-fuchsia-500 px-2 py-0.5 text-xs rounded">Ctrl</span>
@@ -90,12 +82,46 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
                     <span class="ring-1 ring-fuchsia-400 bg-fuchsia-50 text-fuchsia-500 px-1.5 py-0.5 text-xs rounded">K</span>
                 </div>
                 <AskBot v-model="showAskBot" />
-            </button>
+            </button> -->
 
             <div class="pl-2 sm:pl-4 flex items-center gap-x-2">
-                <div @click="() => layout.stackedComponents.push({ component: Profile, data: { currentTab: 'todo' }})">
-                    <Button label="To do" size="xs" :style="'tertiary'" />
+
+                <!-- Badge: Warehouse Waiting Items -->
+                <div v-if="layout?.dispatching_waiting_count > 0" class="relative flex items-center">
+                    <Popover width="w-80" position="right-0">
+                        <template #button="{ open }">
+                            <div class="relative bg-amber-300 text-amber-700 rounded px-2.5 opacity-70 hover:opacity-100 cursor-pointer font-semibold text-sm tabular-nums">
+                                <Transition name="spin-to-right"><span :key="layout?.dispatching_waiting_count">{{ layout?.dispatching_waiting_count > 9 ? '9+' : layout?.dispatching_waiting_count }}</span></Transition>
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
+                            </div>
+                        </template>
+                        <template #content="{ open, close }">
+                            <WaitingWarehouseList :open="open" :close="close" />
+                        </template>
+                    </Popover>
                 </div>
+
+                <!-- Badge: CRM Waiting Items -->
+                <div v-if="layout?.crm_waiting_count > 0" class="relative flex items-center">
+                    <Popover width="w-80" position="right-0">
+                        <template #button="{ open }">
+                            <div class="relative bg-purple-300 text-purple-700 rounded px-2.5 opacity-70 hover:opacity-100 cursor-pointer font-semibold text-sm tabular-nums">
+                                <Transition name="spin-to-right"><span :key="layout?.crm_waiting_count">{{ layout?.crm_waiting_count > 9 ? '9+' : layout?.crm_waiting_count }}</span></Transition>
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
+                            </div>
+                        </template>
+                        <template #content="{ open, close }">
+                            <WaitingCrmList :open="open" :close="close" />
+                        </template>
+                    </Popover>
+                </div>
+
+                <!-- Button: To do -->
+                <!-- <div @click="() => layout.stackedComponents.push({ component: Profile, data: { currentTab: 'todo' }})">
+                    <Button label="To do" size="xs" :style="'tertiary'" />
+                </div> -->
 
                 <!-- Button: Notifications -->
                 <div class="relative px-2 rounded-full flex items-center">

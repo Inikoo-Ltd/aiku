@@ -21,6 +21,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import RenderProductDropshiping from "./RenderProductDropshiping.vue";
+import Image from "@/Components/Image.vue"
 
 library.add(faFileDownload)
 
@@ -229,7 +230,7 @@ const handleSearch = () => {
     page.value = 1;
     isFetchingOutOfStock.value = false;
     updateQueryParams();
-    debFetchProducts(false, true);
+    debFetchProducts(false, false);
 };
 
 
@@ -237,14 +238,14 @@ watch([q, orderBy], () => {
     page.value = 1;
     isFetchingOutOfStock.value = false;
     updateQueryParams();
-    debFetchProducts(false, true);
+    debFetchProducts(false, false);
 }, { deep: true });
 
 watch(filter, () => {
     page.value = 1;
     isFetchingOutOfStock.value = false;
     /* updateQueryParams(); */
-    debFetchProducts(false, true);
+    debFetchProducts(false, false);
 }, { deep: true });
 
 
@@ -265,6 +266,9 @@ const sortOptions = computed(() => {
         baseOptions.splice(1, 0, { label: "Price", value: "price" });
         baseOptions.splice(1, 0, { label: "Rrp", value: "rrp" });
     }
+     if (props.fieldValue?.sub_type == 'family') {
+        baseOptions.splice(1, 0, { label: trans("Recommended"), value: "recommended" })
+    }
     return baseOptions;
 });
 
@@ -274,6 +278,7 @@ const isAscending = ref(true);
 
 const getArrow = (key: typeof sortKey.value) => {
     if (sortKey.value !== key) return "";
+    if(sortKey.value == 'recommended') return ""
     return isAscending.value ? "↑" : "↓";
 };
 
@@ -326,8 +331,8 @@ const toggleSort = (key: string) => {
         sortKey.value = key;
         isAscending.value = true;
     }
-
-    orderBy.value = isAscending.value ? key : `-${key}`;
+    if(props.fieldValue?.sub_type == 'family' && key == 'recommended') orderBy.value = key
+    else orderBy.value = isAscending.value ? key : `-${key}`;
     updateQueryParams();
     handleSearch();
 };
@@ -409,7 +414,13 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
             <!-- Sidebar Filters for Desktop -->
             <transition v-if="!props.fieldValue?.settings?.is_hide_filter" name="slide-fade">
                 <aside v-show="!isMobile && showAside" class="w-68 p-4 transition-all duration-300 ease-in-out">
-                    <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" />
+                    <FilterProducts 
+                        v-model="filter" 
+                        :productCategory="props.fieldValue.model_id" 
+                        :search="q" 
+                        @handleSearch="handleSearch" 
+                        @update:search="(e)=> q = e"
+                    />
                 </aside>
             </transition>
 
@@ -421,17 +432,32 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                     <div class="flex items-center w-full md:w-1/3 gap-2">
 
                         <template v-if="!props.fieldValue?.settings?.is_hide_filter">
-                            <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
+                            <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-2 !w-auto"
                                 aria-label="Open Filters"
                                 :injectStyle="getStyles(fieldValue?.filter?.button?.properties, screenType)" />
                             <!-- Sidebar Toggle for Desktop -->
                             <div v-else class="">
-                                <Button :icon="faFilter" @click="showAside = !showAside" class="!p-3 !w-auto"
+                                <Button :icon="faFilter" @click="showAside = !showAside" class="!p-2 !w-auto"
                                     aria-label="Open Filters"
                                     :injectStyle="getStyles(fieldValue?.filter?.button?.properties, screenType)" />
                             </div>
                         </template>
-                        <div class="w-full">
+
+                          <div
+                            class="flex items-center gap-3 p-4 py-2 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
+                            <span class="font-medium">
+                                {{ trans("Showing") }}
+                                <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                                    {{ products.length }}
+                                </span>
+                                {{ trans("of") }}
+                                <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                                    {{ totalProducts }}
+                                </span>
+                                {{ products.length === 1 ? trans("product") : trans("products") }}
+                            </span>
+                        </div>
+                        <!-- div class="w-full">
                             <PureInput v-model="q" @keyup.enter="handleSearch" type="text"
                                 :placeholder="trans('Search products') + '...'" :clear="true"
                                 :isLoading="loadingInitial" :prefix="{ icon: faSearch, label: '' }"
@@ -443,7 +469,7 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                                     </div>
                                 </template>
                             </PureInput>
-                        </div>
+                        </div> -->
 
                     </div>
 
@@ -451,9 +477,9 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                     <div class="flex items-center space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
 
                         <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
-                            class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1 sort-button"
+                            class="pb-1 text-sm font-medium whitespace-nowrap flex items-center gap-1 sort-button"
                             :class="[
-                                'pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1',
+                                'pb-1 text-sm font-medium whitespace-nowrap flex items-center gap-1',
                                 sortKey === option.value
                                     ? `border-b-2 text-[${layout?.app?.theme?.[0] || '#1F2937'}] border-[${layout?.app?.theme?.[0] || '#1F2937'}]`
                                     : `text-gray-600 hover:text-[${layout?.app?.theme?.[0] || '#1F2937'}]`
@@ -463,7 +489,7 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                     </div>
                 </div>
 
-                <div class="px-4 pb-2 flex justify-between items-center text-sm text-gray-600">
+                <!-- <div class="px-4 pb-2 flex justify-between items-center text-sm text-gray-600">
                     <div
                         class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
                         <span class="text-gray-700 font-medium">
@@ -483,7 +509,7 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                                 parameters: props.fieldValue.model_type == 'ProductCategory' ? { productCategory : categoryId } : { collection : categoryId }
                             }" />
                     </div>
-                </div>
+                </div> -->
 
                 <!-- Product Grid -->
                 <div :class="responsiveGridClass" class="grid gap-6 p-4"
@@ -563,7 +589,12 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
             <Drawer v-model:visible="showFilters" position="left" :modal="true" :dismissable="true"
                 :closeOnEscape="true" :showCloseIcon="false" class="w-80 transition-transform duration-300 ease-in-out">
                 <div class="p-4">
-                    <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" />
+                    <FilterProducts 
+                        v-model="filter" 
+                        :productCategory="props.fieldValue.model_id" 
+                        :search="q" 
+                        @handleSearch="handleSearch" 
+                        @update:search="(e)=> q = e" />
                 </div>
             </Drawer>
         </div>
@@ -592,7 +623,7 @@ aside {
 .sort-button{
    color: v-bind('search_sort_class?.color || null') !important;
    font-family: v-bind('search_sort_class?.fontFamily || null') !important;
-   font-size: v-bind('search_sort_class?.fontSize || null') !important;
+   font-size: v-bind('search_sort_class?.fontSize || "14px"') !important;
    font-style: v-bind('search_sort_class?.fontStyle || null') !important;
 }
 

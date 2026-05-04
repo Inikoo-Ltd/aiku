@@ -46,6 +46,7 @@ const props = defineProps<{
 		product: {
 			data: ProductResource
 		}
+        is_external: boolean
 		stats: {
 			amount: number | null
 			amount_ly: number | null
@@ -160,13 +161,14 @@ const getTooltips = () => {
 				:trade_units="data.product.data.picking_factor"
 				xrouteFunction="tradeUnitRoute"
 				keyPicking="picking_factor"
+                :hideUnit="data.is_external"
 			>
 				<template #col_code="{ data }">
 					{{ data.org_stock_code }}
 				</template>
 
 				<template #col_name="{ data }">
-					{{ data.org_stock_name }}
+					<p>{{ data.org_stock_name }} <span class="text-orange-500">{{ trans('Units/SKU')}}:{{ data.units_per_sku }}</span></p>
 				</template>
 			</LabelSKU>
 
@@ -178,7 +180,7 @@ const getTooltips = () => {
 			</span>
 
 			<span
-                v-if="data.product.data.state!='discontinued'"
+                v-if="data.product.data.state!='discontinued' && !data.is_external  "
 				v-tooltip="getTooltips()"
 				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer mx-2"
 				v-on:click="editIsForSale"

@@ -21,9 +21,22 @@ trait WithUpdateWebImages
 {
     public function updateWebImages(Product|ProductCategory|Collection|MasterAsset|MasterProductCategory|MasterCollection $model): Product|ProductCategory|Collection|MasterAsset|MasterProductCategory|MasterCollection
     {
+        if ($model instanceof MasterProductCategory || $model instanceof ProductCategory) {
+            $description = $this->getDescriptionImageData($model);
+            $extraDescription = $this->getExtraDescriptionImageData($model);
+        } else {
+            $description = [];
+            $extraDescription = [];
+        }
+
+
         $webImagesData = [
-            'main' => $this->getMainWebImageData($model),
-            'all'  => $this->getAllWebImageData($model)
+            'v'                => '1.1',
+            'main'             => $this->getMainWebImageData($model),
+            'secondary'        => $this->getSecondaryWebImageData($model),
+            'description'      => $description,
+            'extraDescription' => $extraDescription,
+            'all'              => $this->getAllWebImageData($model)
         ];
 
 
@@ -51,6 +64,79 @@ trait WithUpdateWebImages
         $media = null;
         if ($model->image_id) {
             $media = Media::find($model->image_id);
+        }
+
+        if (!$media) {
+            return [];
+        }
+
+        $imageOriginal  = $media->getImage();
+        $imageGallery   = $media->getImage()->resize(0, 600);
+        $imageThumbnail = $media->getImage()->resize(0, 48);
+
+        return [
+            'original'  => GetPictureSources::run($imageOriginal),
+            'gallery'   => GetPictureSources::run($imageGallery),
+            'thumbnail' => GetPictureSources::run($imageThumbnail),
+        ];
+    }
+
+    public function getSecondaryWebImageData(Product|ProductCategory|Collection|MasterAsset|MasterProductCategory|MasterCollection $model): array
+    {
+        $media = null;
+        if ($model->front_image_id) {
+            $media = Media::find($model->front_image_id);
+        }
+
+        if (!$media) {
+            return [];
+        }
+
+        $imageOriginal  = $media->getImage();
+        $imageGallery   = $media->getImage()->resize(0, 600);
+        $imageThumbnail = $media->getImage()->resize(0, 48);
+
+        return [
+            'original'  => GetPictureSources::run($imageOriginal),
+            'gallery'   => GetPictureSources::run($imageGallery),
+            'thumbnail' => GetPictureSources::run($imageThumbnail),
+        ];
+    }
+
+    public function getDescriptionImageData(ProductCategory|MasterProductCategory $model): array
+    {
+        $media = null;
+        $column = 'desc_art';
+
+        $images = [];
+
+        for ($i = 1; $i <= 5; $i++) {
+            if ($model->{$column.$i}) {
+                $media = Media::find($model->{$column.$i});
+            }
+
+            if (!$media) {
+                return [];
+            }
+
+            $imageOriginal  = $media->getImage();
+            $imageGallery   = $media->getImage()->resize(0, 600);
+            $imageThumbnail = $media->getImage()->resize(0, 48);
+
+            data_set($images, "{$column}{$i}", [
+                'original'  => GetPictureSources::run($imageOriginal),
+                'gallery'   => GetPictureSources::run($imageGallery),
+                'thumbnail' => GetPictureSources::run($imageThumbnail),
+            ]);
+        }
+        return $images;
+    }
+
+    public function getExtraDescriptionImageData(ProductCategory|MasterProductCategory $model): array
+    {
+        $media = null;
+        if ($model->extra_desc_art1) {
+            $media = Media::find($model->extra_desc_art1);
         }
 
         if (!$media) {

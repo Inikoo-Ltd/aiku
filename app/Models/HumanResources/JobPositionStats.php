@@ -32,10 +32,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_roles
  * @property float $number_employees_work_time
  * @property float $number_guests_work_time
- * @property string|null $share_work_time This is the share of the total work time of the employees in this job position
- * @property string|null $share_work_time_including_guests This is the share of the total work time of the employees and guests in this job position
+ * @property numeric|null $share_work_time This is the share of the total work time of the employees in this job position
+ * @property numeric|null $share_work_time_including_guests This is the share of the total work time of the employees and guests in this job position
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_employees_type_internship
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobPositionStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobPositionStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobPositionStats query()

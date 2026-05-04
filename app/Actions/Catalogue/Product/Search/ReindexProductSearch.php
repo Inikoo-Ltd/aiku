@@ -8,48 +8,21 @@
 
 namespace App\Actions\Catalogue\Product\Search;
 
-use App\Actions\HydrateModel;
+use App\Actions\Traits\WithScoutReindex;
 use App\Models\Catalogue\Product;
-use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexProductSearch extends HydrateModel
+class ReindexProductSearch
 {
-    public string $commandSignature = 'search:products {organisations?*} {--s|slugs=}';
+    use AsAction;
+    use WithScoutReindex;
 
+    public string $commandSignature = 'reindex_search:products';
 
-    public function handle(Product $product): void
+    public function handle(bool $reindex = true, bool $reset = false): void
     {
-        ProductRecordSearch::run($product);
+        $this->runScoutReindex(Product::class, $reindex, $reset);
     }
 
-    protected function getModel(string $slug): Product
-    {
-        return Product::withTrashed()->where('slug', $slug)->first();
-    }
 
-    protected function getAllModels(): Collection
-    {
-        return Product::withTrashed()->get();
-    }
-
-    protected function loopAll(Command $command): void
-    {
-        $command->info("Reindex Products");
-        $count = Product::withTrashed()->count();
-
-        $bar = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
-        $bar->start();
-
-        Product::withTrashed()->chunk(1000, function (Collection $models) use ($bar) {
-            foreach ($models as $model) {
-                $this->handle($model);
-                $bar->advance();
-            }
-        });
-
-        $bar->finish();
-        $command->info("");
-    }
 }

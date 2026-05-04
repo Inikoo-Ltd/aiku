@@ -6,7 +6,7 @@
 */
 
 export interface OfferResource {
-    type: 'Amount AND Order Number' | 'Category Ordered' | 'Category Quantity Ordered'
+    type: 'Amount AND Order Number' | 'Category Ordered' | 'Category Quantity Ordered' | 'GR Amnesty' | 'Category Quantity Ordered Order Interval'
     name: string
     label?: string
     state: string
@@ -23,6 +23,11 @@ export interface OfferResource {
     allowances: {}[]
     data_allowance_signature: {
         percentage_off: string
+        product_category?: {
+            name: string
+            slug: string
+            type: 'department' | 'sub_department' | 'family'
+        } | null
     }
     max_percentage_discount?: number
 

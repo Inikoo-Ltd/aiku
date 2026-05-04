@@ -8,7 +8,6 @@
 
 namespace App\Actions\Dispatching\Shipper;
 
-use App\Actions\Dispatching\Shipper\Hydrators\ShipperHydrateUniversalSearch;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\Shipper;
 use App\Models\Inventory\Warehouse;
@@ -37,8 +36,6 @@ class StoreShipper extends OrgAction
             return $shipper;
         });
 
-        ShipperHydrateUniversalSearch::dispatch($shipper);
-
         return $shipper;
     }
 
@@ -56,8 +53,8 @@ class StoreShipper extends OrgAction
         $rules = [
             'code'         => [
                 'required',
-                'between:2,16',
-                'alpha_dash',
+                'between:2,32',
+                $this->strict ? 'alpha_dash' : 'string',
                 new IUnique(
                     table: 'shippers',
                     extraConditions: [

@@ -21,12 +21,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_orders
  * @property int $number_invoices
  * @property int $number_delivery_notes
- * @property string $amount
- * @property string $org_amount
- * @property string $grp_amount
+ * @property numeric $amount
+ * @property numeric $org_amount
+ * @property numeric $grp_amount
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Billables\Charge $charge
+ * @property-read \App\Models\Billables\Charge|null $charge
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChargeStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChargeStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChargeStats query()

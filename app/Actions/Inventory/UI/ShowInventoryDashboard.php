@@ -10,6 +10,7 @@ namespace App\Actions\Inventory\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
+use App\Actions\Traits\Dashboards\WithLatestStockHistory;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\SysAdmin\Organisation;
@@ -22,6 +23,7 @@ class ShowInventoryDashboard extends OrgAction
 {
     use HasInventoryStats;
     use WithInventoryAuthorisation;
+    use WithLatestStockHistory;
 
 
     public function asController(Organisation $organisation, ActionRequest $request): ActionRequest
@@ -43,7 +45,7 @@ class ShowInventoryDashboard extends OrgAction
                 'title'        => __('Inventory'),
                 'pageHead'     => [
                     'title'     => __('Inventory'),
-                    'model'     => __('warehouse'),
+                    'model'     => __('Warehouse'),
                     'icon'      => [
                         'icon' => 'fal fa-pallet-alt'
                     ],
@@ -55,7 +57,7 @@ class ShowInventoryDashboard extends OrgAction
                 'flatTreeMaps' => [
                     [
                         [
-                            'name'  => __('SKUs families'),
+                            'name'  => __('SKUs Families'),
                             'icon'  => ['fal', 'fa-boxes-alt'],
                             'route' => [
                                 'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.index',
@@ -71,7 +73,7 @@ class ShowInventoryDashboard extends OrgAction
                             'icon'        => ['fal', 'fa-box'],
                             'description' => __('current'),
                             'route'       => [
-                                'name'       => 'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.index',
+                                'name'       => 'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.index',
                                 'parameters' => $routeParameters
                             ],
                             'index'       => [
@@ -81,8 +83,23 @@ class ShowInventoryDashboard extends OrgAction
                         ]
                     ]
                 ],
+                'statsBox' => [
+                    [
+                        'is_negative' => true,
+                        'label' => __('SKU Without Product'),
+                        'route' => [
+                            'name'       => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.current',
+                            'parameters' => $routeParameters
+                        ],
+                        'icon'  => 'fal fa-box',
+                        'backgroundColor' => '#ff000011',
+                        'color'           => '#df1c1cff',
+                        'value' => '0', // No stat for this just yet
+                    ],
+                ],
                 // 'dashboardStats' => $this->getDashboardStats(),
-                'dashboard'    => $this->getDashboard(),
+                'dashboard'          => $this->getDashboard(),
+                'stockHistoryToday'  => $this->getOrganisationStockHistoryData($this->organisation, $routeParameters),
 
             ]
         );

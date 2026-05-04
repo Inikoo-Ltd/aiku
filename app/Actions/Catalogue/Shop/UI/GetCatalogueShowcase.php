@@ -22,12 +22,14 @@ class GetCatalogueShowcase
 
         $stats = [
             $this->buildProductsStat($shop, $orgSlug, $shopSlug),
+            $this->buildBundlesStat($shop, $orgSlug, $shopSlug)
         ];
 
         if ($shop->engine == ShopEngineEnum::AIKU) {
             $stats = array_merge(
                 [
                     $this->buildDepartmentsStat($shop, $orgSlug, $shopSlug),
+                    $this->buildSubDepartmentsStat($shop, $orgSlug, $shopSlug),
                     $this->buildFamiliesStat($shop, $orgSlug, $shopSlug),
                 ],
                 $stats,
@@ -35,6 +37,7 @@ class GetCatalogueShowcase
                     $this->buildCollectionsStat($shop, $orgSlug, $shopSlug),
                     $this->buildStrayFamiliesStat($orgSlug, $shopSlug),
                     $this->buildOrphanProductsStat($shop, $orgSlug, $shopSlug),
+                    $this->buildRRPViolationStat($shop, $orgSlug, $shopSlug)
                 ]
             );
         }
@@ -81,7 +84,7 @@ class GetCatalogueShowcase
             ] : null,
             'metas' => [
                 [
-                    'icon'    => ['tooltip' => 'active', 'icon' => 'fas fa-check-circle', 'class' => 'text-green-500'],
+                    'icon'    => ['icon' => 'fas fa-check-circle', 'class' => 'text-green-500'],
                     'count'   => $shop->stats->number_products_state_active,
                     'tooltip' => __('Active'),
                     'route'   => [
@@ -90,12 +93,12 @@ class GetCatalogueShowcase
                     ],
                 ],
                 [
-                    'icon'    => ['tooltip' => 'discontinuing', 'icon' => 'fas fa-times-circle', 'class' => 'text-amber-500'],
+                    'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-amber-500'],
                     'count'   => $shop->stats->number_products_state_discontinuing,
                     'tooltip' => __('Discontinuing'),
                 ],
                 [
-                    'icon'    => ['tooltip' => 'discontinued', 'icon' => 'fas fa-times-circle', 'class' => 'text-red-500'],
+                    'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-red-500'],
                     'count'   => $shop->stats->number_products_state_discontinued,
                     'tooltip' => __('Discontinued'),
                     'route'   => [
@@ -112,6 +115,49 @@ class GetCatalogueShowcase
                         'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
                     ],
                 ],
+                [
+                    'icon'    => ['icon' => 'fas fa-hat-cowboy', 'class' => 'text-red-500 animate-pulse'],
+                    'count'   => 0,
+                    'tooltip' => __('Products with Independent Trade Units'),
+                    'route'   => [
+                        'name'      => 'grp.org.shops.show.catalogue.products.independent_products.all.index',
+                        'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+                    ]
+                ]
+            ],
+        ];
+    }
+
+    private function buildBundlesStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        return [
+            'label' => __('Current Bundles'),
+            'route' => [
+                'name'       => 'grp.org.shops.show.catalogue.products.current_products.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'  => 'fal fa-layer-group',
+            "color" => "#4f46e5",
+            'value'     => $shop->stats->number_bundles,
+            'metas' => [
+                [
+                    "icon"    => [
+                        "tooltip" => "active",
+                        "icon"    => "fas fa-check-circle",
+                        "class"   => "text-green-500"
+                    ],
+                    "count"   => $shop->stats->number_bundles_state_active,
+                    "tooltip" => "Active"
+                ],
+                [
+                    "icon"    => [
+                        "tooltip" => "discontinuing",
+                        "icon"    => "fas fa-times-circle",
+                        "class"   => "text-amber-500"
+                    ],
+                    "count"   => $shop->stats->number_bundles_state_discontinuing,
+                    "tooltip" => "Discontinuing"
+                ],
             ],
         ];
     }
@@ -127,15 +173,6 @@ class GetCatalogueShowcase
             'icon'      => 'fal fa-folder-tree',
             'color'     => '#a3e635',
             'value'     => $shop->stats->number_current_departments,
-            'metaRight' => [
-                'tooltip' => __('Sub Departments'),
-                'icon'    => ['icon' => 'fal fa-folder-download', 'class' => ''],
-                'route'   => [
-                    'name'       => 'grp.org.shops.show.catalogue.sub_departments.index',
-                    'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
-                ],
-                'count' => $shop->stats->number_current_sub_departments,
-            ],
             'metas' => [
                 [
                     'tooltip' => __('Active departments'),
@@ -170,6 +207,58 @@ class GetCatalogueShowcase
                     'count'   => $shop->stats->number_departments_state_in_process,
                     'route'   => [
                         'name'       => 'grp.org.shops.show.catalogue.departments.index',
+                        'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug, 'index_elements[state]' => 'in_process'],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    private function buildSubDepartmentsStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        return [
+            'label' => __('Sub Departments'),
+            'route' => [
+                'name'       => 'grp.org.shops.show.catalogue.sub_departments.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'      => 'fal fa-folder-download',
+            'color'     => '#facc15',
+            'value'     => $shop->stats->number_current_sub_departments,
+            'metas' => [
+                [
+                    'tooltip' => __('Active sub-departments'),
+                    'icon'    => ['tooltip' => 'active', 'icon' => 'fas fa-check-circle', 'class' => 'text-green-500'],
+                    'count'   => $shop->stats->number_sub_departments_state_active,
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.catalogue.sub_departments.index',
+                        'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug, 'index_elements[state]' => 'active'],
+                    ],
+                ],
+                [
+                    'tooltip' => __('Discontinuing sub-departments'),
+                    'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-amber-500'],
+                    'count'   => $shop->stats->number_sub_departments_state_discontinuing,
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.catalogue.sub_departments.index',
+                        'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug, 'index_elements[state]' => 'discontinuing'],
+                    ],
+                ],
+                [
+                    'tooltip' => __('Discontinued sub-departments'),
+                    'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-red-500'],
+                    'count'   => $shop->stats->number_sub_departments_state_discontinued,
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.catalogue.sub_departments.index',
+                        'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug, 'index_elements[state]' => 'discontinued'],
+                    ],
+                ],
+                [
+                    'tooltip' => __('In process'),
+                    'icon'    => ['icon' => 'fal fa-seedling', 'class' => 'text-green-500 animate-pulse'],
+                    'count'   => $shop->stats->number_sub_departments_state_in_process,
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.catalogue.sub_departments.index',
                         'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug, 'index_elements[state]' => 'in_process'],
                     ],
                 ],
@@ -317,6 +406,21 @@ class GetCatalogueShowcase
                 ],
                 'count' => $shop->stats->number_current_sub_departments,
             ],
+        ];
+    }
+
+    private function buildRRPViolationStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        return [
+            'label'           => __('Products with RRP Violation'),
+            'is_negative'     => true,
+            'route'           => [
+                'name'       => 'grp.org.shops.show.catalogue.products.rrp_violation_products.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'            => 'fal fa-cube',
+            'backgroundColor' => '#ff000011',
+            'value'           => $shop->stats->number_products_with_rrp_violation,
         ];
     }
 }

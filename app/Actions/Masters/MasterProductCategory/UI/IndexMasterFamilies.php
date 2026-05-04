@@ -66,6 +66,7 @@ class IndexMasterFamilies extends OrgAction
                         $discontinuedMasterProducts
                     ],
                 ],
+                'default' => 'active',
 
                 'engine' => function ($query, $elements) {
                     if (in_array('discontinued', $elements)) {
@@ -198,7 +199,8 @@ class IndexMasterFamilies extends OrgAction
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
                 engine: $elementGroup['engine'],
-                prefix: $prefix
+                prefix: $prefix,
+                default: $elementGroup['default'] ?? null,
             );
         }
 
@@ -248,6 +250,7 @@ class IndexMasterFamilies extends OrgAction
             'sub_departments.code as master_sub_department_code',
             'sub_departments.name as master_sub_department_name',
             'currencies.code as currency_code',
+            'master_product_categories.health_rank',
         ];
 
         if ($prefix === MasterProductCategoryTabsEnum::SALES->value) {
@@ -294,6 +297,7 @@ class IndexMasterFamilies extends OrgAction
                 'dropshippers',
                 'listings',
                 'sold',
+                'health_rank',
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -317,7 +321,8 @@ class IndexMasterFamilies extends OrgAction
                 $table->elementGroup(
                     key: $key,
                     label: $elementGroup['label'],
-                    elements: $elementGroup['elements']
+                    elements: $elementGroup['elements'],
+                    default: $elementGroup['default'] ?? null,
                 );
             }
 
@@ -345,7 +350,8 @@ class IndexMasterFamilies extends OrgAction
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table
                     ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
@@ -377,11 +383,11 @@ class IndexMasterFamilies extends OrgAction
             'icon'  => ['fal', 'fa-store-alt'],
             'title' => __('Master shop')
         ];
+        $iconRight       = [
+            'icon' => 'fal fa-folder',
+        ];
         $afterTitle      = [
             'label' => __('Master Families')
-        ];
-        $iconRight       = [
-            'icon' => 'fal fa-folder-tree',
         ];
         $parentType      = 'department';
 
@@ -411,7 +417,7 @@ class IndexMasterFamilies extends OrgAction
             } elseif ($this->parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 $parentType      = 'sub_department';
                 $icon            = [
-                    'icon'  => ['fal', 'fa-folder'],
+                    'icon'  => ['fal', 'fa-folder-download'],
                     'title' => __('Master sub-department')
                 ];
                 $subNavigation   = $this->getMasterSubDepartmentSubNavigation($this->parent);

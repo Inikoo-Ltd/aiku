@@ -46,17 +46,31 @@ class DashboardShopSalesResource extends JsonResource
             ],
         ];
 
+        $migrationTooltip = 'Migrated to Aiku';
+        if (!empty($data['migrated_to_aiku_on'])) {
+            $migrationTooltip .= ' on ' . $data['migrated_to_aiku_on'];
+        }
+
+        $migrationIcon = ($data['is_aiku'] ?? false) ? [
+            'icon_right' => [
+                'img'   => '/favicon.svg' ?? null,
+                'tooltip' => $migrationTooltip,
+            ],
+        ] : [];
+
         $columns = [
             'label' => [
                 'formatted_value' => $data['name'] ?? 'Unknown',
                 'align'           => 'left',
-                ...$routeTargets['shops']
+                ...$routeTargets['shops'],
+                ...$migrationIcon,
             ],
             'label_minified' => [
                 'formatted_value' => Abbreviate::run($data['name'] ?? 'Unknown'),
                 'tooltip'         => $data['name'] ?? 'Unknown',
                 'align'           => 'left',
-                ...$routeTargets['shops']
+                ...$routeTargets['shops'],
+                ...$migrationIcon,
             ]
         ];
 
@@ -109,7 +123,7 @@ class DashboardShopSalesResource extends JsonResource
                         $withoutOrders = $data["registrations_without_orders_{$interval}"] ?? 0;
 
                         $columns[$columnKey][$interval]['tooltip'] = sprintf(
-                            'With basket: %s | Without basket: %s',
+                            'With product in basket: %s | With empty basket: %s',
                             number_format($withOrders),
                             number_format($withoutOrders)
                         );

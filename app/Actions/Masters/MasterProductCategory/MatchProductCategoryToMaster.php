@@ -11,6 +11,7 @@ namespace App\Actions\Masters\MasterProductCategory;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterProductCategory;
 use Exception;
 use Illuminate\Console\Command;
@@ -47,7 +48,7 @@ class MatchProductCategoryToMaster extends OrgAction
 
     public function getCommandSignature(): string
     {
-        return 'product_categories:match_to_master';
+        return 'product_categories:match_to_master {shop?}';
     }
 
     public function asCommand(Command $command): int
@@ -58,14 +59,25 @@ class MatchProductCategoryToMaster extends OrgAction
         $count = 0;
         $matchedCount = 0;
 
-        $totalCount = ProductCategory::count();
+
+        $query = ProductCategory::whereNull('master_product_category_id');
+
+        if ($command->argument('shop')) {
+            $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
+            $query->where('shop_id', $shop->id);
+        } else {
+            $shopsWithMaster = Shop::whereNotNull('master_shop_id')->pluck('id')->toArray();
+            $query->whereIn('shop_id', $shopsWithMaster);
+        }
+
+        $totalCount = $query->count();
 
         $bar = $command->getOutput()->createProgressBar($totalCount);
         $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
         $bar->start();
 
 
-        ProductCategory::chunk(
+        $query->chunk(
             $chunkSize,
             function ($productCategories) use (&$count, &$matchedCount, $bar, $command) {
                 foreach ($productCategories as $productCategory) {
@@ -73,6 +85,10 @@ class MatchProductCategoryToMaster extends OrgAction
                         $hadMaster = (bool)$productCategory->master_product_category_id;
                         $this->handle($productCategory);
                         $hasNowMaster = (bool)$productCategory->master_product_category_id;
+
+                        if ($hasNowMaster) {
+                            $command->info('Family '.$productCategory->slug.' connected to master');
+                        }
 
                         if (!$hadMaster && $hasNowMaster) {
                             $matchedCount++;

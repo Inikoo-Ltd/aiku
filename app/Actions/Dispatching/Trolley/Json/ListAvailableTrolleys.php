@@ -47,7 +47,7 @@ class ListAvailableTrolleys extends OrgAction
             ->defaultSort('trolleys.name')
             ->allowedSorts(['name'])
             ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, 250, tableName: request()->route()->getName())
             ->withQueryString();
     }
 

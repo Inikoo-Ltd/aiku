@@ -39,6 +39,10 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $state
  * @property mixed $number_number_org_stocks_state_active
  * @property mixed $number_org_stocks
+ * @property mixed $sales_grp_currency_external
+ * @property mixed $sales_grp_currency_external_ly
+ * @property mixed $invoices
+ * @property mixed $invoices_ly
  */
 class StocksResource extends JsonResource
 {
@@ -73,6 +77,28 @@ class StocksResource extends JsonResource
             'grp_currency'                          => $this->grp_currency_code,
             'state'                                 => $this->state,
             'state_icon'                            => $this->state ? $this->state->stateIcon()[$this->state->value] : null,
+            'sales_grp_currency_external'           => $this->sales_grp_currency_external ?? 0,
+            'sales_grp_currency_external_ly'        => $this->sales_grp_currency_external_ly ?? 0,
+            'sales_grp_currency_external_delta'     => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),
+            'invoices'                              => $this->invoices ?? 0,
+            'invoices_ly'                           => $this->invoices_ly ?? 0,
+            'invoices_delta'                        => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+        ];
+    }
+
+    private function calculateDelta(float $current, float $previous): ?array
+    {
+        if (!$previous || $previous == 0) {
+            return null;
+        }
+
+        $delta = (($current - $previous) / $previous) * 100;
+
+        return [
+            'value'       => $delta,
+            'formatted'   => number_format($delta, 1).'%',
+            'is_positive' => $delta > 0,
+            'is_negative' => $delta < 0,
         ];
     }
 }

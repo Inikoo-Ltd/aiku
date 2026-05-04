@@ -14,6 +14,7 @@ import { getStyles } from "@/Composables/styles"
 import { sendMessageToParent } from "@/Composables/Workshop"
 import Blueprint from './Blueprint'
 import { routeType } from '@/types/route'
+import { trans } from "laravel-vue-i18n"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -68,7 +69,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 
 const allItems = computed(() => [
   ...(props.modelValue?.families || []),
-/*   ...(props.modelValue?.collections || []) */
+  /*   ...(props.modelValue?.collections || []) */
 ])
 
 const responsiveGridClass = computed(() => {
@@ -111,19 +112,29 @@ function activateBlock() {
 </script>
 
 <template>
-  <div id="families-1">
-    <div
-      v-if="allItems.length"
-      class="px-4 py-10 mx-[30px]"
-      :style="{
-        ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
-        ...getStyles(props.modelValue.container?.properties, props.screenType)
-      }"
-      @click="activateBlock"
-    >
+  <div :id="modelValue?.id ? modelValue?.id : 'families-1'+indexBlock" >
+    <div v-if="allItems.length" class="px-4 py-10 mx-[30px]" :style="{
+      ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
+      ...getStyles(props.modelValue.container?.properties, props.screenType)
+    }" @click="activateBlock">
       <h2 class="text-2xl font-bold mb-6">Browse By Product Lines:</h2>
 
       <div :class="['grid gap-8', responsiveGridClass]">
+        <div>
+          <div class="relative w-full bg-white rounded-md shadow-md overflow-hidden">
+            <div class="aspect-[1/1] flex items-center justify-center bg-gray-50 hover:bg-gray-100" :style="{
+              ...getStyles(
+                props.modelValue?.button?.view_more?.properties,
+                props.screenType
+              )
+            }">
+              <span class="text-base font-semibold text-center">
+                {{ trans("View All") }}
+              </span>
+            </div>
+          </div>
+        </div>
+
         <div v-for="(item, index) in allItems" :key="`item-${index}`">
           <Family1Render :data="item" />
         </div>
@@ -132,15 +143,12 @@ function activateBlock() {
 
     <EmptyState v-else :data="{ title: 'Empty Families' }">
       <template v-if="visibleDrawer !== undefined" #button-empty-state>
-        <Button
-          label="Select sub-department to preview family list"
-          type="secondary"
-        />
+        <Button label="Select sub-department to preview family list" type="secondary" />
       </template>
     </EmptyState>
 
     <!-- Edit Modal -->
-   <!--  <Dialog
+    <!--  <Dialog
       v-model:visible="showDialog"
       :header="`Edit ${selectedSubDepartment?.name}`"
       :style="{ width: '500px' }"

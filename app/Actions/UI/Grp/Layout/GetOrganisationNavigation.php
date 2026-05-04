@@ -104,6 +104,7 @@ class GetOrganisationNavigation
         $navigation = $this->getWarehouseNavs($user, $organisation, $navigation);
 
 
+
         if ($user->authTo("procurement.$organisation->id.view")) {
             $navigation['procurement'] = [
                 'root'    => 'grp.org.procurement',
@@ -152,7 +153,7 @@ class GetOrganisationNavigation
                             ]
                         ],
                         [
-                            'label' => __('Purchase orders'),
+                            'label' => __('Purchase Orders'),
                             'icon'  => ['fal', 'fa-clipboard-list'],
                             'root'  => 'grp.org.procurement.purchase_orders.',
                             'route' => [
@@ -174,7 +175,6 @@ class GetOrganisationNavigation
 
         $navigation['overview'] = [
             'label'   => __('Overview'),
-            'tooltip' => __('Overview'),
             'icon'    => ['fal', 'fa-mountains'],
             'root'    => 'grp.org.overview.',
 
@@ -200,14 +200,47 @@ class GetOrganisationNavigation
         //     'topMenu' => [],
         // ];
 
-        $navigation['crm_agents'] = [
-            'label'   => __('CRM Agents'),
-            'tooltip' => __('CRM Agents'),
-            'icon'    => ['fal', 'fa-headset'],
-            'root'    => 'grp.org.crm.agents.show',
+        $navigation['chat'] = [
+            'label'   => __('Chat'),
+            'icon'    => ['fal', 'comment-alt'],
+            'root'    => 'grp.org.chat.',
             'route'   => [
-                'name'       => 'grp.org.crm.agents.show',
+                'name'       => 'grp.org.chat.dashboard',
                 'parameters' => [$organisation->slug],
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label'   => __('Dashboard'),
+                        'icon'    => ['fal', 'comment-alt'],
+                        'root'    => 'grp.org.chat.dashboard',
+                        'route'   => [
+                            'name'       => 'grp.org.chat.dashboard',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
+                        'label'   => __('Agents'),
+                        'icon'    => ['fal', 'fa-headset'],
+                        'root'    => 'grp.org.chat.agents.show',
+                        'route'   => [
+                            'name'       => 'grp.org.chat.agents.show',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $navigation['calendar_offers'] = [
+            'label'   => __('Calendar Offers'),
+            'icon'    => ['fal', 'fa-calendar'],
+            'root'    => 'grp.org.offer.calendar',
+            'route'   => [
+                'name'       => 'grp.org.offer.calendar',
+                'parameters' => [
+                    'organisation' => $organisation->slug,
+                ],
             ],
             'topMenu' => [],
         ];

@@ -88,6 +88,7 @@ class IndexTrolleys extends OrgAction
                 ])
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'current_delivery_note', label: __('Current Delivery Note'), tooltip: __('The current delivery note where the trolley is currently assigned'), canBeHidden: false, sortable: false, searchable: false)
+                ->column(key: 'actions', label: __('Action'), canBeHidden: false)
                 ->defaultSort('name');
         };
     }

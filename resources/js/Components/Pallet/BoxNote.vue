@@ -4,12 +4,14 @@ import { inject, ref } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPencil, faStickyNote, faTrash, faLock } from '@fas'
 import { faTimes, faSyncAlt } from '@fal'
+import { faExclamationTriangle } from '@fad'
 import { faPlus } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Modal from '@/Components/Utils/Modal.vue'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import axios from 'axios'
+import { router } from '@inertiajs/vue3'
 import { routeType } from '@/types/route'
 import { notify } from '@kyvg/vue3-notification'
 import { PDRNotes } from '@/types/Pallet'
@@ -17,40 +19,59 @@ import { PDRNotes } from '@/types/Pallet'
 import { useBasicColor } from '@/Composables/useColors'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
-library.add(faPencil, faStickyNote, faTrash, faPlus, faLock, faTimes, faSyncAlt)
+library.add(faPencil, faStickyNote, faTrash, faPlus, faLock, faTimes, faSyncAlt, faExclamationTriangle)
 
 // const layout = inject('layout', layoutStructure)
 
 const props = defineProps<{
     noteData: PDRNotes
     updateRoute: routeType
+    alternativeStyle?: boolean
 }>()
 
 // Section: Modal Note
 const noteModalValue = ref(props.noteData.note)
 const isModalOpen = ref(false)
 const isSubmitNoteLoading = ref(false)
-const onSubmitNote = async () => {
+
+const cleanseCapitalize = (value?: string) =>
+  value
+    ?.replace(/[^\w\s]/g, " ")
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase()
+    .replace(/\b\w/g, c => c.toUpperCase());
+
+const onSubmitNote = () => {
     isSubmitNoteLoading.value = true
-    try {
-        const response = await axios.patch(route(props.updateRoute.name, props.updateRoute.parameters), {
+    router.patch(route(props.updateRoute.name, props.updateRoute.parameters), {
             [props.noteData.field]: noteModalValue.value
         },
         {
-                headers: { "Content-Type": 'application/json' },
+            headers: { "Content-Type": 'application/json' },
+            onSuccess: () => {
+                notify({
+                    title: "Success",
+                    text: `Successfully updated ${cleanseCapitalize(props.noteData.field)}`,
+                    type: "success",
+                })
+            },
+            onError: (err) => {
+                console.error('ERR', err);
+                notify({
+                    title: "Failed",
+                    text: "Failed to update the note, try again.",
+                    type: "error",
+                })
+            },
+            onFinish: () => {
+                props.noteData.note = noteModalValue.value
+                isSubmitNoteLoading.value = false
+                isModalOpen.value = false
+            }
         }
-        )
-        props.noteData.note = noteModalValue.value
-    } catch (error) {
-        notify({
-			title: "Failed",
-			text: "Failed to update the note, try again.",
-			type: "error",
-		})
-    }
-
-    isSubmitNoteLoading.value = false
-    isModalOpen.value = false
+    )   
 }
 
 // const onFetchNotes = async () => {
@@ -82,7 +103,7 @@ const fallbackColor = '#374151'  // Color
 </script>
 
 <template>
-    <div class="relative w-full xpt-4 rounded overflow-hidden"  :style="{
+    <div v-if="!alternativeStyle" class="relative w-full xpt-4 rounded overflow-hidden"  :style="{
                 backgroundColor: useBasicColor(noteData.bgColor) + '11' || noteData.bgColor ? `${noteData.bgColor}11` : fallbackBgColor,
                 color: fallbackColor,
                 border:`1px solid ${useBasicColor(noteData.bgColor) ? `color-mix(in srgb, ${useBasicColor(noteData.bgColor)} 40%, white)` : noteData.bgColor || fallbackBgColor}`
@@ -103,6 +124,9 @@ const fallbackColor = '#374151'  // Color
                     <FontAwesomeIcon icon='fas fa-sticky-note' class='' fixed-width aria-hidden='true' />
                     {{ noteData.label }}
                     <InformationIcon v-if="noteData.information" :information="noteData.information" />
+                    <span v-if="noteData.warning" v-tooltip="noteData.warning">
+                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-yellow-500" fixed-width aria-hidden="true" />
+                    </span>
                     
                     <!-- Button: fetch notes from Order -->
                     <!-- <span 
@@ -120,7 +144,7 @@ const fallbackColor = '#374151'  // Color
 
                     <!-- <Button
                         
-                       
+                        
                         :label=""
                         :loading="isSubmitNoteLoading"
                         icon="fal fa-sync-alt"
@@ -165,7 +189,7 @@ const fallbackColor = '#374151'  // Color
             v-tooltip="noteData.editable ? trans('Double click to edit') : false"
             class="h-full max-h-32 mx-auto items-center px-4 pt-2 pb-2 text-xxs break-words"
             :class="noteData.editable ? 'cursor-pointer' : ''"
-           
+            
         >
             <template v-if="noteData.note">{{ noteData.note }}</template>
             <span v-else class="italic select-none"
@@ -177,6 +201,16 @@ const fallbackColor = '#374151'  // Color
             </span>
         </p>
     </div>
+    <button
+        v-else
+        @click="isModalOpen = true"
+        class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+    >
+        <slot name="buttonClick">
+            <FontAwesomeIcon icon="fal fa-sticky-note" class="text-amber-500 text-xs" />
+            {{ trans("Add Note") }}
+        </slot>
+    </button>
 
     <Modal :isOpen="isModalOpen" @onClose="() => (isModalOpen = false, noteModalValue = noteData.note)" width="w-[600px]">
 		<div class="min-h-64 max-h-96 px-2 overflow-auto flex flex-col justify-between">

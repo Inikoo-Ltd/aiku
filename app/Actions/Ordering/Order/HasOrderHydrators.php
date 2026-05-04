@@ -62,7 +62,7 @@ trait HasOrderHydrators
 
 
         if ($order->master_shop_id) {
-            MasterShopHydrateOrders::dispatch($order->master_shop_id)->delay($this->hydratorsDelay);
+            MasterShopHydrateOrders::dispatch($order->master_shop_id)->delay(30);
         }
         if ($order->customer_id) {
             CustomerHydrateOrders::dispatch($order->customer_id)->delay($this->hydratorsDelay);
@@ -79,48 +79,48 @@ trait HasOrderHydrators
         }
     }
 
-    public function orderHandlingHydrators(Order $order, OrderStateEnum $orderState): void
+    public function orderHandlingHydrators(Order $order, OrderStateEnum $orderState, $delay = 0): void
     {
         if ($orderState == OrderStateEnum::CREATING) {
-            GroupHydrateOrderStateCreating::dispatch($order->group_id);
-            OrganisationHydrateOrderStateCreating::dispatch($order->organisation_id);
-            ShopHydrateOrderStateCreating::dispatch($order->shop_id);
+            GroupHydrateOrderStateCreating::dispatch($order->group_id)->delay($delay);
+            OrganisationHydrateOrderStateCreating::dispatch($order->organisation_id)->delay($delay);
+            ShopHydrateOrderStateCreating::dispatch($order->shop_id)->delay($delay);
         } elseif ($orderState == OrderStateEnum::SUBMITTED) {
-            GroupHydrateOrderStateSubmitted::dispatch($order->group_id);
-            OrganisationHydrateOrderStateSubmitted::dispatch($order->organisation_id);
-            ShopHydrateOrderStateSubmitted::dispatch($order->shop_id);
+            GroupHydrateOrderStateSubmitted::dispatch($order->group_id)->delay($delay);
+            OrganisationHydrateOrderStateSubmitted::dispatch($order->organisation_id)->delay($delay);
+            ShopHydrateOrderStateSubmitted::dispatch($order->shop_id)->delay($delay);
         } elseif ($orderState == OrderStateEnum::IN_WAREHOUSE) {
-            GroupHydrateOrderStateInWarehouse::dispatch($order->group_id);
-            OrganisationHydrateOrderStateInWarehouse::dispatch($order->organisation_id);
-            ShopHydrateOrderStateInWarehouse::dispatch($order->shop_id);
+            GroupHydrateOrderStateInWarehouse::dispatch($order->group_id)->delay($delay);
+            OrganisationHydrateOrderStateInWarehouse::dispatch($order->organisation_id)->delay($delay);
+            ShopHydrateOrderStateInWarehouse::dispatch($order->shop_id)->delay($delay);
         } elseif ($orderState == OrderStateEnum::HANDLING) {
-            GroupHydrateOrderStateHandling::dispatch($order->group_id);
-            OrganisationHydrateOrderStateHandling::dispatch($order->organisation_id);
-            ShopHydrateOrderStateHandling::dispatch($order->shop_id);
+            GroupHydrateOrderStateHandling::dispatch($order->group_id)->delay($delay);
+            OrganisationHydrateOrderStateHandling::dispatch($order->organisation_id)->delay($delay);
+            ShopHydrateOrderStateHandling::dispatch($order->shop_id)->delay($delay);
         } elseif ($orderState == OrderStateEnum::HANDLING_BLOCKED) {
-            GroupHydrateOrderStateHandlingBlocked::dispatch($order->group_id);
-            OrganisationHydrateOrderStateHandlingBlocked::dispatch($order->organisation_id);
-            ShopHydrateOrderStateHandlingBlocked::dispatch($order->shop_id);
+            GroupHydrateOrderStateHandlingBlocked::dispatch($order->group_id)->delay($delay);
+            OrganisationHydrateOrderStateHandlingBlocked::dispatch($order->organisation_id)->delay($delay);
+            ShopHydrateOrderStateHandlingBlocked::dispatch($order->shop_id)->delay($delay);
         } elseif ($orderState == OrderStateEnum::PICKED) {
-            GroupHydrateOrderStatePicked::dispatch($order->group_id);
-            OrganisationHydrateOrderStatePicked::dispatch($order->organisation_id);
-            ShopHydrateOrderStatePicked::dispatch($order->shop_id);
+            GroupHydrateOrderStatePicked::dispatch($order->group_id)->delay($delay);
+            OrganisationHydrateOrderStatePicked::dispatch($order->organisation_id)->delay($delay);
+            ShopHydrateOrderStatePicked::dispatch($order->shop_id)->delay($delay);
         } elseif ($orderState == OrderStateEnum::PACKING) {
-            GroupHydrateOrderStatePacking::dispatch($order->group_id);
-            OrganisationHydrateOrderStatePacking::dispatch($order->organisation_id);
-            ShopHydrateOrderStatePacking::dispatch($order->shop_id);
+            GroupHydrateOrderStatePacking::dispatch($order->group_id)->delay($delay);
+            OrganisationHydrateOrderStatePacking::dispatch($order->organisation_id)->delay($delay);
+            ShopHydrateOrderStatePacking::dispatch($order->shop_id)->delay($delay);
         } elseif ($orderState == OrderStateEnum::PACKED) {
-            GroupHydrateOrderStatePacked::dispatch($order->group_id);
-            OrganisationHydrateOrderStatePacked::dispatch($order->organisation_id);
-            ShopHydrateOrderStatePacked::dispatch($order->shop_id);
+            GroupHydrateOrderStatePacked::dispatch($order->group_id)->delay($delay);
+            OrganisationHydrateOrderStatePacked::dispatch($order->organisation_id)->delay($delay);
+            ShopHydrateOrderStatePacked::dispatch($order->shop_id)->delay($delay);
         } elseif ($orderState == OrderStateEnum::FINALISED) {
-            GroupHydrateOrderStateFinalised::dispatch($order->group_id);
-            OrganisationHydrateOrderStateFinalised::dispatch($order->organisation_id);
-            ShopHydrateOrderStateFinalised::dispatch($order->shop_id);
+            GroupHydrateOrderStateFinalised::dispatch($order->group_id)->delay($delay);
+            OrganisationHydrateOrderStateFinalised::dispatch($order->organisation_id)->delay($delay);
+            ShopHydrateOrderStateFinalised::dispatch($order->shop_id)->delay($delay);
         } elseif ($orderState == OrderStateEnum::DISPATCHED) {
-            GroupHydrateOrdersDispatchedToday::dispatch($order->group_id);
-            OrganisationHydrateOrdersDispatchedToday::dispatch($order->organisation_id);
-            ShopHydrateOrdersDispatchedToday::dispatch($order->shop_id);
+            GroupHydrateOrdersDispatchedToday::dispatch($order->group_id)->delay($delay);
+            OrganisationHydrateOrdersDispatchedToday::dispatch($order->organisation_id)->delay($delay);
+            ShopHydrateOrdersDispatchedToday::dispatch($order->shop_id)->delay($delay);
         }
     }
 

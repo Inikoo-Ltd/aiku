@@ -10,14 +10,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $id
  * @property int $task_id
  * @property int $number_users
- * @property string $task_materials_cost
- * @property string $task_energy_cost
- * @property string $task_other_cost
- * @property string $task_work_cost
+ * @property numeric $task_materials_cost
+ * @property numeric $task_energy_cost
+ * @property numeric $task_other_cost
+ * @property numeric $task_work_cost
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property-read \App\Models\SysAdmin\Task $task
+ * @property-read \App\Models\SysAdmin\Task|null $task
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskStat newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskStat newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskStat onlyTrashed()

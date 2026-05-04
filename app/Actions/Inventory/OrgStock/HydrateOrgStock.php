@@ -8,13 +8,17 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentBatchCodes;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateHasBeenInWarehouse;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQuantity;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProducts;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePurchaseOrders;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSalesIntervals;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateValueInLocations;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateWeekOfCover;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Models\Inventory\OrgStock;
@@ -33,13 +37,17 @@ class HydrateOrgStock
 
     public function handle(OrgStock $orgStock): void
     {
+        OrgStockHydrateCurrentBatchCodes::run($orgStock);
         OrgStockHydrateLocations::run($orgStock);
         OrgStockHydrateQuantityInLocations::run($orgStock);
         OrgStockHydrateValueInLocations::run($orgStock);
         OrgStockHydrateMovements::run($orgStock);
-        OrgStockHydrateHasBeenInWarehouse::run($orgStock);
-        OrgStockHydrateSalesIntervals::run($orgStock);
+        OrgStockHydrateProductsAvailableQuantity::run($orgStock);
         OrgStockHydratePackedIn::run($orgStock);
+        OrgStockHydrateStockValue::run($orgStock);
+        OrgStockHydratePurchaseOrders::run($orgStock);
+        OrgStockHydrateWeekOfCover::run($orgStock);
+        OrgStockHydrateProducts::run($orgStock);
         ModelHydrateSingleTradeUnits::run($orgStock);
     }
 

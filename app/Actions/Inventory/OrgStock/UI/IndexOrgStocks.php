@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
+use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
@@ -29,7 +30,6 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
@@ -126,9 +126,9 @@ class IndexOrgStocks extends OrgAction
     {
         $this->bucket = 'all';
         $this->parent = $orgStockFamily;
-        $this->initialisationFromWarehouse($warehouse, $request);
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
 
-        return $this->handle(parent: $orgStockFamily);
+        return $this->handle(parent: $orgStockFamily, prefix: OrgStocksTabsEnum::INDEX->value);
     }
 
     public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, ActionRequest $request): LengthAwarePaginator
@@ -227,13 +227,14 @@ class IndexOrgStocks extends OrgAction
             'org_stocks.name',
             'org_stocks.slug',
             'org_stocks.state',
-            'org_stocks.unit_value',
-            'org_stocks.unit_cost',
+            'org_stocks.sku_value',
+            'org_stocks.current_supplier_sku_cost',
             'org_stocks.quantity_available',
             'org_stocks.value_in_locations',
             'number_locations',
             'quantity_in_locations',
             'org_stocks.discontinued_in_organisation_at',
+            'org_stocks.health_rank',
             'org_stock_families.slug as family_slug',
             'org_stock_families.code as family_code',
             'organisations.name as organisation_name',
@@ -242,36 +243,11 @@ class IndexOrgStocks extends OrgAction
             'warehouses.slug as warehouse_slug',
             'org_stock_intervals.dispatched_ytd as dispatched',
             'org_stock_sales_intervals.revenue_org_currency_ytd as revenue',
-            DB::raw("(
-                SELECT COALESCE(SUM(pot.org_net_amount), 0)
-                FROM purchase_order_transactions pot
-                INNER JOIN purchase_orders po ON pot.purchase_order_id = po.id
-                WHERE pot.org_stock_id = org_stocks.id
-                AND po.delivery_state IN ('ready_to_ship', 'dispatched')
-                AND po.state NOT IN ('cancelled', 'not_received')
-            ) as on_the_way_po_value"),
-            DB::raw("(
-                SELECT COUNT(DISTINCT po.id)
-                FROM purchase_order_transactions pot
-                INNER JOIN purchase_orders po ON pot.purchase_order_id = po.id
-                WHERE pot.org_stock_id = org_stocks.id
-                AND po.delivery_state IN ('ready_to_ship', 'dispatched')
-                AND po.state NOT IN ('cancelled', 'not_received')
-            ) as on_the_way_po_count"),
-            DB::raw("(
-                SELECT
-                    CASE
-                        WHEN SUM(it.quantity) > 0 THEN
-                            org_stocks.quantity_available
-                            * EXTRACT(EPOCH FROM (NOW() - MIN(it.date))) / (7.0 * 86400)
-                            / SUM(it.quantity)
-                        ELSE NULL
-                    END
-                FROM invoice_transactions it
-                INNER JOIN invoice_transaction_has_org_stocks ithos ON ithos.invoice_transaction_id = it.id
-                WHERE ithos.org_stock_id = org_stocks.id
-                AND it.deleted_at IS NULL
-            ) as woc"),
+            'org_stock_stats.stock_value',
+            'org_stock_stats.on_the_way_po_value',
+            'org_stock_stats.on_the_way_po_count',
+            'org_stock_stats.week_of_cover as woc',
+            'org_stock_stats.number_products as product_count'
         ];
 
         if ($prefix === OrgStocksTabsEnum::SALES->value) {
@@ -285,7 +261,6 @@ class IndexOrgStocks extends OrgAction
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
-                includeLY: true
             );
 
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
@@ -294,7 +269,7 @@ class IndexOrgStocks extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
-        $allowedSorts = ['code', 'name', 'family_code', 'unit_value', 'unit_cost', 'stock_value', 'discontinued_in_organisation_at', 'organisation_name', 'value_in_locations', 'dispatched', 'revenue', 'quantity_available', 'on_the_way_po_value'];
+        $allowedSorts = ['code', 'name', 'family_code', 'sku_value', 'current_supplier_sku_cost', 'stock_value', 'discontinued_in_organisation_at', 'organisation_name', 'value_in_locations', 'dispatched', 'revenue', 'quantity_available', 'on_the_way_po_value', 'health_rank', 'week_of_cover', 'product_count'];
 
         if ($prefix === OrgStocksTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_grp_currency_external';
@@ -338,46 +313,80 @@ class IndexOrgStocks extends OrgAction
 
             $table
                 ->defaultSort('code')
-                ->withLabelRecord([__('sku'), __('skus')])
+                ->withLabelRecord(['SKU','SKUs'])
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
-                ->column(key: 'code', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'code', label: __('Reference'), sortable: true, searchable: true);
 
             if ($parent instanceof Organisation && $bucket != 'abnormality') {
-                $table->column(key: 'family_code', label: __('Family'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'family_code', label: __('Family'), sortable: true, searchable: true);
             }
 
-            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
+                ->column(key: 'quantity_available', label: __('Stock'), sortable: true, align: 'right');
 
             if ($sales) {
                 $table->betweenDates(['date'])
-                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
-                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right');
+                    ->column(key: 'stock_value', label: __('Stock Value'), sortable: true, type: 'currency')
+                    ->column(key: 'on_the_way_po_value', label: __("On the way (PO's)"), sortable: true, type: 'currency')
+                    ->column(key: 'invoices', label: __('Invoices'), sortable: true, align: 'right')
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), align: 'right')
+                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), sortable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), sortable: true, type: 'icon');
             } else {
                 if ($parent instanceof OrgStockFamily || !$bucket || in_array($bucket, ['active', 'discontinuing'])) {
                     $table
-                        ->column(key: 'unit_cost', label: __('Cost Value'), canBeHidden: false, sortable: true, type: 'currency')
-                        ->column(key: 'stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
-                        // ->column(key: 'value_in_locations', label: __('Stock value'), canBeHidden: false, sortable: true, type: 'currency') // Todo: fix value_In_locations because mostly 0 or null
-                        ->column(key: 'quantity_available', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
-                        ->column(key: 'on_the_way_po_value', label: __("On the way (PO's)"), sortable: true, type: 'currency')
-                        ->column(key: 'woc', label: __('WOC'), canBeHidden: false, align: 'right')
+                        ->column(key: 'sku_value', label: __('Sku value'), sortable: true, type: 'currency')
+                        ->column(key: 'woc', label: __('WOC'), align: 'right')
                         ->column(key: 'revenue', label: __('Revenue'), sortable: true, type: 'currency')
                         ->column(key: 'dispatched', label: __('Dispatched'), sortable: true);
                 }
 
                 if ($bucket == 'discontinued' || $bucket == 'abnormality') {
-                    $table->column(key: 'discontinued_in_organisation_at', label: $bucket == 'discontinued' ? __('Discontinued') : __('Last seen'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
+                    $table->column(key: 'discontinued_in_organisation_at', label: $bucket == 'discontinued' ? __('Discontinued') : __('Last seen'), sortable: true, searchable: true, type: 'date');
                 }
+
             }
+            $table->column(key: 'product_count', label: __('Used in Products'), sortable: true, searchable: true, align: 'left');
         };
     }
 
     public function jsonResponse(LengthAwarePaginator $stocks): AnonymousResourceCollection
     {
         return OrgStocksResource::collection($stocks);
+    }
+
+    public function getOrgStockFamilySubNavigation(OrgStockFamily $orgStockFamily, ActionRequest $request): array
+    {
+        $routeParameters = $request->route()->originalParameters();
+
+        return [
+            [
+                'label'    => __('SKU Family'),
+                'route'    => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show',
+                    'parameters' => array_diff_key($routeParameters, ['orgStock' => null]),
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-boxes-alt'],
+                    'tooltip' => __('SKU Family'),
+                ],
+            ],
+            [
+                'isAnchor' => true,
+                'label'    => __('SKUs'),
+                'number'   => $orgStockFamily->stats->number_org_stocks ?? 0,
+                'route'    => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index',
+                    'parameters' => array_diff_key($routeParameters, ['orgStock' => null]),
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-box'],
+                    'tooltip' => __('SKUs'),
+                ],
+            ],
+        ];
     }
 
     public function getOrgStocksSubNavigation(): array
@@ -458,33 +467,43 @@ class IndexOrgStocks extends OrgAction
         $afterTitle = null;
         $iconRight = null;
 
-        if ($this->parent instanceof OrgPartner) {
-            $subNavigation = $this->getOrgPartnerNavigation($this->parent);
-            $title = $this->parent->partner->name;
-
-            $icon = [
-                'icon' => ['fal', 'fa-users-class'],
-                'title' => __('SKUs'),
+        if ($this->parent instanceof OrgStockFamily) {
+            $subNavigation = $this->getOrgStockFamilySubNavigation($this->parent, $request);
+            $title         = $this->parent->name;
+            $icon          = [
+                'icon'  => ['fal', 'fa-boxes-alt'],
+                'title' => __('SKU Family'),
             ];
-            $iconRight = [
+            $iconRight  = [
                 'icon' => 'fal fa-box',
             ];
             $afterTitle = [
-
+                'label' => __('SKUs'),
+            ];
+        } elseif ($this->parent instanceof OrgPartner) {
+            $subNavigation = $this->getOrgPartnerNavigation($this->parent);
+            $title         = $this->parent->partner->name;
+            $icon          = [
+                'icon'  => ['fal', 'fa-users-class'],
+                'title' => __('SKUs'),
+            ];
+            $iconRight  = [
+                'icon' => 'fal fa-box',
+            ];
+            $afterTitle = [
                 'label' => __('SKUs'),
             ];
         } elseif ($this->parent instanceof OrgAgent) {
             $subNavigation = $this->getOrgAgentNavigation($this->parent);
-            $title = $this->parent->agent->organisation->name;
-            $icon = [
-                'icon' => ['fal', 'fa-people-arrows'],
+            $title         = $this->parent->agent->organisation->name;
+            $icon          = [
+                'icon'  => ['fal', 'fa-people-arrows'],
                 'title' => __('SKUs'),
             ];
-            $iconRight = [
+            $iconRight  = [
                 'icon' => 'fal fa-box',
             ];
             $afterTitle = [
-
                 'label' => __('SKUs'),
             ];
         } else {
@@ -591,6 +610,17 @@ class IndexOrgStocks extends OrgAction
                 $headCrumb(
                     [
                         'name' => $routeName,
+                        'parameters' => $routeParameters,
+                    ],
+                    $suffix
+                )
+            ),
+
+            'grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index' => array_merge(
+                ShowOrgStockFamily::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
                         'parameters' => $routeParameters,
                     ],
                     $suffix

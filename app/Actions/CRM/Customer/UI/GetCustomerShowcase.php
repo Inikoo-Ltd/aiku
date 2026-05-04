@@ -81,12 +81,37 @@ class GetCustomerShowcase
             ];
         }
 
+        $lastOrder = $customer->orders()->latest('submitted_at')->first();
+
+        $ordersRoute = $customer->shop->type !== ShopTypeEnum::EXTERNAL ? [
+            'name'       => 'grp.org.shops.show.crm.customers.show.orders.index',
+            'parameters' => [
+                $customer->organisation->slug,
+                $customer->shop->slug,
+                $customer->slug,
+            ],
+        ] : null;
+
         return [
             'customer' => CustomerResource::make($customer)->getArray(),
             'address_management' => GetCustomerAddressManagement::run(customer:$customer),
             'require_approval' => Arr::get($customer->shop->settings, 'registration.require_approval', false),
             'approveRoute'       => [
                 'name'       => 'grp.models.customer.approve',
+                'parameters' => [
+                    'customer' => $customer->id
+                ]
+            ],
+            'internal_note' => [
+                "label"       => __("Private"),
+                "note"        => $customer->internal_notes ?? '',
+                "information" => __("This note is only visible to staff members. Staff can communicate with each other about the customer."),
+                "editable"    => true,
+                "bgColor"     => "#FF7DBD",
+                "field"       => "internal_notes"
+            ],
+            'update_route' => [
+                'name'       => 'grp.models.customer.update',
                 'parameters' => [
                     'customer' => $customer->id
                 ]
@@ -98,6 +123,12 @@ class GetCustomerShowcase
                 'type' => $customer->shop->type,
             ],
             'stats' => $customer->stats,
+            'last_order' => $lastOrder ? [
+                'reference'    => $lastOrder->reference,
+                'slug'         => $lastOrder->slug,
+                'state'        => $lastOrder->state->value,
+                'submitted_at' => $lastOrder->submitted_at?->toIso8601String(),
+            ] : null,
             'currency'  => CurrencyResource::make($customer->shop->currency)->toArray(request()),
             'balance'  => $customer->shop->type !== ShopTypeEnum::EXTERNAL ? [
                 'route_store'    => [
@@ -123,6 +154,7 @@ class GetCustomerShowcase
 
                 'type_options' => CreditTransactionTypeEnum::getOptions()
             ] : null,
+            'orders_route' => $ordersRoute,
             'editWebUser' => $webUserRoute,
             'tag_routes' => $tagRoute,
             'tags_selected_id' => $customer->tags->pluck('id')->toArray(),

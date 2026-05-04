@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_records
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Masters\MasterVariant $masterVariant
+ * @property-read \App\Models\Masters\MasterVariant|null $masterVariant
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterVariantTimeSeries newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterVariantTimeSeries newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterVariantTimeSeries query()

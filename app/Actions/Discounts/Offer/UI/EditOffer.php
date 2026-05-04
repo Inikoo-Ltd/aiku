@@ -67,7 +67,7 @@ class EditOffer extends OrgAction
             $discountValue['percentage_off'] = $percentage_off;
         }
 
-
+        // dd($request->route()->originalParameters());
         return Inertia::render(
             'EditModel',
             [
@@ -81,7 +81,17 @@ class EditOffer extends OrgAction
                     'title' => $offer->name,
                     'model' => __('Edit Offer'),
                     'icon'  => 'fal fa-pencil',
-                    'actions' => [
+                    'actions' => array_filter([
+                        app()->environment('local') ? [
+                            'type'  => 'button',
+                            'label' => __('Finish Now'),
+                            'style' => 'indigo',
+                            'icon'  => 'fal fa-check',
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.discounts.offers.finish',
+                                'parameters' => $request->route()->originalParameters(),
+                            ],
+                        ] : null,
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -90,7 +100,7 @@ class EditOffer extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ]
                         ]
-                    ],
+                    ]),
                 ],
                 'warning'   => $warning,
                 'formData'    => [
@@ -135,6 +145,14 @@ class EditOffer extends OrgAction
                                         'required'    => true,
                                         'value'       => $offer->label,
                                     ],
+                                    'date'        => app()->environment('local') ? [
+                                        'type'        => 'date',
+                                        'information' => __('The date until which the offer is valid. After this date, the offer will no longer be applicable.'),
+                                        'label'       => __('End Date'),
+                                        'placeholder' => __('date'),
+                                        'required'    => true,
+                                        'value'       => $offer->end_at,
+                                    ] : null,
                                     'edit_offer_trigger'        => $triggerValue ? [
                                         'type'        => 'editOffer',
                                         'label'       => __('Trigger'),

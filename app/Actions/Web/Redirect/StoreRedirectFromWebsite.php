@@ -3,8 +3,9 @@
 namespace App\Actions\Web\Redirect;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Redirect\Traits\WithStoreRedirect;
+use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\UI\Web\WebsiteTabsEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\Redirect;
@@ -18,6 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreRedirectFromWebsite extends OrgAction
 {
+    use WithStoreRedirect;
+
     public function handle(Website $website, array $modelData): Redirect
     {
         data_set($modelData, 'group_id', $website->group_id);
@@ -25,31 +28,49 @@ class StoreRedirectFromWebsite extends OrgAction
         data_set($modelData, 'shop_id', $website->shop_id);
         data_set($modelData, 'website_id', $website->id);
 
-        data_set($modelData, 'type', RedirectTypeEnum::PERMANENT->value); // Todo: check this
+        data_set($modelData, 'type', RedirectTypeEnum::PERMANENT->value);
 
-        $fromUrl = Arr::get($modelData, 'from_url', '');
-
-        if (!str_starts_with($fromUrl, '/')) {
-            $fromUrl = '/' . ltrim($fromUrl, '/');
-        }
-
-        $url = 'https://' . $website->domain . $fromUrl;
         $toUrl = Arr::pull($modelData, 'to_url');
 
-        data_set($modelData, 'from_url', $url);
-        data_set($modelData, 'from_path', $fromUrl);
         data_set($modelData, 'to_webpage_id', $toUrl);
 
-        return Redirect::create($modelData);
+        $redirect = Redirect::create($modelData);
+
+        $redirectedWebpage = Webpage::find($toUrl);
+        if ($redirectedWebpage) {
+            WebpageHydrateRedirects::run($redirectedWebpage);
+        }
+
+        return $redirect;
     }
 
     public function rules(): array
     {
         return [
-            'from_url'                => ['required', 'string', 'max:2048'],
+            'from_path'                => [
+                'required',
+                'string',
+                'max:2048',
+                Rule::unique(Webpage::class, 'url')
+                    ->where(fn ($query) => $query->where('website_id', $this->shop->website->id)->where('state', 'live')->whereNull('deleted_at')),
+                Rule::unique(Redirect::class, 'from_path')
+                    ->where(fn ($query) => $query->where('website_id', $this->shop->website->id))
+            ],
+            'from_url'                => [
+                'required',
+                'string',
+                'max:2048',
+                Rule::unique(Redirect::class, 'from_url')
+                    ->where(fn ($query) => $query->where('website_id', $this->shop->website->id)),
+            ],
             'to_url' => [
                 'required',
-                Rule::exists(Webpage::class, 'id')->where('website_id', $this->shop->website->id)->where('state', WebpageStateEnum::LIVE),
+                Rule::exists(Webpage::class, 'id')
+                    ->where(
+                        fn ($query) => $query
+                        ->where('website_id', $this->shop->website->id)
+                        ->where('state', WebpageStateEnum::LIVE)
+                    ),
             ],
         ];
     }
@@ -58,23 +79,21 @@ class StoreRedirectFromWebsite extends OrgAction
     {
         if ($redirect->shop->type == ShopTypeEnum::FULFILMENT) {
             return FacadesRedirect::route(
-                'grp.org.fulfilments.show.web.websites.show',
+                'grp.org.fulfilments.show.web.redirect.index',
                 [
                     'organisation' => $redirect->organisation->slug,
                     'fulfilment' => $redirect->shop->fulfilment->slug,
                     'website' => $redirect->website->slug,
-                    'tab' => WebsiteTabsEnum::REDIRECTS->value
                 ]
             );
         }
 
         return FacadesRedirect::route(
-            'grp.org.shops.show.web.websites.show',
+            'grp.org.shops.show.web.redirect.index',
             [
                 'organisation' => $redirect->organisation->slug,
                 'shop' => $redirect->shop->slug,
                 'website' => $redirect->website->slug,
-                'tab' => WebsiteTabsEnum::REDIRECTS->value
             ]
         );
     }

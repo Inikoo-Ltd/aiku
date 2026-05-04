@@ -27,6 +27,7 @@ trait WithAllegroApiServices
             'Authorization'  => 'Bearer ' . $this->access_token,
             'Accept'         => $this->allegroApiVersion,
             'Content-Type'   => $this->allegroApiVersion,
+            'Accept-Language' => 'en-US',
         ])->baseUrl(config('services.allegro.base_url'));
 
         if (! empty($params)) {
@@ -57,10 +58,22 @@ trait WithAllegroApiServices
                 default  => throw new \Exception("Unsupported HTTP method: $method"),
             };
 
+            $json = $response->json();
+
             if ($response->failed()) {
-                $errorMessage = Arr::get($response->json(), 'errors.0.userMessage')
-                    ?? Arr::get($response->json(), 'error_description')
-                    ?? Arr::get($response->json(), 'message')
+                $firstError = Arr::get($json, 'errors.0');
+                $errorCode  = Arr::get($firstError, 'code');
+
+                if ($errorCode === 'ProductDuplicate') {
+                    $existingId = Arr::get($firstError, 'metadata.existingProductId');
+                    if ($existingId) {
+                        return ['id' => $existingId];
+                    }
+                }
+
+                $errorMessage = Arr::get($firstError, 'userMessage')
+                    ?? Arr::get($json, 'error_description')
+                    ?? Arr::get($firstError, 'message')
                     ?? 'Unknown Allegro API error';
 
                 throw new \Exception($errorMessage);
@@ -73,12 +86,15 @@ trait WithAllegroApiServices
         }
     }
 
-    public function sanitizeAllegroDescription(string $content): string
+    public function sanitizeAllegroDescription(?string $content): string
     {
-        $content = str_replace(['<strong>', '</strong>'], ['<b>', '</b>'], $content);
-        $content = str_replace(['<em>', '</em>'], ['<i>', '</i>'], $content);
+        if (!$content) {
+            return "<p>".__("No description available")."</p>";
+        }
 
-        return strip_tags($content, '<b><i><em><ul><ol><li><p><br>');
+        $content = str_replace(['<strong>', '</strong>'], ['<b>', '</b>'], $content);
+
+        return strip_tags($content, '<b><p><br>');
     }
 
     // -------------------------------------------------------------------------
@@ -206,13 +222,19 @@ trait WithAllegroApiServices
         ]);
     }
 
-    public function addOrderTracking(string $orderId, string $carrierId, string $trackingNumber, array $lineItems): array
+    public function addOrderTracking(string $orderId, array $shipmentData): array
     {
-        return $this->makeApiRequest('POST', "/order/checkout-forms/$orderId/parcel-tracking-numbers", [
-            'carrierId'      => $carrierId,
-            'waybill'        => $trackingNumber,
-            'lineItems'      => $lineItems,
+        return $this->makeApiRequest('POST', "/order/checkout-forms/$orderId/shipments", [
+            'carrierId'      => Arr::get($shipmentData, 'carrier_id'),
+            'waybill'        => Arr::get($shipmentData, 'waybill'),
+            'carrierName'    => Arr::get($shipmentData, 'carrier_name'),
+            'lineItems'      => Arr::get($shipmentData, 'line_items')
         ]);
+    }
+
+    public function getCarriers(): array
+    {
+        return $this->makeApiRequest('GET', "/order/carriers");
     }
 
     public function getParcelTrackingNumbers(string $orderId): array

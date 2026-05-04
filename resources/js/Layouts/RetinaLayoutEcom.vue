@@ -42,7 +42,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 
 <template>
 	<!-- page background -->
-	<div class="-z-[1] fixed inset-0 bg-slate-100" />
+	<div class="-z-[1] fixed inset-0 bg-slate-100 custom-class" />
 
 	<ScreenWarning v-if="layout.app.environment === 'staging'">
 		{{ trans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
@@ -160,6 +160,13 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 		// Widget: Superchat
 		bottom: 45px !important;
 	}
+}
+
+@media (max-width: 767px) {
+  html body .whatsapp-btn {
+    bottom: 60px !important;
+    left: 20px !important;
+  }
 }
 </style>
 

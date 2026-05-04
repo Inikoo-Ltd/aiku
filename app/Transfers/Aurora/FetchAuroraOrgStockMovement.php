@@ -25,15 +25,27 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         }
 
         if ($this->auroraModelData->{'Inventory Transaction Record Type'} == 'Info' && $this->auroraModelData->{'Inventory Transaction Type'} != 'Audit') {
+            DB::connection('aurora')->table('Inventory Transaction Fact')
+                ->where('Inventory Transaction Key', $this->auroraModelData->{'Inventory Transaction Key'})
+                ->update(['aiku_id' => 0]);
+
             return;
         }
 
 
         if ($this->auroraModelData->aiku_picking_id) {
+            DB::connection('aurora')->table('Inventory Transaction Fact')
+                ->where('Inventory Transaction Key', $this->auroraModelData->{'Inventory Transaction Key'})
+                ->update(['aiku_id' => 0]);
+
             return;
         }
 
         if (in_array($this->auroraModelData->{'Inventory Transaction Type'}, ['Move Out', 'Move In']) && $this->auroraModelData->{'Inventory Transaction Quantity'} == 0) {
+            DB::connection('aurora')->table('Inventory Transaction Fact')
+                ->where('Inventory Transaction Key', $this->auroraModelData->{'Inventory Transaction Key'})
+                ->update(['aiku_id' => 0]);
+
             return;
         }
 
@@ -41,9 +53,9 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         $type        = null;
         $isDelivered = false;
 
-        $quantity = $this->auroraModelData->{'Inventory Transaction Quantity'};
-
-
+        $quantity        = $this->auroraModelData->{'Inventory Transaction Quantity'};
+        $auditedQuantity = null;
+        $note = null;
         if ($this->auroraModelData->{'Inventory Transaction Type'} == 'Sale') {
             $type        = OrgStockMovementTypeEnum::PICKED;
             $isDelivered = true;
@@ -51,6 +63,7 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             $type = OrgStockMovementTypeEnum::ADJUSTMENT;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'In') {
             $type = OrgStockMovementTypeEnum::PURCHASE;
+            $note = $this->auroraModelData->{'Note'};
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Found') {
             $type = OrgStockMovementTypeEnum::FOUND;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Restock') {
@@ -80,14 +93,16 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Broken') {
             $type = OrgStockMovementTypeEnum::WRITE_OFF;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Associate') {
-            $quantity = 0;
-            $type     = OrgStockMovementTypeEnum::ASSOCIATE;
+            $quantity        = 0;
+            $auditedQuantity = 0;
+            $type            = OrgStockMovementTypeEnum::ASSOCIATE;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Disassociate') {
-            $quantity = 0;
-            $type     = OrgStockMovementTypeEnum::DISASSOCIATE;
+            $quantity        = 0;
+            $auditedQuantity = 0;
+            $type            = OrgStockMovementTypeEnum::DISASSOCIATE;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Audit') {
-            $quantity = $this->auroraModelData->{'Part Location Stock'};
-            $type     = OrgStockMovementTypeEnum::AUDIT;
+            $auditedQuantity = $this->auroraModelData->{'Part Location Stock'};
+            $type            = OrgStockMovementTypeEnum::AUDIT;
         }
         if (!$type) {
             dd($this->auroraModelData);
@@ -97,11 +112,16 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             $quantity = 0;
         }
 
-        if ($quantity == 0 && !in_array($type, [
+        if ($quantity == 0
+            && !in_array($type, [
                 OrgStockMovementTypeEnum::ASSOCIATE,
                 OrgStockMovementTypeEnum::DISASSOCIATE,
                 OrgStockMovementTypeEnum::AUDIT,
             ])) {
+            DB::connection('aurora')->table('Inventory Transaction Fact')
+                ->where('Inventory Transaction Key', $this->auroraModelData->{'Inventory Transaction Key'})
+                ->update(['aiku_id' => 0]);
+
             return;
         }
 
@@ -116,6 +136,8 @@ class FetchAuroraOrgStockMovement extends FetchAurora
 
         $orgStock = $this->parseOrgStock($this->organisation->id.':'.$this->auroraModelData->{'Part SKU'});
         if (!$orgStock) {
+            //print "!!!! Org stock do not found ".$this->organisation->id.':'.$this->auroraModelData->{'Part SKU'}." <<-\n";
+
             return;
         }
 
@@ -170,15 +192,31 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         $this->parsedData['orgStockMovement'] = [
             'is_delivered'    => $isDelivered,
             'type'            => $type,
-            'quantity'        => $quantity,
+            'note'            => $note,
             'org_amount'      => $this->auroraModelData->{'Inventory Transaction Amount'},
             'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Inventory Transaction Key'},
             'date'            => $date,
             'fetched_at'      => now(),
             'last_fetched_at' => now()
         ];
+
+        if ($type == OrgStockMovementTypeEnum::AUDIT || $type == OrgStockMovementTypeEnum::ASSOCIATE || $type == OrgStockMovementTypeEnum::DISASSOCIATE) {
+            $this->parsedData['orgStockMovement']['audited_quantity'] = $auditedQuantity;
+            if ($type == OrgStockMovementTypeEnum::AUDIT) {
+                $this->parsedData['orgStockMovement']['quantity'] = null;
+            } else {
+                $this->parsedData['orgStockMovement']['quantity'] = 0;
+            }
+        } else {
+            $this->parsedData['orgStockMovement']['quantity']         = $quantity;
+            $this->parsedData['orgStockMovement']['audited_quantity'] = null;
+        }
     }
 
+    //    public function parseNote($note):?array
+    //    {
+    //        print "-> ".$note." <-";
+    //    }
 
     protected function fetchData($id): object|null
     {

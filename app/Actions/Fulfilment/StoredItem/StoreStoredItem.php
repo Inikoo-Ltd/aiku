@@ -12,7 +12,6 @@ use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydrateStoredItems;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydrateStoredItems;
 use App\Actions\Fulfilment\Pallet\Hydrators\PalletHydrateStoredItems;
 use App\Actions\Fulfilment\Pallet\Hydrators\PalletHydrateWithStoredItems;
-use App\Actions\Fulfilment\StoredItem\Search\StoredItemRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStoredItems;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateStoredItems;
@@ -57,10 +56,6 @@ class StoreStoredItem extends OrgAction
         OrganisationHydrateStoredItems::dispatch($parent->organisation);
         FulfilmentHydrateStoredItems::dispatch($parent->fulfilment);
         FulfilmentCustomerHydrateStoredItems::dispatch($storedItem->fulfilmentCustomer);
-
-
-
-        StoredItemRecordSearch::dispatch($storedItem);
 
         return $storedItem;
     }

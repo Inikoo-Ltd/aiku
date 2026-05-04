@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { Head, useForm } from "@inertiajs/vue3"
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Modal from "@/Components/Utils/Modal.vue"
+import ExportModalActions from "@/Components/HumanResources/ExportModalActions.vue"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import RejectLeaveModal from "@/Components/HumanResources/RejectLeaveModal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -14,9 +17,9 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faEdit, faDownload, faFileExcel, faFileCsv, faPaperclip } from "@fal"
+import { faCheck, faTimes, faEdit, faDownload, faFileExcel, faFileCsv, faPaperclip, faTrash } from "@fal"
 
-library.add(faCheck, faTimes, faEdit, faDownload, faFileExcel, faFileCsv, faPaperclip)
+library.add(faCheck, faTimes, faEdit, faDownload, faFileExcel, faFileCsv, faPaperclip, faTrash)
 
 const props = defineProps<{
 	title: string
@@ -26,13 +29,21 @@ const props = defineProps<{
 		links: any
 		meta: any
 	}
-	type_options: Record<string, string>
+	type_options: Record<string, string | { label: string; category?: string }>
 	status_options: Record<string, string>
 }>()
+
+const parsedTypeOptions = computed(() => {
+	return Object.entries(props.type_options ?? {}).map(([value, data]) => ({
+		value,
+		label: typeof data === "string" ? data : data.label || value,
+	}))
+})
 
 const locale = useLocaleStore()
 const isEditModalOpen = ref(false)
 const isExportModalOpen = ref(false)
+const isRejectModalOpen = ref(false)
 const selectedLeave = ref<any>(null)
 const isSubmitting = ref(false)
 const isExporting = ref(false)
@@ -63,6 +74,90 @@ const getStatusTheme = (status: string): number => {
 		default:
 			return 99
 	}
+}
+
+const toNumber = (value: unknown): number => {
+	if (typeof value === "number") {
+		return Number.isFinite(value) ? value : 0
+	}
+
+	if (typeof value === "string") {
+		const parsed = Number(value)
+		return Number.isFinite(parsed) ? parsed : 0
+	}
+
+	return 0
+}
+
+const approvalTotalSteps = (leave: any): number => {
+	return Math.max(0, toNumber(leave.approval_total_steps))
+}
+
+const approvalCompletedSteps = (leave: any): number => {
+	const total = approvalTotalSteps(leave)
+	if (total === 0) {
+		return 0
+	}
+
+	if (leave.status === "approved") {
+		return total
+	}
+
+	return Math.min(Math.max(0, toNumber(leave.approval_completed_steps)), total)
+}
+
+const approvalProgressPercent = (leave: any): number => {
+	const total = approvalTotalSteps(leave)
+	if (total === 0) {
+		return 0
+	}
+
+	return Math.round((approvalCompletedSteps(leave) / total) * 100)
+}
+
+const approvalStatusLabel = (leave: any): string => {
+	if (leave.status === "approved") {
+		return trans("Completed")
+	}
+
+	if (leave.status === "rejected") {
+		return trans("Rejected")
+	}
+
+	return trans("In Progress")
+}
+
+const approvalProgressText = (leave: any): string => {
+	const total = approvalTotalSteps(leave)
+	if (total === 0) {
+		return trans("No steps")
+	}
+
+	if (leave.status === "approved") {
+		return trans(":steps steps completed", { steps: String(total) })
+	}
+
+	const currentStep = Math.min(
+		Math.max(1, toNumber(leave.approval_current_step) || approvalCompletedSteps(leave) + 1),
+		total
+	)
+
+	return trans("Level :current of :total", {
+		current: String(currentStep),
+		total: String(total),
+	})
+}
+
+const approvalBarClass = (leave: any): string => {
+	if (leave.status === "approved") {
+		return "bg-green-500"
+	}
+
+	if (leave.status === "rejected") {
+		return "bg-red-500"
+	}
+
+	return "bg-amber-500"
 }
 
 const openExportModal = () => {
@@ -148,6 +243,16 @@ const submitEdit = () => {
 const formatDate = (date: string) => {
 	return useFormatTime(date, { localeCode: locale?.language?.code })
 }
+
+const openRejectModal = (leave: any) => {
+	selectedLeave.value = leave
+	isRejectModalOpen.value = true
+}
+
+const closeRejectModal = () => {
+	isRejectModalOpen.value = false
+	selectedLeave.value = null
+}
 </script>
 
 <template>
@@ -199,10 +304,45 @@ const formatDate = (date: string) => {
 				</Tag>
 			</template>
 
+			<template #cell(approval_progress)="{ item: leave }">
+				<div class="min-w-40">
+					<div class="flex items-center justify-between gap-2 text-xs">
+						<span class="font-medium text-gray-700">
+							{{ approvalStatusLabel(leave) }}
+						</span>
+						<span class="text-gray-500">
+							{{ approvalProgressText(leave) }}
+						</span>
+					</div>
+					<div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-gray-200">
+						<div
+							class="h-full rounded-full transition-all duration-300 ease-out"
+							:class="approvalBarClass(leave)"
+							:style="{ width: `${approvalProgressPercent(leave)}%` }" />
+					</div>
+				</div>
+			</template>
+
 			<template #cell(reason)="{ item: leave }">
-				<span class="whitespace-nowrap">
-					{{ leave.reason ?? "—" }}
-				</span>
+				<div class="max-w-md">
+					<div v-if="leave.reason" class="text-sm text-gray-600 break-words">
+						{{ leave.reason }}
+					</div>
+					<div
+						v-if="leave.status === 'rejected' && leave.rejection_reason"
+						class="mt-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
+						<div class="break-words">
+							{{ leave.rejection_reason }}
+						</div>
+					</div>
+					<span
+						v-if="
+							!leave.reason &&
+							!(leave.status === 'rejected' && leave.rejection_reason)
+						">
+						—
+					</span>
+				</div>
 			</template>
 
 			<template #cell(attachments)="{ item: leave }">
@@ -226,7 +366,7 @@ const formatDate = (date: string) => {
 			</template>
 
 			<template #cell(actions)="{ item: leave }">
-				<div class="flex gap-2">
+				<div class="flex items-center gap-2">
 					<Button
 						v-if="leave.type === 'medical' && leave.status === 'pending'"
 						type="transparent"
@@ -234,8 +374,11 @@ const formatDate = (date: string) => {
 						:icon="faEdit"
 						:label="trans('Edit')"
 						@click="() => openEditModal(leave)" />
+                    <span v-if="leave.status !== 'pending'" class="text-gray-400 text-xs">
+						{{ trans("Processed") }}
+					</span>
 					<ModalConfirmation
-						v-if="leave.status === 'pending'"
+						v-if="leave.status === 'pending' && leave.can_approve_current_user"
 						:routeYes="{
 							name: 'grp.org.hr.leaves.approve',
 							parameters: { ...route().params, leave: leave.id },
@@ -258,39 +401,29 @@ const formatDate = (date: string) => {
 								type="positive" />
 						</template>
 					</ModalConfirmation>
-					<ModalConfirmation
-						v-if="leave.status === 'pending'"
-						:routeYes="{
-							name: 'grp.org.hr.leaves.reject',
+					<Button
+						v-if="leave.status === 'pending' && leave.can_approve_current_user"
+						type="warning"
+						size="xs"
+						:icon="faTimes"
+						:label="trans('Reject')"
+						@click="() => openRejectModal(leave)" />
+					<ModalConfirmationDelete
+						:routeDelete="{
+							name: 'grp.org.hr.leaves.delete',
 							parameters: { ...route().params, leave: leave.id },
-							method: 'post',
-						}"
-						:isWithMessage="true"
-						:keyMessage="'rejection_reason'"
-						:whyLabel="trans('Rejection Reason')"
-						:title="trans('Reject Leave Request')"
-						:description="trans('Are you sure you want to reject this leave request?')"
-						:message="{ placeholder: trans('Enter the reason for rejection') }">
+						}">
 						<template #default="{ changeModel, isLoadingdelete }">
 							<Button
-								type="warning"
+								type="negative"
 								size="xs"
-								:icon="faTimes"
-								:label="trans('Reject')"
+								:icon="faTrash"
+								:label="trans('Delete')"
 								:loading="isLoadingdelete"
 								@click="changeModel" />
 						</template>
-						<template #btn-yes="{ clickYes, isLoadingdelete }">
-							<Button
-								:loading="isLoadingdelete"
-								@click="clickYes"
-								:label="trans('Yes, reject')"
-								type="warning" />
-						</template>
-					</ModalConfirmation>
-					<span v-if="leave.status !== 'pending'" class="text-gray-400 text-xs">
-						{{ trans("Processed") }}
-					</span>
+					</ModalConfirmationDelete>
+
 				</div>
 			</template>
 		</Table>
@@ -379,8 +512,11 @@ const formatDate = (date: string) => {
 						v-model="exportForm.type"
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
 						<option value="">{{ trans("All Types") }}</option>
-						<option v-for="(label, value) in type_options" :key="value" :value="value">
-							{{ label }}
+						<option
+							v-for="option in parsedTypeOptions"
+							:key="option.value"
+							:value="option.value">
+							{{ option.label }}
 						</option>
 					</select>
 				</div>
@@ -407,33 +543,53 @@ const formatDate = (date: string) => {
 					<label class="block text-sm font-medium text-gray-700">{{
 						trans("Department")
 					}}</label>
-					<input
+					<select
 						v-model="exportForm.department"
-						type="text"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-						:placeholder="trans('Filter by department')" />
+						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
+						<option value="">{{ trans("All Departments") }}</option>
+						<option
+							v-for="(label, value) in parsedDepartmentOptions"
+							:key="value"
+							:value="value">
+							{{ label }}
+						</option>
+					</select>
 				</div>
 				<div>
 					<label class="block text-sm font-medium text-gray-700">{{
 						trans("Team")
 					}}</label>
-					<input
+					<select
 						v-model="exportForm.team"
-						type="text"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-						:placeholder="trans('Filter by team')" />
+						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
+						<option value="">{{ trans("All Teams") }}</option>
+						<option
+							v-for="(label, value) in parsedTeamOptions"
+							:key="value"
+							:value="value">
+							{{ label }}
+						</option>
+					</select>
 				</div>
 			</div>
 
-			<div>
-				<label class="block text-sm font-medium text-gray-700">{{
-					trans("Employee")
-				}}</label>
-				<input
-					v-model.number="exportForm.employee_id"
-					type="number"
-					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-					:placeholder="trans('Filter by employee ID')" />
+			<div class="grid grid-cols-2 gap-4">
+				<div>
+					<label class="block text-sm font-medium text-gray-700">{{
+						trans("Employee")
+					}}</label>
+					<select
+						v-model="exportForm.employee_id"
+						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
+						<option value="">{{ trans("All Employees") }}</option>
+						<option
+							v-for="(label, value) in parsedEmployeeOptions"
+							:key="value"
+							:value="value">
+							{{ label }}
+						</option>
+					</select>
+				</div>
 			</div>
 
 			<div>
@@ -461,16 +617,21 @@ const formatDate = (date: string) => {
 					</label>
 				</div>
 			</div>
-
-			<div class="mt-6 flex justify-end gap-2">
-				<Button @click="closeExportModal" :label="trans('Cancel')" type="tertiary" />
-				<Button
-					type="save"
-					nativeType="submit"
-					:label="trans('Export')"
-					:loading="isExporting"
-					icon="fal fa-download" />
-			</div>
 		</form>
+		<ExportModalActions
+			class-name="mt-6 flex justify-end gap-2"
+			:loading="isExporting"
+			export-icon="fal fa-download"
+			@cancel="closeExportModal"
+			@export="submitExport" />
 	</Modal>
+
+	<RejectLeaveModal
+		:isOpen="isRejectModalOpen"
+		:leave="selectedLeave"
+		:route="{
+			name: 'grp.org.hr.leaves.reject',
+			parameters: { ...route().params, leave: selectedLeave?.id },
+		}"
+		@close="closeRejectModal" />
 </template>

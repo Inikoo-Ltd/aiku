@@ -3,19 +3,16 @@
 namespace App\Actions\Comms\Mailshot\Filters;
 
 use Illuminate\Support\Arr;
-use Illuminate\Database\Eloquent\Builder;
-use Spatie\QueryBuilder\QueryBuilder as SpatieQueryBuilder;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
 
 class FilterByInterest
 {
     /**
      * Apply the "By Interest" filter to the query.
      *
-     * @param Builder|SpatieQueryBuilder $query
-     * @param array $filters
-     * @return Builder|SpatieQueryBuilder
      */
-    public function apply($query, array $filters)
+    public function apply(Builder $query, array $filters): Builder
     {
         $interestFilter = Arr::get($filters, 'by_interest');
         $interestTags = is_array($interestFilter) ? ($interestFilter['value'] ?? []) : [];
@@ -30,8 +27,13 @@ class FilterByInterest
         }
 
         if (!empty($tagIds)) {
-            $query->whereHas('tags', function (Builder $q) use ($tagIds) {
-                $q->whereIn('tags.id', $tagIds);
+            $query->whereExists(function ($q) use ($tagIds) {
+                $q->select(DB::raw(1))
+                    ->from('model_has_tags')
+                    ->whereColumn('model_has_tags.model_id', 'customers.id')
+                    ->where('model_has_tags.model_type', 'Customer');
+
+                $q->whereIn('model_has_tags.tag_id', $tagIds);
             });
         }
 

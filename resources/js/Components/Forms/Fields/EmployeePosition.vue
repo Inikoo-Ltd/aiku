@@ -127,7 +127,7 @@ const onSubmitNewForm = () => {
 
     if (props.fieldData.current_organisation?.slug == props.fieldName) {
         console.log(".")
-        // If a user is employed in this organization
+        // If a user is employed in this organisation
         newForm
             .transform((data) => ({
                 permissions: data[props.fieldName]
@@ -428,6 +428,13 @@ const optionsJob = reactive<optionsJob>({
                 label: trans("Picker"),
                 optionsType: ["warehouses"],
                 number_employees: props.options.positions.data.find(position => position.slug == "dist-pik")?.number_employees || 0
+            },
+            {
+                slug: "dist-excp-pick",
+                grade: "clerk",
+                label: trans("Replenisher"),
+                optionsType: ["warehouses"],
+                number_employees: props.options.positions.data.find(position => position.slug == "dist-excp-pik")?.number_employees || 0
             },
             {
                 slug: "dist-pak",
@@ -832,7 +839,7 @@ const isSomeShopCheckedInSameGrade = (subDepartmentSlug: string) => {
                     </template>
                 </template>
 
-                <!-- To grouping the Shope into same area -->
+                <!-- To grouping the Shops into same area -->
                 <div :id="'scopeShop' + fieldName" class="overflow-hidden mt-2 border-t border-gray-300 "
                     :class="shopsLength ? '' : 'hidden'"
                 >

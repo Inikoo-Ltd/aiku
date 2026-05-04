@@ -10,7 +10,6 @@ namespace App\Models\Procurement;
 
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\SysAdmin\Organisation;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -26,13 +25,12 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property array<array-key, mixed> $sources
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Organisation $organisation
  * @property-read Organisation $partner
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Procurement\PurchaseOrder> $purchaseOrders
  * @property-read \App\Models\Procurement\OrgPartnerStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, StockDelivery> $stockDeliveries
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPartner newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPartner newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPartner query()
@@ -41,7 +39,6 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class OrgPartner extends Model
 {
     use InOrganisation;
-    use HasUniversalSearch;
 
     protected $casts = [
         'sources'           => 'array',

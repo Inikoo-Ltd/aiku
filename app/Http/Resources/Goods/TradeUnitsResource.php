@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Goods;
 
+use App\Models\Goods\TradeUnit;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -25,30 +26,65 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $sales_grp_currency_external_ly
  * @property mixed $invoices
  * @property mixed $invoices_ly
+ * @property mixed $health_rank
  */
 class TradeUnitsResource extends JsonResource
 {
     public function toArray($request): array
     {
+        /** @var TradeUnit $tradeUnit*/
+        $tradeUnit = $this->resource;
+
+        $additionalData = [];
+
+        if ($tradeUnit->relationLoaded('brands')) {
+            $additionalData['brands']   = $tradeUnit->brands->select([
+                    'slug',
+                    'name',
+                ])->first();
+        }
+
+        if ($tradeUnit->relationLoaded('tags')) {
+            $additionalData['tags']   = $tradeUnit->tags->map(function ($item) {
+                $hash = 0;
+                for ($i = 0; $i < strlen($item->name); $i++) {
+                    $hash = ord($item->name[$i]) + (($hash << 5) - $hash);
+                }
+                $color = "#";
+                for ($i = 0; $i < 3; $i++) {
+                    $value = ($hash >> ($i * 8)) & 0xFF;
+                    $color .= str_pad(dechex($value), 2, "0", STR_PAD_LEFT);
+                }
+
+                return [
+                    'slug'          => $item->slug,
+                    'name'          => $item->name,
+                    'class_color'   => $color
+                ];
+            })->toArray();
+        }
+
         return [
-            'slug'                    => $this->slug,
-            'code'                    => $this->code,
-            'name'                    => $this->name,
-            'marketing_weight'        => $this->marketing_weight !== null ? ($this->marketing_weight).' g' : null,
-            'type'                    => $this->type,
-            'number_current_stocks'   => $this->number_current_stocks,
-            'number_current_products' => $this->number_current_products,
-            'id'                      => $this->id,
-            'quantity'                => trimDecimalZeros($this->quantity),
-            'status'                  => $this->status,
-            'status_icon'             => $this->status ? $this->status->icon()[$this->status->value] : null,
-            'media'                   => null,
-            'sales_grp_currency_external'       => $this->sales_grp_currency_external ?? 0,
-            'sales_grp_currency_external_ly'    => $this->sales_grp_currency_external_ly ?? 0,
-            'sales_grp_currency_external_delta' => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),
-            'invoices'                          => $this->invoices ?? 0,
-            'invoices_ly'                       => $this->invoices_ly ?? 0,
-            'invoices_delta'                    => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'slug'                              => $tradeUnit->slug,
+            'code'                              => $tradeUnit->code,
+            'name'                              => $tradeUnit->name,
+            'marketing_weight'                  => $tradeUnit->marketing_weight !== null ? ($tradeUnit->marketing_weight).' g' : null,
+            'type'                              => $tradeUnit->type,
+            'number_current_stocks'             => $tradeUnit->number_current_stocks,
+            'number_current_products'           => $tradeUnit->number_current_products,
+            'id'                                => $tradeUnit->id,
+            'quantity'                          => trimDecimalZeros($tradeUnit->quantity),
+            'status'                            => $tradeUnit->status,
+            'status_icon'                       => $tradeUnit->status ? $tradeUnit->status->icon()[$tradeUnit->status->value] : null,
+            'media'                             => null,
+            'sales_grp_currency_external'       => $tradeUnit->sales_grp_currency_external ?? 0,
+            'sales_grp_currency_external_ly'    => $tradeUnit->sales_grp_currency_external_ly ?? 0,
+            'sales_grp_currency_external_delta' => $this->calculateDelta($tradeUnit->sales_grp_currency_external ?? 0, $tradeUnit->sales_grp_currency_external_ly ?? 0),
+            'invoices'                          => $tradeUnit->invoices ?? 0,
+            'invoices_ly'                       => $tradeUnit->invoices_ly ?? 0,
+            'invoices_delta'                    => $this->calculateDelta($tradeUnit->invoices ?? 0, $tradeUnit->invoices_ly ?? 0),
+            'health_rank'                       => $tradeUnit->health_rank ? $tradeUnit->health_rank->stateIcon()[$tradeUnit->health_rank->value] : null,
+            ...$additionalData
         ];
     }
 

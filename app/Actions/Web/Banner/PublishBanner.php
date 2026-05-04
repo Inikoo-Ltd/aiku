@@ -14,7 +14,6 @@ use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Web\Banner\Search\BannerRecordSearch;
 use App\Actions\Web\Banner\UI\ParseBannerLayout;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Enums\Web\Banner\BannerStateEnum;
@@ -95,7 +94,6 @@ class PublishBanner extends OrgAction
         $unpublishedSnapshot = $banner->unpublishedSnapshot;
         $unpublishedSnapshot->update(['layout' => $unpublishedSnapshot->compiledLayout()]);
 
-        BannerRecordSearch::dispatch($banner);
         UpdateBannerImage::run($banner);
 
 

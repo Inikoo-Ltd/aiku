@@ -8,7 +8,6 @@
 
 namespace App\Actions\Goods\Stock;
 
-use App\Actions\Goods\Stock\Search\StockRecordSearch;
 use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateStocks;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\OrgAction;
@@ -53,7 +52,6 @@ class StoreStock extends OrgAction
             $stock = $parent->stocks()->create($modelData);
             $stock->stats()->create();
             $stock->intervals()->create();
-            $stock->salesIntervals()->create();
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $stock->timeSeries()->create(['frequency' => $frequency]);
             }
@@ -77,8 +75,6 @@ class StoreStock extends OrgAction
         if ($parent instanceof StockFamily) {
             StockFamilyHydrateStocks::dispatch($parent)->delay($this->hydratorsDelay);
         }
-
-        StockRecordSearch::dispatch($stock);
 
         return $stock;
     }

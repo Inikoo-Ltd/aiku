@@ -6,11 +6,11 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { useTabChange } from "@/Composables/tab-change"
-import { computed, inject, ref } from "vue"
+import { computed, inject, ref, watch } from "vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from '@/types/route'
 import Dialog from 'primevue/dialog'
-import { faMinus, faPlus } from '@fal'
+import { faMinus, faPlus, faTools } from '@fal'
 import InputNumber from "primevue/inputnumber"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import PureInput from '@/Components/Pure/PureInput.vue'
@@ -23,20 +23,25 @@ import { faSave as falSave, faInfoCircle } from '@fal'
 import { faAsterisk, faQuestion } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faPencil } from '@far'
+import { faWarning } from '@fortawesome/free-solid-svg-icons'
+import FamilySetOrderingPositionOfProduct from '@/Components/Product/OrderProduct.vue'
+import { notify } from '@kyvg/vue3-notification'
 
-library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk)
+library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk, faTools)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
     editable_table: boolean
     title: string
     currencies?: any
+    familyId : number
     tabs: {
         current: string
         navigation: Record<string, string>
     },
     data: Record<string, any>
     index?: Record<string, any>
+    index_ordering?: Record<string, any>
     sales?: Record<string, any>
     routes: {
         families_route: routeType
@@ -46,6 +51,8 @@ const props = defineProps<{
     attachments?: Record<string, any>
     shop_id?: number
     variantSlugs?: Record<string, string>;
+    mismatch_trade_unit_with_master?: boolean
+    hide_sku_in_name_column?: boolean
 }>()
 
 const layout = inject<string>('layout')
@@ -61,6 +68,7 @@ const form = ref({
     unit: ''
 })
 
+const localData = ref({ ...props })
 /* Track field state */
 const formDirty = ref({ price: false, rrp: false, unit: false })
 const formProcessing = ref({ price: false, rrp: false, unit: false })
@@ -70,7 +78,8 @@ const component = computed(() => {
     const mapping: Record<string, any> = {
         index: TableProducts,
         sales: TableProducts,
-        attachments: AttachmentManagement
+        attachments: AttachmentManagement,
+        index_ordering : FamilySetOrderingPositionOfProduct
     }
     return mapping[currentTab.value]
 })
@@ -128,20 +137,125 @@ const onCancelEditBulkProduct = () => {
     rowErrors.value = {}
     key.value = ulid()
 }
+
+
+const repairTradeUnitToChildren = async () => {
+    console.log("REPAIRING");
+    await axios.patch(route('grp.models.master_asset.repair_mismatch_trade_units', {
+        masterAsset: props.masterAsset.id,
+    })).then((response) => {
+        notify({
+            title: trans("Success!"),
+            text: trans("Successfully repaired the product details"),
+            type: "success"
+        })
+        router.visit(route('grp.masters.master_shops.show.master_products.show', route().params))
+    }).catch((errors) => {
+        notify({
+            title: trans("Something went wrong"),
+            text: errors.message || trans("Failed to update product quantity in basket"),
+            type: "error"
+        })
+    })
+}
+const loadingOrder = ref(false)
+const SaveOrder = () => {
+    // console.log(localData.value.index_ordering);
+    router.patch(route('grp.models.product_category.reorder_index', {
+        productCategory: props.familyId
+    }), {
+        products: localData.value.index_ordering.map((product: any, index: number) => ({
+            id: product.id,
+            code : product.code,
+            index_under_family: product.index_under_family,
+        }))
+    }, {
+        preserveScroll: true,
+        onStart : () => {
+            loadingOrder.value = true
+        },
+        onSuccess: () => {
+            notify({
+                title: trans("Success!"),
+                text: trans("Successfully reordered the products"),
+                type: "success"
+            })
+        },
+        onError: (errors) => {
+            // console.log(errors);
+            notify({
+                title: trans("Something went wrong"),
+                text: errors.message || trans("Failed to reorder products"),
+                type: "error"
+            })
+        },
+        onFinish : () => {
+            loadingOrder.value = false
+        }
+    })
+}
+
+watch(
+    () => props,
+    (newVal) => {
+        localData.value = { ...newVal }
+    },
+    { deep: true }
+)
+
+const replaceProps = (updatedData) => {
+    localData.value[currentTab.value] = updatedData
+}
+
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
-
     <PageHeading :data="pageHead">
         <template #other>
             <Button
-                v-if="compSelectedProductsId.length > 0 && editable_table"
+                v-if="editable_table && currentTab !== 'index_ordering'"
+                :disabled="compSelectedProductsId.length <= 0"
+                v-tooltip="compSelectedProductsId.length <= 0 ? ctrans('Select checkbox to edit products') : ''"
                 @click="() => isOpenModalEditProducts = true"
                 type="tertiary"
                 :icon="faPencil"
                 label="Edit Products"
             />
+        </template>
+
+           <template #button-save-order="{ action }">
+            <Button
+                v-if="currentTab === 'index_ordering'"
+                :icon="action.icon"
+                :label="action.label" 
+                :style="action.style"
+                :onClick="SaveOrder"
+                :loading="loadingOrder"
+            />
+            <span v-else />
+        </template>
+        
+        <template #button-create="{ action }">
+            <div  v-if="currentTab === 'index_ordering'"></div>
+        </template>
+
+         <template #button-repair-image="{ action }">
+            <div  v-if="currentTab === 'index_ordering'"></div>
+        </template>
+
+
+        <template #afterTitle2>
+            <FontAwesomeIcon 
+                v-if="mismatch_trade_unit_with_master" 
+                :icon="faWarning" 
+                class="text-red-500" 
+                v-tooltip="trans('One or more product under this master has mismatched trade units data. Please fix it by modifying the master products trade units')"
+            />
+        </template>
+
+        <template #button-repair-mismatch="{ action }">
+            <Button v-if="mismatch_trade_unit_with_master && currentTab !== 'index_ordering'" :icon="faTools" :label="trans('Repair trade units')" v-tooltip="trans('Will force child to follow master products trade units')" @click="repairTradeUnitToChildren()" :style="'warning'" />
         </template>
     </PageHeading>
 
@@ -155,12 +269,15 @@ const onCancelEditBulkProduct = () => {
         :is="component"
         :key="currentTab + key"
         :tab="currentTab"
-        :data="props[currentTab]"
+        :data="localData[currentTab]"
         :isCheckboxProducts="props.editable_table"
         :editable_table="props.editable_table"
         :selectedProductsId="selectedProductsId"
         @selectedRow="(ids) => selectedProductsId = { ...selectedProductsId, ...ids }"
         :variantSlugs="variantSlugs"
+        :mismatch_trade_unit_with_master="mismatch_trade_unit_with_master"
+        :hide_sku_in_name_column="hide_sku_in_name_column"
+        @update:data="(updatedData) => replaceProps(updatedData)"
     />
 
     <!-- MODAL -->

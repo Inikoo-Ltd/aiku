@@ -14,13 +14,14 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 class OvertimeRequestsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
 {
     private ?int $organisationId = null;
-
+    private ?string $timezone = null;
     private ?array $filters = null;
 
-    public function __construct(?int $organisationId = null, ?array $filters = null)
+    public function __construct(?int $organisationId = null, ?array $filters = null, ?string $timezone = 'UTC')
     {
         $this->organisationId = $organisationId;
         $this->filters = $filters;
+        $this->timezone = $timezone ?? 'UTC';
     }
 
     public function query(): Relation|Builder|OvertimeRequest
@@ -64,21 +65,23 @@ class OvertimeRequestsExport implements FromQuery, WithMapping, ShouldAutoSize, 
         $recorder = $row->recordedBy;
         $statusValue = $row->status?->value ?? $row->status;
 
+        $tz = $this->timezone;
+
         return [
             $employee?->contact_name ?? '-',
             $employee?->department ?? '-',
             $row->overtimeType?->name ?? '-',
-            $row->requested_date?->format('Y-m-d'),
-            $row->requested_start_at ? $row->requested_start_at->format('Y-m-d H:i') : '-',
+            $row->requested_date?->timezone($tz)->format('Y-m-d'),
+            $row->requested_start_at ? $row->requested_start_at->timezone($tz)->format('Y-m-d H:i') : '-',
             $row->requested_duration_minutes,
-            $row->recorded_start_at ? $row->recorded_start_at->format('Y-m-d H:i') : '-',
+            $row->recorded_start_at ? $row->recorded_start_at->timezone($tz)->format('Y-m-d H:i') : '-',
             $row->recorded_duration_minutes ?? 0,
             OvertimeRequestStatusEnum::labels()[$statusValue] ?? (string) $statusValue,
             $row->reason ?? '-',
             $approver?->contact_name ?? '-',
-            $row->approved_at ? $row->approved_at->format('Y-m-d H:i') : '-',
+            $row->approved_at ? $row->approved_at->timezone($tz)->format('Y-m-d H:i') : '-',
             $recorder?->contact_name ?? '-',
-            $row->created_at->format('Y-m-d H:i:s'),
+            $row->created_at->timezone($tz)->format('Y-m-d H:i:s'),
         ];
     }
 

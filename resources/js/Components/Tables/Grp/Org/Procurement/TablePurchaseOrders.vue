@@ -45,6 +45,11 @@ function PurchaseOrderRoute(purchaseOrder: PurchaseOrder) {
       return route(
         "grp.org.procurement.purchase_orders.show",
         [route().params["organisation"], purchaseOrder.slug]);
+   case "grp.org.procurement.org_suppliers.show.purchase_orders.index":
+       return route(
+           "grp.org.procurement.org_suppliers.show.purchase-orders.show",
+           [route().params["organisation"], route().params["orgSupplier"], purchaseOrder.slug]
+       );
     default:
       return "";
   }
@@ -66,6 +71,10 @@ function SupplierRoute(purchaseOrder: PurchaseOrder) {
       return route(
         "grp.supply-chain.suppliers.show",
         [purchaseOrder.supplier_slug]);
+    case "grp.org.procurement.org_suppliers.show.purchase_orders.index":
+      return route(
+        "grp.org.procurement.org_suppliers.show",
+        [route().params["organisation"], route().params["orgSupplier"]]);
     default:
       return "";
   }
@@ -83,6 +92,10 @@ function AgentRoute(purchaseOrder: PurchaseOrder) {
       return route(
         "grp.supply-chain.agents.show",
         [purchaseOrder.agent_slug]);
+    case "grp.org.procurement.org_suppliers.show.purchase_orders.index":
+      return route(
+        "grp.org.procurement.org_agents.show",
+        [route().params["organisation"], purchaseOrder.agent_slug]);
     default:
       return "";
   }
@@ -117,7 +130,7 @@ function AgentRoute(purchaseOrder: PurchaseOrder) {
     </template>
 
     <template #cell(date)="{ item: purchaseOrder }">
-      <div class="text-right">
+      <div>
         {{ useFormatTime(purchaseOrder["date"], { localeCode: locale.language.code, formatTime: "aiku" }) }}
       </div>
     </template>

@@ -14,6 +14,7 @@ set('bin/php', function () {
     return '/usr/bin/php8.4';
 });
 
+
 desc('Check for changes in frontend');
 task('deploy:check-fe-changes', function () {
     try {
@@ -50,13 +51,36 @@ task('deploy:check-fe-changes', function () {
 
 desc('🚡 Migrating database');
 task('deploy:migrate', function () {
+    if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
+        writeln('Skipping migrate on production host '.currentHost()->getAlias());
+
+        return;
+    }
+
     artisan('migrate --force', ['skipIfNoEnv', 'showOutput'])();
 });
+
+
+desc('Modified npm:install');
+task('npm:my_install', function () {
+    if (currentHost()->getAlias() == 'staging') {
+        set('use_nvm', 'source ~/.nvm/nvm.sh && nvm use --lts');
+        run("cd {{release_path}} && {{use_nvm}} && npm ci");
+    } else {
+        run('cd {{release_path}} && {{bin/npm}} ci');
+    }
+});
+
 desc('🏗️ Build vue app');
 task('deploy:build', function () {
     $frontEndChanged = get('front_end_changed');
     if ($frontEndChanged) {
-        run("cd {{release_path}} && {{bin/npm}} run build");
+        if (currentHost()->getAlias() == 'staging') {
+            set('use_nvm', 'source ~/.nvm/nvm.sh && nvm use --lts');
+            run("cd {{release_path}} && {{use_nvm}} && npm run build");
+        } else {
+            run("cd {{release_path}} && {{bin/npm}} run build");
+        }
     } else {
         // No FE changes: reuse built assets from the previous release
         writeln('No front-end changes detected. Reusing built assets from previous release if available.');
@@ -85,7 +109,6 @@ desc('Stops inertia SSR server');
 task('artisan:inertia:stop-ssr', artisan('inertia:stop-ssr'))->select('env=prod');
 
 
-
 desc('Refresh vue after deployment');
 task('artisan:refresh_vue', artisan('deploy:refresh_vue'))->select('env=prod');
 
@@ -99,6 +122,11 @@ task('deploy:refresh-vue', function () {
         writeln('Skipping refresh vue: no changes detected');
     }
 });
+
+desc('Reload octane after deployment');
+task('artisan:octane:reload', function () {
+    artisan('octane:reload', ['skipIfNoEnv', 'showOutput'])();
+})->select('env=prod');
 
 desc('Save ssr checksums');
 task('deploy:save-ssr-checksums', function () {
@@ -134,9 +162,6 @@ task('deploy:save-ssr-checksums', function () {
     $checksumFile = '{{release_path}}/SSR_CHECKSUM';
     run('printf %s '.escapeshellarg($combined).' > '.$checksumFile);
     writeln('SSR checksum saved to '.$checksumFile);
-
-
-
 });
 
 
@@ -191,7 +216,6 @@ task(
 
 desc('Restart Inertia SSR by supervisorctl');
 task('deploy:restart-ssr-by-supervisorctl', function () {
-
     $currentFile  = '{{release_path}}/SSR_CHECKSUM';
     $previousFile = '{{previous_release}}/SSR_CHECKSUM';
 
@@ -231,8 +255,6 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
     if ($shouldRestartSSR) {
         run("sudo supervisorctl restart inertia-ssr-production");
     }
-
-
 })->select('env=prod');
 
 set('keep_releases', 25);
@@ -248,9 +270,26 @@ set('shared_files', [
     '.user.ini',
     'restart_varnish.sh'
 ]);
+
+task('debug:writable', function () {
+    $dirs = get('writable_dirs');
+    writeln("Writable directories: ".implode(', ', $dirs));
+});
+
+$defaultWritableDirs = get('writable_dirs');
+
+set('writable_dirs', function () use ($defaultWritableDirs) {
+    if (currentHost()->getAlias() === 'aiku_helio') {
+        return ['bootstrap/cache'];
+    }
+
+    return $defaultWritableDirs;
+});
+
 desc('Deploys your project');
 task('deploy', [
     'deploy:unlock',
+    'debug:writable',
     'deploy:prepare',
     'deploy:vendors',
     'deploy:set-release',
@@ -259,7 +298,7 @@ task('deploy', [
     'artisan:route:cache',
     'artisan:view:cache',
     'artisan:event:cache',
-    'artisan:migrate',
+    'deploy:migrate',
     'deploy:check-fe-changes',
     'deploy:build',
     'deploy:save-ssr-checksums',

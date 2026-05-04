@@ -14,10 +14,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property int $id
  * @property int $stock_family_id
- * @property string $revenue_grp_currency_1d
- * @property string $revenue_grp_currency_1d_ly
- * @property string $profit_grp_currency_1d
- * @property string $profit_grp_currency_1d_ly
+ * @property numeric $revenue_grp_currency_1d
+ * @property numeric $revenue_grp_currency_1d_ly
+ * @property numeric $profit_grp_currency_1d
+ * @property numeric $profit_grp_currency_1d_ly
  * @property int $dispatched_all
  * @property int $dispatched_1y
  * @property int $dispatched_1q
@@ -98,7 +98,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $org_stock_movements_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Goods\StockFamily $stockFamily
+ * @property-read \App\Models\Goods\StockFamily|null $stockFamily
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockFamilyIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockFamilyIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockFamilyIntervals query()

@@ -9,6 +9,10 @@ import { trans } from "laravel-vue-i18n"
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
 
+const props = defineProps<{
+    data?: {}
+}>()
+
 // Init: Search result
 const LBInitSearchResult = async () => {
 

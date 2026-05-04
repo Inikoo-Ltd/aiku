@@ -12,7 +12,6 @@ namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\DeleteCollection;
 use App\Actions\GrpAction;
-use App\Actions\Masters\MasterCollection\Search\MasterCollectionRecordSearch;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterCollections;
 use App\Models\Masters\MasterCollection;
 use Illuminate\Support\Facades\DB;
@@ -51,9 +50,6 @@ class DeleteMasterCollection extends GrpAction
                     $masterCollection->stats->delete();
                 }
 
-                if ($masterCollection->salesIntervals) {
-                    $masterCollection->salesIntervals->delete();
-                }
 
                 if ($masterCollection->orderingStats) {
                     $masterCollection->orderingStats->delete();
@@ -65,7 +61,6 @@ class DeleteMasterCollection extends GrpAction
             }
         });
 
-        MasterCollectionRecordSearch::run($masterCollection);
         MasterShopHydrateMasterCollections::dispatch($masterCollection->masterShop);
     }
 

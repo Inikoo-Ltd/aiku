@@ -12,7 +12,6 @@ use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\Timesheet;
 use App\Models\HumanResources\TimeTracker;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,6 +21,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -43,26 +44,25 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $phone
  * @property string|null $identity_document_type
  * @property string|null $identity_document_number
- * @property \Illuminate\Support\Carbon|null $date_of_birth
+ * @property Carbon|null $date_of_birth
  * @property string|null $gender
  * @property array<array-key, mixed> $data
  * @property int|null $image_id
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $delete_comment
  * @property string|null $source_id
  * @property int|null $user_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Clocking> $clockings
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\SysAdmin\GuestStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, TimeTracker> $timeTrackers
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Timesheet> $timesheets
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read \App\Models\SysAdmin\User|null $user
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\User> $users
  * @method static \Database\Factories\SysAdmin\GuestFactory factory($count = null, $state = [])
@@ -81,15 +81,15 @@ class Guest extends Model implements HasMedia, Auditable
     use SoftDeletes;
     use HasFactory;
     use HasHistory;
-    use HasUniversalSearch;
+    use HasSearch;
 
 
     protected $casts = [
-        'data'          => 'array',
-        'date_of_birth' => 'datetime:Y-m-d',
-        'status'        => 'boolean',
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'data'            => 'array',
+        'date_of_birth'   => 'datetime:Y-m-d',
+        'status'          => 'boolean',
+        'fetched_at'      => 'datetime',
+        'last_fetched_at' => 'datetime',
     ];
 
     protected $attributes = [
@@ -97,6 +97,20 @@ class Guest extends Model implements HasMedia, Auditable
     ];
 
     protected $guarded = [];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'                       => (string)$this->id,
+            'status'                   => $this->status,
+            'contact_name'             => (string)$this->contact_name,
+            'company_name'             => (string)$this->company_name,
+            'email'                    => (string)$this->email,
+            'phone'                    => (string)$this->phone,
+            'identity_document_number' => (string)$this->identity_document_number,
+            'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {
@@ -129,7 +143,10 @@ class Guest extends Model implements HasMedia, Auditable
 
     public function getUser(): ?User
     {
-        return $this->morphToMany(User::class, 'model', 'user_has_models')->wherePivot('status', true)->withTimestamps()->first();
+        /** @var User $user */
+        $user = $this->morphToMany(User::class, 'model', 'user_has_models')->wherePivot('status', true)->withTimestamps()->first();
+
+        return $user;
     }
 
     public function users(): MorphToMany

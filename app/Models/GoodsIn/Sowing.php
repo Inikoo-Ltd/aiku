@@ -47,9 +47,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property SowingTypeEnum $type
  * @property-read DeliveryNote|null $deliveryNote
  * @property-read DeliveryNoteItem|null $deliveryNoteItem
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Location|null $location
- * @property-read OrgStock $orgStock
+ * @property-read OrgStock|null $orgStock
  * @property-read OrgStockMovement|null $orgStockMovement
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop|null $shop

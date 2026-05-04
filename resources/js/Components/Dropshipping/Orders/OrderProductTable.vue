@@ -7,6 +7,7 @@ import Tag from "@/Components/Tag.vue"
 import { routeType } from "@/types/route"
 import { Table as TableTS } from "@/types/Table"
 import { faPencil, faTimes, faTrashAlt, faMoneyCheckEditAlt } from "@far"
+import { faBarcode } from "@fal"
 import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
@@ -23,8 +24,10 @@ import Discount from "@/Components/Utils/Label/Discount.vue"
 import { InputNumber, InputText } from "primevue"
 import axios from "axios"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import BasicDiscount from "@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue"
 
-library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt)
+library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt, faBarcode)
 
 type ProductRow = {
     id: number
@@ -343,6 +346,12 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
         }
     )
 }
+
+const isOffersData = (offersData: any): boolean => {
+    if (!offersData) return false
+    const parsed = typeof offersData === 'string' ? JSON.parse(offersData) : offersData
+    return Object.keys(parsed || {}).length > 0
+}
 </script>
 
 <template>
@@ -382,7 +391,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                         Stock: {{ locale.number(item.available_quantity || 0) }} available
                     </div>
 
-                    <Discount v-if="Object.keys(item.offers_data || {})?.length" :offers_data="item.offers_data" />
+                    <Discount v-if="isOffersData(item.offers_data)" :offers_data="item.offers_data" />
                 </div>
             </template>
 
@@ -392,7 +401,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                 <div class="flex items-center justify-end gap-2">
                     <div v-if="item.is_gift">
                         {{ locale.number(item.quantity_bonus) }}
-                        <span v-tooltip="ctrans('Quantity bonus')">
+                        <span v-tooltip="ctrans('Quantity of free gift')">
                             <FontAwesomeIcon icon="fal fa-gift" class="" fixed-width aria-hidden="true" />
                         </span>
                     </div>
@@ -415,6 +424,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                             :denominator="proxyItem.is_cut_view ? (Number(item.product_units) > 1 ? Number(item.product_units) : undefined) : undefined"
                         />
 
+                        <!-- Toggle: is_cut_view -->
                         <span
                             v-if="layout.app.environment == 'local'"
                             @click="() => proxyItem.is_transaction_loading ? '' : onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)"
@@ -428,10 +438,38 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                     </div>
 
                     <!-- Read-only display -->
-                    <div v-else-if="!editingIds.has(item.id)">
-                        <span :class="(state === 'dispatched' &&  item.quantity_dispatched!=item.quantity_ordered)||(state === 'packed' &&  item.quantity_picked!=item.quantity_ordered)?'line-through':''">{{ formatQuantity(item.quantity_ordered) }}</span>
-                        <span class="pl-3" v-if="state === 'packed' &&  item.quantity_picked!=item.quantity_ordered">{{ formatQuantity(item.quantity_picked) }}</span>
-                        <span class="pl-3" v-if="state === 'dispatched'&&  item.quantity_dispatched!=item.quantity_ordered">{{ formatQuantity(item.quantity_dispatched) }}</span>
+                    <div v-else-if="!editingIds.has(item.id)" class="flex flex-wrap items-center gap-x-2">
+                        <span :class="[
+                            (state === 'dispatched' && item.quantity_dispatched != item.quantity_ordered)
+                            || ((state === 'packing' || state === 'packed') && item.quantity_picked != item.quantity_ordered)
+                            || item.quantity_not_picked > 0
+                                ? 'line-through'
+                                : '',
+                            item.quantity_not_picked > 0 ? 'text-red-500' : ''
+                        ]"
+                            v-tooltip="item.quantity_not_picked > 0 ? ctrans('Original quantity ordered') : ''"
+                        >
+                            {{ formatQuantity(item.quantity_ordered) }}
+                        </span>
+                        <span v-if="item.quantity_not_picked > 0" v-tooltip="ctrans('Quantity ordered (some is not picked)')">
+                            {{ formatQuantity(item.quantity_ordered - item.quantity_not_picked) }}
+                        </span>
+
+                        <template v-if="(state === 'packing' || state === 'packed') && item.quantity_picked != item.quantity_ordered">
+                            <span class="pl-3" :class="item.quantity_not_picked > 0 ? 'line-through text-red-500' : ''"
+                                v-tooltip="item.quantity_not_picked > 0 ? ctrans('Original quantity to pick') : ''"
+                            >
+                                {{ formatQuantity(item.quantity_picked) }}
+                            </span>
+                            <span v-if="item.quantity_not_picked > 0" v-tooltip="item.quantity_not_picked > 0 ? ctrans('Quantity picked (some is not picked)') : ''">
+                                {{ formatQuantity(item.quantity_picked - item.quantity_not_picked) }}
+                            </span>
+                        </template>
+
+                        <span class="pl-3" v-if="state === 'dispatched'&&  item.quantity_dispatched!=item.quantity_ordered">
+                            {{ formatQuantity(item.quantity_dispatched) }}
+                            <!-- <FractionDisplay :fractionData="item.quantity_dispatched_fractional" /> -->
+                        </span>
 
                     </div>
 
@@ -446,8 +484,36 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                 </div>
             </template>
 
+            <!-- Column: Batch Codes -->
+            <template #cell(batch_codes)="{ item }">
+                <div class="flex flex-wrap gap-1">
+                    <span
+                        v-for="code in (item.batch_codes ? item.batch_codes.split(', ') : [])"
+                        :key="code"
+                        class="text-xs px-1.5 py-0.5 rounded border border-blue-300 bg-blue-50 text-blue-700"
+                    >
+                        <FontAwesomeIcon icon="fal fa-barcode" class="mr-1" fixed-width aria-hidden="true" />
+                        {{ code }}
+                    </span>
+                </div>
+            </template>
+
+            <!-- Section: Price -->
+            <template #cell(price)="{ item }">
+                <div v-if="item.is_gift">
+
+                </div>
+                <div v-else class="flex justify-end">
+                    {{ locale.currencyFormat(item.currency_code || "", item.price) }}
+                </div>
+            </template>
+
+            <!-- Section: Net Amount -->
             <template #cell(net_amount)="{ item }">
-                <div class="flex justify-end">
+                <div v-if="item.is_gift">
+
+                </div>
+                <div v-else class="flex justify-end">
                     <div v-if="editingIds.has(item.id)" class="">
                         <!-- Original price tag -->
                         <div
@@ -515,7 +581,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
             <div class="text-center mb-4">
                 <div class="font-semibold text-2xl">Update for {{ selectedItemToEditNetAmount?.asset_code }}:</div>
                 <div class="opacity-80 italic text-sm">
-                    <pre>{{ selectedItemToEditNetAmount?.asset_name }}</pre>
+                    {{ selectedItemToEditNetAmount?.asset_name }}
                 </div>
             </div>
 
@@ -528,6 +594,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                     <InputNumber
                         :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer', 0)"
                         @input="(e) => set(selectedItemToEditNetAmount, 'discretionary_offer', e?.value)"
+                        :max-fraction-digits="2"
                         suffix="%"
                         :disabled="isLoadingSubmitNetAmount"
                     />
@@ -541,7 +608,27 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                     <InputText
                         :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer_label', '')"
                         @input="(e) => (set(selectedItemToEditNetAmount, 'discretionary_offer_label', e?.target?.value))"
+                        :placeholder="ctrans('Discretionary Discount')"
                         :disabled="isLoadingSubmitNetAmount"
+                    />
+                </div>
+
+                <!-- Section: preview -->
+                <div class="w-full border-y py-4 flex justify-center">
+                    <BasicDiscount
+                        :offers_data="{
+                            v: get(selectedItemToEditNetAmount, 'discretionary_offer', 0),
+                            o: {
+                                oc: 0,
+                                o: 0,
+                                oa: 0,
+                                t: 'percentage',
+                                p: String(parseFloat((Number(selectedItemToEditNetAmount?.discretionary_offer || 0)).toFixed(2))) + '%',
+                                l: get(selectedItemToEditNetAmount, 'discretionary_offer_label', '') || ctrans('Discretionary Discount'),
+                                st: null,
+                                sto: null
+                            }
+                        }"
                     />
                 </div>
 

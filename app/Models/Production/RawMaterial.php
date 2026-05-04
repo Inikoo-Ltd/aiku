@@ -14,7 +14,6 @@ use App\Enums\Production\RawMaterial\RawMaterialTypeEnum;
 use App\Enums\Production\RawMaterial\RawMaterialUnitEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InProduction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,8 +35,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $code
  * @property string $description
  * @property RawMaterialUnitEnum $unit
- * @property string $unit_cost
- * @property string|null $quantity_on_location
+ * @property numeric $unit_cost
+ * @property numeric|null $quantity_on_location
  * @property RawMaterialStockStatusEnum $stock_status
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -45,11 +44,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Organisation $organisation
- * @property-read \App\Models\Production\Production $production
+ * @property-read \App\Models\Production\Production|null $production
  * @property-read \App\Models\Production\RawMaterialStats|null $stats
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RawMaterial newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RawMaterial newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RawMaterial onlyTrashed()
@@ -63,7 +61,6 @@ class RawMaterial extends Model implements Auditable
     use InProduction;
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use HasHistory;
 
     protected $guarded = [];

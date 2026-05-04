@@ -155,18 +155,21 @@ class IndexSubDepartmentsInMasterSubDepartment extends OrgAction
     public function htmlResponse(LengthAwarePaginator $subDepartment, ActionRequest $request): Response
     {
         $modelNavigation = [];
+        $navigation = ProductCategoryTabsEnum::navigationExcept([ProductCategoryTabsEnum::SALES]);
         $subNavigation = $this->getMasterSubDepartmentSubNavigation($this->parent);
 
-        $navigation = ProductCategoryTabsEnum::navigationExcept([ProductCategoryTabsEnum::SALES]);
-
-        $title      = __('Sub-departments');
+        $title           = $this->parent->name;
         $model      = '';
         $icon       = [
             'icon'  => ['fal', 'fa-folder-download'],
-            'title' => __('Sub-department')
+            'title' => $this->parent->name
         ];
-        $afterTitle = null;
-        $iconRight  = null;
+        $afterTitle      = [
+            'label' => __('Sub-Departments in Shop')
+        ];
+        $iconRight       = [
+            'icon' => 'fal fa-store',
+        ];
 
         return Inertia::render(
             'Org/Catalogue/SubDepartments',

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, ref, watch } from 'vue'
+import { inject, ref, watch, onMounted, onUnmounted } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { debounce, get, set } from 'lodash-es'
@@ -25,6 +25,7 @@ import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 import EligibleGift from '@/Components/Order/EligibleGift.vue'
+import MissedOfferFOB from '../Offers/MissedOffers/MissedOfferFOB.vue'
 library.add(faMinus, faArrowRight, faPlus, faCheck, faChevronRight, faTrashAlt, faCheckCircle)
 
 interface DataSideBasket {
@@ -251,26 +252,80 @@ const onChangeCharge = async (key_db: string, val: boolean, routeUpdate: routeTy
 }
 
 const idxProductLoading = ref<number | null>(null)
+
+
+const basketContainer = ref<HTMLElement | null>(null)
+
+const topPosition = ref(360)
+const dragging = ref(false)
+const offsetY = ref(0)
+
+const startDrag = (e: MouseEvent) => {
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  offsetY.value = e.clientY - rect.top
+  dragging.value = true
+}
+
+const onDrag = (e: MouseEvent) => {
+  if (!dragging.value) return
+
+  const newTop = e.clientY - offsetY.value
+
+  const min = 0
+  const max = window.innerHeight - 40 // tinggi tombol ±40px
+
+  topPosition.value = Math.min(Math.max(newTop, min), max)
+}
+
+const stopDrag = () => {
+  dragging.value = false
+}
+
+const basketRef = ref<HTMLElement | null>(null)
+
+/* const handleClickOutside = (e: MouseEvent) => {
+  if (!layout.rightbasket?.show) return
+
+  const target = e.target as Node
+
+  if (basketRef.value && !basketRef.value.contains(target)) {
+    layout.rightbasket.show = false
+  }
+}
+ */
+
+onMounted(() => {
+  window.addEventListener('mousemove', onDrag)
+  window.addEventListener('mouseup', stopDrag)
+/*   document.addEventListener('mousedown', handleClickOutside) */
+})
+
+onUnmounted(() => {
+  window.removeEventListener('mousemove', onDrag)
+  window.removeEventListener('mouseup', stopDrag)
+  /* document.removeEventListener('mousedown', handleClickOutside) */
+})
+
+
 </script>
 
 <template>
-    <div class="flex h-full flex-col overflow-y-auto bg-white shadow-xl">
+    <div class="flex h-full flex-col overflow-y-auto bg-white shadow-xl" ref="basketRef">
         <!-- Toggle: collapse-expand right basket -->
-        <div @click="handleToggleLeftBar"
-            class="absolute z-10 top-2/4 -translate-y-full hover:bg-[color-mix(in_srgb,var(--theme-color-0)75%,black)] bg-[var(--theme-color-0)] w-8 lg:w-8 aspect-square xborder xborder-gray-300 rounded-full flex justify-center items-center cursor-pointer"
-            :class="layout.rightbasket?.show ? 'left-0 -translate-x-1/2' : '-left-12'"
-            v-tooltip="layout.rightbasket?.show ? trans('Collapse the bar') : trans('Expand the bar')"
-            :style="{
-                'color': layout.app.theme[1]
-            }"
-        >
-            <div class="flex items-center justify-center transition-all duration-300 ease-in-out">
-                <FontAwesomeIcon v-if="layout.rightbasket?.show" icon="far fa-chevron-right" aria-hidden="true" fixed-width />
-                <FontAwesomeIcon v-else icon="fal fa-shopping-cart" class="" fixed-width aria-hidden="true" />
-            </div>
+        <div @click="handleToggleLeftBar" class="z-[60] w-8 aspect-square rounded-full
+         flex items-center justify-center cursor-pointer
+         hover:bg-[color-mix(in_srgb,var(--theme-color-0)75%,black)]
+         bg-[var(--theme-color-0)]" :class="layout.rightbasket?.show
+            ? 'absolute -left-4'
+            : 'fixed right-4'" :style="{
+        top: layout.rightbasket?.show ? '50%' : topPosition + 'px',
+        color: layout.app.theme[1]
+    }">
+            <FontAwesomeIcon v-if="layout.rightbasket?.show" icon="far fa-chevron-right" fixed-width />
+
+            <FontAwesomeIcon v-else icon="fal fa-shopping-cart" fixed-width class="cursor-grab"
+                @mousedown.stop="startDrag" />
         </div>
-
-
         <div class="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
             <div class="flex items-start justify-between mb-1">
                 <div class="text-lg font-medium">
@@ -296,7 +351,7 @@ const idxProductLoading = ref<number | null>(null)
                 </div> -->
             </div>
             
-            <!-- Section: Bonus list -->
+            <!-- Section: Bonus list (meter) -->
             <div class="text-xs">
                 <div v-if="dataSideBasket?.order_data?.reference" class="-ml-2 bg-gray-200 px-2 mb-3">
                     {{ trans("Order Number #:reference", { reference: dataSideBasket?.order_data?.reference ?? '' }) }}
@@ -444,6 +499,28 @@ const idxProductLoading = ref<number | null>(null)
                 </div>
             </div>
         </div>
+
+        <!-- Section: Missed Offers -->
+        <Transition name="slide-to-right">
+            <div v-if="Object.values(dataSideBasket?.missed_offers || {})?.length" class="px-4 pb-6 sm:px-6">
+                <div class="text-xs text-red-500 font-bold">
+                    {{ ctrans('You missed ( :number_missed_offer ) offers', { number_missed_offer: Object.values(dataSideBasket?.missed_offers || {})?.length || 0 }) }}
+                </div>
+                <div class="flex flex-col gap-y-2">
+                    <TransitionGroup name="list" tag="ul" class="!m-0">
+                        <li v-for="(missed_offer, misOfferKey) in dataSideBasket?.missed_offers" :key="missed_offer.id" class="list-none">
+                            <MissedOfferFOB v-if="misOfferKey == 'fob'" :data="missed_offer" />
+                            <div v-else class="bg-[#2a919e] text-white px-2 py-2 rounded-md mt-2 text-sm flex items-center justify-between gap-x-2">
+                                <InformationIcon :information="missed_offer.information" class="text-2xl" />
+                                <div>
+                                    {{ missed_offer.description }}
+                                </div>
+                            </div>
+                        </li>
+                    </TransitionGroup>
+                </div>
+            </div>
+        </Transition>
         
         <!-- Section: Order Summary -->
         <div class="border-t border-gray-200 px-4 pt-3 pb-6 sm:px-6">
@@ -456,7 +533,7 @@ const idxProductLoading = ref<number | null>(null)
 
                 <div class="pt-3 border-t border-gray-200 space-y-2.5">
                     <!-- Section: Eligible Gift -->
-                    <div v-if="layout.app.environment === 'local' && dataSideBasket?.gr_gifts?.status" class="text-xs flex justify-end pr-2 xmt-4">
+                    <div v-if="dataSideBasket?.gr_gifts?.status" class="text-xs flex justify-end pr-2 xmt-4">
                         <EligibleGift
                             :routeUpdate="{
                                 name: 'iris.models.order.update_gr_gift',
@@ -516,7 +593,7 @@ const idxProductLoading = ref<number | null>(null)
             
             <div class="mt-2 flex justify-start text-center text-sm text-gray-500">
                 <p>
-                    or{{ ' ' }}
+                    {{ 'or' }}
                     <LinkIris
                         href="/app/basket"
                         class="font-medium text-indigo-600 hover:text-indigo-500"

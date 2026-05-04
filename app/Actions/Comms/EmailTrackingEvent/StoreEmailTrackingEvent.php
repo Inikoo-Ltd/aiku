@@ -10,6 +10,7 @@ namespace App\Actions\Comms\EmailTrackingEvent;
 
 use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateClicks;
 use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateEmailTracking;
+use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateReads;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Comms\EmailTrackingEvent\EmailTrackingEventTypeEnum;
@@ -23,18 +24,14 @@ class StoreEmailTrackingEvent extends OrgAction
 
     public function handle(DispatchedEmail $dispatchedEmail, array $modelData): EmailTrackingEvent
     {
-        data_set($modelData, 'group_id', $dispatchedEmail->group_id);
-        data_set($modelData, 'organisation_id', $dispatchedEmail->organisation_id);
-
         /** @var EmailTrackingEvent $emailTrackingEvent */
         $emailTrackingEvent = $dispatchedEmail->emailTrackingEvents()->create($modelData);
-
 
         DispatchedEmailHydrateEmailTracking::run($dispatchedEmail);
         if ($emailTrackingEvent->type == EmailTrackingEventTypeEnum::CLICKED) {
             DispatchedEmailHydrateClicks::run($dispatchedEmail);
         } elseif ($emailTrackingEvent->type == EmailTrackingEventTypeEnum::OPENED) {
-            DispatchedEmailHydrateClicks::run($dispatchedEmail);
+            DispatchedEmailHydrateReads::run($dispatchedEmail);
         }
 
 
@@ -44,8 +41,9 @@ class StoreEmailTrackingEvent extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'type' => ['required', Rule::enum(EmailTrackingEventTypeEnum::class)],
-            'data' => ['sometimes', 'array']
+            'type'       => ['required', Rule::enum(EmailTrackingEventTypeEnum::class)],
+            'data'       => ['sometimes', 'array'],
+            'created_at' => ['required', 'date'],
         ];
 
         if (!$this->strict) {
@@ -60,7 +58,7 @@ class StoreEmailTrackingEvent extends OrgAction
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($dispatchedEmail->organisation, $modelData);
+        $this->initialisation($dispatchedEmail->outbox->organisation, $modelData);
 
         return $this->handle($dispatchedEmail, $this->validatedData);
     }

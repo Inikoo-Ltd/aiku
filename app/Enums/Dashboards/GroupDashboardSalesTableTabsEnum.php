@@ -10,6 +10,8 @@ namespace App\Enums\Dashboards;
 
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
+use App\Http\Resources\Dashboards\DashboardBrandSalesResource;
+use App\Http\Resources\Dashboards\DashboardHeaderBrandSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderInvoiceCategoriesInGroupSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderSalesChannelsSalesResource;
@@ -19,6 +21,7 @@ use App\Http\Resources\Dashboards\DashboardOrganisationSalesResource;
 use App\Http\Resources\Dashboards\DashboardPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardSalesChannelSalesResource;
 use App\Http\Resources\Dashboards\DashboardShopSalesResource;
+use App\Http\Resources\Dashboards\DashboardTotalBrandSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalGroupInvoiceCategoriesSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalOrganisationsSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalPlatformSalesResource;
@@ -26,6 +29,7 @@ use App\Http\Resources\Dashboards\DashboardTotalSalesChannelsSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalShopsTimeSeriesSalesResource;
 use App\Http\Resources\SysAdmin\DashboardHeaderOrganisationsSalesResource;
 use App\Models\SysAdmin\Group;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 enum GroupDashboardSalesTableTabsEnum: string
 {
@@ -34,6 +38,7 @@ enum GroupDashboardSalesTableTabsEnum: string
 
     case ORGANISATIONS = 'organisations';
     case SHOPS = 'shops';
+    case BRANDS = 'brands';
     case INVOICE_CATEGORIES = 'invoice_categories';
     case GLOBAL_MARKETPLACES = 'global_marketplaces';
     case GLOBAL_DROPSHIPPING = 'global_dropshipping';
@@ -49,6 +54,10 @@ enum GroupDashboardSalesTableTabsEnum: string
             GroupDashboardSalesTableTabsEnum::SHOPS => [
                 'title' => __('Shops'),
                 'icon'  => 'fal fa-store-alt',
+            ],
+            GroupDashboardSalesTableTabsEnum::BRANDS => [
+                'title' => __('Brands'),
+                'icon'  => 'fal fa-copyright',
             ],
             GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => [
                 'title' => __('Invoice Categories'),
@@ -77,6 +86,7 @@ enum GroupDashboardSalesTableTabsEnum: string
 
         $organisationTimeSeriesStats = $timeSeriesData['organisations'];
         $shopTimeSeriesStats = $timeSeriesData['shops']['all'];
+        $brandTimeSeriesStats = $timeSeriesData['brands'];
         $invoiceCategoryTimeSeriesStats = $timeSeriesData['invoiceCategories'];
         $platformTimeSeriesStats = $timeSeriesData['platforms'];
         $salesChannelTimeSeriesStats = $timeSeriesData['salesChannels'];
@@ -86,45 +96,48 @@ enum GroupDashboardSalesTableTabsEnum: string
 
         if (!$bool) {
             $header = match ($this) {
-                GroupDashboardSalesTableTabsEnum::ORGANISATIONS => json_decode(DashboardHeaderOrganisationsSalesResource::make($group)->toJson(), true),
-                GroupDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardHeaderShopsSalesResource::make($group)->toJson(), true),
-                GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardHeaderInvoiceCategoriesInGroupSalesResource::make($group)->toJson(), true),
-                GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => json_decode(DashboardHeaderSalesChannelsSalesResource::make($group)->toJson(), true),
-                GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => json_decode(DashboardHeaderShopsSalesResource::make($group)->withContext($this)->toJson(), true),
-                GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT => json_decode(DashboardHeaderShopsSalesResource::make($group)->withContext($this)->toJson(), true),
+                GroupDashboardSalesTableTabsEnum::ORGANISATIONS => self::resourceToArray(DashboardHeaderOrganisationsSalesResource::make($group)),
+                GroupDashboardSalesTableTabsEnum::SHOPS => self::resourceToArray(DashboardHeaderShopsSalesResource::make($group)),
+                GroupDashboardSalesTableTabsEnum::BRANDS => self::resourceToArray(DashboardHeaderBrandSalesResource::make($group)),
+                GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => self::resourceToArray(DashboardHeaderInvoiceCategoriesInGroupSalesResource::make($group)),
+                GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => self::resourceToArray(DashboardHeaderSalesChannelsSalesResource::make($group)),
+                GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => self::resourceToArray(DashboardHeaderShopsSalesResource::make($group)->withContext($this)),
+                GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT => self::resourceToArray(DashboardHeaderShopsSalesResource::make($group)->withContext($this)),
             };
 
             $body = match ($this) {
-                GroupDashboardSalesTableTabsEnum::ORGANISATIONS => json_decode(DashboardOrganisationSalesResource::collection($organisationTimeSeriesStats)->toJson(), true),
-                GroupDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardShopSalesResource::collection($shopTimeSeriesStats)->toJson(), true),
-                GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardInvoiceCategoriesInGroupSalesResource::collection($invoiceCategoryTimeSeriesStats)->toJson(), true),
-                GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => json_decode(DashboardSalesChannelSalesResource::collection($salesChannelTimeSeriesStats)->toJson(), true),
-                GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => json_decode(DashboardShopSalesResource::collection($dropshippingShopTimeSeriesStats)->toJson(), true),
-                GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT => json_decode(DashboardShopSalesResource::collection($fulfilmentShopTimeSeriesStats)->toJson(), true),
+                GroupDashboardSalesTableTabsEnum::ORGANISATIONS => self::resourceToArray(DashboardOrganisationSalesResource::collection($organisationTimeSeriesStats)),
+                GroupDashboardSalesTableTabsEnum::SHOPS => self::resourceToArray(DashboardShopSalesResource::collection($shopTimeSeriesStats)),
+                GroupDashboardSalesTableTabsEnum::BRANDS => self::resourceToArray(DashboardBrandSalesResource::collection($brandTimeSeriesStats)),
+                GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => self::resourceToArray(DashboardInvoiceCategoriesInGroupSalesResource::collection($invoiceCategoryTimeSeriesStats)),
+                GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => self::resourceToArray(DashboardSalesChannelSalesResource::collection($salesChannelTimeSeriesStats)),
+                GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => self::resourceToArray(DashboardShopSalesResource::collection($dropshippingShopTimeSeriesStats)),
+                GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT => self::resourceToArray(DashboardShopSalesResource::collection($fulfilmentShopTimeSeriesStats)),
             };
 
             $totals = match ($this) {
-                GroupDashboardSalesTableTabsEnum::ORGANISATIONS => json_decode(DashboardTotalOrganisationsSalesResource::make($organisationTimeSeriesStats)->toJson(), true),
-                GroupDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardTotalShopsTimeSeriesSalesResource::make($shopTimeSeriesStats)->toJson(), true),
-                GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardTotalGroupInvoiceCategoriesSalesResource::make($invoiceCategoryTimeSeriesStats)->toJson(), true),
-                GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => json_decode(DashboardTotalSalesChannelsSalesResource::make($salesChannelTimeSeriesStats)->toJson(), true),
-                GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => json_decode(DashboardTotalShopsTimeSeriesSalesResource::make($dropshippingShopTimeSeriesStats)->withContext($this)->toJson(), true),
-                GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT => json_decode(DashboardTotalShopsTimeSeriesSalesResource::make($fulfilmentShopTimeSeriesStats)->withContext($this)->toJson(), true),
+                GroupDashboardSalesTableTabsEnum::ORGANISATIONS => self::resourceToArray(DashboardTotalOrganisationsSalesResource::make($organisationTimeSeriesStats)),
+                GroupDashboardSalesTableTabsEnum::SHOPS => self::resourceToArray(DashboardTotalShopsTimeSeriesSalesResource::make($shopTimeSeriesStats)),
+                GroupDashboardSalesTableTabsEnum::BRANDS => self::resourceToArray(DashboardTotalBrandSalesResource::make($brandTimeSeriesStats)),
+                GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => self::resourceToArray(DashboardTotalGroupInvoiceCategoriesSalesResource::make($invoiceCategoryTimeSeriesStats)),
+                GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => self::resourceToArray(DashboardTotalSalesChannelsSalesResource::make($salesChannelTimeSeriesStats)),
+                GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => self::resourceToArray(DashboardTotalShopsTimeSeriesSalesResource::make($dropshippingShopTimeSeriesStats)->withContext($this)),
+                GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT => self::resourceToArray(DashboardTotalShopsTimeSeriesSalesResource::make($fulfilmentShopTimeSeriesStats)->withContext($this)),
             };
         } else {
             $header = match ($this) {
-                GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => json_decode(DashboardHeaderPlatformSalesResource::make($group)->toJson(), true),
-                GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => json_decode(DashboardHeaderInvoiceCategoriesInGroupSalesResource::make($group)->toJson(), true),
+                GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => self::resourceToArray(DashboardHeaderPlatformSalesResource::make($group)),
+                GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => self::resourceToArray(DashboardHeaderInvoiceCategoriesInGroupSalesResource::make($group)),
             };
 
             $body = match ($this) {
-                GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => json_decode(DashboardPlatformSalesResource::collection($platformTimeSeriesStats)->toJson(), true),
-                GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => json_decode(DashboardInvoiceCategoriesInGroupSalesResource::collection($faireTimeSeriesStats)->toJson(), true),
+                GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => self::resourceToArray(DashboardPlatformSalesResource::collection($platformTimeSeriesStats)),
+                GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => self::resourceToArray(DashboardInvoiceCategoriesInGroupSalesResource::collection($faireTimeSeriesStats)),
             };
 
             $totals = match ($this) {
-                GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => json_decode(DashboardTotalPlatformSalesResource::make($platformTimeSeriesStats)->toJson(), true),
-                GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => json_decode(DashboardTotalGroupInvoiceCategoriesSalesResource::make($faireTimeSeriesStats)->toJson(), true),
+                GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => self::resourceToArray(DashboardTotalPlatformSalesResource::make($platformTimeSeriesStats)),
+                GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => self::resourceToArray(DashboardTotalGroupInvoiceCategoriesSalesResource::make($faireTimeSeriesStats)),
             };
         }
 
@@ -137,8 +150,41 @@ enum GroupDashboardSalesTableTabsEnum: string
 
     public static function tables(Group $group, array $timeSeriesData = [], ?bool $bool = false): array
     {
-        return collect(self::cases())->mapWithKeys(function ($case) use ($group, $timeSeriesData, $bool) {
-            return [$case->value => $case->table($group, $timeSeriesData, $bool)];
-        })->filter()->all();
+        if ($bool) {
+            return [
+                self::GLOBAL_DROPSHIPPING->value => self::GLOBAL_DROPSHIPPING->table($group, $timeSeriesData, true),
+                self::GLOBAL_MARKETPLACES->value => self::GLOBAL_MARKETPLACES->table($group, $timeSeriesData, true),
+            ];
+        }
+
+        return collect(self::cases())
+            ->mapWithKeys(fn ($case) => [$case->value => $case->table($group, $timeSeriesData)])
+            ->filter()
+            ->all();
+    }
+
+    public static function tablesForTabs(
+        Group $group,
+        array $timeSeriesData,
+        array $tabs,
+        bool $isSecondBlock = false
+    ): array {
+        return collect($tabs)
+            ->map(function ($tab) {
+                if ($tab instanceof self) {
+                    return $tab;
+                }
+
+                return self::tryFrom((string) $tab);
+            })
+            ->filter()
+            ->mapWithKeys(fn (self $tab) => [$tab->value => $tab->table($group, $timeSeriesData, $isSecondBlock)])
+            ->filter()
+            ->all();
+    }
+
+    private static function resourceToArray(JsonResource $resource): array
+    {
+        return $resource->resolve(request());
     }
 }

@@ -36,6 +36,7 @@ class IndexInvoiceTransactions extends OrgAction
             ->select([
                 'invoice_transactions.model_type',
                 'invoice_transactions.model_id',
+                'invoice_transactions.is_gift',
                 'invoice_transactions.in_process',
                 'invoice_transactions.data',
                 'historic_assets.code',
@@ -52,7 +53,8 @@ class IndexInvoiceTransactions extends OrgAction
             ]);
 
 
-        return $queryBuilder->allowedSorts(['id', 'code', 'description', 'quantity', 'net_amount'])
+        return $queryBuilder
+            ->allowedSorts(['code', 'description', 'quantity', 'net_amount'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -67,7 +69,6 @@ class IndexInvoiceTransactions extends OrgAction
             }
 
             $table
-                ->withModelOperations()
                 ->withGlobalSearch();
 
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);

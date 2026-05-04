@@ -120,9 +120,9 @@ class ShowCustomer extends OrgAction
                     'previous' => $this->getPrevious($customer, $request),
                     'next'     => $this->getNext($customer, $request),
                 ],
-                'sales_channels' => GetSalesChannelOptions::make()->getOptions($customer->shop),
-                'can_add_order'  => $this->shop->type == ShopTypeEnum::B2B,
-                'gr_data'        => $grData,
+                'sales_channels'   => GetSalesChannelOptions::make()->getOptions($customer->shop),
+                'can_add_order'    => $this->shop->type == ShopTypeEnum::B2B,
+                'gr_data'          => $grData,
                 'pageHead'         => [
                     'title'         => $customer->name,
                     'icon'          => [
@@ -136,7 +136,7 @@ class ShowCustomer extends OrgAction
                         $shopMeta,
                         $webUsersMeta
                     ]),
-                    'actions'       => $customer->shop->type !== ShopTypeEnum::EXTERNAL ? [
+                    'actions'       => [
                         [
                             'key'     => 'edit_customer',
                             'type'    => 'button',
@@ -147,7 +147,7 @@ class ShowCustomer extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ],
-                    ] : null,
+                    ],
                     'subNavigation' => $subNavigation,
                 ],
                 'notes'            => $customer->shop->type !== ShopTypeEnum::EXTERNAL ? $this->getCustomerNotes($customer) : null,
@@ -181,14 +181,14 @@ class ShowCustomer extends OrgAction
                     'balance'             => $customer->balance,
                     'credit_transactions' => $customer->stats->number_credit_transactions
                 ],
-                'shop_data'         => [
-                    'id' => $customer->shop->id,
+                'shop_data'        => [
+                    'id'   => $customer->shop->id,
                     'name' => $customer->shop->name,
                     'slug' => $customer->shop->slug,
                     'type' => $customer->shop->type,
                 ],
 
-                $tabs::SHOWCASE->value => $this->tab == $tabs::SHOWCASE->value ?
+                $tabs::SHOWCASE->value            => $this->tab == $tabs::SHOWCASE->value ?
                     fn () => GetCustomerShowcase::run($customer)
                     : Inertia::lazy(fn () => GetCustomerShowcase::run($customer)),
                 $tabs::CREDIT_TRANSACTIONS->value => $this->tab == $tabs::CREDIT_TRANSACTIONS->value ?
@@ -212,6 +212,9 @@ class ShowCustomer extends OrgAction
                 $tabs::HISTORY->value             => $this->tab == $tabs::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($customer))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($customer))),
+                $tabs::TIMELINE->value            => $this->tab == $tabs::TIMELINE->value || $this->tab == $tabs::SHOWCASE->value ?
+                    fn () => GetCustomerTimeline::run($customer)
+                    : Inertia::lazy(fn () => GetCustomerTimeline::run($customer)),
 
 
             ]
@@ -245,18 +248,10 @@ class ShowCustomer extends OrgAction
                     "field"       => "internal_notes"
                 ],
                 [
-                    "label"       => __("Warehouse Public"),
-                    "note"        => $customer->warehouse_public_notes ?? '',
-                    "information" => __("This note will be visible to public, both staff and the customer can see."),
-                    "editable"    => true,
-                    "bgColor"     => "#94DB84",
-                    "field"       => "warehouse_public_notes"
-                ],
-                [
-                    "label"       => __("Warehouse internal"),
+                    "label"       => __("Sticky Note For Delivery Notes").' ('.__("Private").')',
                     "note"        => $customer->warehouse_internal_notes ?? '',
-                    "information" => __("Warehouse internal notes"),
-                    "editable"    => false,
+                    "information" => __("Will be put as Order private note everytime the Order submitted. Visible only to customer service and warehouse's staff."),
+                    "editable"    => true,
                     "bgColor"     => "#FCF4A3",
                     "field"       => "warehouse_internal_notes"
                 ]

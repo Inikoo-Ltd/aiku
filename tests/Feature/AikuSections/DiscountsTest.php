@@ -13,7 +13,6 @@ use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Discounts\Offer\DeleteOffer;
 use App\Actions\Discounts\Offer\HydrateOffers;
-use App\Actions\Discounts\Offer\Search\ReindexOfferSearch;
 use App\Actions\Discounts\Offer\SetOfferAsPermanent;
 use App\Actions\Discounts\Offer\StoreFirstOrderBonus;
 use App\Actions\Discounts\Offer\StoreOffer;
@@ -26,7 +25,6 @@ use App\Actions\Discounts\Offer\VolGr\StoreVolumeGRDiscount;
 use App\Actions\Discounts\OfferAllowance\StoreOfferAllowance;
 use App\Actions\Discounts\OfferAllowance\UpdateOfferAllowance;
 use App\Actions\Discounts\OfferCampaign\HydrateOfferCampaigns;
-use App\Actions\Discounts\OfferCampaign\Search\ReindexOfferCampaignSearch;
 use App\Actions\Discounts\OfferCampaign\UpdateOfferCampaign;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
@@ -92,15 +90,15 @@ test('seed offer campaigns', function () {
     $this->group->refresh();
     $this->organisation->refresh();
 
-    expect($this->group->discountsStats->number_offer_campaigns)->toBe(10)
-        ->and($this->group->discountsStats->number_current_offer_campaigns)->toBe(9)
-        ->and($this->group->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(9)
-        ->and($this->organisation->discountsStats->number_offer_campaigns)->toBe(10)
-        ->and($this->organisation->discountsStats->number_current_offer_campaigns)->toBe(9)
-        ->and($this->organisation->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(9)
-        ->and($shop->discountsStats->number_offer_campaigns)->toBe(10)
-        ->and($shop->discountsStats->number_current_offer_campaigns)->toBe(9)
-        ->and($shop->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(9);
+    expect($this->group->discountsStats->number_offer_campaigns)->toBe(11)
+        ->and($this->group->discountsStats->number_current_offer_campaigns)->toBe(10)
+        ->and($this->group->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(11)
+        ->and($this->organisation->discountsStats->number_offer_campaigns)->toBe(11)
+        ->and($this->organisation->discountsStats->number_current_offer_campaigns)->toBe(10)
+        ->and($this->organisation->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(11)
+        ->and($shop->discountsStats->number_offer_campaigns)->toBe(11)
+        ->and($shop->discountsStats->number_current_offer_campaigns)->toBe(10)
+        ->and($shop->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(11);
 });
 
 test('update offer campaign', function () {
@@ -175,7 +173,6 @@ test('set offer as permanent', function (Offer $offer) {
         ->and($offerAllowance->end_at)->toBeNull()
         ->and($offerAllowance->state)->toBe(OfferAllowanceStateEnum::ACTIVE)
         ->and($offerAllowance->status)->toBeTrue();
-
 })->depends('create offer');
 
 test('UI Discount Dashboard', function () {
@@ -210,7 +207,7 @@ test('UI show offer campaigns', function () {
 
     $response->assertInertia(function (AssertableInertia $page) use ($offerCampaign) {
         $page
-            ->component('Org/Discounts/VolumeDiscountCampaign')
+            ->component('Org/Discounts/OrderRecursionCampaign')
             ->has('title')
             ->has(
                 'pageHead',
@@ -248,20 +245,6 @@ test('UI get section route offer dashboard', function () {
         ->and($sectionScope->model_slug)->toBe($this->shop->slug);
 });
 
-test('offers search', function () {
-    $this->artisan('search:offers')->assertExitCode(0);
-
-    $offer = Offer::first();
-    ReindexOfferSearch::run($offer);
-    expect($offer->universalSearch()->count())->toBe(1);
-});
-
-test('offer campaigns search', function () {
-    $this->artisan('search:offer_campaigns')->assertExitCode(0);
-    $offerCampaign = OfferCampaign::first();
-    ReindexOfferCampaignSearch::run($offerCampaign);
-    expect($offerCampaign->universalSearch()->count())->toBe(1);
-});
 
 test('offer campaigns hydrator', function () {
     $this->artisan('hydrate:offer_campaigns')->assertExitCode(0);
@@ -338,12 +321,12 @@ test('update offer allowance signature', function () {
     $shop          = $this->shop;
     $offerCampaign = $shop->offerCampaigns()->first();
 
-    $offerData = Offer::factory()->definition();
+    $offerData             = Offer::factory()->definition();
     $offerData['duration'] = OfferDurationEnum::PERMANENT;
-    $offerData['start_at']   = now();
+    $offerData['start_at'] = now();
 
 
-    $offer         = StoreOffer::make()->action($offerCampaign, $offerData);
+    $offer = StoreOffer::make()->action($offerCampaign, $offerData);
     UpdateOfferStatusFromDates::run($offer);
 
 
@@ -479,7 +462,7 @@ test('create product category discount', function () {
         'organisation_id' => $shop->organisation_id,
         'group_id'        => $shop->group_id,
         'code'            => 'CAT-DISC',
-        'type'            => ProductCategoryTypeEnum::FAMILY->value
+        'type'            => ProductCategoryTypeEnum::FAMILY->value,
     ]);
 
     $this->artisan('offer:create_category_discount', [
@@ -504,8 +487,11 @@ test('create product category discount', function () {
     $offer2 = StoreProductCategoryDiscount::make()->action(
         $category,
         [
+            'type'                       => 'quantity',
             'trigger_data_item_quantity' => 2,
             'percentage_off'             => .25,
+            'duration'                   => 'interval',
+            'start_at'                   => now()->addDays(7)->toDateTimeString(),
             'end_at'                     => now()->addDays(14)->toDateTimeString(),
         ]
     );
@@ -693,6 +679,10 @@ describe('calculate order discounts', function () {
             [
                 'trigger_data_item_quantity' => 1,
                 'percentage_off'             => 0.60,
+                'type'                       => 'quantity',
+                'duration'                   => 'interval',
+                'start_at'                   => now()->addDays(7)->toDateTimeString(),
+                'end_at'                     => now()->addDays(14)->toDateTimeString(),
             ]
         );
 
@@ -724,6 +714,10 @@ describe('calculate order discounts', function () {
             [
                 'trigger_data_item_quantity' => 5,
                 'percentage_off'             => 0.30,
+                'type'                       => 'quantity',
+                'duration'                   => 'interval',
+                'start_at'                   => now()->addDays(7)->toDateTimeString(),
+                'end_at'                     => now()->addDays(14)->toDateTimeString(),
             ]
         );
 
@@ -744,7 +738,6 @@ describe('calculate order discounts', function () {
         expect((float)$transaction->net_amount)->toBe(350.0);
 
         SuspendOffer::run($categoryDiscount);
-
     });
 
     test('CalculateOrderDiscounts: Vol/GR', function () {
@@ -782,8 +775,5 @@ describe('calculate order discounts', function () {
 
         $transaction->refresh();
         expect((float)$transaction->net_amount)->toBe(280.0);
-
     });
-
-
 });

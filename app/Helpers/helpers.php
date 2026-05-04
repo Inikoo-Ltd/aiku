@@ -24,6 +24,25 @@ if (!function_exists('escapeSQLSearch')) {
     }
 }
 
+if (!function_exists('cleanCapitalize')) {
+    function cleanCapitalize(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = preg_replace('/[^a-zA-Z0-9\s]/', ' ', $value);
+
+        $value = str_replace('_', ' ', $value);
+
+        $value = preg_replace('/\s+/', ' ', $value);
+
+        $value = strtolower(trim($value));
+
+        return ucwords($value);
+    }
+}
+
 if (!function_exists('errorBagHas')) {
     function errorBagHas(MessageBag $errBag, array $keys): bool
     {
@@ -121,7 +140,6 @@ if (!function_exists('cleanUtf8')) {
 
         // If it’s already valid UTF-8, strip stray invalid sequences (rare edge cases)
         if (mb_detect_encoding($text, 'UTF-8', true) === 'UTF-8') {
-            //  $text = iconv('UTF-8', 'UTF-8//IGNORE', $text);
 
             if (class_exists(\Normalizer::class)) {
                 $text = \Normalizer::normalize($text, \Normalizer::FORM_C);
@@ -165,7 +183,7 @@ if (!function_exists('resolveTimezoneHeader')) {
 }
 
 if (!function_exists('percentage')) {
-    function percentage($quantity, $total, int|null $fixed = 1, ?string $errorMessage = null, $percentageSign = '%', $plusSing = false): string
+    function percentage($quantity, $total, int|null $fixed = 1, ?string $errorMessage = null, $percentageSign = '%', $plusSing = false, $removeTailingZeros = true): string
     {
         $locale_info = localeconv();
 
@@ -177,12 +195,18 @@ if (!function_exists('percentage')) {
                 $sign = '';
             }
 
-            $per = $sign.number_format(
+            $number = number_format(
                 ($quantity / $total) * 100,
                 $fixed,
                 $locale_info['decimal_point'],
                 $locale_info['thousands_sep']
-            ).$percentageSign;
+            );
+
+            if ($removeTailingZeros) {
+                $number = trimDecimalZeros($number);
+            }
+
+            $per = $sign.$number.$percentageSign;
         } else {
             $per = $errorMessage === null ? percentage(0, 1) : $errorMessage;
         }

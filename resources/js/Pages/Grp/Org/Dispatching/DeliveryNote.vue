@@ -23,6 +23,8 @@ import {
     faFilePdf,
     faBoxOpen,
     faExclamationTriangle,
+	faClipboardCheck,
+	faClipboardListCheck,
 } from "@fal";
 import { faArrowRight, faCheck, faEye, faStar, faTimes } from "@fas";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
@@ -60,15 +62,18 @@ import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
 import ButtonSetAsWaiting from "@/Components/DeliveryNote/ButtonSetAsWaiting.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ButtonSelectBaysAndWaiting from "@/Components/DeliveryNote/ButtonSelectBaysAndWaiting.vue"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 
-library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes);
+library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes, faClipboardCheck, faClipboardListCheck);
 
 const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
     tabs: TSTabs
     items?: {}
+    pending_items?: {}
+    done_items?: {}
     pickings?: {}
     warning?: {
         text: string
@@ -97,6 +102,9 @@ const props = defineProps<{
     timelines: {
         [key: string]: TSTimeline
     }
+	allowActions: boolean
+	allow_waiting: boolean
+	allow_picker_set_not_picked: boolean
     box_stats: {}
     quick_pickers: {}
     routes: {
@@ -114,10 +122,6 @@ const props = defineProps<{
         submit_route: routeType
         fetch_route: routeType
     }
-	external_order: {
-		status: boolean
-		route_view_packing_slip: routeType
-	}
     address: {
         delivery: {}
         options: {
@@ -136,16 +140,21 @@ const props = defineProps<{
 		type: string   // 'b2b', 'dropshipping'
 	}
 	shop_type : string
+	is_faire_order : boolean
+	showChangePickerPacker: boolean
+	is_editable: boolean  // To distinguish DN in Shops and DN in Wwarehouse
 }>();
 
 
 const layout = inject('layout', layoutStructure)
-
 const currentTab = ref(props.tabs?.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
+const showDropdown = ref(false);
 const component = computed(() => {
     const components: Component = {
         items: TableDeliveryNoteItems,
+        pending_items: TableDeliveryNoteItems,
+        done_items: TableDeliveryNoteItems,
 		history: TableHistories,
         pickings: TablePickings
     };
@@ -280,6 +289,10 @@ const listError = ref({
 });
 provide("listError", listError.value);
 
+// Section: to show Modal 'Add Shipment' if failed Dispatch (because no shipment yet)
+const openModalAddShipment = ref(false);
+provide("openModalAddShipment", openModalAddShipment);
+
 // const isModalEditAddress = ref(false)
 const xxxCopyAddress = ref({...props.address.delivery})
 
@@ -349,13 +362,31 @@ onMounted(() => {
 				fixed-width
 				aria-hidden="true" />
 		</template>
+		
+		<template #button-finalise-and-dispatch="{ action }">
+			<ButtonWithLink
+				:label="action.label"
+				:style="action.style"
+				v-tooltip="action.tooltip"
+				:routeTarget="action.route"
+				@error="(e) => {
+					notify({
+						title: ctrans('Something went wrong'),
+						text: e.message || 'Please try again later or contact administrator.',
+						type: 'error',
+					}),
+					openModalAddShipment = true
+				}"
+			/>
+		</template>
 
 		<template #otherBefore v-if="!box_stats.is_replacement">
 			<!-- toggle picking view -->
 			<div
 				v-if="
-					delivery_note_state.value !== 'dispatched' &&
-					delivery_note_state.value !== 'cancelled'
+					is_editable
+					&& delivery_note_state.value !== 'dispatched'
+					&& delivery_note_state.value !== 'cancelled'
 				"
 				class="flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2 rounded-md">
 				<FontAwesomeIcon :icon="faBoxOpen" class="text-gray-400" fixed-width />
@@ -375,19 +406,20 @@ onMounted(() => {
 				</div>
 			</div>
 			<!-- Button: Download PDF -->
-			<a
-				v-if="route().params.deliveryNote"
-				:href="
-					route('grp.pdfs.delivery-notes', {
-						deliveryNote: route().params.deliveryNote,
-					})
-				"
-				as="a"
-				target="_blank"
-				class="flex items-center"
-				v-tooltip="trans('Download PDF of this Delivery Note')">
-				<Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
-			</a>
+			<div class="relative" v-if="route().params.deliveryNote">
+				<a	v-if="route().params.deliveryNote"
+					:href="
+						route('grp.pdfs.delivery-notes', {
+							deliveryNote: route().params.deliveryNote,
+						})
+					"
+					as="a"
+					target="_blank"
+					class="flex items-center"
+					v-tooltip="trans('Download PDF of this Delivery Note')">
+					<Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
+				</a>
+			</div>
 		</template>
 
 		<template #button-to-queue="{ action }">
@@ -457,7 +489,7 @@ onMounted(() => {
 		</template>
 
 		<!-- Button: Select picked bays (only for Ecom) -->
-		<template v-if="props.shop.type !== 'dropshipping'"  #button-set-as-packed="{ action }">
+		<template v-if="props.shop.type !== 'dropshipping'"  #button-trigger-set-as-picked-or-packed="{ action }">
 			<ButtonSelectBays
 				:warehouse="warehouse"
 				:deliveryNote="delivery_note"
@@ -519,7 +551,7 @@ onMounted(() => {
 	<!-- Section: Box Note -->
 	<div
 		v-if="
-			(pickingView && !box_stats.is_replacement) ||
+			pickingView ||
 			delivery_note_state.value === 'dispatched' ||
 			delivery_note_state.value === 'cancelled'
 		"
@@ -527,7 +559,7 @@ onMounted(() => {
 		<Transition name="headlessui">
 			<div
 				xv-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
-				class="p-2 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
+				class="p-2 grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
 				<BoxNote
 					v-for="(note, index) in notes.note_list"
 					:key="index + note.label"
@@ -554,6 +586,8 @@ onMounted(() => {
 	<!-- Section: Box Stats -->
 	<BoxStatsDeliveryNote
 		v-if="box_stats && pickingView"
+		:showChangePickerPacker="showChangePickerPacker"
+		:allowActions="allowActions"
 		:boxStats="box_stats"
 		:routes
 		:deliveryNote="delivery_note"
@@ -561,6 +595,8 @@ onMounted(() => {
 		:is_external_order
 		:shipments
 		:warehouse
+		:quick_pickers
+		:isEditable="is_editable"
 	/>
 
 	<Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
@@ -570,9 +606,12 @@ onMounted(() => {
 			:is="component"
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
+			:isEditable="is_editable"
 			:routes
 			:state="delivery_note.state"
 			:shop_type="shop_type"
+			:allowWaiting="allow_waiting"
+			:allowPickerSetNotPicked="allow_picker_set_not_picked"
 			@update:quantity-to-resend="handleQuantityToResendUpdate"
 			@validation-error="handleValidationError" />
 	</div>

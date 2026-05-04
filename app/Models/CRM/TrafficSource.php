@@ -29,10 +29,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $status
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\TrafficSourceCampaign> $campaigns
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\Customer> $customers
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Order> $orders
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\CRM\TrafficSourceStat|null $stats
  * @method static Builder<static>|TrafficSource newModelQuery()
  * @method static Builder<static>|TrafficSource newQuery()

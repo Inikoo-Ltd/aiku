@@ -85,7 +85,7 @@ class StoreTiktokOrder extends RetinaAction
     public function digestTiktokCustomerClient(TiktokUser $tiktokUser, array $tiktokOrderData): CustomerClient
     {
         $tiktokOrderAddressData = Arr::get($tiktokOrderData, 'recipient_address');
-        $reference = trim(Arr::get($tiktokOrderAddressData, 'first_name').' '.Arr::get($tiktokOrderAddressData, 'last_name'));
+        $reference = trim(Arr::get($tiktokOrderAddressData, 'first_name').' '.Arr::get($tiktokOrderAddressData, 'last_name')) . '-' . $tiktokUser->customer_sales_channel_id;
 
         $customerClientID = DB::table('customer_clients')
             ->select('id')

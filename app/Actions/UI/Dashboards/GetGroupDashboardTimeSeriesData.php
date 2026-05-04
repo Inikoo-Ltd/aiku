@@ -10,10 +10,12 @@ namespace App\Actions\UI\Dashboards;
 use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryTimeSeriesStats;
 use App\Actions\Catalogue\Shop\GetShopTimeSeriesStats;
 use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
+use App\Actions\Helpers\Brand\GetBrandTimeSeriesStats;
 use App\Actions\Ordering\SalesChannel\GetSalesChannelTimeSeriesStats;
 use App\Actions\SysAdmin\Organisation\GetOrganisationTimeSeriesStats;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\SysAdmin\Group;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -38,12 +40,39 @@ class GetGroupDashboardTimeSeriesData
 
     protected function getCacheKey(Group $group, $fromDate, $toDate): string
     {
+        [$normalizedFromDate, $normalizedToDate] = $this->normalizeDateBounds($fromDate, $toDate);
+
         return sprintf(
             'dashboard:group_timeseries:%s:%s:%s',
             $group->id,
-            $fromDate ?? 'null',
-            $toDate ?? 'null'
+            $normalizedFromDate,
+            $normalizedToDate
         );
+    }
+
+    protected function normalizeDateBounds($fromDate, $toDate): array
+    {
+        if (empty($fromDate) && empty($toDate)) {
+            return ['all', 'all'];
+        }
+
+        return [
+            $this->normalizeDateToken($fromDate),
+            $this->normalizeDateToken($toDate),
+        ];
+    }
+
+    protected function normalizeDateToken($date): string
+    {
+        if (empty($date)) {
+            return 'open';
+        }
+
+        if ($date instanceof Carbon) {
+            return $date->toDateString();
+        }
+
+        return Carbon::parse((string) $date)->toDateString();
     }
 
     protected function fetchData(Group $group, $fromDate, $toDate): array
@@ -84,6 +113,7 @@ class GetGroupDashboardTimeSeriesData
             'faire' => $faireInvoiceCategories,
             'platforms' => GetPlatformTimeSeriesStats::run($group, $fromDate, $toDate),
             'salesChannels' => GetSalesChannelTimeSeriesStats::run($group, $fromDate, $toDate),
+            'brands' => GetBrandTimeSeriesStats::run($group, $fromDate, $toDate),
         ];
     }
 

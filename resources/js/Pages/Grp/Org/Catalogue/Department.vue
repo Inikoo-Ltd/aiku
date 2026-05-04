@@ -26,7 +26,6 @@ import { faDiagramNext } from "@fortawesome/free-solid-svg-icons";
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue";
 import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
-import { capitalize } from "@/Composables/capitalize";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { trans } from "laravel-vue-i18n"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -37,6 +36,8 @@ import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons";
 import ImagesManagement from "@/Components/Goods/ImagesManagement.vue";
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue";
 import Breadcrumb from 'primevue/breadcrumb'
+import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOffers.vue'
+import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 
 library.add(
     faFolder,
@@ -75,6 +76,13 @@ const props = defineProps<{
     images?:object
     sales?: object
     salesData?: object
+    product_category_id?: number
+    shop_data: {
+        id: number
+        slug: string
+        currency_code: string
+    }
+    offers?: {}
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -90,20 +98,18 @@ const component = computed(() => {
         details: ModelDetails,
         history: TableHistories,
         images: ImagesManagement,
-        sales: ProductCategoryTimeSeriesTable
+        sales: ProductCategoryTimeSeriesTable,
+        offers: TableOffers
     };
     return components[currentTab.value];
 
 });
 
-
-
-
 </script>
 
 
 <template>
-    <Head :title="capitalize(title)" />
+    <Head :title="title" />
     <PageHeading :data="pageHead">
         <template #button-delete="propx">
             <ModalConfirmationDelete
@@ -131,6 +137,14 @@ const component = computed(() => {
                 />
             </Link>
             </div>
+        </template>
+
+        <template #otherBefore>
+            <ModalCreateCategoryOffers
+                v-if="currentTab === 'offers'"
+                :shop_data="props.shop_data"
+                :product_category_id="props.product_category_id"
+            />
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
@@ -167,4 +181,3 @@ const component = computed(() => {
     display: none !important;
 }
 </style>
-

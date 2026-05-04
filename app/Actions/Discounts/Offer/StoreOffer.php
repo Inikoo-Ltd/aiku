@@ -9,7 +9,6 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffers;
-use App\Actions\Discounts\Offer\Search\OfferRecordSearch;
 use App\Actions\Discounts\OfferAllowance\StoreOfferAllowance;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffers;
 use App\Actions\OrgAction;
@@ -38,8 +37,12 @@ class StoreOffer extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(OfferCampaign $offerCampaign, array $modelData): Offer
+    public function handle(OfferCampaign $offerCampaign, array $modelData, ?int $hydratorDelay = null): Offer
     {
+        if ($hydratorDelay !== null) {
+            $this->hydratorsDelay = $hydratorDelay;
+        }
+
         $modelData  = $this->prepareOfferData($offerCampaign, $modelData);
         $allowances = Arr::pull($modelData, 'allowances', []);
         $offer      = DB::transaction(function () use ($offerCampaign, $modelData, $allowances) {
@@ -68,7 +71,6 @@ class StoreOffer extends OrgAction
         OrganisationHydrateOffers::dispatch($offerCampaign->organisation)->delay($this->hydratorsDelay);
         ShopHydrateOffers::dispatch($offerCampaign->shop)->delay($this->hydratorsDelay);
         OfferCampaignHydrateOffers::dispatch($offerCampaign)->delay($this->hydratorsDelay);
-        OfferRecordSearch::dispatch($offer)->delay($this->hydratorsDelay);
 
         return $offer;
     }

@@ -98,7 +98,7 @@ onMounted(()=> {
 </script>
 
 <template>
-    <div id="luigi-trends-1-workshop" class="w-full pb-6" :style="{
+    <div :id="modelValue?.id ? modelValue?.id  : 'luigi-trends-1-iris'+indexBlock" class="w-full pb-6" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(modelValue.container?.properties, screenType),
         width: 'auto'

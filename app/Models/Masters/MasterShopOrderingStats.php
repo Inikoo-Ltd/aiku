@@ -33,7 +33,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_orders_handing_type_collection
  * @property int $number_orders_handing_type_shipping
  * @property int $number_item_transactions_out_of_stock_in_basket transactions at the time up submission from basket
- * @property string|null $out_of_stock_in_basket_grp_net_amount
+ * @property numeric|null $out_of_stock_in_basket_grp_net_amount
  * @property int $number_item_transactions transactions including cancelled
  * @property int $number_current_item_transactions transactions excluding cancelled
  * @property int $number_item_transactions_state_creating
@@ -102,7 +102,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_delivery_notes_cancelled_at_state_picked
  * @property int $number_orders_state_picked
  * @property int $number_orders_state_packing
- * @property-read \App\Models\Masters\MasterShop $masterShop
+ * @property-read \App\Models\Masters\MasterShop|null $masterShop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopOrderingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopOrderingStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopOrderingStats query()

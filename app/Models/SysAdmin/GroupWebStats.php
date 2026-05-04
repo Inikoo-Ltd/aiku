@@ -71,7 +71,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_web_user_requests
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property int $number_webpages_type_landing_page
+ * @property int $number_webpages_sub_type_landing_page
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static Builder<static>|GroupWebStats newModelQuery()
  * @method static Builder<static>|GroupWebStats newQuery()
  * @method static Builder<static>|GroupWebStats query()

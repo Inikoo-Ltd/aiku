@@ -23,8 +23,8 @@ use Illuminate\Support\Carbon;
  * @property int $intrastat_import_time_series_id
  * @property int $organisation_id
  * @property string $frequency
- * @property string|null $quantity
- * @property string|null $value_org_currency
+ * @property numeric|null $quantity
+ * @property numeric|null $value_org_currency
  * @property int|null $weight
  * @property int|null $supplier_deliveries_count
  * @property int|null $parts_count

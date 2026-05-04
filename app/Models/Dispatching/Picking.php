@@ -28,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $delivery_note_item_id
  * @property PickingNotPickedReasonEnum $not_picked_reason
  * @property string|null $not_picked_note
- * @property string $quantity
+ * @property numeric $quantity
  * @property int|null $org_stock_movement_id
  * @property int $org_stock_id
  * @property int|null $picker_user_id
@@ -39,15 +39,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property PickingTypeEnum|null $type
  * @property string|null $last_picked_at
- * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
+ * @property int|null $batch_code_id
+ * @property-read \App\Models\Dispatching\BatchCode|null $batchCode
+ * @property-read \App\Models\Dispatching\DeliveryNote|null $deliveryNote
  * @property-read \App\Models\Dispatching\DeliveryNoteItem $deliveryNoteItem
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Location|null $location
- * @property-read OrgStock $orgStock
+ * @property-read OrgStock|null $orgStock
  * @property-read OrgStockMovement|null $orgStockMovement
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read User|null $picker
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Picking newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Picking newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Picking query()
@@ -62,6 +64,7 @@ class Picking extends Model
         'type'              => PickingTypeEnum::class,
         'not_picked_reason' => PickingNotPickedReasonEnum::class,
         'engine'            => PickingEngineEnum::class,
+        'quantity'          => 'decimal:6'
     ];
 
     protected $guarded = [];
@@ -98,6 +101,11 @@ class Picking extends Model
     public function orgStockMovement(): BelongsTo
     {
         return $this->belongsTo(OrgStockMovement::class, 'org_stock_movement_id');
+    }
+
+    public function batchCode(): BelongsTo
+    {
+        return $this->belongsTo(BatchCode::class);
     }
 
 

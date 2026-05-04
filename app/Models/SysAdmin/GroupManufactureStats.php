@@ -49,7 +49,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_artefacts
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupManufactureStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupManufactureStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupManufactureStats query()

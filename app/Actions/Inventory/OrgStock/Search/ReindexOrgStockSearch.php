@@ -1,53 +1,27 @@
 <?php
 
 /*
- * Author: Ganes <gustiganes@gmail.com>
- * Created on: 14-11-2024, Bali, Indonesia
- * Github: https://github.com/Ganes556
- * Copyright: 2024
- *
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 10 Apr 2026 15:51:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Inventory\OrgStock\Search;
 
-use App\Actions\HydrateModel;
+use App\Actions\Traits\WithScoutReindex;
 use App\Models\Inventory\OrgStock;
-use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexOrgStockSearch extends HydrateModel
+class ReindexOrgStockSearch
 {
-    public string $commandSignature = 'search:org_stocks {organisations?*} {--s|slugs=}';
+    use AsAction;
+    use WithScoutReindex;
 
+    public string $commandSignature = 'reindex_search:org_stocks';
 
-    public function handle(OrgStock $orgStock): void
+    public function handle(bool $reindex = true, bool $reset = false): void
     {
-        OrgStockRecordSearch::run($orgStock);
+        $this->runScoutReindex(OrgStock::class, $reindex, $reset);
     }
 
-
-    protected function getModel(string $slug): OrgStock
-    {
-        return OrgStock::withTrashed()->where('slug', $slug)->first();
-    }
-
-    protected function loopAll(Command $command): void
-    {
-        $command->info("Reindex Org Stocks");
-        $count = OrgStock::withTrashed()->count();
-
-        $bar = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
-        $bar->start();
-
-        OrgStock::withTrashed()->chunk(1000, function (Collection $models) use ($bar) {
-            foreach ($models as $model) {
-                $this->handle($model);
-                $bar->advance();
-            }
-        });
-
-        $bar->finish();
-        $command->info("");
-    }
 }

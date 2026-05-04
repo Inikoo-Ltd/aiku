@@ -25,10 +25,16 @@ enum OutboxMergeTagsEnum: string
     case UNSUBSCRIBE = 'Unsubscribe';
     case REJECTED_NOTES = 'Rejected Notes';
     case PRODUCTS = 'Products';
+    case LOW_STOCK_ITEMS_IN_BASKET = 'Low Stock Items in Basket';
     case PAYMENT_BALANCE_PREVIEW = 'Payment Balance Preview';
     case PAYMENT_NOTE = 'Payment Note';
     case PAYMENT_REASON = 'Payment Reason';
     case PAYMENT_TYPE = 'Payment Type';
+    case CHAT_LINK = 'Chat Link';
+    case CHAT_MESSAGE = 'Chat Message';
+    case RETINA_LOGIN_LINK = 'Retina Login Link';
+    case WEB_USER_PASSWORD = 'Web User Password';
+    case WEB_USER_CONTACT_NAME = 'Web User Contact Name';
 
 
     public static function tags(): array
@@ -79,6 +85,10 @@ enum OutboxMergeTagsEnum: string
                 'value' => '[Products]'
             ],
             [
+                'name'  => __('Low Stock Items in Basket'),
+                'value' => '[Low Stock Items in Basket]'
+            ],
+            [
                 'name'  => __('Preview Amount'),
                 'value' => '[Preview Amount]'
             ],
@@ -98,6 +108,27 @@ enum OutboxMergeTagsEnum: string
                 'name'  => __('Payment Type'),
                 'value' => '[Payment Type]'
             ],
+            [
+                'name'  => __('Chat Link'),
+                'value' => '[Chat Link]'
+            ],
+            [
+                'name'  => __('Chat Message'),
+                'value' => '[Chat Message]'
+            ],
+            [
+                'name' => __('Retina Login Link'),
+                'value' => '[Retina Login Link]'
+            ],
+            [
+                'name' => __('Web User Password'),
+                'value' => '[Web User Password]'
+            ],
+            [
+                'name' => __('Web User Contact Name'),
+                'value' => '[Web User Contact Name]'
+            ]
+
 
         ];
     }

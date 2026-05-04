@@ -8,14 +8,17 @@
 
 namespace App\Actions\Traits;
 
+use App\Models\Catalogue\Product;
+use App\Models\CRM\WebUser;
 use App\Models\HumanResources\Employee;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\File\File;
 
 trait WithBase64FileConverter
 {
-    public function convertBase64ToFile($base64File, Employee $model): UploadedFile
+    public function convertBase64ToFile($base64File, Employee|WebUser|User|Product $model): UploadedFile
     {
         $fileData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64File));
 
@@ -26,7 +29,7 @@ trait WithBase64FileConverter
 
         return new UploadedFile(
             $tmpFile->getPathname(),
-            $model->slug . '-' . now()->format('Y-m-d-H-i-s') . '.' . $tmpFile->getExtension(),
+            $model->id . '-' . now()->format('Y-m-d-H-i-s') . '.' . $tmpFile->getExtension(),
             $tmpFile->getMimeType(),
             0,
             false

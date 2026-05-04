@@ -18,12 +18,12 @@ import { routeType } from '@/types/route'
 import StoredItemShowcase from '@/Components/Showcases/Grp/StoredItemShowcase.vue'
 
 // import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faFragile, faNarwhal, faExchange, faYinYang, faBallotCheck, faTruckCouch, faSignOutAlt } from '@fal'
+import { faFragile, faNarwhal, faExchange, faYinYang, faBallotCheck, faTruckCouch, faSignOutAlt, faGhost } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import StockItemsMovements from '@/Components/Showcases/Grp/StockItemsMovements.vue'
 import TableStoredItemsAudits from '@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemsAudits.vue'
 import TableStoredItemAuditDeltas from '@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemAuditDeltas.vue'
-library.add(faFragile, faNarwhal, faExchange, faYinYang, faBallotCheck, faTruckCouch, faSignOutAlt)
+library.add(faFragile, faNarwhal, faExchange, faYinYang, faBallotCheck, faTruckCouch, faSignOutAlt, faGhost)
 
 
 const props = defineProps<{

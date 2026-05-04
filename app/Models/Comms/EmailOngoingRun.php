@@ -15,9 +15,9 @@ use App\Models\Catalogue\Shop;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 /**
@@ -39,7 +39,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\DispatchedEmail> $dispatchedEmails
  * @property-read \App\Models\Comms\Email|null $email
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\EmailBulkRun> $emailBulkRuns
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Comms\EmailOngoingRunIntervals|null $intervals
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Comms\Outbox|null $outbox
@@ -104,9 +104,9 @@ class EmailOngoingRun extends Model
         return $this->hasOne(EmailOngoingRunIntervals::class);
     }
 
-    public function dispatchedEmails(): MorphMany
+    public function dispatchedEmails(): BelongsToMany
     {
-        return $this->morphMany(DispatchedEmail::class, 'parent');
+        return $this->belongsToMany(DispatchedEmail::class, 'email_ongoing_run_has_dispatched_emails');
     }
 
     public function emailBulkRuns(): HasMany

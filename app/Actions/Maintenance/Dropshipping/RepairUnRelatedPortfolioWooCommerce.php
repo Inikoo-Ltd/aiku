@@ -13,6 +13,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -23,40 +24,35 @@ class RepairUnRelatedPortfolioWooCommerce
 
     public function handle(WooCommerceUser $wooCommerceUser, Collection $portfolios): void
     {
+        $page = 1;
         $continue = true;
         $fetchedPortfolios = [];
 
         do {
             $fetchedPortfolio = $wooCommerceUser->getWooCommerceProducts([
-                'per_page' => 20,
+                'per_page' => 100,
+                'page' => $page
             ]);
 
             if (blank($fetchedPortfolio)) {
                 $continue = false;
             }
-
-            echo count($fetchedPortfolio) . "\n";
-
             $fetchedPortfolios[] = $fetchedPortfolio;
 
+            $page++;
         } while ($continue);
 
-        $fetchedPortfolioIds = collect($fetchedPortfolio)->pluck('id');
+        $fetchedPortfolioIds = collect($fetchedPortfolios)->pluck('id');
         $relatedPortfolioIds = $portfolios->pluck('platform_product_id');
 
         $foundedProduct = [];
-        foreach ($fetchedPortfolioIds as $fetchedPortfolioId) {
-            if ($relatedPortfolioIds->contains($fetchedPortfolioId)) {
-                continue;
-            } else {
-                $foundedProduct[] = $fetchedPortfolioId;
-            }
-        }
+        $diff = $fetchedPortfolioIds->diff($relatedPortfolioIds);
 
-        dd($foundedProduct);
+        foreach ($foundedProduct as $product) {
+            $response = $wooCommerceUser->deleteWooCommerceProduct($product->platform_product_id);
+            $id = Arr::get($response, 'id');
 
-        if (!blank($foundedProduct)) {
-            echo '🤘🏻 Success to update SKU \n';
+            echo "🤘🏻 Success to update SKU: $id \n";
         }
     }
 

@@ -70,26 +70,27 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
         foreach ($openShops as $shop) {
             $orgStocksData = $organisationsData[$shop->organisation_id]['org_stocks_data'];
             if ($orgStocksData['org_cost'] === null) {
-                $shopCost = null;
-                $price    = null;
-                $rrp      = null;
+                $shopCost       = null;
+                $warehouseValue = null;
+                $price          = null;
+                $rrp            = null;
             } else {
-                $shopCost = round($orgStocksData['org_cost'] * GetCurrencyExchange::run($shop->organisation->currency, $shop->currency), 2);
-                $price    = round($shopCost * $shop->cost_price_ratio, 2);
-                $rrp      = round($price * 2.4, 2);
+                $shopCost       = round($orgStocksData['org_cost'] * GetCurrencyExchange::run($shop->organisation->currency, $shop->currency), 2);
+                $warehouseValue = round($orgStocksData['org_value_in_warehouse'] * GetCurrencyExchange::run($shop->organisation->currency, $shop->currency), 2);
+
+                $price = round($shopCost * $shop->cost_price_ratio, 2);
+                $rrp   = round($price * 2.4, 2);
             }
 
-            $orgStocksData['shop_currency'] = $shop->currency->code;
-            $orgStocksData['shop_cost']     = $shopCost;
-            $orgStocksData['id']            = $shop->id;
-            $orgStocksData['price']         = $price;
-            $orgStocksData['rrp']           = $rrp;
-            $orgStocksData['gross_weight']  = $tradeUnits[0]['model']->gross_weight * $tradeUnits[0]['quantity'];
-            $organisationsData['images']    = $shop->organisation->media->map(fn ($media) => [
-                'id'  => $media->id,
-                'url' => $media->getUrl()
-            ]);
-            $orgStocksData['margin']        = ($orgStocksData['price'] > 0)
+
+            $orgStocksData['shop_currency']        = $shop->currency->code;
+            $orgStocksData['shop_cost']            = $shopCost;
+            $orgStocksData['shop_warehouse_value'] = $warehouseValue;
+            $orgStocksData['id']                   = $shop->id;
+            $orgStocksData['price']                = $price ?? 0.01;
+            $orgStocksData['rrp']                  = $rrp ?? 0.01;
+            $orgStocksData['gross_weight']         = $tradeUnits[0]['model']->gross_weight * $tradeUnits[0]['quantity'];
+            $orgStocksData['margin']               = ($orgStocksData['price'] > 0)
                 ? round((($orgStocksData['price'] - $orgStocksData['shop_cost']) / $orgStocksData['price']) * 100, 2)
                 : null;
 
@@ -98,18 +99,15 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
         }
 
         foreach ($tradeUnits as $tradeUnit) {
-
             $packedIn = DB::table('model_has_trade_units')
                 ->select('quantity')
                 ->where('model_has_trade_units.model_type', 'Stock')
                 ->where('model_has_trade_units.trade_unit_id', $tradeUnit['id'])
                 ->first();
 
-            // dd($tradeUnit['quantity'], $packedIn->quantity, riseDivisor(divideWithRemainder(findSmallestFactors(2)), $packedIn->quantity));
-
             $finalData['trade_units'][] = [
-                'id'     => $tradeUnit['id'],
-                'images' => $tradeUnit['images'],
+                'id'              => $tradeUnit['id'],
+                'images'          => $tradeUnit['images'],
                 'pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit['quantity'] / $packedIn->quantity)), $packedIn->quantity),
             ];
         }
@@ -121,6 +119,7 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
     {
         $stock                    = null;
         $cost                     = null;
+        $orgValueInWarehouse      = null;
         $organisationHasOrgStocks = false;
         foreach ($tradeUnitsDatum as $tradeUnitData) {
             $tradeUnit = $tradeUnitData['model'];
@@ -135,11 +134,22 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
                         $stock = $localStock;
                     }
 
-                    $localCost = $orgStock->unit_cost * $qty;
+
+                    $orgStockUnitCost  = ($orgStock->current_supplier_sku_cost ?? 0) / ($orgStock->packed_in ?? 1);
+                    $orgStockUnitValue = ($orgStock->sku_value ?? 0) / ($orgStock->packed_in ?? 1);
+
+
+                    $localCost = $orgStockUnitCost * $qty;
                     if ($cost == null) {
                         $cost = $localCost;
                     } else {
                         $cost += $localCost;
+                    }
+
+                    if ($orgValueInWarehouse == null) {
+                        $orgValueInWarehouse = $orgStockUnitValue;
+                    } else {
+                        $orgValueInWarehouse += $orgStockUnitValue;
                     }
 
                     $organisationHasOrgStocks = true;
@@ -155,15 +165,25 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
             $grpCost = round($cost * GetCurrencyExchange::run($organisation->currency, $organisation->group->currency), 2);
         }
 
+        if ($orgValueInWarehouse === null) {
+            $orgValueInWarehouse = null;
+            $grpValueInWarehouse = null;
+        } else {
+            $orgValueInWarehouse = round($orgValueInWarehouse, 2);
+            $grpValueInWarehouse = round($orgValueInWarehouse * GetCurrencyExchange::run($organisation->currency, $organisation->group->currency), 2);
+        }
+
 
         return [
-            'stock'          => $stock,
-            'org_currency'   => $organisation->currency->code,
-            'org_cost'       => $orgCost,
-            'grp_currency'   => $organisation->group->currency->code,
-            'grp_cost'       => $grpCost,
-            'has_org_stocks' => $organisationHasOrgStocks,
-            'create_in_shop' => true,
+            'stock'                  => $stock,
+            'org_currency'           => $organisation->currency->code,
+            'grp_currency'           => $organisation->group->currency->code,
+            'org_cost'               => $orgCost,
+            'grp_cost'               => $grpCost,
+            'org_value_in_warehouse' => $orgValueInWarehouse,
+            'grp_cost_in_warehouse'  => $grpValueInWarehouse,
+            'has_org_stocks'         => $organisationHasOrgStocks,
+            'create_in_shop'         => true,
         ];
     }
 

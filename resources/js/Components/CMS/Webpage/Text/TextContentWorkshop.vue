@@ -58,7 +58,7 @@ watch(() => props.modelValue.value, () => {
 </script>
 
 <template>
-  <div id="text">
+  <div :id="modelValue?.id ? modelValue?.id  : 'text'+indexBlock">
     <div
       @click="() => {
         sendMessageToParent('activeBlock', indexBlock)

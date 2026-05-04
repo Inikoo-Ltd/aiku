@@ -36,10 +36,16 @@ const recipientName = ref<string | null>(null)
 
 // Ambil UUID dari URL path
 const uuid = ref<string | null>(null)
+// Ambil tag dari URL query params
+const tag = ref<string | null>(null)
 
 onMounted(() => {
     const pathParts = window.location.pathname.split('/')
     uuid.value = pathParts[pathParts.length - 1] || null
+
+    // Capture tag from query parameters
+    const urlParams = new URLSearchParams(window.location.search)
+    tag.value = urlParams.get('tag')
 })
 
 const isInvalidParams = computed(() => !uuid.value)
@@ -59,9 +65,16 @@ async function unsubscribe() {
     errorMessage.value = null
 
     try {
-        await axios.post(route("iris.unsubscribe.update", {
-            dispatchedEmail: uuid.value,
-        }), {}).then((response) => {
+        const requestData: any = {
+            encryptedDispatchedEmailID: uuid.value,
+        }
+
+        // Add tag to request if it exists
+        if (tag.value) {
+            requestData.tag = tag.value
+        }
+
+        await axios.post(route("iris.unsubscribe.update", requestData), {}).then((response) => {
             const data = response.data
 
             // Check response status

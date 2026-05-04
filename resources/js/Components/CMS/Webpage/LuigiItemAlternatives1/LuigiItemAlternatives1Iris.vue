@@ -39,7 +39,7 @@ const props = defineProps<{
 const slidesPerView = computed(() => {
     const perRow = props.fieldValue?.settings?.per_row ?? {}
     return {
-        desktop: perRow.desktop ?? 6,
+        desktop: perRow.desktop ?? 5,
         tablet: perRow.tablet ?? 4,
         mobile: perRow.mobile ?? 2,
     }[props.screenType] ?? 5
@@ -48,7 +48,7 @@ const slidesPerView = computed(() => {
 const layout = inject('layout', retinaLayoutStructure)
 
 const listProductsFromLuigi = ref<ProductHit[] | null>()
-const listProducts= ref<ProductHit[] | null>()
+const listProducts= ref<ProductHit[]>([])
 const isLoadingFetch = ref(false)
 
 const listLoadingProducts = ref<Record<string, string>>({})
@@ -187,6 +187,8 @@ const fetchRecommendersToGetProducts = async () => {
 }
 
 
+
+
 onMounted(() => {
     // console.log('wwwwwwwwwwwwww$$$$$$$$$$', layout)
     // console.log('wwwwwwwwwwwwww+++ logged', layout.iris.is_logged_in)
@@ -206,7 +208,7 @@ onMounted(() => {
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'
     }">
-        <template v-if="!isFetched || listProductsFromLuigi?.length">
+        <template v-if="isFetched && listProducts.length">
             <!-- Title -->
             <div class="px-3 py-6 pb-2">
                 <div class="text-2xl md:text-3xl font-semibold">
@@ -218,10 +220,7 @@ onMounted(() => {
             
             <div class="py-4 px-3 md:px-12 swiper-container">
                 <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
-                    :loop="false"
-                    :autoplay="false"
                     :pagination="{ clickable: true }"
-                    :modules="[Autoplay]"
                     class="w-full"
                     spaceBetween="12"
                     autoHeight

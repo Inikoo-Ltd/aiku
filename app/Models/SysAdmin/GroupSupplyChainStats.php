@@ -40,7 +40,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_supplier_products_state_discontinued
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static Builder<static>|GroupSupplyChainStats newModelQuery()
  * @method static Builder<static>|GroupSupplyChainStats newQuery()
  * @method static Builder<static>|GroupSupplyChainStats query()

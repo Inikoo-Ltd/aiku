@@ -9,12 +9,14 @@
 namespace App\Actions\Inventory\LocationOrgStock;
 
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
+use App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories;
 use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Http\Resources\Inventory\LocationOrgStockResource;
 use App\Models\Inventory\LocationOrgStock;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -27,10 +29,46 @@ class UpdateLocationOrgStock extends OrgAction
 
     public function handle(LocationOrgStock $locationOrgStock, array $modelData): LocationOrgStock
     {
+
+        $dropshippingPriority = Arr::pull($modelData, 'set_as_priority_dropshipping', null);
+        if ($dropshippingPriority) {
+            data_set($modelData, 'default_dropshipping_picking_location', $dropshippingPriority);
+
+            $locationOrgStock->orgStock->locationOrgStocks()->whereNot('location_org_stocks.id', $locationOrgStock->id)->update([
+                'default_dropshipping_picking_location' => false
+            ]);
+        }
+
+        $wholesalePriority = Arr::pull($modelData, 'set_as_priority_wholesale', null);
+        if ($wholesalePriority) {
+            data_set($modelData, 'default_wholesale_picking_location', $wholesalePriority);
+
+            $locationOrgStock->orgStock->locationOrgStocks()->whereNot('location_org_stocks.id', $locationOrgStock->id)->update([
+                'default_wholesale_picking_location'    => false
+            ]);
+        }
+
+        $settingKeys = ['min_stock', 'max_stock', 'replenishment_stock'];
+
+        if (Arr::hasAny($modelData, $settingKeys)) {
+            $currSettings = $locationOrgStock->settings ?? [];
+            $newSettings = [];
+
+            foreach ($settingKeys as $key) {
+                $value = Arr::pull($modelData, $key, data_get($currSettings, $key));
+                if (!is_null($value)) {
+                    $newSettings[$key] = $value;
+                }
+            }
+
+            data_set($modelData, 'settings', $newSettings);
+        }
+
         $locationOrgStock = $this->update($locationOrgStock, $modelData, ['data']);
 
         if ($locationOrgStock->wasChanged('quantity')) {
             OrgStockHydrateQuantityInLocations::dispatch($locationOrgStock->orgStock);
+            CalculateOrgStockCurrentStockHistories::dispatch($locationOrgStock->org_stock_id);
         }
 
         RepairOrgStockMissingLocationIds::dispatch($locationOrgStock->orgStock);
@@ -62,12 +100,17 @@ class UpdateLocationOrgStock extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'quantity'         => ['sometimes', 'numeric'],
-            'data'             => ['sometimes', 'array'],
-            'settings'         => ['sometimes', 'array'],
-            'notes'            => ['sometimes', 'nullable', 'string', 'max:255'],
-            'picking_priority' => ['sometimes', 'integer'],
-            'type'             => ['sometimes', Rule::enum(LocationStockTypeEnum::class)],
+            'quantity'                          => ['sometimes', 'numeric'],
+            'data'                              => ['sometimes', 'array'],
+            'settings'                          => ['sometimes', 'array'],
+            'notes'                             => ['sometimes', 'nullable', 'string', 'max:255'],
+            'picking_priority'                  => ['sometimes', 'integer'],
+            'type'                              => ['sometimes', Rule::enum(LocationStockTypeEnum::class)],
+            'min_stock'                         => ['sometimes', 'numeric', 'nullable', 'min:0'],
+            'max_stock'                         => ['sometimes', 'numeric', 'nullable', 'min:0'],
+            'replenishment_stock'               => ['sometimes', 'numeric', 'nullable', 'min:0'],
+            'set_as_priority_dropshipping'      => ['sometimes', 'boolean'],
+            'set_as_priority_wholesale'         => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {

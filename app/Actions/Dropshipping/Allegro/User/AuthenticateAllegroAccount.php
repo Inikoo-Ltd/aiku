@@ -17,6 +17,7 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
@@ -37,84 +38,87 @@ class AuthenticateAllegroAccount extends OrgAction
      */
     public function handle(array $modelData)
     {
-        try {
-            $customer = null;
-            if (Arr::get($modelData, 'state')) {
-                $stateData = json_decode(base64_decode(Arr::get($modelData, 'state')), true);
-                $customer = Customer::find(Arr::get($stateData, 'customer_id'));
-                $codeVerifier = Arr::get($stateData, 'code_verifier');
-            }
-
-            $tokenData = $this->exchangeCodeForTokens(
-                Arr::get($modelData, 'code'),
-                route('retina.dropshipping.allegro.callback'),
-                $codeVerifier ?? null
-            );
-
-            if (isset($tokenData['access_token'])) {
-                $accessTokenExpiresAt = now()->addSeconds($tokenData['expires_in'])->timestamp;
-                $refreshTokenExpiresAt = isset($tokenData['refresh_token'])
-                    ? now()->addDays(90)->timestamp
-                    : null;
-
-                $http = Http::withHeaders([
-                    'Authorization'  => 'Bearer ' . $tokenData['access_token'],
-                    'Accept'         => $this->allegroApiVersion,
-                    'Content-Type'   => $this->allegroApiVersion,
-                ])->baseUrl(config('services.allegro.base_url'))
-                ->get('/me');
-
-                $response = $http->json();
-
-                $userData = [
-                    'allegro_id' => Arr::get($response, 'id'),
-                    'name' => (Arr::get($response, 'firstName') && Arr::get($response, 'lastName'))
-                        ? Arr::get($response, 'firstName') . ' ' . Arr::get($response, 'lastName')
-                        : Arr::get($response, 'company.name'),
-                    'access_token' => $tokenData['access_token'],
-                    'access_token_expire_in' => $accessTokenExpiresAt,
-                    'refresh_token' => $tokenData['refresh_token'] ?? null,
-                    'refresh_token_expire_in' => $refreshTokenExpiresAt,
-                    'auth_type' => 'oauth',
-                ];
-
-                $allegroUser = AllegroUser::where('customer_id', $customer?->id)
-                    ->where('allegro_id', $userData['allegro_id'])
-                    ->first();
-
-                if (!$allegroUser && $customer?->id) {
-                    $allegroUser = StoreAllegroUser::run($customer, $userData);
-                } elseif (!$allegroUser && $customer === null) {
-                    $allegroUser = AllegroUser::create($userData);
+        return DB::transaction(function () use ($modelData) {
+            try {
+                $customer = null;
+                if (Arr::get($modelData, 'state')) {
+                    $stateData = json_decode(base64_decode(Arr::get($modelData, 'state')), true);
+                    $customer = Customer::find(Arr::get($stateData, 'customer_id'));
+                    $codeVerifier = Arr::get($stateData, 'code_verifier');
                 }
 
-                if ($customer?->id && $allegroUser) {
-                    $allegroUser = UpdateAllegroUser::run($allegroUser, $userData);
-                }
+                $tokenData = $this->exchangeCodeForTokens(
+                    Arr::get($modelData, 'code'),
+                    route('retina.dropshipping.allegro.callback'),
+                    $codeVerifier ?? null
+                );
 
-                if ($allegroUser) {
-                    SaveShopDataAllegroChannel::run($allegroUser);
-                    $allegroUser->refresh();
+                if (isset($tokenData['access_token'])) {
+                    $accessTokenExpiresAt = now()->addSeconds($tokenData['expires_in'])->timestamp;
+                    $refreshTokenExpiresAt = isset($tokenData['refresh_token'])
+                        ? now()->addDays(90)->timestamp
+                        : null;
 
-                    if ($customer?->id) {
-                        CheckAllegroChannel::run($allegroUser);
+                    $http = Http::withHeaders([
+                        'Authorization'  => 'Bearer ' . $tokenData['access_token'],
+                        'Accept'         => $this->allegroApiVersion,
+                        'Content-Type'   => $this->allegroApiVersion,
+                    ])->baseUrl(config('services.allegro.base_url'))
+                        ->get('/me');
+
+                    $response = $http->json();
+
+                    $userData = [
+                        'allegro_id' => Arr::get($response, 'id'),
+                        'name' => (Arr::get($response, 'firstName') && Arr::get($response, 'lastName'))
+                            ? Arr::get($response, 'firstName') . ' ' . Arr::get($response, 'lastName')
+                            : Arr::get($response, 'company.name'),
+                        'access_token' => $tokenData['access_token'],
+                        'access_token_expire_in' => $accessTokenExpiresAt,
+                        'refresh_token' => $tokenData['refresh_token'] ?? null,
+                        'refresh_token_expire_in' => $refreshTokenExpiresAt,
+                        'auth_type' => 'oauth',
+                    ];
+
+                    $allegroUser = AllegroUser::where('customer_id', $customer?->id)
+                        ->where('allegro_id', $userData['allegro_id'])
+                        ->first();
+
+                    if (!$allegroUser && $customer?->id) {
+                        $allegroUser = StoreAllegroUser::run($customer, $userData);
+                    } elseif (!$allegroUser && $customer === null) {
+                        $allegroUser = AllegroUser::create($userData);
                     }
+
+                    if ($customer?->id && $allegroUser) {
+                        $allegroUser = UpdateAllegroUser::run($allegroUser, $userData);
+                    }
+
+                    if ($allegroUser) {
+                        SaveShopDataAllegroChannel::run($allegroUser);
+                        $allegroUser->refresh();
+
+                        if ($customer?->id) {
+                            CheckAllegroChannel::run($allegroUser);
+                        }
+                    }
+
+                    return Redirect::route('retina.dropshipping.customer_sales_channels.show', [
+                        'customerSalesChannel' => $allegroUser->customerSalesChannel->slug
+                    ]);
                 }
 
-                return Redirect::route('retina.dropshipping.customer_sales_channels.show', [
-                    'customerSalesChannel' => $allegroUser->customerSalesChannel->slug
-                ]);
+            } catch (\Exception $e) {
+                dd($e->getMessage());
+                Log::error('Allegro authentication failed: ' . $e->getMessage());
+
+                \Sentry::captureException($e);
+
+                return $e->getMessage();
             }
 
-        } catch (\Exception $e) {
-            Log::error('Allegro authentication failed: ' . $e->getMessage());
-
-            \Sentry::captureException($e);
-
-            return $e->getMessage();
-        }
-
-        return null;
+            return null;
+        });
     }
 
     public function redirectToAllegro(Customer $customer): string

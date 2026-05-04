@@ -244,10 +244,10 @@ class IndexFamiliesInMasterFamilies extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $families, ActionRequest $request): Response
     {
+        $modelNavigation = [];
         $navigation = ProductCategoryTabsEnum::navigationExcept([ProductCategoryTabsEnum::SALES]);
         $subNavigation = $this->getMasterFamilySubNavigation($this->parent);
 
-        $modelNavigation = [];
 
         $title           = $this->parent->name;
         $model           = '';

@@ -8,28 +8,15 @@
 
 namespace App\Actions\Ordering\Order;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedIntervals;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateOrders;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCreatedIntervals;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
-use App\Actions\Ordering\Order\Search\OrderRecordSearch;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCreatedIntervals;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCustomerUpdateIntervals;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderIntervals;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInBasketAtCreatedIntervals;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderIntervals;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Traits\WithOrderExchanges;
-use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
@@ -108,7 +95,13 @@ class StoreOrder extends OrgAction
             $modelData['currency_id']      = $parent->shop->currency_id;
             $modelData['shop_id']          = $parent->shop_id;
             $modelData['sales_channel_id'] = Arr::get($modelData, 'sales_channel_id');
-            $shop                          = $parent->shop;
+            $modelData['email']            = $parent->email;
+            $modelData['phone']            = $parent->phone;
+            $modelData['contact_name']     = $parent->contact_name;
+            $modelData['company_name']     = $parent->company_name;
+
+
+            $shop = $parent->shop;
         } elseif ($parent instanceof CustomerClient) {
             $modelData['customer_id']               = $parent->customer_id;
             $modelData['customer_client_id']        = $parent->id;
@@ -117,6 +110,13 @@ class StoreOrder extends OrgAction
             $modelData['platform_id']               = $parent->salesChannel->platform_id;
             $modelData['customer_sales_channel_id'] = $parent->customer_sales_channel_id;
             $shop                                   = $parent->shop;
+
+            if ($parent->customer) {
+                $modelData['email']        = $parent->customer->email;
+                $modelData['phone']        = $parent->customer->phone;
+                $modelData['contact_name'] = $parent->customer->contact_name;
+                $modelData['company_name'] = $parent->customer->company_name;
+            }
         } else {
             $modelData['currency_id'] = $parent->currency_id;
             $modelData['shop_id']     = $parent->id;
@@ -245,29 +245,6 @@ class StoreOrder extends OrgAction
         $this->orderHydrators($order);
         $this->orderHandlingHydrators($order, $order->state);
 
-        $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
-
-        ShopHydrateOrderIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
-        OrganisationHydrateOrderIntervals::dispatch($order->organisation, $intervalsExceptHistorical, []);
-        GroupHydrateOrderIntervals::dispatch($order->group, $intervalsExceptHistorical, []);
-
-        GroupHydrateOrderInBasketAtCreatedIntervals::dispatch($order->group, $intervalsExceptHistorical, []);
-        OrganisationHydrateOrderInBasketAtCreatedIntervals::dispatch($order->organisation, $intervalsExceptHistorical, []);
-        ShopHydrateOrderInBasketAtCreatedIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
-
-        if ($order->master_shop_id) {
-            MasterShopHydrateOrderInBasketAtCreatedIntervals::dispatch($order->master_shop_id, $intervalsExceptHistorical, []);
-        }
-
-        if ($order->updated_by_customer_at) {
-            GroupHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->group, $intervalsExceptHistorical, []);
-            OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->organisation, $intervalsExceptHistorical, []);
-            ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
-            if ($order->master_shop_id) {
-                MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->master_shop_id, $intervalsExceptHistorical, []);
-            }
-        }
-
         if ($order->customer_client_id) {
             CustomerClientHydrateOrders::dispatch($order->customerClient)->delay($this->hydratorsDelay);
         }
@@ -286,9 +263,6 @@ class StoreOrder extends OrgAction
                 ]);
             }
         }
-
-
-        OrderRecordSearch::dispatch($order);
 
         return $order->fresh();
     }

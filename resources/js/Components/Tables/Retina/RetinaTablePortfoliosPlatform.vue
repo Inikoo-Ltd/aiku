@@ -196,8 +196,9 @@ const compTableFilterStatus = computed(() => {
 	return layout.currentQuery?.[`${props.tab}_filter`]?.status
 })
 const isLoadingTable = ref<null | string>(null)
+
 const onClickFilterOutOfStock = (query: string) => {
-	let xx: string | null = ""
+	let xx: string | null = query
 	if (compTableFilterStatus.value === query) {
 		xx = null
 	} else {
@@ -312,7 +313,7 @@ const openEditModal = (item) => {
 	isOpenModalEditProduct.value = true
 	selectedEditProduct.value = {
 		...item,
-		basePrice: item?.customer_price,
+		basePrice: item?.product_rrp,
 	}
 }
 
@@ -528,6 +529,9 @@ const onClickFilterForSale = (query: string) => {
 const compTableFilterForSale = computed(() => {
 	return layout.currentQuery?.[`${props.tab}_filter`]?.is_for_sale
 })
+
+const percentageIncrease = ref(0);
+
 </script>
 
 <template>
@@ -632,10 +636,22 @@ const compTableFilterForSale = computed(() => {
 				size="xs"
 				class="whitespace-nowrap"
 				:key="compTableFilterForSale"
-				:type="compTableFilterForSale ? 'secondary' : 'tertiary'"
-				:icon="compTableFilterForSale ? 'fas fa-filter' : 'fal fa-filter'"
+				:type="compTableFilterForSale === 'true' ? 'secondary' : 'tertiary'"
+				:icon="compTableFilterForSale === 'true' ? 'fas fa-filter' : 'fal fa-filter'"
 				iconRight="fal fa-times"
 				:loading="isLoadingTable == 'discontinued'" />
+			<Button
+                @click="onClickFilterForSale('false')"
+                v-tooltip="trans('Only show products that are not for sale')"
+                :label="trans('Not For Sale')"
+                size="xs"
+                class="whitespace-nowrap"
+                :key="compTableFilterForSale + 'not'"
+                :type="compTableFilterForSale === 'false' ? 'secondary' : 'tertiary'"
+                :icon="compTableFilterForSale === 'false' ? 'fas fa-filter' : 'fal fa-filter'"
+                iconRight="fal fa-times"
+                :loading="isLoadingTable == 'not-for-sale'"
+            />
 			<Button
 				@click="onClickFilterOutOfStock('discontinued')"
 				v-tooltip="trans('Filter the product that discontinued')"
@@ -722,14 +738,18 @@ const compTableFilterForSale = computed(() => {
 					{{ trans("RRP (include VAT):") }}
 					{{ locale.currencyFormat(product.currency_code, product.customer_price) }}
 				</div>
-				<div v-else-if="platform_data.type === 'ebay'">
+				<div v-else>
+					{{ trans("RRP:") }}
+					{{ locale.currencyFormat(product.currency_code, product.customer_price) }}
+				</div>
+				<!-- <div v-else-if="platform_data.type === 'ebay'">
 					{{ trans("RRP:") }}
 					{{ locale.currencyFormat(product.currency_code, product.customer_price * 0.8) }}
 				</div>
 				<div v-else>
 					{{ trans("RRP:") }}
 					{{ locale.currencyFormat(product.currency_code, product.customer_price) }}
-				</div>
+				</div> -->
 			</div>
 		</template>
 
@@ -1333,6 +1353,7 @@ const compTableFilterForSale = computed(() => {
 					trans("Selling Price")
 				}}</label>
 				<InputNumber
+					@update:modelValue="(value) => selectedEditProduct.customer_price = value"
 					:modelValue="selectedEditProduct?.customer_price"
 					inputId="edit-product-rrp"
 					mode="currency"
@@ -1340,17 +1361,18 @@ const compTableFilterForSale = computed(() => {
 					size="small"
 					:currency="layout?.iris?.currency?.code"
 					:locale="layout.locale"
-					:disabled="true" />
+					:allowEmpty="false"
+					:min="selectedEditProduct?.product_rrp" />
 				<div class="mt-2 flex flex-row gap-2">
 					<Button
-						v-for="percent in [20, 40, 60, 80, 100]"
+						v-for="percent in [20, 40, 60]"
 						:key="'p' + percent"
 						@click="
 							set(
 								selectedEditProduct,
 								['customer_price'],
 								calculateAdjustedPrice(
-									selectedEditProduct?.basePrice || 0,
+									selectedEditProduct?.product_rrp || 0,
 									percent,
 									'percent'
 								)
@@ -1360,7 +1382,43 @@ const compTableFilterForSale = computed(() => {
 						size="xs"
 						type="tertiary"
 						:style="'white-w-outline'" />
-					<Button
+						<div class="flex flex-row">
+							<InputNumber
+								@update:modelValue="(value) => percentageIncrease = value"
+								:modelValue="percentageIncrease"
+								:inputClass="'xxs w-[65px]'"
+								:inputStyle="{
+									'border-top-right-radius':0,
+									'border-bottom-right-radius':0,
+									'font-size': '0.75rem'
+								}"
+								type="tertiary"
+								:style="'white-w-outline'"
+								:min="0"
+								:max="100"
+								:allowEmpty="false"
+								:suffix="'%'"
+							/>
+							<Button
+								@click="
+									set(
+										selectedEditProduct,
+										['customer_price'],
+										calculateAdjustedPrice(
+											selectedEditProduct?.product_rrp || 0,
+											percentageIncrease,
+											'percent'
+										)
+									)
+								"
+								:label="`+`"
+								size="xs"
+								type="tertiary"
+								:class="'rounded-l-none  ml-0 px-4'"
+								:style="'white-w-outline'"
+							/>
+						</div>
+						<Button
 						v-for="amount in [2, 4, 6, 8, 10]"
 						:key="'a' + amount"
 						@click="
@@ -1368,7 +1426,7 @@ const compTableFilterForSale = computed(() => {
 								selectedEditProduct,
 								['customer_price'],
 								calculateAdjustedPrice(
-									selectedEditProduct?.basePrice || 0,
+									selectedEditProduct?.product_rrp || 0,
 									amount,
 									'fixed'
 								)

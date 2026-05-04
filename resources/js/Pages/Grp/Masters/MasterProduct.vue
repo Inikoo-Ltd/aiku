@@ -246,7 +246,7 @@ onMounted(() => {
                 v-if="mismatch_detected" 
                 :icon="faWarning" 
                 class="text-red-500" 
-                v-tooltip="trans('One of more product under this master has mismatched trade units data. Please fix it by modifying the master products trade units')"
+                v-tooltip="trans('One or more product under this master has mismatched trade units data. Please fix it by modifying the master products trade units')"
             />
         </template>
 
@@ -255,9 +255,7 @@ onMounted(() => {
         </template>
 
         <template #button-assign="{ action }">
-            <Button v-if="currentTab === 'products'" :icon="action.icon" :label="action.label" @click="openModal()"
-                :style="action.style" />
-            <div v-else></div>
+            <Button :disabled="tableData.data.length == 0" v-tooltip="tableData.data.length == 0 ? trans('Product already exists on all shops under this master shop') : ''" :icon="action.icon" :label="action.label" @click="openModal()" :style="action.style"/>
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
@@ -279,7 +277,7 @@ onMounted(() => {
             <FontAwesomeIcon 
                 :icon="faWarning" 
                 class="text-red-500 mr-1" 
-                v-tooltip="trans('One of more product under this master has mismatched trade units data. Please fix it by modifying the master products trade units')"
+                v-tooltip="trans('One or more product under this master has mismatched trade units data. Please fix it by modifying the master products trade units')"
             />
             {{ trans("One or more products linked to this master contain mismatched trade unit data. Please correct this by updating the master product's trade units.") }}
         </Message>

@@ -32,8 +32,8 @@ class UpdatePicking extends OrgAction
 
     public function handle(Picking $picking, array $modelData): Picking|bool
     {
-        if (Arr::get($modelData, 'quantity') == 0) {
-            return DeletePicking::make()->action($picking);
+        if (Arr::has($modelData, 'quantity') && Arr::get($modelData, 'quantity') == 0) {
+            return DeletePicking::make()->action($picking, null);
         }
 
         $picking = $this->update($picking, $modelData);
@@ -51,9 +51,10 @@ class UpdatePicking extends OrgAction
     {
         return [
             'type'              => ['sometimes', Rule::enum(PickingTypeEnum::class)],
-            'not_picked_reason'  => ['sometimes', Rule::enum(PickingNotPickedReasonEnum::class)],
-            'not_picked_note'    => ['sometimes', 'string'],
-            'quantity' => ['sometimes', 'numeric'],
+            'not_picked_reason' => ['sometimes', Rule::enum(PickingNotPickedReasonEnum::class)],
+            'not_picked_note'   => ['sometimes', 'string'],
+            'quantity'          => ['sometimes', 'numeric'],
+            'batch_code_id'     => ['sometimes', 'nullable', 'integer', 'exists:batch_codes,id'],
         ];
     }
 

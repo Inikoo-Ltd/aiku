@@ -25,15 +25,31 @@ class PdfInvoice extends OrgAction
     use WithInvoicesExport;
 
 
-    public function handle(Invoice $invoice): Response
+    public function handle(Invoice $invoice, array $options = []): Response
     {
-        return $this->processDataExportPdf($invoice);
+        return $this->processDataExportPdf($invoice, $options);
     }
 
+    public function rules(): array
+    {
+        return [
+            'pro_mode'             => ['sometimes', 'boolean'],
+            'country_of_origin'    => ['sometimes', 'boolean'],
+            'rrp'                  => ['sometimes', 'boolean'],
+            'parts'                => ['sometimes', 'boolean'],
+            'commodity_codes'      => ['sometimes', 'boolean'],
+            'weight'               => ['sometimes', 'boolean'],
+            'barcode'              => ['sometimes', 'boolean'],
+            'cpnp'                 => ['sometimes', 'boolean'],
+            'hide_payment_status'  => ['sometimes', 'boolean'],
+            'group_by_tariff_code' => ['sometimes', 'boolean'],
+        ];
+    }
 
     public function asController(Organisation $organisation, Invoice $invoice, ActionRequest $request): Response
     {
+        $this->initialisationFromShop($invoice->shop, $request);
 
-        return $this->handle($invoice);
+        return $this->handle($invoice, $this->validatedData);
     }
 }

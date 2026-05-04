@@ -22,8 +22,11 @@ import {
     faSkull, faDungeon
 } from '@fal';
 import { trans } from 'laravel-vue-i18n';
-import { Link } from "@inertiajs/vue3";
+import { Link, router } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
+import EmailTemplateCarousel from "@/Components/EmailTemplateCarousel.vue"
+import { routeType } from "@/types/route";
 
 library.add(
     faUser, faEnvelope, faSeedling, faShare, faInboxOut, faCheck,
@@ -47,29 +50,138 @@ const props = defineProps<{
         },
         compiled_layout: any
     }
+    liveStats?: any[]
+    ownShopTemplates?: Array<{
+        id: number,
+        slug: string,
+        name: string,
+        compiled_layout: string,
+        created_at: string,
+        shop_name: string
+    }>
+    otherShopTemplates?: Array<{
+        id: number,
+        slug: string,
+        name: string,
+        compiled_layout: string,
+        created_at: string,
+        shop_name: string
+    }>
+    workshopRoute?: routeType
 }>()
 
 const previewOpen = ref(false)
 const iframeClass = ref('w-full h-full')
 
-const totalValue = (props.data.mailshot.data.stats.map((item) => item.value || 0))
-    .reduce((acc, val) => acc + val, 0);
+const stats = computed(
+    () => props.liveStats && props.liveStats.length
+        ? props.liveStats
+        : props.data.mailshot.data.stats
+)
 
-const dataSet = {
-    labels: props.data.mailshot.data.stats.map((item) => item.label),
+const totalValue = computed(() =>
+    stats.value.map((item: any) => item.value || 0).reduce((acc: number, val: number) => acc + val, 0)
+)
+
+const mailshotColors = [
+    "#22c55e",
+    "#a3e635",
+    "#38bdf8",
+    "#fb7185",
+    "#fbbf24",
+    "#4f46e5",
+    "#ec4899",
+    "#14b8a6",
+    "#f97316",
+    "#6b7280",
+]
+
+const dataSet = computed(() => ({
+    labels: stats.value.map((item: any) => item.label),
     datasets: [
         {
-            backgroundColor: props.data.mailshot.data.stats.map((item) => item.color),
-            data: props.data.mailshot.data.stats.map((item) => item.value || 0),
+            data: stats.value.map((item: any) => item.value || 0),
+            backgroundColor: stats.value.map((_: any, index: number) =>
+                mailshotColors[index % mailshotColors.length]
+            ),
+            hoverOffset: 4,
         },
     ],
-};
+}))
+
+const pieOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            labels: {
+                usePointStyle: true,
+                pointStyle: "circle",
+            },
+        },
+    },
+}
+
+const tabsBox = computed(() => {
+    const s = stats.value || []
+
+    const getStat = (index: number) => s[index] || { label: '', value: 0, key: `stat_${index}`, icon: null }
+
+    const buildTabs = (indices: number[]) =>
+        indices.map((i) => {
+            const stat = getStat(i)
+            return {
+                tab_slug: stat.key,
+                label: stat.label,
+                value: stat.value ?? 0,
+                type: 'number',
+                icon: stat.icon,
+                icon_data: {
+                    icon: stat.icon,
+                    tooltip: stat.label,
+                },
+            }
+        })
+
+    return [
+        {
+            label: trans('Errors & Rejected Emails'),
+            tabs: buildTabs([0, 1]),
+        },
+        {
+            label: trans('Sent & Delivered Emails'),
+            tabs: buildTabs([2, 3]),
+        },
+        {
+            label: trans('Hard & Soft Bounced Emails'),
+            tabs: buildTabs([4, 5]),
+        },
+        {
+            label: trans('Opened & Clicked Emails'),
+            tabs: buildTabs([6, 7]),
+        },
+        {
+            label: trans('Spam & Unsubscribed Emails'),
+            tabs: buildTabs([8, 9]),
+        },
+    ]
+})
 
 const mailshotState = computed(() => props.data.mailshot.data.state)
 
 const isInProcess = computed(() => mailshotState.value === "in_process")
 const isReady = computed(() => mailshotState.value === "ready")
 const isLoadingVisit = ref(false)
+
+// Computed properties to use real data when available, otherwise use dummy data
+const effectiveOwnShopTemplates = computed(() =>
+    props.ownShopTemplates
+)
+
+const effectiveOtherShopTemplates = computed(() =>
+    props.otherShopTemplates
+)
+
 </script>
 
 <template>
@@ -82,24 +194,9 @@ const isLoadingVisit = ref(false)
                 </div>
             </div>
 
-            <!-- Horizontal compact stats -->
-            <div v-if="!isReady" class="rounded-md bg-white border border-gray-200 overflow-hidden">
-                <div class="grid grid-cols-5 divide-x divide-y divide-gray-200">
-                    <div v-for="item in data.mailshot.data.stats" :key="item.label"
-                        class="px-3 py-4 flex flex-col items-center justify-center hover:bg-gray-50 transition">
-                        <div class="flex items-center justify-center gap-2 text-gray-700">
-                            <FontAwesomeIcon :icon="item.icon" class="text-base" />
-                            <span class="text-sm font-medium truncate">{{ item.label }}</span>
-                        </div>
-
-                        <div class="flex items-baseline gap-1 mt-1">
-                            <div class="text-lg font-semibold text-gray-900">{{ item.value }}</div>
-                            <div v-if="item.percentage" class="text-xs font-medium text-gray-500">
-                                {{ item.percentage }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <!-- TabsBox stats -->
+            <div v-if="!isReady" class="mt-2">
+                <TabsBoxDisplay :tabs_box="tabsBox" />
             </div>
 
             <!-- Preview and chart -->
@@ -118,7 +215,7 @@ const isLoadingVisit = ref(false)
                 <div class="h-auto mb-3">
                     <div v-if="!isReady"
                         class="bg-white p-4 rounded-lg shadow relative min-h-[28rem] flex justify-center items-center">
-                        <Pie :data="dataSet" :options="{ responsive: true, maintainAspectRatio: false }" />
+                        <Pie :data="dataSet" :options="pieOptions" />
                         <div v-if="totalValue == 0"
                             class="absolute inset-0 flex justify-center items-center bg-gray-100 rounded-lg">
                             <span class="text-gray-500 text-lg">No Data Available</span>
@@ -138,19 +235,21 @@ const isLoadingVisit = ref(false)
             </Modal>
         </template>
         <div v-if="isInProcess">
-            <EmptyState :data="{
-                title: trans(`:mailshotSubject is still in process`, { mailshotSubject: props.data.mailshot.data.subject ?? '' }),
-            }">
-                <template #button-empty-state>
-                    <Link :href="route('grp.helpers.redirect_mailshot_workshop', {
-                        mailshot: props.data.mailshot.data.id,
-                    })
-                        " @start="() => (isLoadingVisit = true)" class="mt-4 block w-fit mx-auto">
-                        <Button :label="trans('Workshop')" type="secondary" icon="fal fa-drafting-compass"
-                            :loading="isLoadingVisit" />
-                    </Link>
-                </template>
-            </EmptyState>
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-2">
+                    {{ trans(`:mailshotSubject is still in process`, {
+                        mailshotSubject: props.data.mailshot.data.subject
+                            ?? ''
+                    }) }}
+                </h2>
+                <p class="text-gray-600 mb-4">
+                    {{ trans('Choose an email template to get started with your mailshot.') }}
+                </p>
+            </div>
+
+            <!-- Template Carousel -->
+            <EmailTemplateCarousel :own-shop-templates="effectiveOwnShopTemplates"
+                :other-shop-templates="effectiveOtherShopTemplates" :workshop-route="props.workshopRoute" />
         </div>
     </div>
 </template>

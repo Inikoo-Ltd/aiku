@@ -9,7 +9,10 @@
 namespace App\Actions\CRM\Customer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
-use App\Actions\CRM\Customer\Search\CustomerRecordSearch;
+use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
+use App\Actions\Dropshipping\Platform\RedoPlatformTimeSeries;
+use App\Actions\Masters\MasterShop\RedoMasterShopTimeSeries;
+use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
@@ -34,6 +37,7 @@ use App\Actions\Traits\WithPrepareTaxNumberValidation;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Helpers\Audit\AuditEventEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
@@ -43,8 +47,11 @@ use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use OwenIt\Auditing\Events\AuditCustom;
 
 class UpdateCustomer extends OrgAction
 {
@@ -60,6 +67,9 @@ class UpdateCustomer extends OrgAction
 
     public function handle(Customer $customer, array $modelData): Customer
     {
+        $staleData = clone $customer;
+        $staleData = $staleData->toArray();
+
         if (Arr::has($modelData, 'contact_address')) {
             $contactAddressData = Arr::get($modelData, 'contact_address');
 
@@ -214,6 +224,8 @@ class UpdateCustomer extends OrgAction
         $emailSubscriptionsData = Arr::pull($modelData, 'email_subscriptions', []);
         UpdateCustomerComms::run($customer->comms, $emailSubscriptionsData);
 
+        $oldRegisteredAt = $customer->registered_at;
+
         $customer = $this->update($customer, $modelData, ['data', 'contact_name_components']);
 
         $changes = Arr::except($customer->getChanges(), ['updated_at', 'last_fetched_at']);
@@ -244,28 +256,44 @@ class UpdateCustomer extends OrgAction
             }
         }
 
-        if (Arr::hasAny($changes, [
-            'company_name',
-            'contact_name',
-            'email',
-            'internal_notes',
-            'warehouse_internal_notes',
-            'warehouse_public_notes',
-            'reference',
-            'name',
-            'state',
-            'created_at',
-            'location',
-            'phone'
-        ])) {
-            CustomerRecordSearch::dispatch($customer)->delay($this->hydratorsDelay);
-        }
-
-
         if (Arr::has($changes, 'email') && $customer->shop->is_aiku) {
             MatchCustomerProspects::run($customer);
         }
 
+        if (Arr::hasAny($changes, ['internal_notes', 'warehouse_internal_notes'])) {
+            $customer->auditEvent    = AuditEventEnum::CUSTOMER_NOTE->value;
+            $customer->isCustomEvent = true;
+
+            $customer->auditCustomOld = Arr::only($staleData, ['internal_notes', 'warehouse_internal_notes']);
+            $customer->auditCustomNew = Arr::only($changes, ['internal_notes', 'warehouse_internal_notes']);
+
+            Event::dispatch(new AuditCustom($customer));
+        }
+
+        $registeredAtDate = $customer->registered_at ? Carbon::parse($customer->registered_at)->toDateString() : null;
+
+        if (Arr::has($changes, 'registered_at') && $oldRegisteredAt) {
+            $oldRegisteredAtDate = Carbon::parse($oldRegisteredAt)->toDateString();
+            RedoShopTimeSeries::dispatch(shopId: $customer->shop_id, from: $oldRegisteredAtDate, to: $oldRegisteredAtDate)->delay(900);
+            RedoOrganisationTimeSeries::dispatch(organisationId: $customer->organisation_id, from: $oldRegisteredAtDate, to: $oldRegisteredAtDate)->delay(900);
+            if ($customer->master_shop_id) {
+                RedoMasterShopTimeSeries::dispatch(masterShopId: $customer->master_shop_id, from: $oldRegisteredAtDate, to: $oldRegisteredAtDate)->delay(900);
+            }
+            foreach ($customer->customerSalesChannels as $customerSalesChannel) {
+                RedoPlatformTimeSeries::dispatch(platformId: $customerSalesChannel->platform_id, from: $oldRegisteredAtDate, to: $oldRegisteredAtDate)->delay(900);
+            }
+        }
+
+        if ($registeredAtDate) {
+            RedoShopTimeSeries::dispatch(shopId: $customer->shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+            RedoOrganisationTimeSeries::dispatch(organisationId: $customer->organisation_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+            if ($customer->master_shop_id) {
+                RedoMasterShopTimeSeries::dispatch(masterShopId: $customer->master_shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+            }
+            foreach ($customer->customerSalesChannels as $customerSalesChannel) {
+                RedoPlatformTimeSeries::dispatch(platformId: $customerSalesChannel->platform_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+            }
+        }
 
         return $customer;
     }
@@ -317,7 +345,9 @@ class UpdateCustomer extends OrgAction
             'is_re'                                                 => ['sometimes', 'boolean'],
             'is_credit_customer'                                    => ['sometimes', 'boolean'],
             'accounting_reference'                                  => ['sometimes', 'nullable', 'string', 'max:255'],
-            'disable_order_auto_processing'                         => ['sometimes', 'boolean']
+            'disable_order_auto_processing'                         => ['sometimes', 'boolean'],
+            'eori'                                                  => ['sometimes', 'nullable', 'string', 'max:20'],
+            'ukims'                                                 => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
 
         if ($this?->asAction) {

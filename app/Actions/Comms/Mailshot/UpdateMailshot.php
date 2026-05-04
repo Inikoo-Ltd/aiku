@@ -36,6 +36,10 @@ class UpdateMailshot extends OrgAction
             $mailshot->email->update(['subject' => $mailshot->subject]);
         }
 
+        if ($mailshot->wasChanged('preview_text') && $mailshot->secondWave) {
+            $mailshot->secondWave->update(['preview_text' => $mailshot->preview_text]);
+        }
+
         if ($mailshot->wasChanged('state')) {
             GroupHydrateMailshots::dispatch($mailshot->group)->delay($this->hydratorsDelay);
             OrganisationHydrateMailshots::dispatch($mailshot->organisation)->delay($this->hydratorsDelay);
@@ -52,7 +56,10 @@ class UpdateMailshot extends OrgAction
     {
         $rules = [
             'subject'           => ['sometimes', 'string', 'max:255'],
+            'name'              => ['sometimes', 'nullable', 'string', 'max:255'],
+            'preview_text'      => ['sometimes', 'nullable', 'string', 'max:255'],
             'state'             => ['sometimes', Rule::enum(MailshotStateEnum::class)],
+            'ready_at'          => ['sometimes', 'date'],
             'recipients_recipe' => ['sometimes', 'array']
         ];
 

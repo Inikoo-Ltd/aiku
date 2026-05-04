@@ -12,6 +12,8 @@ use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\Trolley;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 class DeleteDeliveryNote extends OrgAction
@@ -26,6 +28,13 @@ class DeleteDeliveryNote extends OrgAction
     {
         $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
             $deliveryNote = $this->update($deliveryNote, $modelData);
+
+            DB::table('delivery_note_has_trolleys')->where('delivery_note_id', $deliveryNote->id)->delete();
+            DB::table('picked_bay_has_delivery_notes')->where('delivery_note_id', $deliveryNote->id)->delete();
+            DB::table('picking_session_has_delivery_notes')->where('delivery_note_id', $deliveryNote->id)->delete();
+
+
+            Trolley::where('current_delivery_note_id', $deliveryNote->id)->update(['current_delivery_note_id' => null]);
 
             foreach ($deliveryNote->deliveryNoteItems as $item) {
                 $item->pickings()->delete();
@@ -51,4 +60,22 @@ class DeleteDeliveryNote extends OrgAction
 
         return $this->handle($deliveryNote, $this->validatedData);
     }
+
+    public function getCommandSignature(): string
+    {
+        return 'delete:delivery_note {delivery_note}';
+    }
+
+
+    /**
+     * @throws \Throwable
+     */
+    public function asCommand(Command $command): string
+    {
+        $deliveryNote = DeliveryNote::where('slug', $command->argument('delivery_note'))->firstOrFail();
+        $this->handle($deliveryNote, []);
+
+        return 'Delivery note deleted';
+    }
+
 }

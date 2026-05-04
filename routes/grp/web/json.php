@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Accounting\OrgPaymentServiceProvider\Json\GetOrgPaymentServiceProviders;
+use App\Actions\Dispatching\BatchCode\Json\GetBatchCodes;
 use App\Actions\Accounting\Payment\Json\GetRefundOriginalInvoicePayments;
 use App\Actions\Accounting\PaymentAccount\Json\GetShopPaymentAccounts;
 use App\Actions\Catalogue\Collection\Json\GetCollections;
@@ -20,9 +21,11 @@ use App\Actions\Catalogue\Product\Json\GetOrderCharges;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
 use App\Actions\Catalogue\Product\Json\GetOutOfStockProductsInProductCategory;
+use App\Actions\Catalogue\Product\Json\GetProductsForBeefreeSearch;
 use App\Actions\Catalogue\Product\Json\GetProductsForVolGrGift;
 use App\Actions\Catalogue\Product\Json\GetProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetProductsInProductCategory;
+use App\Actions\Catalogue\Product\Json\GetProductsInShop;
 use App\Actions\Catalogue\Product\Json\GetProductsInWorkshop;
 use App\Actions\Catalogue\Product\Json\GetProductsNotAttachedToACollection;
 use App\Actions\Catalogue\Product\Json\GetProductsWithNoWebpage;
@@ -33,6 +36,7 @@ use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamilies;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInCollection;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInDepartmentInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInWorkshop;
@@ -54,6 +58,8 @@ use App\Actions\CRM\Customer\UI\GetProductsForPortfolioSelect;
 use App\Actions\Dashboard\GetMasterShopsSalesCustomDates;
 use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNoteShipments;
+use App\Actions\Dispatching\PickingSession\Json\GetDeliveryNotesForPickingSession;
+use App\Actions\Dispatching\DeliveryNoteItem\FetchSingleDeliveryNoteItem;
 use App\Actions\Dispatching\PickedBay\Json\ListAvailablePickedBays;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickers;
@@ -63,6 +69,8 @@ use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Dispatching\Shipper\Json\GetShippers;
 use App\Actions\Dispatching\Trolley\Json\ListAvailableTrolleys;
 use App\Actions\Dispatching\Trolley\Json\ListUnavailableTrolleys;
+use App\Actions\Dispatching\WaitingItems\Json\GetCrmWaitingBadge;
+use App\Actions\Dispatching\WaitingItems\Json\GetDispatchingWaitingBadge;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetEbayProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetWooProducts;
@@ -103,6 +111,7 @@ use App\Actions\Web\WebBlockHistory\GetWebBlockHistories;
 use App\Actions\Web\WebBlockType\GetWebBlockTypes;
 use App\Actions\Web\Webpage\Json\GetWebpagesForCollection;
 use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
+use App\Actions\Web\Website\UI\Json\FetchFamilyDescriptionBlockLayout;
 use Illuminate\Support\Facades\Route;
 
 Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
@@ -137,6 +146,8 @@ Route::get('/mailshot/{mailshot:id}/merge-tags', GetMailshotMergeTags::class)->n
 
 Route::get('shop/{shop}/payment-accounts', GetShopPaymentAccounts::class)->name('shop.payment-accounts');
 Route::get('shop/{shop}/products-for-website-workshop', GetProductsInWorkshop::class)->name('shop.products_for_website_workshop');
+Route::get('shop/{shop}/products', GetProductsInShop::class)->name('shop.products');
+Route::get('shop/{shop}/products-beefree-search', GetProductsForBeefreeSearch::class)->name('shop.products_beefree_search');
 Route::get('shop/{shop:id}/products-for-vol-gr-gift', GetProductsForVolGrGift::class)->name('shop.products_for_vol_gr_gift');
 
 
@@ -177,11 +188,13 @@ Route::get('order/{order:id}/charges', GetOrderCharges::class)->name('order.char
 Route::get('order/{order:id}/products-for-modify', GetOrderProductsForModification::class)->name('order.products_for_modify');
 Route::get('organisation/{organisation}/shippers', GetShippers::class)->name('shippers.index');
 Route::get('organisation/{organisation:id}/org-stocks', GetOrgStocks::class)->name('org_stocks.index');
+Route::get('organisation/{organisation:id}/org-stock/{orgStock:id}/batch-codes', GetBatchCodes::class)->name('org_stock.batch_codes.index');
 
 Route::get('trade-units/{tradeUnit}/tags', [IndexTags::class, 'inTradeUnit'])->name('trade_units.tags.index');
 Route::get('brands', GetBrands::class)->name('brands.index');
 
 Route::get('workshop/department/{department}/sub-departments', GetSubDepartmentsInWorkshop::class)->name('workshop.sub_departments.index');
+Route::get('workshop/department/{department}/families', GetFamiliesInDepartmentInWorkshop::class)->name('workshop.families_under_department.index');
 Route::get('workshop/sub-department/{subDepartment}/families', GetFamiliesInWorkshop::class)->name('workshop.families.index');
 
 Route::get('workshop/product-category/{productCategory:id}/products', GetProductsInProductCategory::class)->name('product_category.products.index');
@@ -192,6 +205,8 @@ Route::get('workshop/product-category/{productCategory:id}/out-of-stock-products
 Route::get('workshop/product-category/{productCategory}/collections', GetCollectionsForWorkshop::class)->name('product_category.collections.index');
 Route::get('workshop/collection/{collection:id}/products', GetProductsInCollection::class)->name('collection.products.index');
 Route::get('workshop/collection/{collection}/families', GetFamiliesInCollection::class)->name('collection.families.index');
+
+Route::get('workshop/{website}/{webBlockType:slug}', FetchFamilyDescriptionBlockLayout::class)->name('workshop.fetch_descriptions_layout')->withoutScopedBindings();
 
 Route::get('parent/collection/{collection}/departments', GetDepartmentsInCollection::class)->name('collection.parent.departments.index');
 Route::get('parent/collection/{collection}/sub-departments', GetSubDepartmentsInCollection::class)->name('collection.parent.sub_departments.index');
@@ -212,6 +227,10 @@ Route::get('products-for-portfolio-select/{customerSalesChannel:id}', GetProduct
 
 Route::get('mini-delivery-note/{deliveryNote:id}', GetMiniDeliveryNote::class)->name('mini_delivery_note');
 Route::get('mini-delivery-note-shipments/{deliveryNote:id}', GetMiniDeliveryNoteShipments::class)->name('mini_delivery_note_shipments');
+
+Route::get('picking-session/{pickingSession:id}/delivery-notes', GetDeliveryNotesForPickingSession::class)->name('picking_session.delivery_notes.index');
+
+Route::get('delivery-note-item/{deliveryNoteItem:id}', FetchSingleDeliveryNoteItem::class)->name('fetch_single_delivery_note_item');
 
 Route::get('customer/{customer}/tags', [IndexTags::class, 'inCustomer'])->name('customer.tags.index');
 
@@ -237,6 +256,8 @@ Route::get('webpage/{webpage:id}/web-block-type/{webBlockType:id}/web-block-hist
 Route::get('master-product-category/{masterProductCategory:id}/recommended-trade-units', GetRecommendedTradeUnits::class)->name('master-product-category.recommended-trade-units')->withoutScopedBindings();
 Route::get('master-product-category/{masterProductCategory:id}/taken-trade-units', GetTakenTradeUnits::class)->name('master-product-category.taken-trade-units')->withoutScopedBindings();
 Route::get('master-product-category/all-trade-units', GetAllTradeUnitsInGroup::class)->name('master_product_category.all_trade_units');
+
+Route::get('brand/{brand:id}/all-trade-units/', [GetAllTradeUnitsInGroup::class, 'inBrand'])->name('brand.all_trade_units');
 
 Route::get('product/{product:id}/trade-units/all', GetAllTradeUnitsInProduct::class)->name('trade-units.all.under-product')->withoutScopedBindings();
 Route::get('product/{product:id}/trade-units/recommended', [GetRecommendedTradeUnits::class, 'inExternal'])->name('trade-units.recommended.under-product')->withoutScopedBindings();
@@ -276,3 +297,6 @@ Route::get('location/geocode', GetGeocode::class)->name('get_geocode');
 Route::get('{warehouse}/trolleys/list/', ListAvailableTrolleys::class)->name('available_trolleys.list');
 Route::get('{warehouse}/trolleys/unavailable-list/', ListUnavailableTrolleys::class)->name('unavailable_trolleys.list');
 Route::get('{warehouse}/picked-bays/list/', ListAvailablePickedBays::class)->name('picked_bays.list');
+
+Route::get('dispatching/waiting-badge', GetDispatchingWaitingBadge::class)->name('dispatching_waiting_badge');
+Route::get('dispatching/crm-waiting-badge', GetCrmWaitingBadge::class)->name('crm_waiting_badge');

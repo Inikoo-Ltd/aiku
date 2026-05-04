@@ -29,6 +29,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $sales_grp_currency_external_ly
  * @property mixed $invoices
  * @property mixed $invoices_ly
+ * @property mixed $health_rank
  *
  */
 class OrgStockFamiliesResource extends JsonResource
@@ -58,6 +59,15 @@ class OrgStockFamiliesResource extends JsonResource
             'invoices'                          => $this->invoices ?? 0,
             'invoices_ly'                       => $this->invoices_ly ?? 0,
             'invoices_delta'                    => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'invoices_route'                    => $this->warehouse_slug ? [
+                'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.invoices.index',
+                'parameters' => [
+                    'organisation'   => $this->organisation_slug,
+                    'warehouse'      => $this->warehouse_slug,
+                    'orgStockFamily' => $this->slug,
+                ],
+            ] : null,
+            'health_rank'                  => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
         ];
     }
 

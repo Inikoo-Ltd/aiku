@@ -22,6 +22,8 @@ class ProcessTradeUnitTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
 
+    public string $jobQueue = 'sales_slave';
+
     public function getJobUniqueId(int $tradeUnitId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
         return "$tradeUnitId:$frequency->value:$from:$to";
@@ -51,20 +53,14 @@ class ProcessTradeUnitTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(TradeUnitTimeSeries $timeSeries, string $from, string $to): void
     {
-        $processedPeriods = [];
-
-        $query = DB::table('invoice_transactions')
-            ->whereExists(function ($query) use ($timeSeries) {
-                $query->select(DB::raw(1))
-                      ->from('invoice_transaction_has_trade_units')
-                      ->whereColumn('invoice_transaction_has_trade_units.invoice_transaction_id', 'invoice_transactions.id')
-                      ->where('invoice_transaction_has_trade_units.trade_unit_id', $timeSeries->trade_unit_id);
-            })
+        $query = DB::connection('aiku_no_sticky')->table('invoice_transaction_has_trade_units as pivot')
+            ->join('invoice_transactions', 'invoice_transactions.id', '=', 'pivot.invoice_transaction_id')
+            ->where('pivot.trade_unit_id', $timeSeries->trade_unit_id)
             ->where('invoice_transactions.date', '>=', $from)
             ->where('invoice_transactions.date', '<=', $to)
             ->whereNull('invoice_transactions.deleted_at');
 
-        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency)->get();
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, $this->pivotBasedSelects())->get();
 
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
@@ -91,42 +87,6 @@ class ProcessTradeUnitTimeSeriesRecords implements ShouldBeUnique
                     'invoices'                    => $result->invoices,
                     'refunds'                     => $result->refunds,
                     'orders'                      => $result->orders,
-                ]
-            );
-
-            $processedPeriods[] = $period;
-        }
-
-        $this->processPeriodsWithoutInvoices($timeSeries, $from, $to, $processedPeriods);
-    }
-
-    protected function processPeriodsWithoutInvoices(TradeUnitTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
-    {
-        $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
-
-        foreach ($nonInvoicePeriods as $periodData) {
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'trade_unit_time_series_id' => $timeSeries->id,
-                    'period'                    => $periodData['period'],
-                    'frequency'                 => $timeSeries->frequency->singleLetter(),
-                ],
-                [
-                    'from'                        => $periodData['from'],
-                    'to'                          => $periodData['to'],
-                    'sales_external'              => 0,
-                    'sales_org_currency_external' => 0,
-                    'sales_grp_currency_external' => 0,
-                    'sales_internal'              => 0,
-                    'sales_org_currency_internal' => 0,
-                    'sales_grp_currency_internal' => 0,
-                    'lost_revenue'                => 0,
-                    'lost_revenue_org_currency'   => 0,
-                    'lost_revenue_grp_currency'   => 0,
-                    'customers_invoiced'          => 0,
-                    'invoices'                    => 0,
-                    'refunds'                     => 0,
-                    'orders'                      => 0,
                 ]
             );
         }

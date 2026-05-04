@@ -18,7 +18,7 @@ class PreprocessCollectionTimeSeries implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(int|null $assetID, ?string $date = null): string
     {

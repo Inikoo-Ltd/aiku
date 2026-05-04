@@ -69,8 +69,6 @@ class IndexFamiliesInCollection extends OrgAction
 
         });
         $queryBuilder->where('collection_has_models.collection_id', '=', $collection->id);
-        $queryBuilder->leftJoin('product_category_sales_intervals', 'product_category_sales_intervals.product_category_id', 'product_categories.id');
-        $queryBuilder->leftJoin('product_category_ordering_intervals', 'product_category_ordering_intervals.product_category_id', 'product_categories.id');
         $queryBuilder->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id');
 
 
@@ -89,8 +87,6 @@ class IndexFamiliesInCollection extends OrgAction
                 'product_categories.updated_at',
                 'product_categories.web_images',
                 'product_categories.master_product_category_id',
-                'product_category_sales_intervals.sales_grp_currency_all as sales_all',
-                'product_category_ordering_intervals.invoices_all as invoices_all',
 
             ])
             ->allowedSorts(['code', 'name', 'shop_code', 'department_code', 'number_current_products'])

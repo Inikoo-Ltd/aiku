@@ -22,7 +22,7 @@ class ReindexPurchaseOrderSearch extends HydrateModel
 
     public function handle(PurchaseOrder $purchaseOrder): void
     {
-        PurchaseOrderRecordSearch::run($purchaseOrder);
+
     }
 
     protected function getModel(string $slug): PurchaseOrder

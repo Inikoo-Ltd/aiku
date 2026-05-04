@@ -11,7 +11,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCubes, faFolderDownload, faMailBulk, faSeedling } from "@fal"
 import { faFireAlt } from "@fad"
-import { faCheckCircle, faTimesCircle, faExclamationTriangle } from "@fas"
+import { faCheckCircle, faTimesCircle, faExclamationTriangle, faHatCowboy } from "@fas"
 import Image from "@/Components/Image.vue"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -26,6 +26,7 @@ library.add(
     faExclamationTriangle,
     faFolderDownload,
     faMailBulk,
+    faHatCowboy
 )
 
 interface TopSelling {

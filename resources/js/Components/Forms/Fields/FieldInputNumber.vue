@@ -37,6 +37,7 @@ const props = defineProps<{
         <div class="relative">
             <InputNumber
                 v-model="form[fieldName]"
+                @input="(e) => form[fieldName] = e.value"
                 inputId="horizontal-buttons"
                 v-bind="fieldData?.bind"
                 showButtons

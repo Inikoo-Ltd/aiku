@@ -20,7 +20,6 @@ class ReindexWebsiteSearch extends HydrateModel
 
     public function handle(Website $website): void
     {
-        WebsiteRecordSearch::run($website);
     }
 
     protected function getModel(string $slug): Website

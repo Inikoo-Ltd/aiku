@@ -11,6 +11,7 @@ const props = defineProps<{
 	fieldValue: {}
 	theme?: any
 	screenType: "mobile" | "tablet" | "desktop"
+	indexBlock:number
 }>()
 
 const emits = defineEmits<{
@@ -30,7 +31,7 @@ const getBackgroundStyle = (bg: any): Record<string, string> => {
 
 <template>
 	<div
-		class="flex justify-center"  :id="fieldValue?.id ? fieldValue?.id  : 'pricing'"  component="pricing"
+		class="flex justify-center"  :id="fieldValue?.id ? fieldValue?.id  : 'pricing'+indexBlock"  component="pricing"
 		:style="getStyles(fieldValue?.container?.properties, screenType)">
 		<div class="w-full max-w-7xl px-6 py-12 flex flex-col items-center">
 			<div v-html="fieldValue.text" />

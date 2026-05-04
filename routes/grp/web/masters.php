@@ -7,9 +7,11 @@
  */
 
 use App\Actions\Accounting\Invoice\UI\IndexInvoicesInProduct;
+use App\Actions\Catalogue\Collection\UI\IndexCollectionsInMasterCollection;
 use App\Actions\Catalogue\Shop\StoreShopFromMaster;
 use App\Actions\Masters\MasterAsset\Json\GetSelectedMasterProductDetails;
 use App\Actions\Catalogue\Product\UI\IndexProductsInMasterProduct;
+use App\Actions\Catalogue\ProductCategory\UI\IndexDepartmentsInMasterDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesInMasterFamilies;
 use App\Actions\Catalogue\ProductCategory\UI\IndexSubDepartmentsInMasterSubDepartment;
 use App\Actions\Catalogue\Shop\UI\CreateShopFromMaster;
@@ -17,11 +19,13 @@ use App\Actions\Masters\MasterAsset\UI\CreateMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\EditMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProducts;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsBulkEdit;
+use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInMasterCollection;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsWithMismatch;
 use App\Actions\Masters\MasterAsset\UI\UpdateMasterProductsBulkEdit;
 use App\Actions\Masters\MasterAsset\UI\ShowMasterProduct;
 use App\Actions\Masters\MasterProductCategory\UI\ShowCreateMasterVariant;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsWithNoFamily;
+use App\Actions\Masters\MasterCollection\GetMasterCollectionsInMasterCollection;
 use App\Actions\Masters\MasterCollection\UI\CreateMasterCollection;
 use App\Actions\Masters\MasterCollection\UI\IndexMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\IndexMasterCollectionsInMasterProductCategory;
@@ -36,6 +40,7 @@ use App\Actions\Masters\MasterProductCategory\UI\EditMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterDepartments;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamilies;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamiliesGR;
+use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamiliesInMasterCollection;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamiliesWithMismatch;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterSubDepartments;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
@@ -46,6 +51,7 @@ use App\Actions\Masters\MasterVariant\EditMasterVariant;
 use App\Actions\Masters\MasterShop\UI\EditMasterShop;
 use App\Actions\Masters\MasterShop\UI\IndexMasterShops;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
+use App\Actions\Masters\UI\GetMastersDashboardTabData;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use Illuminate\Support\Facades\Route;
 
@@ -53,6 +59,7 @@ require_once __DIR__ . '/common/trade_units.php';
 require_once __DIR__ . '/common/trade_unit_families.php';
 
 Route::get('/', ShowMastersDashboard::class)->name('dashboard');
+Route::get('/tab-data', GetMastersDashboardTabData::class)->name('dashboard.tab-data');
 
 
 
@@ -63,6 +70,7 @@ Route::delete('/master-departments/{masterProductCategory}/delete', DeleteMaster
 
 Route::prefix('/master-departments/{masterDepartment}')->as('master_departments.show')->group(function () {
     Route::get('', [ShowMasterDepartment::class, 'inGroup'])->name('');
+    Route::get('/departments', [IndexDepartmentsInMasterDepartment::class, 'inGroup'])->name('.departments');
 
     Route::prefix('master-families')->as('.master_families.')->group(function () {
         Route::get('', [IndexMasterFamilies::class, 'inMasterDepartment'])->name('index');
@@ -88,6 +96,11 @@ Route::prefix('/master-departments/{masterDepartment}')->as('master_departments.
         Route::get('', [IndexMasterCollectionsInMasterProductCategory::class, 'inMasterDepartment'])->name('index');
         Route::get('create', [CreateMasterCollection::class, 'inMasterDepartment'])->name('create');
         Route::get('{masterCollection}', [ShowMasterCollection::class, 'inMasterDepartment'])->name('show');
+
+        Route::get('{masterCollection}/collections', [IndexCollectionsInMasterCollection::class, 'inMasterDepartment'])->name('collections');
+        Route::get('{masterCollection}/linked-master-collections', [GetMasterCollectionsInMasterCollection::class, 'inMasterDepartment'])->name('linked_master_collections');
+        Route::get('{masterCollection}/master-families', [IndexMasterFamiliesInMasterCollection::class, 'inMasterDepartment'])->name('families');
+        Route::get('{masterCollection}/master-products', [IndexMasterProductsInMasterCollection::class, 'inMasterDepartment'])->name('products');
     });
 
     Route::get('/master-products', [IndexMasterProducts::class, 'inMasterDepartment'])->name('.master_products.index');
@@ -133,7 +146,7 @@ Route::name("master_shops")->prefix('master-shops')
 
                 Route::prefix('{masterDepartment}')->name('show')->group(function () {
                     Route::get('', ShowMasterDepartment::class);
-
+                    Route::get('/departments', IndexDepartmentsInMasterDepartment::class)->name('.departments');
 
                     Route::prefix('master-families')->as('.master_families.')->group(function () {
                         Route::get('', [IndexMasterFamilies::class, 'inMasterDepartmentInMasterShop'])->name('index');
@@ -194,6 +207,12 @@ Route::name("master_shops")->prefix('master-shops')
                         Route::get('', [IndexMasterCollectionsInMasterProductCategory::class, 'inMasterDepartmentInMasterShop'])->name('index');
                         Route::get('create', [CreateMasterCollection::class, 'inMasterDepartmentInMasterShop'])->name('create');
                         Route::get('{masterCollection}', [ShowMasterCollection::class, 'inMasterDepartmentInMasterShop'])->name('show');
+
+
+                        Route::get('{masterCollection}/collections', [IndexCollectionsInMasterCollection::class, 'inMasterDepartmentInMasterShop'])->name('collections');
+                        Route::get('{masterCollection}/linked-master-collections', [GetMasterCollectionsInMasterCollection::class, 'inMasterDepartmentInMasterShop'])->name('linked_master_collections');
+                        Route::get('{masterCollection}/master-families', [IndexMasterFamiliesInMasterCollection::class, 'inMasterDepartmentInMasterShop'])->name('families');
+                        Route::get('{masterCollection}/master-products', [IndexMasterProductsInMasterCollection::class, 'inMasterDepartmentInMasterShop'])->name('products');
                     });
 
                 });
@@ -254,6 +273,12 @@ Route::name("master_shops")->prefix('master-shops')
                     Route::get('', [IndexMasterCollectionsInMasterProductCategory::class, 'inMasterSubDepartmentInMasterShop'])->name('index');
                     Route::get('create', [CreateMasterCollection::class, 'inMasterSubDepartmentInMasterShop'])->name('create');
                     Route::get('{masterCollection}', [ShowMasterCollection::class, 'inMasterSubDepartmentInMasterShop'])->name('show');
+
+
+                    Route::get('{masterCollection}/collections', [IndexCollectionsInMasterCollection::class, 'inMasterSubDepartmentInMasterShop'])->name('collections');
+                    Route::get('{masterCollection}/linked-master-collections', [GetMasterCollectionsInMasterCollection::class, 'inMasterSubDepartmentInMasterShop'])->name('linked_master_collections');
+                    Route::get('{masterCollection}/master-families', [IndexMasterFamiliesInMasterCollection::class, 'inMasterSubDepartmentInMasterShop'])->name('families');
+                    Route::get('{masterCollection}/master-products', [IndexMasterProductsInMasterCollection::class, 'inMasterSubDepartmentInMasterShop'])->name('products');
                 });
             });
 
@@ -295,6 +320,11 @@ Route::name("master_shops")->prefix('master-shops')
                 Route::get('create', CreateMasterCollection::class)->name('create');
                 Route::get('{masterCollection}/edit', EditMasterCollection::class)->name('edit');
                 Route::get('{masterCollection}', ShowMasterCollection::class)->name('show');
+
+                Route::get('{masterCollection}/collections', IndexCollectionsInMasterCollection::class)->name('collections');
+                Route::get('{masterCollection}/linked-master-collections', GetMasterCollectionsInMasterCollection::class)->name('linked_master_collections');
+                Route::get('{masterCollection}/master-families', IndexMasterFamiliesInMasterCollection::class)->name('families');
+                Route::get('{masterCollection}/master-products', IndexMasterProductsInMasterCollection::class)->name('products');
             });
         });
 

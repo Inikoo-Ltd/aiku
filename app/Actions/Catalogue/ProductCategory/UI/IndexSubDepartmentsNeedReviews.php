@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Http\Resources\Catalogue\FamiliesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
@@ -50,8 +51,6 @@ class IndexSubDepartmentsNeedReviews extends OrgAction
 
         $queryBuilder->leftJoin('shops', 'product_categories.shop_id', 'shops.id');
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', '=', 'organisations.id');
-        $queryBuilder->leftJoin('product_category_sales_intervals', 'product_category_sales_intervals.product_category_id', 'product_categories.id');
-        $queryBuilder->leftJoin('product_category_ordering_intervals', 'product_category_ordering_intervals.product_category_id', 'product_categories.id');
         $queryBuilder->leftJoin('webpages', function ($join) {
             $join->on('webpages.model_id', 'product_categories.id')
                 ->where('webpages.model_type', class_basename(ProductCategory::class));
@@ -116,8 +115,6 @@ class IndexSubDepartmentsNeedReviews extends OrgAction
                 'shops.name as shop_name',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
-                'product_category_sales_intervals.sales_grp_currency_all as sales_all',
-                'product_category_ordering_intervals.invoices_all as invoices_all',
                 'product_categories.master_product_category_id',
                 'webpages.state as webpage_state',
                 DB::raw(
@@ -138,6 +135,7 @@ class IndexSubDepartmentsNeedReviews extends OrgAction
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
+            ->where('shops.state', '!=', ShopStateEnum::CLOSED->value)
             ->allowedSorts([
                 'code',
                 'name',

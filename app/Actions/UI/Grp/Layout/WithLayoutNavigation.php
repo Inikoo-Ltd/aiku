@@ -181,15 +181,6 @@ trait WithLayoutNavigation
                             ],
                         ],
 
-                         [
-                            'tooltip' => __('Calendar'),
-                            'icon'  => ['fal', 'fa-calendar'],
-                            'root'  => 'grp.org.hr.calendars.',
-                            'route' => [
-                                'name'       => 'grp.org.hr.calendars.index',
-                                'parameters' => [$organisation->slug],
-                            ],
-                        ],
                         [
                             'label' => __('Holidays'),
                             'icon'  => ['fal', 'fa-umbrella'],
@@ -209,8 +200,6 @@ trait WithLayoutNavigation
                                 'parameters' => [$organisation->slug],
                             ],
                         ],
-
-
 
                         [
                             'label' => __('Clocking machines'),
@@ -266,6 +255,15 @@ trait WithLayoutNavigation
                                 'parameters' => [$organisation->slug],
                             ],
                         ],
+                        [
+                            'label' => __('Shift Schedules'),
+                            'icon'  => ['fal', 'fa-calendar-check'],
+                            'root'  => 'grp.org.hr.shift_schedules.',
+                            'route' => [
+                                'name'       => 'grp.org.hr.shift_schedules.index',
+                                'parameters' => [$organisation->slug],
+                            ],
+                        ],
                     ],
                 ],
             ];
@@ -279,7 +277,6 @@ trait WithLayoutNavigation
         if ($user->authTo('org-reports.'.$organisation->id)) {
             $navigation['reports'] = [
                 'label'   => __('Reports'),
-                'tooltip' => __('Reports'),
                 'icon'    => ['fal', 'fa-chart-line'],
                 'root'    => 'grp.org.reports',
 
@@ -358,7 +355,6 @@ trait WithLayoutNavigation
                         [
                             "root"    => "grp.org.warehouses.show.infrastructure.locations.",
                             "label"   => __("Locations"),
-                            "tooltip" => __("Locations"),
                             "icon"    => ["fal", "fa-inventory"],
                             "route"   => [
                                 "name"       => "grp.org.warehouses.show.infrastructure.locations.index",

@@ -3,7 +3,8 @@ import { router } from '@inertiajs/vue3'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {
   faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube,
-  faPalette, faCheeseburger, faDraftingCompass, faWindow
+  faPalette, faCheeseburger, faDraftingCompass, faWindow,
+  faPageBreak
 } from '@fal'
 import { computed, ref, provide, inject, nextTick, onMounted, onUnmounted } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
@@ -16,6 +17,8 @@ import ProductsBlockWorkshop from '@/Components/CMS/Website/ProductsBlock/Produc
 import SubDepartmentWorkshop from '@/Components/CMS/Website/SubDepartmentBlockWorkshop/SubDepartmentWorkshop.vue'
 import FamiliesBlockWorkshop from '@/Components/CMS/Website/FamiliesBlockWorkshop/FamiliesBlockWorkshop.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import FamiliesOverviewBlockWorkshop from '@/Components/CMS/Website/FamiliesOverviewBlockWorkshop/FamiliesOverviewWorkshop.vue'
+import FamiliesDescriptionBlockWorkshop from '@/Components/CMS/Website/FamilyDescriptionBlockWorkshop/FamilyDescriptionBlockWorkshop.vue'
 
 import Dialog from 'primevue/dialog'
 import ProgressSpinner from 'primevue/progressspinner'
@@ -24,8 +27,9 @@ import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 import { faSpinnerThird } from '@far'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 
-library.add(faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
+library.add(faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPageBreak)
 
 const props = defineProps<{
   title: string
@@ -36,14 +40,17 @@ const props = defineProps<{
   product?: Record<string, any>
   website_layout: Record<string, any>
   families?: Record<string, any>
+  families_overview?: Record<string, any>
   products?: Record<string, any>
   settings: Record<string, any>
   department: Record<string, any>
   sub_department: Record<string, any>
+  families_description: Record<string, any>
   collection: Record<string, any>
   publishRoute: Record<string, routeType>
   website_slug: string
   layout_theme : Array<any>
+  history: {}
 }>()
 
 const layout = inject('layout')
@@ -59,11 +66,16 @@ const component = computed(() => {
     website_layout: LayoutWorkshop,
     sub_department: SubDepartmentWorkshop,
     families: FamiliesBlockWorkshop,
+    families_overview: FamiliesOverviewBlockWorkshop,
+    families_description: FamiliesDescriptionBlockWorkshop,
     products: ProductsBlockWorkshop,
-    product: ProductBlockWorkshop
+    product: ProductBlockWorkshop,
+    history: TableHistories
   }
   return mapping[currentTab.value]
 })
+
+const emits = defineEmits()
 
 const onPublish = () => {
   const action = props.publishRoute[currentTab.value]
@@ -148,7 +160,7 @@ onUnmounted(() => {
 <template>
   <PageHeading :data="pageHead">
     <template #button-publish="{ action }">
-      <Button v-if="currentTab !== 'website_layout'" v-bind="action" @click="onPublish" :disabled="loadingPublish" :loading="loadingPublish">
+      <Button v-if="currentTab !== 'website_layout' && currentTab !== 'history'" v-bind="action" @click="onPublish" >
         <template #loading v-if="loadingPublish" >
             <FontAwesomeIcon  :icon="faSpinnerThird" class="animate-spin" fixed-width aria-hidden="true" /> {{ progress }}%
         </template>
@@ -161,9 +173,11 @@ onUnmounted(() => {
   <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
   <KeepAlive>
-    <component :is="component" :data="props[currentTab]" :currency="props.currency" :layout_theme/>
+    <component :is="component" :tab="currentTab" :data="props[currentTab]" :currency="props.currency" :layout_theme @update:layout="(data)=> props[currentTab].layout = data"/>
   </KeepAlive>
 
+  <!-- INI-1362 | Just enable them to scroll through and stuff. Don't softblock it using UI -->
+  <!-- 
   <Dialog v-model:visible="modalPublish" modal :closable="true" :draggable="false" class="w-[90%] md:w-[400px]"
     header="Please Wait...">
     <div class="flex flex-col items-center text-center py-4 relative">
@@ -178,6 +192,7 @@ onUnmounted(() => {
         <div class="bg-blue-600 h-2 rounded" :style="{ width: progress + '%' }"></div>
       </div>
     </div>
-  </Dialog>
+  </Dialog> 
+  -->
 
 </template>
