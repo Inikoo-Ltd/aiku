@@ -181,6 +181,8 @@ class ShowMailshotWorkshop extends OrgAction
                 'mergeContents' => GetMailshotMergeContents::run(),
                 'status' => $email->outbox->state,
                 'organisationSlug' => $this->organisation->slug,
+                'shopSlug' => $mailshot->shop->slug,
+                'shopId' => $mailshot->shop_id,
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => EmailTemplateTabsEnum::navigation(),

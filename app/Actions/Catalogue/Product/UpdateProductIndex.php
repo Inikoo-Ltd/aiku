@@ -7,22 +7,23 @@ use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Masters\MasterCollection;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateProductIndex extends OrgAction
 {
-    public function handle(ProductCategory $productCategory, array $modelData): void
+    public function handle(ProductCategory|MasterCollection $parent, array $modelData): void
     {
-        if ($productCategory->type !== ProductCategoryTypeEnum::FAMILY) {
-            abort(403, "Unable to modify this product index");
-        }
+        // if ($parent->type !== ProductCategoryTypeEnum::FAMILY) {
+        //     abort(403, "Unable to modify this product index");
+        // }
 
         $indexOrders = collect(data_get($modelData, 'products', []))->keyBy('code')->toArray();
         $products = Product::whereIn('code', array_keys($indexOrders))->where('shop_id', $this->shop->id)->get();
 
         foreach ($products as $product) {
             $product->updateQuietly([
-                "index_under_{$productCategory->type->value}"    => data_get($indexOrders, "{$product->code}.index_under_{$productCategory->type->value}", null)
+                "index_under_{$parent->type->value}"    => data_get($indexOrders, "{$product->code}.index_under_{$productCategory->type->value}", null)
             ]);
         }
 

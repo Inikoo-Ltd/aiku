@@ -1,0 +1,147 @@
+{
+	"slug": "family-3-extra-description",
+	"scope": "webpage",
+	"code": "family-3-extra-description",
+	"name": "family-extra-description",
+	"category": "family_description",
+	"icon": ["fal", "folder"],
+	"website_type" : ["b2b","b2c","dropshipping"],
+	"is_in_test" : true,
+	"fixed": true,
+	"data": {
+		"fieldValue": {
+			"button": {
+				"link": {
+					"id": null,
+					"url": "#list-products-ecom-iris",
+					"href": "#list-products-ecom-iris",
+					"type": "external"
+				},
+				"text": "Scroll back to product",
+				"container": {
+					"properties": null
+				}
+			},
+			"container": {
+				"properties": {
+					"border": {
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"unit": "px",
+						"color": "#000000",
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						},
+						"desktop": {
+							"top": {
+								"value": null
+							},
+							"left": {
+								"value": null
+							},
+							"unit": "px",
+							"color": null,
+							"right": {
+								"value": null
+							},
+							"bottom": {
+								"value": null
+							},
+							"rounded": {
+								"unit": "px",
+								"topleft": {
+									"value": null
+								},
+								"topright": {
+									"value": null
+								},
+								"bottomleft": {
+									"value": null
+								},
+								"bottomright": {
+									"value": null
+								}
+							}
+						},
+						"rounded": {
+							"unit": "px",
+							"topleft": {
+								"value": 0
+							},
+							"topright": {
+								"value": 0
+							},
+							"bottomleft": {
+								"value": 0
+							},
+							"bottomright": {
+								"value": 0
+							}
+						}
+					},
+					"margin": {
+						"top": {
+							"value": null
+						},
+						"left": {
+							"value": null
+						},
+						"unit": "px",
+						"right": {
+							"value": null
+						},
+						"bottom": {
+							"value": null
+						}
+					},
+					"shadow": {
+						"desktop": {
+							"top": {
+								"value": null
+							},
+							"left": {
+								"value": null
+							},
+							"unit": "px",
+							"right": {
+								"value": null
+							},
+							"bottom": {
+								"value": null
+							}
+						}
+					},
+					"padding": {
+						"top": {
+							"value": null
+						},
+						"left": {
+							"value": null
+						},
+						"unit": "px",
+						"right": {
+							"value": null
+						},
+						"bottom": {
+							"value": null
+						}
+					},
+					"background": {
+						"type": "color",
+						"color": "#D8D9DB",
+						"image": {
+							"original": null
+						}
+					}
+				}
+			}
+		}
+	}
+}
