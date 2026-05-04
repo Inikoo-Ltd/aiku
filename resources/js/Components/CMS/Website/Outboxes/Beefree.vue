@@ -6,6 +6,8 @@ import { routeType } from "@/types/route";
 import EmptyState from "@/Components/Utils/EmptyState.vue";
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import BeefreeDynamicProducts from './BeefreeDynamicProducts.vue'
+import { trans } from "laravel-vue-i18n";
 
 const props = withDefaults(defineProps<{
     updateRoute: routeType;
@@ -15,12 +17,17 @@ const props = withDefaults(defineProps<{
     mergeTags: Array<any>
     mergeContents: Array<any> | null
     organisationSlug: string
+    shopSlug?: string
+    shopId?: number
 }>(), {});
 
 const locale = inject('locale', aikuLocaleStructure)
+
 const showBee = ref(false)
 const isLoading = ref(false)
 const beeInstance = ref<BeefreeSDK | null>(null)
+const dynamicProductsRef = ref<InstanceType<typeof BeefreeDynamicProducts> | null>(null)
+
 
 
 const emits = defineEmits<{
@@ -91,6 +98,16 @@ const initializeBeefree = async () => {
                 ]
             },
             autosave: 20,
+            contentDialog: {
+                mergeContents: {
+                    label: trans('Insert Products'),
+                    handler: function (resolve: (value: any) => void, reject: () => void) {
+                        if (dynamicProductsRef.value) {
+                            dynamicProductsRef.value.openModal().then(resolve).catch(reject)
+                        }
+                    }
+                },
+            },
             onSend: (htmlFile: string, jsonFile: string) => {
                 emits('sendTest', { jsonFile, htmlFile })
             },
@@ -145,6 +162,8 @@ defineExpose({
     beeInstance,
 })
 
+
+
 </script>
 
 <template>
@@ -175,6 +194,10 @@ defineExpose({
             }
         }" />
     </div>
+
+    <!-- Dynamic Products Component -->
+    <BeefreeDynamicProducts ref="dynamicProductsRef" :shopSlug="shopSlug" :shopId="shopId"
+        :organisationSlug="organisationSlug" />
 </template>
 
 <style scoped>

@@ -168,7 +168,7 @@ class IndexBatchCodes extends OrgAction
                 'upload_batch_codes' => $orgStock ? null : [
                     'title' => [
                         'label'       => __('Upload Batch Codes'),
-                        'information' => __('The list of column file:'),
+                        'information' => __('The list of column file: code, expiry_date, sku'),
                     ],
                     'progressDescription' => __('Importing batch codes'),
                     'preview_template'    => [

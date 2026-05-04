@@ -93,7 +93,7 @@ class GetCustomerSearchSchema
                 'default_sorting_field' => 'created_at',
             ],
             'search-parameters' => [
-                'query_by' => 'reference,name.contact_name,email,phone,company_name,notes,contact_website,identity_document_number'
+                'query_by' => 'reference,name,contact_name,email,phone,company_name,notes,contact_website,identity_document_number'
             ],
         ];
     }

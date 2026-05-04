@@ -33,6 +33,7 @@ import ColumnWorkshop from '@/Components/CMS/Webpage/Column/ColumnWorkshop.vue'
 import DisclosureWorkshop from '@/Components/CMS/Webpage/Disclosure/DisclosureWorkshop.vue'
 import FamilyIris1 from '@/Components/CMS/Webpage/Family-1/family1Workshop.vue'
 import FamilyIris2 from '@/Components/CMS/Webpage/Family2/family2Workshop.vue'
+import FamilyIris3 from '@/Components/CMS/Webpage/Family3/family3Workshop.vue'
 import Step2Workshop from '@/Components/CMS/Webpage/Step1/Step1Workshop.vue'
 import Carousel1Workshop from '@/Components/CMS/Webpage/Carousel-1/Carousel1Workshop.vue'
 import ProductWorkshop1 from '@/Components/CMS/Webpage/Product1/Dropshipping/Product1Workshop.vue'
@@ -98,8 +99,6 @@ const components = (shop_type?: string): Record<string, Component> => {
         'collection-description-1' : CollectionDescriptionWorkshop,
         'department-description-1' : DepartmentDescriptionWorkshop,
         'sub-department-description-1' : SubDepartmentDesciptionWorkshop,
-        'family-1': FamilyIris1,
-        'family-2': FamilyIris2,
 
         //sub-department
         'sub-departments-1' : SubDepartmentWorkshop1,
@@ -113,8 +112,14 @@ const components = (shop_type?: string): Record<string, Component> => {
         //family
         "families-1-overview": Families1Overview,
 
+        // family-description
+        'family-1': FamilyIris1,
+        'family-2': FamilyIris2,
+        'family-3': FamilyIris3,
+
         //family-extra-description
         'family-2-extra-description' : Family2ExtraDescriptionWorkshop ,
+        'family-3-extra-description' : Family2ExtraDescriptionWorkshop ,
 
 
         //product

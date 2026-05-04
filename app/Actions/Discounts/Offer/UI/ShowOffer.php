@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Discounts\OfferCampaign\UI\ShowOfferCampaign;
 use App\Actions\OrgAction;
 use App\Enums\Discounts\Offer\OfferStateEnum;
+use App\Http\Resources\Catalogue\OfferAllowanceResource;
 use App\Http\Resources\Catalogue\OfferResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -37,8 +38,6 @@ class ShowOffer extends OrgAction
     public function htmlResponse(Offer $offer, ActionRequest $request): Response
     {
         $icon      = ['fal', 'fa-badge-percent'];
-        $iconRight = null;
-
         $editRoute = null;
         $actions = [];
 
@@ -70,6 +69,10 @@ class ShowOffer extends OrgAction
 
 
         $data['offer'] = OfferResource::make($offer);
+        $data['offer_allowances'] = [];
+        foreach ($offer->offerAllowances as $allowance) {
+            $data['offer_allowances'][] = OfferAllowanceResource::make($allowance);
+        }
 
         if ($offer->type == "VolGr Gift") {
             /** @var OfferAllowance $giftAllowance */

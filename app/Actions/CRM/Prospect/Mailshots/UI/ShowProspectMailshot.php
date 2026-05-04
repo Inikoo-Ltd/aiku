@@ -57,6 +57,8 @@ class ShowProspectMailshot extends OrgAction
 
         $isShowResume = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::STOPPED]);
 
+        $isShowEditName = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::SENT]);
+
         $isSecondWaveActive = $mailshot->secondWave()->exists() && $mailshot->is_second_wave_enabled;
         $mailshotSecondWave = null;
         if ($isSecondWaveActive) {
@@ -122,7 +124,7 @@ class ShowProspectMailshot extends OrgAction
                                 ]
                             ]
                         ] : [],
-                        $isShowActions ? [
+                        $isShowActions || $isShowEditName ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => __('Edit'),
