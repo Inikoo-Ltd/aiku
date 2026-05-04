@@ -34,6 +34,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
+use App\Models\Web\Redirect;
 use App\Models\Web\Website;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashSlash;
@@ -182,8 +183,10 @@ class StoreWebpage extends OrgAction
                 }
             }
 
-
             UpdateWebpageCanonicalUrl::run($webpage);
+
+            // Delete any existing redirect with the same url if it exists
+            Redirect::where('from_path', $webpage->url)->where('website_id', $this->website->id)->delete();
 
             return $webpage;
         });

@@ -26,6 +26,7 @@ const props = defineProps<{
     webpageData?: any
     blockData?: Record<string, any>
     screenType: 'mobile' | 'tablet' | 'desktop'
+    indexBlock:number
 }>()
 
 
@@ -50,7 +51,7 @@ const idxSlideLoading = ref<string | null>(null)
 </script>
 
 <template>
-    <div :id="fieldValue?.id ? fieldValue?.id : 'families-1'" component="families-1">
+    <div :id="fieldValue?.id ? fieldValue?.id : 'families-1'+indexBlock" component="families-1">
         <div v-if="props.fieldValue?.families && props.fieldValue.families.length" class="px-4 py-10 mx-[30px]" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             ...getStyles(fieldValue.container?.properties, screenType)

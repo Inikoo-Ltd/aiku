@@ -19,6 +19,7 @@ import { RouteParams } from "@/types/route-params"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import PickingItemActionsPanel from "@/Components/Warehouse/DeliveryNotes/PickingItemActionsPanel.vue"
+import LabelItemsWaitingForCrm from "@/Components/Warehouse/DeliveryNotes/LabelItemsWaitingForCrm.vue"
 
 library.add(faHandHoldingBox, faDolly, faMapMarkerAlt, faHourglassStart, faSkull, faCircle)
 
@@ -29,6 +30,7 @@ defineProps<{
     tab?: string
     allowStockControllerSetNotPicked: boolean
     isStillPicking: boolean
+    isReadOnly?: boolean
 }>()
 
 const routeToDeliveryNote = (slug: string) => {
@@ -68,8 +70,8 @@ const generateLocationRoute = (location: any) => {
                 }" />
             </div>
             <div class="flex gap-x-2 mt-1 flex-wrap">
-                <span v-if="item.trolley_names" v-tooltip="trans('Trolley')" class="inline-flex items-center gap-x-1 text-xs text-gray-500 bg-gray-100 rounded px-1.5 py-0.5">
-                    <FontAwesomeIcon icon="fal fa-dolly" fixed-width aria-hidden="true" />
+                <span v-if="item.trolley_names" v-tooltip="trans('Trolley')" class="inline-flex items-center gap-x-1 text-xs text-gray-500 bg-gray-100 border rounded px-1.5 py-0.5">
+                    <FontAwesomeIcon icon="fal fa-dolly-flatbed-alt" fixed-width aria-hidden="true" />
                     {{ item.trolley_names }}
                 </span>
                 <span v-if="item.picked_bay_codes" v-tooltip="trans('Picked Bay')" class="inline-flex items-center gap-x-1 text-xs text-gray-500 bg-gray-100 rounded px-1.5 py-0.5">
@@ -137,17 +139,16 @@ const generateLocationRoute = (location: any) => {
 
             <!-- Section: items are waiting for CRM -->
             <div v-if="Number(item.quantity_waiting_crm) > 0" class="mt-2 xmx-auto w-fit">
-                <div v-tooltip="trans('Quantity of items waiting for CRM')" class="border-l-2 border-yellow-400 relative bg-yellow-500/20 py-1 pr-2 pl-1 text-yellow-700 whitespace-nowrap w-fit">
+                <LabelItemsWaitingForCrm v-if="Number(item.quantity_waiting_crm) > 0" :qty_waiting_crm="Number(item.quantity_waiting_crm)" />
+                <!-- <div v-tooltip="trans('Quantity of items waiting for CRM')" class="border-l-2 border-purple-400 relative bg-purple-500/20 py-1 pr-2 pl-1 text-purple-700 whitespace-nowrap w-fit">
                     <FontAwesomeIcon icon="fal fa-hourglass-start" class="mr opacity-70" fixed-width aria-hidden="true" />
-                    <!-- <FractionDisplay v-if="item.quantity_picked_fractional"
-                        :fractionData="item.quantity_picked_fractional" /> -->
                     <span>
                         {{ trans(":quantityWaitingCRM items are waiting for CRM", { quantityWaitingCRM: Number(item.quantity_waiting_crm) }) }}
                     </span>
 
                     <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                     <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
-                </div>
+                </div> -->
             </div>
         </template>
 
@@ -155,6 +156,7 @@ const generateLocationRoute = (location: any) => {
         <template #cell(picking_position)="{ item: itemValue }">
             <div class="rounded p-1">
                 <PickingItemActionsPanel
+                    v-if="!isReadOnly"
                     :item="itemValue"
                     :isStillPicking="isStillPicking"
                     :allowStockControllerSetNotPicked="allowStockControllerSetNotPicked"

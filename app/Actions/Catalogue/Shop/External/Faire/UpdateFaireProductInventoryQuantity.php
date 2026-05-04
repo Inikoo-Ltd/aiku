@@ -10,6 +10,7 @@ use Illuminate\Console\Command;
 
 class UpdateFaireProductInventoryQuantity extends OrgAction
 {
+    public string $jobQueue = 'hydrators-slave';
     public int $jobTries = 1;
 
     public function handle(Product $product): void

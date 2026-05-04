@@ -22,7 +22,7 @@ class OrgStockHydrateCurrentSupplierSkuCost implements ShouldBeUnique
     use CalculatesOrgStockHistories;
 
     public string $commandSignature = 'org_stocks:current_supplier_sku_cost {--a|all}';
-    
+
 
     public function getJobUniqueId(OrgStock $orgStock): string
     {
@@ -61,7 +61,7 @@ class OrgStockHydrateCurrentSupplierSkuCost implements ShouldBeUnique
 
         return null;
     }
-    
+
     public function asCommand(Command $command): int
     {
         $query = OrgStock::query()->whereNull('deleted_at');

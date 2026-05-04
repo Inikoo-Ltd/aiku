@@ -30,6 +30,7 @@ import ColumnLayout4Blueprint from "@/Components/CMS/Webpage/Column4/Blueprint"
 import DisclosureBlueprint from "@/Components/CMS/Webpage/Disclosure/Blueprint"
 import FamilyBluprint from "@/Components/CMS/Webpage/Family-1/Blueprint"
 import FamilyBluprint2 from "@/Components/CMS/Webpage/Family2/Blueprint"
+import FamilyBluprint3 from "@/Components/CMS/Webpage/Family3/Blueprint"
 import Timeline2Bluprint from "@/Components/CMS/Webpage/Step1/Blueprint"
 import Carousel1Blueprint from "@/Components/CMS/Webpage/Carousel-1/Blueprint"
 import SubDepartment1Blueprint from "@/Components/CMS/Webpage/SubDepartment1/Blueprint"
@@ -93,6 +94,7 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		'sub-department-description-1' : SubDepartmentDesciption.blueprint,
 		'family-1': FamilyBluprint.blueprint,
 		'family-2': FamilyBluprint2.blueprint,
+		'family-3': FamilyBluprint3.blueprint,
 
 		// families list
 		"families-1": Families1Blueprint.blueprint,

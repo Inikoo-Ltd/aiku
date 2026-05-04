@@ -16,6 +16,8 @@ class IndexWaitingCrmDeliveryNoteItemsStillInPicking extends BaseIndexWaitingDel
 {
     protected string $waitingType = 'crm';
 
+    protected bool $readOnly = true;
+
     protected function getDeliveryNoteState(): DeliveryNoteStateEnum
     {
         return DeliveryNoteStateEnum::HANDLING;

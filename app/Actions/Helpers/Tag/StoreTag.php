@@ -147,6 +147,7 @@ class StoreTag extends OrgAction
                 ]
             );
         }
+        TranslateTag::dispatch($tag)->delay(2);
 
         return $tag;
     }

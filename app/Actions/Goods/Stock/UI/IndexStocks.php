@@ -162,7 +162,7 @@ class IndexStocks extends OrgAction
             'stocks.slug',
             'stocks.name',
             'stocks.state',
-            'stocks.unit_value',
+            'stocks.value_in_warehouses',
         ];
 
         $allowedSorts = ['code', 'name'];
@@ -177,8 +177,7 @@ class IndexStocks extends OrgAction
                     'invoices'                    => 'invoices',
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
-                prefix: $prefix,
-                includeLY: true
+                prefix: $prefix
             );
 
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
@@ -247,9 +246,9 @@ class IndexStocks extends OrgAction
             if ($sales) {
                 $table->betweenDates(['date'])
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right');
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right');
             } else {
                 $table->dateInterval($this->dateInterval)
                     ->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), sortable: true, align: 'right', isInterval: true);

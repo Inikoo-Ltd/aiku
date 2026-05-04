@@ -17,13 +17,14 @@ import { trans } from "laravel-vue-i18n";
 import { routeType } from "@/types/route";
 import { ref, onMounted, reactive, inject, computed, watch } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox } from "@fal";
+import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox, faBarcode } from "@fal";
 import { faSkull, faWandMagic } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import Modal from "@/Components/Utils/Modal.vue"
-import { RadioButton, DatePicker } from "primevue"
+import { RadioButton } from "primevue"
+import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
@@ -36,7 +37,10 @@ import LabelItemsWaitingForWarehouse from "./LabelItemsWaitingForWarehouse.vue"
 import LabelItemsWaitingForCrm from "./LabelItemsWaitingForCrm.vue"
 import LoadingOverlay2 from "@/Components/Utils/LoadingOverlay2.vue"
 import { ctrans } from "@/Composables/useTrans"
-library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox);
+import LabelPickingLocation from "./LabelPickingLocation.vue"
+import PickingLocationModal from "./PickingLocationModal.vue"
+import SelectPickingLocation from "./SelectPickingLocation.vue"
+library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode);
 
 
 const props = defineProps<{
@@ -46,6 +50,7 @@ const props = defineProps<{
     shop_type : string
     allowWaiting: boolean
     allowPickerSetNotPicked: boolean
+    isEditable: boolean
 }>();
 
 const emit = defineEmits<{
@@ -75,38 +80,38 @@ onMounted(() => {
     isMounted.value = true;
 });
 
-const onPickingQuantity = (pick_route: routeType, quantity: number) => {
-    router[pick_route.method || "post"](
-        route(pick_route.name, pick_route.parameters),
-        {
-            quantity: quantity
-        },
-        {
-            preserveState: true,
-            preserveScroll: true,
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: "",
-                    type: "error"
-                });
-            },
-            onError: (error) => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: "",
-                    type: "error"
-                });
-            }
-        }
-    );
-};
-const debounceOnPickingQuantity = debounce(onPickingQuantity, 500);
+// const onPickingQuantity = (pick_route: routeType, quantity: number) => {
+//     router[pick_route.method || "post"](
+//         route(pick_route.name, pick_route.parameters),
+//         {
+//             quantity: quantity
+//         },
+//         {
+//             preserveState: true,
+//             preserveScroll: true,
+//             onSuccess: () => {
+//                 notify({
+//                     title: trans("Success"),
+//                     text: "",
+//                     type: "error"
+//                 });
+//             },
+//             onError: (error) => {
+//                 notify({
+//                     title: trans("Something went wrong"),
+//                     text: "",
+//                     type: "error"
+//                 });
+//             }
+//         }
+//     );
+// };
+// const debounceOnPickingQuantity = debounce(onPickingQuantity, 500);
 
 
 const generateLocationRoute = (location: any) => {
-    if (!location.location_slug) {
-        return "#";
+    if (!location.location_slug || !(route().params["organisation"]) || !(route().params["warehouse"])) {
+        return "";
     }
 
     if (route().current() === "grp.org.warehouses.show.dispatching.delivery_notes.show") {
@@ -128,7 +133,7 @@ const generateLocationRoute = (location: any) => {
             ]
         )
     } else {
-        return "#";
+        return "";
     }
 
 };
@@ -150,8 +155,9 @@ const onCloseModal = () => {
 }
 
 // Method: to find the location that Alt ed, fallback is index 0
-const findLocation = (locationsList: { location_code: string }[], selectedOrgStockId: string) => {
-    return locationsList.find(x => x.location_code == selectedOrgStockId) || locationsList[0]
+const selectedLocationCode = reactive({})
+const findLocation = (locationsList: { location_code: string }[], locationCode: string) => {
+    return locationsList.find(x => x.location_code == locationCode) || locationsList[0]
 }
 
 const exceptPropsToLoad = ['tabs', 'quick_pickers', 'routes', 'queryBuilderProps', 'warehouse', 'shipments_routes', 'address', 'navigation', 'breadcrumbs']
@@ -159,18 +165,45 @@ const exceptPropsToLoad = ['tabs', 'quick_pickers', 'routes', 'queryBuilderProps
 // Section: Modal for edit expiry date and batch code
 const selectedItemToEditExpiryDate = ref(null)
 const isModalEditExpiryDate = ref(false)
+const selectedBatchCode = ref(null)
+
+const batchCodeFetchRoute = computed(() => {
+    if (!selectedItemToEditExpiryDate.value?.org_stock_id || !selectedItemToEditExpiryDate.value?.organisation_id) {
+        return null
+    }
+    return {
+        name: 'grp.json.org_stock.batch_codes.index',
+        parameters: {
+            organisation: selectedItemToEditExpiryDate.value.organisation_id,
+            orgStock: selectedItemToEditExpiryDate.value.org_stock_id,
+        },
+    }
+})
+
+watch(isModalEditExpiryDate, (isOpen) => {
+    if (isOpen && selectedItemToEditExpiryDate.value?.batch_code_id) {
+        selectedBatchCode.value = {
+            id: selectedItemToEditExpiryDate.value.batch_code_id,
+            code: selectedItemToEditExpiryDate.value.batch_code,
+            expiry_date: selectedItemToEditExpiryDate.value.expiry_date,
+            label: selectedItemToEditExpiryDate.value.batch_code,
+        }
+    } else {
+        selectedBatchCode.value = null
+    }
+})
+
 const onCloseModalExpiryDate = () => {
     isModalEditExpiryDate.value = false
 
     setTimeout(() => {
         selectedItemToEditExpiryDate.value = null
+        selectedBatchCode.value = null
     }, 300);
 }
 const isLoadingSubmitExpiryDate = ref(false)
 const onSubmitEditExpiryDate = () => {
-
     if (!selectedItemToEditExpiryDate.value) {
-        console.log('No item expiry date selected')
         return
     }
 
@@ -179,27 +212,26 @@ const onSubmitEditExpiryDate = () => {
             deliveryNoteItem: selectedItemToEditExpiryDate.value?.id
         }),
         {
-            expiry_date: selectedItemToEditExpiryDate.value?.expiry_date,
-            batch_code: selectedItemToEditExpiryDate.value?.batch_code,
+            batch_code_id: selectedBatchCode.value?.id ?? null,
         },
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingSubmitExpiryDate.value = true
             },
             onSuccess: () => {
                 notify({
                     title: trans("Success"),
-                    text: trans("Successfully set expiry date and batch code"),
+                    text: trans("Successfully set batch code"),
                     type: "success"
                 })
                 onCloseModalExpiryDate()
             },
-            onError: errors => {
+            onError: () => {
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to set expiry date and batch code. Try again"),
+                    text: trans("Failed to set batch code. Try again"),
                     type: "error"
                 })
             },
@@ -403,6 +435,54 @@ const routeItemsWaitingCrm = (item) => {
 // }, { deep: true })
 
 
+// Section: Picking batch code
+const isModalPickingBatchCode = ref(false)
+const selectedPickingForBatchCode = ref(null)
+const selectedPickingBatchCode = ref(null)
+const isLoadingSubmitPickingBatchCode = ref(false)
+
+watch(isModalPickingBatchCode, (isOpen) => {
+    if (isOpen && selectedPickingForBatchCode.value?.batch_code_id) {
+        selectedPickingBatchCode.value = {
+            id: selectedPickingForBatchCode.value.batch_code_id,
+            code: selectedPickingForBatchCode.value.batch_code,
+            label: selectedPickingForBatchCode.value.batch_code,
+        }
+    } else {
+        selectedPickingBatchCode.value = null
+    }
+})
+
+const onCloseModalPickingBatchCode = () => {
+    isModalPickingBatchCode.value = false
+    setTimeout(() => {
+        selectedPickingForBatchCode.value = null
+        selectedPickingBatchCode.value = null
+    }, 300)
+}
+
+const onSubmitPickingBatchCode = () => {
+    if (!selectedPickingForBatchCode.value) return
+
+    router.patch(
+        route(selectedPickingForBatchCode.value.update_route.name, selectedPickingForBatchCode.value.update_route.parameters),
+        { batch_code_id: selectedPickingBatchCode.value?.id ?? null },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { isLoadingSubmitPickingBatchCode.value = true },
+            onSuccess: () => {
+                notify({ title: trans("Success"), text: trans("Successfully set batch code"), type: "success" })
+                onCloseModalPickingBatchCode()
+            },
+            onError: () => {
+                notify({ title: trans("Something went wrong"), text: trans("Failed to set batch code. Try again"), type: "error" })
+            },
+            onFinish: () => { isLoadingSubmitPickingBatchCode.value = false },
+        }
+    )
+}
+
 // Section: Undo Quantity Waiting Warehouse
 const isOpenModalUndoWaitingWarehouse = ref(false)
 const selectedItemToUndoWaitingWarehouse = ref(null)
@@ -464,9 +544,11 @@ const onSetItemToUndoWaitingWarehouse = () => {
         <!-- Column: Name -->
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
             <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span></div>
-            <div class="flex items-center flex-wrap">
+
+            <!-- Section: DNI Expired date -->
+            <div v-if="false" class="flex items-center flex-wrap">
                 <!-- Label: expired date -->
-                <ExpiryDateLabel v-if="(deliveryNoteItem.expiry_date || deliveryNoteItem.batch_code) && (deliveryNoteItem.is_picked && !deliveryNoteItem.is_packed)" :expiry_date="deliveryNoteItem.expiry_date" :batch_code="deliveryNoteItem.batch_code" />
+                <ExpiryDateLabel v-if="(deliveryNoteItem.expiry_date || deliveryNoteItem.batch_code)" :expiry_date="deliveryNoteItem.expiry_date" :batch_code="deliveryNoteItem.batch_code" />
 
                 <!-- Button: add/edit expiry date and batch code -->
                 <div v-if="(deliveryNoteItem.is_picked || Number(deliveryNoteItem.quantity_picked) > 0) && state !== 'cancelled'">
@@ -497,16 +579,28 @@ const onSetItemToUndoWaitingWarehouse = () => {
         <!-- Section: Pickings -->
         <template #cell(picking_locations)="{ item }">
             <div v-if="item.picking_locations && item.picking_locations.length > 0" class="flex flex-col gap-1">
-                <div v-for="picking in item.picking_locations" :key="picking.id" class="text-sm flex items-center gap-2">
-                    <Link v-if="picking.location_code" 
+                <div v-for="picking in item.picking_locations" :key="picking.id" class="text-sm flex items-center gap-2 flex-wrap">
+                    <Link v-if="picking.location_code"
                           :href="route('grp.org.warehouses.show.infrastructure.locations.show', [route().params.organisation, picking.warehouse_slug, picking.location_slug])"
                           :class="['primaryLink font-medium', picking.location_code ? '' : 'text-gray-400 italic']">
                         {{ picking.location_code }}
                     </Link>
                     <span v-else class="text-gray-400 italic">No Location</span>
                     <div class="px-2 py-0.5 bg-gray-100 rounded-full text-xs font-medium">
-                        {{ picking.quantity }}
+                        {{ picking.quantity_picked }}
                     </div>
+
+                    <!-- Batch code display and edit -->
+                    <button
+                        v-if="picking.show_batch_code_ui"
+                        @click="() => (isModalPickingBatchCode = true, selectedPickingForBatchCode = picking)"
+                        v-tooltip="picking.batch_code ? ctrans('Change batch code: :code', { code: picking.batch_code }) : ctrans('Set batch code')"
+                        class="text-xs px-1.5 py-0.5 rounded border transition-colors"
+                        :class="picking.batch_code ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100' : 'border-dashed border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600'"
+                    >
+                        <FontAwesomeIcon icon="fal fa-barcode" class="mr-1" fixed-width aria-hidden="true" />
+                        {{ picking.batch_code ?? ctrans('Batch code') }}
+                    </button>
                 </div>
             </div>
             <div v-else class="text-gray-400 italic text-sm">No items picked yet</div>
@@ -555,13 +649,20 @@ const onSetItemToUndoWaitingWarehouse = () => {
                 {{ Number(item.quantity_not_picked) }}
             </span>
 
-            <span v-if="Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')"  class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
+            <!-- Number: waiting warehouse -->
+            <Link v-if="isEditable && Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')" :href="routeItemsWaitingWarehouse(item)" class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
+                {{ Number(item.quantity_waiting_warehouse) }}
+                <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px]" fixed-width aria-hidden="true" />
+            </Link>
+            <span v-else-if="Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')"  class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
                 {{ Number(item.quantity_waiting_warehouse) }}
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px]" fixed-width aria-hidden="true" />
             </span>
 
 
+            <!-- Number: waiting CRM -->
             <Link
                 v-if="Number(item.quantity_waiting_crm) > 0"
                 :href="routeItemsWaitingCrm(item)"
@@ -591,10 +692,13 @@ const onSetItemToUndoWaitingWarehouse = () => {
             <div v-if="item.pickings?.length" class="space-y-1">
                 <div v-for="picking in item.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
                     <!-- {{ picking.location_code }} -->
-                    <div v-if="picking.type === 'pick'" class="flex gap-x-2 items-center">
-                        <Link :href="generateLocationRoute(picking)" class="secondaryLink">
-                        {{ picking.location_code }}
+                    <div v-if="picking.type === 'pick'" class="flex gap-x-2 items-center flex-wrap">
+                        <Link v-if="!!(generateLocationRoute(picking))" :href="generateLocationRoute(picking)" class="secondaryLink">
+                            {{ picking.location_code }}
                         </Link>
+                        <span v-else>
+                            {{ picking.location_code }}
+                        </span>
 
                         <div v-tooltip="trans('Total picked quantity in this location')"
                             class="text-gray-500 whitespace-nowrap">
@@ -606,6 +710,19 @@ const onSetItemToUndoWaitingWarehouse = () => {
                                 {{ picking.quantity_picked }}
                             </span>
                         </div>
+
+                        <!-- Section: Picking Batch Code -->
+                        <button
+                            v-if="picking.show_batch_code_ui"
+                            @click="() => (isModalPickingBatchCode = true, selectedPickingForBatchCode = picking)"
+                            v-tooltip="picking.batch_code ? ctrans('Change batch code: :code', { code: picking.batch_code }) : ctrans('Set batch code')"
+                            class="text-xs px-1.5 py-0.5 rounded border transition-colors"
+                            :class="picking.batch_code ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100' : 'border-dashed border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600'"
+                        >
+                            <FontAwesomeIcon icon="fal fa-barcode" class="mr-1" fixed-width aria-hidden="true" />
+                            {{ picking.batch_code ?? ctrans('Batch code') }}
+                        </button>
+
                     </div>
 
                     <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')"
@@ -632,7 +749,8 @@ const onSetItemToUndoWaitingWarehouse = () => {
                         </span>
                     </div>
 
-                    <div class="">
+                    <!-- Button: Undo Pick from Pickings -->
+                    <div v-if="isEditable" class="">
                         <ButtonWithLink
                             v-if="item.quantity_picked!=0 || item.quantity_not_picked!=0"
                             v-tooltip="ctrans('Undo pick :qtyPicked items', { qtyPicked: Number(picking.quantity_picked).toString()})"
@@ -651,6 +769,11 @@ const onSetItemToUndoWaitingWarehouse = () => {
             <div v-else class="text-xs text-gray-400 italic">
                 {{ trans("No item picked yet") }}
             </div>
+
+            <!-- Section: items are waiting for warehouse -->
+            <div v-if="!isEditable && Number(item.quantity_waiting_warehouse) > 0" class="mt-2 xmx-auto w-fit flex gap-x-2">
+                <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(item.quantity_waiting_warehouse)" />
+            </div>
         </template>
 
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
@@ -661,73 +784,32 @@ const onSetItemToUndoWaitingWarehouse = () => {
                 <div><span class="bg-yellow-400">itemValue.quantity_to_pick</span>: {{ itemValue.quantity_to_pick }}</div>
                 <div><span class="bg-yellow-400">itemValue.locations</span>: {{ itemValue.locations }}</div>
                 <div><span class="bg-yellow-400">proxyItem.org_stock_id</span>: {{ proxyItem.org_stock_id }}</div>
-                <div><span class="bg-yellow-400">findLocation(itemValue.locations, proxyItem.org_stock_id)</span>: {{ findLocation(itemValue.locations, proxyItem.org_stock_id) }}</div>
+                <div><span class="bg-yellow-400">findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null))</span>: {{ findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)) }}</div>
                 <div><span class="bg-yellow-400">itemValue.is_handled</span>: {{ itemValue.is_handled }}</div>
                 <div><span class="bg-yellow-400">itemValue.quantity_required</span>: {{ itemValue.quantity_required }}</div>
             </div>
             
             <div v-if="itemValue.quantity_to_pick > 0">
-                <div v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)"
+                <div v-if="findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null))"
                     class="flex flex-col justify-between gap-x-6 items-center">
                     <!-- Action: decrease and increase quantity -->
                     <div class="mb-3 w-full flex justify-between gap-x-6 xitems-center">
                         <!-- Section: Locations -->
-                        <div class="">
-                            <Transition name="spin-to-down">
-                                <div :key="findLocation(itemValue.locations, proxyItem.org_stock_id).location_code">
-
-                                    <!-- Section: number of locations available to pick -->
-                                    <span v-if="itemValue.locations?.length > 1" @click="() => {
-                                            isModalLocation = true;
-                                            selectedItemValue = itemValue;
-                                            selectedItemProxy = proxyItem;
-                                        }" v-tooltip="`Other ${itemValue.locations?.length - 1} locations`"
-                                        class="mr-1 cursor-pointer hover:bg-orange-50 whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded px-1">
-                                        <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
-                                            aria-hidden="true" />
-                                        {{ itemValue.locations?.length - 1 }}
-                                    </span>
-
-                                    <span v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)" class="text-base">
-                                        <Link v-tooltip="`${itemValue.warehouse_area}`"
-                                            :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.org_stock_id))"
-                                            class="secondaryLink">
-                                            {{ findLocation(itemValue.locations, proxyItem.org_stock_id).location_code }}
-                                        </Link>
-                                    </span>
-                                    <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">
-                                        ({{ trans("Unknown") }})
-                                    </span>
-                                    
-                                    <!-- Section: number of stocks -->
-                                    <span
-                                        v-tooltip="trans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity || 0), stockLocation: findLocation(itemValue.locations, proxyItem.org_stock_id)?.location_code || '' })"
-                                        class="align-middle whitespace-nowrap text-base py-0.5 xopacity-70 tabular-nums xborder border-gray-300 rounded xpx-1"
-                                    >
-                                        <!-- <FontAwesomeIcon icon="fal fa-inventory" class="mr-1 text-base" fixed-width aria-hidden="true" /> -->
-                                        (<span class="text-lg font-bold">
-                                            <FractionDisplay
-                                                v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity_fractional"
-                                                :fractionData="findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity_fractional"
-                                            />
-                                            <template v-else>
-                                                {{ locale.number(findLocation(itemValue.locations, proxyItem.org_stock_id).quantity) }}
-                                            </template>
-                                        </span>
-                                        <span class="text-sm ml-1">stocks</span>)
-                                    </span>
-                                </div>
-                            </Transition>
-                        </div>
+                        <LabelPickingLocation
+                            :locations="itemValue.locations"
+                            :selectedOrgStockId="get(selectedLocationCode, [itemValue.id], null)"
+                            :warehouseArea="itemValue.warehouse_area"
+                            @openLocationModal="() => { isModalLocation = true; selectedItemValue = itemValue; selectedItemProxy = proxyItem; }"
+                        />
 
                         <div class="flex items-center flex-nowrap gap-x-2">
                             <!-- Button: input number (picking) -->
                             <NumberWithButtonSave
-                                v-if="!itemValue.is_handled && findLocation(itemValue.locations, proxyItem.org_stock_id).quantity > 0"
-                                :key="findLocation(itemValue.locations, proxyItem.org_stock_id).location_code" noUndoButton
+                                v-if="!itemValue.is_handled && findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).quantity > 0"
+                                :key="findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_code" noUndoButton
                                 @onError="(error: any) => {
                                     proxyItem.errors = Object.values(error || {})
-                                }" :modelValue="findLocation(itemValue.locations, proxyItem.org_stock_id).quantity_picked"
+                                }" :modelValue="findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).quantity_picked"
                                 @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
                                 saveOnForm :routeSubmit="{
                                     name: itemValue.upsert_picking_route.name,
@@ -735,16 +817,16 @@ const onSetItemToUndoWaitingWarehouse = () => {
                                 }" :bindToTarget="{
                                     step: 1,
                                     min: 0,
-                                    max: Math.min(findLocation(itemValue.locations, proxyItem.org_stock_id).quantity, itemValue.quantity_required, (itemValue.quantity_to_pick + findLocation(itemValue.locations, proxyItem.org_stock_id).quantity_picked))
+                                    max: Math.min(findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).quantity, itemValue.quantity_required, (itemValue.quantity_to_pick + findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).quantity_picked))
                                 }" :additionalData="{
-                                    location_org_stock_id: findLocation(itemValue.locations, proxyItem.org_stock_id).id,
-                                    picking_id: itemValue.pickings.find(picking => picking.location_id == findLocation(itemValue.locations, proxyItem.org_stock_id).location_id)?.id,
+                                    location_org_stock_id: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).id,
+                                    picking_id: itemValue.pickings.find(picking => picking.location_id == findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_id)?.id,
                                 }" autoSave xxisWithRefreshModel
                                 :readonly="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked">
                                 <template #save="{ isProcessing, isDirty, onSaveViaForm }">
                                     <div class="flex gap-x-8 w-fit">
                                         <ButtonWithLink
-                                            v-tooltip="trans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, proxyItem.org_stock_id).location_code || '-' })"
+                                            v-tooltip="trans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_code || '-' })"
                                             icon="fal fa-clipboard-list-check"
                                             :disabled="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
                                             :size="screenType != 'mobile' ? 'xs' : 'md'"
@@ -757,7 +839,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                                                 preserveState: true,
                                             }"
                                             :body="{
-                                                location_org_stock_id: findLocation(itemValue.locations, proxyItem.org_stock_id).id
+                                                location_org_stock_id: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).id
                                             }"
                                             isWithError
                                         >
@@ -854,14 +936,14 @@ const onSetItemToUndoWaitingWarehouse = () => {
 
 
                         </div>
-                        </div>
+                    </div>
                         
-                        <!-- Section: Errors list -->
-                        <div v-if="proxyItem.errors?.length" class="">
-                            <p v-for="error in proxyItem.errors" class="text-xs text-red-500 italic">
-                                *{{ error }}
-                            </p>
-                        </div>
+                    <!-- Section: Errors list -->
+                    <div v-if="proxyItem.errors?.length" class="">
+                        <p v-for="error in proxyItem.errors" class="text-xs text-red-500 italic">
+                            *{{ error }}
+                        </p>
+                    </div>
                 </div>
 
                 <div v-else class="flex justify-between gap-x-2">
@@ -1040,80 +1122,40 @@ const onSetItemToUndoWaitingWarehouse = () => {
         />
     </Modal>
 
-    <Modal :isOpen="isModalLocation" @onClose="() => onCloseModal()" width="w-full max-w-2xl" :dialogStyle="{
-        background: '#ffffff'
-    }">
-        <div class="text-center font-semibold text-2xl">
-            Location list for {{ selectedItemValue?.org_stock_code }}:
-        </div>
-        <div class="mb-4 italic opacity-60 xtext-sm text-center">
-            {{ ctrans("Total stocks on all locations") }}: <span class="font-bold">{{ locale.number(countStockInAllLocations(selectedItemValue?.locations)) }}</span> {{ trans("stocks") }}
-        </div>
 
-        <div class="rounded p-1 grid grid-cols-3 justify-between gap-x-6 items-center xdivide-x xdivide-gray-300">
-            <div v-for="location in selectedItemValue?.locations"
-                class="xbg-gray-100 border border-gray-300 rounded mb-3 w-full xeven:bg-black/5 flex justify-between gap-x-3 items-center px-2 xpy-2">
-                <label :for="location.location_code" class="flex flex-wrap cursor-pointer w-full py-2">
-                    <span v-if="location.location_code"
-                        v-tooltip="location.quantity <= 0 ? 'Location has no stock' : ''"
-                        :class="location.quantity <= 0 ? 'text-gray-400' : ''">
-                        <Link :href="generateLocationRoute(location)"
-                            class="bg-gradient-to-t from-yellow-300/50 to-yellow-200/50 focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1;">
-                        {{ location.location_code }}
-                        </Link>
-                    </span>
-                    <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">
-                        ({{ trans("Unknown") }})
-                    </span>
-
-                    <span
-                        v-tooltip="trans('Total stock is :quantity in location :location_code', {quantity: locale.number(Number(location.quantity) || 0), location_code: location.location_code || ''})"
-                        class="ml-1 whitespace-nowrap text-gray-400 tabular-nums xborder border-gray-300 rounded xpx-1">
-                        <!-- <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" /> -->
-                        (<FractionDisplay v-if="location.quantity_fractional"
-                            :fractionData="location.quantity_fractional" />
-                        <template v-else>{{ location.quantity }}</template> stocks)
-                    </span>
-                </label>
-                <RadioButton v-model="selectedItemProxy.org_stock_id" @update:modelValue="() => {
-                        onCloseModal()
-                    }" :inputId="location.location_code" :disabled="location.quantity <= 0" name="location"
-                    :value="location.location_code" />
-            </div>
-        </div>
+    <!-- Modal: Location picker -->
+    
+    <Modal :isOpen="isModalLocation" @onClose="isModalLocation = false" width="w-full max-w-3xl" xdialogStyle="{ background: '#ffffff' }">
+        <SelectPickingLocation
+            :item="selectedItemValue"
+            :selectedLocationCode="get(selectedLocationCode, [selectedItemValue?.id], null)"
+            @select="(code) => { set(selectedLocationCode, [selectedItemValue?.id], code); isModalLocation = false; }"
+        />
     </Modal>
 
-    <!-- Modal: Edit expiry date & batch code -->
+    <!-- Modal: Select batch code -->
     <Modal :isOpen="isModalEditExpiryDate" @onClose="() => onCloseModalExpiryDate()" width="w-full max-w-lg">
         <div class="text-center mb-4">
-            <div class="font-semibold text-2xl">Update for {{ selectedItemToEditExpiryDate?.org_stock_code }}:</div>
+            <div class="font-semibold text-2xl">{{ trans('Batch Code for') }} {{ selectedItemToEditExpiryDate?.org_stock_code }}:</div>
             <div class="opacity-80 italic text-sm">
                 {{ selectedItemToEditExpiryDate?.org_stock_name }}
             </div>
         </div>
 
         <div class="flex flex-col items-center gap-4">
-            <div class="w-full ">
-                <label class="block text-sm font-medium mb-2">
-                    {{ trans("Expiry Date") }}:
-                </label>
-                <DatePicker
-                    :modelValue="get(selectedItemToEditExpiryDate, 'expiry_date', null) ? new Date(get(selectedItemToEditExpiryDate, 'expiry_date', '')) : null"
-                    @update:modelValue="(e) => set(selectedItemToEditExpiryDate, 'expiry_date', e)"
-                    fluid
-                    dateFormat="dd M yy"
-                    :disabled="isLoadingSubmitExpiryDate"
-                    :showClear="true"
-                />
-            </div>
-
-            <div class="w-full ">
+            <div class="w-full">
                 <label class="block text-sm font-medium mb-2">
                     {{ trans("Batch code") }}:
                 </label>
-                <PureInput
-                    :modelValue="get(selectedItemToEditExpiryDate, 'batch_code', '')"
-                    @update:modelValue="(e) => set(selectedItemToEditExpiryDate, 'batch_code', e)"
+                <PureMultiselectInfiniteScroll
+                    v-if="batchCodeFetchRoute"
+                    v-model="selectedBatchCode"
+                    :fetchRoute="batchCodeFetchRoute"
+                    :initOptions="selectedBatchCode ? [selectedBatchCode] : []"
+                    labelProp="label"
+                    valueProp="id"
+                    object
+                    :placeholder="trans('Search batch code...')"
                     :disabled="isLoadingSubmitExpiryDate"
                 />
             </div>
@@ -1126,8 +1168,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     icon="far fa-arrow-left"
                     @click="onCloseModalExpiryDate"
                     :label="trans('Cancel')"
-                >
-                </Button>
+                />
 
                 <Button
                     type="primary"
@@ -1136,9 +1177,8 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     icon="fad fa-save"
                     @click="onSubmitEditExpiryDate"
                     full
-                    label="Save"
-                >
-                </Button>
+                    :label="trans('Save')"
+                />
             </div>
         </div>
     </Modal>
@@ -1348,6 +1388,70 @@ const onSetItemToUndoWaitingWarehouse = () => {
                 </div>
             </div>
             <LoadingOverlay2 v-if="isLoadingUndoWaitingWarehouse" class="rounded-2xl" />
+        </div>
+    </Modal>
+
+    <!-- Modal: Set batch code per picking (2) -->
+    <Modal :isOpen="isModalPickingBatchCode" @onClose="onCloseModalPickingBatchCode" width="w-full max-w-lg">
+        <div class="text-center mb-4">
+            <div class="font-semibold text-2xl">{{ trans('Batch Code') }}</div>
+            <div class="opacity-80 italic text-sm">
+                <span>{{ selectedPickingForBatchCode?.location_code ? ctrans('Location: :loc', { loc: selectedPickingForBatchCode.location_code }) : '' }} || </span>
+                <span>{{ ctrans("Quantity") }}: {{ selectedPickingForBatchCode?.quantity_picked }}</span>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center gap-4">
+            <div class="w-full">
+                <label class="block text-sm font-medium mb-2">{{ trans("Batch code") }}:</label>
+                <PureMultiselectInfiniteScroll
+                    v-if="selectedPickingForBatchCode?.batch_codes_fetch_route"
+                    v-model="selectedPickingBatchCode"
+                    :fetchRoute="selectedPickingForBatchCode.batch_codes_fetch_route"
+                    :initOptions="selectedPickingBatchCode ? [selectedPickingBatchCode] : []"
+                    labelProp="label"
+                    valueProp="id"
+                    object
+                    :placeholder="trans('Search batch code...')"
+                    :disabled="isLoadingSubmitPickingBatchCode"
+                >
+                    <template #afterlist>
+                        <div class="text-center m-2 py-1 cursor-auto text-blue-400 text-sm">
+                            {{ trans("Don't see the batch code") }}?
+
+                            <Link
+                                :href="route('grp.org.warehouses.show.inventory.batch_codes.index', {
+                                    organisation: route().params.organisation,
+                                    warehouse: route().params.warehouse,
+                                })"
+                                class="underline hover:text-blue-700 cursor-pointer"
+                            >
+                                {{ trans("See the batch codes list") }}
+                            </Link>
+                        </div>
+                    </template>
+                </PureMultiselectInfiniteScroll>
+            </div>
+
+            <div class="w-full flex gap-4 mt-4">
+                <Button
+                    type="negative"
+                    size="md"
+                    :disabled="isLoadingSubmitPickingBatchCode"
+                    icon="far fa-arrow-left"
+                    @click="onCloseModalPickingBatchCode"
+                    :label="trans('Cancel')"
+                />
+                <Button
+                    type="primary"
+                    size="md"
+                    :loading="isLoadingSubmitPickingBatchCode"
+                    icon="fad fa-save"
+                    @click="onSubmitPickingBatchCode"
+                    full
+                    :label="trans('Save')"
+                />
+            </div>
         </div>
     </Modal>
 </template>

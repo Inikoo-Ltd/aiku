@@ -11,6 +11,7 @@ library.add(faCube, faLink, faImage)
 const props = defineProps<{
     fieldValue: any
     screenType: "mobile" | "tablet" | "desktop"
+    indexBlock:number
 }>()
 
 
@@ -27,7 +28,7 @@ watch(
 </script>
 
 <template>
-    <div :id="fieldValue?.id ? fieldValue?.id  : 'column-4'"  component="column-4"  class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center"
+    <div :id="fieldValue?.id ? fieldValue?.id  : 'column-4'+indexBlock"  component="column-4"  class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center"
         :style="getStyles(fieldValue?.container?.properties,screenType)"
     >
         <!-- <pre>{{ fieldValue }}</pre> -->

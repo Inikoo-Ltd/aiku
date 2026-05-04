@@ -8,19 +8,21 @@
 namespace App\Actions\Discounts\OfferCampaign;
 
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Discounts\OfferCampaign;
-use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 
 class RedoOfferCampaignTimeSeries implements ShouldBeUnique
 {
     use WithHydrateCommand;
+    use WithTimeSeriesRedo {
+        WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
+    }
 
-    public string $jobQueue         = 'default-long';
+    public string $jobQueue = 'default-long';
     public string $commandSignature = 'offer-campaigns:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -28,13 +30,25 @@ class RedoOfferCampaignTimeSeries implements ShouldBeUnique
         $this->model = OfferCampaign::class;
     }
 
-    public function getJobUniqueId(string $from, string $to): string
+    public function getJobUniqueId(?int $offerCampaignId, string $from, string $to): string
     {
-        return "{$from}_{$to}";
+        if ($offerCampaignId === null) {
+            return 'empty'.'_'.$from.'_'.$to;
+        }
+
+        return $offerCampaignId.'_'.$from.'_'.$to;
     }
 
-    public function handle(OfferCampaign $offerCampaign, bool $async = false, ?string $from = null, ?string $to = null): void
+    public function handle(?int $offerCampaignId, bool $async = false, ?string $from = null, ?string $to = null): void
     {
+        if (!$offerCampaignId) {
+            return;
+        }
+        $offerCampaign = OfferCampaign::find($offerCampaignId);
+        if (!$offerCampaign) {
+            return;
+        }
+
         if (!$offerCampaign->status) {
             return;
         }
@@ -70,64 +84,11 @@ class RedoOfferCampaignTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessOfferCampaignTimeSeriesRecords::dispatch($offerCampaign->id, $frequency, $from, $to)->onQueue('low-priority');
+                ProcessOfferCampaignTimeSeriesRecords::dispatch($offerCampaign->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
             } else {
                 ProcessOfferCampaignTimeSeriesRecords::run($offerCampaign->id, $frequency, $from, $to);
             }
         }
     }
 
-    public function asJob(string $from, string $to): void
-    {
-        $tableName = (new $this->model())->getTable();
-        $query     = DB::table($tableName)->select('id')->orderBy('id', 'desc');
-
-        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($from, $to) {
-            foreach ($modelsData as $modelId) {
-                $model    = (new $this->model());
-                $instance = $this->hasSoftDeletes($model)
-                    ? $model->withTrashed()->find($modelId->id)
-                    : $model->find($modelId->id);
-
-                try {
-                    $this->handle($instance, false, $from, $to);
-                } catch (Throwable $e) {
-                    report($e);
-                }
-            }
-        });
-    }
-
-    public function asCommand(Command $command): int
-    {
-        $command->info($command->getName());
-        $tableName = (new $this->model())->getTable();
-        $query     = $this->prepareQuery($tableName, $command);
-        $count     = $query->count();
-        $bar       = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
-        $bar->start();
-
-        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($bar, $command) {
-            foreach ($modelsData as $modelId) {
-                $model    = (new $this->model());
-                $instance = $this->hasSoftDeletes($model)
-                    ? $model->withTrashed()->find($modelId->id)
-                    : $model->find($modelId->id);
-
-                try {
-                    $this->handle($instance, (bool) $command->option('async'), $command->option('from'), $command->option('to'));
-                } catch (Throwable $e) {
-                    $command->error($e->getMessage());
-                }
-
-                $bar->advance();
-            }
-        });
-
-        $bar->finish();
-        $command->info('');
-
-        return 0;
-    }
 }

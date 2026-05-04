@@ -7,6 +7,7 @@ import Tag from "@/Components/Tag.vue"
 import { routeType } from "@/types/route"
 import { Table as TableTS } from "@/types/Table"
 import { faPencil, faTimes, faTrashAlt, faMoneyCheckEditAlt } from "@far"
+import { faBarcode } from "@fal"
 import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
@@ -24,8 +25,9 @@ import { InputNumber, InputText } from "primevue"
 import axios from "axios"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import BasicDiscount from "@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue"
 
-library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt)
+library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt, faBarcode)
 
 type ProductRow = {
     id: number
@@ -344,6 +346,12 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
         }
     )
 }
+
+const isOffersData = (offersData: any): boolean => {
+    if (!offersData) return false
+    const parsed = typeof offersData === 'string' ? JSON.parse(offersData) : offersData
+    return Object.keys(parsed || {}).length > 0
+}
 </script>
 
 <template>
@@ -383,7 +391,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                         Stock: {{ locale.number(item.available_quantity || 0) }} available
                     </div>
 
-                    <Discount v-if="Object.keys(item.offers_data || {})?.length" :offers_data="item.offers_data" />
+                    <Discount v-if="isOffersData(item.offers_data)" :offers_data="item.offers_data" />
                 </div>
             </template>
 
@@ -476,6 +484,20 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                 </div>
             </template>
 
+            <!-- Column: Batch Codes -->
+            <template #cell(batch_codes)="{ item }">
+                <div class="flex flex-wrap gap-1">
+                    <span
+                        v-for="code in (item.batch_codes ? item.batch_codes.split(', ') : [])"
+                        :key="code"
+                        class="text-xs px-1.5 py-0.5 rounded border border-blue-300 bg-blue-50 text-blue-700"
+                    >
+                        <FontAwesomeIcon icon="fal fa-barcode" class="mr-1" fixed-width aria-hidden="true" />
+                        {{ code }}
+                    </span>
+                </div>
+            </template>
+
             <!-- Section: Price -->
             <template #cell(price)="{ item }">
                 <div v-if="item.is_gift">
@@ -559,7 +581,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
             <div class="text-center mb-4">
                 <div class="font-semibold text-2xl">Update for {{ selectedItemToEditNetAmount?.asset_code }}:</div>
                 <div class="opacity-80 italic text-sm">
-                    <pre>{{ selectedItemToEditNetAmount?.asset_name }}</pre>
+                    {{ selectedItemToEditNetAmount?.asset_name }}
                 </div>
             </div>
 
@@ -572,6 +594,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                     <InputNumber
                         :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer', 0)"
                         @input="(e) => set(selectedItemToEditNetAmount, 'discretionary_offer', e?.value)"
+                        :max-fraction-digits="2"
                         suffix="%"
                         :disabled="isLoadingSubmitNetAmount"
                     />
@@ -585,7 +608,27 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                     <InputText
                         :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer_label', '')"
                         @input="(e) => (set(selectedItemToEditNetAmount, 'discretionary_offer_label', e?.target?.value))"
+                        :placeholder="ctrans('Discretionary Discount')"
                         :disabled="isLoadingSubmitNetAmount"
+                    />
+                </div>
+
+                <!-- Section: preview -->
+                <div class="w-full border-y py-4 flex justify-center">
+                    <BasicDiscount
+                        :offers_data="{
+                            v: get(selectedItemToEditNetAmount, 'discretionary_offer', 0),
+                            o: {
+                                oc: 0,
+                                o: 0,
+                                oa: 0,
+                                t: 'percentage',
+                                p: String(parseFloat((Number(selectedItemToEditNetAmount?.discretionary_offer || 0)).toFixed(2))) + '%',
+                                l: get(selectedItemToEditNetAmount, 'discretionary_offer_label', '') || ctrans('Discretionary Discount'),
+                                st: null,
+                                sto: null
+                            }
+                        }"
                     />
                 </div>
 

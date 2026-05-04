@@ -8,24 +8,20 @@
 
 namespace App\Actions\Inventory\OrgStock\Search;
 
-use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Actions\Traits\WithScoutReindex;
 use App\Models\Inventory\OrgStock;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class ReindexOrgStockSearch
 {
-    use WithHydrateCommand;
+    use AsAction;
+    use WithScoutReindex;
 
-    public string $commandSignature = 'search:org_stocks {organisations?*} {--s|slugs=}';
+    public string $commandSignature = 'reindex_search:org_stocks';
 
-    public function __construct()
+    public function handle(bool $reindex = true, bool $reset = false): void
     {
-        $this->model = OrgStock::class;
+        $this->runScoutReindex(OrgStock::class, $reindex, $reset);
     }
-
-
-    public function handle(OrgStock $orgStock): void
-    {
-    }
-
 
 }

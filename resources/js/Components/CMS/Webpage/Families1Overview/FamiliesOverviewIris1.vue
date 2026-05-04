@@ -49,6 +49,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Record<string, any>
   screenType: "mobile" | "tablet" | "desktop"
+  indexBlock:number
 }>()
 
 const layout: any = inject("layout", {})
@@ -163,7 +164,7 @@ const getArrow = (key: string) => {
 </script>
 
 <template>
-  <div :id="fieldValue?.id || 'families-1'">
+  <div :id="fieldValue?.id || 'families-1'+indexBlock">
     <div
       v-if="families.length"
       class="py-10"

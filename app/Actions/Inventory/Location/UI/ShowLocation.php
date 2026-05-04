@@ -20,7 +20,7 @@ use App\Enums\UI\Inventory\LocationTabsEnum;
 use App\Http\Resources\Fulfilment\PalletsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\LocationResource;
-use App\Http\Resources\Inventory\OrgStockResource;
+use App\Http\Resources\Inventory\OrgStocksInLocationResource;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
@@ -112,8 +112,8 @@ class ShowLocation extends OrgAction
                     : Inertia::lazy(fn () => GetLocationShowcase::run($location)),
 
                 LocationTabsEnum::ORG_STOCKS->value => $this->tab == LocationTabsEnum::ORG_STOCKS->value ?
-                    fn () => OrgStockResource::collection(IndexOrgStocksInLocation::run($location))
-                    : Inertia::lazy(fn () => OrgStockResource::collection(IndexOrgStocksInLocation::run($location))),
+                    fn () => OrgStocksInLocationResource::collection(IndexOrgStocksInLocation::run($location))
+                    : Inertia::lazy(fn () => OrgStocksInLocationResource::collection(IndexOrgStocksInLocation::run($location))),
 
                 LocationTabsEnum::PALLETS->value => $this->tab == LocationTabsEnum::PALLETS->value ?
                     fn () => PalletsResource::collection(IndexPalletsInWarehouse::run($location))

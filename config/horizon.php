@@ -187,6 +187,21 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
+        'common'          => [
+            'connection'      => 'redis',
+            'queue'           => ['common'],
+            'balance'         => 'auto',
+            'maxProcesses'    => 1,
+            'maxTime'         => 0,
+            'maxJobs'         => 0,
+            'memory'          => 1280,
+            'tries'           => 10,
+            'timeout'         => 3600,
+            'retry_after'     => 2,
+            'nice'            => 0,
+            'balanceMaxShift' => 1,
+            'balanceCooldown' => 3,
+        ],
         'hydrators-slave' => [
             'connection'      => 'redis',
             'queue'           => ['hydrators-slave'],
@@ -407,6 +422,9 @@ return [
             'normal'          => [
                 'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 6),
             ],
+            'common'          => [
+                'maxProcesses' => env('HORIZON_COMMON_WORKERS', 2),
+            ],
             'hydrators-slave' => [
                 'maxProcesses' => env('HORIZON_HYDRATORS_SLAVE_WORKERS', 6),
             ],
@@ -455,6 +473,9 @@ return [
             'normal'          => [
                 'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 1),
             ],
+            'common'          => [
+                'maxProcesses' => env('HORIZON_COMMON_WORKERS', 1),
+            ],
             'hydrators-slave' => [
                 'maxProcesses' => env('HORIZON_HYDRATORS_SLAVE_WORKERS', 1),
             ],
@@ -500,6 +521,9 @@ return [
         'local'      => [
             'normal'          => [
                 'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 3),
+            ],
+            'common'          => [
+                'maxProcesses' => env('HORIZON_COMMON_WORKERS', 1),
             ],
             'hydrators-slave' => [
                 'maxProcesses' => env('HORIZON_HYDRATORS_SLAVE_WORKERS', 2),

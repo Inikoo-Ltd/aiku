@@ -16,13 +16,14 @@ library.add(faCube, faLink)
 const props = defineProps<{
 	fieldValue: any
 	screenType: "mobile" | "tablet" | "desktop"
+	indexBlock:number
 }>()
 const layout: any = inject("layout", {})
 
 </script>
 
 <template>
-	<div  :id="fieldValue?.id ? fieldValue?.id  : 'overview-2'"  component="overview-2">
+	<div  :id="fieldValue?.id ? fieldValue?.id  : 'overview-2'+indexBlock"  component="overview-2">
 			<div class="flex flex-col md:flex-row w-full rounded-lg overflow-hidden" :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(fieldValue.container?.properties, screenType)

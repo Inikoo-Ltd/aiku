@@ -38,6 +38,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Record<string, any>
   screenType: 'mobile' | 'tablet' | 'desktop'
+  indexBlock:number
 }>()
 
 const layout: any = inject("layout", {})
@@ -134,7 +135,7 @@ const idxSlideLoading = ref<null | number>(null)
 </script>
 
 <template>
-  <div :id="fieldValue?.id ? fieldValue?.id  : 'carousel-background-image'"  component="carousel-background-image"  class="relative w-full">
+  <div :id="fieldValue?.id ? fieldValue?.id  : 'carousel-background-image'+ indexBlock"  component="carousel-background-image"  class="relative w-full">
     <div :data-refresh="refreshTrigger" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
         ...getStyles(fieldValue?.container?.properties, props.screenType),

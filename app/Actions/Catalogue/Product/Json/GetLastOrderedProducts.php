@@ -3,7 +3,7 @@
 /*
  * author Louis Perez
  * created on 03-02-2026-09h-57m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 

@@ -19,6 +19,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use App\Models\Traits\HasSearch;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -34,12 +36,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $name
  * @property OrgStockFamilyStateEnum $state
  * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property string|null $activated_in_organisation_at
  * @property string|null $discontinuing_in_organisation_at
  * @property string|null $discontinued_in_organisation_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $deleted_at
  * @property string|null $source_id
  * @property HealthRankEnum|null $health_rank
  * @property-read Group|null $group
@@ -62,9 +64,10 @@ class OrgStockFamily extends Model
     use HasSlug;
     use SoftDeletes;
     use InOrganisation;
+    use HasSearch;
 
     protected $casts = [
-        'data'  => 'array',
+        'data'        => 'array',
         'state'       => OrgStockFamilyStateEnum::class,
         'health_rank' => HealthRankEnum::class
 
@@ -76,6 +79,29 @@ class OrgStockFamily extends Model
 
     protected $guarded = [];
 
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'code',
+                'state',
+                'name',
+                'created_at'
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+
+            'id'          => (string)$this->id,
+            'code'        => $this->code,
+            'state'       => $this->state,
+            'name'        => (string)$this->name,
+            'created_at'  => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
+
     public function getRouteKeyName(): string
     {
         return 'slug';
@@ -85,7 +111,7 @@ class OrgStockFamily extends Model
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return $this->code. ' '.$this->organisation->code;
+                return $this->code.' '.$this->organisation->code;
             })
             ->slugsShouldBeNoLongerThan(128)
             ->doNotGenerateSlugsOnUpdate()

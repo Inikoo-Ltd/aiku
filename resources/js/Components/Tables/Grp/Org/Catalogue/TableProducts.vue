@@ -59,7 +59,7 @@ const emits = defineEmits<{
     (e: "selectedRow", value: {}): void
 }>()
 
-const editingValues = shallowRef<Record<number, { price: number; rrp: number, unit : string }>>({})
+const editingValues = shallowRef<Record<number, { price: number; rrp: number, rrp_per_unit: number, unit : string }>>({})
 const editingBackup = ref<Record<number, any>>({})
 const onEditOpen = ref<number[]>([])
 const loadingSave = ref([])
@@ -74,6 +74,7 @@ function onEdit(data) {
     // make a working copy
     editingValues.value[item.id] = {
         price: item.price,
+        rrp_per_unit: item.rrp_per_unit,
         rrp: item.rrp,
         unit: item.unit
     }
@@ -95,6 +96,7 @@ function onSave(item) {
         {
             price: updated.price,
             rrp: updated.rrp,
+            rrp_per_unit: updated.rrp_per_unit,
             unit: updated.unit
         },
         {
@@ -139,7 +141,7 @@ function productRoute(product: Product) {
         return ""
     }
 
-    console.log(route().current())
+    // console.log(route().current())
     switch (route().current()) {
         case 'grp.org.shops.show.catalogue.products.independent_products.current.index':
             return route(
@@ -704,8 +706,19 @@ const repairTradeUnitFromChildren = async (product) => {
         </template>
 
         <template #cell(rrp_per_unit)="{ item: product }">
-            {{ locale.currencyFormat(product.currency_code, product.rrp_per_unit) }}
-
+            <div v-if="onEditOpen.includes(product.id)">
+                <InputNumber v-model="editingValues[product.id].rrp_per_unit" mode="currency" :currency="product.currency_code" :min="0.01"
+                    :step="0.25" showButtons  button-layout="horizontal" inputClass="w-full text-xs"  @update:model-value="()=>deleteError(product)">
+                    <template #incrementbuttonicon>
+                        <FontAwesomeIcon :icon="faPlus" />
+                    </template>
+                    <template #decrementbuttonicon>
+                        <FontAwesomeIcon :icon="faMinus" />
+                    </template>
+                </InputNumber>
+                <p class="text-red-600 text-xxs">{{ errors?.[product.id]?.rrp }}</p>
+            </div>
+            <span v-else>{{ locale.currencyFormat(product.currency_code, product.rrp_per_unit) }}</span>
         </template>
 
         <template #cell(rrp)="{ item: product }">
@@ -744,6 +757,7 @@ const repairTradeUnitFromChildren = async (product) => {
             <div v-if="item.customers_invoiced_delta">
                 <span>{{ item.customers_invoiced_delta.formatted }}</span>
                 <FontAwesomeIcon
+                    v-if="getIntervalChangesIcon(item.customers_invoiced_delta.is_positive)?.icon"
                     :icon="getIntervalChangesIcon(item.customers_invoiced_delta.is_positive)?.icon"
                     class="text-xxs md:text-sm"
                     :class="[

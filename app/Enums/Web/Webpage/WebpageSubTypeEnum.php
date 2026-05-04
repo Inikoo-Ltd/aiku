@@ -25,7 +25,7 @@ enum WebpageSubTypeEnum: string
     case SUB_DEPARTMENT = 'sub_department';
     case COLLECTION = 'collection';
 
-
+    case LANDING_PAGE = 'landing_page';
     case CONTENT = 'content';
 
     case ABOUT_US = 'about-us';

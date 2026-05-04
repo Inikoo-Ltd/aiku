@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from "chart.js"
+import axios from "axios"
 import { faChevronDown } from "@far"
 import { faChartLine, faPlay, faTimesCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -67,11 +68,49 @@ ChartJS.register(ArcElement, Tooltip, Legend, Colors)
 
 const dashboardTabActive = ref('')
 provide("dashboardTabActive", dashboardTabActive)
+const isLoadingOnTable = ref(false)
+provide("isLoadingOnTable", isLoadingOnTable)
 
 const currentTab = ref(props.dashboard?.super_blocks?.[0]?.tabs_box?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const isExpanded = ref(false)
+
+const fetchDashboardTabData = async (tabSlug: string): Promise<void> => {
+	const block = props.dashboard?.super_blocks?.[0]?.blocks?.[0]
+	const fetchRoute = block?.tab_fetch_route
+	if (!block?.tables || !fetchRoute?.name) {
+		return
+	}
+
+	if (block.tables[tabSlug]) {
+		return
+	}
+
+	isLoadingOnTable.value = true
+	try {
+		const { data } = await axios.get(route(fetchRoute.name), {
+			params: {
+				tab: tabSlug,
+			},
+		})
+
+		if (data?.tab && data?.table) {
+			set(props, `dashboard.super_blocks[0].blocks[0].tables.${data.tab}`, data.table)
+		}
+
+		if (data?.tab && data?.table_2) {
+			set(props, `dashboard.super_blocks[0].blocks_2[0].tables.${data.tab}`, data.table_2)
+		}
+	} finally {
+		isLoadingOnTable.value = false
+	}
+}
+
+const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
+	set(props, "dashboard.super_blocks[0].blocks[0].current_tab", tabSlug)
+	await fetchDashboardTabData(tabSlug)
+}
 </script>
 
 <template>
@@ -252,9 +291,7 @@ const isExpanded = ref(false)
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 			:settings="props.dashboard?.super_blocks?.[0].settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
-			@onChangeTab="(val) => {
-				set(props, 'dashboard.super_blocks[0].blocks[0].current_tab', val)
-			}"
+			@onChangeTab="onChangeDashboardTab"
 		/>
 
 		<DashboardTable
@@ -269,9 +306,7 @@ const isExpanded = ref(false)
 			:settings="props.dashboard?.super_blocks?.[0].settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
 			:showTabs="false"
-			@onChangeTab="(val) => {
-				set(props, 'dashboard.super_blocks[0].blocks[0].current_tab', val)
-			}"
+			@onChangeTab="onChangeDashboardTab"
 		/>
 
 		<DashboardWidget

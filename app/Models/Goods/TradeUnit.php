@@ -33,6 +33,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
@@ -59,11 +61,11 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $type unit type
  * @property int|null $image_id
  * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $source_slug
  * @property string|null $source_id
  * @property array<array-key, mixed> $sources
@@ -137,6 +139,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $bottomImage
  * @property-read Collection<int, Brand> $brands
  * @property-read Media|null $frontImage
+ * @property-read array $translatable_columns_from
  * @property-read Group|null $group
  * @property-read Media|null $image
  * @property-read MediaCollection<int, Media> $images
@@ -181,6 +184,7 @@ class TradeUnit extends Model implements HasMedia, Auditable
     use HasHistory;
     use HasAttachments;
     use HasTranslations;
+    use HasSearch;
 
 
     public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
@@ -202,6 +206,37 @@ class TradeUnit extends Model implements HasMedia, Auditable
     ];
 
     protected $guarded = [];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'code',
+                'type',
+                'name',
+                'status',
+                'barcode',
+                'tariff_code',
+                'marketing_ingredients',
+                'created_at'
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+
+            'id'                    => (string)$this->id,
+            'code'                  => $this->code,
+            'type'                  => $this->type,
+            'name'                  => (string)$this->name,
+            'status'                => $this->status->value,
+            'barcode'               => (string)$this->barcode,
+            'tariff_code'           => (string)$this->tariff_code,
+            'marketing_ingredients' => (string)$this->marketing_ingredients,
+            'created_at'            => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {
@@ -279,6 +314,7 @@ class TradeUnit extends Model implements HasMedia, Auditable
     {
         /** @var Brand $brand */
         $brand = $this->brands()->first();
+
         return $brand;
     }
 

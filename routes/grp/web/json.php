@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Accounting\OrgPaymentServiceProvider\Json\GetOrgPaymentServiceProviders;
+use App\Actions\Dispatching\BatchCode\Json\GetBatchCodes;
 use App\Actions\Accounting\Payment\Json\GetRefundOriginalInvoicePayments;
 use App\Actions\Accounting\PaymentAccount\Json\GetShopPaymentAccounts;
 use App\Actions\Catalogue\Collection\Json\GetCollections;
@@ -56,6 +57,7 @@ use App\Actions\CRM\Customer\UI\GetProductsForPortfolioSelect;
 use App\Actions\Dashboard\GetMasterShopsSalesCustomDates;
 use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNoteShipments;
+use App\Actions\Dispatching\PickingSession\Json\GetDeliveryNotesForPickingSession;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchSingleDeliveryNoteItem;
 use App\Actions\Dispatching\PickedBay\Json\ListAvailablePickedBays;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
@@ -184,6 +186,7 @@ Route::get('order/{order:id}/charges', GetOrderCharges::class)->name('order.char
 Route::get('order/{order:id}/products-for-modify', GetOrderProductsForModification::class)->name('order.products_for_modify');
 Route::get('organisation/{organisation}/shippers', GetShippers::class)->name('shippers.index');
 Route::get('organisation/{organisation:id}/org-stocks', GetOrgStocks::class)->name('org_stocks.index');
+Route::get('organisation/{organisation:id}/org-stock/{orgStock:id}/batch-codes', GetBatchCodes::class)->name('org_stock.batch_codes.index');
 
 Route::get('trade-units/{tradeUnit}/tags', [IndexTags::class, 'inTradeUnit'])->name('trade_units.tags.index');
 Route::get('brands', GetBrands::class)->name('brands.index');
@@ -222,6 +225,8 @@ Route::get('products-for-portfolio-select/{customerSalesChannel:id}', GetProduct
 
 Route::get('mini-delivery-note/{deliveryNote:id}', GetMiniDeliveryNote::class)->name('mini_delivery_note');
 Route::get('mini-delivery-note-shipments/{deliveryNote:id}', GetMiniDeliveryNoteShipments::class)->name('mini_delivery_note_shipments');
+
+Route::get('picking-session/{pickingSession:id}/delivery-notes', GetDeliveryNotesForPickingSession::class)->name('picking_session.delivery_notes.index');
 
 Route::get('delivery-note-item/{deliveryNoteItem:id}', FetchSingleDeliveryNoteItem::class)->name('fetch_single_delivery_note_item');
 

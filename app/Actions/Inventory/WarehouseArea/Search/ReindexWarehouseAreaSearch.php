@@ -8,43 +8,20 @@
 
 namespace App\Actions\Inventory\WarehouseArea\Search;
 
-use App\Actions\HydrateModel;
+use App\Actions\Traits\WithScoutReindex;
 use App\Models\Inventory\WarehouseArea;
-use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexWarehouseAreaSearch extends HydrateModel
+class ReindexWarehouseAreaSearch
 {
-    public string $commandSignature = 'search:warehouse_areas {organisations?*} {--s|slugs=}';
+    use AsAction;
+    use WithScoutReindex;
 
+    public string $commandSignature = 'reindex_search:warehouse_areas';
 
-    public function handle(WarehouseArea $warehouseArea): void
+    public function handle(bool $reindex = true, bool $reset = false): void
     {
+        $this->runScoutReindex(WarehouseArea::class, $reindex, $reset);
     }
 
-
-    protected function getModel(string $slug): WarehouseArea
-    {
-        return WarehouseArea::withTrashed()->where('slug', $slug)->first();
-    }
-
-    protected function loopAll(Command $command): void
-    {
-        $command->info("Reindex Warehouse areas");
-        $count = WarehouseArea::withTrashed()->count();
-
-        $bar = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
-        $bar->start();
-
-        WarehouseArea::withTrashed()->chunk(1000, function (Collection $models) use ($bar) {
-            foreach ($models as $model) {
-                $this->handle($model);
-                $bar->advance();
-            }
-        });
-
-        $bar->finish();
-        $command->info("");
-    }
 }

@@ -34,6 +34,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Object,
   screenType: 'mobile' | 'tablet' | 'desktop'
+  indexBlock:number
 }>()
 
 const emits = defineEmits<{
@@ -74,7 +75,7 @@ console.log('see also', props)
 </script>
 
 <template>
-  <div id="see-also-1-iris" class="w-full pb-6" :style="{
+  <div :id="fieldValue?.id ? fieldValue?.id  : 'see-also-1'+indexBlock"   class="w-full pb-6" :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(fieldValue.container?.properties, screenType),
     width: 'auto'
@@ -93,10 +94,7 @@ console.log('see also', props)
     </div>
 
     <!-- Carousel with custom navigation -->
-    <div v-else-if="compSwiperOptions?.length" class="relative px-4 py-6" @click="
-      sendMessageToParent('activeBlock', indexBlock);
-    sendMessageToParent('activeChildBlock', bKeys[0]);
-    ">
+    <div v-else-if="compSwiperOptions?.length" class="relative px-4 py-6" >
       <!-- Tombol Navigasi Custom -->
       <button ref="prevEl" class="swiper-nav-button  left-0 top-1/2">
         <FontAwesomeIcon :icon="faChevronLeft" />

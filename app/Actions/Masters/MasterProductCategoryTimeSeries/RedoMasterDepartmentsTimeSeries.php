@@ -8,17 +8,13 @@
 
 namespace App\Actions\Masters\MasterProductCategoryTimeSeries;
 
-use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 
 class RedoMasterDepartmentsTimeSeries implements ShouldBeUnique
 {
-    use WithHydrateCommand, WithRedoMasterProductCategoryTimeSeries {
-        WithRedoMasterProductCategoryTimeSeries::asCommand insteadof WithHydrateCommand;
-        WithRedoMasterProductCategoryTimeSeries::asJob insteadof WithHydrateCommand;
-    }
+    use WithRedoMasterProductCategoryTimeSeries;
 
     protected ?MasterProductCategoryTypeEnum $categoryType;
 

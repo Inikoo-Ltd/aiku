@@ -6,6 +6,7 @@ import Table from "@/Components/Table/Table.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import ExportModalActions from "@/Components/HumanResources/ExportModalActions.vue"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import RejectLeaveModal from "@/Components/HumanResources/RejectLeaveModal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
@@ -16,9 +17,9 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faEdit, faDownload, faFileExcel, faFileCsv, faPaperclip } from "@fal"
+import { faCheck, faTimes, faEdit, faDownload, faFileExcel, faFileCsv, faPaperclip, faTrash } from "@fal"
 
-library.add(faCheck, faTimes, faEdit, faDownload, faFileExcel, faFileCsv, faPaperclip)
+library.add(faCheck, faTimes, faEdit, faDownload, faFileExcel, faFileCsv, faPaperclip, faTrash)
 
 const props = defineProps<{
 	title: string
@@ -365,7 +366,7 @@ const closeRejectModal = () => {
 			</template>
 
 			<template #cell(actions)="{ item: leave }">
-				<div class="flex gap-2">
+				<div class="flex items-center gap-2">
 					<Button
 						v-if="leave.type === 'medical' && leave.status === 'pending'"
 						type="transparent"
@@ -373,6 +374,9 @@ const closeRejectModal = () => {
 						:icon="faEdit"
 						:label="trans('Edit')"
 						@click="() => openEditModal(leave)" />
+                    <span v-if="leave.status !== 'pending'" class="text-gray-400 text-xs">
+						{{ trans("Processed") }}
+					</span>
 					<ModalConfirmation
 						v-if="leave.status === 'pending' && leave.can_approve_current_user"
 						:routeYes="{
@@ -404,9 +408,22 @@ const closeRejectModal = () => {
 						:icon="faTimes"
 						:label="trans('Reject')"
 						@click="() => openRejectModal(leave)" />
-					<span v-if="leave.status !== 'pending'" class="text-gray-400 text-xs">
-						{{ trans("Processed") }}
-					</span>
+					<ModalConfirmationDelete
+						:routeDelete="{
+							name: 'grp.org.hr.leaves.delete',
+							parameters: { ...route().params, leave: leave.id },
+						}">
+						<template #default="{ changeModel, isLoadingdelete }">
+							<Button
+								type="negative"
+								size="xs"
+								:icon="faTrash"
+								:label="trans('Delete')"
+								:loading="isLoadingdelete"
+								@click="changeModel" />
+						</template>
+					</ModalConfirmationDelete>
+
 				</div>
 			</template>
 		</Table>

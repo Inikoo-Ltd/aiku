@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
+use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Actions\Traits\WithDashboard;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\UI\Discounts\DiscountsDashboardTabsEnum;
@@ -30,9 +31,10 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowDiscountsDashboard extends OrgAction
 {
     use WithDashboard;
-    use WithDashboardSettings;
-    use WithDashboardIntervalOption;
     use WithDashboardCurrencyTypeSettings;
+    use WithDashboardIntervalOption;
+    use WithDashboardSettings;
+    use WithPerformanceDateResolution;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -50,19 +52,8 @@ class ShowDiscountsDashboard extends OrgAction
     {
         $userSettings = $request->user()->settings;
 
-        $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
-
-        $performanceDates = [null, null];
-
-        if ($saved_interval === DateIntervalEnum::CUSTOM) {
-            $rangeInterval = Arr::get($userSettings, 'range_interval', '');
-            if ($rangeInterval) {
-                $dates = explode('-', $rangeInterval);
-                if (count($dates) === 2) {
-                    $performanceDates = [$dates[0], $dates[1]];
-                }
-            }
-        }
+        $saved_interval   = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
+        $performanceDates = $this->resolvePerformanceDates($saved_interval, $userSettings);
 
         $timeSeriesData = GetDiscountsDashboardTimeSeriesData::run($this->shop, $performanceDates[0], $performanceDates[1]);
         $offerCampaignTimeSeriesStats = $timeSeriesData['offerCampaigns'];

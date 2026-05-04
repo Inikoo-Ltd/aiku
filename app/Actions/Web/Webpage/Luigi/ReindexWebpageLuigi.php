@@ -18,7 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ReindexWebpageLuigi extends OrgAction implements ShouldBeUnique
 {
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'hydrators-slave';
 
     public int $jobTries = 1;
 
@@ -33,14 +33,16 @@ class ReindexWebpageLuigi extends OrgAction implements ShouldBeUnique
     public function handle(Webpage $webpage): array
     {
         $msg = __('Reindexing running in the background');
-        ReindexWebpageLuigiData::dispatch($webpage->id);
+        ReindexWebpageLuigiData::dispatch($webpage->id)->delay(5);
 
         if ($webpage->sub_type == WebpageSubTypeEnum::FAMILY && $webpage->model instanceof ProductCategory) {
             /** @var ProductCategory $family */
             $family = $webpage->model;
             $count  = 0;
             foreach ($family->getActiveProducts() as $product) {
-                ReindexWebpageLuigiData::dispatch($product->webpage->id)->delay(5);
+                if ($product->webpage) {
+                    ReindexWebpageLuigiData::dispatch($product->webpage->id)->delay(5);
+                }
                 $count++;
             }
             $msg = __('Family reindexing including product pages running in the background.').' ('.$count.' '.__('products').')';

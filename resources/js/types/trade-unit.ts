@@ -7,5 +7,14 @@
 export interface TradeUnit {
 
     slug:string,
+    brands?: {
+        name: string,
+        slug: string
+    },
+    tags?: {
+        name: string,
+        slug: string,
+        class_color?: string
+    }
 
 }

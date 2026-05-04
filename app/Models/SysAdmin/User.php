@@ -18,7 +18,7 @@ use App\Models\UserFailedLogIn;
 use App\Models\UserLogin;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\SlugOptions;
 use Illuminate\Support\Collection;
@@ -81,6 +81,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property string|null $legacy_password source password
  * @property string|null $google2fa_secret
  * @property bool $is_two_factor_required
+ * @property array<array-key, mixed> $bookmarks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedAgentsOrganisations
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedDigitalAgencyOrganisations
@@ -137,7 +138,7 @@ class User extends Authenticatable implements HasMedia, Auditable
     use IsUserable;
     use HasImage;
     use HasApiTokens;
-    use Searchable;
+    use HasSearch;
 
     protected $guarded = [
     ];
@@ -151,6 +152,7 @@ class User extends Authenticatable implements HasMedia, Auditable
         'data'      => 'array',
         'settings'  => 'array',
         'sources'   => 'array',
+        'bookmarks' => 'array',
         'status'    => 'boolean',
         'auth_type' => UserAuthTypeEnum::class,
         'password'  => 'hashed',
@@ -158,14 +160,16 @@ class User extends Authenticatable implements HasMedia, Auditable
 
 
     protected $attributes = [
-        'data'     => '{}',
-        'settings' => '{}',
-        'sources'  => '{}',
+        'data'      => '{}',
+        'settings'  => '{}',
+        'sources'   => '{}',
+        'bookmarks' => '{}'
     ];
 
     public function searchIndexShouldBeUpdated(): bool
     {
-        return $this->wasRecentlyCreated || $this->wasChanged([
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
                 'username',
                 'email',
                 'contact_name',
@@ -185,6 +189,7 @@ class User extends Authenticatable implements HasMedia, Auditable
             'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }
+
     public function generateTags(): array
     {
         return [
@@ -341,6 +346,7 @@ class User extends Authenticatable implements HasMedia, Auditable
     {
         /** @var Organisation $organisation */
         $organisation = $this->getOrganisations()->first();
+
         return $organisation;
     }
 

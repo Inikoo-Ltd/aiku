@@ -53,7 +53,7 @@ const isImageLeft = computed(() => valueForField.value === 'Image-left')
 </script>
 
 <template>
-	<div id="cta1" class="w-full">
+	<div :id="modelValue?.id ? modelValue?.id  : 'cta1' + indexBlock" class="w-full">
 		<div :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(modelValue.container?.properties, screenType),

@@ -92,7 +92,7 @@ const activateBlock = () => {
 </script>
 
 <template>
-  <div id="families-1">
+  <div :id="modelValue?.id || 'families-1'+indexBlock">
     <div
       v-if="allItems.length"
       class="px-4 py-10 mx-[30px]"

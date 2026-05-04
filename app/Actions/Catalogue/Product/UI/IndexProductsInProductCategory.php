@@ -89,7 +89,9 @@ class IndexProductsInProductCategory extends OrgAction
         $sortByIndex = $prefix === ProductsTabsEnum::INDEX_ORDERING->value;
 
         $queryBuilder = QueryBuilder::for(Product::class);
-        $queryBuilder->orderBy('products.state');
+        if ($prefix !== ProductTabsEnum::SALES->value) {
+            $queryBuilder->orderBy('products.state');
+        }
         $queryBuilder->leftJoin('shops', 'products.shop_id', 'shops.id');
         $queryBuilder->leftJoin('currencies', 'currencies.id', 'shops.currency_id');
         $queryBuilder->leftJoin('organisations', 'products.organisation_id', '=', 'organisations.id');
@@ -148,21 +150,27 @@ class IndexProductsInProductCategory extends OrgAction
                 timeSeriesRecordsTable: 'asset_time_series_records',
                 foreignKey: 'asset_id',
                 aggregateColumns: [
-                    'customers_invoiced'          => 'customers_invoiced',
                     'sales_grp_currency_external' => 'sales_grp_currency_external',
-                    'invoices'                    => 'invoices'
+                    'invoices'                    => 'invoices',
+                    'refunds'                     => 'refunds',
+                    'dropshippers'                => 'dropshippers',
+                    'listings'                    => 'listings',
+                    'sold'                        => 'sold'
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
-                localKey: 'asset_id'
+                includeLY: true,
+                localKey: 'asset_id',
+                timeSeriesFilters: ['shop_id' => $productCategory->shop_id],
             );
 
-            $selects[] = $timeSeriesData['selectRaw']['customers_invoiced'];
-            $selects[] = $timeSeriesData['selectRaw']['customers_invoiced_ly'];
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
+            $selects[] = $timeSeriesData['selectRaw']['refunds'];
+            $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
+            $selects[] = $timeSeriesData['selectRaw']['listings'];
+            $selects[] = $timeSeriesData['selectRaw']['sold'];
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
-            $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         } else {
             $queryBuilder
                 ->with('orgStocks');
@@ -178,9 +186,10 @@ class IndexProductsInProductCategory extends OrgAction
                         ->orderBy('products.index_under_family')
                         ->orderBy('products.code');
                 },
-                function ($query) {
-                    $query
-                        ->orderBy('products.code');
+                function ($query) use ($prefix) {
+                    if ($prefix !== ProductTabsEnum::SALES->value) {
+                        $query->orderBy('products.code');
+                    }
                 }
             )
             ->allowedSorts([
@@ -189,9 +198,12 @@ class IndexProductsInProductCategory extends OrgAction
                 'shop_slug',
                 'department_slug',
                 'family_slug',
-                'customers_invoiced',
                 'sales_grp_currency_external',
                 'invoices',
+                'refunds',
+                'dropshippers',
+                'listings',
+                'sold',
                 'health_rank',
                 'price',
                 'rrp_per_unit',
@@ -243,12 +255,13 @@ class IndexProductsInProductCategory extends OrgAction
 
             if ($prefix === 'sales') {
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'customers_invoiced', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'customers_invoiced_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: true, align: 'right')
+                    ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
+                    ->column(key: 'listings', label: __('Total Listing'), canBeHidden: true, sortable: true, align: 'right')
+                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'refunds', label: __('Refunds'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
-                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
                     ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')

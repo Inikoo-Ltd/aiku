@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, nextTick, onMounted, computed } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import 'swiper/css/navigation'
@@ -74,12 +74,18 @@ onMounted(async () => {
     }
   })
 })
+
+const totalSlides = computed(() => {
+  return props.images.length + (props.video ? 1 : 0)
+})
+
+const enableLoop = computed(() => totalSlides.value > 1)
 </script>
 
 <template>
   <div class="w-full flex flex-col items-center relative isolate">
     <!-- Main Swiper -->
-    <Swiper :key="keySwiperMain" :slides-per-view="1" :loop="true" :autoplay="false" :navigation="navigation"
+    <Swiper :key="keySwiperMain" :slides-per-view="1"   :loop="enableLoop" :autoplay="false" :navigation="navigation"
       :modules="[Navigation, Autoplay, Thumbs]" :thumbs="{ swiper: thumbsSwiper }"
       class="aspect-square w-full rounded-lg mb-4">
       <!-- Shared Navigation Buttons -->

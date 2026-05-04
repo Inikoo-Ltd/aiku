@@ -51,6 +51,7 @@ use App\Actions\Masters\MasterVariant\EditMasterVariant;
 use App\Actions\Masters\MasterShop\UI\EditMasterShop;
 use App\Actions\Masters\MasterShop\UI\IndexMasterShops;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
+use App\Actions\Masters\UI\GetMastersDashboardTabData;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use Illuminate\Support\Facades\Route;
 
@@ -58,6 +59,7 @@ require_once __DIR__ . '/common/trade_units.php';
 require_once __DIR__ . '/common/trade_unit_families.php';
 
 Route::get('/', ShowMastersDashboard::class)->name('dashboard');
+Route::get('/tab-data', GetMastersDashboardTabData::class)->name('dashboard.tab-data');
 
 
 

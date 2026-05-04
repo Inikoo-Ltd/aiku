@@ -35,6 +35,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasSearch;
 use App\Models\Traits\InCustomer;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -48,11 +49,12 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Audits\Transformer\OrderSubmitSummaryTransformer;
+use App\Audits\Transformer\RelationTransformer;
 
 /**
  * @property int $id
@@ -158,6 +160,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $packing_at
  * @property numeric $amount_off
  * @property string|null $handling_blocked_at
+ * @property string|null $email
+ * @property string|null $phone
+ * @property string|null $contact_name
+ * @property string|null $company_name
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -203,8 +209,7 @@ class Order extends Model implements HasMedia, Auditable
     use HasAddresses;
     use HasAttachments;
     use HasHistory;
-    use Searchable;
-
+    use HasSearch;
 
     protected $casts = [
         'data'                          => 'array',
@@ -214,51 +219,44 @@ class Order extends Model implements HasMedia, Auditable
         'shipping_data'                 => 'array',
         'categories_data'               => 'array',
         'discretionary_offers_data'     => 'array',
-
-
-        'date'                   => 'datetime',
-        'updated_by_customer_at' => 'datetime',
-        'submitted_at'           => 'datetime',
-        'in_warehouse_at'        => 'datetime',
-        'handling_at'            => 'datetime',
-        'picked_at'              => 'datetime',
-        'packed_at'              => 'datetime',
-        'finalised_at'           => 'datetime',
-        'dispatched_at'          => 'datetime',
-        'cancelled_at'           => 'datetime',
-        'settled_at'             => 'datetime',
-        'fetched_at'             => 'datetime',
-        'last_fetched_at'        => 'datetime',
-
-
-        'grp_exchange' => 'decimal:4',
-        'org_exchange' => 'decimal:4',
-
-        'gross_amount'      => 'decimal:2',
-        'goods_amount'      => 'decimal:2',
-        'services_amount'   => 'decimal:2',
-        'charges_amount'    => 'decimal:2',
-        'shipping_amount'   => 'decimal:2',
-        'insurance_amount'  => 'decimal:2',
-        'net_amount'        => 'decimal:2',
-        'grp_net_amount'    => 'decimal:2',
-        'org_net_amount'    => 'decimal:2',
-        'tax_amount'        => 'decimal:2',
-        'total_amount'      => 'decimal:2',
-        'payment_amount'    => 'decimal:2',
-        'commission_amount' => 'decimal:2',
-
-
-        'state'                   => OrderStateEnum::class,
-        'status'                  => OrderStatusEnum::class,
-        'handing_type'            => OrderHandingTypeEnum::class,
-        'pay_status'              => OrderPayStatusEnum::class,
-        'pay_detailed_status'     => OrderPayDetailedStatusEnum::class,
-        'shipping_engine'         => OrderShippingEngineEnum::class,
-        'charges_engine'          => OrderChargesEngineEnum::class,
-        'to_be_paid_by'           => OrderToBePaidByEnum::class,
-        'with_replacement'        => 'boolean',
-        'is_shipping_by_external' => 'boolean'
+        'date'                          => 'datetime',
+        'updated_by_customer_at'        => 'datetime',
+        'submitted_at'                  => 'datetime',
+        'in_warehouse_at'               => 'datetime',
+        'handling_at'                   => 'datetime',
+        'picked_at'                     => 'datetime',
+        'packed_at'                     => 'datetime',
+        'finalised_at'                  => 'datetime',
+        'dispatched_at'                 => 'datetime',
+        'cancelled_at'                  => 'datetime',
+        'settled_at'                    => 'datetime',
+        'fetched_at'                    => 'datetime',
+        'last_fetched_at'               => 'datetime',
+        'grp_exchange'                  => 'decimal:4',
+        'org_exchange'                  => 'decimal:4',
+        'gross_amount'                  => 'decimal:2',
+        'goods_amount'                  => 'decimal:2',
+        'services_amount'               => 'decimal:2',
+        'charges_amount'                => 'decimal:2',
+        'shipping_amount'               => 'decimal:2',
+        'insurance_amount'              => 'decimal:2',
+        'net_amount'                    => 'decimal:2',
+        'grp_net_amount'                => 'decimal:2',
+        'org_net_amount'                => 'decimal:2',
+        'tax_amount'                    => 'decimal:2',
+        'total_amount'                  => 'decimal:2',
+        'payment_amount'                => 'decimal:2',
+        'commission_amount'             => 'decimal:2',
+        'state'                         => OrderStateEnum::class,
+        'status'                        => OrderStatusEnum::class,
+        'handing_type'                  => OrderHandingTypeEnum::class,
+        'pay_status'                    => OrderPayStatusEnum::class,
+        'pay_detailed_status'           => OrderPayDetailedStatusEnum::class,
+        'shipping_engine'               => OrderShippingEngineEnum::class,
+        'charges_engine'                => OrderChargesEngineEnum::class,
+        'to_be_paid_by'                 => OrderToBePaidByEnum::class,
+        'with_replacement'              => 'boolean',
+        'is_shipping_by_external'       => 'boolean'
     ];
 
     protected $attributes = [
@@ -275,13 +273,18 @@ class Order extends Model implements HasMedia, Auditable
 
     public function searchIndexShouldBeUpdated(): bool
     {
-        return $this->wasRecentlyCreated || $this->wasChanged([
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
                 'organisation_id',
                 'shop_id',
                 'customer_id',
                 'state',
                 'reference',
                 'customer_reference',
+                'email',
+                'phone',
+                'company_name',
+                'contact_name',
                 'date',
             ]);
     }
@@ -296,6 +299,10 @@ class Order extends Model implements HasMedia, Auditable
             'state'              => $this->state->value,
             'reference'          => $this->reference,
             'customer_reference' => $this->customer_reference,
+            'email'              => (string)$this->email,
+            'phone'              => (string)$this->phone,
+            'company_name'       => (string)$this->company_name,
+            'contact_name'       => (string)$this->contact_name,
             'date'               => is_string($this->date) ? Carbon::parse($this->date)->timestamp : $this->date->timestamp,
         ];
     }
@@ -306,12 +313,100 @@ class Order extends Model implements HasMedia, Auditable
     }
 
     protected array $auditInclude = [
-        'reference',
+        // States & Statuses
+        'state',
+        'status',
+        'pay_status',
+        'pay_detailed_status',
+
+        // Handling & Locks
         'handing_type',
-        'is_shipping_by_external'.
-        'state'
+        'is_handling_on_hold',
+        'can_dispatch',
+        'customer_locked',
+        'billing_locked',
+        'delivery_locked',
+
+        // Timestamps
+        'submitted_at',
+        'in_warehouse_at',
+        'handling_at',
+        'picked_at',
+        'packed_at',
+        'finalised_at',
+        'dispatched_at',
+        'cancelled_at',
+        'settled_at',
+        'handling_blocked_at',
+
+        // Shipping & Delivery
+        'shipping_engine',
+        'charges_engine',
+        'to_be_paid_by',
+        'is_premium_dispatch',
+        'has_extra_packing',
+        'has_insurance',
+        'is_shipping_tbc',
+        'is_shipping_by_external',
+        'with_replacement',
+        'collection_address_id',
+        'delivery_address_id',
+        'billing_address_id',
+        'shipping_zone_id',
+
+        // Notes
+        'customer_notes',
+        'public_notes',
+        'internal_notes',
+        'shipping_notes',
+
+        // Totals & Quantities
+        'number_item_transactions',
+        'gross_amount',
+        'net_amount',
+        'total_amount',
+        'weight',
     ];
 
+    public function transformAudit(array $data): array
+    {
+        $data = RelationTransformer::execute(
+            auditable: $this,
+            data: $data,
+            relationName: 'collection_address',
+            relationModel: Address::class,
+            attributes: ['address_line_1', 'address_line_2']
+        );
+
+        $data = RelationTransformer::execute(
+            auditable: $this,
+            data: $data,
+            relationName: 'shipping_zone',
+            relationModel: ShippingZone::class,
+            attributes: ['name']
+        );
+
+        $data = OrderSubmitSummaryTransformer::execute($this, $data);
+
+        return $data;
+    }
+
+    public function readyForAuditing(): bool
+    {
+        if ($this->state === OrderStateEnum::CREATING) {
+            return false;
+        }
+
+        if ($this->isAuditingDisabled()) {
+            return false;
+        }
+
+        if ($this->isCustomEvent) {
+            return true;
+        }
+
+        return $this->isEventAuditable($this->auditEvent);
+    }
 
     public function getRouteKeyName(): string
     {

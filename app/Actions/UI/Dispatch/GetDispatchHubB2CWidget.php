@@ -49,7 +49,7 @@ class GetDispatchHubB2CWidget
                     ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
                     ->where('shops.type', ShopTypeEnum::B2C->value)
                     ->where('delivery_note_items.has_waiting_warehouse', true)
-                    ->where('delivery_notes.state', '!=', DeliveryNoteStateEnum::HANDLING)
+                    ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED)
                     ->count(),
                 'route' => [
                     'name'       => 'grp.org.warehouses.show.dispatching.waiting_items.shop',

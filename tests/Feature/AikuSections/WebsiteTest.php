@@ -23,6 +23,7 @@ use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Website\HydrateWebsite;
 use App\Actions\Web\Website\LaunchWebsite;
+use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Actions\Web\Website\UpdateWebsite;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
@@ -368,5 +369,8 @@ test('store redirect', function (Webpage $webpage) {
 
 
 test('web sitemap creation', function () {
+
+    SaveWebsitesSitemap::run();
     $this->artisan('sitemaps:create')->assertExitCode(0);
+
 });

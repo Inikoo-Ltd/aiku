@@ -30,6 +30,8 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
 
     protected string $waitingType = 'warehouse';
 
+    protected bool $readOnly = false;
+
     abstract protected function getDeliveryNoteState(): DeliveryNoteStateEnum;
 
     abstract protected function getPageTitle(): string;
@@ -84,6 +86,7 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
             ],
             'allow_stock_controller_set_not_picked' => (data_get($this->organisation->settings, 'orders.allow_stock_controller_set_not_picked', false)),
             'is_still_picking'                      => $this->getDeliveryNoteState()->value === DeliveryNoteStateEnum::HANDLING->value,
+            'is_read_only'                          => $this->readOnly,
             'tabs'                                  => [
                 'current'    => $this->tab,
                 'navigation' => $this->getTabNavigation(),
@@ -100,7 +103,7 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
         ];
 
         return Inertia::render('Org/Dispatching/WaitingDeliveryNoteItems', $props)
-            ->table(IndexWaitingDeliveryNoteItemsItemized::make()->tableStructure(WaitingItemsTabsEnum::ITEMIZED->value))
+            ->table(IndexWaitingDeliveryNoteItemsItemized::make()->tableStructure(WaitingItemsTabsEnum::ITEMIZED->value, $this->readOnly))
             ->table(IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote::make()->tableStructure(WaitingItemsTabsEnum::GROUPED_BY_DELIVERY_NOTE->value))
             ->table(IndexWaitingDeliveryNoteItemsGroupedByItem::make()->tableStructure(WaitingItemsTabsEnum::GROUPED_BY_ITEM->value));
     }

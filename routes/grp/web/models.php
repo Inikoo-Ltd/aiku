@@ -230,6 +230,7 @@ use App\Actions\Goods\StockFamily\UpdateStockFamily;
 use App\Actions\Goods\TradeUnit\AttachTradeUnitsToTradeUnitFamily;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnitTranslations;
 use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
+use App\Actions\Goods\TradeUnitFamily\UI\AssignBrandTagsToTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UpdateTradeUnitFamily;
 use App\Actions\Helpers\AwsEmail\SendIdentityEmailVerification;
 use App\Actions\Helpers\Brand\AttachBrandToModel;
@@ -365,7 +366,6 @@ use App\Actions\Web\ModelHasWebBlocks\DuplicateModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\UploadImagesToModelHasWebBlocks;
-use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\Webpage\BreakWebpageCache;
@@ -391,6 +391,7 @@ use Illuminate\Support\Facades\Route;
 use App\Actions\HumanResources\ClockingMachine\GenerateClockingMachineQrCode;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
+use App\Actions\HumanResources\TimeTracker\ClockOutTimeTracker;
 use App\Actions\Masters\MasterAsset\RepairMasterAssetTradeUnitsToChildren;
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\StoreClockingMachineCoordinatePolicy;
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\UpdateClockingMachineCoordinatePolicy;
@@ -399,6 +400,8 @@ use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\StoreClocking
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\UpdateClockingMachineCoordinatePolicyRule;
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\DeleteClockingMachineCoordinatePolicyRule;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetIndex;
+use App\Actions\Web\Redirect\DeleteRedirect;
+use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
@@ -958,12 +961,12 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('web-block', StoreModelHasWebBlock::class)->name('web_block.store');
     Route::post('web-block/{modelHasWebBlock:id}/duplicate', DuplicateModelHasWebBlock::class)->name('web_block.duplicate')->withoutScopedBindings();
     Route::post('reorder-web-blocks', ReorderWebBlocks::class)->name('reorder_web_blocks');
-    Route::post('redirect', [StoreRedirect::class, 'inWebpage'])->name('redirect.store');
     Route::post('set-snapshot/{snapshot:id}', SetSnapshotAsLive::class)->name('set-snapshot-as-live')->withoutScopedBindings();
 });
 
 Route::name('redirect.')->prefix('redirect/{redirect:id}')->group(function () {
     Route::patch('', UpdateRedirect::class)->name('update');
+    Route::delete('', DeleteRedirect::class)->name('delete');
 });
 
 Route::name('model_has_web_block.')->prefix('model-has-web-block')->group(function () {
@@ -1160,6 +1163,7 @@ Route::name('poll.')->prefix('poll')->group(function () {
 });
 
 Route::post('webpage/{webpage:id}/break-cache', BreakWebpageCache::class)->name('webpage.break_cache')->withoutScopedBindings();
+Route::post('webpage/{webpage:id}/redirect', StoreRedirectFromWebpage::class)->name('webpage.redirect.store')->withoutScopedBindings();
 
 Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name('website.break_cache')->withoutScopedBindings();
 Route::post('website/{website:id}/redirect', StoreRedirectFromWebsite::class)->name('website.redirect.store')->withoutScopedBindings();
@@ -1191,6 +1195,8 @@ Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function (
     Route::post('{tradeUnitFamily:id}/attach-trade-units', AttachTradeUnitsToTradeUnitFamily::class)->name('attach_trade_units')->withoutScopedBindings();
     Route::post('{tradeUnitFamily:id}/attachment/attach', [AttachAttachmentToModel::class, 'inTradeUnitFamily'])->name('attachment.attach');
     Route::delete('{tradeUnitFamily:id}/attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inTradeUnitFamily'])->name('attachment.detach')->withoutScopedBindings();
+
+    Route::post('{tradeUnitFamily:id}/mass-assign-brand-tags', AssignBrandTagsToTradeUnitFamily::class)->name('mass_assign_brand_tags')->withoutScopedBindings();
 });
 
 Route::prefix('customer-comms/{customerComms:id}')->name('customer_comms.')->group(function () {
@@ -1222,6 +1228,7 @@ Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () 
     Route::post('qr/validate', ValidateClockingMachineQrCode::class)->name('qr.validate');
     Route::patch('clocking/{clocking:id}/notes', UpdateClockingNotes::class)->name('clocking.notes.update');
 });
+Route::patch('time-tracker/{timeTracker:id}/clock-out', ClockOutTimeTracker::class)->name('time-tracker.clock-out');
 Route::patch('trolleys/{trolley:id}', UpdateTrolley::class)->name('trolleys.update');
 
 

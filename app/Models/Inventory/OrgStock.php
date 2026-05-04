@@ -12,6 +12,7 @@ use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Dispatching\BatchCode;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\Procurement\OrgSupplierProduct;
@@ -27,6 +28,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -43,9 +46,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $slug
  * @property string $code
  * @property string|null $name
- * @property numeric|null $unit_cost
- * @property numeric|null $unit_value
- * @property numeric $unit_commercial_value
+ * @property numeric $sku_commercial_value
  * @property bool $is_sellable_in_organisation
  * @property bool $is_raw_material_in_organisation
  * @property OrgStockStateEnum $state
@@ -54,14 +55,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $value_in_locations
  * @property float|null $available_forecast days
  * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $activated_in_organisation_at
- * @property \Illuminate\Support\Carbon|null $discontinuing_in_organisation_at
- * @property \Illuminate\Support\Carbon|null $discontinued_in_organisation_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $activated_in_organisation_at
+ * @property Carbon|null $discontinuing_in_organisation_at
+ * @property Carbon|null $discontinued_in_organisation_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $source_id
  * @property int|null $picking_location_id
  * @property int|null $picking_dropshipping_location_id
@@ -78,13 +79,16 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $movements_fixed
  * @property numeric|null $sku_value
  * @property numeric|null $current_supplier_sku_cost
+ * @property int $current_batch_codes
+ * @property int|null $main_batch_code_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, BatchCode> $batchCodes
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Location> $locations
+ * @property-read BatchCode|null $mainBatchCode
  * @property-read \App\Models\Inventory\OrgStockFamily|null $orgStockFamily
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockHistory> $orgStockHistories
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockMovement> $orgStockMovements
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OrgSupplierProduct> $orgSupplierProducts
  * @property-read Organisation $organisation
@@ -109,6 +113,7 @@ class OrgStock extends Model implements Auditable
     use HasSlug;
     use InOrganisation;
     use SoftDeletes;
+    use HasSearch;
 
     protected $casts = [
         'data'                             => 'array',
@@ -129,6 +134,28 @@ class OrgStock extends Model implements Auditable
     ];
 
     protected $guarded = [];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'code',
+                'state',
+                'name',
+                'created_at'
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'         => (string)$this->id,
+            'code'       => $this->code,
+            'name'       => $this->name,
+            'state'      => $this->state->value,
+            'created_at' => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function getRouteKeyName(): string
     {
@@ -219,8 +246,14 @@ class OrgStock extends Model implements Auditable
             ->withPivot(['type', 'picking_priority', 'value', 'dropshipping_pipe', 'quantity', 'notes']);
     }
 
-    public function orgStockHistories(): HasMany
+    public function batchCodes(): HasMany
     {
-        return $this->hasMany(OrgStockHistory::class);
+        return $this->hasMany(BatchCode::class);
     }
+
+    public function mainBatchCode(): BelongsTo
+    {
+        return $this->belongsTo(BatchCode::class, 'main_batch_code_id');
+    }
+
 }

@@ -250,11 +250,14 @@ class ShowIrisWebpage
 
             if ($webpage?->state === WebpageStateEnum::LIVE) {
                 $webpageID = $webpage->id;
-            } elseif ($webpage?->state === WebpageStateEnum::CLOSED) {
-                $webpageID = $webpage->redirectWebpage?->id;
             } else {
-                $webpageID = null;
+                $webpageID = DB::table('redirects')
+                    ->select('to_webpage_id')
+                    ->where('from_path', $path)
+                    ->where('website_id', $website->id)
+                    ->first()?->to_webpage_id;
             }
+
         }
 
 

@@ -80,7 +80,8 @@ import {
 	faTimesCircle as faTimesCircleLight,
 	faUserAlien,
 	faTombstone as faTombstoneLight,
-	faCopyright, faSyncAlt, faArrowFromLeft
+	faCopyright, faSyncAlt, faArrowFromLeft,
+	faBarcode
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import { faViruses } from "@fad"
@@ -184,7 +185,8 @@ library.add(
 	faStarLight, faArrowUpLight, faMinusLight, faTimesCircleLight,
 	faUserAlien,
 	faTombstoneLight,
-	faCopyright, faSyncAlt, faArrowFromLeft
+	faCopyright, faSyncAlt, faArrowFromLeft,
+	faBarcode
 )
 
 provide("layout", useLayoutStore())
@@ -441,7 +443,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 				<div class="mt-5 sm:mt-6">
 					<Button
 						@click="() => (isModalOpen = false)"
-						:label="trans('Ok, Get it')"
+						:label="ctrans('Ok, Get it')"
 						full />
 				</div>
 			</div>
@@ -467,11 +469,11 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 
 					<div class="mt-3 text-center sm:mt-5">
 						<div as="h3" class="font-semibold text-2xl">
-							{{ trans("Hey, sorry for your inconvenience.") }}
+							{{ ctrans("Hey, sorry for your inconvenience.") }}
 						</div>
 						<div class="mt-2 text-sm text-gray-500">
 							{{
-								trans(
+								ctrans(
 									"Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen."
 								)
 							}}
@@ -480,8 +482,8 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 				</div>
 
 				<div class="mt-5 sm:mt-6 flex flex-col gap-4">
-					<Button @click="() => onRefreshPage()" :label="trans('Refresh page')" full :loading="isLoadingRefreshPage" />
-					<Button @click="() => isModalNeedToRefresh = false" :label="trans('Dismiss')" full type="tertiary" />
+					<Button @click="() => onRefreshPage()" :label="ctrans('Refresh page')" full :loading="isLoadingRefreshPage" />
+					<Button @click="() => isModalNeedToRefresh = false" :label="ctrans('Dismiss')" full type="tertiary" />
 				</div>
 			</div>
 		</div>

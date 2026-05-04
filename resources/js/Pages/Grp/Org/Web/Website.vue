@@ -73,6 +73,7 @@ const props = defineProps<{
     external_links?: {},
     analytics: object
     route_storefront: routeType
+    route_landing_page?: routeType
     route_redirects: {
         fetch_live_webpages: routeType
         submit: routeType
@@ -148,6 +149,7 @@ const submitForm = () => {
         :data="props[currentTab]"
         :tab="currentTab"
         :route_storefront
+        :route_landing_page
         :luigi_data
     />
 

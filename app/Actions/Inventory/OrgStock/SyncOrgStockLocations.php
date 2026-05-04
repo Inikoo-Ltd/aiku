@@ -48,7 +48,9 @@ class SyncOrgStockLocations extends OrgAction
         foreach (array_diff($oldLocations, $newLocations) as $locationID) {
 
             $locationOrgStock = LocationOrgStock::where('org_stock_id', $orgStock->id)->where('location_id', $locationID)->first();
-            DeleteLocationOrgStock::make()->action($locationOrgStock);
+            if ($locationOrgStock) {
+                DeleteLocationOrgStock::make()->action($locationOrgStock);
+            }
         }
 
         return $newLocations;

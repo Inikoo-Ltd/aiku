@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -102,7 +102,7 @@ class Collection extends Model implements Auditable, HasMedia
     use HasHistory;
     use InShop;
     use HasImage;
-    use Searchable;
+    use HasSearch;
 
     protected $guarded = [];
 

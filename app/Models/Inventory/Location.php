@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -85,7 +85,7 @@ class Location extends Model implements Auditable
     use HasFactory;
     use HasHistory;
     use InWarehouse;
-    use Searchable;
+    use HasSearch;
 
     protected $casts = [
         'data'            => 'array',
@@ -115,7 +115,6 @@ class Location extends Model implements Auditable
                 'warehouse_id'
             ]);
     }
-
 
     public function toSearchableArray(): array
     {

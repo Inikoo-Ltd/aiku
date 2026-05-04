@@ -27,6 +27,13 @@ class GenerateGptImagesProgressEvent implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
+        if (blank($this->images)) {
+            return [
+                'images' => [],
+                'status' => 'failed'
+            ];
+        }
+
         return ImageResource::make(Arr::first($this->images))->getArray();
     }
 

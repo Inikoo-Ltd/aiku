@@ -36,4 +36,4 @@ before:
   deploy: install:env
 after:
   deploy:failed: [ deploy:unlock ]
-  deploy:update_code: [ npm:install, deploy:vendors ]
+  deploy:update_code: [ npm:my_install, deploy:vendors ]

@@ -39,6 +39,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property PickingTypeEnum|null $type
  * @property string|null $last_picked_at
+ * @property int|null $batch_code_id
+ * @property-read \App\Models\Dispatching\BatchCode|null $batchCode
  * @property-read \App\Models\Dispatching\DeliveryNote|null $deliveryNote
  * @property-read \App\Models\Dispatching\DeliveryNoteItem $deliveryNoteItem
  * @property-read \App\Models\SysAdmin\Group|null $group
@@ -99,6 +101,11 @@ class Picking extends Model
     public function orgStockMovement(): BelongsTo
     {
         return $this->belongsTo(OrgStockMovement::class, 'org_stock_movement_id');
+    }
+
+    public function batchCode(): BelongsTo
+    {
+        return $this->belongsTo(BatchCode::class);
     }
 
 

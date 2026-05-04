@@ -37,6 +37,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -73,16 +75,16 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $tax_amount
  * @property numeric $total_amount
  * @property numeric $payment_amount
- * @property \Illuminate\Support\Carbon|null $date
- * @property \Illuminate\Support\Carbon|null $tax_liability_at
- * @property \Illuminate\Support\Carbon|null $paid_at
+ * @property Carbon|null $date
+ * @property Carbon|null $tax_liability_at
+ * @property Carbon|null $paid_at
  * @property array<array-key, mixed> $payment_data
  * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $source_id
  * @property InvoicePayStatusEnum|null $pay_status
  * @property bool $in_process Used for refunds only
@@ -124,6 +126,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $profit_amount
  * @property numeric|null $margin
  * @property numeric $amount_off
+ * @property string|null $email
+ * @property string|null $phone
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
@@ -163,6 +167,7 @@ class Invoice extends Model implements Auditable
     use HasFactory;
     use InCustomer;
     use HasHistory;
+    use HasSearch;
 
     protected $casts = [
         'type'                => InvoiceTypeEnum::class,
@@ -187,6 +192,41 @@ class Invoice extends Model implements Auditable
     ];
 
     protected $guarded = [];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'organisation_id',
+                'shop_id',
+                'customer_id',
+                'state',
+                'reference',
+                'customer_reference',
+                'customer_name',
+                'customer_contact_name',
+                'email',
+                'phone',
+                'date',
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'                    => (string)$this->id,
+            'organisation_id'       => $this->organisation_id,
+            'shop_id'               => $this->shop_id,
+            'customer_id'           => $this->customer_id,
+            'type'                  => $this->type->value,
+            'reference'             => $this->reference,
+            'customer_name'         => (string)$this->customer_name,
+            'customer_contact_name' => (string)$this->customer_contact_name,
+            'email'                 => (string)$this->email,
+            'phone'                 => (string)$this->phone,
+            'date'                  => is_string($this->date) ? Carbon::parse($this->date)->timestamp : $this->date->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {

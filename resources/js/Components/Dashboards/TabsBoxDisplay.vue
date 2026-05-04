@@ -24,6 +24,7 @@ const locale = inject('locale', aikuLocaleStructure)
 const props = defineProps<{
     tabs_box: {
         label: string
+        show_total?: boolean
         currency_code?: string
         icon?: string | string[]
         tabs: {
@@ -63,6 +64,10 @@ const props = defineProps<{
                 information?: {
                     label: string | number
                     type?: string
+                }
+                route?: {
+                    name: string
+                    parameters: Record<string, any>
                 }
             }[]
         }[]
@@ -120,6 +125,7 @@ const tableRows = computed(() => {
                     information: childTab?.information,
                     type: childTab?.type ?? tab.type,
                     currencyCode: matchingChild?.currency_code ?? box.currency_code,
+                    route: childTab?.route,
                 }
             })
         }),
@@ -154,6 +160,9 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
         return label || '0'
     }
 }
+
+const boxTotal = (box: { tabs: { value?: string | number }[] }) =>
+    box.tabs.reduce((sum, t) => sum + Number(t.value || 0), 0)
 
 const childrenLabel = computed(() => {
     if (layoutStore.currentRoute === 'grp.dashboard.show') return trans('Organisation')
@@ -214,7 +223,7 @@ const clickVisitRoute = (visitRoute: {
             >
                 <div class="text-center mb-2 text-xs font-semibold">
                     <FontAwesomeIcon v-if="box.icon" :icon="box.icon" class="" fixed-width aria-hidden="true" />
-                    {{ box.label }}
+                    {{ box.label }}<template v-if="box.show_total"> ({{ locale.number(boxTotal(box)) }})</template>
                 </div>
 
                 <div class="flex gap-x-4 justify-center">
@@ -316,7 +325,11 @@ const clickVisitRoute = (visitRoute: {
                                 v-for="(cell, i) in row.cells"
                                 :key="i"
                                 class="px-4 py-2.5 text-right tabular-nums text-gray-700"
-                                :class="tableColumns[i]?.isSectionStart ? 'border-l border-gray-200' : ''"
+                                :class="[
+                                    tableColumns[i]?.isSectionStart ? 'border-l border-gray-200' : '',
+                                    cell.route ? 'cursor-pointer hover:text-blue-600 hover:underline' : ''
+                                ]"
+                                @click="cell.route ? router.get(route(cell.route.name, cell.route.parameters)) : null"
                             >
                                 {{ renderLabelBasedOnType(cell.value, cell.type, { currency_code: cell.currencyCode }) }}
                                 <div v-if="cell.information?.label" class="text-[10px] text-gray-400">
@@ -344,7 +357,7 @@ const clickVisitRoute = (visitRoute: {
                 <div class="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center">
                     <div class="flex items-center justify-center gap-2 text-sm font-semibold text-gray-700 flex-1">
                         <FontAwesomeIcon v-if="box.icon" :icon="box.icon" class="text-gray-500" fixed-width aria-hidden="true" />
-                        <span>{{ box.label }}</span>
+                        <span>{{ box.label }}<template v-if="box.show_total"> ({{ locale.number(boxTotal(box)) }})</template></span>
                     </div>
                 </div>
 
@@ -463,7 +476,11 @@ const clickVisitRoute = (visitRoute: {
                                 v-for="(cell, i) in row.cells"
                                 :key="i"
                                 class="px-4 py-2.5 text-right tabular-nums text-gray-700 whitespace-nowrap"
-                                :class="tableColumns[i]?.isSectionStart ? 'border-l border-gray-200' : ''"
+                                :class="[
+                                    tableColumns[i]?.isSectionStart ? 'border-l border-gray-200' : '',
+                                    cell.route ? 'cursor-pointer hover:text-blue-600 hover:underline' : ''
+                                ]"
+                                @click="cell.route ? router.get(route(cell.route.name, cell.route.parameters)) : null"
                             >
                                 {{ renderLabelBasedOnType(cell.value, cell.type, { currency_code: cell.currencyCode }) }}
                                 <div v-if="cell.information?.label" class="text-[10px] text-gray-400">

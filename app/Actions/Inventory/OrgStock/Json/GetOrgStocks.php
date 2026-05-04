@@ -54,13 +54,13 @@ class GetOrgStocks extends OrgAction
                 'org_stocks.code',
                 'org_stocks.name',
                 'org_stocks.state',
-                'org_stocks.unit_value',
+                'org_stocks.sku_value',
                 'org_stocks.discontinued_in_organisation_at',
                 'org_stock_families.slug as family_slug',
                 'org_stock_families.code as family_code',
             ])
             ->leftJoin('org_stock_families', 'org_stocks.org_stock_family_id', 'org_stock_families.id')
-            ->allowedSorts(['code', 'name', 'family_code', 'unit_value'])
+            ->allowedSorts(['code', 'name', 'family_code', 'sku_value'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

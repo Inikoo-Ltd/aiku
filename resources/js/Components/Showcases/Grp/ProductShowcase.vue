@@ -168,7 +168,7 @@ const getTooltips = () => {
 				</template>
 
 				<template #col_name="{ data }">
-					{{ data.org_stock_name }}
+					<p>{{ data.org_stock_name }} <span class="text-orange-500">{{ trans('Units/SKU')}}:{{ data.units_per_sku }}</span></p>
 				</template>
 			</LabelSKU>
 

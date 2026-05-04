@@ -87,6 +87,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property numeric $quantity_waiting_crm
  * @property bool $has_waiting_warehouse
  * @property bool $has_waiting_crm
+ * @property int|null $batch_code_id
+ * @property-read \App\Models\Dispatching\BatchCode|null $batchCode
  * @property-read \App\Models\Dispatching\DeliveryNote|null $deliveryNote
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read OrgStock|null $orgStock
@@ -169,5 +171,10 @@ class DeliveryNoteItem extends Model
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(Transaction::class);
+    }
+
+    public function batchCode(): BelongsTo
+    {
+        return $this->belongsTo(BatchCode::class);
     }
 }

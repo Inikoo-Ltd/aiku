@@ -143,7 +143,7 @@ onBeforeUnmount(stopAutoMove)
 </script>
 
 <template>
-  <div id="slider" class="relative overflow-hidden">
+  <div :id="modelValue?.id ? modelValue?.id  : 'slider'+indexBlock" class="relative overflow-hidden">
     <div :data-refresh="refreshTrigger" :key="keySwiper" :style="containerStyles">
 
       <div

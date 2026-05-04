@@ -164,15 +164,14 @@ class EditWebpage extends OrgAction
                 ],
             ];
 
-
             $fields = array_merge($fields, $productFields);
         }
 
-        $mainData = [
+        $mainData = $webpage->state !== WebpageStateEnum::CLOSED ? [
             'label'  => $isBlog ? __('Blog') : __('Webpage'),
             'icon'   => 'fal fa-browser',
             'fields' => $fields
-        ];
+        ] : null;
 
         $warning = [];
 
@@ -215,9 +214,9 @@ class EditWebpage extends OrgAction
                     ],
                 ],
                 'formData' => [
-                    'blueprint' => [
+                    'blueprint' => array_values(array_filter([
                         $mainData,
-                        [
+                        $webpage->state !== WebpageStateEnum::CLOSED ? [
                             'label'  => __('Structured data'),
                             'icon'   => 'fal fa-brackets-curly',
                             'fields' => [
@@ -228,7 +227,7 @@ class EditWebpage extends OrgAction
                                     'required' => false,
                                 ],
                             ]
-                        ],
+                        ] : null,
                         $inVariant ? [] : [
                             'label'  => __('Set online/closed'),
                             'icon'   => 'fal fa-broadcast-tower',
@@ -277,7 +276,7 @@ class EditWebpage extends OrgAction
                                 ]
                             ]
                         ]
-                    ],
+                    ])),
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.webpage.update',

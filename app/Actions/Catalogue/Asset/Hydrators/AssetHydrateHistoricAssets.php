@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 09 Apr 2024 12:35:47 Central Indonesia Time, Bali Office , Indonesia
+ * Created: Tue, 09 Apr 2024 12:35:47 Central Indonesia Time, Bali Office, Indonesia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
@@ -17,6 +17,8 @@ class AssetHydrateHistoricAssets implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
+
+    public string $jobQueue = 'hydrators-slave';
 
     public function getJobUniqueId(Asset $asset): string
     {

@@ -61,7 +61,6 @@ class StoreProductToAllegro extends RetinaAction
 
             $getParameters = $allegroUser->getCategoryParameters($categoryId);
 
-            $allegroProductId = null;
             try {
                 $proposedProduct = ProposeAllegroProduct::run($allegroUser, $portfolio, [
                     'category_id' => $categoryId,
@@ -70,8 +69,7 @@ class StoreProductToAllegro extends RetinaAction
 
                 $allegroProductId = Arr::get($proposedProduct, 'id');
             } catch (\Exception $e) {
-                dd($e);
-                $res = Str::contains($e->getMessage(), ['Produkt z takimi danymi już istnieje. Skontaktuj się z autorem aplikacji.']);
+                $res = Str::contains($e->getMessage(), ['Product already exists.']);
 
                 if ($res) {
                     $proposedProduct = $allegroUser->searchProducts([
@@ -80,6 +78,8 @@ class StoreProductToAllegro extends RetinaAction
                     ]);
 
                     $allegroProductId = Arr::get($proposedProduct, 'products.0.id');
+                } else {
+                    throw $e;
                 }
             }
 

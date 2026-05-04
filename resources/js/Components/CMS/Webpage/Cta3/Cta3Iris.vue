@@ -11,6 +11,7 @@ const props = defineProps<{
 	webpageData?: any
 	blockData?: Object
 	screenType: "mobile" | "tablet" | "desktop"
+	indexBlock:number
 }>()
 
 const layout: any = inject("layout", {})
@@ -18,7 +19,7 @@ const layout: any = inject("layout", {})
 </script>
 
 <template>
-	<div :id="fieldValue?.id ? fieldValue?.id  : 'cta3'"  component="cta3">
+	<div :id="fieldValue?.id ? fieldValue?.id  : 'cta3'+indexBlock"  component="cta3">
 		<div class="relative grid rounded-lg overflow-hidden shadow-lg" :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(fieldValue.container?.properties, screenType)

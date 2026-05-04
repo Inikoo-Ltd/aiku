@@ -7,12 +7,13 @@ const props = defineProps<{
 	fieldValue: {}
 	theme?: any
 	blockData?: Object
+	indexBlock:number
 }>()
 </script>
 
 <template>
 	<div
-		class="relative  transition-all hidden md:block" :id="fieldValue?.id ? fieldValue?.id  : 'overview'"  component="overview"
+		class="relative  transition-all hidden md:block" :id="fieldValue?.id ? fieldValue?.id  : 'overview'+indexBlock"  component="overview"
 		:style="{...getStyles(fieldValue?.container?.properties), width : '100%', height : 'auto'}">
 		<!-- Render text elements -->
 		<div v-for="(text, index) in fieldValue?.texts?.values" :key="index">

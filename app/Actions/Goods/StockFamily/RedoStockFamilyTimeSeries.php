@@ -53,7 +53,7 @@ class RedoStockFamilyTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessStockFamilyTimeSeriesRecords::dispatch($stockFamily->id, $frequency, $from, $to)->onQueue('low-priority');
+                ProcessStockFamilyTimeSeriesRecords::dispatch($stockFamily->id, $frequency, $from, $to)->delay(300);
             } else {
                 ProcessStockFamilyTimeSeriesRecords::run($stockFamily->id, $frequency, $from, $to);
             }

@@ -26,6 +26,7 @@ const props = defineProps<{
     webpageData?: any
     blockData?: Object,
     screenType: 'mobile' | 'tablet' | 'desktop'
+    indexBlock:number
 }>()
 
 
@@ -42,7 +43,7 @@ const slidesPerView = computed(() => {
 
 const layout = inject('layout', retinaLayoutStructure)
 
-const listProductsFromLuigi = ref<ProductHit[] | null>()
+const listProductsFromLuigi = ref<ProductHit[]>([])
 const isLoadingFetch = ref(false)
 
 const listLoadingProducts = ref<Record<string, string>>({})
@@ -155,7 +156,7 @@ onMounted(() => {
 
 <template>
     
-    <div aria-type="luigi-trends-1-iris" class="w-full pb-6 px-4" :id="fieldValue?.id ? fieldValue?.id  : 'luigi-trends-1-iris'"  component="luigi-trends-1-iris"
+    <div aria-type="luigi-trends-1-iris" class="w-full pb-6 px-4" :id="fieldValue?.id ? fieldValue?.id  : 'luigi-trends-1-iris'+indexBlock"  component="luigi-trends-1-iris"
     :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
@@ -173,10 +174,7 @@ onMounted(() => {
             
             <div class="py-4 px-3 md:px-12" id="LuigiTrends1">
               <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
-                    :loop="false"
-                    :autoplay="false"
                     :pagination="{ clickable: true }"
-                    :modules="[Autoplay]"
                     class="w-full"
                     spaceBetween="12"
                     autoHeight
