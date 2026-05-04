@@ -92,7 +92,8 @@ class StoreBundle extends OrgAction
             }
 
             if (! Arr::get($productData, 'code')) {
-                $productData['code'] = 'B-'.$customerSalesChannel->id.'-'.rand(1000, 9999);
+                $bundleCount = $customerSalesChannel->bundles()->count();
+                $productData['code'] = 'B-'.$customerSalesChannel->id.'-'.$bundleCount + 1;
             }
 
             if (! Arr::get($productData, 'name')) {

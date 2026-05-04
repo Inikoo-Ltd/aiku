@@ -60,6 +60,7 @@ use Spatie\Translatable\HasTranslations;
  * @property HealthRankEnum|null $health_rank
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, Collection> $childrenCollections
+ * @property-read array $translatable_columns_from
  * @property-read Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images

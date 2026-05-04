@@ -49,8 +49,6 @@ class GetGroupNavigation
                 ],
             ]
         ];
-        //        $groupNavigation['clocking-machines'] = $this->getClockingMachinesNavs(); //need permission for just employees can access
-
         if ($user->hasAnyPermission(['goods.view','masters.view'])) {
             $groupNavigation['trade-units'] = $this->getTradeUnitsNavs();
         }
@@ -155,6 +153,15 @@ class GetGroupNavigation
                         'root'  => 'grp.trade_units.brands.',
                         'route' => [
                             'name'       => 'grp.trade_units.brands.index',
+                            'parameters' => []
+                        ]
+                    ],
+                    [
+                        'label' => 'Tags',
+                        'icon'  => ['fal', 'fa-tags'],
+                        'root'  => 'grp.trade_units.tags.',
+                        'route' => [
+                            'name'       => 'grp.trade_units.tags.index',
                             'parameters' => []
                         ]
                     ],
@@ -316,19 +323,6 @@ class GetGroupNavigation
             'topMenu' => []
         ];
     }
-
-    //    private function getClockingMachinesNavs(): array
-    //    {
-    //        return [
-    //            'label'   => __('Clocking'),
-    //            'icon'    => ['fal', 'fa-clock'],
-    //            'root'    => 'grp.clocking_employees.',
-    //            'route'   => [
-    //                'name' => 'grp.clocking_employees.index'
-    //            ],
-    //            'topMenu' => []
-    //        ];
-    //    }
 
 
 

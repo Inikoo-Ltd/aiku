@@ -32,9 +32,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property numeric $quantity_picked
  * @property string|null $not_setup_reason
- * @property int|null $picking_session_id
- * @property numeric $quantity_waiting_crm
- * @property bool $has_waiting_crm
  * @property-read \App\Models\Fulfilment\Pallet|null $pallet
  * @property-read \App\Models\Fulfilment\PalletReturn|null $palletReturn
  * @property-read \App\Models\Fulfilment\PalletStoredItem|null $palletStoredItem

@@ -12,6 +12,7 @@ use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Dispatching\BatchCode;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\Procurement\OrgSupplierProduct;
@@ -28,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -78,11 +79,15 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $movements_fixed
  * @property numeric|null $sku_value
  * @property numeric|null $current_supplier_sku_cost
+ * @property int $current_batch_codes
+ * @property int|null $main_batch_code_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, BatchCode> $batchCodes
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Location> $locations
+ * @property-read BatchCode|null $mainBatchCode
  * @property-read \App\Models\Inventory\OrgStockFamily|null $orgStockFamily
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockMovement> $orgStockMovements
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OrgSupplierProduct> $orgSupplierProducts
@@ -108,7 +113,7 @@ class OrgStock extends Model implements Auditable
     use HasSlug;
     use InOrganisation;
     use SoftDeletes;
-    use Searchable;
+    use HasSearch;
 
     protected $casts = [
         'data'                             => 'array',
@@ -239,6 +244,16 @@ class OrgStock extends Model implements Auditable
     {
         return $this->belongsToMany(Location::class, 'location_org_stocks')
             ->withPivot(['type', 'picking_priority', 'value', 'dropshipping_pipe', 'quantity', 'notes']);
+    }
+
+    public function batchCodes(): HasMany
+    {
+        return $this->hasMany(BatchCode::class);
+    }
+
+    public function mainBatchCode(): BelongsTo
+    {
+        return $this->belongsTo(BatchCode::class, 'main_batch_code_id');
     }
 
 }

@@ -530,7 +530,10 @@ const debouncedFilter = debounce(() => {
     trailing: true,
 });
 
+let isMounted = false;
+
 watch(queryBuilderData, async () => {
+        if (!isMounted) return;
         debouncedFilter();
     },
     {deep: true},
@@ -541,6 +544,7 @@ const inertiaListener = () => {
 };
 
 onMounted(() => {
+    isMounted = true;
     document.addEventListener('inertia:success', inertiaListener);
 });
 

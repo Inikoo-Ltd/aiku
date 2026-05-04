@@ -49,8 +49,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric|null $quantity_packed
  * @property numeric $picking_percentage
  * @property numeric $packing_percentage
- * @property string $type
- * @property int $number_pallet_returns
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNote> $deliveryNotes
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNoteItem> $deliveryNotesItems
  * @property-read Group|null $group

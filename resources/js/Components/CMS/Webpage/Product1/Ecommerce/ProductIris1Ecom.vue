@@ -100,15 +100,14 @@ const props = withDefaults(
         blockData?: object
         screenType: "mobile" | "tablet" | "desktop"
         validImages: object
-        customerData: {  // \Json\GetIrisProductEcomOrdering  (no cache)
-
-        }
+        customerData: any
         product: ProductResource  // Catalogue\GetProductDetail (no cache)
         isLoadingRemindBackInStock: boolean
         isLoadingFavourite: boolean
         videoSetup: { url: string }
         listProducts: ProductResource[]
         indexBlock:number
+        theme?: string[]
     }>(),
     {}
 )
@@ -180,6 +179,10 @@ const showDiscount = computed(() => {
     )
 })
 
+
+
+
+
 watch([variantPrevEl, variantNextEl], () => {
   if (variantPrevEl.value && variantNextEl.value) {
     varinatNavigation.value = {
@@ -189,13 +192,14 @@ watch([variantPrevEl, variantNextEl], () => {
   }
 })
 
+
+
 onMounted(async () => {
   await nextTick()
   varinatNavigation.value.prevEl = variantPrevEl.value
   varinatNavigation.value.nextEl = variantNextEl.value
 })
-
-console.log('props', props)
+console.log(props)
 </script>
 
 
@@ -220,7 +224,7 @@ console.log('props', props)
                         <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
                         <Image v-else :src="tag.image" :alt="`Thumbnail tag ${index}`"
                             class="w-[15px] h-[15px] object-cover" />
-                        <span>{{ tag.name }}</span>
+                        <span>{{ trans(tag?.label) || tag?.label }}</span>
                     </div>
                 </div>
             </div>
@@ -236,9 +240,20 @@ console.log('props', props)
                             {{ product.name }}
                         </h1>
 
-                        <div class="text-sm font-medium text-gray-600 mt-1 mb-1">
-                            {{ trans("Product code") }}: {{ product.code }}
+                        <div class="text-sm font-medium text-gray-600 mt-2 mb-1">
+                            <div class="flex items-center justify-between">
+
+                                <span>
+                                    {{ trans("Product code") }}: {{ product.code }}
+                                </span>
+
+                                <span v-if="!layout?.iris?.is_logged_in" class="text-primary font-semibold">
+                                    RRP : {{ locale.currencyFormat(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{ product.unit }}
+                                </span>
+
+                            </div>
                         </div>
+                        
 
                         <!-- STOCK SECTION -->
                         <div v-if="layout?.iris?.is_logged_in" class="flex justify-between items-center">
@@ -360,21 +375,19 @@ console.log('props', props)
                 
                 <!-- Section: ADD TO CART -->
                 <div class="mt-4 flex gap-2 mb-6">
-
                     <!-- ONLY show when NOT coming soon -->
                     <div v-if="product.status !== 'coming-soon' && layout?.iris?.is_logged_in" class="w-full">
                         <EcomAddToBasketv2 v-if="product.stock" v-model:product="product" :customerData="customerData"
                             :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
 
                         <div v-else>
-                            <Button :label="product.status_label ?? trans('Out of stock')" type="tertiary" disabled
-                                full />
+                            <Button :label="product.status_label ?? trans('Out of stock')" type="tertiary" disabled full />
                         </div>
                     </div>
 
                     <!-- LOGIN BUTTON (only if not coming soon) -->
                     <LinkIris v-else-if="product.status !== 'coming-soon'" :href="urlLoginWithRedirect()"
-                        class="w-full block text-center border text-sm px-3 py-2 rounded text-gray-600"
+                        class="block w-full text-center border border-gray-400 bg-gray rounded px-3 py-2 text-sm text-gray-600"
                         :style="getStyles(fieldValue?.buttonLogin?.properties, screenType)">
                         {{ trans("Login or Register for Wholesale Prices") }}
                     </LinkIris>
@@ -475,6 +488,7 @@ console.log('props', props)
 
         <!-- MEDIA -->
         <ImageProducts :images="validImages" :video="videoSetup?.url" />
+        
 
         <!-- STOCK + FAVOURITE -->
         <div v-if="layout?.iris?.is_logged_in" class="flex items-center justify-between mt-4">
@@ -597,6 +611,21 @@ console.log('props', props)
             </div>
         </div>
 
+         <div class="text-sm font-medium text-gray-600 mt-4 mb-1 ">
+            <div class="flex items-center justify-between">
+
+                <span>
+                    {{ product.code }}
+                </span>
+
+                <span v-if="!layout?.iris?.is_logged_in" class="text-primary font-semibold">
+                    RRP : {{ locale.currencyFormat(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{
+                    product.unit }}
+                </span>
+
+            </div>
+        </div>
+
         <!-- BACK IN STOCK -->
         <button
             v-if="!product.stock && layout?.outboxes?.oos_notification?.state === 'active'"
@@ -638,7 +667,7 @@ console.log('props', props)
             <LinkIris
                 v-else
                 :href="urlLoginWithRedirect()"
-                class="block w-full text-center border rounded px-3 py-2 text-sm text-gray-600"
+                class="block w-full text-center border border-gray-400 bg-gray rounded px-3 py-2 text-sm text-gray-600"
             >
                 {{ trans("Login or Register for Wholesale Prices") }}
             </LinkIris>

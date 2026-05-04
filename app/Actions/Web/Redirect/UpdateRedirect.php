@@ -11,7 +11,7 @@ namespace App\Actions\Web\Redirect;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
+use App\Actions\Web\Website\HydrateRedirect;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
@@ -41,7 +41,7 @@ class UpdateRedirect extends OrgAction
             ]);
         }
 
-        WebpageHydrateRedirects::run($toWebpage);
+        HydrateRedirect::run($toWebpage);
 
         return $redirect;
     }

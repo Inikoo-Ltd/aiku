@@ -114,6 +114,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $unpublished_family_description_snapshot_id
  * @property int|null $live_family_description_snapshot_id
  * @property string|null $published_family_description_checksum
+ * @property int|null $landing_page_id
  * @property-read Collection<int, Announcement> $announcements
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Deployment> $deployments
@@ -121,6 +122,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Media|null $favicon
  * @property-read Group|null $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
+ * @property-read \App\Models\Web\Webpage|null $landingPage
  * @property-read Snapshot|null $liveCollectionSnapshot
  * @property-read Snapshot|null $liveDepartmentSnapshot
  * @property-read Snapshot|null $liveFamiliesOverviewSnapshot
@@ -247,6 +249,11 @@ class Website extends Model implements Auditable, HasMedia
     public function storefront(): BelongsTo
     {
         return $this->belongsTo(Webpage::class, 'storefront_id');
+    }
+
+    public function landingPage(): HasOne
+    {
+        return $this->hasOne(Webpage::class, 'id', 'landing_page_id');
     }
 
     public function logo(): BelongsTo

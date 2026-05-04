@@ -16,6 +16,7 @@ use App\Actions\OrgAction;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Goods\TradeUnit;
+use App\Models\Goods\TradeUnitFamily;
 use App\Models\Helpers\Tag;
 use Exception;
 use Lorisleiva\Actions\ActionRequest;
@@ -87,10 +88,11 @@ class AttachTagsToModel extends OrgAction
         }
     }
 
-    public function action(TradeUnit|Customer $parent, array $modelData, $replace = false): void
+    public function action(TradeUnit|TradeUnitFamily|Customer $parent, array $modelData, $replace = false): void
     {
+        $hasSession = request()->hasSession();
         try {
-            if ($parent instanceof TradeUnit) {
+            if ($parent instanceof TradeUnit || $parent instanceof TradeUnitFamily) {
                 $this->forcedScope = TagScopeEnum::PRODUCT_PROPERTY;
                 $this->initialisationFromGroup($parent->group, $modelData);
             } else {
@@ -99,21 +101,25 @@ class AttachTagsToModel extends OrgAction
 
             $this->handle($parent, $this->validatedData, $replace);
 
-            request()->session()->flash('notification', [
-                'status'  => 'success',
-                'title'   => __('Success!'),
-                'description' => __('Tags successfully attached.'),
-            ]);
+            if ($hasSession) {
+                request()->session()->flash('notification', [
+                    'status'  => 'success',
+                    'title'   => __('Success!'),
+                    'description' => __('Tags successfully attached.'),
+                ]);
+            }
         } catch (Exception $e) {
-            request()->session()->flash('notification', [
-                'status'  => 'error',
-                'title'   => __('Error!'),
-                'description' => $e->getMessage(),
-            ]);
+            if ($hasSession) {
+                request()->session()->flash('notification', [
+                    'status'  => 'error',
+                    'title'   => __('Error!'),
+                    'description' => $e->getMessage(),
+                ]);
+            }
         }
     }
 
-    public function handle(TradeUnit|Customer $model, array $modelData, $replace = false): void
+    public function handle(TradeUnit|TradeUnitFamily|Customer $model, array $modelData, $replace = false): void
     {
         if ($replace) {
             $model->tags()->sync($modelData['tags_id']);

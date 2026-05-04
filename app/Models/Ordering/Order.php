@@ -35,6 +35,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasSearch;
 use App\Models\Traits\InCustomer;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -48,11 +49,11 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Audits\Transformer\OrderSubmitSummaryTransformer;
 use App\Audits\Transformer\RelationTransformer;
 
 /**
@@ -208,7 +209,7 @@ class Order extends Model implements HasMedia, Auditable
     use HasAddresses;
     use HasAttachments;
     use HasHistory;
-    use Searchable;
+    use HasSearch;
 
     protected $casts = [
         'data'                          => 'array',
@@ -385,7 +386,26 @@ class Order extends Model implements HasMedia, Auditable
             attributes: ['name']
         );
 
+        $data = OrderSubmitSummaryTransformer::execute($this, $data);
+
         return $data;
+    }
+
+    public function readyForAuditing(): bool
+    {
+        if ($this->state === OrderStateEnum::CREATING) {
+            return false;
+        }
+
+        if ($this->isAuditingDisabled()) {
+            return false;
+        }
+
+        if ($this->isCustomEvent) {
+            return true;
+        }
+
+        return $this->isEventAuditable($this->auditEvent);
     }
 
     public function getRouteKeyName(): string

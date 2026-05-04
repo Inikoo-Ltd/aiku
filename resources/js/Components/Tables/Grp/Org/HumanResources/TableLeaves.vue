@@ -342,6 +342,10 @@ const canSubmitLeave = computed(() => {
 		return true
 	}
 
+	if (selectedLeaveBucket.value === "unpaid") {
+		return true
+	}
+
 	return selectedBucketRemaining.value >= requestedLeaveDays.value
 })
 
@@ -555,7 +559,7 @@ const submitEdit = () => {
 							{{ displayedMedicalCount }}
 						</p>
 						<p class="text-xs text-gray-400">
-							{{ trans("Requests Submitted") }}
+							{{ trans("Requests This Month") }}
 						</p>
 					</div>
 					<div class="text-3xl text-red-200">
@@ -572,7 +576,7 @@ const submitEdit = () => {
 							{{ displayedUnpaidCount }}
 						</p>
 						<p class="text-xs text-gray-400">
-							{{ trans("Request(s) Submitted") }}
+							{{ trans("Days This Month") }}
 						</p>
 					</div>
 					<div class="text-3xl text-gray-200">

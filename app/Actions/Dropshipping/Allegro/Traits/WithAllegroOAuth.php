@@ -126,9 +126,17 @@ trait WithAllegroOAuth
             $params['client_id']      = config('services.allegro.client_id');
             $params['code_verifier']  = $codeVerifier;
 
-            $response = Http::withHeaders([
+            $baseHttp = Http::withHeaders([
                 'Content-Type' => 'application/x-www-form-urlencoded',
-            ])->asForm()->post($this->allegroTokenUrl, $params);
+            ])->asForm();
+
+            if (app()->isLocal()) {
+                $baseHttp->withOptions([
+                    'verify' => false
+                ]);
+            }
+
+            $response = $baseHttp->post($this->allegroTokenUrl, $params);
 
             if ($response->failed()) {
                 $error = Arr::get($response->json(), 'error_description')

@@ -21,6 +21,7 @@ import { trans } from "laravel-vue-i18n"
 import RenderProduct from "@/Components/CMS/Webpage/Products/Ecommerce/RenderProduct.vue"
 import Image from "@/Components/Image.vue"
 import ReviewFamily from "@/Components/CMS/Reviews/ReviewFamily.vue"
+import { useFormatTime } from "@/Composables/useFormatTime";
 
 
 const props = defineProps<{
@@ -275,6 +276,7 @@ const isAscending = ref(true)
 const getArrow = (key: typeof sortKey.value) => {
     if (sortKey.value !== key) return ""
     if(sortKey.value == 'recommended') return ""
+    if(sortKey.value == 'created_at') return ""
     return isAscending.value ? "↑" : "↓"
 }
 
@@ -349,7 +351,8 @@ const toggleSort = (key: string) => {
     }
 
     if(props.fieldValue?.sub_type == 'family' && key == 'recommended') orderBy.value = key
-    else orderBy.value = isAscending.value ? key : `-${key}`
+    /* if(key == 'created_at') orderBy.value = `-${key}` */
+    else orderBy.value = isAscending.value ? key : `${key}`
     updateQueryParams()
     handleSearch()
 }

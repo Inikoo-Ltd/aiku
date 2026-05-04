@@ -2,27 +2,16 @@
 import Image from '@/Components/Image.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
-//import { useFormatTime, useRangeFromNow } from '@/Composables/useFormatTime'
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { LastOrderedProduct } from '@/types/Resource/LastOrderedProductsResource'
-import { faCircle } from '@fas'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Link } from '@inertiajs/vue3'
-//import { formatDistance } from 'date-fns'
-import { trans } from 'laravel-vue-i18n'
-import { SwiperSlide } from 'swiper/vue'
 import { inject, ref } from 'vue'
 
-const props = defineProps<{
+defineProps<{
     product: LastOrderedProduct
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
-const locale = inject('locale', aikuLocaleStructure)
-
-const firstName = props.product?.customer_contact_name?.split(" ")?.[0];
-
 const isLoadingVisit = ref(false)
 </script>
 

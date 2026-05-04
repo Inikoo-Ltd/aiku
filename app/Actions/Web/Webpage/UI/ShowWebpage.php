@@ -22,6 +22,7 @@ use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebpageTabsEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Helpers\SnapshotResource;
 use App\Http\Resources\History\HistoryResource;
@@ -112,13 +113,15 @@ class ShowWebpage extends OrgAction
                 ];
             }
 
-            $actions[] = [
-                'type'    => 'button',
-                'style'   => 'edit',
-                'icon'    => ["fal", "fa-directions"],
-                'tooltip' => __('New Redirect'),
-                'route'   => $redirectRoute
-            ];
+            if ($webpage->state == WebpageStateEnum::LIVE) {
+                $actions[] = [
+                    'type'    => 'button',
+                    'style'   => 'edit',
+                    'icon'    => ["fal", "fa-terminal"],
+                    'tooltip' => __('New Redirect'),
+                    'route'   => $redirectRoute
+                ];
+            }
         }
 
 
@@ -306,7 +309,6 @@ class ShowWebpage extends OrgAction
                     'actions'       => $actions,
                     'subNavigation' => $subNavigation,
                 ],
-
                 'tabs'                  => [
                     'current'    => $this->tab,
                     'navigation' => $tabsNavigation,
@@ -314,7 +316,7 @@ class ShowWebpage extends OrgAction
                 'root_active'           => $subNavigationRoot,
                 'webpage_url'           => $webpage->getUrl(),
                 'webpage_canonical_url' => $webpage->canonical_url,
-
+                'redirected_to'         => $webpage->redirectedTo?->redirectTo?->only(['id', 'slug', 'code', 'url']),
                 WebpageTabsEnum::SHOWCASE->value => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()
                     : Inertia::lazy(fn () => WebpageResource::make($webpage)->getArray()),
@@ -369,24 +371,24 @@ class ShowWebpage extends OrgAction
                 prefix: 'snapshots'
             )
         )
-            ->table(
-                IndexSnapshots::make()->tableStructure(
-                    parent: $webpage,
-                    withLabel: true,
-                    prefix: WebpageTabsEnum::LABELED_SNAPSHOTS->value
-                )
+        ->table(
+            IndexSnapshots::make()->tableStructure(
+                parent: $webpage,
+                withLabel: true,
+                prefix: WebpageTabsEnum::LABELED_SNAPSHOTS->value
             )
-            ->table(
-                IndexRedirects::make()->tableStructure(
-                    parent: $webpage,
-                    prefix: WebpageTabsEnum::REDIRECTS->value
-                )
+        )
+        ->table(
+            IndexRedirects::make()->tableStructure(
+                parent: $webpage,
+                prefix: WebpageTabsEnum::REDIRECTS->value
             )
-            ->table(
-                IndexHistory::make()->tableStructure(
-                    prefix: WebpageTabsEnum::CHANGELOG->value
-                )
-            );
+        )
+        ->table(
+            IndexHistory::make()->tableStructure(
+                prefix: WebpageTabsEnum::CHANGELOG->value
+            )
+        );
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array

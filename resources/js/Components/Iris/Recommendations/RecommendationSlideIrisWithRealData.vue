@@ -18,6 +18,7 @@ import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartBu
 const props = defineProps<{
     product: ProductHit
     isLoadingProductRealData: boolean
+    isProductLoading?:any
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)

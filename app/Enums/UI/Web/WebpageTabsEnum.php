@@ -54,8 +54,8 @@ enum WebpageTabsEnum: string
                 'icon'  => 'fal fa-layer-group',
             ],
             WebpageTabsEnum::REDIRECTS => [
-                'title' => __('Redirects'),
-                'icon'  => 'fal fa-layer-group',
+                'title' => __('Incoming Redirects'),
+                'icon'  => 'fal fa-arrow-to-bottom',
             ],
             WebpageTabsEnum::LABELED_SNAPSHOTS => [
                 'title' => __('Labeled Snapshots'),

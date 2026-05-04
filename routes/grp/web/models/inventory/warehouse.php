@@ -7,11 +7,14 @@
  */
 
 use App\Actions\Dispatching\BatchCode\DeleteBatchCode;
+use App\Actions\Dispatching\BatchCode\ImportBatchCodes;
 use App\Actions\Dispatching\BatchCode\StoreBatchCode;
 use App\Actions\Dispatching\BatchCode\UpdateBatchCode;
 use App\Actions\Dispatching\PickedBay\DeletePickedBay;
 use App\Actions\Dispatching\PickedBay\StorePickedBay;
 use App\Actions\Dispatching\PickedBay\UpdatePickedBay;
+use App\Actions\Dispatching\PickingSession\AddDeliveryNotesToPickingSession;
+use App\Actions\Dispatching\PickingSession\RemoveDeliveryNotesFromPickingSession;
 use App\Actions\Dispatching\PickingSession\StartPickPickingSession;
 use App\Actions\Dispatching\PickingSession\StorePickingSession;
 use App\Actions\Dispatching\PickingSession\UpdatePickingSession;
@@ -52,8 +55,11 @@ Route::delete('trolleys/{trolley:id}', DeleteTrolley::class)->name('trolleys.del
 
 Route::patch('picking-session/{pickingSession:id}', UpdatePickingSession::class)->name('picking_session.update')->withoutScopedBindings();
 Route::patch('picking-session/{pickingSession:id}/start-picking', StartPickPickingSession::class)->name('picking_session.start_picking')->withoutScopedBindings();
+Route::patch('picking-session/{pickingSession:id}/add-delivery-notes', AddDeliveryNotesToPickingSession::class)->name('picking_session.add_delivery_notes')->withoutScopedBindings();
+Route::patch('picking-session/{pickingSession:id}/remove-delivery-notes', RemoveDeliveryNotesFromPickingSession::class)->name('picking_session.remove_delivery_notes')->withoutScopedBindings();
 
 Route::post('warehouse/{warehouse:id}/batch-code', StoreBatchCode::class)->name('warehouse.batch_code.store');
+Route::post('warehouse/{warehouse:id}/batch-code/upload', [ImportBatchCodes::class, 'inWarehouse'])->name('warehouse.batch_codes.upload')->withoutScopedBindings();
 Route::patch('batch-code/{batchCode:id}', UpdateBatchCode::class)->name('batch_code.update')->withoutScopedBindings();
 Route::delete('batch-code/{batchCode:id}', DeleteBatchCode::class)->name('batch_code.delete')->withoutScopedBindings();
 

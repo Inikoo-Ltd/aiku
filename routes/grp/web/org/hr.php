@@ -55,6 +55,7 @@ use App\Actions\HumanResources\Leave\PrintCalendar;
 use App\Actions\HumanResources\Overtime\ExportOvertimeReport;
 use App\Actions\HumanResources\Leave\RejectLeave;
 use App\Actions\HumanResources\Leave\UpdateLeave;
+use App\Actions\HumanResources\Leave\DeleteLeave;
 use App\Actions\HumanResources\AttendanceAdjustment\UI\IndexAttendanceAdjustmentsAdmin;
 use App\Actions\HumanResources\AttendanceAdjustment\ApproveAttendanceAdjustment;
 use App\Actions\HumanResources\AttendanceAdjustment\RejectAttendanceAdjustment;
@@ -193,6 +194,7 @@ Route::prefix('leaves')->as('leaves.')->group(function () {
     Route::post('{leave}/approve', ApproveLeave::class)->name('approve');
     Route::post('{leave}/reject', RejectLeave::class)->name('reject');
     Route::post('{leave}', UpdateLeave::class)->name('update');
+    Route::delete('{leave}', DeleteLeave::class)->name('delete');
 });
 
 Route::prefix('leave_approvers')->as('leave_approvers.')->group(function () {

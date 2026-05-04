@@ -15,7 +15,6 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
-use App\Actions\Dropshipping\Portfolio\UpdateProductCustomerSalesChannelThresholdQuantity;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -64,6 +63,11 @@ class UpdateProduct extends OrgAction
         $newData     = [];
         $oldData     = $product->toArray();
 
+        if (Arr::has($modelData, 'rrp_per_unit')) {
+            $rrpPerUnit = Arr::pull($modelData, 'rrp_per_unit');
+            $rrp        = $rrpPerUnit * trimDecimalZeros($product->units);
+            data_set($modelData, 'rrp', $rrp);
+        }
 
         if (Arr::has($modelData, 'webpage_title')) {
             $webpageData['title'] = Arr::pull($modelData, 'webpage_title');
@@ -277,7 +281,7 @@ class UpdateProduct extends OrgAction
             )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
-            ReindexWebpageLuigiData::dispatch($product->webpage->id)->delay(60 * 15);
+            ReindexWebpageLuigiData::dispatch($product->webpage->id)->delay(60);
         }
 
         $fieldsUsedInWebpages = array_merge(
@@ -300,11 +304,8 @@ class UpdateProduct extends OrgAction
             $product->updateQuietly([
                 'available_quantity_updated_at' => now()
             ]);
-            if ($product->shop->type == ShopTypeEnum::DROPSHIPPING) {
-                UpdateProductCustomerSalesChannelThresholdQuantity::dispatch($product->id)->delay(now()->addSeconds(180));
-            }
             if ($product->shop->type === ShopTypeEnum::EXTERNAL && $product->shop->engine === ShopEngineEnum::FAIRE) {
-                UpdateFaireProductInventoryQuantity::dispatch($product);
+                UpdateFaireProductInventoryQuantity::dispatch($product)->delay(60);
             }
         }
 
@@ -365,6 +366,7 @@ class UpdateProduct extends OrgAction
             'description_title'         => ['sometimes', 'nullable', 'max:255'],
             'description_extra'         => ['sometimes', 'nullable', 'max:65500'],
             'rrp'                       => ['sometimes', 'nullable', 'numeric', 'min:0.01'],
+            'rrp_per_unit'              => ['sometimes', 'nullable', 'numeric', 'min:0.01'],
             'data'                      => ['sometimes', 'array'],
             'settings'                  => ['sometimes', 'array'],
             'status'                    => ['sometimes', 'required', Rule::enum(ProductStatusEnum::class)],
@@ -435,17 +437,17 @@ class UpdateProduct extends OrgAction
             'pictogram_oxidising'          => ['sometimes', 'boolean'],
             'pictogram_danger'             => ['sometimes', 'boolean'],
 
-            'webpage_title'                => ['sometimes', 'string'],
-            'webpage_description'          => ['sometimes', 'string'],
-            'webpage_breadcrumb_label'     => ['sometimes', 'string', 'max:40'],
+            'webpage_title'                 => ['sometimes', 'string'],
+            'webpage_description'           => ['sometimes', 'string'],
+            'webpage_breadcrumb_label'      => ['sometimes', 'string', 'max:40'],
 
             // Sale Status & Webpage
-            'is_main'                      => ['sometimes', 'boolean'],
-            'is_for_sale'                  => ['sometimes', 'boolean'],
-            'not_for_sale_from_master'     => ['sometimes', 'boolean'],
-            'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
-            'has_live_webpage'             => ['sometimes', 'boolean'],
-            'marketplace_id'               => ['sometimes'],
+            'is_main'                       => ['sometimes', 'boolean'],
+            'is_for_sale'                   => ['sometimes', 'boolean'],
+            'not_for_sale_from_master'      => ['sometimes', 'boolean'],
+            'not_for_sale_from_trade_unit'  => ['sometimes', 'boolean'],
+            'has_live_webpage'              => ['sometimes', 'boolean'],
+            'marketplace_id'                => ['sometimes'],
             'not_follow_master_trade_units' => ['sometimes', 'boolean']
         ];
 

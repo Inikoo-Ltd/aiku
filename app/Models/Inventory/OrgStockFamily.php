@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -64,7 +64,7 @@ class OrgStockFamily extends Model
     use HasSlug;
     use SoftDeletes;
     use InOrganisation;
-    use Searchable;
+    use HasSearch;
 
     protected $casts = [
         'data'        => 'array',

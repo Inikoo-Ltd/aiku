@@ -43,7 +43,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Laravel\Scout\Searchable;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -197,7 +197,7 @@ class DeliveryNote extends Model implements Auditable
     use InCustomer;
     use HasAddresses;
     use HasHistory;
-    use Searchable;
+    use HasSearch;
 
     protected $casts = [
         'data'                    => 'array',
@@ -416,7 +416,7 @@ class DeliveryNote extends Model implements Auditable
     {
         $weight     = 0;
         $hasParcels = false;
-        foreach ($this->parcels as $parcel) {
+        foreach ($this->parcels ?? [] as $parcel) {
             $weight     += $parcel['weight'] * 1000;
             $hasParcels = true;
         }

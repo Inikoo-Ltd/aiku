@@ -9,7 +9,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 
 library.add(faInfoCircle, faFacebook, faLinkedin, faGoogle, faTwitter)
 
-const props = defineProps<{
+defineProps<{
     form?: {
         [key: string]: {
             type: {}[]

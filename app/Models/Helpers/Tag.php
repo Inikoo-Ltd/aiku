@@ -22,6 +22,8 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Spatie\Translatable\Attributes\Translatable;
+use Spatie\Translatable\HasTranslations;
 
 /**
  * @property int $id
@@ -37,7 +39,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int|null $image_id
  * @property array<array-key, mixed>|null $web_image
+ * @property array<array-key, mixed> $label
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Customer> $customers
+ * @property-read array $translatable_columns_from
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
@@ -45,15 +49,23 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read Shop|null $shop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, TradeUnit> $tradeUnits
+ * @property-read mixed $translations
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Tag newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Tag newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Tag query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Tag whereJsonContainsLocale(string $column, string $locale, ?mixed $value, string $operand = '=')
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Tag whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Tag whereLocale(string $column, string $locale)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Tag whereLocales(string $column, array $locales)
  * @mixin \Eloquent
  */
+
+#[Translatable('label')]
 class Tag extends Model implements HasMedia
 {
     use HasSlug;
     use HasImage;
+    use HasTranslations;
 
     protected $guarded = [];
 

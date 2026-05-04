@@ -30,14 +30,14 @@ const locationHref = computed(() => {
     if (!currentLocation.value?.location_slug) {
         return "#"
     }
-    return route(
-        "grp.org.warehouses.show.infrastructure.locations.show",
-        [
-            route().params["organisation"],
-            route().params["warehouse"],
-            currentLocation.value.location_slug,
-        ]
-    )
+    
+    const warehouseParam = currentLocation.value.warehouse_slug || currentLocation.value.warehouse_id || 'DEFAULT_WAREHOUSE'; 
+
+    return route("grp.org.warehouses.show.infrastructure.locations.show", {
+        organisation: route().params["organisation"],
+        warehouse: warehouseParam,
+        location: currentLocation.value.location_slug
+    });
 })
 </script>
 

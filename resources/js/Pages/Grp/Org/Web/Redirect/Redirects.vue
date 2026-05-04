@@ -111,6 +111,9 @@ const submitForm = () => {
                 text: trans("New redirect created successfully."),
                 type: "success",
             })
+        },
+        onError: () => {
+            
         }
     })
 }
@@ -189,7 +192,7 @@ const submitForm = () => {
                     <!-- Action Buttons -->
                     <div class="flex justify-end space-x-2">
                         <Button label="Cancel" @click="() => openModal = false" type="white" />
-                        <Button type="save" label="create Redirect" full :disabled="form.processing"  @click="() => submitForm()" />
+                        <Button type="save" :label="trans('Create Redirect')" full :disabled="form.processing"  @click="() => submitForm()" />
                     </div>
                 </form>
             </div>

@@ -9,7 +9,9 @@
 
 namespace App\Actions\Web\Redirect;
 
+use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\OrgAction;
+use App\Actions\Web\Website\HydrateRedirect;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebpageTabsEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
@@ -20,7 +22,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect as FacadesRedirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
-use Lorisleiva\Actions\ActionRequest;
 
 class StoreRedirect extends OrgAction
 {
@@ -37,7 +38,11 @@ class StoreRedirect extends OrgAction
 
         $webpage->update(['redirect_webpage_id' => data_get($modelData, 'to_webpage_id')]);
 
-        return $webpage->redirectedTo()->create($modelData);
+        /** @var Redirect $redirect */
+        $redirect = $webpage->redirectedTo()->create($modelData);
+        HydrateRedirect::run($webpage);
+        BreakProductInWebpagesCache::make()->breakCache($webpage);
+        return $redirect;
 
     }
 
@@ -101,14 +106,5 @@ class StoreRedirect extends OrgAction
 
         return $this->handle($webpage, $this->validatedData);
     }
-
-    public function inWebpage(Webpage $webpage, ActionRequest $request): Redirect
-    {
-        $this->webpage      = $webpage;
-        $this->initialisationFromShop($webpage->shop, $request);
-
-        return $this->handle($webpage, $this->validatedData);
-    }
-
 
 }

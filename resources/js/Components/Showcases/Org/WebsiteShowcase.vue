@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { faFragile, faGlobe, faLink, faSearch, faPencil } from "@fal"
+import { faFragile, faGlobe, faLink, faSearch, faPencil, faPlaneArrival } from "@fal"
 import { computed, ref, inject } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -20,7 +20,7 @@ import { useFormatTime, useRangeFromNow } from "@/Composables/useFormatTime"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 
-library.add(faGlobe, faLink, faSearch, faFragile)
+library.add(faGlobe, faLink, faSearch, faFragile, faPlaneArrival)
 
 const props = defineProps<{
     data: {
@@ -37,6 +37,7 @@ const props = defineProps<{
         website_type: string
     }
     route_storefront: routeType
+    route_landing_page?: routeType
     luigi_data: {
         last_reindexed: string
         luigisbox_tracker_id: string
@@ -138,6 +139,11 @@ const links = computed(() => {
                     <div class="p-2">
                         <ButtonWithLink :routeTarget="route_storefront" icon="fal fa-home" type="tertiary"
                             :label="trans('Storefront')" full />
+                    </div>
+                    
+                    <div class="p-2" v-if="route_landing_page.length">
+                        <ButtonWithLink :routeTarget="route_landing_page" icon="fal fa-plane-arrival" type="tertiary"
+                            :label="trans('Landing Page')" full />
                     </div>
 
                     <div v-for="(item, index) in links" :key="index" class="px-2 py-1">

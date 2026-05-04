@@ -17,7 +17,6 @@ use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -257,10 +256,6 @@ class ShowIrisWebpage
                     ->where('from_path', $path)
                     ->where('website_id', $website->id)
                     ->first()?->to_webpage_id;
-
-                Log::error('Initial WebpageID failed');
-                Log::error("Path: {$path}");
-                Log::error("WebpageID: {$webpageID}");
             }
 
         }

@@ -27,6 +27,7 @@ trait WithAllegroApiServices
             'Authorization'  => 'Bearer ' . $this->access_token,
             'Accept'         => $this->allegroApiVersion,
             'Content-Type'   => $this->allegroApiVersion,
+            'Accept-Language' => 'en-US',
         ])->baseUrl(config('services.allegro.base_url'));
 
         if (! empty($params)) {
@@ -57,10 +58,22 @@ trait WithAllegroApiServices
                 default  => throw new \Exception("Unsupported HTTP method: $method"),
             };
 
+            $json = $response->json();
+
             if ($response->failed()) {
-                $errorMessage = Arr::get($response->json(), 'errors.0.userMessage')
-                    ?? Arr::get($response->json(), 'error_description')
-                    ?? Arr::get($response->json(), 'message')
+                $firstError = Arr::get($json, 'errors.0');
+                $errorCode  = Arr::get($firstError, 'code');
+
+                if ($errorCode === 'ProductDuplicate') {
+                    $existingId = Arr::get($firstError, 'metadata.existingProductId');
+                    if ($existingId) {
+                        return ['id' => $existingId];
+                    }
+                }
+
+                $errorMessage = Arr::get($firstError, 'userMessage')
+                    ?? Arr::get($json, 'error_description')
+                    ?? Arr::get($firstError, 'message')
                     ?? 'Unknown Allegro API error';
 
                 throw new \Exception($errorMessage);

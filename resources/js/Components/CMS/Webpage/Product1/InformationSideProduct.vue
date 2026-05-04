@@ -15,7 +15,7 @@ type InfoBlock = {
 
 const props = defineProps<{
   informations: InfoBlock[]
-  styleData : object
+  styleData : any
 }>()
 
 const openDisclosureId = ref<number | null>(null)

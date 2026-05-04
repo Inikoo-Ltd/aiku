@@ -12,10 +12,10 @@ import { faCopy } from '@fal'
 import { faSpinnerThird } from '@fad'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { set, get } from 'lodash-es'
-library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 import { ref, watch } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
+library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 
 const props = defineProps<{
     form: any
