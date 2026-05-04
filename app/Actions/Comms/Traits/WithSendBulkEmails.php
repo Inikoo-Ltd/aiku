@@ -36,7 +36,8 @@ trait WithSendBulkEmails
         array $additionalData = [],
         ?string $senderName = null,
         bool $isTest = false,
-        bool $debug = false
+        bool $debug = false,
+        ?string $previewText = null
     ): DispatchedEmail {
         $html = $emailHtmlBody;
         $html = $this->processStyles($html);
@@ -74,6 +75,10 @@ trait WithSendBulkEmails
 
         // 'u' flag ensures multi-byte UTF-8 characters are not corrupted
         $html = preg_replace('/\R+/u', '', $html);
+
+        if ($previewText) {
+            $html = $this->injectPreviewText($html, $previewText);
+        }
 
         return SendSesEmail::run(
             subject: $subject,
@@ -265,5 +270,22 @@ trait WithSendBulkEmails
         return DB::table('chat_email_recipient_has_dispatched_emails')
             ->where('dispatched_email_id', $dispatchedEmailId)
             ->first();
+    }
+
+    private function injectPreviewText(string $htmlBody, string $previewText): string
+    {
+        $padding = str_repeat('&zwnj;&nbsp;', 140);
+
+        $previewDiv = '<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">'
+            . htmlspecialchars($previewText, ENT_QUOTES, 'UTF-8')
+            . $padding
+            . '</div>';
+
+        // Inject right after <body> tag if present, otherwise prepend
+        if (stripos($htmlBody, '<body') !== false) {
+            return preg_replace('/(<body[^>]*>)/i', '$1' . $previewDiv, $htmlBody, 1);
+        }
+
+        return $previewDiv . $htmlBody;
     }
 }

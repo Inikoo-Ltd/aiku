@@ -72,7 +72,7 @@ console.log(props)
 </script>
 
 <template>
-  <div class="w-full" :style="{
+  <div class="w-full"  :id="fieldValue?.id ? fieldValue?.id : 'family-2'+indexBlock"  :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue?.container?.properties, screenType)
     }">

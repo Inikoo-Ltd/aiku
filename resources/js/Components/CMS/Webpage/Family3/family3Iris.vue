@@ -45,10 +45,10 @@ const showTriggers = computed(() => {
 const columnPosition = computed(() => {
   const raw = get(props.fieldValue, ["column_position"])
   if (!isPlainObject(raw)) return raw
-  return raw?.[props.screenType] ?? raw?.desktop ?? "Image-left"
+  return raw?.[props.screenType] ?? raw?.desktop ?? "Image-right"
 })
 
-const isImageLeft = computed(() => columnPosition.value === "Image-left")
+const isImageLeft = computed(() => columnPosition.value === "Image-right")
 const imageOrder = computed(() => (isImageLeft.value ? "order-1" : "order-2"))
 const textOrder = computed(() => (isImageLeft.value ? "order-2" : "order-1"))
 
@@ -66,7 +66,7 @@ const cleanedDescription = computed(() => {
 </script>
 
 <template>
-  <div class="w-full" :style="{
+  <div class="w-full"   :id="fieldValue?.id ? fieldValue?.id : 'family-3'+indexBlock"  :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(fieldValue?.container?.properties, screenType)
   }">
