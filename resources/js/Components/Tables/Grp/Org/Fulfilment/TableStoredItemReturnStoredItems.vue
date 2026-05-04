@@ -528,7 +528,7 @@ function getRequestedPalletStoredItems(item: any) {
         <template #cell(pallet_stored_items)="{ item: value, proxyItem }">
             <div class="grid gap-y-1">
                 <template v-for="pallet_stored_item in getRequestedPalletStoredItems(value)" :key="pallet_stored_item.id">
-                    <div class="rounded p-1 flex justify-between gap-x-6 items-center">
+                    <div class="rounded p-1 flex justify-between items-start gap-x-6">
                             <!-- <Tag :label="pallet_stored_item.reference" stringToColor>
                                 <template #label>
                                     <div class="">
@@ -685,11 +685,11 @@ function getRequestedPalletStoredItems(item: any) {
         </template>
 
         <template #cell(required)="{ item }">
-            <div v-if="getRequiredPalletStoredItems(item).length" class="grid gap-y-1 tabular-nums">
+            <div v-if="getRequestedPalletStoredItems(item).length" class="grid gap-y-1 tabular-nums">
                 <div
-                    v-for="pallet_stored_item in getRequiredPalletStoredItems(item)"
+                    v-for="pallet_stored_item in getRequestedPalletStoredItems(item)"
                     :key="`required-${pallet_stored_item.id}`"
-                    class="flex items-center justify-end gap-x-1"
+                    class="flex items-start justify-end gap-x-1"
                 >
                     <span v-if="['picking', 'picked', 'dispatched'].includes(props.state)">
                         {{ locale.number(pallet_stored_item.selected_quantity || 0) }}
@@ -714,7 +714,7 @@ function getRequestedPalletStoredItems(item: any) {
                 <div
                     v-for="pallet_stored_item in getRequiredPalletStoredItems(item)"
                     :key="`picked-action-${pallet_stored_item.id}`"
-                    class="flex items-center justify-end gap-x-2"
+                    class="flex items-start justify-end gap-x-2"
                 >
                     <span>{{ locale.number(pallet_stored_item.picked_quantity || 0) }}</span>
                     <span
@@ -777,22 +777,27 @@ function getRequestedPalletStoredItems(item: any) {
 
         <template #cell(pickings)="{ item }">
             <div v-if="['picked', 'dispatched'].includes(props.state)">
-                <div v-if="getPickedPalletStoredItems(item).length" class="grid gap-y-1">
+                <div v-if="getRequiredPalletStoredItems(item).length" class="grid gap-y-1">
                     <div
-                        v-for="pallet_stored_item in getPickedPalletStoredItems(item)"
-                        :key="`picked-${pallet_stored_item.id}`"
-                        class="flex items-center gap-x-2"
+                        v-for="pallet_stored_item in getRequiredPalletStoredItems(item)"
+                        :key="`required-picking-${pallet_stored_item.id}`"
+                        class="flex items-start gap-x-2"
                     >
-                        <Link
-                            v-if="generateLinkPalletLocationHref(pallet_stored_item)"
-                            :href="generateLinkPalletLocationHref(pallet_stored_item)"
-                            class="secondaryLink"
-                        >
-                            {{ pallet_stored_item.location?.code || pallet_stored_item.reference }}
-                        </Link>
-                        <span v-else>{{ pallet_stored_item.location?.code || pallet_stored_item.reference || '-' }}</span>
-                        <span class="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-gray-100 text-gray-700 text-xs tabular-nums">
-                            {{ locale.number(pallet_stored_item.picked_quantity || 0) }}
+                        <div v-if="Number(pallet_stored_item.picked_quantity || 0) > 0" class="flex items-start gap-x-2">
+                            <Link
+                                v-if="generateLinkPalletLocationHref(pallet_stored_item)"
+                                :href="generateLinkPalletLocationHref(pallet_stored_item)"
+                                class="secondaryLink"
+                            >
+                                {{ pallet_stored_item.location?.code || pallet_stored_item.reference }}
+                            </Link>
+                            <span v-else>{{ pallet_stored_item.location?.code || pallet_stored_item.reference || '-' }}</span>
+                            <span class="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-gray-100 text-gray-700 text-xs tabular-nums">
+                                {{ locale.number(pallet_stored_item.picked_quantity || 0) }}
+                            </span>
+                        </div>
+                        <span v-else class="text-xs text-gray-400 italic">
+                            {{ trans('No items picked yet') }}
                         </span>
                     </div>
                 </div>
@@ -800,39 +805,52 @@ function getRequestedPalletStoredItems(item: any) {
                     {{ trans('No items picked yet') }}
                 </div>
             </div>
-            <div v-else-if="getPickedPalletStoredItems(item).length || getNotPickedPalletStoredItems(item).length" class="grid gap-y-1">
-                <div v-for="pallet_stored_item in getPickedPalletStoredItems(item)" :key="`picked-${pallet_stored_item.id}`" class="flex items-center gap-x-2">
-                    <Link v-if="generateLinkPalletLocationHref(pallet_stored_item)"
+            <div v-else-if="getRequestedPalletStoredItems(item).length" class="grid gap-y-1">
+                <div
+                    v-for="pallet_stored_item in getRequestedPalletStoredItems(item)"
+                    :key="`picking-row-${pallet_stored_item.id}`"
+                    class="flex items-start gap-x-2"
+                >
+                    <Link
+                        v-if="Number(pallet_stored_item.picked_quantity || 0) > 0 && generateLinkPalletLocationHref(pallet_stored_item)"
                         :href="generateLinkPalletLocationHref(pallet_stored_item)"
-                        class="secondaryLink">
+                        class="secondaryLink"
+                    >
                         {{ pallet_stored_item.location?.code || pallet_stored_item.reference }}
                     </Link>
-                    <span v-else>{{ pallet_stored_item.location?.code || pallet_stored_item.reference || '-' }}</span>
+                    <span v-else-if="Number(pallet_stored_item.picked_quantity || 0) > 0">
+                        {{ pallet_stored_item.location?.code || pallet_stored_item.reference || '-' }}
+                    </span>
 
-                    <div class="text-gray-500 tabular-nums whitespace-nowrap" v-tooltip="trans('Total picked quantity in this location')">
+                    <div
+                        v-if="Number(pallet_stored_item.picked_quantity || 0) > 0"
+                        class="text-gray-500 tabular-nums whitespace-nowrap"
+                        v-tooltip="trans('Total picked quantity in this location')"
+                    >
                         <FontAwesomeIcon icon="fal fa-hand-holding-box" fixed-width aria-hidden="true" />
                         {{ locale.number(pallet_stored_item.picked_quantity || 0) }}
                     </div>
-                    <Button
-                        v-if="palletReturn.state === 'picking' && isWarehouseDispatchingPalletReturnPage"
-                        @click="() => onUndoPick(pallet_stored_item.undoRoute, pallet_stored_item, `undo_${item.id}_${pallet_stored_item.id}`)"
-                        icon="fal fa-undo-alt"
-                        size="xxs"
-                        :loading="get(isLoadingUndoPick, `undo_${item.id}_${pallet_stored_item.id}`, false)"
-                        type="negative"
-                    />
-                </div>
-
-                <div v-for="pallet_stored_item in getNotPickedPalletStoredItems(item)"
-                    :key="`not-picked-${pallet_stored_item.id}`"
-                    class="text-red-500 w-fit mr-auto tabular-nums flex items-center gap-x-2"
-                    v-tooltip="trans('Quantity not gonna be picked')">
-                    <div>
+                    <div
+                        v-if="Number(pallet_stored_item.not_picked_quantity || 0) > 0"
+                        class="text-red-500 tabular-nums whitespace-nowrap"
+                        v-tooltip="trans('Quantity not gonna be picked')"
+                    >
                         <FontAwesomeIcon icon="fas fa-skull" fixed-width aria-hidden="true" />
                         {{ locale.number(pallet_stored_item.not_picked_quantity || 0) }}
                     </div>
+                    <span
+                        v-if="Number(pallet_stored_item.picked_quantity || 0) <= 0 && Number(pallet_stored_item.not_picked_quantity || 0) <= 0"
+                        class="text-xs text-gray-400 italic"
+                    >
+                        {{ trans('No items picked yet') }}
+                    </span>
+
                     <Button
-                        v-if="palletReturn.state === 'picking' && isWarehouseDispatchingPalletReturnPage"
+                        v-if="
+                            palletReturn.state === 'picking' &&
+                            isWarehouseDispatchingPalletReturnPage &&
+                            (Number(pallet_stored_item.picked_quantity || 0) > 0 || Number(pallet_stored_item.not_picked_quantity || 0) > 0)
+                        "
                         @click="() => onUndoPick(pallet_stored_item.undoRoute, pallet_stored_item, `undo_${item.id}_${pallet_stored_item.id}`)"
                         icon="fal fa-undo-alt"
                         size="xxs"
@@ -852,7 +870,7 @@ function getRequestedPalletStoredItems(item: any) {
                 <div
                     v-for="pallet_stored_item in getRequestedPalletStoredItemsForAction(stored_item)"
                     :key="`action-${stored_item.id}-${pallet_stored_item.id}`"
-                    class="flex items-center justify-between gap-x-3"
+                    class="flex items-start justify-between gap-x-3"
                 >
                     <LabelPalletStoredItemLocation
                         :palletStoredItems="[pallet_stored_item, ...getOtherPalletStoredItems(stored_item, pallet_stored_item.id)]"
@@ -862,6 +880,7 @@ function getRequestedPalletStoredItems(item: any) {
                     />
 
                     <NumberWithButtonSave
+                        v-if="getRemainingActionQuantity(pallet_stored_item) > 0"
                         :key="`pickingpicked-action_${stored_item.id}_${pallet_stored_item.id}_${getRemainingActionQuantity(pallet_stored_item)}`"
                         noUndoButton
                         :modelValue="getRemainingActionQuantity(pallet_stored_item)"
@@ -873,7 +892,7 @@ function getRequestedPalletStoredItems(item: any) {
                         :xxparentClass="''"
                     >
                         <template #save="{ quantity }">
-                            <div class="flex items-center gap-x-1">
+                            <div class="flex items-start gap-x-1">
                                 <Button
                                     @click="() => onSetAsPicked(pallet_stored_item, Number(quantity || 0), `picked_${stored_item.id}_${pallet_stored_item.id}`)"
                                     icon="fal fa-clipboard-list-check"
@@ -897,6 +916,7 @@ function getRequestedPalletStoredItems(item: any) {
                             </div>
                         </template>
                     </NumberWithButtonSave>
+                    <div v-else class="px-1 py-0.5 text-xs text-gray-300">-</div>
                 </div>
             </div>
         </template>
