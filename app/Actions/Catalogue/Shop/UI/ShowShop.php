@@ -54,7 +54,7 @@ class ShowShop extends OrgAction
         $saved_interval   = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         $performanceDates = $this->resolvePerformanceDates($saved_interval, $userSettings);
 
-        $timeSeriesData      = GetShopDashboardTimeSeriesData::run($shop, $performanceDates[0], $performanceDates[1]);
+        $timeSeriesData      = GetShopDashboardTimeSeriesData::run($shop, $performanceDates[0], $performanceDates[1], false);
         $shopTimeSeriesStats = $timeSeriesData['shops'];
 
         $waitingItemsData = $this->buildWaitingItemsData($shop, $request);
