@@ -42,6 +42,7 @@ class MarketingMailshotsResource extends JsonResource
         return [
             'id'                        => $mailshot->id,
             'slug'                      => $mailshot->slug,
+            'name'                      => $mailshot->name,
             'date'                      => Carbon::parse($mailshot->date)->format('d F Y, H:i'),
             'subject'                   => $mailshot->subject,
             'state'                     => $mailshot->state,

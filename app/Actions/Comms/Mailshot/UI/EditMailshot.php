@@ -10,6 +10,7 @@ namespace App\Actions\Comms\Mailshot\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
+use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use App\Models\SysAdmin\Organisation;
@@ -29,15 +30,36 @@ class EditMailshot extends OrgAction
         $fields[] = [
             'title'  => '',
             'fields' => [
-                'subject'        => [
+                'name'           => [
                     'type'        => 'input',
-                    'label'       => __('Subject'),
-                    'placeholder' => __('Email subject'),
+                    'label'       => __('Name'),
+                    'placeholder' => __('Mailshot name'),
                     'required'    => false,
-                    'value'       => $mailshot->subject,
+                    'value'       => $mailshot->name,
                 ],
             ]
         ];
+
+        // Only show subject and preview_text for non-SENT states
+        if ($mailshot->state !== MailshotStateEnum::SENT) {
+            $fields[0]['fields'][] = [
+                'type'        => 'input',
+                'label'       => __('Subject'),
+                'placeholder' => __('Email subject'),
+                'required'    => false,
+                'value'       => $mailshot->subject,
+                'name'        => 'subject',
+            ];
+
+            $fields[0]['fields'][] = [
+                'type'        => 'input',
+                'label'       => __('Preview text'),
+                'placeholder' => __('Email preview text'),
+                'required'    => false,
+                'value'       => $mailshot->preview_text,
+                'name'        => 'preview_text',
+            ];
+        }
 
         return Inertia::render(
             'EditModel',

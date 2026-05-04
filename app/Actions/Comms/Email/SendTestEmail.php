@@ -37,6 +37,7 @@ class SendTestEmail extends OrgAction
             $sender     = $entity->sender();
             $subject    = $entity->subject;
             $senderName = $entity->senderName();
+            $modelData['preview_text'] = $entity->preview_text;
         } elseif ($entity instanceof Outbox) {
             $parent     = $entity->emailOngoingRun;
             $shop       = $entity->shop;
@@ -83,7 +84,8 @@ class SendTestEmail extends OrgAction
             subject: $subject,
             emailHtmlBody: $modelData['compiled_layout'],
             senderName: $senderName,
-            isTest: true
+            isTest: true,
+            previewText: $modelData['preview_text'] ?? null
         );
 
         return $dispatchedEmail;

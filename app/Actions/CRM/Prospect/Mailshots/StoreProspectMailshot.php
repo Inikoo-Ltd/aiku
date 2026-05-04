@@ -56,6 +56,8 @@ class StoreProspectMailshot extends OrgAction
     {
         return [
             'subject'           => ['required', 'string', 'max:255'],
+            'name'              => ['nullable', 'string', 'max:255'],
+            'preview_text'      => ['nullable', 'string', 'max:255'],
             'state'             => ['sometimes', Rule::enum(MailshotStateEnum::class)],
             'recipients_recipe' => ['sometimes', 'array'],
             'date'              => ['nullable', 'date'],
