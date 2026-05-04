@@ -22,6 +22,7 @@ class ProductCategorySearchResultResource extends JsonResource
         $productCategory = $this;
 
         return [
+            'id'    => $productCategory->id,
             'code'  => $productCategory->code,
             'name'  => $productCategory->name,
             'image' => Arr::get($productCategory->web_images, 'main.thumbnail'),
