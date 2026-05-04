@@ -591,7 +591,7 @@ const locationRoute = (item: any) => {
                         </div>
 
                         <div class="flex items-center gap-x-3 ml-auto">
-                            <div>
+                            <div v-if="pallet.status !== 'incident'">
                                 <Link v-if="locationRoute(pallet)" :href="locationRoute(pallet)" class="secondaryLink">
                                     {{ pallet.location_code }}
                                 </Link>
@@ -730,7 +730,7 @@ const locationRoute = (item: any) => {
                         icon="fal fa-arrow-alt-left"
                         :label="trans('Revert to Picking')"
                         type="negative"
-                        size="xs"
+                        size="sm"
                         class="py-0"
                     />
                 </Link>
