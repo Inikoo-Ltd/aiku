@@ -17,7 +17,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowMarketingSettings extends OrgAction
+class ShowMailshotSettings extends OrgAction
 {
     public function authorize(ActionRequest $request): bool
     {
@@ -33,7 +33,7 @@ class ShowMarketingSettings extends OrgAction
 
     public function htmlResponse(ActionRequest $request): Response
     {
-        $title = __('Marketing Settings');
+        $title = __('Mailshot Settings');
 
         return Inertia::render(
             'EditModel',
@@ -58,18 +58,18 @@ class ShowMarketingSettings extends OrgAction
                     'fullLayout' => true,
                     'blueprint' => [
                         [
-                            'title'  => __('Tracking Event Settings'),
+                            'title'  => __('Tracking Event Settings (this setting also applies to prospect mailshots)'),
                             'fields' => [
-                                'marketing_days' => [
+                                'after_days' => [
                                     'type'  => 'input_number',
                                     'label' => __('Tracking Duration (Days)'),
-                                    'value' => Arr::get($this->shop->settings, 'marketing.days'),
+                                    'value' => Arr::get($this->shop->settings, 'mailshot_tracking.after_days') ?? 30,
                                     'information' => __('Defines how many days an mailshot/newsletter will continue to be tracked after it is start sending. default value if empty is 30 days'),
                                 ],
-                                'marketing_hours' => [
+                                'every_hours' => [
                                     'type'  => 'input_number',
                                     'label' => __('Tracking Interval (Hours)'),
-                                    'value' => Arr::get($this->shop->settings, 'marketing.hours'),
+                                    'value' => Arr::get($this->shop->settings, 'mailshot_tracking.every_hours') ?? 2,
                                     'information' => __('Defines how often the system checks for tracking events (e.g., every 2 hours). default value if empty is 2 hours'),
                                 ],
                             ]
@@ -77,7 +77,7 @@ class ShowMarketingSettings extends OrgAction
                     ],
                     'args' => [
                         'updateRoute' => [
-                            'name'       => 'grp.org.shops.show.marketing.settings.update',
+                            'name'       => 'grp.org.shops.show.marketing.mailshot_settings.update',
                             'parameters' => [
                                 'organisation' => $this->organisation->slug,
                                 'shop'         => $this->shop->slug,
@@ -109,7 +109,7 @@ class ShowMarketingSettings extends OrgAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.shops.show.marketing.settings',
+                                'name'       => 'grp.org.shops.show.marketing.mailshot_settings',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('Settings')

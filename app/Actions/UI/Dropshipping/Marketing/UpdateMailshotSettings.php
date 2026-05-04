@@ -15,7 +15,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateMarketingSettings extends OrgAction
+class UpdateMailshotSettings extends OrgAction
 {
     use WithActionUpdate;
 
@@ -27,12 +27,12 @@ class UpdateMarketingSettings extends OrgAction
 
     public function handle(Shop $shop, array $modelData): Shop
     {
-        if (Arr::exists($modelData, 'marketing_days')) {
-            data_set($modelData, 'settings.marketing.days', Arr::pull($modelData, 'marketing_days'));
+        if (Arr::exists($modelData, 'after_days')) {
+            data_set($modelData, 'settings.mailshot_tracking.after_days', Arr::pull($modelData, 'after_days'));
         }
 
-        if (Arr::exists($modelData, 'marketing_hours')) {
-            data_set($modelData, 'settings.marketing.hours', Arr::pull($modelData, 'marketing_hours'));
+        if (Arr::exists($modelData, 'every_hours')) {
+            data_set($modelData, 'settings.mailshot_tracking.every_hours', Arr::pull($modelData, 'every_hours'));
         }
         return $this->update($shop, $modelData, ['settings']);
     }
@@ -40,8 +40,8 @@ class UpdateMarketingSettings extends OrgAction
     public function rules(): array
     {
         return [
-            'marketing_days' => ['nullable', 'integer', 'min:1', 'max:365'],
-            'marketing_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
+            'after_days' => ['nullable', 'integer', 'min:1', 'max:365'],
+            'every_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
         ];
     }
 

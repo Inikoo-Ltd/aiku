@@ -60,7 +60,7 @@ class ShowMarketingDashboard extends OrgAction
                             'label' => __('Settings'),
                             'icon'  => ["fal", "fa-cog"],
                             'route' => [
-                                'name'       => "grp.org.shops.show.marketing.settings",
+                                'name'       => "grp.org.shops.show.marketing.mailshot_settings",
                                 'parameters' => [
                                     $this->organisation->slug,
                                     $this->shop->slug
