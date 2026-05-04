@@ -2,15 +2,15 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 21 Apr 2026 10:23:50 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Mon, 04 May 2026 11:18:32 Nepal Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\CRM\Customer\Search;
+namespace App\Actions\CRM\Prospect\Search;
 
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetCustomerSearchSchema
+class GetProspectSearchSchema
 {
     use AsObject;
 
@@ -29,15 +29,7 @@ class GetCustomerSearchSchema
                         'optional' => true,
                     ],
                     [
-                        'name' => 'status',
-                        'type' => 'string',
-                    ],
-                    [
                         'name' => 'state',
-                        'type' => 'string',
-                    ],
-                    [
-                        'name' => 'reference',
                         'type' => 'string',
                     ],
                     [
@@ -65,22 +57,6 @@ class GetCustomerSearchSchema
                         'type' => 'string',
                     ],
                     [
-                        'name' => 'identity_document_number',
-                        'type' => 'string',
-                    ],
-                    [
-                        'name' => 'eori',
-                        'type' => 'string',
-                    ],
-                    [
-                        'name' => 'ukims',
-                        'type' => 'string',
-                    ],
-                    [
-                        'name' => 'notes',
-                        'type' => 'string',
-                    ],
-                    [
                         'name' => 'created_at',
                         'type' => 'int64',
                     ],
@@ -93,7 +69,7 @@ class GetCustomerSearchSchema
                 'default_sorting_field' => 'created_at',
             ],
             'search-parameters' => [
-                'query_by' => 'reference,name,contact_name,email,phone,company_name,notes,contact_website,identity_document_number'
+                'query_by' => 'name,contact_name,email,phone,company_name,contact_website'
             ],
         ];
     }
