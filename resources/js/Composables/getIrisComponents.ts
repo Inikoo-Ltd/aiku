@@ -220,7 +220,7 @@ export const getIrisComponent = (
 		shop_type?: string // 'b2b' | 'dropshipping'
 	}
 ) => {
-	return components(options?.shop_type)[componentName] ?? NotFoundComponentwo
+	return components(options?.shop_type)[componentName] ?? NotFoundComponent
 }
 
 export const getProductsRenderDropshippingComponent = (
