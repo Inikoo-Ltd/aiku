@@ -45,7 +45,6 @@ class RunMailshotTrackingUpdates
 
         $shops = $query->cursor();
 
-        // TODO: need default value or not, if setting not exist
         foreach ($shops as $shop) {
             $marketingHours = $shop->settings['mailshot_tracking']['every_hours'] ?? 2; // default 2 hours
             $marketingDays = $shop->settings['mailshot_tracking']['after_days'] ?? 30; // default 30 days
