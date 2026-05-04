@@ -23,6 +23,9 @@ class StoreFavourite extends OrgAction
 {
     use WithActionUpdate;
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(Customer $customer, Product $product, array $modelData): Favourite
     {
         $favourite = $customer->favourites()->where('product_id', $product->id)->first();
@@ -37,11 +40,9 @@ class StoreFavourite extends OrgAction
                 );
             } else {
                 $this->update($favourite, ['unfavourited_at' => null, 'current_favourite_id' => $favourite->id]);
-
-
             }
-
         } else {
+            /** @noinspection DuplicatedCode */
             data_set($modelData, 'group_id', $customer->group_id);
             data_set($modelData, 'organisation_id', $customer->organisation_id);
             data_set($modelData, 'shop_id', $customer->shop_id);
@@ -53,12 +54,12 @@ class StoreFavourite extends OrgAction
 
             /** @var Favourite $favourite */
             $favourite = $customer->favourites()->create($modelData);
-
         }
 
         CustomerHydrateFavourites::run($customer->id);
         ProductHydrateCustomersWhoFavourited::dispatch($product);
         ProductHydrateCustomersWhoFavouritedInCategories::dispatch($product);
+
         return $favourite;
     }
 

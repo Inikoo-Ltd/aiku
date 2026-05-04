@@ -80,6 +80,7 @@ class IndexDeliveryNotesInBatchCode
                 'delivery_notes.shipping_notes',
                 'customers.slug as customer_slug',
                 'customers.name as customer_name',
+                'customers.phone as customer_phone',
                 'shops.slug as shop_slug',
                 'shops.name as shop_name',
                 'organisations.slug as organisation_slug',
@@ -87,6 +88,10 @@ class IndexDeliveryNotesInBatchCode
             ])
             ->selectSub($pickingSessionsCount, 'picking_sessions_count')
             ->selectSub($pickingSessionIds, 'picking_session_ids')
+            ->selectSub(
+                BatchCode::query()->select('code')->where('id', $batchCode->id)->limit(1),
+                'batch_code'
+            )
             ->allowedSorts(['reference', 'date', 'number_items'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -111,8 +116,10 @@ class IndexDeliveryNotesInBatchCode
             $table
                 ->column(key: 'state', label: '', type: 'icon')
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'batch_code', label: __('Batch Code'), canBeHidden: false, sortable: false)
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true)
+                ->column(key: 'customer_phone', label: __('Phone'), canBeHidden: false, sortable: false)
                 ->column(key: 'number_items', label: __('Items'), canBeHidden: false, sortable: true);
         };
     }
