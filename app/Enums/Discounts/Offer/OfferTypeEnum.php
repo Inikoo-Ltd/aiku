@@ -171,7 +171,7 @@ enum OfferTypeEnum: string
                 'class'     => '',
             ],
             self::CATEGORY_ORDERED                                  => [
-                'icon'      => 'fal fa',
+                'icon'      => 'fal fa-box',
                 'tooltip'   => 'Category Ordered',
                 'class'     => '',
             ],

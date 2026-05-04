@@ -105,7 +105,7 @@ const props = defineProps<{
                 <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Products</p>
             </div>
             <div class="flex-1 overflow-y-auto p-3">
-                <template v-if="isLoading">
+                <!-- <template v-if="isLoading">
                     <div class="grid grid-cols-4 gap-2">
                         <div v-for="i in 9" :key="i" class="flex flex-col gap-1">
                             <Skeleton height="4rem" borderRadius="0.5rem" />
@@ -113,9 +113,9 @@ const props = defineProps<{
                             <Skeleton width="55%" height="0.5rem" />
                         </div>
                     </div>
-                </template>
+                </template> -->
 
-                <template v-else-if="results?.products?.length">
+                <template v-if="results?.products?.length">
                     <div class="grid grid-cols-4 gap-2">
                         <a
                             v-for="product in results.products.slice(0, 9)"
