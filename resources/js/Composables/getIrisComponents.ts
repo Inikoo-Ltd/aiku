@@ -136,8 +136,8 @@ const components = (shop_type?: string): Record<string, Component> => {
 		'department-description-1' : DepartmentDescriptionIris,
 		'sub-department-description-1' : SubDepartmentDesciptionIris,
 		'family-1': family1Iris,
-		'family-2': family2Iris,
-		'family-3': family3Iris,
+		//'family-2': family2Iris,
+		'family-2': family3Iris,
 
 		//sub-department	
 		"sub-departments-1": SubDepartment1Iris,
