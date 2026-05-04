@@ -108,15 +108,21 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             $countFamilyDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'family-2');
             if (count($countFamilyDescriptionBlock) == 0) {
                 $this->deleteWebBlocksByCode($webpage, 'family-1');
+                $this->deleteWebBlocksByCode($webpage, 'family-3');
+                $this->deleteWebBlocksByCode($webpage, 'family-3-extra-description');
+                
                 $this->createWebBlock($webpage, 'family-2');
                 $this->createWebBlock($webpage, 'family-2-extra-description');
             }
         } else {
             $countFamilyDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'family-1');
             if (count($countFamilyDescriptionBlock) == 0) {
-                $this->createWebBlock($webpage, 'family-1');
                 $this->deleteWebBlocksByCode($webpage, 'family-2');
                 $this->deleteWebBlocksByCode($webpage, 'family-2-extra-description');
+                $this->deleteWebBlocksByCode($webpage, 'family-3');
+                $this->deleteWebBlocksByCode($webpage, 'family-3-extra-description');
+
+                $this->createWebBlock($webpage, 'family-1');
             }
         }
 
@@ -191,6 +197,8 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
 
         if ($familyWebBlockCode == 'family-2') {
             $familyExtraDesc = $this->getWebpageBlocksByType($webpage, 'family-2-extra-description')->first()->model_has_web_blocks_id;
+        } elseif ($familyWebBlockCode == 'family-3') {
+            $familyExtraDesc = $this->getWebpageBlocksByType($webpage, 'family-3-extra-description')->first()->model_has_web_blocks_id;
         }
 
         $website = $webpage->website;

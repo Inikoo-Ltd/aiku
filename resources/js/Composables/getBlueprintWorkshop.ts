@@ -92,16 +92,20 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		'collection-description-1' : CollectionDescription.blueprint,
 		'department-description-1' : DepartmentDescription.blueprint,
 		'sub-department-description-1' : SubDepartmentDesciption.blueprint,
-		'family-1': FamilyBluprint.blueprint,
-		'family-2': FamilyBluprint2.blueprint,
-		'family-3': FamilyBluprint3.blueprint,
 
 		// families list
 		"families-1": Families1Blueprint.blueprint,
 		"families-2": Families2Blueprint.blueprint,
 		"families-3": Families3Blueprint.blueprint,
 
+		// family-description
+		'family-1': FamilyBluprint.blueprint,
+		'family-2': FamilyBluprint2.blueprint,
+		'family-3': FamilyBluprint3.blueprint,
+
+		// family-extra-description
 		'family-2-extra-description' : Family2ExtraDescriptionBlueprint.blueprint, 
+		'family-3-extra-description' : Family2ExtraDescriptionBlueprint.blueprint,
 
 		// families list
 		"families-1-overview": Families1Overview.blueprint,
