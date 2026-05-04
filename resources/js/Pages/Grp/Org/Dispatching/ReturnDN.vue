@@ -11,6 +11,8 @@ import type { Component } from 'vue'
 
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
+import Timeline from '@/Components/Utils/Timeline.vue'
+import BoxNote from '@/Components/Pallet/BoxNote.vue'
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
 
@@ -18,8 +20,23 @@ const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
     tabs: TSTabs
-
-    
+	timelines: {}[]
+    delivery_note: {
+        state: string
+    }
+	notes: {
+		note_list: {
+			label: string,
+			note: string
+		}[]
+	}
+	routes: {
+		update: {
+			name: string,
+			parameters: Record<string, any>,
+			method: string
+		},
+	}
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -42,6 +59,39 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+
+	<!-- Section: Box Note (TODO: update the routes ) -->
+	<div
+		vxif="
+			pickingView ||
+			delivery_note_state.value === 'dispatched' ||
+			delivery_note_state.value === 'cancelled'
+		"
+		class="relative">
+		<div
+			xv-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
+			class="p-2 grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
+			<BoxNote
+				v-for="(note, index) in notes.note_list"
+				:key="index + note.label"
+				:noteData="note"
+				:updateRoute="routes.update"
+				:fetchRoute="{
+					name: 'grp.models.delivery_note.copy_notes',
+					parameters: { deliveryNote: props.delivery_note.id },
+					method: 'patch',
+				}" />
+		</div>
+	</div>
+
+	<!-- Section: Timeline -->
+	<div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
+		<Timeline
+			:options="timelines"
+			:state="props.delivery_note.state"
+			:slidesPerView="6"
+			:format-time="'MMMM d yyyy, HH:mm'" />
+	</div>
 
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
 </template>
