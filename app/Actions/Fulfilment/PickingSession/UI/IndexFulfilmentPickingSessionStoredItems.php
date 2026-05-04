@@ -92,7 +92,7 @@ class IndexFulfilmentPickingSessionStoredItems extends OrgAction
 
             $table->column(key: 'pallet_return_reference', label: __('Return'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'total_quantity', label: __('Current stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'pallet_stored_items', label: __('Pallets [Location]'), canBeHidden: false);
             $table->column(key: 'total_quantity_ordered', label: __('Requested quantity'), canBeHidden: false, sortable: true, searchable: false, align: 'right');
 

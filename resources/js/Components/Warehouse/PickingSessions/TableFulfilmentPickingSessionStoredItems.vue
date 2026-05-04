@@ -973,53 +973,58 @@ const onDispatchPalletReturn = async () => {
                                             <template v-if="isRowPicking(storedItem)">
                                                 <div class="grid gap-y-1">
                                                     <div
-                                                        v-for="palletStoredItemAction in getRequestedPalletStoredItemsForAction(storedItem)"
-                                                        :key="`action-${storedItem.id}-${palletStoredItemAction.id}`"
+                                                        v-if="getRemainingActionQuantity(palletStoredItem) > 0"
                                                         class="flex items-center justify-between gap-x-3"
                                                     >
                                                         <LabelPalletStoredItemLocation
-                                                            :palletStoredItems="[palletStoredItemAction, ...getOtherPalletStoredItems(storedItem, palletStoredItemAction.id)]"
-                                                            :selectedPalletStoredItemId="palletStoredItemAction.id"
-                                                            :locationHref="generateLinkLocationInWarehouse(palletStoredItemAction)"
-                                                            @openLocationModal="openModalLocation(storedItem, palletStoredItemAction)"
+                                                            :palletStoredItems="[palletStoredItem, ...getOtherPalletStoredItems(storedItem, palletStoredItem.id)]"
+                                                            :selectedPalletStoredItemId="palletStoredItem.id"
+                                                            :locationHref="generateLinkLocationInWarehouse(palletStoredItem)"
+                                                            @openLocationModal="openModalLocation(storedItem, palletStoredItem)"
                                                         />
 
                                                         <NumberWithButtonSave
-                                                            :key="`picking-action_${storedItem.id}_${palletStoredItemAction.id}_${getRemainingActionQuantity(palletStoredItemAction)}`"
+                                                            :key="`picking-action_${storedItem.id}_${palletStoredItem.id}_${getRemainingActionQuantity(palletStoredItem)}`"
                                                             noUndoButton
-                                                            :modelValue="getRemainingActionQuantity(palletStoredItemAction)"
+                                                            :modelValue="getRemainingActionQuantity(palletStoredItem)"
                                                             :bindToTarget="{
                                                                 step: 1,
                                                                 min: 1,
-                                                                max: getRemainingActionQuantity(palletStoredItemAction),
+                                                                max: getRemainingActionQuantity(palletStoredItem),
                                                             }"
                                                             :xxparentClass="''"
                                                         >
                                                             <template #save="{ quantity }">
                                                                 <div class="flex items-center gap-x-1">
                                                                     <Button
-                                                                        @click="() => onSetLineAsPicked(palletStoredItemAction, Number(quantity || 0), `picked_${storedItem.id}_${palletStoredItemAction.id}`)"
+                                                                        @click="() => onSetLineAsPicked(palletStoredItem, Number(quantity || 0), `picked_${storedItem.id}_${palletStoredItem.id}`)"
                                                                         icon="fal fa-clipboard-list-check"
                                                                         :label="String(Number(quantity || 0))"
                                                                         size="xs"
                                                                         type="secondary"
-                                                                        :loading="get(isLoadingSetPicked, `picked_${storedItem.id}_${palletStoredItemAction.id}`, false)"
+                                                                        :loading="get(isLoadingSetPicked, `picked_${storedItem.id}_${palletStoredItem.id}`, false)"
                                                                         class="py-0"
                                                                     />
                                                                     <Button
-                                                                        @click="() => onSetLineAsNotPicked(palletStoredItemAction, Number(quantity || 0), `not-picked_${storedItem.id}_${palletStoredItemAction.id}`)"
+                                                                        @click="() => onSetLineAsNotPicked(palletStoredItem, Number(quantity || 0), `not-picked_${storedItem.id}_${palletStoredItem.id}`)"
                                                                         iconRight="fal fa-debug"
                                                                         :label="String(Number(quantity || 0))"
                                                                         size="xs"
                                                                         type="negative"
-                                                                        :loading="get(isLoadingSetNotPicked, `not-picked_${storedItem.id}_${palletStoredItemAction.id}`, false)"
+                                                                        :loading="get(isLoadingSetNotPicked, `not-picked_${storedItem.id}_${palletStoredItem.id}`, false)"
                                                                         class="py-0"
                                                                     />
                                                                 </div>
                                                             </template>
                                                         </NumberWithButtonSave>
                                                     </div>
-                                                    <div class="ml-auto flex items-center justify-end gap-x-2">
+                                                    <div
+                                                        v-if="
+                                                            Number(palletStoredItem.picked_quantity || 0) > 0 ||
+                                                            Number(palletStoredItem.not_picked_quantity || 0) > 0
+                                                        "
+                                                        class="ml-auto flex items-center justify-end gap-x-2"
+                                                    >
                                                         <Link
                                                             v-if="palletStoredItem.location?.code && Number(palletStoredItem.picked_quantity || 0) > 0"
                                                             :href="generateLinkLocationInWarehouse(palletStoredItem) || '#'"
@@ -1042,10 +1047,6 @@ const onDispatchPalletReturn = async () => {
                                                             {{ palletStoredItem.not_picked_quantity ?? 0 }}
                                                         </span>
                                                         <Button
-                                                            v-if="
-                                                                Number(palletStoredItem.picked_quantity || 0) > 0 ||
-                                                                Number(palletStoredItem.not_picked_quantity || 0) > 0
-                                                            "
                                                             @click="() => onUndoLinePick(palletStoredItem.undoRoute, `undo_${storedItem.id}_${palletStoredItem.id}`)"
                                                             icon="fal fa-undo-alt"
                                                             size="xxs"
@@ -1170,7 +1171,7 @@ const onDispatchPalletReturn = async () => {
                     </div>
                 </div>
 
-                <Collapse
+                <!-- <Collapse
                     v-if="groupMode === 'by_item'"
                     as="section"
                     :when="get(proxyItem, ['is_open_collapsed'], false)"
@@ -1211,7 +1212,7 @@ const onDispatchPalletReturn = async () => {
                             {{ get(proxyItem, ['is_open_collapsed'], false) ? 'Close' : 'Open hidden pallets' }}
                         </div>
                     </Button>
-                </div>
+                </div> -->
             </div>
 
             <div v-else class="text-gray-400 italic">
