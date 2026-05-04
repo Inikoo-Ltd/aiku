@@ -70,6 +70,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_webpages_sub_type_sub_department
  * @property int $number_web_user_requests
  * @property int $number_webpages_families_overview
+ * @property int $number_webpages_type_landing_page
+ * @property int $number_webpages_sub_type_landing_page
  * @property-read \App\Models\Web\Website|null $website
  * @method static Builder<static>|WebsiteStats newModelQuery()
  * @method static Builder<static>|WebsiteStats newQuery()

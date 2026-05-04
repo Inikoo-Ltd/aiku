@@ -15,6 +15,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProductions;
 use App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions;
 use App\Actions\SysAdmin\User\UserAddRoles;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Actions\UI\Grp\RecacheUserUiProps;
 use App\Enums\Production\Production\ProductionStateEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Production\Production;
@@ -64,7 +65,7 @@ class StoreProduction extends OrgAction
 
         GroupHydrateProductions::dispatch($organisation->group)->delay($this->hydratorsDelay);
         OrganisationHydrateProductions::dispatch($organisation)->delay($this->hydratorsDelay);
-
+        RecacheUserUiProps::make()->redoAllUsers();
         return $production;
     }
 

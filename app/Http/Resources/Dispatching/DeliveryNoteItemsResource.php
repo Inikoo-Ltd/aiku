@@ -102,18 +102,31 @@ class DeliveryNoteItemsResource extends JsonResource
             'picking_locations' => $this->pickings
                 ->where('type', '!=', \App\Enums\Dispatching\Picking\PickingTypeEnum::NOT_PICK)
                 ->where('quantity', '!=', 0)
-                ->groupBy('location_id')
-                ->map(function ($pickingGroup) {
-                    $firstPicking = $pickingGroup->first();
-                    $location     = $firstPicking->location;
+                ->map(function ($picking) {
+                    $location = $picking->location;
 
                     return [
-                        'id'             => ('loc_'.($location ? $location->id : 'none')),
-                        'quantity'       => $pickingGroup->sum('quantity'),
-                        'location_slug'  => $location ? $location->slug : null,
-                        'location_code'  => $location ? $location->code : null,
-                        'warehouse_slug' => $location ? $location->warehouse->slug : null,
-                        'warehouse_code' => $location ? $location->warehouse->code : null,
+                        'id'                      => $picking->id,
+                        'quantity_picked'          => (float)$picking->quantity,
+                        'location_slug'            => $location ? $location->slug : null,
+                        'location_code'            => $location ? $location->code : null,
+                        'warehouse_slug'           => $location ? $location->warehouse?->slug : null,
+                        'warehouse_code'           => $location ? $location->warehouse?->code : null,
+                        'show_batch_code_ui'       => $picking->orgStock?->current_batch_codes > 0,
+                        'batch_code_id'            => $picking->batch_code_id,
+                        'batch_code'               => $picking->batchCode?->code ?? $picking->orgStock?->mainBatchCode?->code,
+                        'update_route'             => [
+                            'name'       => 'grp.models.picking.update',
+                            'parameters' => ['picking' => $picking->id],
+                            'method'     => 'patch',
+                        ],
+                        'batch_codes_fetch_route'  => [
+                            'name'       => 'grp.json.org_stock.batch_codes.index',
+                            'parameters' => [
+                                'organisation' => $picking->organisation_id,
+                                'orgStock'     => $picking->org_stock_id,
+                            ],
+                        ],
                     ];
                 })->values()->toArray(),
             'not_picking_route' => [

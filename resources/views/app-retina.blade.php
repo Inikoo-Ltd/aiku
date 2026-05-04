@@ -61,11 +61,6 @@
             </style>
         @endif
         
-    @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'gsc_content', ''))
-        <!-- Google search console  -->
-    <meta name="google-site-verification" content="{{ Arr::get(request()->input('website')->settings, 'gsc_content', '') }}" />
-        <!-- End Google search console -->
-    @endif
     </head>
     <body class="font-sans antialiased h-full text-slate-700">
         @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'google_tag_id', ''))

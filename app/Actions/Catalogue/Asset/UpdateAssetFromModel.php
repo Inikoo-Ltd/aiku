@@ -77,9 +77,9 @@ class UpdateAssetFromModel extends OrgAction
 
 
         if (Arr::hasAny($changes, ['state'])) {
-            ShopHydrateAssets::dispatch($asset->shop)->delay($hydratorsDelay);
-            OrganisationHydrateAssets::dispatch($asset->organisation)->delay($hydratorsDelay);
-            GroupHydrateAssets::dispatch($asset->group)->delay($hydratorsDelay);
+            ShopHydrateAssets::dispatch($asset->shop)->delay(2);
+            OrganisationHydrateAssets::dispatch($asset->organisation)->delay(2);
+            GroupHydrateAssets::dispatch($asset->group)->delay(2);
         }
 
         if (Arr::hasAny($changes, ['state', 'master_asset_id'])) {

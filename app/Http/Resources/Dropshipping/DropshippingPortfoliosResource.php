@@ -36,24 +36,54 @@ use Illuminate\Support\Arr;
  * @property mixed $platform_product_id
  * @property mixed $item_description
  * @property mixed $id
+ * @property mixed $is_bundle
+ * @property mixed $selling_price
+ * @property mixed $platform_handle
+ * @property mixed $item_id
+ * @property mixed $bundle_id
+ * @property mixed $is_for_sale
+ * @property mixed $rrp
+ * @property mixed $platform_type
+ * @property mixed $available_quantity
+ * @property mixed $current_historic_asset_id
+ * @property mixed $gross_weight
+ * @property mixed $marketing_weight
+ * @property mixed $marketing_dimensions
+ * @property mixed $price
+ * @property mixed $web_images
+ * @property mixed $customer_price
+ * @property mixed $status
+ * @property mixed $upload_warning
+ * @property mixed $platform_status
+ * @property mixed $data
+ * @property mixed $platform_user_id
+ * @property mixed $item_code
+ * @property mixed $currency_code
+ * @property mixed $item_type
+ * @property mixed $errors_response
+ * @property mixed $has_valid_platform_product_id
+ * @property mixed $exist_in_platform
+ * @property mixed $platform_possible_matches
+ * @property mixed $customer_sales_channels_platform_status
+ * @property mixed $product_code
  *
  */
 class DropshippingPortfoliosResource extends JsonResource
 {
     public function toArray($request): array
     {
-        if ($department = $this->item?->department) {
-            $department = $department->name.', ';
-        }
-        $quantity         = $this->item->available_quantity;
-        $itemId           = $this->item->current_historic_asset_id;
-        $weight           = $this->item->gross_weight;
-        $marketing_weight = $this->item->marketing_weight;
-        $dimension        = NaturalLanguage::make()->dimensions(json_encode($this->item->marketing_dimensions));
-        $price            = $this->item->price;
-        $image            = $this->item->imageSources(64, 64);
-        $fullSizeImage    = $this->item->imageSources();
-        $category         = $department.$this->item->family?->name;
+        //        if ($department = $this->item?->department) {
+        //            $department = $department->name.', ';
+        //        }
+        $quantity         = $this->available_quantity;
+        $itemId           = $this->current_historic_asset_id;
+        $weight           = $this->gross_weight;
+        $marketing_weight = $this->marketing_weight;
+        $dimension        = NaturalLanguage::make()->dimensions($this->marketing_dimensions);
+        $price            = $this->price;
+        $image            = Arr::get($this->web_images, 'main.thumbnail');
+        $fullSizeImage    = Arr::get($this->web_images, 'main.gallery');
+        // $category         = $department.$this->item->family?->name;
 
 
         $shopifyUploadRoute = [];
@@ -63,66 +93,66 @@ class DropshippingPortfoliosResource extends JsonResource
         $magentoUploadRoute = [];
 
 
-        if ($this->platform->type != PlatformTypeEnum::MANUAL && $this->customerSalesChannel->user) {
-            if ($this->platform->type == PlatformTypeEnum::SHOPIFY) {
+        if ($this->platform_type != PlatformTypeEnum::MANUAL->value && $this->platform_user_id) {
+            if ($this->platform_type == PlatformTypeEnum::SHOPIFY->value) {
                 $shopifyUploadRoute = [
                     'platform_upload_portfolio' => [
                         'method'     => 'post',
                         'name'       => 'retina.models.dropshipping.shopify.single_upload',
                         'parameters' => [
-                            'shopifyUser' => $this->customerSalesChannel->user->id,
+                            'shopifyUser' => $this->platform_user_id,
                             'portfolio'   => $this->id
                         ]
                     ],
                 ];
             }
 
-            if ($this->platform->type == PlatformTypeEnum::WOOCOMMERCE) {
+            if ($this->platform_type == PlatformTypeEnum::WOOCOMMERCE->value) {
                 $wooUploadRoute = [
                     'platform_upload_portfolio' => [
                         'method'     => 'post',
                         'name'       => 'retina.models.dropshipping.woo.single_upload',
                         'parameters' => [
-                            'wooCommerceUser' => $this->customerSalesChannel->user->id,
+                            'wooCommerceUser' => $this->platform_user_id,
                             'portfolio'       => $this->id
                         ]
                     ],
                 ];
             }
 
-            if ($this->platform->type == PlatformTypeEnum::EBAY) {
+            if ($this->platform_type == PlatformTypeEnum::EBAY->value) {
                 $ebayUploadRoute = [
                     'platform_upload_portfolio' => [
                         'method'     => 'post',
                         'name'       => 'retina.models.dropshipping.ebay.single_upload',
                         'parameters' => [
-                            'ebayUser'  => $this->customerSalesChannel->user->id,
+                            'ebayUser'  => $this->platform_user_id,
                             'portfolio' => $this->id
                         ]
                     ],
                 ];
             }
 
-            if ($this->platform->type == PlatformTypeEnum::AMAZON) {
+            if ($this->platform_type == PlatformTypeEnum::AMAZON->value) {
                 $amazonUploadRoute = [
                     'platform_upload_portfolio' => [
                         'method'     => 'post',
                         'name'       => 'retina.models.dropshipping.amazon.single_upload',
                         'parameters' => [
-                            'amazonUser' => $this->customerSalesChannel->user->id,
+                            'amazonUser' => $this->platform_user_id,
                             'portfolio'  => $this->id
                         ]
                     ],
                 ];
             }
 
-            if ($this->platform->type == PlatformTypeEnum::MAGENTO) {
+            if ($this->platform_type == PlatformTypeEnum::MAGENTO->value) {
                 $magentoUploadRoute = [
                     'platform_upload_portfolio' => [
                         'method'     => 'post',
                         'name'       => 'retina.models.dropshipping.magento.single_upload',
                         'parameters' => [
-                            'magentoUser' => $this->customerSalesChannel->user->id,
+                            'magentoUser' => $this->platform_user_id,
                             'portfolio'   => $this->id
                         ]
                     ],
@@ -134,11 +164,11 @@ class DropshippingPortfoliosResource extends JsonResource
             'id'                    => $this->id,
             'item_id'               => $itemId,
             'product_id'            => $this->item_id,
-            'code'                  => $this->item?->code ?? $this->item_code,
-            'currency_code'         => $this->item?->currency?->code,
+            'code'                  => $this->product_code ?? $this->item_code,
+            'currency_code'         => $this->currency_code,
             'handle'                => $this->platform_handle,
-            'name'                  => $this->customer_product_name ?? $this->item?->name ?? $this->item_name ?? $this->item?->code,
-            'description'           => $this->customer_description ?? $this->item?->description ?? $this->item_description,
+            'name'                  => $this->customer_product_name ?? $this->product_name ?? $this->item_name ?? $this->product_code,
+            'description'           => $this->customer_description ?? $this->product_description ?? $this->item_description,
             'quantity_left'         => $quantity,
             'weight'                => $weight,
             'marketing_weight'      => $marketing_weight,
@@ -158,48 +188,48 @@ class DropshippingPortfoliosResource extends JsonResource
             'upload_warning'        => $this->upload_warning,
             'message'               => $this->platform_status ? 'OK' : Arr::get($this->errors_response, 'message', ''),
             'shopify_product_data'  => Arr::get($this->data, 'shopify_product', []),
-            'platform_product_data' => match ($this->platform->type) {
-                PlatformTypeEnum::WOOCOMMERCE => Arr::get($this->data, 'woo_product', []),
-                PlatformTypeEnum::EBAY => Arr::get($this->data, 'ebay_product', []),
+            'platform_product_data' => match ($this->platform_type) {
+                PlatformTypeEnum::WOOCOMMERCE->value => Arr::get($this->data, 'woo_product', []),
+                PlatformTypeEnum::EBAY->value => Arr::get($this->data, 'ebay_product', []),
                 default => [],
             },
 
             'portfolio_data' => $this->data,
-            'bundle_id' => $this->bundle_id,
-            'is_bundle' => $this->is_bundle,
+            'bundle_id'      => $this->bundle_id,
+            'is_bundle'      => $this->is_bundle,
 
             'has_valid_platform_product_id'          => $this->has_valid_platform_product_id,
             'exist_in_platform'                      => $this->exist_in_platform,
             'platform_status'                        => $this->platform_status,
             'platform_possible_matches'              => $this->platform_possible_matches,
-            'customer_sales_channel_platform_status' => $this->customerSalesChannel->platform_status,
+            'customer_sales_channel_platform_status' => $this->customer_sales_channels_platform_status,
 
-            'category'         => $category,
-            'platform'         => $this->platform->type,
-            'delete_portfolio' => [
+            //'category'         => $category,
+            'platform'                               => $this->platform_type,
+            'delete_portfolio'                       => [
                 'method'     => 'delete',
                 'name'       => 'retina.models.portfolio.delete',
                 'parameters' => [
                     'portfolio' => $this->id
                 ]
             ],
-            'unlink_portfolio' => [
+            'unlink_portfolio'                       => [
                 'method'     => 'delete',
                 'name'       => 'retina.models.portfolio.unlink',
                 'parameters' => [
                     'portfolio' => $this->id
                 ]
             ],
-            'update_portfolio' => [
+            'update_portfolio'                       => [
                 'method'     => 'patch',
                 'name'       => 'retina.models.portfolio.update',
                 'parameters' => [
                     'portfolio' => $this->id
                 ]
             ],
-            'product_state'             => $this->product_state ?? null,
-            'is_for_sale'               => ($this->is_bundle ? true : $this->is_for_sale) ?? null,
-            'product_rrp'               => $this->rrp,
+            'product_state'                          => $this->product_state ?? null,
+            'is_for_sale'                            => ($this->is_bundle ? true : $this->is_for_sale) ?? null,
+            'product_rrp'                            => $this->rrp,
             ...$shopifyUploadRoute,
             ...$wooUploadRoute,
             ...$ebayUploadRoute,

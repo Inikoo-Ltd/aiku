@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, inject, onMounted } from "vue"
 import { getStyles } from "@/Composables/styles"
-
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import axios from 'axios'
 import { trans } from "laravel-vue-i18n"
@@ -24,7 +22,7 @@ library.add(faChevronLeft, faChevronRight)
 
 const props = defineProps<{
     fieldValue: {
-        family: {   // GetWebBlockRecommendationsCRB
+        family: {
             id: number
             slug: string
             name: string
@@ -70,7 +68,6 @@ const fetchRecommenders = async () => {
             )
 
             listProducts.value = response.data.data
-            /* console.log('Final listProducts value:', listProducts.value) */
         } catch (error: any) {
             console.error('Error on fetching recommendations:', error)
         } finally {

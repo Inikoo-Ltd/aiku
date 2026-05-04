@@ -492,7 +492,7 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->command('art clone:aurora_vol_gr_offers sk eu')->twiceDailyAt(12, 18)->timezone('UTC')->onOneServer()->sentryMonitor(
+                $schedule->command('clone:aurora_vol_gr_offers sk eu')->twiceDailyAt(12, 18)->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'CloneAuroraVolGrOffers',
                 ),
                 name: 'CloneAuroraVolGrOffers',
@@ -582,10 +582,19 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->command('art hydrate:mismatch_detected')->weeklyOn(1, '03:00')->timezone('UTC')->onOneServer()->sentryMonitor(
+                $schedule->command('hydrate:mismatch_detected')->weeklyOn(1, '03:00')->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'HydrateMismatchDetected',
                 ),
                 name: 'HydrateMismatchDetected',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('ui:recache-user-props')->weeklyOn(1, '06:00')->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RecacheUserUiProps',
+                ),
+                name: 'RecacheUserUiProps',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

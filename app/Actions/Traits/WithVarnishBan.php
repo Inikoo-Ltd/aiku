@@ -10,26 +10,26 @@ namespace App\Actions\Traits;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
+use Sentry;
 
 trait WithVarnishBan
 {
-    protected function sendVarnishBanHttp(array $banExpression, ?Command $command = null): array
+    protected function sendVarnishBanHttp(array $banExpression, ?Command $command = null): void
     {
-        try {
-            $response = Http::timeout(3)
-                ->withHeaders($banExpression)
-                ->send('BAN', config('iris.cache.varnish_host'));
+        foreach (config('iris.cache.varnish_hosts') as $varnishHost) {
+            try {
+                $response = Http::timeout(3)
+                    ->withHeaders($banExpression)
+                    ->send('BAN', $varnishHost);
 
-            if ($command) {
-                $command->line('BAN sent: '.json_encode($banExpression));
-                $command->line('Varnish replied: '.$response->status().' '.$response->body());
+                if ($command) {
+                    $command->line('BAN sent: '.json_encode($banExpression));
+                    $command->line('Varnish replied: '.$response->status().' '.$response->body());
+                }
+            } catch (\Throwable $e) {
+                $command?->error('Failed to send Varnish BAN: '.$e->getMessage());
+                Sentry::captureException($e);
             }
-
-            return $response['body'] ?? ['status' => 'success'];
-        } catch (\Throwable $e) {
-            $command?->error('Failed to send Varnish BAN: '.$e->getMessage());
-
-            return ['status' => 'error', 'error' => $e->getMessage() ?? ''];
         }
     }
 }

@@ -9,6 +9,7 @@
 namespace App\Actions\Helpers\Address;
 
 use App\Models\Helpers\Address;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -18,11 +19,11 @@ class FixedAddressGarbageCollection
 
     public function handle(int $addressID): ?bool
     {
-
         $address = Address::find($addressID);
         if (!$address) {
             DB::table('model_has_fixed_addresses')->where('address_id', $addressID)->delete();
             DB::table('addresses')->where('id', $addressID)->delete();
+
             return null;
         }
 
@@ -30,8 +31,13 @@ class FixedAddressGarbageCollection
             ->where('address_id', $address->id)->exists();
 
         if (!$inUse) {
-            $address->forceDelete();
-            return true;
+            try {
+                $address->forceDelete();
+
+                return true;
+            } catch (Exception) {
+                return false;
+            }
         }
 
         return false;
