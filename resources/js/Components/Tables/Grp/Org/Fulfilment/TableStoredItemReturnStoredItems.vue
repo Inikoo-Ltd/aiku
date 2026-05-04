@@ -546,7 +546,16 @@ function getRequestedPalletStoredItems(item: any) {
                                     <div v-else>{{ pallet_stored_item.reference }}</div>
                                 </span>
                                 <span v-else class="text-gray-400 italic">({{ trans('No reference') }})</span>
-                                <span v-if="pallet_stored_item.location?.code" v-tooltip="trans('Location code of the pallet')" class="text-gray-400"> [{{ pallet_stored_item.location?.code }}]</span>
+                                <span
+                                    v-if="
+                                        pallet_stored_item.location?.code &&
+                                        ['in_process', 'submitted', 'confirmed'].includes(palletReturn.state)
+                                    "
+                                    v-tooltip="trans('Location code of the pallet')"
+                                    class="text-gray-400"
+                                >
+                                    [{{ pallet_stored_item.location?.code }}]
+                                </span>
                                 <div  v-if="pallet_stored_item.selected_quantity && palletReturn.state === 'in_process'" v-tooltip="trans('Will be picked')" class="pl-1 pb-1 inline" >
                                     <FontAwesomeIcon icon='fas fa-circle' class='text-[7px] text-blue-500 animate-pulse' fixed-width aria-hidden='true' />
                                 </div>
