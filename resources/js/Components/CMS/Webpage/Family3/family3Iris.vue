@@ -121,7 +121,7 @@ console.log("Family2 Workshop Props:", props)
           }">
             <SwiperSlide v-for="(img, i) in images" :key="i">
               <div class="relative w-full aspect-square overflow-hidden rounded-lg">
-                <Image :src="img.original" :imageCover="true"
+                <Image :src="img.original" :imageCover="true" :alt="`image-description-${index}`"
                   class="absolute inset-0 w-full h-full object-cover transition duration-300 hover:scale-105" />
               </div>
             </SwiperSlide>
@@ -211,21 +211,21 @@ console.log("Family2 Workshop Props:", props)
 
 /* BADGE */
 .discount-wrapper :deep(.offer-max-discount) {
-  @apply bg-[#A80000] border border-red-900 text-gray-100 flex items-center rounded-sm px-2 py-1 text-xs 2xl:px-3 2xl:py-2 2xl:text-sm;
+  @apply bg-[#A80000] border border-red-900 text-gray-100 flex items-center rounded-sm px-2 py-1 text-[12px] 2xl:px-3 2xl:py-2 2xl:text-sm;
 }
 
 /* PERCENTAGE */
 .discount-wrapper :deep(.discount-percentage) {
-  @apply text-white font-bold px-2 w-[30%] text-sm 2xl:text-base 2xl:px-3;
+  @apply text-white font-bold px-2 w-[30%] text-[12px] 2xl:text-base 2xl:px-3;
 }
 
 .discount-wrapper :deep(.percentage-text) {
-  @apply text-sm 2xl:text-lg;
+  @apply text-[12px] 2xl:text-lg;
 }
 
 /* TITLE */
 .discount-wrapper :deep(.discount-title) {
-  @apply text-sm leading-5 2xl:text-base 2xl:leading-6;
+  @apply text-[12px] leading-5 2xl:text-base 2xl:leading-6;
 }
 
 /* CONTENT WRAPPER */
@@ -240,7 +240,7 @@ console.log("Family2 Workshop Props:", props)
 
 /* TRIGGERS (TRUNCATE) */
 .discount-wrapper :deep(.discount-triggers) {
-  @apply block truncate text-sm leading-5 opacity-70 2xl:text-base 2xl:leading-6;
+  @apply hidden block truncate text-[12px] leading-5 opacity-70 2xl:text-base 2xl:leading-6;
 }
 
 /* GR WRAPPER */
@@ -250,7 +250,7 @@ console.log("Family2 Workshop Props:", props)
 
 /* GR TEXT (TRUNCATE) */
 .discount-wrapper :deep(.inactive-text) {
-  @apply min-w-0 flex-1 max-w-[170px] truncate text-sm leading-5 opacity-70 md:max-w-[120px] 2xl:max-w-[200px] 2xl:text-base 2xl:leading-6;
+  @apply min-w-0 flex-1 max-w-[170px] truncate text-[12px] leading-5 opacity-70 md:max-w-[120px] 2xl:max-w-[200px] 2xl:text-base 2xl:leading-6;
 }
 
 /* ICON FIX */
