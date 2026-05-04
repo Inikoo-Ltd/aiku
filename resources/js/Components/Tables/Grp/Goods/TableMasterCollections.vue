@@ -20,9 +20,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@/Components/Image.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import axios from "axios"
 import { remove as loRemove } from 'lodash-es'
-import { notify } from "@kyvg/vue3-notification"
 
 library.add(fasCheckCircle,faTimesCircle,faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree, faTrash, faEdit, faTriangle, faEquals, faMinus)
 
@@ -60,37 +58,7 @@ function collectionRoute(collection: { slug: string }) {
   }
 }
 
-function parentRoute(slug: string, type: string) {
-    if(inMasterCollection && type)
-    {
-        const routeLink = type === 'department' ? 'grp.masters.master_shops.show.master_departments.show' : 'grp.masters.master_shops.show.master_sub_departments.show';
-        return route(
-            routeLink,
-            [
-                (route().params as RouteParams).masterShop,
-                slug
-            ]);
-    }
 
-    return route(
-        "grp.helpers.redirect_collections_in_product_category",
-        [
-            slug
-        ]
-    )
-
-}
-
-// edit route
-function editRoute(collection: {}) {
-    return route(
-        "grp.masters.master_shops.show.master_collections.edit",
-        [
-            (route().params as RouteParams).masterShop,
-            collection.slug
-        ]
-    )
-}
 
 const isLoadingDetach = ref<string[]>([])
 
@@ -139,33 +107,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
 console.log('ssss',props)
 
-// const detachCollection = async (model) => {
-//     isLoadingDetach.value = true;
-//     await axios.delete(route(props.routes.detach.name, props.routes.detach.parameters), 
-//     {
-//         data: {
-//             collection: model.id
-//         }
-//     })
-//     .then((res) => {
-//         notify({
-//             title: trans('Success'),
-//             text: trans(`Successfully detached collection`),
-//             type: 'success',
-//         })
-//     })
-//     .catch((res) => {
-//         console.error("Error Response:", res);
-//         notify({
-//             title: trans('Error'),
-//             text: trans(`Failed to detach collection`),
-//             type: 'error',
-//         })
-//     })
-//     .finally(() => {
-//         isLoadingDetach.value = false;
-//     });
-// }
+
 </script>
 
 <template>
@@ -200,18 +142,6 @@ console.log('ssss',props)
                 </template>
             </div>
         </template>
-
-
-
-       <!--  <template #cell(parents)="{ item: collection }">
-            <template v-for="(parent, index) in collection.parents_data" :key="index">
-                <FontAwesomeIcon v-if="parent.type === 'department'" :icon="faFolderTree" class="mr-1" v-tooltip="trans('Department')" />
-                <FontAwesomeIcon v-else-if="parent.type === 'sub_department'" :icon="faFolderDownload" class="mr-1" v-tooltip="trans('Sub Department')" />
-                <Link :href="parentRoute(parent.slug, parent.type) as string" class="secondaryLink">
-                    {{ parent.code && parent.code.length > 16 ? parent.code.substring(0, 16) + "..." : parent.code }}
-                </Link>&nbsp;
-            </template>
-        </template> -->
 
         <template #cell(master_department)="{ item: department }">
             <span class="inline-flex max-w-full overflow-hidden whitespace-nowrap">
