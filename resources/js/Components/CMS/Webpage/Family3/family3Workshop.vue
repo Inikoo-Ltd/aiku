@@ -84,11 +84,10 @@ const textOrder = computed(() =>
 )
 
 const images = computed(() => {
-  const src = modelValue.value?.family?.web_images?.all
-  if (!src) return []
-  return Array.isArray(src) ? src : [src]
+  const data = props.fieldValue?.family?.description_image
+  if (!data) return []
+  return Object.values(data).filter(Boolean)
 })
-
 const saveDescription = debounce(async (key: string, value: string) => {
   try {
     const url = route("grp.models.product_category.update", {
@@ -138,6 +137,7 @@ console.log("Family2 Workshop Props:", props)
 <template>
   <div
     class="w-full"
+    :id="modelValue?.id ? modelValue?.id : 'family-3'+indexBlock" 
     :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(modelValue?.container?.properties, screenType)
