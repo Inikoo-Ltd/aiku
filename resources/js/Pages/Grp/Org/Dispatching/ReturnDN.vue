@@ -13,6 +13,7 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import Timeline from '@/Components/Utils/Timeline.vue'
 import BoxNote from '@/Components/Pallet/BoxNote.vue'
+import TableReturnDNItems from '@/Components/Warehouse/DeliveryNotes/TableReturnDNItems.vue'
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
 
@@ -24,6 +25,10 @@ const props = defineProps<{
     delivery_note: {
         state: string
     }
+	returned_delivery_note_state: {
+		value: string
+		label: string
+	}
 	notes: {
 		note_list: {
 			label: string,
@@ -37,6 +42,10 @@ const props = defineProps<{
 			method: string
 		},
 	}
+	is_faire_order: boolean
+	allow_waiting: boolean
+	allow_picker_set_not_picked: boolean
+	showChangePickerPacker: boolean
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -45,7 +54,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
 
     const components: Component = {
-        showcase: DummyComponent
+        return_delivery_note: TableReturnDNItems
     }
 
     return components[currentTab.value]
@@ -88,10 +97,14 @@ const component = computed(() => {
 	<div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
 		<Timeline
 			:options="timelines"
-			:state="props.delivery_note.state"
+			:state="returned_delivery_note_state.value"
 			:slidesPerView="6"
 			:format-time="'MMMM d yyyy, HH:mm'" />
 	</div>
 
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
+    <component
+		:is="component"
+		:data="props[currentTab as keyof typeof props]"
+		:tab="currentTab"
+	/>
 </template>

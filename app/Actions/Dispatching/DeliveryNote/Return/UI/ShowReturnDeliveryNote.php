@@ -358,11 +358,10 @@ class ShowReturnDeliveryNote extends OrgAction
                 'actions'         => $actions,
                 'wrapped_actions' => $this->wrappedActions($returnDeliveryNote),
             ],
-            'warning'       => $warning,
-            'isEditable'    => $isEditable,
-            // TODO LATER
+            // 'warning'       => $warning,
+            // 'isEditable'    => $isEditable,
             'tabs'  => [
-                
+                // TODO LATER
             ],
             // 'tabs'          => [
             //     'current'    => $deliveryNote->state == DeliveryNoteStateEnum::PACKING ? DeliveryNoteTabsEnum::PENDING_ITEMS->value : $this->tab,
@@ -379,10 +378,10 @@ class ShowReturnDeliveryNote extends OrgAction
                     'countriesAddressData' => GetAddressData::run()
                 ]
             ],
-            'allowActions'        => $allowAction,
+            // 'allowActions'        => $allowAction,
             'timelines'           => $this->getTimeline($returnDeliveryNote),
             'box_stats'           => $this->getBoxStats($returnDeliveryNote),
-            'shop_type'           => $returnDeliveryNote->shop->type,
+            // 'shop_type'           => $returnDeliveryNote->shop->type,
             'notes'               => $this->getDeliveryNoteNotes($returnDeliveryNote),
             'quick_pickers'       => $this->quickGetPickers(),
             'routes'              => [
@@ -433,43 +432,43 @@ class ShowReturnDeliveryNote extends OrgAction
                 'label' => $returnDeliveryNote->return_state->labels()[$returnDeliveryNote->return_state->value],
             ],
             // TODO REMOVE PERHAPS 
-            'shipments_routes'    => [
-                'submit_route' => [
-                    'name'       => 'grp.models.delivery_note.shipment.store',
-                    'parameters' => [
-                        'deliveryNote' => $returnDeliveryNote->deliveryNote->id
-                    ]
-                ],
+            // 'shipments_routes'    => [
+            //     'submit_route' => [
+            //         'name'       => 'grp.models.delivery_note.shipment.store',
+            //         'parameters' => [
+            //             'deliveryNote' => $returnDeliveryNote->deliveryNote->id
+            //         ]
+            //     ],
 
-                'fetch_route' => [
-                    'name'       => 'grp.json.shippers.index',
-                    'parameters' => [
-                        'organisation' => $returnDeliveryNote->deliveryNote->organisation->slug,
-                    ]
-                ],
+            //     'fetch_route' => [
+            //         'name'       => 'grp.json.shippers.index',
+            //         'parameters' => [
+            //             'organisation' => $returnDeliveryNote->deliveryNote->organisation->slug,
+            //         ]
+            //     ],
 
-                'delete_route' => [
-                    'name'       => 'grp.models.delivery_note.shipment.detach',
-                    'parameters' => [
-                        'deliveryNote' => $returnDeliveryNote->deliveryNote->id
-                    ]
-                ],
-            ],
+            //     'delete_route' => [
+            //         'name'       => 'grp.models.delivery_note.shipment.detach',
+            //         'parameters' => [
+            //             'deliveryNote' => $returnDeliveryNote->deliveryNote->id
+            //         ]
+            //     ],
+            // ],
             'warehouse'           => [
                 'slug' => $returnDeliveryNote->warehouse->slug,
             ],
 
-            'is_faire_order' => ($returnDeliveryNote->shop->engine == ShopEngineEnum::FAIRE),
-            'allow_waiting'               => $allowWaiting,
-            'allow_picker_set_not_picked' => !$allowWaiting || (data_get($this->organisation->settings, 'orders.allow_picker_set_not_picked', false)),
-            'showChangePickerPacker'      => $showChangePickerPacker,
-            DeliveryNoteTabsEnum::HISTORY->value => $this->tab == DeliveryNoteTabsEnum::HISTORY->value ?
-                fn () => HistoryResource::collection(IndexHistory::run($returnDeliveryNote, DeliveryNoteTabsEnum::HISTORY->value))
-                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($returnDeliveryNote, DeliveryNoteTabsEnum::HISTORY->value))),
+            'is_faire_order'                => ($returnDeliveryNote->shop->engine == ShopEngineEnum::FAIRE),
+            'allow_waiting'                 => $allowWaiting,
+            'allow_picker_set_not_picked'   => !$allowWaiting || (data_get($this->organisation->settings, 'orders.allow_picker_set_not_picked', false)),
+            'showChangePickerPacker'        => $showChangePickerPacker,
+            // DeliveryNoteTabsEnum::HISTORY->value => $this->tab == DeliveryNoteTabsEnum::HISTORY->value ?
+            //     fn () => HistoryResource::collection(IndexHistory::run($returnDeliveryNote, DeliveryNoteTabsEnum::HISTORY->value))
+            //     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($returnDeliveryNote, DeliveryNoteTabsEnum::HISTORY->value))),
             'shop'                               => [
                 'type' => $returnDeliveryNote->shop?->type?->value,
-            ]
-
+            ],
+            'return_delivery_note' => [],   // TODO: Index
 
         ];
 
