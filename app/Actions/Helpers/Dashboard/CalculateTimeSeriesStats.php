@@ -87,13 +87,14 @@ class CalculateTimeSeriesStats
         if ($from_date && $to_date) {
             $start = Carbon::parse($from_date)->startOfDay();
             $end = Carbon::parse($to_date)->endOfDay();
+
             foreach ($metricsMapping as $outputKey => $column) {
                 $selects[] = "SUM(CASE WHEN \"from\" >= ? AND \"from\" <= ? THEN $column ELSE 0 END) as {$outputKey}_ctm";
                 $bindings[] = $start;
                 $bindings[] = $end;
             }
-            $startLy = $this->getSameDayPreviousYear($start);
-            $endLy = $this->getSameDayPreviousYear($end);
+
+            [$startLy, $endLy] = $this->getComparisonRange(DateIntervalEnum::CUSTOM, $start, $end);
 
             foreach ($metricsMapping as $outputKey => $column) {
                 $selects[] = "SUM(CASE WHEN \"from\" >= ? AND \"from\" <= ? THEN $column ELSE 0 END) as {$outputKey}_ctm_ly";
@@ -116,8 +117,7 @@ class CalculateTimeSeriesStats
                 $bindings[] = $end;
             }
 
-            $startLy = $this->getSameDayPreviousYear($start);
-            $endLy = $this->getSameDayPreviousYear($end);
+            [$startLy, $endLy] = $this->getComparisonRange($interval, $start, $end);
 
             foreach ($metricsMapping as $outputKey => $column) {
                 $selects[] = "SUM(CASE WHEN \"from\" >= ? AND \"from\" <= ? THEN $column ELSE 0 END) as {$outputKey}_{$interval->value}_ly";
@@ -216,6 +216,14 @@ class CalculateTimeSeriesStats
             'formatted_value' => $formattedValue,
             'delta_icon'      => $deltaIcon,
         ];
+    }
+
+    protected function getComparisonRange(DateIntervalEnum $interval, Carbon $start, Carbon $end): array
+    {
+        return match ($interval->value) {
+            'ld', 'tdy', 'wtd' => [$this->getSameDayPreviousYear($start), $this->getSameDayPreviousYear($end)],
+            default => [$start->copy()->subYear(), $end->copy()->subYear()],
+        };
     }
 
     protected function getSameDayPreviousYear(Carbon $date): Carbon
