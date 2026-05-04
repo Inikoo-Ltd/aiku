@@ -216,16 +216,16 @@ console.log("Family2 Workshop Props:", props)
 
 /* PERCENTAGE */
 .discount-wrapper :deep(.discount-percentage) {
-  @apply text-white font-bold px-2 w-[30%] text-[12px] 2xl:text-base 2xl:px-3;
+  @apply text-white font-bold px-2 w-[30%] text-[12px] 2xl:text-base 2xl:px-3 leading-[0.20rem];
 }
 
 .discount-wrapper :deep(.percentage-text) {
-  @apply text-[12px] 2xl:text-lg;
+  @apply text-[12px] leading-[0.20rem] 2xl:text-lg;
 }
 
 /* TITLE */
 .discount-wrapper :deep(.discount-title) {
-  @apply text-[12px] leading-5 2xl:text-base 2xl:leading-6;
+  @apply text-[12px] leading-5 2xl:text-base 2xl:leading-6 leading-[0.20rem];
 }
 
 /* CONTENT WRAPPER */
@@ -235,12 +235,12 @@ console.log("Family2 Workshop Props:", props)
 
 /* TEXT WRAPPER */
 .discount-wrapper :deep(.discount-content > div) {
-  @apply min-w-0 flex-1;
+  @apply min-w-0 flex-1 p-0;
 }
 
 /* TRIGGERS (TRUNCATE) */
 .discount-wrapper :deep(.discount-triggers) {
-  @apply hidden block truncate text-[12px] leading-5 opacity-70 2xl:text-base 2xl:leading-6;
+  @apply hidden block truncate text-[12px] leading-5 opacity-70 2xl:text-base 2xl:leading-6 leading-[0.20rem];
 }
 
 /* GR WRAPPER */
@@ -250,11 +250,11 @@ console.log("Family2 Workshop Props:", props)
 
 /* GR TEXT (TRUNCATE) */
 .discount-wrapper :deep(.inactive-text) {
-  @apply min-w-0 flex-1 max-w-[170px] truncate text-[12px] leading-5 opacity-70 md:max-w-[120px] 2xl:max-w-[200px] 2xl:text-base 2xl:leading-6;
+  @apply min-w-0 flex-1 max-w-[170px] truncate text-[12px]  leading-[0.20rem] leading-5 opacity-70 md:max-w-[120px] 2xl:max-w-[200px] 2xl:text-base 2xl:leading-6;
 }
 
 /* ICON FIX */
 .discount-wrapper :deep(.gr-info-icon) {
-  @apply flex-shrink-0;
+  @apply flex-shrink-0 leading-[0.20rem];
 }
 </style>
