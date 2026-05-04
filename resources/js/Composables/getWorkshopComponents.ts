@@ -99,9 +99,6 @@ const components = (shop_type?: string): Record<string, Component> => {
         'collection-description-1' : CollectionDescriptionWorkshop,
         'department-description-1' : DepartmentDescriptionWorkshop,
         'sub-department-description-1' : SubDepartmentDesciptionWorkshop,
-        'family-1': FamilyIris1,
-        'family-2': FamilyIris2,
-        'family-3': FamilyIris3,
 
         //sub-department
         'sub-departments-1' : SubDepartmentWorkshop1,
@@ -115,8 +112,14 @@ const components = (shop_type?: string): Record<string, Component> => {
         //family
         "families-1-overview": Families1Overview,
 
+        // family-description
+        'family-1': FamilyIris1,
+        'family-2': FamilyIris2,
+        'family-3': FamilyIris3,
+
         //family-extra-description
         'family-2-extra-description' : Family2ExtraDescriptionWorkshop ,
+        'family-3-extra-description' : Family2ExtraDescriptionWorkshop ,
 
 
         //product

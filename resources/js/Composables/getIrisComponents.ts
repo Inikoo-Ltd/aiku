@@ -135,9 +135,6 @@ const components = (shop_type?: string): Record<string, Component> => {
 		'collection-description-1' : CollectionDescriptionIris,
 		'department-description-1' : DepartmentDescriptionIris,
 		'sub-department-description-1' : SubDepartmentDesciptionIris,
-		'family-1': family1Iris,
-		'family-2': family2Iris,
-		'family-3': family3Iris,
 
 		//sub-department	
 		"sub-departments-1": SubDepartment1Iris,
@@ -152,8 +149,14 @@ const components = (shop_type?: string): Record<string, Component> => {
 		//family
 		"families-1-overview": Families1Overview,
 
+		// family-description
+		'family-1': family1Iris,
+		'family-2': family2Iris,
+		'family-3': family3Iris,
+
 		 //family-extra-description
 		'family-2-extra-description' : Family2ExtraDescriptionIris,
+		'family-3-extra-description' : Family2ExtraDescriptionIris,
 
 		//product
 		"product-1": shop_type === "b2b" ? RenderEcommerceProduct : RenderDropshippingProduct,
@@ -217,7 +220,7 @@ export const getIrisComponent = (
 		shop_type?: string // 'b2b' | 'dropshipping'
 	}
 ) => {
-	return components(options?.shop_type)[componentName] ?? NotFoundComponent
+	return components(options?.shop_type)[componentName] ?? NotFoundComponentwo
 }
 
 export const getProductsRenderDropshippingComponent = (

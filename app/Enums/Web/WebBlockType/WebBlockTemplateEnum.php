@@ -52,7 +52,9 @@ enum WebBlockTemplateEnum: string
             self::FAMILY_DESCRIPTION => [
                 'family-1',
                 'family-2',
-                'family-2-extra-description'
+                'family-2-extra-description',
+                'family-3',
+                'family-3-extra-description',
             ],
 
             self::FAMILY_OVERVIEW => [
