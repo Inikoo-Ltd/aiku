@@ -9,23 +9,12 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
-use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\PaymentGateway\Pastpay\WithPastpayConfiguration;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
-use App\Actions\Accounting\WithCheckoutCom;
-use App\Actions\Ordering\Order\AttachPaymentToOrder;
-use App\Enums\Accounting\Payment\PaymentStateEnum;
-use App\Enums\Accounting\Payment\PaymentStatusEnum;
-use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
-use App\Models\Accounting\MitSavedCard;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
-use Checkout\CheckoutApiException;
-use Checkout\CheckoutSdk;
-use Checkout\Environment;
-use Checkout\Payments\Request\PaymentRequest;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -35,9 +24,6 @@ class PayOrderWithPastpay
     use CalculatesPaymentWithBalance;
     use WithPastpayConfiguration;
 
-    /**
-     * @throws \Checkout\CheckoutArgumentException
-     */
     public function handle(Order $order, array $modelData): array
     {
         /** @var PaymentAccountShop $paymentAccountShop */
@@ -74,9 +60,9 @@ class PayOrderWithPastpay
                 'status' => 'ok',
                 'data' => Arr::get($response, 'data.redirectUrl')
             ];
-        } catch (CheckoutApiException $e) {
+        } catch (\Exception $e) {
             // API error
-            $error_details    = $e->error_details;
+            $error_details    = $e->getMessage();
             $http_status_code = isset($e->http_metadata) ? $e->http_metadata->getStatusCode() : null;
 
             $result = [
