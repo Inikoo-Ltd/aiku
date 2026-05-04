@@ -38,12 +38,16 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
+use App\Actions\Masters\MasterProductCategory\UI\GetMasterSubDepartmentNavigation;
+use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
+use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigation;
 use Illuminate\Support\Collection;
 
 class IndexMasterProducts extends GrpAction
 {
     use WithMasterCatalogueSubNavigation;
     use WithMasterDepartmentSubNavigation;
+    use WithMasterSubDepartmentSubNavigation;
     use WithMasterFamilySubNavigation;
     use WithMastersAuthorisation;
 
@@ -456,10 +460,27 @@ class IndexMasterProducts extends GrpAction
                 $iconRight       = [
                     'icon' => 'fal fa-cube',
                 ];
-            } elseif ($this->parent->type == MasterProductCategoryTypeEnum::FAMILY) {
+            } elseif ($this->parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                $subNavigation   = $this->getMasterSubDepartmentSubNavigation($this->parent);
+                $modelNavigation = GetMasterSubDepartmentNavigation::run($this->parent, $request);
+
+                $title           = $this->parent->name;
+                $icon            = [
+                    'icon'  => ['fal', 'fa-folder-download'],
+                    'title' => __('Master Sub-department')
+                ];
+                $afterTitle      = [
+                    'label' => __('Master Products')
+                ];
+                $iconRight       = [
+                    'icon' => 'fal fa-cube',
+                ];
+            }elseif ($this->parent->type == MasterProductCategoryTypeEnum::FAMILY) {
                 // TODO FOLLOW THIS AND PLACE IT UNDER ALL X IN SHOPS
                 $familyId        = $this->parent->id;
                 $subNavigation   = $this->getMasterFamilySubNavigation($this->parent);
+                $modelNavigation = GetMasterFamilyNavigation::run($this->parent, $request);
+
                 $title           = $this->parent->name;
                 $model           = '';
                 $icon            = [
@@ -472,9 +493,8 @@ class IndexMasterProducts extends GrpAction
                 $iconRight       = [
                     'icon' => 'fal fa-cube',
                 ];
-                $modelNavigation = GetMasterFamilyNavigation::run($this->parent, $request);
-                $exception       = [];
             }
+            $exception       = [];
             $shopsData = OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops'));
         }
 
@@ -605,6 +625,26 @@ class IndexMasterProducts extends GrpAction
                     $suffix
                 ),
             ),
+            'grp.masters.master_shops.show.master_sub_departments.master_products.index',
+            'grp.masters.master_shops.show.master_sub_departments.master_products.show',
+            'grp.masters.master_shops.show.master_sub_departments.master_products.edit',
+            'grp.masters.master_shops.show.master_sub_departments.master_products.create',
+            'grp.masters.master_shops.show.master_sub_departments.master_products.products',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_products.show',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_products.edit',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_products.create',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_products.products', => 
+            array_merge(
+                ShowMasterSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters,
+                    ],
+                    $suffix
+                ),
+            ),
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',
             'grp.masters.master_shops.show.master_families.master_products.index',
             'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index',
@@ -666,6 +706,28 @@ class IndexMasterProducts extends GrpAction
         $this->initialisation($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($masterFamily, prefix: MasterProductsTabsEnum::INDEX->value);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, ActionRequest $request): LengthAwarePaginator
+    {
+        $group = group();
+
+        $this->parent = $masterSubDepartment;
+        $this->initialisation($group, $request)->withTab(MasterProductsTabsEnum::values());
+
+        return $this->handle($masterSubDepartment, prefix: MasterProductsTabsEnum::INDEX->value);
+    }
+    
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterSubDepartmentInMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): LengthAwarePaginator
+    {
+        $group = group();
+
+        $this->parent = $masterSubDepartment;
+        $this->initialisation($group, $request)->withTab(MasterProductsTabsEnum::values());
+
+        return $this->handle($masterSubDepartment, prefix: MasterProductsTabsEnum::INDEX->value);
     }
 
     /** @noinspection PhpUnusedParameterInspection */

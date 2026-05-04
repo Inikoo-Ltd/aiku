@@ -119,6 +119,28 @@ class CreateMasterProduct extends GrpAction
 
         return $this->handle($masterFamily, $request);
     }
+    
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
+    {
+        $group        = group();
+
+        $this->parent = $masterSubDepartment;
+        $this->initialisation($group, $request);
+
+        return $this->handle($masterSubDepartment, $request);
+    }
+    
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterSubDepartmentInMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
+    {
+        $group        = group();
+
+        $this->parent = $masterSubDepartment;
+        $this->initialisation($group, $request);
+
+        return $this->handle($masterSubDepartment, $request);
+    }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inMasterFamilyInMasterSubDepartmentInMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): Response

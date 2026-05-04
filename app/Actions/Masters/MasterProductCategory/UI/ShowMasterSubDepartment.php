@@ -273,6 +273,11 @@ class ShowMasterSubDepartment extends GrpAction
                 )
             ),
             'grp.masters.master_shops.show.master_sub_departments.show',
+            'grp.masters.master_shops.show.master_sub_departments.master_products.index',
+            'grp.masters.master_shops.show.master_sub_departments.master_products.show',
+            'grp.masters.master_shops.show.master_sub_departments.master_products.edit',
+            'grp.masters.master_shops.show.master_sub_departments.master_products.create',
+            'grp.masters.master_shops.show.master_sub_departments.master_products.products',
             'grp.masters.master_shops.show.master_sub_departments.master_families.index',
             'grp.masters.master_shops.show.master_sub_departments.master_collections.index',
             'grp.masters.master_shops.show.master_sub_departments.edit',
@@ -298,6 +303,11 @@ class ShowMasterSubDepartment extends GrpAction
                 )
             ),
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_products.show',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_products.edit',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_products.create',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_products.products',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',

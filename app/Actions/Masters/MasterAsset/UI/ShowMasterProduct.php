@@ -72,6 +72,24 @@ class ShowMasterProduct extends GrpAction
         return $this->handle($masterProduct);
     }
 
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterAsset $masterSubDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
+    {
+        $group        = group();
+        $this->parent = $masterSubDepartment;
+        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
+
+        return $this->handle($masterProduct);
+    }
+    
+    public function inMasterSubDepartmentInMasterDepartment(MasterShop $masterShop, MasterAsset $masterDepartment, MasterAsset $masterSubDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
+    {
+        $group        = group();
+        $this->parent = $masterSubDepartment;
+        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
+
+        return $this->handle($masterProduct);
+    }
+
     public function inMasterDepartment(MasterAsset $masterDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
         $group        = group();

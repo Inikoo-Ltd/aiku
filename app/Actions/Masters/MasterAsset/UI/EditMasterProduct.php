@@ -43,7 +43,23 @@ class EditMasterProduct extends GrpAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inMasterDepartment(MasterAsset $masterDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
+    {
+        $this->initialisation($masterProduct->group, $request);
+
+        return $this->handle($masterProduct);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterSubDepartmentInMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
+    {
+        $this->initialisation($masterProduct->group, $request);
+
+        return $this->handle($masterProduct);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterDepartment(MasterProductCategory $masterDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
         $this->initialisation($masterProduct->group, $request);
 

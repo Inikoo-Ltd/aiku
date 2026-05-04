@@ -256,7 +256,16 @@ class IndexProductsInMasterProduct extends OrgAction
         return $this->handle($masterProduct, ProductsTabsEnum::INDEX->value);
     }
 
-    public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterAsset $masterProduct, ActionRequest $request)
+    
+    public function inMasterFamilyInMasterShop(MasterShop $masterShop, MasterProductCategory $masterFamily, MasterAsset $masterProduct, ActionRequest $request)
+    {
+        $this->initialisationFromGroup($masterProduct->group, $request)->withTab(ProductsTabsEnum::valuesExcept([ProductsTabsEnum::SALES]));
+        $this->parent = $masterProduct;
+        
+        return $this->handle($masterProduct, ProductsTabsEnum::INDEX->value);
+    }
+
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterAsset $masterProduct, ActionRequest $request)
     {
         $this->initialisationFromGroup($masterProduct->group, $request)->withTab(ProductsTabsEnum::valuesExcept([ProductsTabsEnum::SALES]));
         $this->parent = $masterProduct;
@@ -264,7 +273,15 @@ class IndexProductsInMasterProduct extends OrgAction
         return $this->handle($masterProduct, ProductsTabsEnum::INDEX->value);
     }
 
-    public function inMasterFamilyInMasterShop(MasterShop $masterShop, MasterProductCategory $masterFamily, MasterAsset $masterProduct, ActionRequest $request)
+    public function inMasterSubDepartmentInMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterAsset $masterProduct, ActionRequest $request)
+    {
+        $this->initialisationFromGroup($masterProduct->group, $request)->withTab(ProductsTabsEnum::valuesExcept([ProductsTabsEnum::SALES]));
+        $this->parent = $masterProduct;
+
+        return $this->handle($masterProduct, ProductsTabsEnum::INDEX->value);
+    }
+
+    public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterAsset $masterProduct, ActionRequest $request)
     {
         $this->initialisationFromGroup($masterProduct->group, $request)->withTab(ProductsTabsEnum::valuesExcept([ProductsTabsEnum::SALES]));
         $this->parent = $masterProduct;

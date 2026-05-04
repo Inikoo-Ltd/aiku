@@ -31,12 +31,27 @@ trait WithMasterSubDepartmentSubNavigation
             'parameters' => request()->route()->originalParameters()
         ];
 
+        $routeProducts = [
+            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_products.index',
+            'parameters' => request()->route()->originalParameters()
+        ];
+
         $routeCollections = [
              'name'       => 'grp.masters.master_shops.show.master_sub_departments.master_collections.index',
              'parameters' => request()->route()->originalParameters()
         ];
 
-        if (in_array(request()->route()->getName(), ['grp.masters.master_shops.show.master_sub_departments.show', 'grp.masters.master_shops.show.master_sub_departments.sub_departments', 'grp.masters.master_shops.show.master_sub_departments.master_families.index', 'grp.masters.master_shops.show.master_sub_departments.master_collections.index'])) {
+        if (in_array(request()->route()->getName(), [
+            'grp.masters.master_shops.show.master_sub_departments.show', 
+            'grp.masters.master_shops.show.master_sub_departments.sub_departments', 
+            'grp.masters.master_shops.show.master_sub_departments.master_families.index', 
+            'grp.masters.master_shops.show.master_sub_departments.master_collections.index',
+            'grp.masters.master_shops.show.master_sub_departments.master_products.index',
+            'grp.masters.master_shops.show.master_sub_departments.master_products.show',
+            'grp.masters.master_shops.show.master_sub_departments.master_products.edit',
+            'grp.masters.master_shops.show.master_sub_departments.master_products.create',
+            'grp.masters.master_shops.show.master_sub_departments.master_products.products',
+        ])) {
             $subRoute = [
                 'name'       => 'grp.masters.master_shops.show.master_sub_departments.show',
                 'parameters' => request()->route()->originalParameters(),
@@ -49,6 +64,11 @@ trait WithMasterSubDepartmentSubNavigation
 
             $routeFamilies = [
                 'name'       => 'grp.masters.master_shops.show.master_sub_departments.master_families.index',
+                'parameters' => request()->route()->originalParameters(),
+            ];
+
+            $routeProducts = [
+                'name'       => 'grp.masters.master_shops.show.master_sub_departments.master_products.index',
                 'parameters' => request()->route()->originalParameters(),
             ];
 
@@ -65,7 +85,7 @@ trait WithMasterSubDepartmentSubNavigation
                 'route'     => $subRoute,
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-stream'],
-                    'tooltip' => __('Sub-department')
+                    'tooltip' => __('Sub-Department')
                 ]
             ],
             [
@@ -83,7 +103,16 @@ trait WithMasterSubDepartmentSubNavigation
                 'route'     => $routeFamilies,
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-folder'],
-                    'tooltip' => __('families')
+                    'tooltip' => __('Families')
+                ]
+            ],
+            [
+                'label'    => __('Master Products'),
+                'number'   => $masterSubDepartment->stats->number_current_master_assets,
+                'route'     => $routeProducts,
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-cube'],
+                    'tooltip' => __('Products')
                 ]
             ],
             [
@@ -92,7 +121,7 @@ trait WithMasterSubDepartmentSubNavigation
                 'route'     => $routeCollections,
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-album-collection'],
-                    'tooltip' => __('collections')
+                    'tooltip' => __('Collections')
                 ]
             ],
         ];
