@@ -192,7 +192,6 @@ function inertiaRoutingInstrumentation(
   }
 
   if (startTransactionOnLocationChange) {
-    console.info("Start transaction on location change");
 
     router.on("before", (_to, _from) => {
       if (activeTransaction) {
