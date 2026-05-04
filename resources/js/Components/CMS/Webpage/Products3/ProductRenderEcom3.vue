@@ -296,7 +296,7 @@ defineExpose({
             <div class="mt-2">
                 <div class="flex w-full items-center gap-2">
                     <!-- Product Code -->
-                    <div  v-if="layout?.iris?.is_logged_in"  class="text-xs">
+                    <div  class="text-xs">
                         {{ product?.code }}
                     </div>
                     <!-- Stock / Coming Soon -->
@@ -332,15 +332,9 @@ defineExpose({
 
                 <!-- CODE + RRP -->
                 <div class="flex items-center text-gray-600 text-xs py-1 min-w-0">
-
-                    <!-- CODE (tidak boleh terpotong) -->
-                    <span class="text-gray-400 whitespace-nowrap mr-2 shrink-0">
-                        {{ product.code }}
-                    </span>
-
                     <!-- RRP + UNIT (truncate di sini) -->
                     <span class="truncate min-w-0 overflow-hidden text-primary">
-                        RRP : {{ locale.currencyFormat(currency?.code, product.rrp_per_unit) }}/{{ product.unit }}
+                        Recommended retail price : {{ locale.currencyFormat(currency?.code, product.rrp_per_unit) }}/{{ product.unit }}
                     </span>
 
                 </div> <!-- CTA -->
