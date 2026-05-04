@@ -1098,7 +1098,7 @@ onMounted(async () => {
 }
 
 :deep(.editor-class h1) {
-    @apply text-4xl font-semibold;
+    @apply text-4xl font-semibold leading-[0.5rem];
 }
 
 :deep(.editor-class h2) {

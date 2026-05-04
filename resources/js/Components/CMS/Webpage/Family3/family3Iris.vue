@@ -63,6 +63,8 @@ const cleanedDescription = computed(() => {
   const html = props.fieldValue?.family?.description || ""
   return html.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
 })
+
+console.log("Family2 Workshop Props:", props)
 </script>
 
 <template>
