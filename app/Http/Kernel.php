@@ -84,7 +84,7 @@ class Kernel extends HttpKernel
         ValidatePostSize::class,
         TrimStrings::class,
         ConvertEmptyStringsToNull::class,
-        AddFrameOptionsHeader::class,
+        //AddFrameOptionsHeader::class, // add individually to retina, iris ..etc except pupil
         AddSentryBrowserProfilingHeader::class,
         AcceptClientHintsMiddleware::class,
         NewRelicTransactionMiddleware::class,
