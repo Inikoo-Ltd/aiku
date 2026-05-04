@@ -41,6 +41,7 @@ use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProducts;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Catalogue\Variant\ShowVariant;
+use App\Actions\Discounts\Offer\UI\ShowOffer;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', ShowCatalogue::class)->name('dashboard');
@@ -202,6 +203,11 @@ Route::name("departments.")->prefix('departments')
                     Route::get('edit', [EditCollection::class, 'inDepartment'])->name('edit');
                 });
             });
+
+            Route::prefix('offers')->as('.offers.')->group(function () {
+                Route::get('/{offer}', [ShowOffer::class,'inDepartment'])->name('show');
+            });
+
             Route::prefix('families')->name('.families.')->group(function () {
                 Route::get('', [IndexFamilies::class, 'inDepartment'])->name('index');
                 Route::get('create', [CreateFamily::class, 'inDepartment'])->name('create');
@@ -279,6 +285,9 @@ Route::name("families.")->prefix('families')
             Route::prefix('variant')->as('.variants.')->group(function () {
                 Route::get('/{variant}', [ShowVariant::class,'inShop'])->name('show');
             });
+            Route::prefix('offers')->as('.offers.')->group(function () {
+                Route::get('/{offer}', [ShowOffer::class,'inFamily'])->name('show');
+            });
             Route::prefix('products')->name('.products.')->group(function () {
                 Route::get('', [IndexProductsInProductCategory::class, 'inFamily'])->name('index');
                 Route::get('create', [CreateProduct::class, 'inFamily'])->name('create');
@@ -323,6 +332,11 @@ Route::name("sub_departments.")->prefix('sub-departments')
                     Route::get('edit', [EditCollection::class, 'inSubDepartmentInShop'])->name('edit');
                 });
             });
+
+            Route::prefix('offers')->as('.offers.')->group(function () {
+                Route::get('/{offer}', [ShowOffer::class,'inSubDepartment'])->name('show');
+            });
+
             Route::prefix('families')->name('.families.')->group(function () {
                 Route::get('', [IndexFamilies::class, 'inSubDepartmentInShop'])->name('index');
                 Route::get('create', [CreateFamily::class, 'inSubDepartmentInShop'])->name('create');

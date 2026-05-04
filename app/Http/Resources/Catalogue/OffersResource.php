@@ -10,6 +10,7 @@ namespace App\Http\Resources\Catalogue;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Enums\Discounts\Offer\OfferStateEnum;
+use App\Enums\Discounts\Offer\OfferTypeEnum;
 
 /**
  * @property int $shop_id
@@ -33,13 +34,17 @@ class OffersResource extends JsonResource
             'state'               => OfferStateEnum::stateIcon()[$this->state->value],
             'code'                => $this->code,
             'name'                => $this->name,
+            'type_icon'           => OfferTypeEnum::from($this->type)?->icons(),
             'type'                => $this->type,
             'organisation_name'   => $this->organisation_name,
             'organisation_slug'   => $this->organisation_slug,
             'shop_name'           => $this->shop_name,
             'orders'              => $this->orders,
             'invoices'            => $this->invoices,
-            'sales_grp_currency_external' => $this->sales_grp_currency_external
+            'sales_grp_currency_external' => $this->sales_grp_currency_external,
+            'duration'            => $this->duration,
+            'start_at'            => $this->start_at,
+            'end_at'              => $this->end_at,
         ];
     }
 }
