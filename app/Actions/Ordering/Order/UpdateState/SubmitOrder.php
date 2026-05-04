@@ -33,6 +33,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -64,7 +65,13 @@ class SubmitOrder extends OrgAction
         if ($order->state == OrderStateEnum::CREATING || $order->submitted_at == null) {
             data_set($modelData, 'submitted_at', $date);
         } else {
-            throw new \Exception('Order has been submitted and cannot be submitted again');
+            throw ValidationException::withMessages(
+                [
+                    'order' => [
+                        'favourite' => 'Order has been submitted and cannot be submitted again',
+                    ]
+                ]
+            );
         }
 
         $this->processGrGift($order);
