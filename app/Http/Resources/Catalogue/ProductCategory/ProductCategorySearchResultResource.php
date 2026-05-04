@@ -23,6 +23,7 @@ class ProductCategorySearchResultResource extends JsonResource
 
         return [
             'id'    => $productCategory->id,
+            'slug'  => $productCategory->slug,
             'code'  => $productCategory->code,
             'name'  => $productCategory->name,
             'image' => Arr::get($productCategory->web_images, 'main.thumbnail'),
