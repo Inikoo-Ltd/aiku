@@ -94,7 +94,7 @@ class CalculateTimeSeriesStats
                 $bindings[] = $end;
             }
 
-            [$startLy, $endLy] = $this->getComparisonRange(DateIntervalEnum::CUSTOM->value, $start, $end);
+            [$startLy, $endLy] = $this->getComparisonRange(DateIntervalEnum::CUSTOM, $start, $end);
 
             foreach ($metricsMapping as $outputKey => $column) {
                 $selects[] = "SUM(CASE WHEN \"from\" >= ? AND \"from\" <= ? THEN $column ELSE 0 END) as {$outputKey}_ctm_ly";
