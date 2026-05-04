@@ -47,7 +47,7 @@ class RunMailshotTrackingUpdates
 
         // TODO: need default value or not, if setting not exist
         foreach ($shops as $shop) {
-            $marketingHours = $shop->settings['marketing']['hours'] ?? 3; // default 3 hours
+            $marketingHours = $shop->settings['marketing']['hours'] ?? 2; // default 2 hours
             $marketingDays = $shop->settings['marketing']['days'] ?? 30; // default 30 days
 
             // Calculate date range: now - X days
