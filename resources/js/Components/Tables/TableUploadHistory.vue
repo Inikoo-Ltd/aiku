@@ -41,6 +41,12 @@ const props = defineProps<{
             </Link>
         </template> -->
 
+        <template #cell(errors)="{ item }">
+            <ul v-if="Array.isArray(item.errors) && item.errors.length" class="list-disc list-inside text-red-600 text-xs">
+                <li v-for="(error, i) in item.errors" :key="i">{{ error }}</li>
+            </ul>
+        </template>
+
         <template #cell(status)="{ item }">
             <Tag :theme="item.status === 'completed' ? 4 : 7" :label="item.status">
                 {{ item.status }}

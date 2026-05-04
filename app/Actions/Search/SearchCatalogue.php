@@ -38,7 +38,7 @@ class SearchCatalogue
             'results' => [
                 'products'           => ProductSearchResultResource::collection($productsQuery->get()),
                 'product_categories' => ProductCategorySearchResultResource::collection($productCategoriesQuery->get()),
-                'collections'        => CollectionSearchResultResource::collection($productsQuery->get()),
+                'collections'        => CollectionSearchResultResource::collection($collectionsQuery->get()),
             ],
         ];
     }

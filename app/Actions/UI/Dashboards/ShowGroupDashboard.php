@@ -48,7 +48,7 @@ class ShowGroupDashboard extends OrgAction
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         $performanceDates = $this->resolvePerformanceDates($saved_interval, $userSettings);
 
-        $timeSeriesData = GetGroupDashboardTimeSeriesData::run($group, $performanceDates[0], $performanceDates[1]);
+        $timeSeriesData = GetGroupDashboardTimeSeriesData::run($group, $performanceDates[0], $performanceDates[1], false);
         $currentTabEnum = GroupDashboardSalesTableTabsEnum::from($currentTab);
         $primaryTables = GroupDashboardSalesTableTabsEnum::tablesForTabs($group, $timeSeriesData, [$currentTabEnum]);
         $secondaryTables = GroupDashboardSalesTableTabsEnum::tablesForTabs($group, $timeSeriesData, [$currentTabEnum], true);

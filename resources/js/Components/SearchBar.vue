@@ -19,6 +19,7 @@ library.add(faTimes, faSearch)
 
 const scopeComponents: Record<string, ReturnType<typeof defineAsyncComponent>> = {
     sysadmin: defineAsyncComponent(() => import('@/Components/Search/SearchResultSysAdmin.vue')),
+    catalogue: defineAsyncComponent(() => import('@/Components/Search/SearchResultCatalogue.vue')),
 }
 
 const isOpen = defineModel<boolean>()

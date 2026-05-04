@@ -63,17 +63,19 @@ const cleanedDescription = computed(() => {
   const html = props.fieldValue?.family?.description || ""
   return html.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
 })
+
+console.log("Family2 Workshop Props:", props)
 </script>
 
 <template>
-  <div class="w-full"   :id="fieldValue?.id ? fieldValue?.id : 'family-3'+indexBlock"  :style="{
+  <div class="w-full" :id="fieldValue?.id ? fieldValue?.id : 'family-3' + indexBlock" :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(fieldValue?.container?.properties, screenType)
   }">
     <div class="mx-auto max-w-[2000px] w-full px-4 py-4">
 
       <!-- ================= HEADER (TITLE + DISCOUNT RIGHT) ================= -->
-      <div class="flex items-center justify-between mb-6 gap-4 flex-wrap sm:flex-nowrap">
+      <!--  <div class="flex items-center justify-between mb-6 gap-4 flex-wrap sm:flex-nowrap">
 
         <h1 class="text-xl md:text-xl font-semibold text-gray-900">
           {{ fieldValue?.family?.name }}
@@ -92,13 +94,13 @@ const cleanedDescription = computed(() => {
           </div>
         </div>
 
-      </div>
+      </div> -->
 
       <!-- ================= CONTENT ================= -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 
         <!-- IMAGE -->
-        <div class="w-full relative" :class="imageOrder">
+        <div class="w-full relative hidden md:block" :class="imageOrder">
 
           <!-- NAV -->
           <div v-if="images.length > 3" :class="`nav-btn left-3 swiper-btn-prev-${swiperId}`">
@@ -113,10 +115,10 @@ const cleanedDescription = computed(() => {
             prevEl: `.swiper-btn-prev-${swiperId}`,
             nextEl: `.swiper-btn-next-${swiperId}`
           }" :breakpoints="{
-              0: { slidesPerView: 1, spaceBetween: 12 },
-              768: { slidesPerView: 2, spaceBetween: 16 },
-              1024: { slidesPerView: 3, spaceBetween: 20 }
-            }">
+            0: { slidesPerView: 1, spaceBetween: 12 },
+            768: { slidesPerView: 2, spaceBetween: 16 },
+            1024: { slidesPerView: 3, spaceBetween: 20 }
+          }">
             <SwiperSlide v-for="(img, i) in images" :key="i">
               <div class="relative w-full aspect-square overflow-hidden rounded-lg">
                 <Image :src="img.original" :imageCover="true"
@@ -128,13 +130,34 @@ const cleanedDescription = computed(() => {
 
         <!-- TEXT -->
         <div class="flex flex-col justify-center text-center md:text-left" :class="textOrder">
+          <h1 class="text-xl md:text-xl font-semibold text-gray-900">
+            {{ fieldValue?.family?.name }}
+          </h1>
           <div v-html="cleanedDescription" class="text-gray-600 leading-relaxed text-sm md:text-base max-w-xl" />
+          <div class="flex flex-col items-center md:flex-row md:justify-start gap-3 mt-4">
+            <!-- DISCOUNT -->
+            <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
+              class="discount-wrapper w-fit">
+              <div :class="bestOffer?.type === 'Category Quantity Ordered Order Interval'
+                  ? 'block md:flex md:flex-nowrap md:gap-3'
+                  : 'discount-grid'
+                ">
+                <DiscountByType v-if="showTriggers" :offers_data="fieldValue?.family?.offers_data"
+                  template="triggers_labels" class="discount-item discount-span" />
 
-          <div class="flex justify-center md:justify-start">
+                <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="bestOffer?.type === 'Category Quantity Ordered Order Interval'
+                    ? 'active-inactive-gr'
+                    : 'max_discount'
+                  " class="discount-item" />
+              </div>
+            </div>
+
+            <!-- BUTTON -->
             <LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target">
               <Button :label="fieldValue?.button?.text"
                 :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" />
             </LinkIris>
+
           </div>
         </div>
 
@@ -170,7 +193,7 @@ const cleanedDescription = computed(() => {
 
 /* BASE */
 .discount-wrapper {
-  @apply w-auto;
+  margin: 0 auto;
 }
 
 .discount-grid {

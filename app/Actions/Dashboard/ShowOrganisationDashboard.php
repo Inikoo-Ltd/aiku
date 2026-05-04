@@ -52,7 +52,7 @@ class ShowOrganisationDashboard extends OrgAction
         $saved_interval  = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         $performanceDates = $this->resolvePerformanceDates($saved_interval, $userSettings);
 
-        $timeSeriesData = GetOrganisationDashboardTimeSeriesData::run($organisation, $performanceDates[0], $performanceDates[1]);
+        $timeSeriesData = GetOrganisationDashboardTimeSeriesData::run($organisation, $performanceDates[0], $performanceDates[1], false);
 
         $currentTabEnum = OrganisationDashboardSalesTableTabsEnum::from($currentTab);
         $primaryTables = OrganisationDashboardSalesTableTabsEnum::tablesForTabs($organisation, $timeSeriesData, [$currentTabEnum]);

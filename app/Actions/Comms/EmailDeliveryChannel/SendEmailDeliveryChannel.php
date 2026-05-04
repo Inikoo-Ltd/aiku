@@ -127,6 +127,7 @@ class SendEmailDeliveryChannel
 
             $subject = ($model instanceof EmailBulkRun) ? $model->outbox->emailOngoingRun->email->subject : $model->subject;
 
+            $previewText = ($model instanceof Mailshot && $model->preview_text) ? $model->preview_text : null;
 
             $additionalData = $dispatchedEmail->data['additional_data'] ?? [];
 
@@ -152,7 +153,8 @@ class SendEmailDeliveryChannel
                 $emailHtmlBody,
                 $unsubscribeUrl,
                 additionalData: $additionalData,
-                senderName: $model->senderName()
+                senderName: $model->senderName(),
+                previewText: $previewText
             );
 
             if ($recipient->recipient_type === class_basename(Prospect::class)) {
