@@ -29,7 +29,7 @@ enum CreditTransactionReasonEnum: string
             CreditTransactionReasonEnum::PAY_FOR_PRODUCT => 'Pay for the product cost of a return',
             CreditTransactionReasonEnum::COMPENSATE_CUSTOMER => 'Compensate customer',
             CreditTransactionReasonEnum::TRANSFER => 'Transfer from other customer account',
-            CreditTransactionReasonEnum::MONEY_BACK => 'Customer want money back',
+            CreditTransactionReasonEnum::MONEY_BACK => 'Customer requested a return of funds',
             CreditTransactionReasonEnum::OTHER => 'Other reason',
         };
     }
