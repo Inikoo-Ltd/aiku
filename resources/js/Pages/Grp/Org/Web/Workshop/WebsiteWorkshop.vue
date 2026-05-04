@@ -161,10 +161,9 @@ onUnmounted(() => {
   <PageHeading :data="pageHead">
     <template #button-publish="{ action }">
       <Button v-if="currentTab !== 'website_layout' && currentTab !== 'history'" v-bind="action" @click="onPublish" >
-      <!-- <Button v-if="currentTab !== 'website_layout'" v-bind="action" @click="onPublish" :disabled="loadingPublish" :loading="loadingPublish"> -->
-       <!--  <template #loading v-if="loadingPublish" >
+        <template #loading v-if="loadingPublish" >
             <FontAwesomeIcon  :icon="faSpinnerThird" class="animate-spin" fixed-width aria-hidden="true" /> {{ progress }}%
-        </template> -->
+        </template>
       </Button>
       <div v-else></div>
     </template>
