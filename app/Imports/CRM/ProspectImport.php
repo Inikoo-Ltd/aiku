@@ -26,6 +26,7 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
     use WithImport;
 
     protected Shop $scope;
+
     public function __construct(Shop $scope, Upload $upload)
     {
         $this->scope  = $scope;
@@ -39,22 +40,21 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
         $validatedData = array_intersect_key($sanitizedData, array_flip(array_keys($this->rules())));
 
         $modelData = [
-            'company_name' => $validatedData['company'],
+            'company_name' => $validatedData['company_name'],
             'contact_name' => $validatedData['contact_name'],
-            'email' => $validatedData['email'],
-            'phone' => $validatedData['telephone'],
+            'email'        => $validatedData['email'],
+            'phone'        => $validatedData['phone'],
         ];
 
 
-
         try {
-            $prospectKey = $validatedData['id_prospect_key'];
+            $prospectKey      = $validatedData['id_prospect_key'];
             $existingProspect = null;
             if (is_numeric($prospectKey)) {
-                $prospectKey = (int) $prospectKey;
+                $prospectKey      = (int)$prospectKey;
                 $existingProspect = $this->scope->prospects()
-                ->where('id', $prospectKey)
-                ->first();
+                    ->where('id', $prospectKey)
+                    ->first();
             }
 
             $isNew = is_string($validatedData['id_prospect_key'])
@@ -65,9 +65,8 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
             } elseif ($isNew) {
                 StoreProspect::run($this->scope, $modelData);
             } else {
-                throw new Exception("Part key not found");
+                throw new Exception("Prospect key not found");
             }
-
 
 
             $this->setRecordAsCompleted($uploadRecord);
@@ -77,13 +76,13 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
     }
 
 
-    protected function processExcelData($data)
+    protected function processExcelData($data): array
     {
         $mappedRow = [];
 
         foreach ($data as $row) {
             foreach ($row as $key => $value) {
-                $mappedKey = str_replace([' ', ':', "'"], '_', strtolower($key));
+                $mappedKey             = str_replace([' ', ':', "'"], '_', strtolower($key));
                 $mappedRow[$mappedKey] = $value;
             }
             break;
@@ -93,7 +92,6 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
     }
 
 
-
     public function rules(): array
     {
         return [
@@ -101,22 +99,20 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
                 'sometimes',
                 'nullable',
             ],
-            'company'         => ['nullable', 'nullable', 'string', 'max:255'],
+            'company_name'    => ['nullable', 'nullable', 'string', 'max:255'],
             'contact_name'    => ['nullable', 'nullable', 'string', 'max:255'],
             'email'           => [
-                'present','nullable',
+                'present',
+                'nullable',
                 'email',
                 'max:500',
 
 
             ],
-            'telephone'           => [
+            'phone'           => [
                 'nullable',
-                new Phone(),
+                'string'
             ],
-            // 'contact_website' => ['nullable'],
-            // 'tags'            => ['nullable', 'array'],
-            // 'tags.*'          => ['nullable', 'string'],
         ];
     }
 }
