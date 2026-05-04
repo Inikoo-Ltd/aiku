@@ -63,6 +63,8 @@ class SubmitOrder extends OrgAction
 
         if ($order->state == OrderStateEnum::CREATING || $order->submitted_at == null) {
             data_set($modelData, 'submitted_at', $date);
+        } else {
+            throw new \Exception('Order has been submitted and cannot be submitted again');
         }
 
         $this->processGrGift($order);
