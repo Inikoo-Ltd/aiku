@@ -17,6 +17,10 @@ trait WithVarnishBan
     protected function sendVarnishBanHttp(array $banExpression, ?Command $command = null): void
     {
         foreach (config('iris.cache.varnish_hosts') as $varnishHost) {
+            if (!$varnishHost) {
+                continue;
+            }
+            $command?->info('Sending Varnish BAN to '.$varnishHost);
             try {
                 $response = Http::timeout(3)
                     ->withHeaders($banExpression)
