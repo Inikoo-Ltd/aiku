@@ -22,6 +22,7 @@ use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
@@ -60,7 +61,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowOrder extends OrgAction
 {
     use IsOrder;
-    use WithOrderingEditAuthorisation;
+    use WithOrderingAuthorisation;
 
     private Shop|Customer|CustomerClient|Purge|CustomerSalesChannel $parent;
     private CustomerSalesChannel $customerSalesChannel;
