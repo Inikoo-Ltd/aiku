@@ -33,7 +33,17 @@ const currentPalletStoredItem = computed(() => {
     return props.palletStoredItems.find((item) => Number(item.selected_quantity || 0) > 0) ?? props.palletStoredItems[0]
 })
 
-const otherLocationsCount = computed(() => Math.max((props.palletStoredItems?.length || 0) - 1, 0))
+const otherLocationsCount = computed(() => {
+    if (!props.palletStoredItems?.length) {
+        return 0
+    }
+
+    const currentId = Number(currentPalletStoredItem.value?.id || props.selectedPalletStoredItemId || 0)
+
+    return props.palletStoredItems.filter((item) => {
+        return Number(item?.id || 0) !== currentId && Number(item?.selected_quantity || 0) <= 0
+    }).length
+})
 </script>
 
 <template>

@@ -215,6 +215,10 @@ const getOtherPalletStoredItems = (storedItem: any, selectedPalletStoredItemId: 
     const items = storedItem?.pallet_stored_items || []
     return items.filter((ps: any) => Number(ps?.id) !== Number(selectedPalletStoredItemId))
 }
+const getAvailablePalletStoredItemsForLocationSwitch = (storedItem: any) => {
+    const items = storedItem?.pallet_stored_items || []
+    return items.filter((ps: any) => Number(ps?.selected_quantity || 0) <= 0)
+}
 const generateLinkLocationInWarehouse = (palletStoredItem: any): string | undefined => {
     const locationSlug = palletStoredItem?.location?.slug
     const params = route().params as Record<string, string | undefined>
@@ -1427,7 +1431,7 @@ const onDispatchPalletReturn = async () => {
             v-if="selectedStoredItemValue && selectedCurrentPalletStoredItem"
             :item="{
                 reference: selectedStoredItemValue.reference,
-                pallet_stored_items: getOtherPalletStoredItems(selectedStoredItemValue, selectedCurrentPalletStoredItem.id)
+                pallet_stored_items: getAvailablePalletStoredItemsForLocationSwitch(selectedStoredItemValue)
             }"
             :selectedPalletStoredItemId="null"
             @select="onSelectPalletStoredItem"
