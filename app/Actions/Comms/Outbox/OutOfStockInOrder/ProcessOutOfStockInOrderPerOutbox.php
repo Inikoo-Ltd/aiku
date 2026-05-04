@@ -38,6 +38,11 @@ class ProcessOutOfStockInOrderPerOutbox
 
         $lastOutBoxSent = $outbox->last_sent_at;
 
+        // Check if enough time has passed since last outbox was sent
+        if ($lastOutBoxSent && Carbon::parse($lastOutBoxSent)->diffInHours($currentDateTime) < $outbox->interval) {
+            return;
+        }
+
         $productClass = class_basename(Product::class);
 
         // Build customer query
@@ -46,16 +51,16 @@ class ProcessOutOfStockInOrderPerOutbox
         $baseQuery->whereNull('customers.deleted_at');
 
         // check customer comms
-        $baseQuery->join('customer_comms', function ($join) {
-            $join->on('customers.id', '=', 'customer_comms.customer_id')
-                ->where('customer_comms.is_subscribed_to_basket_low_stock', true);
-        });
+        // $baseQuery->join('customer_comms', function ($join) {
+        //     $join->on('customers.id', '=', 'customer_comms.customer_id')
+        //         ->where('customer_comms.is_subscribed_to_basket_low_stock', true);
+        // });
 
         // check Order
         $baseQuery->join('orders', function ($join) {
             $join->on('customers.id', '=', 'orders.customer_id');
-            $join->where('orders.state', OrderStateEnum::CREATING->value);
-            $join->where('orders.status', OrderStatusEnum::CREATING->value);
+            $join->whereIn('orders.state', [OrderStateEnum::SUBMITTED->value]);
+            $join->whereIn('orders.status', [OrderStatusEnum::PROCESSING->value]);
             $join->whereNull('orders.deleted_at');
         });
 
