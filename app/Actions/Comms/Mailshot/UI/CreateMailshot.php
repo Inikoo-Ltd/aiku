@@ -92,7 +92,7 @@ class CreateMailshot extends OrgAction
                     'blueprint'  =>
                     [
                         [
-                            'title'  => __('Name'),
+                            'title'  => '',
                             'fields' => array_merge(...array_map(fn ($item) => $item['fields'], $fields))
                         ]
                     ],
