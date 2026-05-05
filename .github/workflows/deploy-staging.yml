@@ -61,5 +61,5 @@ jobs:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
         with:
           environment: staging
-          projects: ${{ secrets.SENTRY_PROJECTS }}
+          projects: 'inikoo.ltd/aiku'
           release: ${{ steps.date.outputs.date }}
