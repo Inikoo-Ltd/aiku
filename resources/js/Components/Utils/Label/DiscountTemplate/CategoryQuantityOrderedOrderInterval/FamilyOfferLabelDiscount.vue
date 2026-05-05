@@ -10,6 +10,7 @@ library.add(faInfoCircle)
 
 const props = defineProps<{
     offer: {}
+    offer_allowances?: {}
 }>()
 
 const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
@@ -19,8 +20,12 @@ const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
 <section class="volume-discount-label" aria-label="Volume Discount Offer Label">
 
     <div class="discount-percentage">
-        <span v-if="offer?.max_percentage_discount" class="percentage-text">
-            {{ Number(offer?.max_percentage_discount) * 100 }}% OFF
+        <span v-if="offer?.max_percentage_discount || offer_allowances?.[0]?.data?.percentage_off" class="percentage-text">
+            {{
+                Number(
+                    offer?.max_percentage_discount ?? offer_allowances?.[0]?.data?.percentage_off
+                ) * 100
+            }}% OFF
         </span>
 
         <span v-else>

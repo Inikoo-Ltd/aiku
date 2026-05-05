@@ -24,6 +24,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\CRM\TrafficSource;
+use App\Models\Discounts\Offer;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasSearchableText;
@@ -94,7 +95,7 @@ class IndexCustomers extends OrgAction
         return $this->handle($shop);
     }
 
-    public function handle(Group|Organisation|Shop|Product|TrafficSource $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Organisation|Shop|Product|TrafficSource|Offer $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) use ($parent) {
             $query->where(function ($query) use ($value, $parent) {
@@ -158,6 +159,18 @@ class IndexCustomers extends OrgAction
                     ->whereNull('deleted_at')
                     ->distinct();
             });
+        }
+
+        if ($parent instanceof Offer) {
+            $queryBuilder->whereIn('customers.id', function ($query) use ($parent) {
+                $query->select('transactions.customer_id')
+                    ->from('transactions')
+                    ->join('transaction_has_offer_allowances', 'transactions.id', '=', 'transaction_has_offer_allowances.transaction_id')
+                    ->where('transaction_has_offer_allowances.offer_id', $parent->id)
+                    ->whereNull('transactions.deleted_at')
+                    ->distinct();
+            });
+            $queryBuilder->where('customers.shop_id', $parent->shop_id);
         }
 
         $allowedSort = [
@@ -239,7 +252,7 @@ class IndexCustomers extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Organisation|Shop|Product|TrafficSource $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Group|Organisation|Shop|Product|TrafficSource|Offer $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {

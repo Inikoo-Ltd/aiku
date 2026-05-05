@@ -45,6 +45,9 @@ class UpdateTransaction extends OrgAction
                 /** @var Product $product */
                 $product         = $transaction->model;
                 $estimatedWeight = (int)ceil(Arr::get($modelData, 'quantity_ordered') * $product->gross_weight);
+                if ($estimatedWeight > 1000000000) {
+                    $estimatedWeight = 1000000000;
+                }
                 data_set($modelData, 'estimated_weight', $estimatedWeight);
             }
 
