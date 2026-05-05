@@ -17,6 +17,7 @@ use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -42,7 +43,10 @@ class PayOrderWithPastpay extends RetinaAction
             $order->customer->balance
         );
 
-        $toPay = $paymentAmounts['total'];
+        $charges = Arr::get($this->paymentAccount->data, 'charges.options', []);
+        $chargeAmount = collect($charges)->where('days', Arr::get($modelData, 'days', 30))->first();
+        $toPay = $paymentAmounts['total'] * (1 + ($chargeAmount['charge'] / 100));
+
         $toPay = (int)round((float)$toPay * 100);
 
         if ($toPay == 0) {
@@ -90,14 +94,13 @@ class PayOrderWithPastpay extends RetinaAction
 
     public function rules(): array
     {
-        $rules = [
+        return [
             'days' => [
                 'required',
                 'integer',
+                Rule::in([30, 60]),
             ],
         ];
-
-        return $rules;
     }
 
     public string $commandSignature = 'test_pastpay';
