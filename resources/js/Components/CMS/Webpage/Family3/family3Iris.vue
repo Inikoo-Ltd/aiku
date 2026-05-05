@@ -49,8 +49,14 @@ const columnPosition = computed(() => {
 })
 
 const isImageLeft = computed(() => columnPosition.value === "Image-right")
-const imageOrder = computed(() => (isImageLeft.value ? "order-1" : "order-2"))
-const textOrder = computed(() => (isImageLeft.value ? "order-2" : "order-1"))
+const imageOrder = computed(() =>
+  isImageLeft.value ? "order-1" : "order-2"
+)
+
+const textOrder = computed(() =>
+  isImageLeft.value ? "order-2" : "order-1"
+)
+
 
 // ================= DATA =================
 const images = computed(() => {
@@ -68,11 +74,12 @@ console.log("Family2 Workshop Props:", props)
 </script>
 
 <template>
-  <div class="w-full" :id="fieldValue?.id ? fieldValue?.id : 'family-3' + indexBlock" :style="{
+  <div :id="fieldValue?.id ? fieldValue?.id : 'family-3' + indexBlock" :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(fieldValue?.container?.properties, screenType)
   }">
-    <div class="mx-auto max-w-[2000px] w-full px-4 py-4">
+
+    <div class="w-full px-4 py-4">
 
       <!-- ================= HEADER (TITLE + DISCOUNT RIGHT) ================= -->
       <!--  <div class="flex items-center justify-between mb-6 gap-4 flex-wrap sm:flex-nowrap">
@@ -129,35 +136,40 @@ console.log("Family2 Workshop Props:", props)
         </div>
 
         <!-- TEXT -->
-        <div class="flex flex-col justify-center text-center md:text-left" :class="textOrder">
+        <div class="flex flex-col   text-center md:text-left " :class="textOrder">
           <h1 class="text-xl md:text-xl font-semibold text-gray-900">
             {{ fieldValue?.family?.name }}
           </h1>
-          <div v-html="cleanedDescription" class="text-gray-600 leading-relaxed text-sm md:text-base max-w-xl" />
-          <div class="flex flex-col items-center md:flex-row md:justify-start gap-3 mt-4">
+
+          <div v-html="cleanedDescription" class="text-gray-600 leading-relaxed text-sm md:text-base " />
+
+          <!-- COMBINED DISCOUNT + BUTTON -->
+          <div v-if="layout.iris.is_logged_in"
+            class="mt-4 flex items-stretch w-fit rounded-xl  overflow-hidden discount-wrapper">
             <!-- DISCOUNT -->
-            <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
-              class="discount-wrapper w-fit">
+            <div v-if="fieldValue?.family?.offers_data?.number_offers"
+              class="flex items-center pr-3 bg-gray-50 border-r border-gray-200 min-w-0">
               <div :class="bestOffer?.type === 'Category Quantity Ordered Order Interval'
-                  ? 'block md:flex md:flex-nowrap md:gap-3'
+                  ? 'flex flex-nowrap gap-2'
                   : 'discount-grid'
-                ">
+                " class="items-center">
                 <DiscountByType v-if="showTriggers" :offers_data="fieldValue?.family?.offers_data"
-                  template="triggers_labels" class="discount-item discount-span" />
+                  template="triggers_labels" class="truncate text-sm" />
 
                 <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="bestOffer?.type === 'Category Quantity Ordered Order Interval'
                     ? 'active-inactive-gr'
                     : 'max_discount'
-                  " class="discount-item" />
+                  " class="truncate text-sm font-medium" />
               </div>
             </div>
 
             <!-- BUTTON -->
-            <LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target">
-              <Button :label="fieldValue?.button?.text"
-                :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" />
+            <LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target" class="flex">
+              <Button 
+                :label="fieldValue?.button?.text"
+                :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
+              />
             </LinkIris>
-
           </div>
         </div>
 
@@ -193,7 +205,7 @@ console.log("Family2 Workshop Props:", props)
 
 /* BASE */
 .discount-wrapper {
-  margin: 0 auto;
+  margin: 0 0;
 }
 
 .discount-grid {
@@ -220,7 +232,7 @@ console.log("Family2 Workshop Props:", props)
 }
 
 .discount-wrapper :deep(.percentage-text) {
-  @apply text-[12px] leading-[0.20rem] 2xl:text-lg;
+  @apply text-[12px] leading-[0.20rem];
 }
 
 /* TITLE */
@@ -250,11 +262,19 @@ console.log("Family2 Workshop Props:", props)
 
 /* GR TEXT (TRUNCATE) */
 .discount-wrapper :deep(.inactive-text) {
-  @apply min-w-0 flex-1 max-w-[170px] truncate text-[12px]  leading-[0.20rem] leading-5 opacity-70 md:max-w-[120px] 2xl:max-w-[200px] 2xl:text-base 2xl:leading-6;
+  @apply min-w-0 flex-1 max-w-[170px] truncate text-[12px] leading-[0.20rem] leading-5 opacity-70 md:max-w-[120px] 2xl:max-w-[200px] 2xl:text-base 2xl:leading-6;
 }
 
 /* ICON FIX */
 .discount-wrapper :deep(.gr-info-icon) {
   @apply flex-shrink-0 leading-[0.20rem];
+}
+
+.discount-wrapper :deep(.gr-content) {
+  @apply flex-shrink-0 text-[12px] leading-[0.20rem];
+}
+
+.discount-wrapper :deep(.gr-logo) {
+  @apply h-[2rem];
 }
 </style>
