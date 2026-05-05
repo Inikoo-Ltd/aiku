@@ -58,8 +58,8 @@ jobs:
         uses: getsentry/action-release@v3
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_ORG: 'inikoo-ltd'
         with:
           environment: staging
-          projects: 'aiku,aiku-iris'
+          projects: 'aiku'
           release: ${{ steps.date.outputs.date }}
