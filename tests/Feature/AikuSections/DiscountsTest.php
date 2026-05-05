@@ -61,7 +61,7 @@ beforeEach(function () {
         $this->organisation,
         $this->user,
         $this->shop
-    ) = createShop();
+        ) = createShop();
 
     $this->group      = $this->organisation->group;
     $this->adminGuest = createAdminGuest($this->organisation->group);
@@ -69,7 +69,7 @@ beforeEach(function () {
     list(
         $this->tradeUnit,
         $this->product
-    ) = createProduct($this->shop);
+        ) = createProduct($this->shop);
 
     $this->customer = createCustomer($this->shop);
 
@@ -211,7 +211,7 @@ test('UI show offer campaigns', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', $offerCampaign->name)
                     ->etc()
             )
@@ -222,7 +222,13 @@ test('UI show offer campaigns', function () {
 });
 
 test('UI Index offers', function () {
-    $response = get(route('grp.org.shops.show.discounts.offers.index', [$this->organisation->slug, $this->shop->slug]));
+    $this->withoutExceptionHandling();
+
+
+    $response = get(route('grp.org.shops.show.discounts.offers.index', [
+        $this->organisation->slug,
+        $this->shop->slug
+    ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
