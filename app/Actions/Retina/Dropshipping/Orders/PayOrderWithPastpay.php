@@ -11,14 +11,16 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Accounting\PaymentGateway\Pastpay\WithPastpayConfiguration;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
+use App\Actions\RetinaAction;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class PayOrderWithPastpay
+class PayOrderWithPastpay extends RetinaAction
 {
     use AsAction;
     use CalculatesPaymentWithBalance;
@@ -75,6 +77,13 @@ class PayOrderWithPastpay
         }
 
         return $result;
+    }
+
+    public function asController(Order $order, ActionRequest $request): array
+    {
+        $this->initialisation($request);
+
+        return $this->handle($order, $this->validatedData);
     }
 
     public string $commandSignature = 'test_pastpay';
