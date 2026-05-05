@@ -82,13 +82,13 @@ console.log("Family2 Workshop Props:", props)
     <div class="w-full px-4 py-4">
 
       <!-- ================= HEADER (TITLE + DISCOUNT RIGHT) ================= -->
-      <!--  <div class="flex items-center justify-between mb-6 gap-4 flex-wrap sm:flex-nowrap">
+       <div class="flex items-center justify-between mb-6 gap-4 flex-wrap sm:flex-nowrap">
 
         <h1 class="text-xl md:text-xl font-semibold text-gray-900">
           {{ fieldValue?.family?.name }}
         </h1>
 
-        <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in" class="discount-wrapper">
+        <!-- <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in" class="discount-wrapper">
           <div :class="bestOffer?.type === 'Category Quantity Ordered Order Interval'
             ? 'block md:flex md:flex-nowrap md:gap-3'
             : 'discount-grid'">
@@ -99,9 +99,9 @@ console.log("Family2 Workshop Props:", props)
               ? 'active-inactive-gr'
               : 'max_discount'" class="discount-item" />
           </div>
-        </div>
+        </div> -->
 
-      </div> -->
+      </div>
 
       <!-- ================= CONTENT ================= -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -137,17 +137,23 @@ console.log("Family2 Workshop Props:", props)
 
         <!-- TEXT -->
         <div class="flex flex-col   text-center md:text-left " :class="textOrder">
-          <h1 class="text-xl md:text-xl font-semibold text-gray-900">
+         <!--  <h1 class="text-xl md:text-xl font-semibold text-gray-900">
             {{ fieldValue?.family?.name }}
-          </h1>
+          </h1> -->
 
           <div v-html="cleanedDescription" class="text-gray-600 leading-relaxed text-sm md:text-base " />
 
           <!-- COMBINED DISCOUNT + BUTTON -->
           <div class="mt-4 flex flex-col md:flex-row w-fit overflow-hidden discount-wrapper md:items-stretch">
 
+
+              <Button 
+                  :label="fieldValue?.button?.text" 
+                  class="flex leading-none h-full mb-[0.5rem]"
+                  :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" />
+
             <!-- DISCOUNT -->
-            <div :class="bestOffer?.type === 'Category Quantity Ordered Order Interval'
+          <!--   <div :class="bestOffer?.type === 'Category Quantity Ordered Order Interval'
               ? 'flex flex-nowrap gap-2'
               : 'discount-grid'
               " class="flex items-center h-full">
@@ -168,7 +174,7 @@ console.log("Family2 Workshop Props:", props)
 
               </LinkIris>
 
-            </div>
+            </div> -->
 
           </div>
         </div>
