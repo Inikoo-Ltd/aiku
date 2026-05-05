@@ -29,12 +29,12 @@ class SyncMasterProductCategoryRelatedMasterAssets extends OrgAction
 
         SyncShopRelatedProductsFromMasterCategory::dispatch($masterProductCategory);
 
-
         return $masterProductCategory;
     }
 
     public function rules(): array
     {
+        dd($this);
         return [
             'master_asset_ids'   => ['required', 'array'],
             'master_asset_ids.*' => ['integer', Rule::exists('master_assets', 'id')->where('master_shop_id', $this->masterShopId)],

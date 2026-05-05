@@ -8,6 +8,7 @@ import { router } from "@inertiajs/vue3";
 
 const props = defineProps<{
     data: any
+    product_category_id?: number
 }>()
 
 // ✅ shape sesuai komponen ordering
@@ -25,9 +26,9 @@ const LoadingOrder = ref(false)
 
 const SaveOrder = () => {
     router.patch(route('grp.models.master_product_category.related_assets.sync', {
-        masterProductCategory : route().params['masterFamily']
+        masterProductCategory: props.product_category_id
     }), {
-        products: localData.value.map((product: any, index: number) => ({
+        products: listProducts.value.data.map((product: any, index: number) => ({
             id: product.id,
             code : product.code,
             index: product.index_under_family,

@@ -161,7 +161,6 @@ const showDialog = ref(false);
         <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-amber-500" fixed-width aria-hidden="true" />
         {{ trans("This family is not assigned to any department. You can add it in edit section.") }}
     </Message>
-
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
      <div  class="bg-white pt-2 w-full  border-gray-200 border-b overflow-x-auto">
         <Breadcrumb :model="mini_breadcrumbs">
@@ -191,7 +190,7 @@ const showDialog = ref(false);
         </Message>
     </div>
 
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData" :product_category_id="props.masterProductCategoryId" />
 
     <FormCreateMasterProduct
         :showDialog="showDialog"
