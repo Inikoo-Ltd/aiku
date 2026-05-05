@@ -207,7 +207,6 @@ class GetWarehouseNavigation
             ];
         }
 
-
         if ($user->hasAnyPermission(["dispatching.$warehouse->id.view", "fulfilment.$warehouse->id.view"])) {
             $navigation["dispatching"] = [
                 "root"    => "grp.org.warehouses.show.dispatching.",

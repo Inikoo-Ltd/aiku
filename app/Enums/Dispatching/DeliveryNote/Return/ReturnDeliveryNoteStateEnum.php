@@ -15,27 +15,19 @@ enum ReturnDeliveryNoteStateEnum: string
 {
     use EnumHelperTrait;
 
-    // Block to do
-    case QUEUED = 'queued';
-    // case UNASSIGNED = 'unassigned';
 
-    // Block Picking
-    case HANDLING = 'handling';
-    // case PICKED = 'picked';
-
-    // Block Received
     case RECEIVED = 'received';
+    case RETURNING = 'returning';
+    case RETURNED = 'returned';
     case CANCELLED = 'cancelled';
 
 
     public static function labels(): array
     {
         return [
-            'queued'           => __('Waiting to Receive'),
-            // 'unassigned'       => __('In Warehouse'),
-            'handling'         => __('Picking'),
-            // 'picked'           => __('Picked'),
-            'received'         => __('Received'),
+            'received'           => __('Received'),
+            'returning'         => __('Returning to locations'),
+            'returned'         => __('Returned'),
             'cancelled'        => __('Cancelled')
         ];
     }
@@ -73,16 +65,6 @@ enum ReturnDeliveryNoteStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            // 'picked'           => [
-            //     'tooltip' => __('Picked'),
-            //     'icon'    => 'fal fa-check',
-            //     'class'   => 'text-indigo-500',
-            //     'color'   => 'indigo',
-            //     'app'     => [
-            //         'name' => 'check',
-            //         'type' => 'font-awesome-5'
-            //     ]
-            // ],
             'received' => [
                 'tooltip' => __('Received'),
                 'icon'    => 'fal fa-check-double',
