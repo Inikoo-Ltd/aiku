@@ -15,6 +15,7 @@ use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\CalculateOrderHangingCharges;
 use App\Actions\Ordering\Transaction\Traits\WithChargeTransactions;
+use App\Actions\RetinaAction;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
@@ -26,16 +27,17 @@ use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Billables\Charge;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SuccessOrderWithPastpay
+class SuccessOrderWithPastpay extends RetinaAction
 {
     use AsAction;
     use CalculatesPaymentWithBalance;
     use WithPastpayConfiguration;
     use WithChargeTransactions;
 
-    public function handle(Order $order, array $modelData): string
+    public function handle(Order $order, array $modelData): false|string|\Illuminate\Http\RedirectResponse
     {
         /** @var PaymentAccountShop $paymentAccountShop */
         $paymentAccountShop = $order->shop->paymentAccountShops()
@@ -85,9 +87,7 @@ class SuccessOrderWithPastpay
                 'amount' => $payment->amount,
             ]);
 
-            $result = ['status' => 'ok'];
-
-            return route('retina.orders.show', $order->slug);
+            return redirect()->route('retina.orders.show', $order->slug);
         } catch (\Exception $e) {
             $result = [
                 'debug'            => 'SuccessOrderWithPastpay.php',
@@ -99,6 +99,13 @@ class SuccessOrderWithPastpay
         }
 
         return json_encode($result);
+    }
+
+    public function asController(Order $order, ActionRequest $request): false|string|\Illuminate\Http\RedirectResponse
+    {
+        $this->initialisation($request);
+
+        return $this->handle($order, $this->validatedData);
     }
 
     public function asCommand(): int
