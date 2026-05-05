@@ -28,7 +28,7 @@ class SearchCustomers
         return [
             'scope'   => 'customers',
             'results' => [
-                'prospects' => CustomerSearchResultResource::collection($customersQuery->get()),
+                'customers' => CustomerSearchResultResource::collection($customersQuery->get()),
 
             ],
         ];
