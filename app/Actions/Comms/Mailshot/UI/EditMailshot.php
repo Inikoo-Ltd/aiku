@@ -10,6 +10,7 @@ namespace App\Actions\Comms\Mailshot\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
+use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use App\Models\SysAdmin\Organisation;
@@ -29,15 +30,34 @@ class EditMailshot extends OrgAction
         $fields[] = [
             'title'  => '',
             'fields' => [
-                'subject'        => [
+                'name'           => [
                     'type'        => 'input',
-                    'label'       => __('Subject'),
-                    'placeholder' => __('Email subject'),
+                    'label'       => __('Name'),
+                    'placeholder' => __('Mailshot name'),
                     'required'    => false,
-                    'value'       => $mailshot->subject,
+                    'value'       => $mailshot->name,
                 ],
             ]
         ];
+
+        // Only show subject and preview_text for non-SENT states
+        if ($mailshot->state !== MailshotStateEnum::SENT) {
+            $fields[0]['fields']['subject'] = [
+                'type'        => 'input',
+                'label'       => __('Subject'),
+                'placeholder' => __('Email subject'),
+                'required'    => false,
+                'value'       => $mailshot->subject,
+            ];
+
+            $fields[0]['fields']['preview_text'] = [
+                'type'        => 'input',
+                'label'       => __('Preview text'),
+                'placeholder' => __('Email preview text'),
+                'required'    => false,
+                'value'       => $mailshot->preview_text,
+            ];
+        }
 
         return Inertia::render(
             'EditModel',
@@ -67,7 +87,7 @@ class EditMailshot extends OrgAction
                     'blueprint'  =>
                     [
                         [
-                            'title'  => __('Name'),
+                            'title'  => '',
                             'fields' => array_merge(...array_map(fn ($item) => $item['fields'], $fields))
                         ]
                     ],

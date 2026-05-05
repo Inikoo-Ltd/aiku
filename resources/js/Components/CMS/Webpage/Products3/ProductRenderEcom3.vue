@@ -8,6 +8,7 @@ import { faEnvelope, faHeart } from '@far'
 import { faCircle, faHeart as fasHeart } from '@fas'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import { useLocaleStore } from "@/Stores/locale"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faQuestionCircle } from "@fal"
@@ -23,7 +24,7 @@ import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
 import Prices from '@/Components/CMS/Webpage/Products3/Prices3.vue'
 
 library.add(faStarHalfAlt, faQuestionCircle)
-
+const locale = useLocaleStore()
 const layout = inject('layout', retinaLayoutStructure)
 
 const props = withDefaults(defineProps<{
@@ -295,7 +296,7 @@ defineExpose({
             <div class="mt-2">
                 <div class="flex w-full items-center gap-2">
                     <!-- Product Code -->
-                    <div class="text-xs">
+                    <div  class="text-xs">
                         {{ product?.code }}
                     </div>
                     <!-- Stock / Coming Soon -->
@@ -327,11 +328,21 @@ defineExpose({
 
         <div class="mt-auto">
             <Prices v-if="layout?.iris?.is_logged_in" :product="product" :currency="currency" :basketButton />
-            <div v-else class="mt-2">
-                <a :href="urlLoginWithRedirect()" class="w-full">
-                    <Button :label="trans('Login or Register for Wholesale Prices')" class="rounded-none" full
-                        :injectStyle="buttonStyleLogin" />
+            <div v-else class="text-xs leading-tight space-y-1">
+
+                <!-- CODE + RRP -->
+                <div class="flex items-center text-gray-600 text-[10px] 2xl:text-xs py-1 min-w-0">
+                    <!-- RRP + UNIT  -->
+                    <span class="truncate min-w-0 overflow-hidden text-primary">
+                     {{ trans('Recommended retail price')   }} : {{ locale.currencyFormat(currency?.code, product.rrp_per_unit) }}/{{ product.unit }}
+                    </span>
+
+                </div> <!-- CTA -->
+                <a :href="urlLoginWithRedirect()" class="block w-full">
+                    <Button :label="trans('Login or Register for Wholesale Prices')"
+                        class="w-full rounded-none text-xs py-2" full :injectStyle="buttonStyleLogin" />
                 </a>
+
             </div>
         </div>
 

@@ -2,14 +2,12 @@
 import { Link } from "@inertiajs/vue3"
 import { inject, computed, ref } from "vue"
 
-type RouteType = string | Record<string, any>
-
 const layout = inject("layout", {})
 const location = layout?.app?.name || "iris"
 
 const props = withDefaults(
   defineProps<{
-    href: RouteType
+    href: any
     header?: Record<string, any>
     method?: string
     as?: string
@@ -40,18 +38,24 @@ const emit = defineEmits<{
   (e: "finish"): void
 }>()
 
+/**
+ * Normalize raw input
+ */
 const computedHref = computed<string | null>(() => {
   const raw = props.canonical_url ?? props.href
-
   if (typeof raw !== "string" || !raw.trim()) return null
 
   if (props.type !== "internal") return raw
 
   try {
+    // external → convert to relative
     if (/^https?:\/\//.test(raw)) {
       const parsed = new URL(raw)
       return parsed.pathname + parsed.search + parsed.hash
     }
+
+    // ensure leading slash (except hash)
+    if (raw.startsWith("#")) return raw
 
     return raw.startsWith("/")
       ? raw
@@ -61,26 +65,77 @@ const computedHref = computed<string | null>(() => {
   }
 })
 
+/**
+ * Final href used in template
+ * - SSR safe
+ * - no window usage
+ * - normalize "/#section" → "#section"
+ */
+const resolvedHref = computed<string | null>(() => {
+  const href = computedHref.value
+  if (!href) return null
 
+  if (href.startsWith("/#")) {
+    return href.slice(1) // "#section"
+  }
 
+  return href
+})
 
+/**
+ * Routing decision only (never for anchors)
+ */
 const linkLocation = computed<"iris" | "retina" | null>(() => {
-  if (!computedHref.value) return null
+  const href = computedHref.value
+  if (!href) return null
 
-  return computedHref.value.startsWith("/app") ||
-    computedHref.value.startsWith("/retina")
+  // anchors handled by browser
+  if (href.startsWith("#") || href.startsWith("/#")) {
+    return null
+  }
+
+  return href.startsWith("/app") || href.startsWith("/retina")
     ? "retina"
     : "iris"
 })
 
+const isAnchor = computed(() => {
+  const href = resolvedHref.value
+  return !!href && href.startsWith("#")
+})
+
 const isLoading = ref(false)
+
+const handleClick = (event: MouseEvent) => {
+  if (
+    !resolvedHref.value ||
+    isAnchor.value ||
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey ||
+    props.target !== "_self"
+  ) {
+    return
+  }
+
+  isLoading.value = true
+  emit("start")
+}
 </script>
 
 <template>
-  <!-- Internal Inertia link (same app) -->
+  <!-- Inertia link (same app, NOT anchor) -->
   <Link
-    v-if="type === 'internal' && computedHref && linkLocation === location"
-    :href="computedHref"
+    v-if="
+      type === 'internal' &&
+      resolvedHref &&
+      linkLocation === location &&
+      !isAnchor
+    "
+    :href="resolvedHref"
     :method="method"
     :headers="{ is_logged_in: layout?.iris?.is_logged_in, ...header }"
     :as="as"
@@ -96,17 +151,21 @@ const isLoading = ref(false)
     <slot :isLoading="isLoading">{{ label }}</slot>
   </Link>
 
-  <!-- External or cross-app link -->
+  <!-- Anchor OR external OR cross-app -->
   <a
-    v-else-if="computedHref"
-    :href="computedHref"
+    v-else-if="resolvedHref"
+    :href="resolvedHref"
     :class="class"
     :style="style"
     :target="target"
     rel="noopener noreferrer"
+    @click="handleClick"
   >
-    <slot>{{ label }}</slot>
+    <slot :isLoading="isLoading">{{ label }}</slot>
   </a>
 
-  <div v-else><slot>{{ label }}</slot></div>
+  <!-- fallback -->
+  <div v-else>
+    <slot>{{ label }}</slot>
+  </div>
 </template>

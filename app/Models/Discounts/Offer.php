@@ -173,7 +173,6 @@ class Offer extends Model implements Auditable
         return $this->belongsToMany(InvoiceTransaction::class, 'invoice_transaction_has_offer_allowances');
     }
 
-
     public function trigger(): MorphTo
     {
         return $this->morphTo();

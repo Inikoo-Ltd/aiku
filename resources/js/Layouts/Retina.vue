@@ -253,27 +253,7 @@ const getBgColorDependsOnStatus = (status: string) => {
     }
 }
 
-const isSidebarFetching = ref(false)
-const fetchSidebarOnce = async () => {
-    if (isSidebarFetching.value) return
-
-    isSidebarFetching.value = true
-
-    try {
-        const baseUrl = window.location.origin
-        const { data } = await axios.get(`${baseUrl}/json/sidebar`)
-
-        layout.iris.sidebar = data.sidebar
-        layout.isSidebarLoaded = true
-    } catch (e) {
-        console.error("[IrisSidebar] fetch failed", e)
-    } finally {
-        isSidebarFetching.value = false
-    }
-}
-
 onMounted(() => {
-    fetchSidebarOnce()
     // if (layout.iris?.is_have_gtm) {
     setColorStyleRoot(layout?.app?.theme)
     hideSuperchatWidget()

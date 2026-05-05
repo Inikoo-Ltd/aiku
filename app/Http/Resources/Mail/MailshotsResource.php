@@ -41,6 +41,7 @@ class MailshotsResource extends JsonResource
         //Hard bounces, Clicks, Complaints, Deliveries, Delivery delays, Opens, Rejects
         return [
             'slug'                 => $this->slug,
+            'name'                 => $this->name,
             'subject'              => $this->subject,
             'state'                => $mailshot->state,
             'state_label'          => $mailshot->state->labels()[$mailshot->state->value],

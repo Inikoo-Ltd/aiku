@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\SysAdmin\User;
 
+use App\Models\SysAdmin\User;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Resources\Json\JsonResource;
 use JsonSerializable;
@@ -16,7 +17,7 @@ class UserSearchResultResource extends JsonResource
 {
     public function toArray($request): array|Arrayable|JsonSerializable
     {
-        /** @var \App\Models\SysAdmin\User $user */
+        /** @var User $user */
         $user = $this;
         return [
             'username'           => $user->username,

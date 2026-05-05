@@ -162,25 +162,31 @@ class ShowWebsite extends OrgAction
             ],
         ];
 
-        $route_storefront = [
-            'name'       => 'grp.org.shops.show.web.webpages.show',
-            'parameters' => [
-                'organisation' => $shop->organisation->slug,
-                'shop'         => $shop->slug,
-                'website'      => $website->slug,
-                'webpage'      => 'storefront-'.$shop->slug,
-            ]
+        $routeShowWebpage   = 'grp.org.shops.show.web.webpages.show';
+        $routeParam         = [
+            'organisation' => $shop->organisation->slug,
+            'shop'         => $shop->slug,
+            'website'      => $website->slug,
+            'webpage'      => 'storefront-'.$shop->slug,
         ];
 
         if ($website->shop->type == ShopTypeEnum::FULFILMENT) {
-            $route_storefront = [
-                'name'       => 'grp.org.fulfilments.show.web.webpages.show',
-                'parameters' => [
-                    'organisation' => $shop->organisation->slug,
-                    'fulfilment'   => $shop->slug,
-                    'website'      => $website->slug,
-                    'webpage'      => 'storefront-'.$shop->slug,
-                ]
+            $routeShowWebpage   = 'grp.org.fulfilments.show.web.webpages.show';
+            data_set($routeParam, 'fulfilment', $shop->slug);
+            unset($routeParam['shop']);
+        }
+
+        $route_storefront = [
+            'name'       => $routeShowWebpage,
+            'parameters' => $routeParam,
+        ];
+
+        $route_landing_page = [];
+        if ($website->landingPage) {
+            data_set($routeParam, 'webpage', $website->landingPage->slug);
+            $route_landing_page = [
+                'name'       => $routeShowWebpage,
+                'parameters' => $routeParam,
             ];
         }
 
@@ -231,7 +237,8 @@ class ShowWebsite extends OrgAction
                     'navigation' => WebsiteTabsEnum::navigation()
                 ],
 
-                'route_storefront' => $route_storefront,
+                'route_storefront'      => $route_storefront,
+                'route_landing_page'    => $route_landing_page,
                 'migrated'        => $website->migrated,
                 'luigi_data'      => [
                     'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),

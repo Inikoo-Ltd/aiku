@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Helpers\Redirects\RedirectAssetLink;
+use App\Actions\Helpers\Redirects\RedirectCollectionLink;
 use App\Actions\Helpers\Redirects\RedirectCollectionsInProductCategoryLink;
 use App\Actions\Helpers\Redirects\RedirectCustomersInShopFromDashboard;
 use App\Actions\Helpers\Redirects\RedirectDeletedInvoicesInShopLink;
@@ -25,6 +26,7 @@ use App\Actions\Helpers\Redirects\RedirectOutboxWorkshopLink;
 use App\Actions\Helpers\Redirects\RedirectPickingSessionLink;
 use App\Actions\Helpers\Redirects\RedirectPortfolioItemLink;
 use App\Actions\Helpers\Redirects\RedirectProductCategoryLink;
+use App\Actions\Helpers\Redirects\RedirectProductLink;
 use App\Actions\Helpers\Redirects\RedirectShopInShopFromDashboard;
 use App\Actions\Helpers\Upload\DownloadUploads;
 use App\Actions\Helpers\Upload\UI\ShowUpload;
@@ -46,8 +48,12 @@ Route::get('redirect-shops-from-dashboard/{shop:id}', RedirectShopInShopFromDash
 
 Route::get('redirect-portfolio-item/{portfolio:id}', RedirectPortfolioItemLink::class)->name('redirect_portfolio_item');
 
-Route::get('redirect-product-category/{productCategory:slug}', RedirectProductCategoryLink::class)->name('redirect_product_category');
+Route::get('redirect-product-category/{productCategory:id}', RedirectProductCategoryLink::class)->name('redirect_product_category');
 Route::get('redirect-collections-in-product-category/{productCategory:slug}', RedirectCollectionsInProductCategoryLink::class)->name('redirect_collections_in_product_category');
+
+Route::get('redirect-collection/{collection:id}', RedirectCollectionLink::class)->name('redirect_collection');
+Route::get('redirect-product/{product:id}', RedirectProductLink::class)->name('redirect_product');
+
 
 Route::get('redirect-picking-session/{pickingSession:id}', RedirectPickingSessionLink::class)->name('redirect_picking_session');
 

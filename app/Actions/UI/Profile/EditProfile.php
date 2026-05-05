@@ -8,8 +8,8 @@
 
 namespace App\Actions\UI\Profile;
 
+use App\Actions\SysAdmin\User\UI\GetLoggedUser;
 use App\Actions\UI\WithInertia;
-use App\Http\Resources\UI\LoggedUserResource;
 use App\Models\SysAdmin\User;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -34,9 +34,9 @@ class EditProfile
     public function generateBlueprint(User $user): array
     {
         return [
-            "title"       => __("Edit Profile"),
-            "pageHead"    => [
-                "title"        => __("Edit Profile"),
+            "title"    => __("Edit Profile"),
+            "pageHead" => [
+                "title" => __("Edit Profile"),
 
             ],
             "formData" => [
@@ -46,26 +46,26 @@ class EditProfile
                         "icon"    => "fa-light fa-user-circle",
                         "current" => true,
                         "fields"  => [
-                            "email"     => [
+                            "email"    => [
                                 "type"  => "input",
                                 "label" => __("Email"),
                                 "value" => $user->email,
                             ],
-                            "password"  => [
+                            "password" => [
                                 "type"  => "password",
                                 "label" => __("Password"),
                                 "value" => "",
                             ],
-                            "about"     => [
-                                "type"          => "textarea",
-                                "label"         => __("About"),
-                                "value"         => $user->about,
-                                "maxLength"     => 48,
-                                "counter"       => true,
-                                "rows"          => 5,
-                                "placeholder"   => __('Enter up to 50 characters')
+                            "about"    => [
+                                "type"        => "textarea",
+                                "label"       => __("About"),
+                                "value"       => $user->about,
+                                "maxLength"   => 48,
+                                "counter"     => true,
+                                "rows"        => 5,
+                                "placeholder" => __('Enter up to 50 characters')
                             ],
-                            "image"     => [
+                            "image"    => [
                                 "type"  => "image_crop_square",
                                 "label" => __("Logo"),
                                 "value" => $user->imageSources(320, 320)
@@ -77,14 +77,14 @@ class EditProfile
                         "icon"    => "fal fa-user-lock",
                         "current" => true,
                         "fields"  => [
-                            "enable_2fa"       => [
-                                "type"          => "toggle2fa",
-                                "label"         => __("Enable 2FA"),
-                                "noSaveButton"  => true,
-                                "value"         => [
-                                    'has_2fa'               => (bool) $user->google2fa_secret,
-                                    'secretKey'             => $user->google2fa_secret,
-                                    'one_time_password'     => null,
+                            "enable_2fa" => [
+                                "type"         => "toggle2fa",
+                                "label"        => __("Enable 2FA"),
+                                "noSaveButton" => true,
+                                "value"        => [
+                                    'has_2fa'           => (bool)$user->google2fa_secret,
+                                    'secretKey'         => $user->google2fa_secret,
+                                    'one_time_password' => null,
                                 ],
                             ],
                         ]
@@ -92,19 +92,18 @@ class EditProfile
                 ],
                 "args"      => [
                     "updateRoute" => [
-                        "name"       => "grp.models.profile.update"
+                        "name" => "grp.models.profile.update"
                     ],
                 ],
             ],
-            'auth'          => [
-                'user' => LoggedUserResource::make($user)->getArray(),
+            'auth'     => [
+                'user' => GetLoggedUser::run($user)
             ],
         ];
     }
 
     public function htmlResponse(User $user): Response
     {
-
         return Inertia::render("EditModel", $this->generateBlueprint($user));
     }
 

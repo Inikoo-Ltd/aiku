@@ -8,20 +8,24 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
+import Tabs from '@/Components/Navigation/Tabs.vue'
+import { useTabChange } from '@/Composables/tab-change'
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from '@/types/PageHeading'
 import Coupon from '@/Components/Utils/Coupon.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { inject } from 'vue'
+import { inject, computed, ref } from 'vue'
 import { routeType } from '@/types/route'
 import { trans } from 'laravel-vue-i18n'
 import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue'
 import BasicDiscount from '@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue'
-import { OfferResource } from '@/types/Catalogue/Offers'
+import { OfferResource, OfferAllowanceResource } from '@/types/Catalogue/Offers'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faFlagCheckered } from "@fortawesome/free-solid-svg-icons"
+import TableCustomers from '@/Components/Tables/Grp/Org/CRM/TableCustomers.vue'
+import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
 
 library.add(faFlagCheckered)
 
@@ -31,7 +35,14 @@ const props = defineProps<{
     currency_code: string
     data: {
         offer: OfferResource
+        offer_allowances: OfferAllowanceResource[]
     }
+    tabs: {
+        current: string
+        navigation: Record<string, { title: string; icon?: string; type?: string; align?: string }>
+    }
+    customers?: object
+    orders?: object
     url_master?: routeType
 }>()
 
@@ -69,7 +80,7 @@ const getCategoryLink = (productCategory?: ProductCategoryLink | null) => {
     })
 }
 
-const getOfferCampaignLink = (offerCampaign: {}) => {
+const getOfferCampaignLink = (offerCampaign: { slug: string }) => {
     if (offerCampaign) {
         return route('grp.org.shops.show.discounts.campaigns.show', {
             organisation: route().params.organisation,
@@ -79,7 +90,54 @@ const getOfferCampaignLink = (offerCampaign: {}) => {
     }
     return '#'
 }
-console.log("props data offer", props.data.offer)
+
+const isExpired = computed(() => {
+    const now = new Date()
+    const end = props.data.offer.end_at ? new Date(props.data.offer.end_at) : null
+
+    return end && now > end
+})
+
+const stateClass = computed(() => {
+    if (isExpired.value) return 'bg-red-200 text-red-800 border'
+
+    switch (state) {
+        case 'active':
+            return 'bg-green-50 text-green-700 border border-green-300'
+        case 'in_process':
+            return 'bg-grey-100 text-gray-600 border border-gray-300'
+        case 'suspended':
+            return 'bg-yellow-50 text-yellow-700 border border-yellow-300'
+        case 'finished':
+            return 'bg-red-200 text-red-800 border border'
+        default:
+            return 'bg-blue-50 text-blue-700 border border-blue-300'
+    }
+})
+
+const currentTab = ref(props.tabs.current)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
+const tabComponent = computed(() => {
+    const components: Record<string, unknown> = {
+        customers: TableCustomers,
+        orders: TableOrders,
+    }
+    return components[currentTab.value]
+})
+
+const hasTrigger = computed(() => {
+    const t = props.data.offer.trigger_data
+    return (
+        t?.item_quantity !== undefined ||
+        t?.min_amount !== undefined ||
+        t?.order_number !== undefined ||
+        t?.item_amount !== undefined
+    )
+})
+
+const state = props.data.offer_allowances[0]?.state
+const percentage_off = props.data.offer_allowances[0]?.data?.percentage_off
 </script>
 
 <template>
@@ -87,21 +145,16 @@ console.log("props data offer", props.data.offer)
     <PageHeading :data="pageHead">
         <template #afterTitle2>
             <div class="whitespace-nowrap">
-                <Link v-if="url_master?.name" :href="route(url_master.name,url_master.parameters)" v-tooltip="trans('Go to Master Family section Offer GR/Vol')" class="mr-1 opacity-70 hover:opacity-100">
-                    <FontAwesomeIcon
-                        icon="fab fa-octopus-deploy"
-                        color="#4B0082"
-                        fixed-width
-                    />
+                <Link v-if="url_master?.name" :href="route(url_master.name, url_master.parameters)" v-tooltip="trans('Go to Master Family section Offer GR/Vol')" class="mr-1 opacity-70 hover:opacity-100">
+                    <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" fixed-width />
                 </Link>
             </div>
         </template>
     </PageHeading>
-    <!-- <pre>{{ data.offer }}</pre> -->
 
     <!-- Section: Preview label -->
-    <div class="p-5 border-b border-gray-300 mb-4 offer">
-        <div class="grid grid-cols-3 items-center gap-4">
+    <div class="p-5 border-b border-gray-300 offer">
+        <div class="grid grid-cols-1 md:grid-cols-3 items-center gap-4">
             <!-- Left: Duration & State -->
             <div class="flex flex-col gap-3 ml-4">
                 <div v-if="data.offer.start_at || data.offer.end_at" class="flex flex-col gap-1 text-lg text-gray-600">
@@ -115,15 +168,8 @@ console.log("props data offer", props.data.offer)
                     </div>
                 </div>
 
-                <div v-if="data.offer.state" class="inline-flex items-center text-sm capitalize rounded-full px-3 py-0.5 font-medium w-fit"
-                    :class="{
-                        'bg-green-50 text-green-700 border border-green-300': data.offer.state === 'active',
-                        'bg-gray-100 text-gray-600 border border-gray-300': data.offer.state === 'inactive',
-                        'bg-yellow-50 text-yellow-700 border border-yellow-300': data.offer.state === 'suspended',
-                        'bg-blue-50 text-blue-700 border border-blue-300': !['active','inactive','suspended'].includes(data.offer.state),
-                    }"
-                >
-                    {{ data.offer.state }}
+                <div v-if="state" class="inline-flex items-center text-sm capitalize rounded-full px-3 py-0.5 font-medium w-fit" :class="stateClass">
+                    {{ (data.offer.end_at && new Date() > new Date(data.offer.end_at)) ? ctrans('finished') : state?.replace('_', ' ') }}
                 </div>
             </div>
 
@@ -131,16 +177,12 @@ console.log("props data offer", props.data.offer)
             <div class="flex flex-col items-center gap-2">
                 <div class="text-sm text-gray-600 gap-2">
                     {{ ctrans("Type") }}: <span class="font-bold">{{ data.offer.type }}</span>
-                    <!-- <div v-if="data.offer.end_at && new Date() > new Date(data.offer.end_at)" class="inline-flex items-center gap-2 bg-red-50 border border-red-300 text-red-700 rounded-full px-3 py-1 text-sm font-medium ml-2">
-                    <FontAwesomeIcon icon="fa-flag-checkered" class="text-red-500" fixed-width />
-                    {{ ctrans("Offer Finished") }}
-                </div> -->
                 </div>
-                <FamilyOfferLabelDiscount v-if="data.offer.type == 'Category Quantity Ordered Order Interval'" :offer="data.offer" />
+                <FamilyOfferLabelDiscount v-if="data.offer.type == 'Category Quantity Ordered Order Interval'" :offer="data.offer" :offer_allowances="data.offer_allowances" />
                 <BasicDiscount v-else-if="data.offer.type == 'GR Amnesty'"
                     :offers_data="{
                         o: {
-                            p: (data.offer.max_percentage_discount || 0 )*100 + '%',
+                            p: (percentage_off || 0) * 100 + '%',
                             l: data.offer.label ?? '',
                             st: 'a'
                         }
@@ -148,198 +190,117 @@ console.log("props data offer", props.data.offer)
                     class="!text-xl"
                 />
                 <BasicDiscount v-else-if="data.offer.type == 'Category Ordered'"
-                    :offers_data="{
-                        o: {
-                            p: (data.offer.max_percentage_discount || 0 )*100 + '%',
-                            l: data.offer.label ?? ''
-                        }
-                    }"
-                    class="!text-3xl"
+                :offers_data="{
+                    o: {
+                        p: (percentage_off || 0) * 100 + '%',
+                        l: data.offer.label ?? ''
+                    }
+                }"
+                class="!text-3xl"
                 />
-                <Coupon v-else :offer="data.offer" :currency_code="currency_code" />
+                <Coupon v-else :offer="data.offer" :currency_code="currency_code" />    
             </div>
 
-            <!-- Right: empty placeholder for balance -->
-            <div></div>
-        </div>
-    </div>
-    
-    <div class="flex justify-between gap-8 mx-8">
-        <!-- Section: Details -->
-        <div class="max-w-lg first:pt-0 pr-2 flex flex-col first:border-t-0 gap-y-1 pt-1 pb-1.5">
-            <div class="bg-gray-100 font-bold border-b border-gray-200 text-gray-700 text-center mb-1 py-1 px-2">
-                {{ ctrans("Details") }}
-            </div>
+            <!-- RIGHT -->
+            <div :class="[
+                'grid gap-6',
+                hasTrigger ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'
+            ]">
 
-            <!-- Detail: Created -->
-            <!-- <div v-if="data.offer.created_at" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
-                <dt class="col-span-4 flex flex-col">
-                    <div class="flex items-center leading-none">
-                        <span>{{ ctrans("Created at") }}</span>
+                <div class="flex flex-col gap-3">
+                    <div class="bg-gray-100 font-semibold text-gray-700 text-center py-1 px-2 rounded">
+                        {{ ctrans("Details") }}
                     </div>
-                </dt>
-        
-                <div class="relative col-span-3 justify-self-end font-medium overflow-hidden text-right">
-                    {{ useFormatTime(data.offer.created_at, { formatTime: 'hm' }) }}
+
+                    <div class="flex flex-col gap-2 text-sm">
+
+                        <!-- Campaign -->
+                        <div v-if="data.offer.offer_campaign" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">
+                                {{ ctrans("Campaign") }}
+                            </dt>
+                            <dd class="font-medium text-right break-words max-w-[60%]">
+                                <Link
+                                    :href="getOfferCampaignLink(data.offer.offer_campaign)"
+                                    class="secondaryLink capitalize"
+                                >
+                                    {{ data.offer.offer_campaign.name }}
+                                </Link>
+                            </dd>
+                        </div>
+
+                        <!-- Product Category -->
+                        <div v-if="data.offer.data_allowance_signature?.product_category" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">
+                                {{ ctrans("Product category") }}
+                            </dt>
+                            <dd class="font-medium text-right break-words max-w-[60%]">
+                                <Link
+                                    :href="getCategoryLink(data.offer.data_allowance_signature.product_category)"
+                                    class="secondaryLink"
+                                >
+                                    {{ data.offer.data_allowance_signature.product_category?.name }}
+                                </Link>
+                            </dd>
+                        </div>
+
+                    </div>
                 </div>
-            </div> -->
 
-            <!-- Detail: Campaign -->
-            <div v-if="data.offer.offer_campaign" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
-                <dt class="col-span-4 flex flex-col">
-                    <div class="flex items-center leading-none">
-                        <span>{{ ctrans("Campaign") }}</span>
+                <div
+                    v-if="hasTrigger"
+                    class="flex flex-col gap-3"
+                >
+                    <div class="bg-amber-100 font-semibold text-amber-700 text-center py-1 px-2 rounded">
+                        {{ ctrans("Trigger") }}
                     </div>
-                </dt>
-        
-                <div class="relative col-span-3 justify-self-end font-medium overflow-hidden text-right">
-                    <Link :href="getOfferCampaignLink(data.offer.offer_campaign)" class="secondaryLink capitalize">
-                        {{ data.offer.offer_campaign.name }}
-                    </Link>
-                </div>
-            </div>
 
-            <!-- Detail: Duration -->
-            <!-- <div v-if="data.offer.start_at || data.offer.end_at" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
-                <dt class="col-span-4 flex flex-col">
-                    <div class="flex items-center leading-none">
-                        <span>{{ ctrans("Duration") }}</span>
-                    </div>
-                </dt>
-        
-                <div class="relative col-span-3 justify-self-end font-medium overflow-hidden text-right">
-                    {{ useFormatTime(data.offer.start_at, { formatTime: 'hm' }) }} - {{ data.offer.end_at ? useFormatTime(data.offer.end_at, { formatTime: 'hm' }) : ctrans('Permanent') }}
-                </div>
-            </div> -->
+                    <div class="flex flex-col gap-2 text-sm">
 
-            <!-- Detail: Product category -->
-            <div v-if="data.offer.data_allowance_signature?.product_category" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
-                <dt class="col-span-4 flex flex-col">
-                    <div class="flex items-center leading-none">
-                        <span>{{ ctrans("Product category") }}</span>
-                    </div>
-                    <!-- <span v-tooltip="'fieldSummary.information'" class="text-xs text-gray-400 truncate">
-                        Minimum of quantity the item ordered
-                    </span> -->
-                </dt>
-        
-                <div class="relative col-span-3 justify-self-end font-medium overflow-hidden text-right">
-                    <Link :href="getCategoryLink(data.offer.data_allowance_signature.product_category)" class="secondaryLink">
-                        {{ data.offer.data_allowance_signature.product_category?.name }}
-                    </Link>
-                </div>
-            </div>
-        </div>
+                        <!-- Item Quantity -->
+                        <div v-if="data.offer.trigger_data?.item_quantity !== undefined" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">{{ ctrans("Item quantity") }}</dt>
+                            <dd class="font-medium text-right">
+                                {{ data.offer.trigger_data.item_quantity }}
+                            </dd>
+                        </div>
 
-        <!-- Section: Trigger -->
-        <div v-if="
-            (typeof data.offer.trigger_data?.item_quantity !== 'undefined')
-            || (typeof data.offer.trigger_data?.min_amount !== 'undefined')
-            || (typeof data.offer.trigger_data?.order_number !== 'undefined')
-            || (typeof data.offer.trigger_data?.item_amount !== 'undefined')
-        "
-            class="max-w-lg first:pt-0 pr-2 flex flex-col first:border-t-0 gap-y-1 pt-1 pb-1.5">
-            <div class="bg-amber-100 font-bold border-b border-gray-200 text-amber-700 text-center mb-1 py-1 px-2">
-                {{ ctrans("Trigger") }}
-            </div>
-            
-            <!-- Trigger: Item Quantity -->
-            <div v-if="(typeof data.offer.trigger_data?.item_quantity !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
-                <dt class="col-span-4 flex flex-col">
-                    <div class="flex items-center leading-none">
-                        <span>{{ ctrans("Item quantity") }}</span>
+                        <!-- Item Amount -->
+                        <div v-if="data.offer.trigger_data?.item_amount !== undefined" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">{{ ctrans("Item amount") }}</dt>
+                            <dd class="font-medium text-right">
+                                {{ locale.currencyFormat(currency_code, data.offer.trigger_data.item_amount) }}
+                            </dd>
+                        </div>
+
+                        <!-- Minimum Amount -->
+                        <div v-if="data.offer.trigger_data?.min_amount !== undefined" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">{{ ctrans("Minimum amount") }}</dt>
+                            <dd class="font-medium text-right">
+                                {{ locale.currencyFormat(currency_code, data.offer.trigger_data.min_amount) }}
+                            </dd>
+                        </div>
+
+                        <!-- Order Number -->
+                        <div v-if="data.offer.trigger_data?.order_number !== undefined" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">{{ ctrans("Minimum order") }}</dt>
+                            <dd class="font-medium text-right">
+                                {{ data.offer.trigger_data.order_number }}
+                            </dd>
+                        </div>
+
                     </div>
-                    <span v-tooltip="ctrans('Minimum of quantity the item ordered')" class="text-xs text-gray-400 truncate">
-                        {{ ctrans("Minimum of quantity the item ordered") }}
-                    </span>
-                </dt>
-        
-                <div class="relative col-span-3 justify-self-end font-medium overflow-hidden">
-                    <dd class="">
-                        {{ data.offer.trigger_data.item_quantity }}
-                    </dd>
                 </div>
             </div>
             
-            <!-- Trigger: item amount -->
-            <div v-if="(typeof data.offer.trigger_data?.item_amount !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
-                <dt class="col-span-4 flex flex-col">
-                    <div class="flex items-center leading-none">
-                        <span>{{ ctrans("Item amount") }}</span>
-                    </div>
-                    <span v-tooltip="ctrans('Minimum of amount the item ordered')" class="text-xs text-gray-400 truncate">
-                        {{ ctrans("Minimum of amount the item ordered") }}
-                    </span>
-                </dt>
-        
-                <div class="relative col-span-3 justify-self-end font-medium overflow-hidden">
-                    <dd class="">
-                        {{ locale.currencyFormat(currency_code, data.offer.trigger_data.item_amount)}}
-                    </dd>
-                </div>
-            </div>
-            
-            <!-- Trigger: Min amount -->
-            <div v-if="(typeof data.offer.trigger_data?.min_amount !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
-                <dt class="col-span-4 flex flex-col">
-                    <div class="flex items-center leading-none">
-                        <span>{{ ctrans("Minimum amount") }}</span>
-                    </div>
-                    <span v-tooltip="ctrans('Minimum of amount the item ordered')" class="text-xs text-gray-400 truncate">
-                        {{ ctrans("Minimum of amount the item ordered") }}
-                    </span>
-                </dt>
-        
-                <div class="relative col-span-3 justify-self-end font-medium overflow-hidden">
-                    <dd class="">
-                        {{ locale.currencyFormat(currency_code, data.offer.trigger_data.min_amount) }}
-                    </dd>
-                </div>
-            </div>
-
-            <!-- Trigger: Order number -->
-            <div v-if="(typeof data.offer.trigger_data?.order_number !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
-                <dt class="col-span-4 flex flex-col">
-                    <div class="flex items-center leading-none">
-                        <span>{{ ctrans("Minimum order") }}</span>
-                    </div>
-                    <span v-tooltip="ctrans('The order count required to activate the discount (e.g., 7 = 7th order)')" class="text-xs text-gray-400 truncate">
-                        {{ ctrans("The order count required to activate the discount (e.g., 7 = 7th order)") }}
-                    </span>
-                </dt>
-        
-                <div class="relative col-span-3 justify-self-end font-medium overflow-hidden">
-                    <dd class="">
-                        {{ data.offer.trigger_data.order_number }}
-                    </dd>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section: Discount -->
-        <div class="ml-4 max-w-lg first:pt-0 pr-2 flex flex-col first:border-t-0 gap-y-1 pt-1 pb-1.5">
-            <div class="bg-green-100 font-bold border-b border-gray-200 text-green-700 text-center mb-1 py-1 px-2">
-                {{ ctrans("Discounts") }}
-            </div>
-            <div v-if="(typeof props.data.offer.data_allowance_signature?.percentage_off !== 'undefined')" class="grid grid-cols-7 gap-x-4 items-center justify-between">
-                <dt class="col-span-4 flex flex-col">
-                    <div class="flex items-center leading-none">
-                        <span>{{ ctrans("Discount percentage") }}</span>
-                    </div>
-                    <span v-tooltip="ctrans('The discount of the product price')" class="text-xs text-gray-400 truncate">
-                        {{ ctrans("The discount of the product price") }}
-                    </span>
-                </dt>
-        
-                <div class="relative col-span-3 justify-self-end font-medium overflow-hidden">
-                    <dd class="">
-                        {{ props.data.offer.data_allowance_signature?.percentage_off * 100 }}%
-                    </dd>
-                </div>
-            </div>
         </div>
     </div>
 
+    <!-- Tabs: Customers / Orders -->
+    <div class="">
+        <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+        <component :is="tabComponent" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
+    </div>
 </template>
 
 
@@ -349,6 +310,6 @@ console.log("props data offer", props.data.offer)
 }
 
 .offer :deep(.text-primary) {
-    color:#ff862f;
+    color: #ff862f;
 }
 </style>

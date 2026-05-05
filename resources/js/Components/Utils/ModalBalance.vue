@@ -31,7 +31,7 @@ const increase = ref([
 ])
 
 const decrease = ref([
-	{ name: "Customer want money back", type: "money_back" },
+	{ name: "Customer requested a return of funds", type: "money_back" },
 	{ name: "Transfer to other customer account", type: "transfer_in" },
 	{ name: "Other Reason", type: "remove_funds_other" },
 ])

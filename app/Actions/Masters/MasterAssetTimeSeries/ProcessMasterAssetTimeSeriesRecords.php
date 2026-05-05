@@ -8,8 +8,10 @@
 namespace App\Actions\Masters\MasterAssetTimeSeries;
 
 use App\Actions\Masters\MasterAssetTimeSeries\Hydrators\MasterAssetTimeSeriesHydrateNumberRecords;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Helpers\TimeSeriesPeriodCalculator;
+use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterAssetTimeSeries;
 use App\Traits\BuildsInvoiceTransactionTimeSeriesQuery;
@@ -23,23 +25,30 @@ class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
 
-    public function getJobUniqueId(int $masterAssetId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
+    public function getJobUniqueId(?int $masterAssetId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
+        if ($masterAssetId === null) {
+            return 'empty'.'_'.$from.'_'.$to;
+        }
+
         return "$masterAssetId:$frequency->value:$from:$to";
     }
 
-    public function handle(int $masterAssetId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
+    public function handle(?int $masterAssetId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-        $from .= ' 00:00:00';
-        $to   .= ' 23:59:59';
-
+        if (!$masterAssetId) {
+            return;
+        }
         $masterAsset = MasterAsset::find($masterAssetId);
 
         if (!$masterAsset) {
             return;
         }
+
+        $from .= ' 00:00:00';
+        $to   .= ' 23:59:59';
 
         $timeSeries = MasterAssetTimeSeries::where('master_asset_id', $masterAsset->id)->where('frequency', $frequency->value)->first();
 
@@ -47,16 +56,18 @@ class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
             $timeSeries = $masterAsset->timeSeries()->create(['frequency' => $frequency]);
         }
 
-        $this->processTimeSeries($timeSeries, $from, $to);
+        $hasDropshipping = Shop::on('aiku_no_sticky')->where('master_shop_id', $masterAsset->master_shop_id)->where('type', ShopTypeEnum::DROPSHIPPING)->exists();
+
+        $this->processTimeSeries($timeSeries, $from, $to, $hasDropshipping);
 
         MasterAssetTimeSeriesHydrateNumberRecords::run($timeSeries->id);
     }
 
-    protected function processTimeSeries(MasterAssetTimeSeries $timeSeries, string $from, string $to): void
+    protected function processTimeSeries(MasterAssetTimeSeries $timeSeries, string $from, string $to, bool $hasDropshipping): void
     {
         $processedPeriods = [];
 
-        $query = DB::table('invoice_transactions')
+        $query = DB::connection('aiku_no_sticky')->table('invoice_transactions')
             ->where('master_asset_id', $timeSeries->master_asset_id)
             ->where('date', '>=', $from)
             ->where('date', '<=', $to)
@@ -67,8 +78,11 @@ class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
-            $metrics = $this->getPortfolioStats($timeSeries->master_asset_id, $periodFrom, $periodTo);
-
+            if ($hasDropshipping) {
+                $metrics = $this->getPortfolioStats($timeSeries->master_asset_id, $periodFrom, $periodTo);
+            } else {
+                $metrics = ['dropshippers' => 0, 'listings' => 0];
+            }
             $timeSeries->records()->updateOrCreate(
                 [
                     'master_asset_time_series_id' => $timeSeries->id,
@@ -134,7 +148,7 @@ class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
 
     protected function getPortfolioStats(int $masterAssetId, Carbon $periodFrom, Carbon $periodTo): array
     {
-        $assetIds = DB::table('assets')
+        $assetIds = DB::connection('aiku_no_sticky')->table('assets')
             ->where('master_asset_id', $masterAssetId)
             ->pluck('id');
 
@@ -142,7 +156,7 @@ class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
             return ['dropshippers' => 0, 'listings' => 0];
         }
 
-        $result = DB::table('portfolios')
+        $result = DB::connection('aiku_no_sticky')->table('portfolios')
             ->selectRaw('COUNT(id) as total_listed, COUNT(DISTINCT customer_id) as total_customers')
             ->where('item_type', 'Product')
             ->whereIn('item_id', $assetIds)

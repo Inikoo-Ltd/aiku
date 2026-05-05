@@ -129,7 +129,9 @@ provide('screenType', screenType)
 const handleTabFocus = () => {
     if (document.visibilityState === 'visible') {
         checkScreenType()
-        fetchHasInBasket()
+        if (layout?.iris?.is_logged_in) {
+            fetchHasInBasket()
+        }
     }
 }
 
@@ -155,25 +157,6 @@ onBeforeUnmount(() => {
     document.removeEventListener('visibilitychange', handleTabFocus)
 })
 
-const isSidebarFetching = ref(false)
-
-const fetchSidebarOnce = async () => {
-    if (layout.isSidebarLoaded.value || isSidebarFetching.value) return
-
-    isSidebarFetching.value = true
-
-    try {
-        const { data } = await axios.get(route("iris.json.sidebar"))
-
-        layout.iris.sidebar  = data.sidebar
-
-        layout.isSidebarLoaded = true
-    } catch (e) {
-        console.error("[IrisSidebar] fetch failed", e)
-    } finally {
-        isSidebarFetching.value = false
-    }
-}
 
 const fetchHasInBasket = async () => {
     set(layout, ['family_page', 'productInBasket', 'isLoading'], true)
@@ -198,7 +181,6 @@ const fetchHasInBasket = async () => {
 onBeforeMount(()=>{
 initialiseIrisVarnish(useIrisLayoutStore)
 getAnnouncements()
-fetchSidebarOnce()
 })
 
 // Watch: open Side Basket if cart have any changes

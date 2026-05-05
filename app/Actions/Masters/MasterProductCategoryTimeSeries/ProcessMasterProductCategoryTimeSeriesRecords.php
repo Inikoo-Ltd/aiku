@@ -9,8 +9,10 @@
 namespace App\Actions\Masters\MasterProductCategoryTimeSeries;
 
 use App\Actions\Masters\MasterProductCategoryTimeSeries\Hydrators\MasterProductCategoryTimeSeriesHydrateNumberRecords;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Helpers\TimeSeriesPeriodCalculator;
+use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterProductCategoryTimeSeries;
 use App\Traits\BuildsInvoiceTransactionTimeSeriesQuery;
@@ -24,23 +26,30 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
 
-    public function getJobUniqueId(int $masterProductCategoryId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
+    public function getJobUniqueId(?int $masterProductCategoryId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
+        if ($masterProductCategoryId === null) {
+            return 'empty'.'_'.$from.'_'.$to;
+        }
+
         return "$masterProductCategoryId:$frequency->value:$from:$to";
     }
 
-    public function handle(int $masterProductCategoryId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
+    public function handle(?int $masterProductCategoryId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-        $from .= ' 00:00:00';
-        $to   .= ' 23:59:59';
-
+        if (!$masterProductCategoryId) {
+            return;
+        }
         $masterProductCategory = MasterProductCategory::find($masterProductCategoryId);
 
         if (!$masterProductCategory) {
             return;
         }
+
+        $from .= ' 00:00:00';
+        $to   .= ' 23:59:59';
 
         $timeSeries = MasterProductCategoryTimeSeries::where('master_product_category_id', $masterProductCategoryId)->where('frequency', $frequency->value)->first();
 
@@ -50,23 +59,24 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
                 'type'      => $masterProductCategory->type->value
             ]);
         }
+        $hasDropshipping = Shop::on('aiku_no_sticky')->where('master_shop_id', $masterProductCategory->master_shop_id)->where('type', ShopTypeEnum::DROPSHIPPING)->exists();
 
-        $this->processTimeSeries($timeSeries, $from, $to);
+        $this->processTimeSeries($timeSeries, $from, $to, $hasDropshipping);
 
         MasterProductCategoryTimeSeriesHydrateNumberRecords::run($timeSeries->id);
     }
 
-    protected function processTimeSeries(MasterProductCategoryTimeSeries $timeSeries, string $from, string $to): void
+    protected function processTimeSeries(MasterProductCategoryTimeSeries $timeSeries, string $from, string $to, bool $hasDropshipping): void
     {
         $processedPeriods = [];
 
         $categoryColumn = match ($timeSeries->type) {
-            'department'     => 'master_department_id',
+            'department' => 'master_department_id',
             'sub_department' => 'master_sub_department_id',
-            'family'         => 'master_family_id',
+            'family' => 'master_family_id',
         };
 
-        $query = DB::table('invoice_transactions')
+        $query = DB::connection('aiku_no_sticky')->table('invoice_transactions')
             ->where($categoryColumn, $timeSeries->master_product_category_id)
             ->where('date', '>=', $from)
             ->where('date', '<=', $to)
@@ -77,16 +87,19 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
-            $metrics = $this->getPortfolioStats($timeSeries->master_product_category_id, $timeSeries->type, $periodFrom, $periodTo);
-
+            if ($hasDropshipping) {
+                $metrics = $this->getPortfolioStats($timeSeries->master_product_category_id, $timeSeries->type, $periodFrom, $periodTo);
+            } else {
+                $metrics = ['dropshippers' => 0, 'listings' => 0];
+            }
             $timeSeries->records()->updateOrCreate(
                 [
                     'master_product_category_time_series_id' => $timeSeries->id,
                     'period'                                 => $period,
                     'type'                                   => match ($timeSeries->type) {
-                        'department'     => 'D',
+                        'department' => 'D',
                         'sub_department' => 'S',
-                        'family'         => 'F',
+                        'family' => 'F',
                     },
                     'frequency'                              => $timeSeries->frequency->singleLetter()
                 ],
@@ -129,9 +142,9 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
                     'master_product_category_time_series_id' => $timeSeries->id,
                     'period'                                 => $periodData['period'],
                     'type'                                   => match ($timeSeries->type) {
-                        'department'     => 'D',
+                        'department' => 'D',
                         'sub_department' => 'S',
-                        'family'         => 'F',
+                        'family' => 'F',
                     },
                     'frequency'                              => $timeSeries->frequency->singleLetter()
                 ],
@@ -155,29 +168,30 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
     protected function getPortfolioStats(int $masterProductCategoryId, string $type, Carbon $periodFrom, Carbon $periodTo): array
     {
         $categoryColumn = match ($type) {
-            'department'     => 'master_department_id',
+            'department' => 'master_department_id',
             'sub_department' => 'master_sub_department_id',
-            'family'         => 'master_family_id',
+            'family' => 'master_family_id',
         };
 
-        $assetIds = DB::table('master_assets')
+        $masterAssetIds = DB::connection('aiku_no_sticky')->table('master_assets')
             ->where($categoryColumn, $masterProductCategoryId)
             ->where('is_main', true)
             ->pluck('id');
 
-        if ($assetIds->isEmpty()) {
+        if ($masterAssetIds->isEmpty()) {
             return ['dropshippers' => 0, 'listings' => 0];
         }
 
-        $productAssetIds = DB::table('assets')
-            ->whereIn('master_asset_id', $assetIds)
+
+        $productAssetIds = DB::connection('aiku_no_sticky')->table('assets')
+            ->whereIn('master_asset_id', $masterAssetIds)
             ->pluck('id');
 
         if ($productAssetIds->isEmpty()) {
             return ['dropshippers' => 0, 'listings' => 0];
         }
 
-        $result = DB::table('portfolios')
+        $result = DB::connection('aiku_no_sticky')->table('portfolios')
             ->selectRaw('COUNT(id) as total_listed, COUNT(DISTINCT customer_id) as total_customers')
             ->where('item_type', 'Product')
             ->whereIn('item_id', $productAssetIds)

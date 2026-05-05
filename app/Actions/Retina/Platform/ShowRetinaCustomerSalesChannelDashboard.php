@@ -110,7 +110,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             'platform_status'         => $platformStatus,
             'ebay_warehouse_policy_msg'    => [
                 'show_msg' => $this->customerSalesChannel->platform->type == PlatformTypeEnum::EBAY ? EbayOverseasWarehousePolicy::isAffected($this->customer->deliveryAddress->country_code) : false,
-                'cust_country' => $this->customer->deliveryAddress->country->name
+                'customer_country' => $this->customer->deliveryAddress->country->name
             ],
 
             'error_captcha' => Arr::get($customerSalesChannel->user?->data ?? [], 'error_data'),

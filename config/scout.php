@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Collection\Search\GetCollectionSearchSchema;
 use App\Actions\Catalogue\Product\Search\GetProductSearchSchema;
 use App\Actions\Catalogue\ProductCategory\Search\GetProductCategorySearchSchema;
 use App\Actions\CRM\Customer\Search\GetCustomerSearchSchema;
+use App\Actions\CRM\Prospect\Search\GetProspectSearchSchema;
 use App\Actions\Dispatching\DeliveryNote\Search\GetDeliveryNoteSearchSchema;
 use App\Actions\Goods\Stock\Search\GetStockSearchSchema;
 use App\Actions\Goods\StockFamily\Search\GetStockFamilySearchSchema;
@@ -31,6 +32,7 @@ use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
+use App\Models\CRM\Prospect;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
@@ -193,6 +195,7 @@ return [
             Location::class        => GetLocationSearchSchema::run(),
             Customer::class        => GetCustomerSearchSchema::run(),
             Order::class           => GetOrderSearchSchema::run(),
+            Prospect::class        => GetProspectSearchSchema::run(),
             TradeUnit::class       => GetTradeUnitSearchSchema::run(),
             TradeUnitFamily::class => GetTradeUnitFamilySearchSchema::run(),
             Stock::class           => GetStockSearchSchema::run(),

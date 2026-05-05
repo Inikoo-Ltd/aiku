@@ -5,6 +5,7 @@ namespace App\Actions\Web\Redirect;
 use App\Actions\OrgAction;
 use App\Actions\Web\Redirect\Traits\WithStoreRedirect;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
+use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -28,19 +29,10 @@ class StoreRedirectFromWebsite extends OrgAction
         data_set($modelData, 'shop_id', $website->shop_id);
         data_set($modelData, 'website_id', $website->id);
 
-        data_set($modelData, 'type', RedirectTypeEnum::PERMANENT->value); // Todo: check this
-
-        $fromUrl = preg_replace('/\s+/', '', (Arr::get($modelData, 'from_url', ''))); // Sanitize whitespace
-        $fromUrl = preg_replace('#/+#', '/', $fromUrl); // Collapse slash
-        $fromUrl = trim($fromUrl, '/'); // Sanitize start & end slash
-
-        $url = 'https://' . $website->domain . '/' . $fromUrl;
-        $fromPath = array_last(explode('/', $fromUrl)); // Get last path
+        data_set($modelData, 'type', RedirectTypeEnum::PERMANENT->value);
 
         $toUrl = Arr::pull($modelData, 'to_url');
 
-        data_set($modelData, 'from_url', $url);
-        data_set($modelData, 'from_path', $fromPath);
         data_set($modelData, 'to_webpage_id', $toUrl);
 
         $redirect = Redirect::create($modelData);
@@ -49,6 +41,7 @@ class StoreRedirectFromWebsite extends OrgAction
         if ($redirectedWebpage) {
             WebpageHydrateRedirects::run($redirectedWebpage);
         }
+        BreakWebsiteCache::dispatch($website)->delay(now()->addMinute(1));
 
         return $redirect;
     }
@@ -61,7 +54,7 @@ class StoreRedirectFromWebsite extends OrgAction
                 'string',
                 'max:2048',
                 Rule::unique(Webpage::class, 'url')
-                    ->where(fn ($query) => $query->where('website_id', $this->shop->website->id)->where('state', 'live')),
+                    ->where(fn ($query) => $query->where('website_id', $this->shop->website->id)->where('state', 'live')->whereNull('deleted_at')),
                 Rule::unique(Redirect::class, 'from_path')
                     ->where(fn ($query) => $query->where('website_id', $this->shop->website->id))
             ],

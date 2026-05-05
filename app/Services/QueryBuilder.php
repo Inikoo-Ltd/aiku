@@ -21,12 +21,12 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         string $key,
         array $allowedElements,
         callable $engine,
-        ?string $prefix = null
+        ?string $prefix = null,
+        ?string $default = null
     ): self {
         $elementsData = null;
 
         $argumentName = ($prefix ? $prefix . '_' : '') . 'elements';
-
 
         if (request()->has("$argumentName.$key")) {
             $elements               = explode(',', request()->input("$argumentName.$key"));
@@ -35,8 +35,14 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
             if ($countValidatedElements > 0 && $countValidatedElements < count($allowedElements)) {
                 $elementsData = $validatedElements;
             }
+        } elseif ($default !== null) {
+            $defaultElements        = explode(',', $default);
+            $validatedElements      = array_intersect($allowedElements, $defaultElements);
+            $countValidatedElements = count($validatedElements);
+            if ($countValidatedElements > 0 && $countValidatedElements < count($allowedElements)) {
+                $elementsData = $validatedElements;
+            }
         }
-
 
         if ($elementsData) {
             $engine($this, $elementsData);

@@ -33,7 +33,7 @@ class ReindexWebpageLuigi extends OrgAction implements ShouldBeUnique
     public function handle(Webpage $webpage): array
     {
         $msg = __('Reindexing running in the background');
-        ReindexWebpageLuigiData::dispatch($webpage->id);
+        ReindexWebpageLuigiData::dispatch($webpage->id)->delay(5);
 
         if ($webpage->sub_type == WebpageSubTypeEnum::FAMILY && $webpage->model instanceof ProductCategory) {
             /** @var ProductCategory $family */

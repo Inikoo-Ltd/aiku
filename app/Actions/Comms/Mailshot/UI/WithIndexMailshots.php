@@ -31,7 +31,8 @@ trait WithIndexMailshots
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereWith('mailshots.subject', $value);
+                $query->whereWith('mailshots.subject', $value)
+                    ->orWhereWith('mailshots.name', $value);
             });
         });
 
@@ -75,6 +76,7 @@ trait WithIndexMailshots
                 'mailshots.slug',
                 'mailshots.id',
                 'mailshots.subject',
+                'mailshots.name',
                 'outboxes.slug as outboxes_slug',
                 'post_rooms.id as post_room_id',
                 'mailshot_stats.number_deliveries_success',
@@ -94,7 +96,7 @@ trait WithIndexMailshots
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
             ])
-            ->allowedSorts(['state', 'subject', 'date', 'number_try_send_success', 'hard_bounce', 'soft_bounce', 'number_deliveries_success', 'opened', 'clicked', 'spam', 'unsubscribed'])
+            ->allowedSorts(['state', 'subject', 'name', 'date', 'number_try_send_success', 'hard_bounce', 'soft_bounce', 'number_deliveries_success', 'opened', 'clicked', 'spam', 'unsubscribed'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -113,7 +115,8 @@ trait WithIndexMailshots
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->column(key: 'state', label: '', type: 'icon')
-                ->column(key: 'subject', label: __('subject'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'subject', label: __('subject'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);

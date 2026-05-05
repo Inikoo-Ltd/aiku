@@ -6,22 +6,21 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-
 return [
     'cache' => [
-        'varnish' => env('IRIS_VARNISH_ENABLED', false),
+        'varnish'               => env('IRIS_VARNISH_ENABLED', false),
         'iris_website_data_ttl' => env('IRIS_WEBSITE_DATA_TTL', 900),
-        'varnish_host' => env('IRIS_VARNISH_HOST', 'http://127.0.0.1:6081/'),
-        'website' => [
-            'ttl' => env('IRIS_WEBSITE_CACHE_TTL', 3600), // 1 hour in seconds
+        'varnish_hosts'         => explode(',', env('IRIS_VARNISH_HOSTS', 'http://127.0.0.1:6081/')),
+        'website'               => [
+            'ttl'    => env('IRIS_WEBSITE_CACHE_TTL', 3600), // 1 hour in seconds
             'prefix' => env('IRIS_WEBSITE_CACHE_PREFIX', 'iris_website_cache'),
         ],
-        'webpage_path' => [
-            'ttl' => env('IRIS_WEBPAGE_PATH_CACHE_TTL', 3600), // 1 hour in seconds
+        'webpage_path'          => [
+            'ttl'    => env('IRIS_WEBPAGE_PATH_CACHE_TTL', 3600), // 1 hour in seconds
             'prefix' => env('IRIS_WEBPAGE_PATH_CACHE_PREFIX', 'iris_webpage_path_cache'),
         ],
-        'webpage' => [
-            'ttl' => env('IRIS_WEBPAGE_CACHE_TTL', 3600), // 1 hour in seconds
+        'webpage'               => [
+            'ttl'    => env('IRIS_WEBPAGE_CACHE_TTL', 3600), // 1 hour in seconds
             'prefix' => env('IRIS_WEBPAGE_CACHE_PREFIX', 'iris_webpage_cache'),
         ]
     ],

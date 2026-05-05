@@ -29,7 +29,6 @@ class GetWebsiteWorkshopFamilyDescriptionWebBlock
                         ->whereJsonContains('website_type', $website->shop->type)
                         ->get();
 
-
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
             'family'    => WorkshopFamiliesResource::collection($website->shop->getFamilies()->where('state', ProductCategoryStateEnum::ACTIVE)),

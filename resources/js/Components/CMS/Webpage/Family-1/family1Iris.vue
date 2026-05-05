@@ -80,11 +80,11 @@ const cleanedDescription = computed(() => {
       aria-label="Family Description Section">
       
         <!-- Section: listing Offers -->
-        <div class="hidden">
+       <!--  <div class="hidden">
           <pre><span class="bg-yellow-400">layout?.user?.gr_data</span>: {{ layout?.user?.gr_data }}</pre>
           <pre><span class="bg-yellow-400">offers_data</span>: {{ fieldValue?.family?.offers_data }}</pre>
           <pre><span class="bg-yellow-400">bestOffer</span>: {{ bestOffer }}</pre>
-        </div>
+        </div> -->
          
         <!-- Offer: list offers -->
         <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"

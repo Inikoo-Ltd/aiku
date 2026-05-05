@@ -12,6 +12,7 @@ namespace App\Actions\Web\Redirect;
 use App\Actions\OrgAction;
 use App\Actions\Web\Website\HydrateRedirect;
 use App\Actions\Web\Redirect\Traits\WithStoreRedirect;
+use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebpageTabsEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
@@ -45,6 +46,7 @@ class StoreRedirectFromWebpage extends OrgAction
         $redirect = Redirect::create($modelData);
 
         HydrateRedirect::run($webpage);
+        BreakWebsiteCache::dispatch($website)->delay(now()->addMinute(1));
 
         return $redirect;
     }
@@ -61,7 +63,7 @@ class StoreRedirectFromWebpage extends OrgAction
                 'string',
                 'max:2048',
                 Rule::unique(Webpage::class, 'url')
-                    ->where(fn ($query) => $query->where('website_id', $this->shop->website->id)->where('state', 'live')),
+                    ->where(fn ($query) => $query->where('website_id', $this->shop->website->id)->where('state', 'live')->where('deleted_at')),
                 Rule::unique(Redirect::class, 'from_path')
                     ->where(fn ($query) => $query->where('website_id', $this->shop->website->id))
             ],
