@@ -2,6 +2,7 @@
 import { inject, ref, watch } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus } from "@fal"
+import { faSpinnerThird } from "@fad"
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { faLaptopCode, faLayerGroup } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -20,7 +21,7 @@ import GoldReward from "@/Components/Utils/GoldReward.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 
-library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck, faLayerGroup)
+library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck, faLayerGroup, faSpinnerThird)
 
 const props = defineProps<{
     screenType?: "desktop" | "mobile" | "tablet"
@@ -312,16 +313,16 @@ const goToBundle = () => {
             </LinkIris>
 
             <!-- Section: Register -->
-            <LinkIris href="/app/register" :type="'internal'">
+            <LinkIris href="/app/register" :type="'internal'" v-slot="{ isLoading }">
                 <Button
                     v-if="(checkVisible(model?.register?.visible || null, isLoggedIn))"
+                    :loading="isLoading"
                     icon="fal fa-user-plus"
                     type="transparent"
                     class="button"
                 >
                     <template #icon>
-                        <FontAwesomeIcon icon="fal fa-user-plus" fixed-width
-                            aria-hidden="true" class="button"/>
+                        <FontAwesomeIcon icon="fal fa-user-plus" fixed-width aria-hidden="true" class="button"/>
                     </template>
                     <template #label>
                         <span class="button whitespace-nowrap">
@@ -332,15 +333,16 @@ const goToBundle = () => {
             </LinkIris>
 
             <!-- Section: Login -->
-            <LinkIris :href="urlLoginWithRedirect()" :type="'internal'">
+            <LinkIris :href="urlLoginWithRedirect()" :type="'internal'" v-slot="{ isLoading }">
                 <Button
                     v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
+                    :loading="isLoading"
                     icon="fal fa-sign-in"
                     type="transparent"
                     class="button"
                 >
                     <template #icon>
-                        <FontAwesomeIcon icon="fal fa-sign-in" class="button"  fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-sign-in" class="button" fixed-width aria-hidden="true" />
                     </template>
                     <template #label>
                         <span class="button whitespace-nowrap">

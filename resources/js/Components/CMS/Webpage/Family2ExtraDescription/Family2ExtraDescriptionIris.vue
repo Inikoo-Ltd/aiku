@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { computed, inject, ref, onMounted, nextTick, watch } from "vue"
+import { computed, inject, ref, onMounted, nextTick, watch, onUnmounted } from "vue"
 import { get, isPlainObject } from "lodash-es"
 
 import Image from "@/Components/Image.vue"
@@ -87,6 +87,11 @@ const onImageLoad = () => {
 onMounted(async () => {
   await nextTick()
   calculateHeight()
+  window.addEventListener("resize", calculateHeight)
+})
+
+onUnmounted(() => {
+  window.removeEventListener("resize", calculateHeight)
 })
 
 watch(() => props.fieldValue, async () => {
@@ -94,7 +99,6 @@ watch(() => props.fieldValue, async () => {
   calculateHeight()
 })
 
-window.addEventListener("resize", calculateHeight)
 </script>
 
 <template>
