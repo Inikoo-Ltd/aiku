@@ -421,7 +421,8 @@ class GetPalletReturnActions
         if (in_array($palletReturn->state, [
             PalletReturnStateEnum::IN_PROCESS,
             PalletReturnStateEnum::SUBMITTED,
-            PalletReturnStateEnum::CONFIRMED
+            PalletReturnStateEnum::CONFIRMED,
+            PalletReturnStateEnum::PICKING,
         ])) {
             $actions = array_merge([
                 [
