@@ -151,6 +151,14 @@ class ShowMasterFamily extends GrpAction
                         fn () => GetMasterProductCategoryImages::run($masterFamily)
                     ),
 
+
+            MasterFamilyTabsEnum::RECOMMENDATION->value =>
+                $this->tab === MasterFamilyTabsEnum::RECOMMENDATION->value
+                    ? fn () => GetMasterProductCategoryRecomendation::run($masterFamily)
+                    : Inertia::lazy(
+                        fn () => GetMasterProductCategoryRecomendation::run($masterFamily)
+                    ),
+
             MasterFamilyTabsEnum::HISTORY->value =>
                 $this->tab == MasterFamilyTabsEnum::HISTORY->value
                     ? fn () => HistoryResource::collection(IndexHistory::run($masterFamily, MasterFamilyTabsEnum::HISTORY->value))

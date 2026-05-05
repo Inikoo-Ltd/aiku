@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
     faBullhorn,
@@ -39,6 +39,7 @@ import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import TableMasterVariants from "@/Components/Tables/Grp/Goods/TableMasterVariants.vue"
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
+import ProductCategoryRecomendation from "@/Components/Master/ProductCategoryRecomendation.vue"
 
 library.add(
     faFolder,
@@ -102,13 +103,47 @@ const component = computed(() => {
         images : ImagesManagement,
         sales: ProductCategoryTimeSeriesTable,
         variants: TableMasterVariants,
+        recommendation: ProductCategoryRecomendation
     }
     return components[currentTab.value] ?? ModelDetails
 })
 
 const showDialog = ref(false);
 
-console.log(props.price_rrp_warning_ratio)
+const SaveOrder = () => {
+    console.log(localData)
+    router.patch(route('grp.models.master_product_category.related_assets.sync', {
+        masterProductCategory: props.familyId
+    }), {
+        products: localData.value.map((product: any, index: number) => ({
+            id: product.id,
+            code : product.code,
+            index_under_master_family: product.index_under_family,
+        }))
+    }, {
+        preserveScroll: true,
+        onStart : () => {
+            loadingOrder.value = true
+        },
+         onSuccess: () => {
+            notify({
+                title: trans("Success!"),
+                text: trans("Successfully reordered the products"),
+                type: "success"
+            })
+        },
+        onError: (errors) => {
+            console.log(errors)
+            notify({
+                title: trans("Something went wrong"),
+                text: errors.message || trans("Failed to reorder products"),
+                type: "error"
+            })
+        },
+        onFinish : ()=> {
+             loadingOrder.value = false
+        }
+})}
 </script>
 
 <template>
