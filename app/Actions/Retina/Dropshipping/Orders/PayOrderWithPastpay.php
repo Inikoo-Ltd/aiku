@@ -19,10 +19,12 @@ use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class PayOrderWithPastpay extends RetinaAction
 {
     use AsAction;
+    use WithAttributes;
     use CalculatesPaymentWithBalance;
     use WithPastpayConfiguration;
 
@@ -55,7 +57,7 @@ class PayOrderWithPastpay extends RetinaAction
                     'amount' => (float) $toPay,
                     'currency' => $order->currency->code
                 ],
-                'termDays' => Arr::get($modelData, 'charges', 30),
+                'termDays' => Arr::get($modelData, 'days', 30),
             ]);
 
             return [
@@ -84,6 +86,18 @@ class PayOrderWithPastpay extends RetinaAction
         $this->initialisation($request);
 
         return $this->handle($order, $this->validatedData);
+    }
+
+    public function rules(): array
+    {
+        $rules = [
+            'days' => [
+                'required',
+                'integer',
+            ],
+        ];
+
+        return $rules;
     }
 
     public string $commandSignature = 'test_pastpay';
