@@ -103,7 +103,7 @@ createInertiaApp(
         if (import.meta.env.VITE_SENTRY_DSN) {
           sentry_init({
                         app,
-                        dsn                     : import.meta.env.VITE_SENTRY_DSN,
+                        dsn                     : import.meta.env.VITE_SENTRY_IRIS_DSN,
                         environment             : import.meta.env.VITE_APP_ENV,
                           release: import.meta.env.VITE_RELEASE,
                         replaysSessionSampleRate: 0.1,
