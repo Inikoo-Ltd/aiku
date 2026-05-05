@@ -146,7 +146,7 @@ class IndexOffers extends OrgAction
 
         return $query->defaultSort('offers.id')
             ->select($selects)
-            ->allowedSorts(['id', 'code', 'created_at', 'name', 'type', 'orders', 'invoices', 'sales_grp_currency_external'])
+            ->allowedSorts(['id', 'code','duration', 'created_at', 'name', 'type', 'orders', 'invoices', 'sales_grp_currency_external'])
             ->allowedFilters([$globalSearch, 'code', 'name'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
