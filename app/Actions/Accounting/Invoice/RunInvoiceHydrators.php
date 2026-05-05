@@ -28,6 +28,7 @@ use App\Actions\Masters\MasterShop\ProcessMasterShopTimeSeriesRecords;
 use App\Actions\Ordering\SalesChannel\ProcessSalesChannelTimeSeriesRecords;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
+use App\Actions\Helpers\Dashboard\InvalidateDashboardCaches;
 use App\Actions\SysAdmin\Organisation\ProcessOrganisationTimeSeriesRecords;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
@@ -42,10 +43,10 @@ class RunInvoiceHydrators
 
     public function handle(Invoice $invoice, int $hydratorsDelay = 0): void
     {
+        InvalidateDashboardCaches::run($invoice);
 
         $this->runImportantJobs($invoice, $hydratorsDelay, async: true);
         $this->runAnotherJobs($invoice, $hydratorsDelay);
-
     }
 
     public function runImportantJobs(Invoice $invoice, int $hydratorsDelay, bool $async = false): void
