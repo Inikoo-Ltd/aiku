@@ -19,35 +19,27 @@ defineOptions({ layout: BlankLayout })
 
 
 const isModalOpen = ref(true)
-</script> 
+</script>
 
 <template>
 
     <Head title="Blank blank blank" />
     <div>
-        <Modal
-            :isOpen="isModalOpen"
-            aonClose="isModalNeedToRefresh = false"
-            width="w-full max-w-lg">
+        <Modal :isOpen="isModalOpen" aonClose="isModalNeedToRefresh = false" width="w-full max-w-lg">
             <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
-                <div
-                    class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+                <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
                     <div>
-                        <div
-                            class="mx-auto flex size-12 items-center justify-center rounded-full bg-red-100">
-                            <FontAwesomeIcon
-                                :icon="faFrown"
-                                class="text-red-500 text-2xl"
-                                fixed-width
+                        <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-red-100">
+                            <FontAwesomeIcon :icon="faFrown" class="text-red-500 text-2xl" fixed-width
                                 aria-hidden="true" />
                         </div>
 
                         <div class="mt-3 text-center sm:mt-5">
                             <div as="h3" class="font-semibold text-2xl">
-                                {{ ctrans("Hey, hey. hey...") }}
+                                {{ ctrans("Incorrect URL Detected") }}
                             </div>
                             <div class="mt-2 text-sm text-gray-500">
-                                {{ ctrans( "Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet." ) }}
+                                {{ ctrans("Please make sure to copy and paste the full URL") }}
                             </div>
                         </div>
                     </div>
