@@ -794,8 +794,8 @@ function getRequestedPalletStoredItems(item: any) {
                     >
                         <div v-if="Number(pallet_stored_item.picked_quantity || 0) > 0" class="flex items-start gap-x-2">
                             <Link
-                                v-if="generateLinkPalletLocationHref(pallet_stored_item)"
-                                :href="generateLinkPalletLocationHref(pallet_stored_item)"
+                                v-if="generateLinkLocationInWarehouse(pallet_stored_item)"
+                                :href="generateLinkLocationInWarehouse(pallet_stored_item)"
                                 class="secondaryLink"
                             >
                                 {{ pallet_stored_item.location?.code || pallet_stored_item.reference }}
@@ -821,8 +821,8 @@ function getRequestedPalletStoredItems(item: any) {
                     class="flex items-start gap-x-2"
                 >
                     <Link
-                        v-if="Number(pallet_stored_item.picked_quantity || 0) > 0 && generateLinkPalletLocationHref(pallet_stored_item)"
-                        :href="generateLinkPalletLocationHref(pallet_stored_item)"
+                        v-if="Number(pallet_stored_item.picked_quantity || 0) > 0 && generateLinkLocationInWarehouse(pallet_stored_item)"
+                        :href="generateLinkLocationInWarehouse(pallet_stored_item)"
                         class="secondaryLink"
                     >
                         {{ pallet_stored_item.location?.code || pallet_stored_item.reference }}
