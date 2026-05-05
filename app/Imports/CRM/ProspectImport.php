@@ -38,16 +38,15 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
         $sanitizedData = $this->processExcelData([$row]);
         $validatedData = array_intersect_key($sanitizedData, array_flip(array_keys($this->rules())));
 
-        $modelData = [
-            'company_name' => $validatedData['company_name'],
-            'contact_name' => $validatedData['contact_name'],
-            'email'        => $validatedData['email'],
-            'phone'        => $validatedData['phone'],
-        ];
-
-
         try {
-            $prospectKey      = $validatedData['id_prospect_key'];
+            $modelData = [
+                'company_name' => $validatedData['company_name'] ?? null,
+                'contact_name' => $validatedData['contact_name'] ?? null,
+                'email'        => $validatedData['email'] ?? null,
+                'phone'        => $validatedData['phone'] ?? null,
+            ];
+
+            $prospectKey      = $validatedData['id_prospect_key'] ?? null;
             $existingProspect = null;
             if (is_numeric($prospectKey)) {
                 $prospectKey      = (int)$prospectKey;
@@ -56,8 +55,7 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
                     ->first();
             }
 
-            $isNew = is_string($validatedData['id_prospect_key'])
-                && strtolower($validatedData['id_prospect_key']) === 'new';
+            $isNew = is_string($prospectKey) && strtolower($prospectKey) === 'new';
 
             if ($existingProspect) {
                 UpdateProspect::run($existingProspect, $modelData);
@@ -66,7 +64,6 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
             } else {
                 throw new Exception("Prospect key not found");
             }
-
 
             $this->setRecordAsCompleted($uploadRecord);
         } catch (Exception $e) {
