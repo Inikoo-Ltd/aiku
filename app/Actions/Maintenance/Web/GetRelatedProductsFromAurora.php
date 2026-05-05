@@ -1,9 +1,4 @@
-    <?php
-/*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 05 May 2026 14:32:22 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2026, Raul A Perusquia Flores
- */
+<?php
 
 
 
@@ -11,6 +6,12 @@
 /** @noinspection DuplicatedCode */
 
 namespace App\Actions\Maintenance\Web;
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 05 May 2026 14:32:22 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
 
 use AllowDynamicProperties;
 use App\Actions\Traits\WithOrganisationSource;
