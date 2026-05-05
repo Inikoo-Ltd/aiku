@@ -271,7 +271,7 @@ console.log("Family2 Workshop Props:", props)
 }
 
 .discount-wrapper :deep(.gr-content) {
-  @apply flex-shrink-0 text-[12px] leading-[0.20rem];
+  @apply flex-shrink-0 text-[12px] leading-[0.20rem] w-[80%];
 }
 
 .discount-wrapper :deep(.gr-logo) {
