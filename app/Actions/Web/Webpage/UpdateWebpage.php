@@ -15,6 +15,7 @@ use App\Actions\Traits\UI\WithImageSeo;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHasLiveWebpage;
 use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
@@ -114,6 +115,9 @@ class UpdateWebpage extends OrgAction
                 Redirect::where('from_path', $webpage->url)->where('website_id', $webpage->website->id)->delete();
             }
 
+            if ($webpage->model instanceof Product) {
+                ProductHydrateHasLiveWebpage::run($webpage->model);
+            }
             data_forget($modelData, 'state_data');
         }
 
