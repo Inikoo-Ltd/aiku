@@ -30,7 +30,7 @@ class BreakWebsiteCache extends OrgAction implements ShouldBeUniqueUntilProcessi
     {
         return 'website-'.$this->website->id;
     }
-    
+
     public function handle(Website $website, ?Command $command = null): Website
     {
         $key = config('iris.cache.website.prefix')."_$website->domain";

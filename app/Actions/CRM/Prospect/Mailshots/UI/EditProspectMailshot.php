@@ -43,22 +43,20 @@ class EditProspectMailshot extends OrgAction
 
         // Only show subject and preview_text for non-SENT states
         if ($mailshot->state !== MailshotStateEnum::SENT) {
-            $fields[0]['fields'][] = [
+            $fields[0]['fields']['subject'] = [
                 'type'        => 'input',
                 'label'       => __('Subject'),
                 'placeholder' => __('Email subject'),
                 'required'    => true,
-                'value'       => $mailshot->subject,
-                'name'        => 'subject',
+                'value'       => $mailshot->subject
             ];
 
-            $fields[0]['fields'][] = [
+            $fields[0]['fields']['preview_text'] = [
                 'type'        => 'input',
                 'label'       => __('Preview text'),
                 'placeholder' => __('Email preview text'),
                 'required'    => false,
-                'value'       => $mailshot->preview_text,
-                'name'        => 'preview_text',
+                'value'       => $mailshot->preview_text
             ];
         }
 

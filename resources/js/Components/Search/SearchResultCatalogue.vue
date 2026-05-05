@@ -56,7 +56,7 @@ const props = defineProps<{
                         <Link
                             v-for="category in results.product_categories"
                             :key="category.id"
-                            :href="route('grp.helpers.redirect_product_category', { productCategory: category.slug })"
+                            :href="route('grp.helpers.redirect_product_category', { productCategory: category.id })"
                             class="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer group"
                         >
                             <div class="w-8 h-8 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
@@ -75,7 +75,7 @@ const props = defineProps<{
                         <Link
                             v-for="collection in results.collections"
                             :key="collection.id"
-                            :href="route('grp.helpers.redirect_product_category', { productCategory: collection.slug })"
+                            :href="route('grp.helpers.redirect_collection', { productCategory: collection.id })"
                             class="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer group"
                         >
                             <div class="w-8 h-8 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
@@ -105,7 +105,7 @@ const props = defineProps<{
                 <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Products</p>
             </div>
             <div class="flex-1 overflow-y-auto p-3">
-                <template v-if="isLoading">
+                <!-- <template v-if="isLoading">
                     <div class="grid grid-cols-4 gap-2">
                         <div v-for="i in 9" :key="i" class="flex flex-col gap-1">
                             <Skeleton height="4rem" borderRadius="0.5rem" />
@@ -113,9 +113,9 @@ const props = defineProps<{
                             <Skeleton width="55%" height="0.5rem" />
                         </div>
                     </div>
-                </template>
+                </template> -->
 
-                <template v-else-if="results?.products?.length">
+                <template v-if="results?.products?.length">
                     <div class="grid grid-cols-4 gap-2">
                         <a
                             v-for="product in results.products.slice(0, 9)"

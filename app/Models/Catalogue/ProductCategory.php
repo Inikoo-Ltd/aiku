@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -122,6 +123,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read Organisation $organisation
  * @property-read ProductCategory|null $parent
+ * @property-read LaravelCollection<int, \App\Models\Catalogue\Product> $relatedProducts
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductCategoryStats|null $stats
@@ -388,5 +390,11 @@ class ProductCategory extends Model implements Auditable, HasMedia
     public function extraDescArt1Image(): HasOne
     {
         return $this->hasOne(Media::class, 'id', 'extra_desc_art1');
+    }
+
+    public function relatedProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'product_category_has_related_products')
+            ->withTimestamps();
     }
 }

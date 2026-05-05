@@ -11,6 +11,8 @@ import { Image as ImageTS } from '@/types/Image';
 import { trans } from 'laravel-vue-i18n';
 import { faSearch, faTimes } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import axios from 'axios'
 library.add(faSearch, faTimes)
 
 const props = defineProps<{
@@ -236,6 +238,33 @@ const onClickLuigi = () => {
 	const input = document.getElementById('luigi_mobile') as HTMLInputElement | null;
 	if (input) input.focus();
 }
+
+
+// Fetch Sidebar
+const layout = inject('layout', retinaLayoutStructure)
+const isSidebarFetching = ref(false)
+const fetchSidebarOnce = async () => {
+	// To take custom bottom navigation
+    if (layout.iris.isSidebarLoaded || isSidebarFetching.value) return
+
+    isSidebarFetching.value = true
+
+    try {
+		layout.iris.isSidebarLoading = true
+        const { data } = await axios.get(route("iris.json.sidebar"))
+        
+        console.log('ddddddata', data)
+
+        layout.iris.sidebar  = data.sidebar
+
+		layout.iris.isSidebarLoading = false
+        layout.iris.isSidebarLoaded = true
+    } catch (e) {
+        console.error("[IrisSidebar] fetch failed", e)
+    } finally {
+        isSidebarFetching.value = false
+    }
+}
 </script>
 
 <template>
@@ -273,7 +302,9 @@ const onClickLuigi = () => {
 						: '545px'
 					: '290px',
 			}"
-			class="h-screen">
+			class="h-screen"
+			@show="() => fetchSidebarOnce()"
+		>
 			<template #header>
 				<div>
 					<div class="md:max-w-[270px] overflow-hidden">

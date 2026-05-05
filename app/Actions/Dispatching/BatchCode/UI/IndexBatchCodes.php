@@ -142,7 +142,7 @@ class IndexBatchCodes extends OrgAction
                             'type'   => 'buttonGroup',
                             'key'    => 'upload-add',
                             'button' => [
-                                app()->isLocal() ? [
+                                [
                                     'type'  => 'button',
                                     'style' => 'primary',
                                     'icon'  => ['fal', 'fa-upload'],
@@ -151,7 +151,7 @@ class IndexBatchCodes extends OrgAction
                                         'name'       => 'grp.models.warehouse.batch_codes.upload',
                                         'parameters' => [$this->warehouse->id],
                                     ],
-                                ] : [],
+                                ],
                                 [
                                     'type'  => 'button',
                                     'style' => 'create',

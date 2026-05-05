@@ -42,22 +42,20 @@ class EditMailshot extends OrgAction
 
         // Only show subject and preview_text for non-SENT states
         if ($mailshot->state !== MailshotStateEnum::SENT) {
-            $fields[0]['fields'][] = [
+            $fields[0]['fields']['subject'] = [
                 'type'        => 'input',
                 'label'       => __('Subject'),
                 'placeholder' => __('Email subject'),
                 'required'    => false,
                 'value'       => $mailshot->subject,
-                'name'        => 'subject',
             ];
 
-            $fields[0]['fields'][] = [
+            $fields[0]['fields']['preview_text'] = [
                 'type'        => 'input',
                 'label'       => __('Preview text'),
                 'placeholder' => __('Email preview text'),
                 'required'    => false,
                 'value'       => $mailshot->preview_text,
-                'name'        => 'preview_text',
             ];
         }
 
@@ -89,7 +87,7 @@ class EditMailshot extends OrgAction
                     'blueprint'  =>
                     [
                         [
-                            'title'  => __('Name'),
+                            'title'  => '',
                             'fields' => array_merge(...array_map(fn ($item) => $item['fields'], $fields))
                         ]
                     ],

@@ -78,7 +78,9 @@ class StoreTransaction extends OrgAction
 
             $estimatedWeight = $unitWeight * Arr::get($modelData, 'quantity_ordered', 1);
             $estimatedWeight = (int)ceil($estimatedWeight);
-
+            if ($estimatedWeight > 1000000000) {
+                $estimatedWeight = 1000000000;
+            }
 
             data_set($modelData, 'estimated_weight', $estimatedWeight);
         } else {
