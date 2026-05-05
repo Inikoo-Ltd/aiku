@@ -29,10 +29,10 @@ const SaveOrder = () => {
     router.patch(route('grp.models.master_product_category.related_assets.sync', {
         masterProductCategory: props.product_category_id
     }), {
-        products: listProducts.value.data.map((product: any, index: number) => ({
+        master_asset_ids: listProducts.value.data.map((product: any, index: number) => ({
             id: product.id,
             code : product.code,
-            index: product.index_under_family || index,
+            position: product.index_under_family || index,
         }))
     }, {
         preserveScroll: true,

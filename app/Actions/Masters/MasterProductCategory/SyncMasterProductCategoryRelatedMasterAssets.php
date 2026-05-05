@@ -20,8 +20,18 @@ class SyncMasterProductCategoryRelatedMasterAssets extends OrgAction
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
-        $masterAssetIds = collect(Arr::get($modelData, 'master_asset_ids', []))
-            ->map(fn ($masterAssetId) => (int)$masterAssetId)
+        $masterAssetIds = collect(Arr::get($modelData, 'master_asset_ids', []));
+
+        if (data_get($masterAssetIds, '*.position')) {
+            $masterAssetIds = $masterAssetIds->sortBy(fn ($masterAssetId) => data_get($masterAssetId, 'position'));
+        }
+
+        $masterAssetIds = $masterAssetIds
+            ->map(function ($masterAssetId) {
+                return [
+                    'master_asset_id'   => data_get($masterAssetId, 'id'),
+                ];
+            })
             ->unique()
             ->values();
 
@@ -34,10 +44,10 @@ class SyncMasterProductCategoryRelatedMasterAssets extends OrgAction
 
     public function rules(): array
     {
-        dd($this);
         return [
             'master_asset_ids'   => ['required', 'array'],
-            'master_asset_ids.*' => ['integer', Rule::exists('master_assets', 'id')->where('master_shop_id', $this->masterShopId)],
+            'master_asset_ids.*.id' => ['integer', Rule::exists('master_assets', 'id')->where('master_shop_id', $this->masterShopId)],
+            'master_asset_ids.*.position' => ['integer'],
         ];
     }
 
