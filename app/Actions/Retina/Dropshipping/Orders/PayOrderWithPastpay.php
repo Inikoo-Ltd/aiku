@@ -108,7 +108,7 @@ class PayOrderWithPastpay extends RetinaAction
 
     public function asCommand(): int
     {
-        $order = Order::where('slug', 'awp31048')->first();
+        $order = Order::where('slug', 'awp31151')->first();
 
         $this->handle($order, [
             'charges' => 30
