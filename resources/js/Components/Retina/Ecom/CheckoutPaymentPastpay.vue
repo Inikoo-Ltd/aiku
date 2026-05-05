@@ -9,6 +9,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import Modal from "@/Components/Utils/Modal.vue"
+import LoadingText from "@/Components/Utils/LoadingText.vue"
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(faArrowRight, faCheckCircle)
 
@@ -48,27 +51,57 @@ const totalCost = 160
 const selectedOption = ref<{ days: number; charge: string } | null>(null)
 
 const isLoading = ref(false)
-const onSubmitPlaceOrder = () => {
-	router.post(
-		route("retina.models.place_order_pay_by_pastpay", {
-			order: props.order.slug
-		}),
-		{
-			days: selectedOption.value?.days,
-		},
-		{
-			onStart: () => {
-				isLoading.value = true
-			},
-			onFinish: () => {
-				isLoading.value = false
-			},
-			onSuccess: (response) => {
-				window.location.href = response
-			},
-		}
-	)
+const onSubmitPlaceOrder = async () => {
+	try {
+		isLoading.value = true
+		const response = await axios.post(
+			route("retina.models.place_order_pay_by_pastpay", {
+				order: props.order.slug
+			}),
+			{
+				days: selectedOption.value?.days,
+			}
+		)
+		isModalPastpayRedirected.value = true
+		// if (response.status !== 200) {
+			
+		// }
+		console.log('Response axios:', response.data.data)
+		setTimeout(() => {
+			window.location.href = response.data.data
+		}, 800);
+	} catch (error: any) {
+		notify({
+			title: trans("Something went wrong"),
+			text: error.message || trans("Please try again or contact administrator"),
+			type: 'error'
+		})
+	} finally {
+		isLoading.value = false
+	}
+
+	// router.post(
+	// 	route("retina.models.place_order_pay_by_pastpay", {
+	// 		order: props.order.slug
+	// 	}),
+	// 	{
+	// 		days: selectedOption.value?.days,
+	// 	},
+	// 	{
+	// 		onStart: () => {
+	// 			isLoading.value = true
+	// 		},
+	// 		onFinish: () => {
+	// 			isLoading.value = false
+	// 		},
+	// 		onSuccess: (response) => {
+	// 			window.location.href = response
+	// 		},
+	// 	}
+	// )
 }
+
+const isModalPastpayRedirected = ref(false)
 </script>
 
 <template>
@@ -139,5 +172,38 @@ const onSubmitPlaceOrder = () => {
 				:loading="isLoading"
 				iconRight="fas fa-arrow-right" />
 		</div>
+
+		<Modal
+			:isOpen="isModalPastpayRedirected"
+			aonClose="isModalPastpayRedirected = false"
+			width="w-full max-w-lg">
+			<div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+				<div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+					<div>
+						<!-- <div
+							class="mx-auto flex size-12 items-center justify-center rounded-full bg-green-100">
+							<FontAwesomeIcon
+								:icon="faSmile"
+								class="text-green-500 text-2xl"
+								fixed-width
+								aria-hidden="true" />
+						</div> -->
+	
+						<div class="mt-3 text-center sm:mt-5">
+							<div as="h3" class="font-semibold text-2xl">
+								{{ ctrans("Pastpay payment selected.") }}
+							</div>
+							<div class="mt-2 text-sm text-gray-500">
+								{{ ctrans( "You will be redirected to Pastpay to complete your payment." ) }}
+							</div>
+						</div>
+					</div>
+	
+					<div class="mt-5 sm:mt-6 flex flex-col gap-4 text-center items-center">
+						<LoadingText />
+					</div>
+				</div>
+			</div>
+		</Modal>
 	</div>
 </template>
