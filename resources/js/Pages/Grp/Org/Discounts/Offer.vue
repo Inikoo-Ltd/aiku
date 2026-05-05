@@ -20,7 +20,7 @@ import { routeType } from '@/types/route'
 import { trans } from 'laravel-vue-i18n'
 import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue'
 import BasicDiscount from '@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue'
-import { OfferResource } from '@/types/Catalogue/Offers'
+import { OfferResource, OfferAllowanceResource } from '@/types/Catalogue/Offers'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faFlagCheckered } from "@fortawesome/free-solid-svg-icons"
@@ -35,7 +35,7 @@ const props = defineProps<{
     currency_code: string
     data: {
         offer: OfferResource
-        offer_allowances: {}
+        offer_allowances: OfferAllowanceResource[]
     }
     tabs: {
         current: string

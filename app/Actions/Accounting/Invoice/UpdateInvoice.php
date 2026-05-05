@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
+use App\Actions\Helpers\Dashboard\InvalidateDashboardCaches;
 use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
 use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
@@ -162,6 +163,8 @@ class UpdateInvoice extends OrgAction
         $changes = Arr::except($invoice->getChanges(), ['updated_at', 'last_fetched_at']);
 
         if (count($changes) > 0) {
+            InvalidateDashboardCaches::run($invoice);
+
             $invoiceDate    = \Carbon\Carbon::parse($invoice->date);
             $newDateString  = $invoiceDate->toDateString();
             $dateHasChanged = Arr::has($changes, 'date');

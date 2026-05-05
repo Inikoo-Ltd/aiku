@@ -19,6 +19,7 @@ use App\Http\Resources\HumanResources\ClockingMachineResource;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -32,6 +33,31 @@ class UpdateClockingMachine extends OrgAction
 
     public function handle(ClockingMachine $clockingMachine, array $modelData): ClockingMachine
     {
+        $qrKeys = [
+            'config.qr.enable',
+            'config.qr.refresh_interval',
+            'config.qr.expiry_duration',
+            'config.qr.expiry_configuration',
+            'config.qr.allow_multiple_scans',
+            'config.qr.allow_coordinates',
+            'config.qr.coordinates',
+            'config.qr.radius',
+        ];
+
+        $configPayload = Arr::get($modelData, 'config', []);
+        if (!is_array($configPayload)) {
+            $configPayload = [];
+        }
+
+        foreach ($qrKeys as $qrKey) {
+            if (array_key_exists($qrKey, $modelData)) {
+                data_set($configPayload, str_replace('config.', '', $qrKey), $modelData[$qrKey]);
+            }
+        }
+
+        if (!empty($configPayload)) {
+            $modelData['config'] = $configPayload;
+        }
 
         $clockingMachine = $this->update($clockingMachine, $modelData, ['data', 'config']);
 
@@ -74,6 +100,11 @@ class UpdateClockingMachine extends OrgAction
             'config.qr.enable'               => ['nullable', 'boolean'],
             'config.qr.refresh_interval'     => ['nullable', 'integer', 'min:1'],
             'config.qr.expiry_duration'      => ['nullable', 'integer', 'min:1'],
+            'config.qr.expiry_configuration' => ['nullable', 'array'],
+            'config.qr.expiry_configuration.mode' => ['nullable', Rule::in(['duration', 'custom_date'])],
+            'config.qr.expiry_configuration.unit' => ['nullable', Rule::in(['second', 'minute', 'hour', 'day', 'week'])],
+            'config.qr.expiry_configuration.value' => ['nullable', 'numeric', 'min:1'],
+            'config.qr.expiry_configuration.custom_at' => ['nullable', 'date'],
             'config.qr.allow_multiple_scans' => ['nullable', 'boolean'],
             'config.qr.allow_coordinates'    => ['nullable', 'boolean'],
             'config.qr.coordinates'          => ['nullable', 'string'],
