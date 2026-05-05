@@ -28,22 +28,20 @@ class CallApiCttEsShipping extends OrgAction
     private const string MANIFEST_LOCK_KEY_PREFIX = 'ctt_manifest_lock:';
     private const int MANIFEST_LOCK_TTL_SECONDS = 180;
 
-    public function getBaseUrl(): string
+    public function getBaseUrl(Shipper $shipper): string
     {
-
         if (app()->environment('production')) {
-            //todo: return here production url
+            return Arr::get($shipper->settings, 'base_url');
         }
+
         return 'https://api-test.cttexpress.com/integrations';
-
-
     }
 
-    public function getAccessToken(bool $forceRefresh = false): string
+    public function getAccessToken(Shipper $shipper,bool $forceRefresh = false): string
     {
-        $tokenCacheKey = $this->getTokenCacheKey();
+        $tokenCacheKey = $this->getTokenCacheKey($shipper);
 
-        if (! $forceRefresh) {
+        if (!$forceRefresh) {
             $cachedToken = Cache::get($tokenCacheKey);
 
             if (is_string($cachedToken) && $cachedToken !== '') {
@@ -51,7 +49,7 @@ class CallApiCttEsShipping extends OrgAction
             }
         }
 
-        [$accessToken, $ttlSeconds] = $this->fetchAccessToken();
+        [$accessToken, $ttlSeconds] = $this->fetchAccessToken($shipper);
 
         Cache::put(
             $tokenCacheKey,
@@ -62,17 +60,16 @@ class CallApiCttEsShipping extends OrgAction
         return $accessToken;
     }
 
-    private function getTokenCacheKey(): string
+    private function getTokenCacheKey(Shipper $shipper): string
     {
-
         if (app()->environment('production')) {
             //todo: get this data from the DB
-            $cttClientId='';
-        }else{
-            $cttClientId= config('app.sandbox.shipper_ctt_es_client_id', '');
+            $cttClientId = '';
+        } else {
+            $cttClientId = config('app.sandbox.shipper_ctt_es_client_id', '');
         }
 
-        $signature = hash('sha256', $this->getBaseUrl().'|'.$cttClientId);
+        $signature = hash('sha256', $this->getBaseUrl($shipper).'|'.$cttClientId);
 
         return self::TOKEN_CACHE_KEY_PREFIX.$signature;
     }
@@ -86,20 +83,20 @@ class CallApiCttEsShipping extends OrgAction
     {
         if (app()->environment('production')) {
             //todo: get this data from the DB
-            $clientCenterCode='';
-        }else{
-            $clientCenterCode= config('app.sandbox.shipper_ctt_es_client_center_number', '');
+            $clientCenterCode = '';
+        } else {
+            $clientCenterCode = config('app.sandbox.shipper_ctt_es_client_center_number', '');
         }
 
         return $clientCenterCode;
     }
 
-    private function fetchAccessToken(): array
+    private function fetchAccessToken(Shipper $shipper): array
     {
-        $clientId = (string) config('services.ctt.client_id');
-        $clientSecret = (string) config('services.ctt.client_secret');
-        $grantType = (string) config('services.ctt.grant_type', 'client_credentials');
-        $scope = (string) config('services.ctt.scope', '');
+        $clientId     = (string)config('services.ctt.client_id');
+        $clientSecret = (string)config('services.ctt.client_secret');
+        $grantType    = (string)config('services.ctt.grant_type', 'client_credentials');
+        $scope        = (string)config('services.ctt.scope', '');
 
         if ($clientId === '' || $clientSecret === '') {
             throw new \RuntimeException('CTT credentials are missing in config (services.ctt.client_id / client_secret).');
@@ -108,11 +105,11 @@ class CallApiCttEsShipping extends OrgAction
         $response = Http::asForm()
             ->connectTimeout(10)
             ->timeout(30)
-            ->post($this->getBaseUrl().'/oauth2/token', [
-                'client_id' => $clientId,
+            ->post($this->getBaseUrl($shipper).'/oauth2/token', [
+                'client_id'     => $clientId,
                 'client_secret' => $clientSecret,
-                'grant_type' => $grantType,
-                'scope' => $scope,
+                'grant_type'    => $grantType,
+                'scope'         => $scope,
             ]);
 
         if ($response->failed()) {
@@ -125,12 +122,12 @@ class CallApiCttEsShipping extends OrgAction
             );
         }
 
-        $accessToken = (string) $response->json('access_token', '');
+        $accessToken = (string)$response->json('access_token', '');
         if ($accessToken === '') {
             throw new \RuntimeException('CTT token response does not contain access_token.');
         }
 
-        $expiresIn = (int) $response->json('expires_in', self::TOKEN_FALLBACK_TTL_SECONDS);
+        $expiresIn  = (int)$response->json('expires_in', self::TOKEN_FALLBACK_TTL_SECONDS);
         $ttlSeconds = max($expiresIn - self::TOKEN_TTL_BUFFER_SECONDS, 60);
 
         return [$accessToken, $ttlSeconds];
@@ -140,8 +137,8 @@ class CallApiCttEsShipping extends OrgAction
     {
         return array_merge([
             'Authorization' => 'Bearer '.$this->getAccessToken($forceRefreshToken),
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
+            'Content-Type'  => 'application/json',
+            'Accept'        => 'application/json',
         ], $extraHeaders);
     }
 
@@ -164,40 +161,40 @@ class CallApiCttEsShipping extends OrgAction
     {
         $manifestLockKey = $this->getManifestLockKey($parent, $shipper);
 
-        if (! Cache::add($manifestLockKey, 1, self::MANIFEST_LOCK_TTL_SECONDS)) {
+        if (!Cache::add($manifestLockKey, 1, self::MANIFEST_LOCK_TTL_SECONDS)) {
             return [
-                'status' => 'fail',
+                'status'    => 'fail',
                 'modelData' => [],
                 'errorData' => [
                     'message' => ['A shipment manifest request is already in progress for this delivery note.'],
-                    'others' => [],
+                    'others'  => [],
                 ],
             ];
         }
 
         try {
-            $url = '/manifest/v2.0/shippings';
+            $url            = '/manifest/v2.0/shippings';
             $parentResource = GetShippingDeliveryNoteData::run($parent);
-            $parcels = $parent->parcels ?? [];
+            $parcels        = $parent->parcels ?? [];
 
             $items = [];
             foreach ($parcels as $parcel) {
                 $dimensions = Arr::get($parcel, 'dimensions', []);
 
                 $items[] = [
-                    'item_weight_declared' => (float) Arr::get($parcel, 'weight', 1),
-                    'item_length_declared' => (float) Arr::get($dimensions, 0, 10),
-                    'item_width_declared' => (float) Arr::get($dimensions, 1, 10),
-                    'item_height_declared' => (float) Arr::get($dimensions, 2, 10),
-                    'item_comments' => 'Item from AW Artisan',
+                    'item_weight_declared' => (float)Arr::get($parcel, 'weight', 1),
+                    'item_length_declared' => (float)Arr::get($dimensions, 0, 10),
+                    'item_width_declared'  => (float)Arr::get($dimensions, 1, 10),
+                    'item_height_declared' => (float)Arr::get($dimensions, 2, 10),
+                    'item_comments'        => 'Item from AW Artisan',
                 ];
             }
 
             $fromAddress = Arr::get($parentResource, 'from_address', []);
-            $toAddress = Arr::get($parentResource, 'to_address', []);
+            $toAddress   = Arr::get($parentResource, 'to_address', []);
 
-            $customerReference = (string) Arr::get($parentResource, 'customer_reference', $parent->reference);
-            $idempotencyKey = hash('sha256', implode('|', [
+            $customerReference = (string)Arr::get($parentResource, 'customer_reference', $parent->reference);
+            $idempotencyKey    = hash('sha256', implode('|', [
                 'ctt-es',
                 $shipper->id,
                 $parent->id,
@@ -205,101 +202,107 @@ class CallApiCttEsShipping extends OrgAction
             ]));
 
             $params = [
-                'client_center_code' => $this->getClientCenterCode(),
-                'shipping_type_code' => 'C24',
-                'department_code' => '1',
-                'client_references' => [$customerReference],
+                'client_center_code'       => $this->getClientCenterCode(),
+                'shipping_type_code'       => 'C24',
+                'department_code'          => '1',
+                'client_references'        => [$customerReference],
                 'shipping_weight_declared' => collect($parcels)->sum('weight') ?: 1,
-                'item_count' => count($items),
+                'item_count'               => count($items),
 
-                'sender_name' => Str::limit(
+                'sender_name'                 => Str::limit(
                     Arr::get($parentResource, 'from_company_name')
-                    ?: Arr::get($parentResource, 'from_contact_name', 'AW Artisan'),
+                        ?: Arr::get($parentResource, 'from_contact_name', 'AW Artisan'),
                     60
                 ),
-                'sender_country_code' => Arr::get($fromAddress, 'country_code', 'ES'),
-                'sender_postal_code' => Arr::get($fromAddress, 'postal_code', '28821'),
-                'sender_address' => trim(Arr::get($fromAddress, 'address_line_1', '').' '.Arr::get($fromAddress, 'address_line_2', '')),
-                'sender_town' => Arr::get($fromAddress, 'locality', 'Coslada'),
+                'sender_country_code'         => Arr::get($fromAddress, 'country_code', 'ES'),
+                'sender_postal_code'          => Arr::get($fromAddress, 'postal_code', '28821'),
+                'sender_address'              => trim(Arr::get($fromAddress, 'address_line_1', '').' '.Arr::get($fromAddress, 'address_line_2', '')),
+                'sender_town'                 => Arr::get($fromAddress, 'locality', 'Coslada'),
                 'sender_email_notify_address' => Arr::get($parentResource, 'from_email'),
-                'sender_phones' => array_values(array_filter(
-                    [Arr::get($parentResource, 'from_phone')],
-                    fn ($phone) => filled($phone)
-                )),
+                'sender_phones'               => array_values(
+                    array_filter(
+                        [Arr::get($parentResource, 'from_phone')],
+                        fn($phone) => filled($phone)
+                    )
+                ),
 
-                'recipient_name' => Str::limit(
+                'recipient_name'                 => Str::limit(
                     Arr::get($parentResource, 'to_company_name')
-                    ?: Arr::get($parentResource, 'to_contact_name', 'Customer'),
+                        ?: Arr::get($parentResource, 'to_contact_name', 'Customer'),
                     60
                 ),
-                'recipient_country_code' => Arr::get($toAddress, 'country_code', 'ES'),
-                'recipient_postal_code' => Arr::get($toAddress, 'postal_code', '08850'),
-                'recipient_address' => trim(Arr::get($toAddress, 'address_line_1', '').' '.Arr::get($toAddress, 'address_line_2', '')),
-                'recipient_town' => Arr::get($toAddress, 'locality', 'Madrid'),
+                'recipient_country_code'         => Arr::get($toAddress, 'country_code', 'ES'),
+                'recipient_postal_code'          => Arr::get($toAddress, 'postal_code', '08850'),
+                'recipient_address'              => trim(Arr::get($toAddress, 'address_line_1', '').' '.Arr::get($toAddress, 'address_line_2', '')),
+                'recipient_town'                 => Arr::get($toAddress, 'locality', 'Madrid'),
                 'recipient_email_notify_address' => Arr::get($parentResource, 'to_email'),
-                'recipient_phones' => array_values(array_filter(
-                    [Arr::get($parentResource, 'to_phone')],
-                    fn ($phone) => filled($phone)
-                )),
+                'recipient_phones'               => array_values(
+                    array_filter(
+                        [Arr::get($parentResource, 'to_phone')],
+                        fn($phone) => filled($phone)
+                    )
+                ),
 
                 'shipping_date' => now()->format('Y-m-d'),
-                'delivery' => [
-                    'contact_name' => Str::limit((string) Arr::get($parentResource, 'to_contact_name', ''), 60),
-                    'comments' => Str::limit(strip_tags((string) ($parent->shipping_notes ?? '')), 100),
+                'delivery'      => [
+                    'contact_name' => Str::limit((string)Arr::get($parentResource, 'to_contact_name', ''), 60),
+                    'comments'     => Str::limit(strip_tags((string)($parent->shipping_notes ?? '')), 100),
                 ],
-                'items' => $items,
+                'items'         => $items,
             ];
 
-            $params['custom_origin_name'] = $params['sender_name'];
+            $params['custom_origin_name']         = $params['sender_name'];
             $params['custom_origin_country_code'] = $params['sender_country_code'];
-            $params['custom_origin_postal_code'] = $params['sender_postal_code'];
-            $params['custom_origin_address'] = $params['sender_address'];
-            $params['custom_origin_town'] = $params['sender_town'];
+            $params['custom_origin_postal_code']  = $params['sender_postal_code'];
+            $params['custom_origin_address']      = $params['sender_address'];
+            $params['custom_origin_town']         = $params['sender_town'];
 
             $codData = Arr::get($parentResource, 'cash_on_delivery');
-            if (! empty($codData)) {
-                $params['additionals'] = [[
-                    'additional_code' => 'REE',
-                    'additional_value' => (float) Arr::get($codData, 'amount', 0),
-                    'additional_flag' => true,
-                    'additional_text' => 'Cash on delivery payment',
-                    'additional_sub_code' => '',
-                ]];
+            if (!empty($codData)) {
+                $params['additionals'] = [
+                    [
+                        'additional_code'     => 'REE',
+                        'additional_value'    => (float)Arr::get($codData, 'amount', 0),
+                        'additional_flag'     => true,
+                        'additional_text'     => 'Cash on delivery payment',
+                        'additional_sub_code' => '',
+                    ]
+                ];
             }
 
             // Do not auto-retry manifest POST to avoid accidental duplicate shipments on ambiguous failures.
-            $response = $this->requestWithTokenRefresh(function (bool $forceRefreshToken) use ($url, $params, $idempotencyKey) {
+            $response = $this->requestWithTokenRefresh(function (bool $forceRefreshToken) use ($url, $params, $idempotencyKey, $shipper) {
                 return Http::withHeaders($this->getHeaders($forceRefreshToken, [
                     'Idempotency-Key' => $idempotencyKey,
                 ]))
                     ->connectTimeout(10)
                     ->timeout(45)
-                    ->post($this->getBaseUrl().$url, $params);
+                    ->post($this->getBaseUrl($shipper).$url, $params);
             });
 
             $apiResponse = $response->json();
-            $statusCode = $response->status();
+            $statusCode  = $response->status();
 
             $modelData = ['api_response' => $apiResponse];
             $errorData = [];
 
             if ($statusCode === 201 && Arr::has($apiResponse, 'shipping_data.shipping_code')) {
-                $status = 'success';
+                $status       = 'success';
                 $shippingCode = Arr::get($apiResponse, 'shipping_data.shipping_code');
 
-                $modelData['trackings'] = [$shippingCode];
-                $modelData['tracking'] = $shippingCode;
-                $modelData['label_type'] = ShipmentLabelTypeEnum::PDF;
+                $modelData['trackings']      = [$shippingCode];
+                $modelData['tracking']       = $shippingCode;
+                $modelData['label_type']     = ShipmentLabelTypeEnum::PDF;
                 $modelData['number_parcels'] = count($parcels);
-                $modelData['label'] = $this->getLabel($shippingCode);
+                $modelData['label']          = $this->getLabel($shippingCode);
             } else {
-                $status = 'fail';
+                $status                 = 'fail';
                 $errorData['message'][] = Arr::get($apiResponse, 'error.error_description', 'Failed to manifest');
-                $errorData['others'][] = Arr::get($apiResponse, 'error.error_extended_info.message', '');
+                $errorData['others'][]  = Arr::get($apiResponse, 'error.error_extended_info.message', '');
             }
 
             return [
-                'status' => $status,
+                'status'    => $status,
                 'modelData' => $modelData,
                 'errorData' => $errorData,
             ];
@@ -311,7 +314,7 @@ class CallApiCttEsShipping extends OrgAction
     public function getLabel(string $shippingCode): string
     {
         $content = '';
-        $url = "/trf/labelling/v1.0/shippings/{$shippingCode}/shipping-labels?label_type_code=PDF&model_type_code=SINGLE&label_offset=1";
+        $url     = "/trf/labelling/v1.0/shippings/{$shippingCode}/shipping-labels?label_type_code=PDF&model_type_code=SINGLE&label_offset=1";
 
         for ($attempt = 1; $attempt <= 3; $attempt++) {
             try {
@@ -324,7 +327,7 @@ class CallApiCttEsShipping extends OrgAction
 
                 if ($response->successful()) {
                     $apiResponse = $response->json();
-                    $content = (string) Arr::get($apiResponse, 'data.0.label', '');
+                    $content     = (string)Arr::get($apiResponse, 'data.0.label', '');
 
                     if ($content !== '') {
                         return $content;
