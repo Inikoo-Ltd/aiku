@@ -110,7 +110,7 @@ createInertiaApp(
     setup({ el, App, props, plugin }) {
       const app = createApp({ render: () => h(App, props) });
 
-      if (import.meta.env.VITE_SENTRY_DSN) {
+      if (import.meta.env.VITE_SENTRY_GRP_DSN) {
         Sentry.init({
                       app,
                       dsn                     : import.meta.env.VITE_SENTRY_GRP_DSN,
