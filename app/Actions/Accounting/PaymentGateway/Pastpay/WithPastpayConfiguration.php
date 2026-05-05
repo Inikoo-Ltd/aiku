@@ -100,8 +100,8 @@ trait WithPastpayConfiguration
             ],
             'termDays'  => Arr::get($extra, 'termDays', 30),
             'paymentRedirectUrl' => [
-                'success'      => route('retina.ecom.orders.show', $order->slug),
-                'failure'         => route('retina.ecom.orders.show', $order->slug),
+                'success'      => route('retina.models.success_order_pay_by_pastpay', $order->slug),
+                'failure'         => route(' retina.ecom.basket.show'),
             ],
         ], $extra);
     }
