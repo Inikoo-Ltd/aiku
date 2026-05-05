@@ -302,10 +302,10 @@ class IndexProspects extends OrgAction
                 'channel'         => 'grp.personal.'.$this->group->id,
                 'required_fields' => [
                     "id_prospect_key",
-                    "company",
+                    "company_name",
                     "contact_name",
                     "email",
-                    "telephone"
+                    "phone"
                 ],
                 'route'           => [
                     'upload' => [
