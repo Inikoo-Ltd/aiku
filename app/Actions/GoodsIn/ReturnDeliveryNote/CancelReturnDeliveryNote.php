@@ -28,7 +28,7 @@ class CancelReturnDeliveryNote extends OrgAction
     {
         $oldState = $returnDeliveryNote->return_state;
 
-        if (in_array($oldState, [ReturnDeliveryNoteStateEnum::RECEIVED, ReturnDeliveryNoteStateEnum::CANCELLED])) {
+        if (in_array($oldState, [ReturnDeliveryNoteStateEnum::RETURNED, ReturnDeliveryNoteStateEnum::CANCELLED])) {
             throw ValidationException::withMessages([
                 'message' => __('Delivery note can not be cancelled.').' ['.__('Invalid state').': '.$oldState->value.']',
             ]);
