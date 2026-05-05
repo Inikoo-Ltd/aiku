@@ -23,6 +23,9 @@ const props = defineProps<{
 	}
 	needToPay: number
 	currency_code: string
+	order: {
+
+	}
 }>()
 
 const layout = inject("layout", retinaLayoutStructure)
@@ -47,9 +50,11 @@ const selectedOption = ref<{ days: number; charge: string } | null>(null)
 const isLoading = ref(false)
 const onSubmitPlaceOrder = () => {
 	router.post(
-		route("retina.models.place_order_pay_by_pastpay"),
+		route("retina.models.place_order_pay_by_pastpay", {
+			order: props.order.slug
+		}),
 		{
-			charges: selectedOption.value,
+			days: selectedOption.value?.days,
 		},
 		{
 			onStart: () => {
