@@ -136,8 +136,6 @@ class SuccessOrderWithPastpay
         $order->refresh();
     }
 
-    public string $commandSignature = 'test_pastpay';
-
     public function asCommand(): int
     {
         $order = Order::where('slug', 'awp31048')->first();
