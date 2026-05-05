@@ -3,6 +3,8 @@ import Skeleton from 'primevue/skeleton'
 import Image from '@/Components/Image.vue'
 import { Link } from '@inertiajs/vue3'
 
+const model = defineModel<boolean>('open')
+
 const props = defineProps<{
     results: {
         products: {
@@ -58,6 +60,7 @@ const props = defineProps<{
                             :key="category.id"
                             :href="route('grp.helpers.redirect_product_category', { productCategory: category.id })"
                             class="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer group"
+                            @success="() => model = false"
                         >
                             <div class="w-8 h-8 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
                                 <Image v-if="category.image" :src="category.image" class="w-full h-full object-cover" />
@@ -70,13 +73,15 @@ const props = defineProps<{
                         </Link>
                     </template>
 
+                    <!-- Section: Collections -->
                     <template v-if="results?.collections?.length">
                         <p class="text-[10px] uppercase tracking-widest text-gray-400 px-2 pt-3 pb-0.5">Collections</p>
                         <Link
                             v-for="collection in results.collections"
                             :key="collection.id"
-                            :href="route('grp.helpers.redirect_collection', { productCategory: collection.id })"
+                            :href="route('grp.helpers.redirect_collection', { collection: collection.id })"
                             class="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer group"
+                            @success="() => model = false"
                         >
                             <div class="w-8 h-8 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
                                 <Image v-if="collection.image" :src="collection.image" class="w-full h-full object-cover" />
@@ -117,11 +122,12 @@ const props = defineProps<{
 
                 <template v-if="results?.products?.length">
                     <div class="grid grid-cols-4 gap-2">
-                        <a
+                        <Link
                             v-for="product in results.products.slice(0, 9)"
                             :key="product.id"
-                            :href="product.route?.name ? route(product.route.name, product.route.parameters) : '#'"
+                            :href="route('grp.helpers.redirect_product', { product: product.id })"
                             class="group flex flex-col rounded-lg overflow-hidden border border-transparent hover:border-slate-200 hover:shadow-sm transition cursor-pointer"
+                            @success="() => model = false"
                         >
                             <div class="w-full aspect-square bg-gray-100 overflow-hidden flex items-center justify-center">
                                 <Image v-if="product.image" :src="product.image" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
@@ -131,12 +137,12 @@ const props = defineProps<{
                                 <p class="text-xs font-medium text-slate-800 truncate leading-tight">{{ product.name }}</p>
                                 <p class="text-[10px] text-gray-400 truncate">{{ product.code }}</p>
                             </div>
-                        </a>
+                        </Link>
                     </div>
                 </template>
                 
                 <div v-else class="flex h-32 items-center justify-center text-gray-400 text-sm">
-                    No products found
+                    {{ ctrans("No products found") }}
                 </div>
             </div>
         </div>
