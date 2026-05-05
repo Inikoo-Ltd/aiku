@@ -144,32 +144,32 @@ console.log("Family2 Workshop Props:", props)
           <div v-html="cleanedDescription" class="text-gray-600 leading-relaxed text-sm md:text-base " />
 
           <!-- COMBINED DISCOUNT + BUTTON -->
-          <div v-if="layout.iris.is_logged_in"
-            class="mt-4 flex items-stretch w-fit rounded-xl  overflow-hidden discount-wrapper">
-            <!-- DISCOUNT -->
-            <div v-if="fieldValue?.family?.offers_data?.number_offers"
-              class="flex items-center pr-3 bg-gray-50 border-r border-gray-200 min-w-0">
-              <div :class="bestOffer?.type === 'Category Quantity Ordered Order Interval'
-                  ? 'flex flex-nowrap gap-2'
-                  : 'discount-grid'
-                " class="items-center">
-                <DiscountByType v-if="showTriggers" :offers_data="fieldValue?.family?.offers_data"
-                  template="triggers_labels" class="truncate text-sm" />
+          <div class="mt-4 flex flex-col md:flex-row w-fit overflow-hidden discount-wrapper md:items-stretch">
 
-                <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="bestOffer?.type === 'Category Quantity Ordered Order Interval'
-                    ? 'active-inactive-gr'
-                    : 'max_discount'
-                  " class="truncate text-sm font-medium" />
-              </div>
+            <!-- DISCOUNT -->
+            <div :class="bestOffer?.type === 'Category Quantity Ordered Order Interval'
+              ? 'flex flex-nowrap gap-2'
+              : 'discount-grid'
+              " class="flex items-center h-full">
+
+              <DiscountByType v-if="showTriggers && layout.iris.is_logged_in" :offers_data="fieldValue?.family?.offers_data"
+                template="triggers_labels" class="truncate text-sm leading-none" />
+
+              <DiscountByType v-if="layout.iris.is_logged_in" :offers_data="fieldValue?.family?.offers_data" :template="bestOffer?.type === 'Category Quantity Ordered Order Interval'
+                ? 'active-inactive-gr'
+                : 'max_discount'
+                " class="truncate text-sm font-medium leading-none" />
+
+              <LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target"
+                class="flex items-center ml-2">
+
+                <Button :label="fieldValue?.button?.text" class="flex leading-none h-full mb-[0.5rem]"
+                  :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" />
+
+              </LinkIris>
+
             </div>
 
-            <!-- BUTTON -->
-            <LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target" class="flex">
-              <Button 
-                :label="fieldValue?.button?.text"
-                :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
-              />
-            </LinkIris>
           </div>
         </div>
 

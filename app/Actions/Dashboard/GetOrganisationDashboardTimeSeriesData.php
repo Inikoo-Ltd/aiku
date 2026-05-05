@@ -30,9 +30,10 @@ class GetOrganisationDashboardTimeSeriesData
 
         $cacheKey = $this->getCacheKey($organisation, $fromDate, $toDate);
 
-        return Cache::remember($cacheKey, now()->addSeconds(300), function () use ($organisation, $fromDate, $toDate) {
-            return $this->fetchData($organisation, $fromDate, $toDate);
-        });
+        return Cache::tags(["dashboard-org-{$organisation->id}"])
+            ->remember($cacheKey, now()->addSeconds(300), function () use ($organisation, $fromDate, $toDate) {
+                return $this->fetchData($organisation, $fromDate, $toDate);
+            });
     }
 
     protected function getCacheKey(Organisation $organisation, $fromDate, $toDate): string
@@ -82,11 +83,8 @@ class GetOrganisationDashboardTimeSeriesData
         ];
     }
 
-    public static function clearCache(Organisation $organisation, $fromDate = null, $toDate = null): void
+    public static function clearCache(Organisation $organisation): void
     {
-        $instance = new static();
-        $cacheKey = $instance->getCacheKey($organisation, $fromDate, $toDate);
-
-        Cache::forget($cacheKey);
+        Cache::tags(["dashboard-org-{$organisation->id}"])->flush();
     }
 }

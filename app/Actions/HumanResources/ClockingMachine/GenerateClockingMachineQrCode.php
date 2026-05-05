@@ -39,13 +39,11 @@ class GenerateClockingMachineQrCode extends OrgAction
         $qrCodeToken = encrypt(json_encode($payload));
 
         $expiresAt = Carbon::now()->addSeconds($expiryDuration);
-        $refreshInterval = (int) ($config['refresh_interval'] ?? 60);
 
         return [
             'qr_code'          => $qrCodeToken,
             'expires_at'       => $expiresAt->toIso8601String(),
-            'duration_seconds' => $expiryDuration,
-            'refresh_interval' => $refreshInterval
+            'duration_seconds' => $expiryDuration
         ];
     }
 

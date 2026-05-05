@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import QrcodeVue from "qrcode.vue"
 import { computed, ref, onUnmounted } from "vue"
-import { faExpand, faCompress, faStop } from '@fortawesome/free-solid-svg-icons'
+import { faExpand, faCompress, faStop, faDownload } from '@fortawesome/free-solid-svg-icons'
 import axios from "axios";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { trans } from "laravel-vue-i18n";
@@ -24,6 +24,7 @@ const isFullscreen = ref(false)
 const isGenerating = ref(false)
 const qrData = ref<any>(null)
 const countdown = ref(0)
+const expiresAt = ref<Date | null>(null)
 
 let qrRefreshTimer: any = null
 let countdownTimer: any = null
@@ -63,6 +64,7 @@ const fetchQR = async () => {
             qrData.value = res.data.data.qr_code
             qrKey.value++
             startCountdown(res.data.data.duration_seconds)
+            expiresAt.value = new Date(Date.now() + (res.data.data.duration_seconds * 1000))
 
             clearTimeout(qrRefreshTimer)
             qrRefreshTimer = setTimeout(fetchQR, res.data.data.duration_seconds * 1000)
@@ -78,6 +80,7 @@ const stopQR = () => {
 
     qrData.value = null
     countdown.value = 0
+    expiresAt.value = null
 }
 
 const formattedCountdown = computed(() => {
@@ -93,6 +96,76 @@ const formattedCountdown = computed(() => {
 
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
 })
+
+const formattedExpiredAt = computed(() => {
+    if (!expiresAt.value) {
+        return "-"
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+    }).format(expiresAt.value)
+})
+
+const downloadQrCode = async () => {
+    if (!qrContainer.value || !hasQR.value) {
+        return
+    }
+
+    const qrCanvas = qrContainer.value.querySelector("canvas") as HTMLCanvasElement | null
+
+    if (!qrCanvas) {
+        return
+    }
+
+    const title = trans("Employee Scan")
+    const subtitle = trans("Scan QR to clock in or out")
+    const expiredAtText = `${trans("Expired at")}: ${formattedExpiredAt.value}`
+    const qrSize = qrCanvas.width
+    const canvasPadding = 48
+    const textTopHeight = 120
+    const textBottomHeight = 80
+    const canvasWidth = Math.max(900, qrSize + (canvasPadding * 2))
+    const canvasHeight = textTopHeight + qrSize + textBottomHeight + (canvasPadding * 2)
+    const exportCanvas = document.createElement("canvas")
+    exportCanvas.width = canvasWidth
+    exportCanvas.height = canvasHeight
+    const context = exportCanvas.getContext("2d")
+
+    if (!context) {
+        return
+    }
+
+    context.fillStyle = "#ffffff"
+    context.fillRect(0, 0, canvasWidth, canvasHeight)
+
+    context.textAlign = "center"
+    context.fillStyle = "#111827"
+    context.font = "bold 38px sans-serif"
+    context.fillText(title, canvasWidth / 2, canvasPadding + 34)
+
+    context.fillStyle = "#6b7280"
+    context.font = "26px sans-serif"
+    context.fillText(subtitle, canvasWidth / 2, canvasPadding + 78)
+
+    const qrX = (canvasWidth - qrSize) / 2
+    const qrY = textTopHeight + canvasPadding
+    context.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize)
+
+    context.fillStyle = "#374151"
+    context.font = "24px sans-serif"
+    context.fillText(expiredAtText, canvasWidth / 2, qrY + qrSize + 52)
+
+    const downloadLink = document.createElement("a")
+    downloadLink.href = exportCanvas.toDataURL("image/png")
+    downloadLink.download = `employee-scan-${props.data.slug}.png`
+    downloadLink.click()
+}
 
 onUnmounted(() => stopQR())
 </script>
@@ -131,9 +204,15 @@ onUnmounted(() => stopQR())
                 <div class="mt-4 text-md font-semibold">
                     {{ trans("Expires in") }} <span class="font-semibold text-gray-700">{{ formattedCountdown }}</span>
                 </div>
+                <div class="text-sm text-gray-500">
+                    {{ trans("Expired at") }}: {{ formattedExpiredAt }}
+                </div>
             </div>
 
-            <Button :label="trans('Stop QR Code')" @click="stopQR" type="cancel" :icon="faStop" v-if="hasQR" />
+            <div v-if="hasQR" class="flex justify-center gap-2">
+                <Button :label="trans('Download QR Code')" @click="downloadQrCode" type="tertiary" :icon="faDownload" />
+                <Button :label="trans('Stop QR Code')" @click="stopQR" type="cancel" :icon="faStop" />
+            </div>
         </div>
     </div>
 </template>
