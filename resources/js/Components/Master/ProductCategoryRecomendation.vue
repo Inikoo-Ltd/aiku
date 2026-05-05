@@ -6,12 +6,13 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import ListSelector from "@/Components/Selector.vue"
 import { router } from "@inertiajs/vue3";
 import { notify } from "@kyvg/vue3-notification";
+import axios from "axios";
 
 const props = defineProps<{
     data: any
     product_category_id?: number
 }>()
-
+console.log('Props:', props)
 // ✅ shape sesuai komponen ordering
 const listProducts = ref({
     data: props.data?.data ?? []
@@ -25,39 +26,43 @@ const openAddProduct = () => {
 
 const loadingOrder = ref(false)
 
-const SaveOrder = () => {
-    router.patch(route('grp.models.master_product_category.related_assets.sync', {
-        masterProductCategory: props.product_category_id
-    }), {
-        master_asset_ids: listProducts.value.data.map((product: any, index: number) => ({
-            id: product.id,
-            code : product.code,
-            position: product.index_under_family || index,
-        }))
-    }, {
-        preserveScroll: true,
-        onStart : () => {
-            loadingOrder.value = true
-        },
-         onSuccess: () => {
-            notify({
-                title: trans("Success!"),
-                text: trans("Successfully reordered the products"),
-                type: "success"
-            })
-        },
-        onError: (errors) => {
-            console.log(errors)
-            notify({
-                title: trans("Something went wrong"),
-                text: errors.message || trans("Failed to reorder products"),
-                type: "error"
-            })
-        },
-        onFinish : ()=> {
-             loadingOrder.value = false
-        }
-})}
+
+const SaveOrder = async () => {
+    loadingOrder.value = true
+
+    try {
+        await axios.patch(
+            route('grp.models.master_product_category.related_assets.sync', {
+                masterProductCategory: props.product_category_id
+            }),
+            {
+                master_asset_ids: listProducts.value.data.map((product: any, index: number) => ({
+                    id: product.id,
+                    code: product.code,
+                    position: product.index_under_family ?? index,
+                }))
+            }
+        )
+
+        notify({
+            title: trans("Success!"),
+            text: trans("Successfully reordered the products"),
+            type: "success"
+        })
+
+    } catch (error: any) {
+        console.error(error)
+
+        notify({
+            title: trans("Something went wrong"),
+            text: error?.response?.data?.message || trans("Failed to reorder products"),
+            type: "error"
+        })
+
+    } finally {
+        loadingOrder.value = false
+    }
+}
 
 
 </script>
@@ -67,14 +72,15 @@ const SaveOrder = () => {
 
         <!-- HEADER ACTION -->
         <div class="flex justify-between items-center">
-            <div class="text-sm font-semibold text-gray-700">
-                {{ trans('Product Ordering') }}
+            <div class="text-xl font-semibold text-gray-700">
+                {{ trans('Product Recommendations Ordering') }}
             </div>
 
             <Button 
                 label="Save Order" 
                 @click="SaveOrder" 
                 :disabled="loadingOrder" 
+                type="save"
             />
         </div>
 
@@ -88,10 +94,10 @@ const SaveOrder = () => {
 
                 <!-- TOP ACTION -->
                 <template #before-button-list>
-                    <div class="flex justify-end mb-2">
+                    <div class="flex justify-end mx-3">
                         <Button 
-                            label="Add Product" 
-                            type="create" 
+                            label=" + Add Product" 
+                            type="tertiary" 
                             size="xs"
                             @click="openAddProduct"
                         />

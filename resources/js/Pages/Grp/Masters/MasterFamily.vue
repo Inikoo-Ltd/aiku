@@ -83,6 +83,7 @@ const props = defineProps<{
     isPerfectFamily: boolean
     price_rrp_warning_ratio : number
     mismatch_detected?: boolean
+    recommendation : object
 }>()
 const layout = inject("layout")
 const currentTab = ref(props.tabs.current)
