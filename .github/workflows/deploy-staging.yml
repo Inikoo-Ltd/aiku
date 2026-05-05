@@ -17,6 +17,7 @@ jobs:
     environment: staging
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      SENTRY_LOG_LEVEL: debug
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
