@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Accounting\PaymentGateway\Pastpay\WithPastpayConfiguration;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
+use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\RetinaAction;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
@@ -44,8 +45,9 @@ class PayOrderWithPastpay extends RetinaAction
         );
 
         $charges = Arr::get($this->paymentAccount->data, 'charges.options', []);
-        $chargeAmount = collect($charges)->where('days', Arr::get($modelData, 'days', 30))->first();
-        $toPay = $paymentAmounts['total'] * (1 + ($chargeAmount['charge'] / 100));
+        $chargePercentage = collect($charges)->where('days', Arr::get($modelData, 'days', 30))->first();
+        $chargeAmount = $paymentAmounts['total'] * ($chargePercentage['charge'] / 100);
+        $toPay = $paymentAmounts['total'] + $chargeAmount;
 
         $toPay = (int)round((float)$toPay * 100);
 
@@ -62,6 +64,15 @@ class PayOrderWithPastpay extends RetinaAction
                     'currency' => $order->currency->code
                 ],
                 'termDays' => Arr::get($modelData, 'days', 30),
+            ]);
+
+            UpdateOrder::run($order, [
+                'data' => [
+                    'pastpay' => [
+                        'charges' => $chargeAmount,
+                        'termDays' => Arr::get($modelData, 'days', 30),
+                    ]
+                ]
             ]);
 
             return [
