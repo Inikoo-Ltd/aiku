@@ -9,6 +9,7 @@
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNote;
 
+use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\GoodsIn\ReturnDeliveryNoteItem\UpdateReturnDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -53,6 +54,10 @@ class CancelReturnDeliveryNote extends OrgAction
                     'return_state'        => ReturnDeliveryNoteItemStateEnum::CANCELLED,
                 ]);
             }
+
+            UpdateDeliveryNote::make()->action($returnDeliveryNote->deliveryNote, [
+                'is_returned'   => false
+            ]);
 
             return $returnDeliveryNote;
         });

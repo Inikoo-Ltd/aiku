@@ -341,6 +341,30 @@ onMounted(() => {
         })
     console.log('Subscribed to channel for porto ID:', props.delivery_note.id, 'Channel:', channel)
 })
+
+const processReturn = (routeData: {
+	name: string,
+	parameters: {}
+}) => {
+	router.patch(route(routeData.name, routeData.parameters), {}, {
+		onSuccess: () => {
+            notify({ 
+				title: 'Updated', 
+				text: 'Successfully created return', 
+				type: 'success' 
+			})
+		},
+		onError: (err) => {
+			console.error(err)
+            notify({ 
+				title: 'Error', 
+				text: 'Failed to create return.', 
+				type: 'error' 
+			})
+		}
+	})
+}
+
 </script>
 
 <template>
@@ -377,6 +401,15 @@ onMounted(() => {
 					}),
 					openModalAddShipment = true
 				}"
+			/>
+		</template>
+
+		<template #wrapped-return="{ action }">
+			<Button
+				@click="processReturn(action.route)"
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
 			/>
 		</template>
 

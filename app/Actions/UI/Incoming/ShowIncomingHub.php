@@ -11,7 +11,9 @@ namespace App\Actions\UI\Incoming;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\GoodsIn\Return\ReturnStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Models\GoodsIn\OrderReturn;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -47,6 +49,12 @@ class ShowIncomingHub extends OrgAction
         $returnsWaitingToReceive = OrderReturn::where('warehouse_id', $warehouse->id)
             ->where('state', ReturnStateEnum::WAITING_TO_RECEIVE)
             ->count();
+
+        // TODO LATER USE STAT INSTEAD
+        $return = ReturnDeliveryNote::where('warehouse_id', $warehouse->id)
+            ->whereNotIn('return_state', [ReturnDeliveryNoteStateEnum::RETURNED, ReturnDeliveryNoteStateEnum::CANCELLED])
+            ->count();
+
 
         return Inertia::render(
             'Org/Incoming/IncomingHub',
@@ -97,6 +105,18 @@ class ShowIncomingHub extends OrgAction
                         'icon'  => [
                             'icon'    => 'fal fa-undo-alt',
                             'tooltip' => __('Customer Returns')
+                        ]
+                    ],
+                    [
+                        'name'  => __('Return Delivery Note'),
+                        'value' => $return,
+                        'route' => [
+                            'name'       => 'grp.org.warehouses.show.incoming.return-delivery-notes',
+                            'parameters' => $request->route()->originalParameters()
+                        ],
+                        'icon'  => [
+                            'icon'    => 'fal fa-undo-alt',
+                            'tooltip' => __('Return Delivery Notes')
                         ]
                     ],
                 ],
