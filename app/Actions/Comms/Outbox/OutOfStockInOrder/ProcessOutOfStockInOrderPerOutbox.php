@@ -50,12 +50,6 @@ class ProcessOutOfStockInOrderPerOutbox
         $baseQuery->where('customers.shop_id', $outbox->shop_id);
         $baseQuery->whereNull('customers.deleted_at');
 
-        // check customer comms
-        // $baseQuery->join('customer_comms', function ($join) {
-        //     $join->on('customers.id', '=', 'customer_comms.customer_id')
-        //         ->where('customer_comms.is_subscribed_to_basket_low_stock', true);
-        // });
-
         // check Order
         $baseQuery->join('orders', function ($join) {
             $join->on('customers.id', '=', 'orders.customer_id');
@@ -75,7 +69,7 @@ class ProcessOutOfStockInOrderPerOutbox
             $join->on('transactions.model_id', '=', 'products.id');
             $join->where('transactions.model_type', $productClass);
             $join->where('products.is_for_sale', true);
-            $join->where('products.available_quantity_updated_at', '>', $intervalInHours);
+            // $join->where('products.available_quantity_updated_at', '>', $intervalInHours);
             $join->whereIn('products.state', [
                 ProductStateEnum::ACTIVE->value,
                 ProductStateEnum::DISCONTINUING->value,
