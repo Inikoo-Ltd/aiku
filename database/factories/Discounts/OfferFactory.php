@@ -8,6 +8,7 @@
 
 namespace Database\Factories\Discounts;
 
+use App\Enums\Discounts\Offer\OfferTypeEnum;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class OfferFactory extends Factory
@@ -17,7 +18,7 @@ class OfferFactory extends Factory
         return [
             'code' => fake()->lexify,
             'name' => fake()->name,
-            'type' => fake()->randomElement(['percentage','fixed']),
+            'type' => OfferTypeEnum::DISCRETIONARY->value
         ];
     }
 }
