@@ -89,9 +89,6 @@ class PayOrderWithPastpay extends RetinaAction
     public string $commandSignature = 'test_pastpay';
 
 
-    /**
-     * @throws \Checkout\CheckoutArgumentException
-     */
     public function asCommand(): int
     {
         $order = Order::where('slug', 'awp31048')->first();
