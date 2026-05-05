@@ -110,40 +110,7 @@ const component = computed(() => {
 
 const showDialog = ref(false);
 
-const SaveOrder = () => {
-    console.log(localData)
-    router.patch(route('grp.models.master_product_category.related_assets.sync', {
-        masterProductCategory: props.familyId
-    }), {
-        products: localData.value.map((product: any, index: number) => ({
-            id: product.id,
-            code : product.code,
-            index_under_master_family: product.index_under_family,
-        }))
-    }, {
-        preserveScroll: true,
-        onStart : () => {
-            loadingOrder.value = true
-        },
-         onSuccess: () => {
-            notify({
-                title: trans("Success!"),
-                text: trans("Successfully reordered the products"),
-                type: "success"
-            })
-        },
-        onError: (errors) => {
-            console.log(errors)
-            notify({
-                title: trans("Something went wrong"),
-                text: errors.message || trans("Failed to reorder products"),
-                type: "error"
-            })
-        },
-        onFinish : ()=> {
-             loadingOrder.value = false
-        }
-})}
+
 </script>
 
 <template>

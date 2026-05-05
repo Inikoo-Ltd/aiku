@@ -4,6 +4,7 @@ import FamilySetOrderingPositionOfProduct from "./FamilySetOrderingPositionOfPro
 import { trans } from "laravel-vue-i18n";
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ListSelector from "@/Components/Selector.vue"
+import { router } from "@inertiajs/vue3";
 
 const props = defineProps<{
     data: any
@@ -20,43 +21,115 @@ const openAddProduct = () => {
     productDialog.value?.open()
 }
 
+const LoadingOrder = ref(false)
+
+const SaveOrder = () => {
+    router.patch(route('grp.models.master_product_category.related_assets.sync', {
+        masterProductCategory : route().params['masterFamily']
+    }), {
+        products: localData.value.map((product: any, index: number) => ({
+            id: product.id,
+            code : product.code,
+            index: product.index_under_family,
+        }))
+    }, {
+        preserveScroll: true,
+        onStart : () => {
+            loadingOrder.value = true
+        },
+         onSuccess: () => {
+            notify({
+                title: trans("Success!"),
+                text: trans("Successfully reordered the products"),
+                type: "success"
+            })
+        },
+        onError: (errors) => {
+            console.log(errors)
+            notify({
+                title: trans("Something went wrong"),
+                text: errors.message || trans("Failed to reorder products"),
+                type: "error"
+            })
+        },
+        onFinish : ()=> {
+             loadingOrder.value = false
+        }
+})}
+
 
 </script>
 
 <template>
+    <div class="p-4 space-y-4">
 
-    
-    <FamilySetOrderingPositionOfProduct :data="listProducts">
-
-        <template #empty>
-            <div class="flex flex-col items-center justify-center text-center py-12 px-6 border border-dashed rounded-lg bg-gray-50">
-
-                <div class="text-sm font-semibold text-gray-700">
-                    {{ trans('No products found') }}
-                </div>
-
-                <div class="text-xs text-gray-500 mt-1 max-w-xs">
-                    {{ trans('Start by adding your first product to this list.') }}
-                </div>
-
-                <Button 
-                    class="mt-5" 
-                    label="Add Product" 
-                    type="create" 
-                    @click="openAddProduct" 
-                />
+        <!-- HEADER ACTION -->
+        <div class="flex justify-between items-center">
+            <div class="text-sm font-semibold text-gray-700">
+                {{ trans('Product Ordering') }}
             </div>
-        </template>
 
-    </FamilySetOrderingPositionOfProduct>
+            <Button 
+                label="Save Order" 
+                @click="SaveOrder" 
+                :disabled="loadingOrder" 
+            />
+        </div>
 
-    <!-- ✅ selector langsung bind ke data -->
-    <ListSelector
-        ref="productDialog"
-        v-model="listProducts.data"
-        :routeFetch="{
-            name: 'grp.masters.master_shops.show.master_products.index',
-            parameters: { masterShop: route().params['masterShop'] }
-        }"
-    />
+        <!-- MAIN CONTENT -->
+        <div class="bg-white border rounded-lg p-4">
+
+            <FamilySetOrderingPositionOfProduct 
+                :data="listProducts"
+                @update:data="handleUpdateData"
+            >
+
+                <!-- TOP ACTION -->
+                <template #before-button-list>
+                    <div class="flex justify-end mb-2">
+                        <Button 
+                            label="Add Product" 
+                            type="create" 
+                            size="xs"
+                            @click="openAddProduct"
+                        />
+                    </div>
+                </template>
+
+                <!-- EMPTY STATE -->
+                <template #empty>
+                    <div class="flex flex-col items-center justify-center text-center py-12 px-6 border border-dashed rounded-lg bg-gray-50">
+
+                        <div class="text-sm font-semibold text-gray-700">
+                            {{ trans('No products found') }}
+                        </div>
+
+                        <div class="text-xs text-gray-500 mt-1 max-w-xs">
+                            {{ trans('Start by adding your first product to this list.') }}
+                        </div>
+
+                        <Button 
+                            class="mt-5" 
+                            label="Add Product" 
+                            type="create" 
+                            @click="openAddProduct" 
+                        />
+                    </div>
+                </template>
+
+            </FamilySetOrderingPositionOfProduct>
+
+        </div>
+
+        <!-- SELECTOR (DIALOG CONTROLLER) -->
+        <ListSelector
+            ref="productDialog"
+            v-model="listProducts.data"
+            :routeFetch="{
+                name: 'grp.masters.master_shops.show.master_products.index',
+                parameters: { masterShop: route().params['masterShop'] }
+            }"
+        />
+
+    </div>
 </template>

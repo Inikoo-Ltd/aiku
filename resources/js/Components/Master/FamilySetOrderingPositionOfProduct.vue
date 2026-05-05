@@ -180,23 +180,26 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                 </div>
             </div>
 
-            <div class="inline-flex rounded-lg border bg-gray-100 p-1">
-                <button @click="viewMode = 'list'"
-                    class="flex items-center gap-1 px-3 py-1.5 text-xs rounded-md transition"
-                    :class="viewMode === 'list'
-                        ? 'bg-white shadow text-gray-900'
-                        : 'text-gray-500 hover:text-gray-700'">
-                    ≡ List
-                </button>
+            <div class="flex">
+                <slot name="before-button-list"></slot>
+                <div class="inline-flex rounded-lg border bg-gray-100 p-1">
+                    <button @click="viewMode = 'list'"
+                        class="flex items-center gap-1 px-3 py-1.5 text-xs rounded-md transition" :class="viewMode === 'list'
+                            ? 'bg-white shadow text-gray-900'
+                            : 'text-gray-500 hover:text-gray-700'">
+                        ≡ List
+                    </button>
 
-                <button @click="viewMode = 'card'"
-                    class="flex items-center gap-1 px-3 py-1.5 text-xs rounded-md transition"
-                    :class="viewMode === 'card'
-                        ? 'bg-white shadow text-gray-900'
-                        : 'text-gray-500 hover:text-gray-700'">
-                    ▦ Card
-                </button>
+                    <button @click="viewMode = 'card'"
+                        class="flex items-center gap-1 px-3 py-1.5 text-xs rounded-md transition" :class="viewMode === 'card'
+                            ? 'bg-white shadow text-gray-900'
+                            : 'text-gray-500 hover:text-gray-700'">
+                        ▦ Card
+                    </button>
+                </div>
+                <slot name="after-button-list>"></slot>
             </div>
+           
         </div>
 
         <!-- EMPTY STATE -->
