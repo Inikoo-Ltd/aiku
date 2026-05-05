@@ -108,6 +108,8 @@ class SuccessOrderWithPastpay extends RetinaAction
         return $this->handle($order, $this->validatedData);
     }
 
+    public string $commandSignature = 'test_success_pastpay';
+
     public function asCommand(): int
     {
         $order = Order::where('slug', 'awp31048')->first();
