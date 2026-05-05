@@ -11,7 +11,7 @@ import TablePhysicalGoods from "@/Components/Tables/Grp/Org/Fulfilment/TablePhys
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
-const props = defineProps<{
+defineProps<{
     pageHead: PageHeadingTypes
     title: string,
     data: {}
