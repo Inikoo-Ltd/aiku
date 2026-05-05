@@ -72,6 +72,7 @@ class CreateNewsletter extends OrgAction
                 ],
                 'formData'    => [
                     'fullLayout' => true,
+                    'submitLabel' => __('Continue'),
                     'blueprint'  =>
                     [
                         [

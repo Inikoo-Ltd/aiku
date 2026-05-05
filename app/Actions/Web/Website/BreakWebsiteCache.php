@@ -12,12 +12,25 @@ use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\OrgAction;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\ActionRequest;
 
-class BreakWebsiteCache extends OrgAction
+class BreakWebsiteCache extends OrgAction implements ShouldBeUniqueUntilProcessing
 {
+    public Website $website;
+
+    public function __construct(Website $website)
+    {
+        $this->website = $website;
+    }
+
+    public function uniqueId()
+    {
+        return 'website-'.$this->website->id;
+    }
+
     public function handle(Website $website, ?Command $command = null): Website
     {
         $key = config('iris.cache.website.prefix')."_$website->domain";
@@ -52,8 +65,8 @@ class BreakWebsiteCache extends OrgAction
 
     public function asCommand(Command $command): int
     {
-        $website = Website::where('slug', $command->argument('slug'))->first();
-        $this->handle($website, $command);
+        $this->website = Website::where('slug', $command->argument('slug'))->first();
+        $this->handle($this->website, $command);
 
         return 0;
     }

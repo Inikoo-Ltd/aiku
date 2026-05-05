@@ -19,10 +19,10 @@ class Search extends OrgAction
     public function handle(string $scope, string $query, array $options = []): array
     {
         $actions = [
-            'sysadmin'  => static fn() => SearchSysAdmin::run($query),
-            'catalogue' => static fn() => SearchCatalogue::run($query, $options),
-            'prospects' => static fn() => SearchProspects::run($query, $options),
-            'customers' => static fn() => SearchCustomers::run($query, $options),
+            'sysadmin'  => static fn () => SearchSysAdmin::run($query),
+            'catalogue' => static fn () => SearchCatalogue::run($query, $options),
+            'prospects' => static fn () => SearchProspects::run($query, $options),
+            'customers' => static fn () => SearchCustomers::run($query, $options),
         ];
 
         if (!isset($actions[$scope])) {
@@ -71,7 +71,7 @@ class Search extends OrgAction
             'grp.org.shops.show.crm.prospects' => 'prospects',
             'grp.org.shops.show.crm'           => 'customers',
         ];
-        return array_find($scopes, fn($scope, $prefix) => str_starts_with($route, $prefix));
+        return array_find($scopes, fn ($scope, $prefix) => str_starts_with($route, $prefix));
     }
 
 }

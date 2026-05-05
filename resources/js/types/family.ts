@@ -5,6 +5,7 @@
  */
 
 export interface Family {
+	id: number
 	slug: string
 	shop_slug: string
 	shop_code: string

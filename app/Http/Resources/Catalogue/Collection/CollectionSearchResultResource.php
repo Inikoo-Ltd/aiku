@@ -23,6 +23,7 @@ class CollectionSearchResultResource extends JsonResource
 
         return [
             'id'    => $collection->id,
+            'slug'  => $collection->slug,
             'code'  => $collection->code,
             'name'  => $collection->name,
             'image' => Arr::get($collection->web_images, 'main.thumbnail'),

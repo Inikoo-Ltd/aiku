@@ -5,6 +5,7 @@ namespace App\Actions\Web\Redirect;
 use App\Actions\OrgAction;
 use App\Actions\Web\Redirect\Traits\WithStoreRedirect;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
+use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -40,6 +41,7 @@ class StoreRedirectFromWebsite extends OrgAction
         if ($redirectedWebpage) {
             WebpageHydrateRedirects::run($redirectedWebpage);
         }
+        BreakWebsiteCache::dispatch($website)->delay(now()->addMinute(1));
 
         return $redirect;
     }
