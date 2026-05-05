@@ -207,9 +207,13 @@ const borderWidth = computed(() => {
                 </div>
             </div>
             
+            <!-- Section: List additional links -->
             <div class="mb-8 ">
-                <!-- Section: List additional links -->
-                <div v-if="props?.fieldValue?.additional_items?.items_list?.length" class="flex flex-col gap-y-3 pb-3 mb-3 xborder-b xborder-gray-300">
+                <div v-if="layout.iris.isSidebarLoading" class="flex flex-col gap-y-3 mb-3 pb-3">
+                    <div v-for="i in 2" class="w-full h-[1.9rem] skeleton" />
+                </div>
+
+                <div v-else-if="props?.fieldValue?.additional_items?.items_list?.length" class="flex flex-col gap-y-3 pb-3 mb-3">
                     <LinkIris v-for="item in props?.fieldValue?.additional_items?.items_list"
                         :href="item?.url?.href ?? ''"
                         class="flex gap-x-2 items-center py-1 hover:underline"

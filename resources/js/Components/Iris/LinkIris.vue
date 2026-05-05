@@ -75,7 +75,7 @@ const resolvedHref = computed<string | null>(() => {
   const href = computedHref.value
   if (!href) return null
 
-  if (href.startsWith("/#")) {
+  if (href.startsWith("#")) {
     return href.slice(1) // "#section"
   }
 
