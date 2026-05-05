@@ -3,7 +3,7 @@
 /*
  * author Louis Perez
  * created on 17-03-2026-09h-01m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
@@ -49,7 +49,6 @@ class WebsiteReHydrateFamilyWebpage implements ShouldBeUnique
             $countFamilyDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'family-1');
             if (count($countFamilyDescriptionBlock) == 0) {
                 $this->createWebBlock($webpage, 'family-1');
-
                 $this->deleteWebBlocksByCode($webpage, 'family-2');
                 $this->deleteWebBlocksByCode($webpage, 'family-2-extra-description');
                 $this->deleteWebBlocksByCode($webpage, 'family-3');
@@ -60,7 +59,6 @@ class WebsiteReHydrateFamilyWebpage implements ShouldBeUnique
             if (count($countFamilyDescriptionBlock) == 0) {
                 $this->createWebBlock($webpage, 'family-2');
                 $this->createWebBlock($webpage, 'family-2-extra-description');
-                
                 $this->deleteWebBlocksByCode($webpage, 'family-1');
                 $this->deleteWebBlocksByCode($webpage, 'family-3');
                 $this->deleteWebBlocksByCode($webpage, 'family-3-extra-description');
@@ -70,7 +68,6 @@ class WebsiteReHydrateFamilyWebpage implements ShouldBeUnique
             if (count($countFamilyDescriptionBlock) == 0) {
                 $this->createWebBlock($webpage, 'family-3');
                 $this->createWebBlock($webpage, 'family-3-extra-description');
-                
                 $this->deleteWebBlocksByCode($webpage, 'family-1');
                 $this->deleteWebBlocksByCode($webpage, 'family-2');
                 $this->deleteWebBlocksByCode($webpage, 'family-2-extra-description');

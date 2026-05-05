@@ -68,19 +68,19 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $can_contact_by_address
  * @property array<array-key, mixed> $data
  * @property string|null $contacted_at
- * @property \Illuminate\Support\Carbon|null $last_contacted_at
- * @property \Illuminate\Support\Carbon|null $last_opened_at
- * @property \Illuminate\Support\Carbon|null $last_clicked_at
- * @property \Illuminate\Support\Carbon|null $dont_contact_me_at
- * @property \Illuminate\Support\Carbon|null $failed_at
- * @property \Illuminate\Support\Carbon|null $registered_at
- * @property \Illuminate\Support\Carbon|null $invoiced_at
- * @property \Illuminate\Support\Carbon|null $last_soft_bounced_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $last_contacted_at
+ * @property Carbon|null $last_opened_at
+ * @property Carbon|null $last_clicked_at
+ * @property Carbon|null $dont_contact_me_at
+ * @property Carbon|null $failed_at
+ * @property Carbon|null $registered_at
+ * @property Carbon|null $invoiced_at
+ * @property Carbon|null $last_soft_bounced_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $delete_comment
  * @property string|null $source_id
  * @property bool $is_opt_in

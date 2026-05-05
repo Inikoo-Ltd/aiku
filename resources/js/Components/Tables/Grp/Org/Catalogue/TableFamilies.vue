@@ -24,7 +24,7 @@ import Image from "@/Components/Image.vue"
 
 library.add(faCheck)
 
-const props = defineProps<{
+defineProps<{
     data: object
     tab?: string,
     routes: {
@@ -95,7 +95,7 @@ function familyRoute(family: Family) {
         default:
             return route(
                 'grp.helpers.redirect_product_category',
-                [family.slug])
+                [family.id])
 
     }
 }

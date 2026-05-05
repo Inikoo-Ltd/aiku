@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\Helpers\Media;
 use App\Actions\Helpers\Images\GetPictureSources;
@@ -49,12 +50,13 @@ use Illuminate\Support\Arr;
  * @property mixed $image_id
  * @property mixed $currency_code
  * @property mixed $health_rank
+ * @property mixed $webpage_state
  */
 class FamiliesResource extends JsonResource
 {
     public function toArray($request): array
     {
-        /** @var \App\Models\Catalogue\ProductCategory $department */
+        /** @var ProductCategory $department */
         $imageSources = null;
         $media        = Media::find($this->image_id);
         if ($media) {

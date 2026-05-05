@@ -56,7 +56,7 @@ const props = defineProps<{
                         <Link
                             v-for="category in results.product_categories"
                             :key="category.id"
-                            :href="route('grp.helpers.redirect_product_category', { productCategory: category.slug })"
+                            :href="route('grp.helpers.redirect_product_category', { productCategory: category.id })"
                             class="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer group"
                         >
                             <div class="w-8 h-8 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
@@ -75,7 +75,7 @@ const props = defineProps<{
                         <Link
                             v-for="collection in results.collections"
                             :key="collection.id"
-                            :href="route('grp.helpers.redirect_product_category', { productCategory: collection.slug })"
+                            :href="route('grp.helpers.redirect_collection', { productCategory: collection.id })"
                             class="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer group"
                         >
                             <div class="w-8 h-8 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
