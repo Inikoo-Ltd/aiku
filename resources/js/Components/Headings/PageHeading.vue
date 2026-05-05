@@ -33,7 +33,7 @@ import Action from "@/Components/Forms/Fields/Action.vue"
 import SubNavigation from "@//Components/Navigation/SubNavigation.vue"
 import { kebabCase } from "lodash-es"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { faNarwhal, faReceipt } from "@fas"
+import { faNarwhal, faReceipt, faWarehouseAlt } from "@fas"
 import { faLayerPlus } from "@far"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { inject, ref } from "vue"
@@ -66,7 +66,8 @@ library.add(
     faPause,
     faPlay,
 	faStore,
-	faExchange
+	faExchange,
+	faWarehouseAlt
 )
 
 const props = defineProps<{

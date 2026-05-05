@@ -37,12 +37,12 @@ class ReturnDeliveryNote extends Model implements Auditable
     protected $table = 'return_delivery_notes';
 
     protected $casts = [
-        'return_state'         => ReturnDeliveryNoteStateEnum::class,
-        'queued_at'     => 'datetime',
-        'handling_at'   => 'datetime',
-        'picked_at'     => 'datetime',
-        'received_at'   => 'datetime',
-        'cancelled_at'  => 'datetime',
+        'return_state'          => ReturnDeliveryNoteStateEnum::class,
+        'queued_at'             => 'datetime',
+        'handling_at'           => 'datetime',
+        'picked_at'             => 'datetime',
+        'received_at'           => 'datetime',
+        'cancelled_at'          => 'datetime',
     ];
 
     protected $attributes = [
@@ -68,7 +68,7 @@ class ReturnDeliveryNote extends Model implements Auditable
             ->saveSlugsTo('slug')
             ->doNotGenerateSlugsOnUpdate();
     }
-    
+
     public function getRouteKeyName(): string
     {
         return 'slug';
@@ -93,7 +93,7 @@ class ReturnDeliveryNote extends Model implements Auditable
     {
         return $this->hasMany(ReturnDeliveryNoteItem::class);
     }
-    
+
     public function picker(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'picker_id');

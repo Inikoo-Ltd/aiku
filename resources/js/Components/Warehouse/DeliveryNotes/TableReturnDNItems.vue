@@ -533,6 +533,38 @@ const onSetItemToUndoWaitingWarehouse = () => {
             </div>
         </template>
 
+        <template #cell(expected_quantity)="{ item }">
+            <span v-tooltip="item.quantity_required">
+                <FractionDisplay v-if="item.expected_quantity_fractional"
+                    :fractionData="item.expected_quantity_fractional" />
+                <span v-else>{{ item.expected_quantity }}</span>
+            </span>
+        </template>
+
+        <template #cell(total_item_damaged)="{ item }">
+            <span v-tooltip="item.quantity_required">
+                <FractionDisplay v-if="item.total_item_damaged_fractional"
+                    :fractionData="item.total_item_damaged_fractional" />
+                <span v-else>{{ item.total_item_damaged }}</span>
+            </span>
+        </template>
+        
+        <template #cell(total_item_lost)="{ item }">
+            <span v-tooltip="item.quantity_required">
+                <FractionDisplay v-if="item.total_item_lost_fractional"
+                    :fractionData="item.total_item_lost_fractional" />
+                <span v-else>{{ item.total_item_lost }}</span>
+            </span>
+        </template>
+
+        <template #cell(total_item_returned)="{ item }">
+            <span v-tooltip="item.quantity_required">
+                <FractionDisplay v-if="item.total_item_returned_fractional"
+                    :fractionData="item.total_item_returned_fractional" />
+                <span v-else>{{ item.total_item_returned }}</span>
+            </span>
+        </template>
+
         <!-- Section: Pickings -->
         <template #cell(picking_locations)="{ item }">
             <div v-if="item.picking_locations && item.picking_locations.length > 0" class="flex flex-col gap-1">

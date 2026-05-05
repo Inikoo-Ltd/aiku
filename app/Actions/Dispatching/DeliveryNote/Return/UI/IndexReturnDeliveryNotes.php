@@ -9,12 +9,9 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\Return\UI;
 
-use App\Actions\Dispatching\DeliveryNote\UI\IsDeliveryNotesIndex;
-use App\Actions\Dispatching\DeliveryNote\UI\WithDeliveryNotesSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
-use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\Http\Resources\Dispatching\ReturnDeliveryNotesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\WebUser;
@@ -52,15 +49,15 @@ class IndexReturnDeliveryNotes extends OrgAction
         $query->leftJoin('organisations', 'return_delivery_notes.organisation_id', '=', 'organisations.id');
         $query->leftJoin('shops', 'return_delivery_notes.shop_id', '=', 'shops.id');
         $query->leftJoin('delivery_notes', 'return_delivery_notes.delivery_note_id', '=', 'delivery_notes.id');
-        
+
         $query->where('shops.is_aiku', true);
 
         $allowedFilters = [$globalSearch];
-        
+
         $selectColumns = [
             'return_delivery_notes.id',
             'return_delivery_notes.reference',
-            'return_delivery_notes.queued_at as date',
+            'return_delivery_notes.created_at as date',
             'return_delivery_notes.return_state',
             'return_delivery_notes.created_at',
             'return_delivery_notes.updated_at',
@@ -92,10 +89,10 @@ class IndexReturnDeliveryNotes extends OrgAction
         //     $subNavigation = $this->getDeliveryNotesSubNavigation($this->shopType);
         // }
 
-        $title      = __('Returned Delivery notes');
+        $title      = __('Returned Delivery Notes');
         $model      = '';
         $icon       = [
-            'icon'  => ['fal', 'fa-truck'],
+            'icon'  => ['fal', 'fa-exchange'],
             'title' => $title
         ];
         $afterTitle = null;
@@ -105,12 +102,12 @@ class IndexReturnDeliveryNotes extends OrgAction
         if ($this->parent instanceof Warehouse) {
             $icon      = ['fal', 'fa-arrow-from-left'];
             $iconRight = [
-                'icon' => 'fal fa-truck',
+                'icon' => 'fal fa-exchange',
             ];
             $model     = __('Goods Out');
         }
 
-        
+
         return Inertia::render(
             'Org/Dispatching/DeliveryNotes',
             [
@@ -185,7 +182,7 @@ class IndexReturnDeliveryNotes extends OrgAction
         return $this->handle(parent: $warehouse, bucket: $this->bucket, isReturn: true);
     }
 
-    /** @noinspection PhpUnusedParameterInspection */   
+    /** @noinspection PhpUnusedParameterInspection */
     // public function inWarehouseShopTypes(Organisation $organisation, Warehouse $warehouse, string $shopType, ActionRequest $request): LengthAwarePaginator
     // {
     //     $this->parent = $warehouse;

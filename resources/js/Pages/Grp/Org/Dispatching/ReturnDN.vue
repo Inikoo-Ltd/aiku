@@ -14,6 +14,8 @@ import { Tabs as TSTabs } from '@/types/Tabs'
 import Timeline from '@/Components/Utils/Timeline.vue'
 import BoxNote from '@/Components/Pallet/BoxNote.vue'
 import TableReturnDNItems from '@/Components/Warehouse/DeliveryNotes/TableReturnDNItems.vue'
+import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
+import BoxStatsDeliveryNote from '@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue'
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
 
@@ -25,6 +27,7 @@ const props = defineProps<{
     delivery_note: {
         state: string
     }
+	box_stats: {}
 	returned_delivery_note_state: {
 		value: string
 		label: string
@@ -46,6 +49,9 @@ const props = defineProps<{
 	allow_waiting: boolean
 	allow_picker_set_not_picked: boolean
 	showChangePickerPacker: boolean
+	items: {}
+	pending_items?: {}
+	done_items?: {}
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -54,7 +60,10 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
 
     const components: Component = {
-        return_delivery_note: TableReturnDNItems
+        items: TableReturnDNItems,
+        pending_items: TableReturnDNItems,
+        done_items: TableReturnDNItems,
+		history: TableHistories,
     }
 
     return components[currentTab.value]
@@ -67,7 +76,6 @@ const component = computed(() => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
 	<!-- Section: Box Note (TODO: update the routes ) -->
 	<div
@@ -102,6 +110,16 @@ const component = computed(() => {
 			:format-time="'MMMM d yyyy, HH:mm'" />
 	</div>
 
+	<BoxStatsDeliveryNote
+		v-if="box_stats"
+		:showChangePickerPacker="showChangePickerPacker"
+		:boxStats="box_stats"
+		:routes
+		:deliveryNote="delivery_note"
+		:updateRoute="routes.update"
+	/>
+
+    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <component
 		:is="component"
 		:data="props[currentTab as keyof typeof props]"

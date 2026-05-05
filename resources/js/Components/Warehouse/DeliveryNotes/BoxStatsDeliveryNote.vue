@@ -525,9 +525,8 @@ console.log(layout)
                             </dl>
                         </div>
 
-
                         <FontAwesomeIcon
-                            v-if="boxStats?.picker?.id != layout?.user?.id && ['queued', 'packed', 'handling', 'packing'].includes(deliveryNote?.state)"
+                            v-if="boxStats?.picker?.id && boxStats?.picker?.id != layout?.user?.id && ['queued', 'packed', 'handling', 'packing'].includes(deliveryNote?.state)"
                             v-tooltip="allowActions ? trans('Delivery note unlocked') : trans('Locked, only assigned picker can process this delivery note')"
                             class="cursor-pointer focus:outline-none"
                             :icon="allowActions ? faLockOpen : faLock"

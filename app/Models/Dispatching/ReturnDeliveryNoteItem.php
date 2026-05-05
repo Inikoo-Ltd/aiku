@@ -11,11 +11,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ReturnDeliveryNoteItem extends Model
 {
     use InShop;
-    
+
     protected $table = 'return_delivery_note_items';
 
     protected $casts = [
-        'state'         => ReturnDeliveryNoteItemStateEnum::class,
+        'return_state'  => ReturnDeliveryNoteItemStateEnum::class,
         'handled_at'    => 'datetime',
         'processed_at'  => 'datetime',
         'cancelled_at'  => 'datetime',

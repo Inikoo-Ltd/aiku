@@ -17,11 +17,11 @@ enum ReturnDeliveryNoteStateEnum: string
 
     // Block to do
     case QUEUED = 'queued';
-    case UNASSIGNED = 'unassigned';
+    // case UNASSIGNED = 'unassigned';
 
     // Block Picking
     case HANDLING = 'handling';
-    case PICKED = 'picked';
+    // case PICKED = 'picked';
 
     // Block Received
     case RECEIVED = 'received';
@@ -32,9 +32,9 @@ enum ReturnDeliveryNoteStateEnum: string
     {
         return [
             'queued'           => __('Waiting to Receive'),
-            'unassigned'       => __('To do'),
+            // 'unassigned'       => __('In Warehouse'),
             'handling'         => __('Picking'),
-            'picked'           => __('Picked'),
+            // 'picked'           => __('Picked'),
             'received'         => __('Received'),
             'cancelled'        => __('Cancelled')
         ];
@@ -73,16 +73,16 @@ enum ReturnDeliveryNoteStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'picked'           => [
-                'tooltip' => __('Picked'),
-                'icon'    => 'fal fa-check',
-                'class'   => 'text-indigo-500',
-                'color'   => 'indigo',
-                'app'     => [
-                    'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
-            ],
+            // 'picked'           => [
+            //     'tooltip' => __('Picked'),
+            //     'icon'    => 'fal fa-check',
+            //     'class'   => 'text-indigo-500',
+            //     'color'   => 'indigo',
+            //     'app'     => [
+            //         'name' => 'check',
+            //         'type' => 'font-awesome-5'
+            //     ]
+            // ],
             'received' => [
                 'tooltip' => __('Received'),
                 'icon'    => 'fal fa-check-double',

@@ -3,7 +3,6 @@
 namespace App\Actions\Dispatching\DeliveryNote\Return;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\ReturnDeliveryNote;
 
@@ -19,12 +18,11 @@ class StoreReturnDeliveryNote extends OrgAction
         data_set($modelData, 'delivery_note_id', $deliveryNote->id, false);
         data_set($modelData, 'order_id', $deliveryNote->orders()->first()->id);
         data_set($modelData, 'reference', $deliveryNote->reference);
-        data_set($modelData, 'queued_at', now());
 
         return $deliveryNote->returnedDeliveryNote()->create($modelData);
     }
 
-    public function rules() :array
+    public function rules(): array
     {
         return [
 
