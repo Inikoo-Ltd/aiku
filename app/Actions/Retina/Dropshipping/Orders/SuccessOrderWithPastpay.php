@@ -35,7 +35,7 @@ class SuccessOrderWithPastpay
     use WithPastpayConfiguration;
     use WithChargeTransactions;
 
-    public function handle(Order $order, array $modelData): array
+    public function handle(Order $order, array $modelData): string
     {
         /** @var PaymentAccountShop $paymentAccountShop */
         $paymentAccountShop = $order->shop->paymentAccountShops()
@@ -52,12 +52,7 @@ class SuccessOrderWithPastpay
 
         $chargeAmount = Arr::get($order->data, 'pastpay.charges');
         $toPay = $paymentAmounts['total'] + $chargeAmount;
-
         $toPay = (int) round((float) $toPay * 100);
-
-        if ($toPay == 0) {
-            return ['status' => 'ok'];
-        }
 
         try {
             $amount = $toPay / 100;
@@ -91,6 +86,8 @@ class SuccessOrderWithPastpay
             ]);
 
             $result = ['status' => 'ok'];
+
+            return route('retina.orders.show', $order->slug);
         } catch (\Exception $e) {
             $result = [
                 'debug'            => 'SuccessOrderWithPastpay.php',
@@ -101,7 +98,7 @@ class SuccessOrderWithPastpay
             ];
         }
 
-        return $result;
+        return json_encode($result);
     }
 
     public function asCommand(): int

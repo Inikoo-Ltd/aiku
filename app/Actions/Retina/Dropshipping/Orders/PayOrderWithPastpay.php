@@ -58,9 +58,11 @@ class PayOrderWithPastpay extends RetinaAction
         }
 
         try {
+            $amount = $toPay / 100;
+
             $response = $this->pastpayInitiateOrder($order, [
                 'totalPrice'       => [
-                    'amount' => (float) $toPay,
+                    'amount' => (float) $amount,
                     'currency' => $order->currency->code
                 ],
                 'termDays' => Arr::get($modelData, 'days', 30),
