@@ -7,10 +7,10 @@
  * copyright 2026
 */
 
-namespace App\Http\Resources\Dispatching;
+namespace App\Http\Resources\Procurement;
 
 use App\Http\Resources\HasSelfCall;
-use App\Models\Dispatching\ReturnDeliveryNote;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ReturnDeliveryNoteResource extends JsonResource

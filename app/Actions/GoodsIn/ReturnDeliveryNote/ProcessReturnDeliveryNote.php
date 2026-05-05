@@ -7,12 +7,11 @@
  * copyright 2026
 */
 
-namespace App\Actions\Dispatching\DeliveryNote\Return;
+namespace App\Actions\GoodsIn\ReturnDeliveryNote;
 
-use App\Actions\Dispatching\DeliveryNoteItem\Return\StoreReturnDeliveryNoteItems;
+use App\Actions\GoodsIn\ReturnDeliveryNoteItem\StoreReturnDeliveryNoteItems;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Enums\Dispatching\DeliveryNote\Return\ReturnDeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Validator;

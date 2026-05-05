@@ -6,7 +6,6 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Dispatching\DeliveryNote\Return\ProcessReturnDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\SaveDeliveryNoteShippingFieldsAndRetryStoreShipping;
 use App\Actions\Dispatching\DeliveryNote\UndispatchDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
@@ -36,6 +35,7 @@ use App\Actions\Dispatching\Trolley\ChangeTrolleyDeliveryNote;
 use App\Actions\Dispatching\Trolley\DetachTrolleyFromDeliveryNote;
 use App\Actions\Dispatching\Trolley\SyncDeliveryNoteTrolleys;
 use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
+use App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote;
 use Illuminate\Support\Facades\Route;
 
 Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(function () {

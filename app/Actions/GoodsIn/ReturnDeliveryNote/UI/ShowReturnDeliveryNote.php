@@ -7,32 +7,33 @@
  * copyright 2026
 */
 
-namespace App\Actions\Dispatching\DeliveryNote\Return\UI;
+namespace App\Actions\GoodsIn\ReturnDeliveryNote\UI;
 
-use App\Actions\Dispatching\DeliveryNoteItem\Return\IndexReturnDeliveryNoteItems;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
+use App\Actions\GoodsIn\ReturnDeliveryNoteItem\IndexReturnDeliveryNoteItems;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\UI\WithInertia;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Dispatching\DeliveryNote\Return\ReturnDeliveryNoteStateEnum;
-use App\Enums\Dispatching\DeliveryNoteItem\Return\ReturnDeliveryNoteItemStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Http\Resources\CRM\CustomerResource;
-use App\Http\Resources\Dispatching\ReturnDeliveryNoteItemsResource;
-use App\Http\Resources\Dispatching\ReturnDeliveryNoteResource;
 use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Ordering\PickersResource;
+use App\Http\Resources\Procurement\ReturnDeliveryNoteItemsResource;
+use App\Http\Resources\Procurement\ReturnDeliveryNoteResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\Dispatching\ReturnDeliveryNote;
-use App\Models\Dispatching\ReturnDeliveryNoteItem;
+use App\Models\GoodsIn\ReturnDeliveryNote;
+use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use App\Models\Helpers\Address;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
@@ -93,7 +94,7 @@ class ShowReturnDeliveryNote extends OrgAction
 
         if (in_array($returnDeliveryNote->return_state, [
             ReturnDeliveryNoteStateEnum::CANCELLED,
-            ReturnDeliveryNoteStateEnum::RECEIVED
+            ReturnDeliveryNoteStateEnum::RETURNED
         ])) {
             $showCancel = false;
         }
@@ -130,17 +131,17 @@ class ShowReturnDeliveryNote extends OrgAction
         }
 
         return match ($returnDeliveryNote->return_state) {
-            ReturnDeliveryNoteStateEnum::QUEUED => [
+            ReturnDeliveryNoteStateEnum::RECEIVED => [
                 [
                     'type'    => 'button',
                     'style'   => 'save',
                     'icon'    => 'fas fa-warehouse-alt',
-                    'tooltip' => __('Mark this return as in warehouse'),
-                    'label'   => __('Mark as In Warehouse'),
+                    'tooltip' => __('Process this Return'),
+                    'label'   => __('Set as Returning'),
                     'key'     => 'start-picking',
                     'route'   => [
                         'method'        => 'patch',
-                        'name'          => 'grp.models.return_delivery_note.state.handling',
+                        'name'          => 'grp.models.return_delivery_note.state.returning',
                         'parameters'    =>  [
                             'returnDeliveryNote'    => $returnDeliveryNote->id
                         ]
@@ -283,7 +284,7 @@ class ShowReturnDeliveryNote extends OrgAction
             $timestamp = $timestamp ?: null;
 
             $timestamp = match ($case) {
-                ReturnDeliveryNoteStateEnum::QUEUED => $returnDeliveryNote->created_at,
+                ReturnDeliveryNoteStateEnum::RECEIVED => $returnDeliveryNote->created_at,
                 default => $timestamp ?: null
             };
 
@@ -383,8 +384,8 @@ class ShowReturnDeliveryNote extends OrgAction
             // 'warning'       => $warning,
             // 'isEditable'    => $isEditable,
             'tabs'          => [
-                'current'    => $returnDeliveryNote->return_state == ReturnDeliveryNoteStateEnum::HANDLING ? DeliveryNoteTabsEnum::PENDING_ITEMS->value : $this->tab,
-                'navigation' => $returnDeliveryNote->return_state == ReturnDeliveryNoteStateEnum::HANDLING
+                'current'    => $returnDeliveryNote->return_state !== ReturnDeliveryNoteStateEnum::RECEIVED ? DeliveryNoteTabsEnum::PENDING_ITEMS->value : $this->tab,
+                'navigation' => $returnDeliveryNote->return_state !== ReturnDeliveryNoteStateEnum::RECEIVED
                     ?
                     DeliveryNoteTabsEnum::navigation($returnDeliveryNote)
                     :
@@ -472,7 +473,7 @@ class ShowReturnDeliveryNote extends OrgAction
         );
 
         $inertiaResponse->table(IndexReturnDeliveryNoteItems::make()->tableStructure($returnDeliveryNote, DeliveryNoteTabsEnum::ITEMS->value));
-        if ($returnDeliveryNote->return_state == ReturnDeliveryNoteStateEnum::HANDLING) {
+        if ($returnDeliveryNote->return_state == ReturnDeliveryNoteStateEnum::RETURNING) {
             $inertiaResponse->table(IndexReturnDeliveryNoteItems::make()->tableStructure($returnDeliveryNote, DeliveryNoteTabsEnum::PENDING_ITEMS->value));
             $inertiaResponse->table(IndexReturnDeliveryNoteItems::make()->tableStructure($returnDeliveryNote, DeliveryNoteTabsEnum::DONE_ITEMS->value));
         }
@@ -489,7 +490,7 @@ class ShowReturnDeliveryNote extends OrgAction
                 : Inertia::lazy(fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
         ];
 
-        if ($returnDeliveryNote->return_state == ReturnDeliveryNoteStateEnum::HANDLING) {
+        if ($returnDeliveryNote->return_state == ReturnDeliveryNoteStateEnum::RETURNING) {
             $initArr = array_merge($initArr, [
                 DeliveryNoteTabsEnum::PENDING_ITEMS->value => $this->tab == DeliveryNoteTabsEnum::PENDING_ITEMS->value ?
                     fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::PENDING_ITEMS->value, ReturnDeliveryNoteItemStateEnum::HANDLING))
@@ -572,20 +573,20 @@ class ShowReturnDeliveryNote extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.warehouses.show.dispatching.return-delivery-notes.show'
+            'grp.org.warehouses.show.incoming.return-delivery-notes.show'
             => array_merge(
-                ShowWarehouse::make()->getBreadcrumbs(
+                ShowProcurementDashboard::make()->getBreadcrumbs(
                     Arr::only($routeParameters, ['organisation', 'warehouse'])
                 ),
                 $headCrumb(
                     $returnDeliveryNote,
                     [
                         'index' => [
-                            'name'       => 'grp.org.warehouses.show.dispatching.return-delivery-notes',
+                            'name'       => 'grp.org.warehouses.show.incoming.return-delivery-notes',
                             'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse'])
                         ],
                         'model' => [
-                            'name'       => 'grp.org.warehouses.show.dispatching.return-delivery-notes.show',
+                            'name'       => 'grp.org.warehouses.show.incoming.return-delivery-notes.show',
                             'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse', 'returnDeliveryNote'])
                         ]
                     ],

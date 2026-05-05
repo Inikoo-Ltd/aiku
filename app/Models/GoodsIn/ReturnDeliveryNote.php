@@ -7,9 +7,10 @@
  * copyright 2026
 */
 
-namespace App\Models\Dispatching;
+namespace App\Models\GoodsIn;
 
-use App\Enums\Dispatching\DeliveryNote\Return\ReturnDeliveryNoteStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\HumanResources\Employee;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;

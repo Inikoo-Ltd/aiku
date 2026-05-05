@@ -7,20 +7,22 @@
  * copyright 2026
 */
 
-namespace App\Actions\Dispatching\DeliveryNote\Return\UI;
+namespace App\Actions\GoodsIn\ReturnDeliveryNote\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
-use App\Http\Resources\Dispatching\ReturnDeliveryNotesResource;
+use App\Http\Resources\Procurement\ReturnDeliveryNotesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\WebUser;
-use App\Models\Dispatching\ReturnDeliveryNote;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -211,12 +213,13 @@ class IndexReturnDeliveryNotes extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.warehouses.show.dispatching.return-delivery-notes' =>
-            array_merge(
-                ShowDispatchHub::make()->getBreadcrumbs($routeParameters),
+            'grp.org.warehouses.show.incoming.return-delivery-notes'=> array_merge(
+                ShowProcurementDashboard::make()->getBreadcrumbs(
+                    Arr::only($routeParameters, ['organisation', 'warehouse'])
+                ),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.warehouses.show.dispatching.return-delivery-notes',
+                        'name'       => 'grp.org.warehouses.show.incoming.return-delivery-notes',
                         'parameters' => $routeParameters
                     ]
                 )

@@ -9,7 +9,7 @@
 namespace App\Enums;
 
 use App\Models\Dispatching\DeliveryNote;
-use App\Models\Dispatching\ReturnDeliveryNote;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 
 trait HasTabsWithIndicator
 {

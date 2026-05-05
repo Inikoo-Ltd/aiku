@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\Dispatching\DeliveryNote\Return\ReturnDeliveryNoteStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Stubs\Migrations\HasGroupOrganisationRelationship;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -41,7 +41,7 @@ return new class extends Migration
             $table->unsignedSmallInteger('packer_user_id')->nullable()->index();
             $table->foreign('packer_user_id')->references('id')->on('users');
 
-            $table->string('return_state')->default(ReturnDeliveryNoteStateEnum::QUEUED->value);
+            $table->string('return_state');
 
             $table->dateTimeTz('queued_at')->nullable();
             $table->dateTimeTz('handling_at')->nullable();

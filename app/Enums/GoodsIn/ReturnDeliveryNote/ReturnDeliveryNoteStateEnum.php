@@ -7,7 +7,7 @@
  * copyright 2026
 */
 
-namespace App\Enums\Dispatching\DeliveryNote\Return;
+namespace App\Enums\GoodsIn\ReturnDeliveryNote;
 
 use App\Enums\EnumHelperTrait;
 
@@ -26,7 +26,7 @@ enum ReturnDeliveryNoteStateEnum: string
     {
         return [
             'received'           => __('Received'),
-            'returning'         => __('Returning to locations'),
+            'returning'         => __('Returning to Locations'),
             'returned'         => __('Returned'),
             'cancelled'        => __('Cancelled')
         ];
@@ -35,28 +35,18 @@ enum ReturnDeliveryNoteStateEnum: string
     public static function stateIcon(): array
     {
         return [
-            'queued'           => [
-                'tooltip' => __('Waiting to Receive'),
-                'icon'    => 'fal fa-clock',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
-                'app'     => [
-                    'name' => 'clock',
-                    'type' => 'font-awesome-5'
-                ]
-            ],
-            'unassigned'       => [
-                'tooltip' => __('Unassigned'),
+            'received'           => [
+                'tooltip' => __('Received'),
                 'icon'    => 'fal fa-chair',
-                'class'   => 'text-gray-500',  // Color for normal icon (Aiku)
-                'color'   => 'gray',  // Color for box (Retina)
+                'class'   => 'text-gray-500', 
+                'color'   => 'gray',
                 'app'     => [
                     'name' => 'chair',
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'handling'         => [
-                'tooltip' => __('Handling'),
+            'returning'         => [
+                'tooltip' => __('Returning to Locations'),
                 'icon'    => 'fal fa-hand-paper',
                 'class'   => 'text-gray-500',
                 'color'   => 'gray',
@@ -65,8 +55,8 @@ enum ReturnDeliveryNoteStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            'received' => [
-                'tooltip' => __('Received'),
+            'returned' => [
+                'tooltip' => __('Returned'),
                 'icon'    => 'fal fa-check-double',
                 'class'   => 'text-green-500',
                 'color'   => 'green',

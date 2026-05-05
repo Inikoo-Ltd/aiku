@@ -1,18 +1,18 @@
 <?php
 
-namespace App\Actions\Dispatching\DeliveryNote\Return;
+namespace App\Actions\GoodsIn\ReturnDeliveryNote;
 
-use App\Actions\Dispatching\DeliveryNoteItem\Return\UpdateReturnDeliveryNoteItem;
+use App\Actions\GoodsIn\ReturnDeliveryNoteItem\UpdateReturnDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dispatching\DeliveryNote\Return\ReturnDeliveryNoteStateEnum;
-use App\Enums\Dispatching\DeliveryNoteItem\Return\ReturnDeliveryNoteItemStateEnum;
-use App\Models\Dispatching\ReturnDeliveryNote;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
-class SetHandlingReturnDeliveryNote extends OrgAction
+class SetReturningReturnDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
 
@@ -20,21 +20,21 @@ class SetHandlingReturnDeliveryNote extends OrgAction
     {
         $oldState = $returnDeliveryNote->return_state;
 
-        if ($oldState !== ReturnDeliveryNoteStateEnum::QUEUED) {
+        if ($oldState !== ReturnDeliveryNoteStateEnum::RECEIVED) {
             throw ValidationException::withMessages([
                 'message' => __('Delivery note can not be handled.').' ['.__('Invalid state').': '.$oldState->value.']',
             ]);
         }
 
         data_set($modelData, 'handling_at', now());
-        data_set($modelData, 'return_state', ReturnDeliveryNoteStateEnum::HANDLING);
+        data_set($modelData, 'return_state', ReturnDeliveryNoteStateEnum::RETURNING);
 
         $returnDeliveryNote = DB::transaction(function () use ($returnDeliveryNote, $modelData) {
             $returnDeliveryNote = $this->update($returnDeliveryNote, $modelData);
 
             foreach ($returnDeliveryNote->returnDeliveryNoteItem as $item) {
                 UpdateReturnDeliveryNoteItem::make()->action($item, [
-                    'return_state'        => ReturnDeliveryNoteItemStateEnum::UNASSIGNED,
+                    'return_state'        => ReturnDeliveryNoteItemStateEnum::HANDLING,
                 ]);
             }
 

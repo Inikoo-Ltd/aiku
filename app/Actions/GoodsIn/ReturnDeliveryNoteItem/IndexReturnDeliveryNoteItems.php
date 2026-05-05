@@ -7,14 +7,14 @@
  * copyright 2026
 */
 
-namespace App\Actions\Dispatching\DeliveryNoteItem\Return;
+namespace App\Actions\GoodsIn\ReturnDeliveryNoteItem;
 
 use App\Actions\OrgAction;
-use App\Enums\Dispatching\DeliveryNote\Return\ReturnDeliveryNoteStateEnum;
-use App\Enums\Dispatching\DeliveryNoteItem\Return\ReturnDeliveryNoteItemStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
 use App\InertiaTable\InertiaTable;
-use App\Models\Dispatching\ReturnDeliveryNote;
-use App\Models\Dispatching\ReturnDeliveryNoteItem;
+use App\Models\GoodsIn\ReturnDeliveryNote;
+use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -116,13 +116,13 @@ class IndexReturnDeliveryNoteItems extends OrgAction
             //     $table->column(key: 'quantity_packed_readonly', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             // } else {
             $table->column(key: 'expected_quantity', label: __('Expected Qty'), canBeHidden: false, sortable: false, searchable: false);
-            if ($parent->return_state !== ReturnDeliveryNoteStateEnum::QUEUED) {
+            if ($parent->return_state !== ReturnDeliveryNoteStateEnum::RECEIVED) {
                 $table->column(key: 'total_item_damaged', label: __('Damaged'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'total_item_lost', label: __('Lost'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'total_item_returned', label: __('Returned'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             }
 
-            if (!in_array($parent->return_state, [ReturnDeliveryNoteStateEnum::QUEUED, ReturnDeliveryNoteStateEnum::CANCELLED])) {
+            if (!in_array($parent->return_state, [ReturnDeliveryNoteStateEnum::RECEIVED, ReturnDeliveryNoteStateEnum::CANCELLED])) {
                 $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false, className: 'w-[250px]');
             }
         };

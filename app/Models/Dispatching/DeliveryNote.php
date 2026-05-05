@@ -17,6 +17,7 @@ use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\GoodsIn\Sowing;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Feedback;

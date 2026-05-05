@@ -11,7 +11,7 @@ namespace App\Enums\UI\Dispatch;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabsWithIndicator;
 use App\Models\Dispatching\DeliveryNote;
-use App\Models\Dispatching\ReturnDeliveryNote;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 
 enum DeliveryNoteTabsEnum: string
 {

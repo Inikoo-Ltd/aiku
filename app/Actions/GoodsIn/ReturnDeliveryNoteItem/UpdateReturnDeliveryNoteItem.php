@@ -1,11 +1,18 @@
 <?php
 
-namespace App\Actions\Dispatching\DeliveryNoteItem\Return;
+/*
+ * author Louis Perez
+ * created on 05-05-2026-13h-37m
+ * github: https://github.com/louis-perez
+ * copyright 2026
+*/
+
+namespace App\Actions\GoodsIn\ReturnDeliveryNoteItem;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dispatching\DeliveryNoteItem\Return\ReturnDeliveryNoteItemStateEnum;
-use App\Models\Dispatching\ReturnDeliveryNoteItem;
+use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
+use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use Illuminate\Validation\Rule;
 
 class UpdateReturnDeliveryNoteItem extends OrgAction

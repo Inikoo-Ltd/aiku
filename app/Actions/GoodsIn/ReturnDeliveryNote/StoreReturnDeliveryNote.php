@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Actions\Dispatching\DeliveryNote\Return;
+namespace App\Actions\GoodsIn\ReturnDeliveryNote;
 
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
-use App\Models\Dispatching\ReturnDeliveryNote;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 
 class StoreReturnDeliveryNote extends OrgAction
 {

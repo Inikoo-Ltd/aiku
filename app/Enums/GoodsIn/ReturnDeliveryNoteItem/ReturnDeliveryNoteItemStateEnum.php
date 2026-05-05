@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Enums\Dispatching\DeliveryNoteItem\Return;
+namespace App\Enums\GoodsIn\ReturnDeliveryNoteItem;
 
 use App\Enums\EnumHelperTrait;
 

@@ -201,7 +201,18 @@ class GetWarehouseNavigation
                                 ],
                             ]
                         ] : null,
-
+                        $user->hasPermissionTo("incoming.$warehouse->id.view") ? [
+                            'label' => __('D.N. Returns'),
+                            'icon'  => ['fal', 'fa-exchange'],
+                            'root'  => 'grp.org.warehouses.show.incoming.return-delivery-notes',
+                            'route' => [
+                                "name"       => 'grp.org.warehouses.show.incoming.return-delivery-notes',
+                                "parameters" => [
+                                    $warehouse->organisation->slug,
+                                    $warehouse->slug
+                                ],
+                            ]
+                        ] : null
                     ]
                 ],
             ];
@@ -239,19 +250,6 @@ class GetWarehouseNavigation
                             'root'  => 'grp.org.warehouses.show.dispatching.delivery-notes',
                             'route' => [
                                 "name"       => "grp.org.warehouses.show.dispatching.delivery-notes",
-                                "parameters" => [
-                                    $warehouse->organisation->slug,
-                                    $warehouse->slug
-                                ],
-                            ]
-                        ] : null,
-                        $user->hasPermissionTo("dispatching.$warehouse->id.view") ?
-                        [
-                            'label' => __('D.N. Returns'),
-                            'icon'  => ['fal', 'fa-exchange'],
-                            'root'  => 'grp.org.warehouses.show.dispatching.return-delivery-notes',
-                            'route' => [
-                                "name"       => 'grp.org.warehouses.show.dispatching.return-delivery-notes',
                                 "parameters" => [
                                     $warehouse->organisation->slug,
                                     $warehouse->slug

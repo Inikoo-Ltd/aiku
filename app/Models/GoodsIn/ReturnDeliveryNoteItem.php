@@ -1,8 +1,16 @@
 <?php
 
-namespace App\Models\Dispatching;
+/*
+ * author Louis Perez
+ * created on 05-05-2026-13h-38m
+ * github: https://github.com/louis-perez
+ * copyright 2026
+*/
 
-use App\Enums\Dispatching\DeliveryNoteItem\Return\ReturnDeliveryNoteItemStateEnum;
+namespace App\Models\GoodsIn;
+
+use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;

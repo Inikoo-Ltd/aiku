@@ -1,9 +1,16 @@
 <?php
 
-namespace App\Http\Resources\Dispatching;
+/*
+ * author Louis Perez
+ * created on 05-05-2026-13h-40m
+ * github: https://github.com/louis-perez
+ * copyright 2026
+*/
+
+namespace App\Http\Resources\Procurement;
 
 use App\Http\Resources\HasSelfCall;
-use App\Models\Dispatching\ReturnDeliveryNoteItem;
+use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 

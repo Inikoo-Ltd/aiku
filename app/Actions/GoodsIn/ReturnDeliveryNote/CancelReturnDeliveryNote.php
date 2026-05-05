@@ -1,13 +1,20 @@
 <?php
 
-namespace App\Actions\Dispatching\DeliveryNote\Return;
+/*
+ * author Louis Perez
+ * created on 05-05-2026-13h-35m
+ * github: https://github.com/louis-perez
+ * copyright 2026
+*/
 
-use App\Actions\Dispatching\DeliveryNoteItem\Return\UpdateReturnDeliveryNoteItem;
+namespace App\Actions\GoodsIn\ReturnDeliveryNote;
+
+use App\Actions\GoodsIn\ReturnDeliveryNoteItem\UpdateReturnDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dispatching\DeliveryNote\Return\ReturnDeliveryNoteStateEnum;
-use App\Enums\Dispatching\DeliveryNoteItem\Return\ReturnDeliveryNoteItemStateEnum;
-use App\Models\Dispatching\ReturnDeliveryNote;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
