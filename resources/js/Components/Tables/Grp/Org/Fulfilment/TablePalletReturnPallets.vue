@@ -384,15 +384,22 @@ const generateLinkPallet = (pallet: any) => {
     }
 }
 
-const generateLocationRoute = (item: any, picking: any) => {
-    if (!picking?.location_slug) {
+const generateLocationRoute = (item: any, picking?: any) => {
+    const locationSlug = picking?.location_slug
+        ?? picking?.location
+        ?? item?.location_slug
+        ?? item?.location
+    const organisation = route().params["organisation"]
+    const warehouse = route().params["warehouse"]
+
+    if (!locationSlug || !organisation || !warehouse) {
         return null
     }
 
     return route("grp.org.warehouses.show.infrastructure.locations.show", [
-        route().params["organisation"],
-        route().params["warehouse"],
-        picking.location_slug
+        organisation,
+        warehouse,
+        locationSlug
     ])
 }
 </script>
@@ -482,8 +489,15 @@ const generateLocationRoute = (item: any, picking: any) => {
         <!-- Column: Location -->
 		<template #cell(location)="{ item: palletDelivery }">
       <!--   <pre>{{ palletDelivery }}</pre> -->
-            <Tag v-if="palletDelivery.location_code" :label="palletDelivery.location_code" />
-            <div v-else class="text-gray-400">-</div>
+            <Tag v-if="isFulfilmentOperationsPalletReturnPage && palletDelivery.location_code" :label="palletDelivery.location_code" />
+            <Link
+                v-else-if="generateLocationRoute(palletDelivery, palletDelivery)"
+                :href="generateLocationRoute(palletDelivery, palletDelivery)!"
+                class="secondaryLink"
+            >
+                {{ palletDelivery.location_code }}
+            </Link>
+            <div v-else class="text-gray-400">{{ palletDelivery.location_code || '-' }}</div>
 		</template>
 
         <!-- Column: Pickings -->
