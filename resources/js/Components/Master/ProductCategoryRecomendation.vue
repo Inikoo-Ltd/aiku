@@ -5,6 +5,7 @@ import { trans } from "laravel-vue-i18n";
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ListSelector from "@/Components/Selector.vue"
 import { router } from "@inertiajs/vue3";
+import { notify } from "@kyvg/vue3-notification";
 
 const props = defineProps<{
     data: any
@@ -22,7 +23,7 @@ const openAddProduct = () => {
     productDialog.value?.open()
 }
 
-const LoadingOrder = ref(false)
+const loadingOrder = ref(false)
 
 const SaveOrder = () => {
     router.patch(route('grp.models.master_product_category.related_assets.sync', {
@@ -31,7 +32,7 @@ const SaveOrder = () => {
         products: listProducts.value.data.map((product: any, index: number) => ({
             id: product.id,
             code : product.code,
-            index: product.index_under_family,
+            index: product.index_under_family || index,
         }))
     }, {
         preserveScroll: true,
