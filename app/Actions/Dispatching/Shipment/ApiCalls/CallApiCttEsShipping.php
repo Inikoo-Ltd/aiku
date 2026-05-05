@@ -22,25 +22,21 @@ class CallApiCttEsShipping extends OrgAction
     use AsAction;
     use WithAttributes;
 
-    private const TOKEN_CACHE_KEY_PREFIX = 'ctt_access_token:';
-    private const TOKEN_FALLBACK_TTL_SECONDS = 3600;
-    private const TOKEN_TTL_BUFFER_SECONDS = 120;
-    private const MANIFEST_LOCK_KEY_PREFIX = 'ctt_manifest_lock:';
-    private const MANIFEST_LOCK_TTL_SECONDS = 180;
+    private const string TOKEN_CACHE_KEY_PREFIX = 'ctt_access_token:';
+    private const int TOKEN_FALLBACK_TTL_SECONDS = 3600;
+    private const int TOKEN_TTL_BUFFER_SECONDS = 120;
+    private const string MANIFEST_LOCK_KEY_PREFIX = 'ctt_manifest_lock:';
+    private const int MANIFEST_LOCK_TTL_SECONDS = 180;
 
     public function getBaseUrl(): string
     {
-        $configuredBaseUrl = (string) config('services.ctt.base_url', '');
-
-        if ($configuredBaseUrl !== '') {
-            return rtrim($configuredBaseUrl, '/');
-        }
 
         if (app()->environment('production')) {
-            throw new \RuntimeException('CTT base URL is missing in production. Set services.ctt.base_url.');
+            //todo: return here production url
         }
-
         return 'https://api-test.cttexpress.com/integrations';
+
+
     }
 
     public function getAccessToken(bool $forceRefresh = false): string
@@ -68,7 +64,15 @@ class CallApiCttEsShipping extends OrgAction
 
     private function getTokenCacheKey(): string
     {
-        $signature = hash('sha256', $this->getBaseUrl().'|'.(string) config('services.ctt.client_id', ''));
+
+        if (app()->environment('production')) {
+            //todo: get this data from the DB
+            $cttClientId='';
+        }else{
+            $cttClientId= config('app.sandbox.shipper_ctt_es_client_id', '');
+        }
+
+        $signature = hash('sha256', $this->getBaseUrl().'|'.$cttClientId);
 
         return self::TOKEN_CACHE_KEY_PREFIX.$signature;
     }
@@ -80,14 +84,11 @@ class CallApiCttEsShipping extends OrgAction
 
     private function getClientCenterCode(): string
     {
-        $clientCenterCode = (string) config('services.ctt.client_center_code', '');
-
-        if ($clientCenterCode === '') {
-            $clientCenterCode = (string) config('app.sandbox.shipper_ctt_es_client_center_number', '');
-        }
-
-        if ($clientCenterCode === '') {
-            throw new \RuntimeException('CTT client center code is missing. Set services.ctt.client_center_code.');
+        if (app()->environment('production')) {
+            //todo: get this data from the DB
+            $clientCenterCode='';
+        }else{
+            $clientCenterCode= config('app.sandbox.shipper_ctt_es_client_center_number', '');
         }
 
         return $clientCenterCode;
