@@ -20,6 +20,7 @@ enum MasterFamilyTabsEnum: string
     // case FAMILIES     = 'families';
     case IMAGES    = 'images';
     case SALES     = 'sales';
+    case RECOMMENDATION    = 'recommendation';
 
     case HISTORY   = 'history';
     case VARIANTS   = 'variants';
@@ -56,6 +57,10 @@ enum MasterFamilyTabsEnum: string
                  'title' => __('Master Variants'),
                  'icon'  => 'fal fa-shapes',
              ],
+            MasterFamilyTabsEnum::RECOMMENDATION => [
+                'title' => __('Recommendation'),
+                'icon'  => 'fal fa-lightbulb',
+            ],
         };
     }
 }

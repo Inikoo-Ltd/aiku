@@ -101,6 +101,7 @@ import SubDepartmentDesciptionIris from "@/Components/CMS/Webpage/SubDepartmentD
 import ProductRenderEcom3 from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
 import Family2ExtraDescriptionIris from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionIris.vue'
 import Families1Overview from '@/Components/CMS/Webpage/Families1Overview/FamiliesOverviewIris1.vue'
+import RecomendationFromMasterIris from '@/Components/CMS/Webpage/RecomendationFromMaster/RecomendationFromMasterIris.vue';
 
 const async = (loader: () => Promise<Component>) =>
 	defineAsyncComponent({
@@ -210,7 +211,8 @@ const components = (shop_type?: string): Record<string, Component> => {
 		blog: BlogIris,
 		"step-2": Step2Iris,
 		'video-1': Video1Iris,
-		'slider-1' : Slider1Iris
+		'slider-1' : Slider1Iris,
+		'recommendation-from-master' : RecomendationFromMasterIris
 	}
 }
 
