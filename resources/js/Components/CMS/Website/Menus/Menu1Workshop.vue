@@ -103,7 +103,7 @@ onMounted(() => {
     });
 });
 
-const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
+const isOpenMenuMobile = inject("isOpenMenuMobile", ref(true));
 
 // Unified icon resolver
 const getNavigationIcon = (navigation: any) => {
@@ -220,6 +220,8 @@ const imageCol = computed(() => {
 
     return 4 
 })
+
+console.log("isOpenMenuMobile", isOpenMenuMobile.value)
 </script>
 
 <template>
