@@ -11,6 +11,7 @@
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\OrgAction;
+use App\Http\Resources\Catalogue\ProductsResource;
 use App\Models\Catalogue\ProductCategory;
 
 class GetProductCategoryRecomendation extends OrgAction
@@ -21,7 +22,7 @@ class GetProductCategoryRecomendation extends OrgAction
         $productCategory->refresh();
         return [
             'id' => $productCategory->id,
-            'data' => $productCategory->relatedProducts,
+            'data' => ProductsResource::collection($productCategory->relatedProducts),
             'editable' => false
         ];
     }

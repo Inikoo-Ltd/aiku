@@ -11,6 +11,7 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\OrgAction;
+use App\Http\Resources\Masters\MasterProductsResource;
 use App\Models\Masters\MasterProductCategory;
 
 class GetMasterProductCategoryRecomendation extends OrgAction
@@ -19,7 +20,7 @@ class GetMasterProductCategoryRecomendation extends OrgAction
     {
         return [
             'id' => $masterProductCategory->id,
-            'data' => $masterProductCategory->relatedMasterAssets,
+            'data' => MasterProductsResource::collection($masterProductCategory->relatedMasterAssets),
             'editable' => true
         ];
     }
