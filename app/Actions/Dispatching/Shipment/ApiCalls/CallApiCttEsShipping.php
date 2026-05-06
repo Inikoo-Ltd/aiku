@@ -7,6 +7,8 @@ use App\Actions\OrgAction;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
+use App\Models\Fulfilment\PalletReturn;
+use App\Http\Resources\Dispatching\ShippingPalletReturnResource;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -28,16 +30,16 @@ class CallApiCttEsShipping extends OrgAction
     private const string MANIFEST_LOCK_KEY_PREFIX = 'ctt_manifest_lock:';
     private const int MANIFEST_LOCK_TTL_SECONDS = 180;
 
-    public function getBaseUrl(Shipper $shipper): string
+    public function getBaseUrl(): string
     {
         if (app()->environment('production')) {
-            return Arr::get($shipper->settings, 'base_url');
+            return 'https://api.cttexpress.com/integrations';
         }
 
         return 'https://api-test.cttexpress.com/integrations';
     }
 
-    public function getAccessToken(Shipper $shipper,bool $forceRefresh = false): string
+    public function getAccessToken(Shipper $shipper, bool $forceRefresh = false): string
     {
         $tokenCacheKey = $this->getTokenCacheKey($shipper);
 
@@ -63,13 +65,12 @@ class CallApiCttEsShipping extends OrgAction
     private function getTokenCacheKey(Shipper $shipper): string
     {
         if (app()->environment('production')) {
-            //todo: get this data from the DB
-            $cttClientId = '';
+            $cttClientId = Arr::get($shipper->settings, 'client_id', '');
         } else {
-            $cttClientId = config('app.sandbox.shipper_ctt_es_client_id', '');
+            $cttClientId = config('app.sandbox.shipper_ctt_token.client_id', '');
         }
 
-        $signature = hash('sha256', $this->getBaseUrl($shipper).'|'.$cttClientId);
+        $signature = hash('sha256', $this->getBaseUrl().'|'.$cttClientId);
 
         return self::TOKEN_CACHE_KEY_PREFIX.$signature;
     }
@@ -79,13 +80,12 @@ class CallApiCttEsShipping extends OrgAction
         return self::MANIFEST_LOCK_KEY_PREFIX.$shipper->id.':'.$parent->id;
     }
 
-    private function getClientCenterCode(): string
+    private function getClientCenterCode(Shipper $shipper): string
     {
         if (app()->environment('production')) {
-            //todo: get this data from the DB
-            $clientCenterCode = '';
+            $clientCenterCode = Arr::get($shipper->settings, 'client_center_code', '');
         } else {
-            $clientCenterCode = config('app.sandbox.shipper_ctt_es_client_center_number', '');
+            $clientCenterCode = config('app.sandbox.shipper_ctt_token.client_center_code', '');
         }
 
         return $clientCenterCode;
@@ -93,19 +93,26 @@ class CallApiCttEsShipping extends OrgAction
 
     private function fetchAccessToken(Shipper $shipper): array
     {
-        $clientId     = (string)config('services.ctt.client_id');
-        $clientSecret = (string)config('services.ctt.client_secret');
-        $grantType    = (string)config('services.ctt.grant_type', 'client_credentials');
-        $scope        = (string)config('services.ctt.scope', '');
+        if (app()->environment('production')) {
+            $clientId     = Arr::get($shipper->settings, 'client_id', '');
+            $clientSecret = Arr::get($shipper->settings, 'client_secret', '');
+            $grantType    = Arr::get($shipper->settings, 'grant_type', 'client_credentials');
+            $scope        = Arr::get($shipper->settings, 'scope', '');
+        } else {
+            $clientId     = config('app.sandbox.shipper_ctt_token.client_id', '');
+            $clientSecret = config('app.sandbox.shipper_ctt_token.client_secret', '');
+            $grantType    = config('app.sandbox.shipper_ctt_token.grant_type', 'client_credentials');
+            $scope        = config('app.sandbox.shipper_ctt_token.scope', '');
+        }
 
         if ($clientId === '' || $clientSecret === '') {
-            throw new \RuntimeException('CTT credentials are missing in config (services.ctt.client_id / client_secret).');
+            throw new \RuntimeException('CTT credentials are missing in config (sandbox.ctt.client_id / client_secret).');
         }
 
         $response = Http::asForm()
             ->connectTimeout(10)
             ->timeout(30)
-            ->post($this->getBaseUrl($shipper).'/oauth2/token', [
+            ->post($this->getBaseUrl().'/oauth2/token', [
                 'client_id'     => $clientId,
                 'client_secret' => $clientSecret,
                 'grant_type'    => $grantType,
@@ -133,21 +140,21 @@ class CallApiCttEsShipping extends OrgAction
         return [$accessToken, $ttlSeconds];
     }
 
-    private function getHeaders(bool $forceRefreshToken = false, array $extraHeaders = []): array
+    private function getHeaders(Shipper $shipper, bool $forceRefreshToken = false, array $extraHeaders = []): array
     {
         return array_merge([
-            'Authorization' => 'Bearer '.$this->getAccessToken($forceRefreshToken),
+            'Authorization' => 'Bearer '.$this->getAccessToken($shipper, $forceRefreshToken),
             'Content-Type'  => 'application/json',
             'Accept'        => 'application/json',
         ], $extraHeaders);
     }
 
-    private function requestWithTokenRefresh(callable $request): Response
+    private function requestWithTokenRefresh(Shipper $shipper, callable $request): Response
     {
         $response = $request(false);
 
         if ($response->status() === 401) {
-            Cache::forget($this->getTokenCacheKey());
+            Cache::forget($this->getTokenCacheKey($shipper));
             $response = $request(true);
         }
 
@@ -157,7 +164,7 @@ class CallApiCttEsShipping extends OrgAction
     /**
      * @throws \Illuminate\Http\Client\ConnectionException
      */
-    public function handle(DeliveryNote $parent, Shipper $shipper): array
+    public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
         $manifestLockKey = $this->getManifestLockKey($parent, $shipper);
 
@@ -173,10 +180,15 @@ class CallApiCttEsShipping extends OrgAction
         }
 
         try {
-            $url            = '/manifest/v2.0/shippings';
-            $parentResource = GetShippingDeliveryNoteData::run($parent);
-            $parcels        = $parent->parcels ?? [];
+            $url = '/manifest/v2.0/shippings';
 
+            if ($parent instanceof PalletReturn) {
+                $parentResource = ShippingPalletReturnResource::make($parent)->getArray();
+            } else {
+                $parentResource = GetShippingDeliveryNoteData::run($parent);
+            }
+
+            $parcels = $parent->parcels ?? [];
             $items = [];
             foreach ($parcels as $parcel) {
                 $dimensions = Arr::get($parcel, 'dimensions', []);
@@ -202,7 +214,7 @@ class CallApiCttEsShipping extends OrgAction
             ]));
 
             $params = [
-                'client_center_code'       => $this->getClientCenterCode(),
+                'client_center_code'       => $this->getClientCenterCode($shipper),
                 'shipping_type_code'       => 'C24',
                 'department_code'          => '1',
                 'client_references'        => [$customerReference],
@@ -211,13 +223,13 @@ class CallApiCttEsShipping extends OrgAction
 
                 'sender_name'                 => Str::limit(
                     Arr::get($parentResource, 'from_company_name')
-                        ?: Arr::get($parentResource, 'from_contact_name', 'AW Artisan'),
+                        ?: Arr::get($parentResource, 'from_contact_name'),
                     60
                 ),
-                'sender_country_code'         => Arr::get($fromAddress, 'country_code', 'ES'),
-                'sender_postal_code'          => Arr::get($fromAddress, 'postal_code', '28821'),
-                'sender_address'              => trim(Arr::get($fromAddress, 'address_line_1', '').' '.Arr::get($fromAddress, 'address_line_2', '')),
-                'sender_town'                 => Arr::get($fromAddress, 'locality', 'Coslada'),
+                'sender_country_code'         => Arr::get($fromAddress, 'country_code'),
+                'sender_postal_code'          => Arr::get($fromAddress, 'postal_code'),
+                'sender_address'              => trim(Arr::get($fromAddress, 'address_line_1').' '.Arr::get($fromAddress, 'address_line_2')),
+                'sender_town'                 => Arr::get($fromAddress, 'locality'),
                 'sender_email_notify_address' => Arr::get($parentResource, 'from_email'),
                 'sender_phones'               => array_values(
                     array_filter(
@@ -228,13 +240,13 @@ class CallApiCttEsShipping extends OrgAction
 
                 'recipient_name'                 => Str::limit(
                     Arr::get($parentResource, 'to_company_name')
-                        ?: Arr::get($parentResource, 'to_contact_name', 'Customer'),
+                        ?: Arr::get($parentResource, 'to_contact_name'),
                     60
                 ),
-                'recipient_country_code'         => Arr::get($toAddress, 'country_code', 'ES'),
-                'recipient_postal_code'          => Arr::get($toAddress, 'postal_code', '08850'),
-                'recipient_address'              => trim(Arr::get($toAddress, 'address_line_1', '').' '.Arr::get($toAddress, 'address_line_2', '')),
-                'recipient_town'                 => Arr::get($toAddress, 'locality', 'Madrid'),
+                'recipient_country_code'         => Arr::get($toAddress, 'country_code'),
+                'recipient_postal_code'          => Arr::get($toAddress, 'postal_code'),
+                'recipient_address'              => trim(Arr::get($toAddress, 'address_line_1').' '.Arr::get($toAddress, 'address_line_2')),
+                'recipient_town'                 => Arr::get($toAddress, 'locality'),
                 'recipient_email_notify_address' => Arr::get($parentResource, 'to_email'),
                 'recipient_phones'               => array_values(
                     array_filter(
@@ -245,7 +257,7 @@ class CallApiCttEsShipping extends OrgAction
 
                 'shipping_date' => now()->format('Y-m-d'),
                 'delivery'      => [
-                    'contact_name' => Str::limit((string)Arr::get($parentResource, 'to_contact_name', ''), 60),
+                    'contact_name' => Str::limit((string)Arr::get($parentResource, 'to_contact_name'), 60),
                     'comments'     => Str::limit(strip_tags((string)($parent->shipping_notes ?? '')), 100),
                 ],
                 'items'         => $items,
@@ -271,18 +283,24 @@ class CallApiCttEsShipping extends OrgAction
             }
 
             // Do not auto-retry manifest POST to avoid accidental duplicate shipments on ambiguous failures.
-            $response = $this->requestWithTokenRefresh(function (bool $forceRefreshToken) use ($url, $params, $idempotencyKey, $shipper) {
-                return Http::withHeaders($this->getHeaders($forceRefreshToken, [
+            $response = $this->requestWithTokenRefresh($shipper, function (bool $forceRefreshToken) use ($url, $params, $idempotencyKey, $shipper) {
+                return Http::withHeaders($this->getHeaders($shipper, $forceRefreshToken, [
                     'Idempotency-Key' => $idempotencyKey,
                 ]))
                     ->connectTimeout(10)
                     ->timeout(45)
-                    ->post($this->getBaseUrl($shipper).$url, $params);
+                    ->post($this->getBaseUrl().$url, $params);
             });
 
             $apiResponse = $response->json();
             $statusCode  = $response->status();
 
+            dd([
+                'params' => $params,
+                'response' => $apiResponse,
+                'status' => $statusCode,
+            ]);
+            
             $modelData = ['api_response' => $apiResponse];
             $errorData = [];
 
@@ -294,7 +312,7 @@ class CallApiCttEsShipping extends OrgAction
                 $modelData['tracking']       = $shippingCode;
                 $modelData['label_type']     = ShipmentLabelTypeEnum::PDF;
                 $modelData['number_parcels'] = count($parcels);
-                $modelData['label']          = $this->getLabel($shippingCode);
+                $modelData['label']          = $this->getLabel($shipper, $shippingCode);
             } else {
                 $status                 = 'fail';
                 $errorData['message'][] = Arr::get($apiResponse, 'error.error_description', 'Failed to manifest');
@@ -311,15 +329,15 @@ class CallApiCttEsShipping extends OrgAction
         }
     }
 
-    public function getLabel(string $shippingCode): string
+    public function getLabel(Shipper $shipper, string $shippingCode): string
     {
         $content = '';
         $url     = "/trf/labelling/v1.0/shippings/{$shippingCode}/shipping-labels?label_type_code=PDF&model_type_code=SINGLE&label_offset=1";
 
         for ($attempt = 1; $attempt <= 3; $attempt++) {
             try {
-                $response = $this->requestWithTokenRefresh(function (bool $forceRefreshToken) use ($url) {
-                    return Http::withHeaders($this->getHeaders($forceRefreshToken))
+                $response = $this->requestWithTokenRefresh($shipper, function (bool $forceRefreshToken) use ($url, $shipper) {
+                    return Http::withHeaders($this->getHeaders($shipper, $forceRefreshToken))
                         ->connectTimeout(10)
                         ->timeout(45)
                         ->get($this->getBaseUrl().$url);
