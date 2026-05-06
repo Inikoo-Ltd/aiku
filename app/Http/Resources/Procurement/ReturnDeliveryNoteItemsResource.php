@@ -61,6 +61,8 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
                 ),
                 $returnDeliveryNoteItem->packed_in
             ),
+
+
             'total_item_not_returned'               => $returnDeliveryNoteItem->total_item_not_returned,
             'total_item_not_returned_fractional'    =>  riseDivisor(
                 divideWithRemainder(
@@ -70,6 +72,13 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
                 ),
                 $returnDeliveryNoteItem->packed_in
             ),
+            'upsert_not_returned_route'              => [
+                'name'       => 'grp.models.return_delivery_note_item.not_founded',
+                'parameters' => ['returnDeliveryNoteItem' => $this->id],
+                'method'     => 'patch',
+            ],
+
+
             'total_item_damaged'                    => $returnDeliveryNoteItem->total_item_damaged,
             'total_item_damaged_fractional'         =>  riseDivisor(
                 divideWithRemainder(
@@ -79,6 +88,13 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
                 ),
                 $returnDeliveryNoteItem->packed_in
             ),
+            'upsert_damaged_route'              => [
+                'name'       => 'grp.models.return_delivery_note_item.damage',
+                'parameters' => ['returnDeliveryNoteItem' => $this->id],
+                'method'     => 'patch',
+            ],
+
+
             'total_item_returned'                   => $returnDeliveryNoteItem->total_item_returned,
             'total_item_returned_fractional'        =>  riseDivisor(
                 divideWithRemainder(
@@ -88,27 +104,19 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
                 ),
                 $returnDeliveryNoteItem->packed_in
             ),
+            'upsert_return_route'              => [
+                'name'       => 'grp.models.return_delivery_note_item.returned',
+                'parameters' => ['returnDeliveryNoteItem' => $this->id],
+                'method'     => 'patch',
+            ],
+
+
             'org_stock_id'                          => $returnDeliveryNoteItem->org_stock_id,
             'org_stock_code'                        => $returnDeliveryNoteItem->org_stock_code,
             'org_stock_name'                        => $returnDeliveryNoteItem->org_stock_name,
             'org_stock_slug'                        => $returnDeliveryNoteItem->org_stock_slug,
             'packed_in'                             => $returnDeliveryNoteItem->packed_in,
             'locations'                             => $returnLocation,
-            'upsert_not_returned_route'              => [
-                'name'       => '#',
-                'parameters' => ['returnDeliveryNoteItem' => $this->id],
-                'method'     => 'post',
-            ],
-            'upsert_damaged_route'              => [
-                'name'       => '#',
-                'parameters' => ['returnDeliveryNoteItem' => $this->id],
-                'method'     => 'post',
-            ],
-            'upsert_return_route'              => [
-                'name'       => '#',
-                'parameters' => ['returnDeliveryNoteItem' => $this->id],
-                'method'     => 'post',
-            ],
         ];
     }
 }

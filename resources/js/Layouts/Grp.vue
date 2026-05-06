@@ -81,9 +81,9 @@ import {
 	faUserAlien,
 	faTombstone as faTombstoneLight,
 	faCopyright, faSyncAlt, faArrowFromLeft,
-	faBarcode
+	faBarcode, faFragile
 } from "@fal"
-import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
+import { faSearch, faBell, faArrowRight, faShippingFast, faGhost } from "@far"
 import { faViruses } from "@fad"
 import {
 	faAsterisk as fasAsterisk,
@@ -152,7 +152,7 @@ library.add(
 	faSearch,
 	faBell,
 	faArrowRight,
-	faShippingFast,
+	faShippingFast, faGhost,
 	faTachometerAltFast,
 	faGlobe,
 	faParachuteBox,
@@ -186,7 +186,7 @@ library.add(
 	faUserAlien,
 	faTombstoneLight,
 	faCopyright, faSyncAlt, faArrowFromLeft,
-	faBarcode
+	faBarcode, faFragile
 )
 
 provide("layout", useLayoutStore())
