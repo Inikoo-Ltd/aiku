@@ -38,6 +38,10 @@ const emit = defineEmits<{
   (e: "finish"): void
 }>()
 
+defineSlots<{
+  default?: (props: { isLoading: boolean }) => any
+}>()
+
 /**
  * Normalize raw input
  */
@@ -105,6 +109,25 @@ const isAnchor = computed(() => {
 })
 
 const isLoading = ref(false)
+
+const handleClick = (event: MouseEvent) => {
+  if (
+    !resolvedHref.value ||
+    isAnchor.value ||
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey ||
+    props.target !== "_self"
+  ) {
+    return
+  }
+
+  isLoading.value = true
+  emit("start")
+}
 </script>
 
 <template>
@@ -140,8 +163,9 @@ const isLoading = ref(false)
     :style="style"
     :target="target"
     rel="noopener noreferrer"
+    @click="handleClick"
   >
-    <slot>{{ label }}</slot>
+    <slot :isLoading="isLoading">{{ label }}</slot>
   </a>
 
   <!-- fallback -->

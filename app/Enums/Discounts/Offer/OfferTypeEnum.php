@@ -118,7 +118,7 @@ enum OfferTypeEnum: string
 
     private function amountIcon(): array
     {
-        return $this->iconData('fal fa-sigma');
+        return $this->iconData('fal fa-money-bill-wave');
     }
 
     private function orderIcon(): array

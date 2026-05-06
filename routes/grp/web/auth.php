@@ -8,6 +8,7 @@
  */
 
 use App\Actions\Helpers\Redirects\RedirectUnsubscribe;
+use App\Actions\Helpers\Redirects\ShowUnsubscribeError;
 use App\Actions\SysAdmin\UI\Auth\Login;
 use App\Actions\SysAdmin\UI\Auth\Logout;
 use App\Actions\SysAdmin\UI\Auth\ShowLogin;
@@ -28,6 +29,7 @@ Route::middleware('guest')->group(function () {
     Route::patch('reset/password/email', UpdateUserPasswordViaEmail::class)->name('reset-password.email.update');
 
     Route::get('redirect-unsubscribe/{encryptedDispatchedEmailID}', RedirectUnsubscribe::class)->name('redirect_unsubscribe');
+    Route::get('unsubscribe-error', ShowUnsubscribeError::class)->name('unsubscribe-error');
 });
 
 Route::middleware('auth')->group(function () {

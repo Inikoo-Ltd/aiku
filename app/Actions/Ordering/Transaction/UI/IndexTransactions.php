@@ -64,10 +64,6 @@ class IndexTransactions extends OrgAction
         $query->leftJoin('products', 'assets.model_id', '=', 'products.id');
         $query->leftJoin('orders', 'transactions.order_id', '=', 'orders.id');
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
-        $query->leftJoin('delivery_note_items', function ($join) {
-            $join->on('transactions.id', '=', 'delivery_note_items.transaction_id')
-                ->whereNotIn('delivery_note_items.state', [DeliveryNoteItemStateEnum::CANCELLED, DeliveryNoteItemStateEnum::NO_DISPATCHED]);
-        });
 
         return $query->defaultSort('transactions.id')
             ->select([

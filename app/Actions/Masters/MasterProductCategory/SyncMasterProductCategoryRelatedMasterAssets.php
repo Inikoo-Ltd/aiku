@@ -50,6 +50,7 @@ class SyncMasterProductCategoryRelatedMasterAssets extends OrgAction
 
     public function rules(): array
     {
+
         return [
             'master_asset_ids'   => ['required', 'array'],
             'master_asset_ids.*.id' => ['integer', Rule::exists('master_assets', 'id')->where('master_shop_id', $this->masterShopId)],

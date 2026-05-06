@@ -447,26 +447,22 @@ provide("goNext", goNext)
                     <img
                         src="/assets/channel_logo/tiktok.svg"
                         class="h-9 sm:h-12"
-                        :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
                         alt="Tiktok"
                         v-tooltip="'Tiktok'"
                     />
                     <div class="flex flex-col">
                         <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Tiktok</div>
-                        <div v-if="layout?.app?.environment === 'local'"
-                             class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.tiktok }} {{ trans("Channels") }}
+                        <div class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.tiktok }} {{ trans("Channels") }}
                         </div>
                     </div>
                 </div>
 
                 <div class="w-full flex justify-end">
-                        <Button v-if="layout?.app?.environment !== 'production'"
-								@click="() => (isModalTiktok = true)"
+                        <Button @click="() => (isModalTiktok = true)"
 								:label="trans('Connect')"
                             type="primary"
                             full
                         />
-                        <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
                 </div>
             </div>
 

@@ -143,7 +143,7 @@ console.log("Family2 Workshop Props:", props)
     <div class="mx-auto max-w-[2000px] w-full px-4 py-4">
 
       <!-- ================= HEADER (TITLE + DISCOUNT RIGHT) ================= -->
-   <!--    <div class="flex items-center justify-between mb-6 gap-4 flex-wrap sm:flex-nowrap">
+      <div class="flex items-center justify-between mb-6 gap-4 flex-wrap sm:flex-nowrap">
 
         <h1 class="text-xl md:text-xl font-semibold text-gray-900 w-full">
           <textarea ref="titleRef" v-model="name" @input="autoResize" rows="1" placeholder="Family Title" class="w-full resize-none overflow-hidden bg-transparent border-none p-0 m-0
@@ -153,7 +153,7 @@ console.log("Family2 Workshop Props:", props)
            text-center md:text-left"></textarea>
         </h1>
 
-        <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in" class="discount-wrapper">
+        <!-- <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in" class="discount-wrapper">
           <div :class="bestOffer?.type === 'Category Quantity Ordered Order Interval'
             ? 'block md:flex md:flex-nowrap md:gap-3'
             : 'discount-grid'">
@@ -163,11 +163,11 @@ console.log("Family2 Workshop Props:", props)
             <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="bestOffer?.type === 'Category Quantity Ordered Order Interval'
               ? 'active-inactive-gr'
               : 'max_discount'" class="discount-item" />
-          </div>
+          </div> -->
         </div>
 
       </div>
- -->
+
       <!-- ================= CONTENT ================= -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 
@@ -203,13 +203,13 @@ console.log("Family2 Workshop Props:", props)
         <!-- TEXT -->
         <div class="flex flex-col justify-center text-center md:text-left" :class="textOrder">
           <div class="text-gray-600 leading-relaxed text-sm md:text-base max-w-xl">
-             <h1 class="text-xl md:text-xl font-semibold text-gray-900 w-full">
+         <!--     <h1 class="text-xl md:text-xl font-semibold text-gray-900 w-full">
               <textarea ref="titleRef" v-model="name" @input="autoResize" rows="1" placeholder="Family Title" class="w-full resize-none overflow-hidden bg-transparent border-none p-0 m-0
            text-2xl md:text-3xl font-semibold text-gray-900
            leading-tight
            focus:outline-none focus:ring-0
            text-center md:text-left"></textarea>
-            </h1>
+            </h1> -->
             <EditorV2 v-model="modelValue.family.description" placeholder="Family Description"
               @update:model-value="(e) => saveDescription('description', e)" :uploadImageRoute="{
                 name: webpageData?.images_upload_route?.name,
@@ -226,7 +226,6 @@ console.log("Family2 Workshop Props:", props)
 
       </div>
     </div>
-  </div>
 </template>
 
 <style scoped>
