@@ -88,18 +88,16 @@ console.log("Family2 Workshop Props:", props)
           {{ fieldValue?.family?.name }}
         </h1>
 
-        <!-- <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in" class="discount-wrapper">
+        <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in" class="discount-wrapper">
           <div :class="bestOffer?.type === 'Category Quantity Ordered Order Interval'
             ? 'block md:flex md:flex-nowrap md:gap-3'
             : 'discount-grid'">
             <DiscountByType v-if="showTriggers" :offers_data="fieldValue?.family?.offers_data"
               template="triggers_labels" class="discount-item discount-span" />
 
-            <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="bestOffer?.type === 'Category Quantity Ordered Order Interval'
-              ? 'active-inactive-gr'
-              : 'max_discount'" class="discount-item" />
+            <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="'active-inactive-gr'" class="discount-item" />
           </div>
-        </div> -->
+        </div>
 
       </div>
 
