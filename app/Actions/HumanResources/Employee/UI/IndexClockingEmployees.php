@@ -206,7 +206,7 @@ class IndexClockingEmployees extends OrgAction
                 return $leave->status?->value === LeaveStatusEnum::APPROVED->value;
             });
 
-            $medicalRequestCount = $this->countLeavesByBucket($submittedLeavesThisMonth, 'medical');
+            $medicalRequestCount = $this->sumLeaveDaysByBucket($submittedLeavesThisMonth, 'medical');
             $unpaidRequestCount = $this->sumLeaveDaysByBucket($submittedLeavesThisMonth, 'unpaid');
             $balance = EmployeeLeaveBalance::firstOrCreate(
                 [

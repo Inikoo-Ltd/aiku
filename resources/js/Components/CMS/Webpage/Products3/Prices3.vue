@@ -291,14 +291,12 @@ const _popoverProfit = ref(null)
                     <template v-else>
 
                         <div class="flex justify-end items-center gap-1 min-w-0">
-
-                            <span class="whitespace-nowrap">
+                            <span class="truncate min-w-0 font-normal  text-[8px] sm:text-[9px] md:text-[10px]">
                                 {{ locale.currencyFormat(currency?.code, product.discounted_price) }}
                             </span>
-                            <span class="truncate min-w-0 font-normal text-[8px] sm:text-[9px] md:text-[10px]" :title="product.unit">
+                          <!--   <span class="truncate min-w-0 font-normal text-[8px] sm:text-[9px] md:text-[10px]" :title="product.unit">
                                 ({{ locale.currencyFormat(currency?.code, product.discounted_price_per_unit) }}/{{ product.unit }})
-                            </span>
-
+                            </span> -->
                         </div>
 
                     </template>

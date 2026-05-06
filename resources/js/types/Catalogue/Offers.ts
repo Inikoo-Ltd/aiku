@@ -45,3 +45,17 @@ export interface OfferResource {
         name: string
     } | null
 }
+
+export interface OfferAllowanceResource {
+    offer_campaign_id: number | null
+    slug: string
+    code: string | null
+    name: string | null
+    data: {
+        percentage_off?: number
+        [key: string]: unknown
+    } | null
+    state: string | null
+    created_at: string | null
+    updated_at: string | null
+}

@@ -43,6 +43,9 @@ function orderRoute(order: Order) {
         case "grp.org.shops.show.ordering.backlog":
         case "grp.org.shops.show.ordering.orders.index":
         case "grp.org.shops.show.discounts.offers.show":
+        case "grp.org.shops.show.catalogue.departments.show.offers.show":
+        case "grp.org.shops.show.catalogue.sub_departments.show.offers.show":
+        case "grp.org.shops.show.catalogue.families.show.offers.show":
         case "grp.org.shops.show.discounts.campaigns.offer.show":
         case "grp.org.shops.show.discounts.campaigns.gift.show":
         case "grp.org.shops.show.discounts.campaigns.amnesty.show":

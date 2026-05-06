@@ -140,6 +140,7 @@ const closeModal = () => {
 
                         <div v-else class="grid grid-cols-12 flex-1 min-h-0">
                             <component
+                                v-model:open="isOpen"
                                 :is="activeComponent"
                                 :results="resultsSearch"
                                 :is-loading="isLoadingSearch"

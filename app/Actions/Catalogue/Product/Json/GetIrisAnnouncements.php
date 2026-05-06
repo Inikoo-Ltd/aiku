@@ -11,7 +11,7 @@ namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\IrisAction;
 use App\Enums\Announcement\AnnouncementStatusEnum;
-use App\Http\Resources\Web\AnnouncementResource;
+use App\Http\Resources\Web\AnnouncementIrisResource;
 use App\Models\Web\Website;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -19,7 +19,7 @@ class GetIrisAnnouncements extends IrisAction
 {
     public function handle(Website $website): array
     {
-        $announcementsTopBar = AnnouncementResource::collection(
+        $announcementsTopBar = AnnouncementIrisResource::collection(
             $website->announcements()
                 ->where('status', AnnouncementStatusEnum::ACTIVE)
                 ->where(function ($q) {
@@ -28,25 +28,25 @@ class GetIrisAnnouncements extends IrisAction
                         ->orWhereRaw("NOT jsonb_exists(settings, 'position')");
                 })
                 ->get()
-        )->toArray(request());
+        )->resolve();
 
 
 
-        $announcementsBottomMenu = AnnouncementResource::collection(
+        $announcementsBottomMenu = AnnouncementIrisResource::collection(
             $website->announcements()
                 ->where('status', AnnouncementStatusEnum::ACTIVE)
                 ->where('settings->position', 'bottom-menu')
                 ->get()
-        )->toArray(request());
+        )->resolve();
 
 
 
-        $announcementsTopFooter = AnnouncementResource::collection(
+        $announcementsTopFooter = AnnouncementIrisResource::collection(
             $website->announcements()
                 ->where('status', AnnouncementStatusEnum::ACTIVE)
                 ->where('settings->position', 'top-footer')
                 ->get()
-        )->toArray(request());
+        )->resolve();
 
         return [
             'top_bar' => $announcementsTopBar,

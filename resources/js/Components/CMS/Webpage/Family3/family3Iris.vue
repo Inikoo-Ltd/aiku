@@ -49,8 +49,14 @@ const columnPosition = computed(() => {
 })
 
 const isImageLeft = computed(() => columnPosition.value === "Image-right")
-const imageOrder = computed(() => (isImageLeft.value ? "order-1" : "order-2"))
-const textOrder = computed(() => (isImageLeft.value ? "order-2" : "order-1"))
+const imageOrder = computed(() =>
+  isImageLeft.value ? "order-1" : "order-2"
+)
+
+const textOrder = computed(() =>
+  isImageLeft.value ? "order-2" : "order-1"
+)
+
 
 // ================= DATA =================
 const images = computed(() => {
@@ -68,20 +74,21 @@ console.log("Family2 Workshop Props:", props)
 </script>
 
 <template>
-  <div class="w-full" :id="fieldValue?.id ? fieldValue?.id : 'family-3' + indexBlock" :style="{
+  <div :id="fieldValue?.id ? fieldValue?.id : 'family-3' + indexBlock" :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(fieldValue?.container?.properties, screenType)
   }">
-    <div class="mx-auto max-w-[2000px] w-full px-4 py-4">
+
+    <div class="w-full px-4 py-4">
 
       <!-- ================= HEADER (TITLE + DISCOUNT RIGHT) ================= -->
-      <!--  <div class="flex items-center justify-between mb-6 gap-4 flex-wrap sm:flex-nowrap">
+       <div class="flex items-center justify-between mb-6 gap-4 flex-wrap sm:flex-nowrap">
 
         <h1 class="text-xl md:text-xl font-semibold text-gray-900">
           {{ fieldValue?.family?.name }}
         </h1>
 
-        <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in" class="discount-wrapper">
+        <!-- <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in" class="discount-wrapper">
           <div :class="bestOffer?.type === 'Category Quantity Ordered Order Interval'
             ? 'block md:flex md:flex-nowrap md:gap-3'
             : 'discount-grid'">
@@ -92,9 +99,9 @@ console.log("Family2 Workshop Props:", props)
               ? 'active-inactive-gr'
               : 'max_discount'" class="discount-item" />
           </div>
-        </div>
+        </div> -->
 
-      </div> -->
+      </div>
 
       <!-- ================= CONTENT ================= -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -129,34 +136,45 @@ console.log("Family2 Workshop Props:", props)
         </div>
 
         <!-- TEXT -->
-        <div class="flex flex-col justify-center text-center md:text-left" :class="textOrder">
-          <h1 class="text-xl md:text-xl font-semibold text-gray-900">
+        <div class="flex flex-col   text-center md:text-left " :class="textOrder">
+         <!--  <h1 class="text-xl md:text-xl font-semibold text-gray-900">
             {{ fieldValue?.family?.name }}
-          </h1>
-          <div v-html="cleanedDescription" class="text-gray-600 leading-relaxed text-sm md:text-base max-w-xl" />
-          <div class="flex flex-col items-center md:flex-row md:justify-start gap-3 mt-4">
+          </h1> -->
+
+          <div v-html="cleanedDescription" class="text-gray-600 leading-relaxed text-sm md:text-base " />
+
+          <!-- COMBINED DISCOUNT + BUTTON -->
+          <div class="mt-4 flex  w-full overflow-hidden discount-wrapper md:items-stretch  md:justify-start justify-center">
+
+
+              <Button 
+                  :label="fieldValue?.button?.text" 
+                  class="flex leading-none h-full mb-[0.5rem]"
+                  :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" />
+
             <!-- DISCOUNT -->
-            <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
-              class="discount-wrapper w-fit">
-              <div :class="bestOffer?.type === 'Category Quantity Ordered Order Interval'
-                  ? 'block md:flex md:flex-nowrap md:gap-3'
-                  : 'discount-grid'
-                ">
-                <DiscountByType v-if="showTriggers" :offers_data="fieldValue?.family?.offers_data"
-                  template="triggers_labels" class="discount-item discount-span" />
+          <!--   <div :class="bestOffer?.type === 'Category Quantity Ordered Order Interval'
+              ? 'flex flex-nowrap gap-2'
+              : 'discount-grid'
+              " class="flex items-center h-full">
 
-                <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="bestOffer?.type === 'Category Quantity Ordered Order Interval'
-                    ? 'active-inactive-gr'
-                    : 'max_discount'
-                  " class="discount-item" />
-              </div>
-            </div>
+              <DiscountByType v-if="showTriggers && layout.iris.is_logged_in" :offers_data="fieldValue?.family?.offers_data"
+                template="triggers_labels" class="truncate text-sm leading-none" />
 
-            <!-- BUTTON -->
-            <LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target">
-              <Button :label="fieldValue?.button?.text"
-                :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" />
-            </LinkIris>
+              <DiscountByType v-if="layout.iris.is_logged_in" :offers_data="fieldValue?.family?.offers_data" :template="bestOffer?.type === 'Category Quantity Ordered Order Interval'
+                ? 'active-inactive-gr'
+                : 'max_discount'
+                " class="truncate text-sm font-medium leading-none" />
+
+              <LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target"
+                class="flex items-center ml-2">
+
+                <Button :label="fieldValue?.button?.text" class="flex leading-none h-full mb-[0.5rem]"
+                  :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" />
+
+              </LinkIris>
+
+            </div> -->
 
           </div>
         </div>
@@ -193,7 +211,7 @@ console.log("Family2 Workshop Props:", props)
 
 /* BASE */
 .discount-wrapper {
-  margin: 0 auto;
+  margin: 0 0;
 }
 
 .discount-grid {
@@ -220,7 +238,7 @@ console.log("Family2 Workshop Props:", props)
 }
 
 .discount-wrapper :deep(.percentage-text) {
-  @apply text-[12px] leading-[0.20rem] 2xl:text-lg;
+  @apply text-[12px] leading-[0.20rem];
 }
 
 /* TITLE */
@@ -250,11 +268,19 @@ console.log("Family2 Workshop Props:", props)
 
 /* GR TEXT (TRUNCATE) */
 .discount-wrapper :deep(.inactive-text) {
-  @apply min-w-0 flex-1 max-w-[170px] truncate text-[12px]  leading-[0.20rem] leading-5 opacity-70 md:max-w-[120px] 2xl:max-w-[200px] 2xl:text-base 2xl:leading-6;
+  @apply min-w-0 flex-1 max-w-[170px] truncate text-[12px] leading-[0.20rem] leading-5 opacity-70 md:max-w-[120px] 2xl:max-w-[200px] 2xl:text-base 2xl:leading-6;
 }
 
 /* ICON FIX */
 .discount-wrapper :deep(.gr-info-icon) {
   @apply flex-shrink-0 leading-[0.20rem];
+}
+
+.discount-wrapper :deep(.gr-content) {
+  @apply flex-shrink-0 text-[12px] leading-[0.20rem] w-[80%];
+}
+
+.discount-wrapper :deep(.gr-logo) {
+  @apply h-[2rem];
 }
 </style>

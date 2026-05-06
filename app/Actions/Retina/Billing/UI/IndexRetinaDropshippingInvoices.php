@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 07-07-2025-10h-27m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -17,6 +17,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\CRM\Customer;
 use App\Services\QueryBuilder;
 use Closure;
+use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
@@ -36,14 +37,14 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
             if ($endDate) {
                 $endDate = Carbon::parse($endDate)->toDateString();
             }
-        } catch (\Exception $e) {
+        } catch (Exception) {
             // Handle invalid date format, maybe log the error or return a default value
             $startDate = null; // or you could throw an exception or return an error response
-            $endDate = null;
+            $endDate   = null;
         }
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereWith('reference', $value);
+                $query->whereWith('invoices.reference', $value);
             });
         });
 
@@ -93,9 +94,7 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
             ->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id');
 
 
-
-
-        return $queryBuilder->allowedSorts(['number', 'customer_sales_channel_name','total_amount', 'net_amount', 'date', 'customer_name', 'reference'])
+        return $queryBuilder->allowedSorts(['number', 'customer_sales_channel_name', 'total_amount', 'net_amount', 'date', 'customer_name', 'reference'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -129,14 +128,10 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
             $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
 
-
-
             $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
                 ->defaultSort('reference');
         };
     }
-
-
 
 
     public function jsonResponse(LengthAwarePaginator $invoices): AnonymousResourceCollection
@@ -147,21 +142,17 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $invoices, ActionRequest $request): Response
     {
-
-
         $afterTitle = null;
         $iconRight  = null;
         $model      = null;
         $actions    = null;
 
-        $title      = __('Invoices');
+        $title = __('Invoices');
 
-        $icon  = [
+        $icon = [
             'icon'  => ['fal', 'fa-file-invoice-dollar'],
             'title' => __('Invoices')
         ];
-
-
 
 
         return Inertia::render(
@@ -171,12 +162,12 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
                 'title'       => __('Invoices'),
                 'pageHead'    => [
 
-                    'title'         => $title,
-                    'model'         => $model,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
-                    'icon'          => $icon,
-                    'actions'       => $actions
+                    'title'      => $title,
+                    'model'      => $model,
+                    'afterTitle' => $afterTitle,
+                    'iconRight'  => $iconRight,
+                    'icon'       => $icon,
+                    'actions'    => $actions
                 ],
                 'data'        => DropshippingInvoicesResource::collection($invoices),
 
@@ -198,7 +189,6 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
 
     public function getBreadcrumbs(): array
     {
-
         return
             array_merge(
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
@@ -214,6 +204,5 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
                     ]
                 ]
             );
-
     }
 }

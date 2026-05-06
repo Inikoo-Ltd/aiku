@@ -342,7 +342,7 @@ const canSubmitLeave = computed(() => {
 		return true
 	}
 
-	if (selectedLeaveBucket.value === "unpaid") {
+	if (selectedLeaveBucket.value === "unpaid" || selectedLeaveBucket.value === "medical") {
 		return true
 	}
 
@@ -559,7 +559,7 @@ const submitEdit = () => {
 							{{ displayedMedicalCount }}
 						</p>
 						<p class="text-xs text-gray-400">
-							{{ trans("Requests This Month") }}
+							{{ trans("Days This Month") }}
 						</p>
 					</div>
 					<div class="text-3xl text-red-200">

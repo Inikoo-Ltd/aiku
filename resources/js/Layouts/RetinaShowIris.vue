@@ -23,7 +23,6 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { initialiseRetinaApp } from '@/Composables/initialiseRetinaApp'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
-import axios from 'axios'
 import { setColorStyleRoot } from '@/Composables/useApp'
 library.add(faExclamationTriangle, faSignIn)
 
@@ -43,25 +42,6 @@ const useChat = usePage().props?.use_chat
 
 console.log('irisTheme', usePage().props.iris)
 
-const isSidebarFetching = ref(false)
-
-const fetchSidebarOnce = async () => {
-    if (isSidebarFetching.value) return
-
-    isSidebarFetching.value = true
-
-    try {
-        const baseUrl = window.location.origin
-        const { data } = await axios.get(`${baseUrl}/json/sidebar`)
-
-        layout.iris.sidebar = data.sidebar
-        layout.isSidebarLoaded = true
-    } catch (e) {
-        console.error("[IrisSidebar] fetch failed", e)
-    } finally {
-        isSidebarFetching.value = false
-    }
-}
 const isFirstVisit = () => {
     if (typeof window !== "undefined") {
         const irisData = localStorage.getItem('iris');
@@ -94,7 +74,6 @@ provide('isOpenMenuMobile', isOpenMenuMobile)
 onMounted(() => {
     irisStyleVariables(theme?.color)  // DEPRECATED (use setColorStyleRoot instead)
     setColorStyleRoot(theme?.color)
-    fetchSidebarOnce()
 })
 
 </script>

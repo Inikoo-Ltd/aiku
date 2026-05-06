@@ -60,6 +60,7 @@ class ProductsWebpageResource extends JsonResource
             'code'                          => $this->code,
             'name'                          => $this->name,
             'stock'                         => $this->available_quantity,
+            'slug'                         => $this->slug,
             'price'                         => $this->price,
             'price_per_unit'                => $pricePerUnit,
             'profit'                        => $profit,
