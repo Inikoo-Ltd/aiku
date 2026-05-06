@@ -21,6 +21,7 @@ use App\Actions\Web\WebBlock\GetWebBlockProducts;
 use App\Actions\Web\WebBlock\GetWebBlockRecommendationsCRB;
 use App\Actions\Web\WebBlock\GetWebBlockSeeAlso;
 use App\Actions\Web\WebBlock\GetWebBlockSubDepartments;
+use App\Actions\Web\WebBlock\GetWebBlockRecommendationsFromMaster;
 use Illuminate\Support\Arr;
 
 trait WithFillIrisWebBlocks
@@ -55,6 +56,8 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockBlog::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-customer-recently-bought-1') {
             $parsedWebBlocks[$key] = GetWebBlockRecommendationsCRB::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'recommendation-from-master') {
+            $parsedWebBlocks[$key] = GetWebBlockRecommendationsFromMaster::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
             $parsedWebBlocks[$key] = GetWebBlockLuigiRecommendations::run($webpage, $webBlock);
         } else {
