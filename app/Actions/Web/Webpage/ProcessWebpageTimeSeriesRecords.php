@@ -24,7 +24,7 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsAggregatedTimeSeriesQuery;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(int $webpageId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -92,16 +92,12 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
                     'conversion_rate'  => round($conversionRate, 2),
                 ]
             );
-
-            $processedPeriods[] = $period;
         }
-
-        $this->processPeriodsWithoutData($timeSeries, $from, $to, $processedPeriods);
     }
 
     protected function fetchDailyResults(WebpageTimeSeries $timeSeries, string $from, string $to): Collection
     {
-        $pageViewStats = DB::table('website_page_views')
+        $pageViewStats = DB::connection('aiku_no_sticky')->table('website_page_views')
             ->where('view_date', '>=', $from)
             ->where('view_date', '<=', $to)
             ->where('webpage_id', $timeSeries->webpage_id)
@@ -115,7 +111,7 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
             ->get()
             ->keyBy('date');
 
-        $conversionStats = DB::table('website_conversion_events')
+        $conversionStats = DB::connection('aiku_no_sticky')->table('website_conversion_events')
             ->where('event_date', '>=', $from)
             ->where('event_date', '<=', $to)
             ->where('webpage_id', $timeSeries->webpage_id)
@@ -152,35 +148,11 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
             DB::raw('SUM(avg_time_on_page * page_views) as total_duration'),
         ];
 
-        $query = DB::table('webpage_time_series_records')
+        $query = DB::connection('aiku_no_sticky')->table('webpage_time_series_records')
             ->where('webpage_time_series_id', $dailyTimeSeries->id)
             ->where('from', '>=', $from)
             ->where('to', '<=', $to);
 
         return $this->applyAggregatedFrequencyGrouping($query, $timeSeries->frequency, $selects)->get();
-    }
-
-    protected function processPeriodsWithoutData(WebpageTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
-    {
-        $emptyPeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
-
-        foreach ($emptyPeriods as $periodData) {
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'webpage_time_series_id' => $timeSeries->id,
-                    'period'                 => $periodData['period'],
-                    'frequency'              => $timeSeries->frequency->singleLetter(),
-                ],
-                [
-                    'from'             => $periodData['from'],
-                    'to'               => $periodData['to'],
-                    'visitors'         => 0,
-                    'page_views'       => 0,
-                    'avg_time_on_page' => 0,
-                    'add_to_baskets'   => 0,
-                    'conversion_rate'  => 0,
-                ]
-            );
-        }
     }
 }

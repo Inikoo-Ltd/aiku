@@ -20,7 +20,7 @@ class RedoWebsiteTimeSeries implements ShouldBeUnique
 {
     use WithHydrateCommand;
 
-    public string $jobQueue         = 'default-long';
+    public string $jobQueue         = 'default-long-slave';
     public string $commandSignature = 'websites:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -36,8 +36,8 @@ class RedoWebsiteTimeSeries implements ShouldBeUnique
     public function handle(Website $website, bool $async = false, ?string $from = null, ?string $to = null): void
     {
         if (!$from || !$to) {
-            $firstVisitDate = DB::table('website_visitors')->where('website_id', $website->id)->min('first_seen_at');
-            $lastVisitDate  = DB::table('website_visitors')->where('website_id', $website->id)->max('first_seen_at');
+            $firstVisitDate = DB::connection('aiku_no_sticky')->table('website_visitors')->where('website_id', $website->id)->min('first_seen_at');
+            $lastVisitDate  = DB::connection('aiku_no_sticky')->table('website_visitors')->where('website_id', $website->id)->max('first_seen_at');
 
             if (!$firstVisitDate) {
                 return;
@@ -49,7 +49,7 @@ class RedoWebsiteTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessWebsiteTimeSeriesRecords::dispatch($website->id, $frequency, $from, $to)->onQueue('low-priority');
+                ProcessWebsiteTimeSeriesRecords::dispatch($website->id, $frequency, $from, $to);
             } else {
                 ProcessWebsiteTimeSeriesRecords::run($website->id, $frequency, $from, $to);
             }
