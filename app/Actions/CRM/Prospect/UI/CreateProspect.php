@@ -100,8 +100,7 @@ class CreateProspect extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        // return $request->user()->authTo('crm.edit');
-        return true;
+        return $request->user()->authTo("crm.{$this->shop->id}.edit");
     }
 
 
