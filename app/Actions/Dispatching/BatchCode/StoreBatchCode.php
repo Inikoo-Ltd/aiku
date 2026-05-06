@@ -26,7 +26,7 @@ class StoreBatchCode extends OrgAction
 
         $batchCode = BatchCode::create($modelData);
 
-        OrgStockHydrateCurrentBatchCodes::dispatch(OrgStock::find($batchCode->org_stock_id))->delay($this->hydratorsDelay);
+        OrgStockHydrateCurrentBatchCodes::run(OrgStock::find($batchCode->org_stock_id));
 
         return $batchCode;
     }

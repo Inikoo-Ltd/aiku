@@ -12,7 +12,6 @@ namespace App\Actions\Catalogue\Product\Json;
 use App\Actions\IrisAction;
 use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Http\Resources\Web\AnnouncementIrisResource;
-use App\Http\Resources\Web\AnnouncementResource;
 use App\Models\Web\Website;
 use Lorisleiva\Actions\ActionRequest;
 

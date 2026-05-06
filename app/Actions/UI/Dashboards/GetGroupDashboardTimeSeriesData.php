@@ -33,9 +33,10 @@ class GetGroupDashboardTimeSeriesData
 
         $cacheKey = $this->getCacheKey($group, $fromDate, $toDate);
 
-        return Cache::remember($cacheKey, now()->addSeconds(300), function () use ($group, $fromDate, $toDate) {
-            return $this->fetchData($group, $fromDate, $toDate);
-        });
+        return Cache::tags(["dashboard-group-{$group->id}"])
+            ->remember($cacheKey, now()->addSeconds(300), function () use ($group, $fromDate, $toDate) {
+                return $this->fetchData($group, $fromDate, $toDate);
+            });
     }
 
     protected function getCacheKey(Group $group, $fromDate, $toDate): string
@@ -117,11 +118,8 @@ class GetGroupDashboardTimeSeriesData
         ];
     }
 
-    public static function clearCache(Group $group, $fromDate = null, $toDate = null): void
+    public static function clearCache(Group $group): void
     {
-        $instance = new static();
-        $cacheKey = $instance->getCacheKey($group, $fromDate, $toDate);
-
-        Cache::forget($cacheKey);
+        Cache::tags(["dashboard-group-{$group->id}"])->flush();
     }
 }

@@ -29,10 +29,10 @@ class UpdateBatchCode extends OrgAction
 
         if ($batchCode->wasChanged('org_stock_id')) {
             if ($previousOrgStockId) {
-                OrgStockHydrateCurrentBatchCodes::dispatch(OrgStock::find($previousOrgStockId))->delay($this->hydratorsDelay);
+                OrgStockHydrateCurrentBatchCodes::run(OrgStock::find($previousOrgStockId));
             }
             if ($batchCode->org_stock_id) {
-                OrgStockHydrateCurrentBatchCodes::dispatch(OrgStock::find($batchCode->org_stock_id))->delay($this->hydratorsDelay);
+                OrgStockHydrateCurrentBatchCodes::run(OrgStock::find($batchCode->org_stock_id));
             }
         }
 

@@ -2,6 +2,8 @@
 import { faChevronRight } from "@far"
 import LinkIris from "../LinkIris.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
+import { ref } from "vue"
 
 const props = defineProps<{
     internalHref?: Function
@@ -16,6 +18,8 @@ const props = defineProps<{
     }
     isWithArrowRight?: boolean
 }>()
+
+const isLoading = ref(false)
 
 const emit = defineEmits<{
     (e: "arrow-click"): void
@@ -32,12 +36,15 @@ const emit = defineEmits<{
             @success="() => closeSidebar()"
             :type="nav.type"
             :target="nav.target"
+            @start="() => isLoading = true"
+            @finish="() => isLoading = false"
         >
             {{ nav.name }}
         </LinkIris>
         <div v-else >
             {{ nav.name }}
         </div>
-        <FontAwesomeIcon v-if="isWithArrowRight" :icon="faChevronRight" fixed-width class="text-xs"  @click="emit('arrow-click')"/>
+        <LoadingIcon v-if="isLoading" class="text-sm" />
+        <FontAwesomeIcon v-else-if="isWithArrowRight" :icon="faChevronRight" fixed-width class="text-xs"  @click="emit('arrow-click')"/>
     </div>
 </template>

@@ -48,50 +48,50 @@ class CreateProspect extends OrgAction
                 ],
                 'formData'    => [
                     'blueprint' =>
+                    [
                         [
-                            [
-                                'title'  => __('Contact'),
-                                'fields' => [
-                                    'company_name'    => [
-                                        'type'  => 'input',
-                                        'label' => __('Company')
+                            'title'  => __('Contact'),
+                            'fields' => [
+                                'company_name'    => [
+                                    'type'  => 'input',
+                                    'label' => __('Company')
+                                ],
+                                'contact_name'    => [
+                                    'type'  => 'input',
+                                    'label' => __('Contact name'),
+                                    'required' => true
+                                ],
+                                'email'           => [
+                                    'type'  => 'input',
+                                    'label' => __('Email')
+                                ],
+                                'phone'           => [
+                                    'type'  => 'phone',
+                                    'label' => __('phone')
+                                ],
+                                'contact_website' => [
+                                    'type'      => 'inputWithAddOn',
+                                    'label'     => __('website'),
+                                    'leftAddOn' => [
+                                        'label' => 'https://'
                                     ],
-                                    'contact_name'    => [
-                                        'type'  => 'input',
-                                        'label' => __('Contact name'),
-                                        'required' => true
-                                    ],
-                                    'email'           => [
-                                        'type'  => 'input',
-                                        'label' => __('Email')
-                                    ],
-                                    'phone'           => [
-                                        'type'  => 'phone',
-                                        'label' => __('phone')
-                                    ],
-                                    'contact_website' => [
-                                        'type'      => 'inputWithAddOn',
-                                        'label'     => __('website'),
-                                        'leftAddOn' => [
-                                            'label' => 'https://'
-                                        ],
-                                    ],
+                                ],
 
-                                ]
-                            ],
-                        ],
-                    'route'     =>
-                        match (class_basename($parent)) {
-                            'Shop' => [
-                                'name'       => 'org.models.shop.prospect.store',
-                                'parameters' => [$parent->id]
-                            ],
-                            default => [
-                                [
-                                    'name' => 'org.models.prospect.store',
-                                ]
                             ]
-                        }
+                        ],
+                    ],
+                    'route'     =>
+                    match (class_basename($parent)) {
+                        'Shop' => [
+                            'name'       => 'grp.models.shop.prospect.store',
+                            'parameters' => [$parent->id]
+                        ],
+                        default => [
+                            [
+                                'name' => 'org.models.prospect.store',
+                            ]
+                        ]
+                    }
                 ]
 
             ]
@@ -100,7 +100,7 @@ class CreateProspect extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo('crm.edit');
+        return $request->user()->authTo("crm.{$this->shop->id}.edit");
     }
 
 

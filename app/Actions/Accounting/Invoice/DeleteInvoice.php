@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
+use App\Actions\Helpers\Dashboard\InvalidateDashboardCaches;
 use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
 use App\Actions\Accounting\InvoiceTransaction\DeleteInvoiceTransaction;
 use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
@@ -90,6 +91,8 @@ class DeleteInvoice extends OrgAction
 
     public function postDeleteInvoiceHydrators(Invoice $invoice): void
     {
+        InvalidateDashboardCaches::run($invoice);
+
         $customer = $invoice->customer;
         CustomerHydrateInvoices::dispatch($invoice->customer_id);
         ShopHydrateInvoices::dispatch($customer->shop);

@@ -14,6 +14,7 @@ use App\Imports\WithImport;
 use App\Models\Helpers\Upload;
 use App\Models\Catalogue\Shop;
 use Exception;
+use Illuminate\Support\Arr;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithEvents;
@@ -38,16 +39,15 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
         $sanitizedData = $this->processExcelData([$row]);
         $validatedData = array_intersect_key($sanitizedData, array_flip(array_keys($this->rules())));
 
-        $modelData = [
-            'company_name' => $validatedData['company_name'],
-            'contact_name' => $validatedData['contact_name'],
-            'email'        => $validatedData['email'],
-            'phone'        => $validatedData['phone'],
-        ];
-
-
         try {
-            $prospectKey      = $validatedData['id_prospect_key'];
+            $modelData = [
+                'company_name' => Arr::get($validatedData, 'company_name'),
+                'contact_name' => Arr::get($validatedData, 'contact_name'),
+                'email' => Arr::get($validatedData, 'email'),
+                'phone' => Arr::get($validatedData, 'phone'),
+            ];
+
+            $prospectKey = Arr::get($validatedData, 'id_prospect_key');
             $existingProspect = null;
             if (is_numeric($prospectKey)) {
                 $prospectKey      = (int)$prospectKey;
@@ -56,8 +56,7 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
                     ->first();
             }
 
-            $isNew = is_string($validatedData['id_prospect_key'])
-                && strtolower($validatedData['id_prospect_key']) === 'new';
+            $isNew = is_string($prospectKey) && strtolower($prospectKey) === 'new';
 
             if ($existingProspect) {
                 UpdateProspect::run($existingProspect, $modelData);
@@ -66,7 +65,6 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
             } else {
                 throw new Exception("Prospect key not found");
             }
-
 
             $this->setRecordAsCompleted($uploadRecord);
         } catch (Exception $e) {

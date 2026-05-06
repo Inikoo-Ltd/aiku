@@ -5,21 +5,91 @@
 	"name": "family",
 	"category": "family_description",
 	"icon": ["fal", "folder"],
-	"website_type" : ["b2b","b2c","dropshipping"],
-	"is_in_test" : true,
+	"website_type": ["b2b", "b2c", "dropshipping"],
+	"is_in_test": true,
 	"fixed": true,
 	"data": {
 		"fieldValue": {
+			"id": "family-description",
 			"button": {
 				"link": {
 					"id": null,
 					"url": "#family-extra-description",
 					"href": "#family-extra-description",
-					"type": "external"
+					"type": "external",
+					"target": "_self"
 				},
-				"text": "Learn more about this product range",
+				"text": "Read more",
 				"container": {
-					"properties": null
+					"properties": {
+						"border": {
+							"desktop": {
+								"top": {
+									"value": null
+								},
+								"left": {
+									"value": []
+								},
+								"unit": "px",
+								"color": null,
+								"right": {
+									"value": []
+								},
+								"bottom": {
+									"value": []
+								},
+								"rounded": {
+									"unit": "px",
+									"topleft": {
+										"value": null
+									},
+									"topright": {
+										"value": null
+									},
+									"bottomleft": {
+										"value": null
+									},
+									"bottomright": {
+										"value": null
+									}
+								}
+							}
+						},
+						"margin": {
+							"desktop": {
+								"top": {
+									"value": null
+								},
+								"left": {
+									"value": null
+								},
+								"unit": "px",
+								"right": {
+									"value": null
+								},
+								"bottom": {
+									"value": null
+								}
+							}
+						},
+						"padding": {
+							"desktop": {
+								"top": {
+									"value": 8
+								},
+								"left": {
+									"value": 10
+								},
+								"unit": "px",
+								"right": {
+									"value": 10
+								},
+								"bottom": {
+									"value": 8
+								}
+							}
+						}
+					}
 				}
 			},
 			"container": {
@@ -141,6 +211,9 @@
 						}
 					}
 				}
+			},
+			"column_position": {
+				"desktop": "Image-right"
 			}
 		}
 	}
