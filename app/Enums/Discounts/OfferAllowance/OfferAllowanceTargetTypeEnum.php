@@ -12,13 +12,15 @@ enum OfferAllowanceTargetTypeEnum: string
 {
     case ALL_PRODUCTS_IN_ORDER = 'all_products_in_order';
     case ALL_PRODUCTS_IN_PRODUCT_CATEGORY = 'all_products_in_product_category';
+    case ALL_PRODUCTS_IN_DEPARTMENT = 'all_products_in_department';
     case ORDER = 'order';
 
     public function label(): string
     {
         return match ($this) {
             OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER => __('All products in order'),
-            OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY => __('All products in product category'),
+            OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY => __('All products in family'),
+            OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_DEPARTMENT => __('All products in department'),
             OfferAllowanceTargetTypeEnum::ORDER => __('Order'),
         };
     }
