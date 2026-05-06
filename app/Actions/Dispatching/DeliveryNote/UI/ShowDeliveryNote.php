@@ -243,18 +243,7 @@ class ShowDeliveryNote extends OrgAction
         if ($deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED && !$deliveryNote->is_returned) {
             $actions[] = [
                 'type'    => 'button',
-                'style'   => 'secondary',
-                'icon'    => 'fal fa-exchange',
-                'tooltip' => __('Make a return'),
-                'label'   => __('Return'),
                 'key'     => 'return',
-                'route'   => [
-                    'method'     => 'patch',
-                    'name'       => 'grp.models.delivery_note.return.process',
-                    'parameters' => [
-                        'deliveryNote' => $deliveryNote->id
-                    ]
-                ],
             ];
         }
 
@@ -467,7 +456,7 @@ class ShowDeliveryNote extends OrgAction
                 [
                     'type'    => 'button',
                     'style'   => 'cancel',
-                    'tooltip' => __('Undispatch'),
+                    'tooltip' => __('Set Delivery Note as undispatched (back to finalised)'),
                     'label'   => __('Undispatch'),
                     'key'     => 'undispatch',
                     'route'   => [

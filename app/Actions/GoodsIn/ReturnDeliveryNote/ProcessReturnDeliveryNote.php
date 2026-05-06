@@ -13,17 +13,21 @@ use App\Actions\GoodsIn\ReturnDeliveryNoteItem\StoreReturnDeliveryNoteItems;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
+
 
 class ProcessReturnDeliveryNote extends OrgAction
 {
     private DeliveryNote $deliveryNote; 
 
-    public function handle(DeliveryNote $deliveryNote, array $modelData): void
+    public function handle(DeliveryNote $deliveryNote, array $modelData): ReturnDeliveryNote
     {
-        DB::transaction(function () use($deliveryNote) {
+        return DB::transaction(function () use($deliveryNote) {
             $returnDeliveryNote = StoreReturnDeliveryNote::make()->action($deliveryNote, []);
             $returnDeliveryNote->refresh();
 
@@ -38,7 +42,22 @@ class ProcessReturnDeliveryNote extends OrgAction
             ]);
             
             $returnDeliveryNote->refresh();
+
+            return $returnDeliveryNote;
         });
+    }
+
+    public function htmlResponse(ReturnDeliveryNote $returnDeliveryNote, ActionRequest $request): RedirectResponse
+    {
+        return Redirect::route('grp.org.warehouses.show.incoming.return-delivery-notes.show', [
+                'organisation' => $this->organisation,
+                'warehouse' => $returnDeliveryNote->warehouse->slug,
+                'returnDeliveryNote' => $returnDeliveryNote
+            ])->with('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Return Delivery Note created successfully.'),
+            ]);
     }
 
     public function afterValidator(Validator $validator, ActionRequest $request)
@@ -53,6 +72,6 @@ class ProcessReturnDeliveryNote extends OrgAction
         $this->deliveryNote = $deliveryNote;
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
-        $this->handle($deliveryNote, $this->validatedData);
+        return $this->handle($deliveryNote, $this->validatedData);
     }
 }

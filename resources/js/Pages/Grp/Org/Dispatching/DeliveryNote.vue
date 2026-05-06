@@ -347,27 +347,26 @@ onMounted(() => {
     console.log('Subscribed to channel for porto ID:', props.delivery_note.id, 'Channel:', channel)
 })
 
-const processReturn = (routeData: {
-	name: string,
-	parameters: {}
-}) => {
-	router.patch(route(routeData.name, routeData.parameters), {}, {
-		onSuccess: () => {
-            notify({ 
-				title: 'Updated', 
-				text: 'Successfully created return', 
-				type: 'success' 
-			})
-		},
-		onError: (err) => {
-			console.error(err)
-            notify({ 
-				title: 'Error', 
-				text: 'Failed to create return.', 
-				type: 'error' 
-			})
-		}
-	})
+const processReturn = () => {
+	// router.patch(route('grp.models.delivery_note.return.process', {
+	// 	deliveryNote: props.delivery_note.id
+	// }), {}, {
+	// 	onSuccess: () => {
+    //         notify({ 
+	// 			title: 'Updated', 
+	// 			text: 'Successfully created return', 
+	// 			type: 'success' 
+	// 		})
+	// 	},
+	// 	onError: (err) => {
+	// 		console.error(err)
+    //         notify({ 
+	// 			title: 'Error', 
+	// 			text: 'Failed to create return.', 
+	// 			type: 'error' 
+	// 		})
+	// 	}
+	// })
 }
 
 </script>
@@ -376,17 +375,17 @@ const processReturn = (routeData: {
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead" isButtonGroupWithBorder>
 		<template #afterTitle2>
-			<FontAwesomeIcon
-				v-if="hasReturn?.reference"
-				:icon="faExchange"
+			<div v-if="hasReturn?.reference"
 				v-tooltip="trans('Go to Return')"
-				class="text-gray-500 cursor-pointer hover:animate-pulse"
 				@click="() => {
 					router.visit(route(hasReturn.route.name, hasReturn.route.parameters))
 				}"
-			/>
-			<div class="font-normal text-lg leading-none text-indigo-500" v-if="hasReturn?.reference">
-				{{ trans("Returned") }}
+				class="hover:underline cursor-pointer"
+			>
+				<FontAwesomeIcon :icon="faExchange" class="opacity-75" fixed-width />
+				<span class="ml-2 font-normal text-lg leading-none text-indigo-500">
+					{{ trans("Returned") }}
+				</span>
 			</div>
 			<FontAwesomeIcon
 				v-if="delivery_note.is_premium_dispatch"
@@ -422,12 +421,38 @@ const processReturn = (routeData: {
 		</template>
 
 		<template #wrapped-return="{ action }">
-			<Button
-				@click="processReturn(action.route)"
-				:style="action.style"
-				:label="action.label"
-				:icon="action.icon"
-			/>
+			<ButtonWithLink
+				xclick="processReturn()"
+				type="red"
+				v-tooltip="ctrans('Maybe the Delivery Note is not received by customer')"
+				icon="fal fa-exchange"
+				:routeTarget="{
+					name: 'grp.models.delivery_note.return.process',
+					parameters: {
+						deliveryNote: props.delivery_note.id
+					},
+					method: 'patch'
+				}"
+				@error="(e) => {
+					console.log('eeee', e)
+					notify({
+						title: ctrans('Failed to set return'),
+						text: e.message || 'Please try again later or contact administrator.',
+						type: 'error',
+					})
+				}"
+				@success="() => {
+					notify({ 
+						title: ctrans('Updated'), 
+						text: ctrans('Successfully created return'), 
+						type: 'success' 
+					})
+				}"
+			>
+				<template #label>
+					<span class="whitespace-nowrap">{{ ctrans('Set return') }}</span>
+				</template>
+			</ButtonWithLink>
 		</template>
 
 		<template #otherBefore v-if="!box_stats.is_replacement">
