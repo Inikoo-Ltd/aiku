@@ -15,8 +15,8 @@ enum ReturnDeliveryNoteItemStateEnum: string
     case HANDLING = 'handling';
 
     // Block Received
-    // case NOT_RETURNED = 'not_returned';
-    // case DAMAGED = 'damaged';
+    case NOT_RETURNED = 'not_returned';
+    case DAMAGED = 'damaged';
     case PROCESSED = 'processed';
     case CANCELLED = 'cancelled';
 
@@ -25,9 +25,9 @@ enum ReturnDeliveryNoteItemStateEnum: string
         return match ($this) {
             self::UNASSIGNED    => 'Item is on queue',
             self::HANDLING      => 'Item is handled',
-            // self::NOT_RETURNED  => 'Item is not returned',
-            // self::DAMAGED       => 'Item is damaged',
-            self::PROCESSED      => 'Item is processed',
+            self::NOT_RETURNED  => 'Item is not returned',
+            self::DAMAGED       => 'Item is damaged',
+            self::PROCESSED     => 'Item is processed',
             self::CANCELLED     => 'Item is cancelled',
         };
     }
@@ -55,26 +55,26 @@ enum ReturnDeliveryNoteItemStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
-            // self::NOT_RETURNED  => [
-            //     'tooltip' => __('Not Returned'),
-            //     'icon'    => 'fal fa-minus-circle',
-            //     'class'   => 'text-red-500',
-            //     'color'   => 'red',
-            //     'app'     => [
-            //         'name' => 'times',
-            //         'type' => 'font-awesome-5'
-            //     ]
-            // ],
-            // self::DAMAGED       => [
-            //     'tooltip' => __('Damaged'),
-            //     'icon'    => 'fal fa-claw-marks',
-            //     'class'   => 'text-red-500',
-            //     'color'   => 'red',
-            //     'app'     => [
-            //         'name' => 'times',
-            //         'type' => 'font-awesome-5'
-            //     ]
-            // ],
+            self::NOT_RETURNED  => [
+                'tooltip' => __('Not Returned'),
+                'icon'    => 'fal fa-minus-circle',
+                'class'   => 'text-red-500',
+                'color'   => 'red',
+                'app'     => [
+                    'name' => 'times',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            self::DAMAGED       => [
+                'tooltip' => __('Damaged'),
+                'icon'    => 'fal fa-claw-marks',
+                'class'   => 'text-red-500',
+                'color'   => 'red',
+                'app'     => [
+                    'name' => 'times',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
             self::PROCESSED      => [
                 'tooltip' => __('Processed'),
                 'icon'    => 'fal fa-check-circle',

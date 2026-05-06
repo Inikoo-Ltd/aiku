@@ -7,18 +7,21 @@
  * Copyright: 2026
 */
 
+use App\Actions\GoodsIn\ReturnDeliveryNoteItem\SetReturnDeliveryNoteItemAsNotReturned;
+use App\Actions\GoodsIn\ReturnDeliveryNoteItem\SetReturnDeliveryNoteItemAsReturned;
+use App\Actions\GoodsIn\ReturnDeliveryNoteItem\SetReturnDeliveryNoteItemAsDamaged;
+use App\Actions\GoodsIn\ReturnDeliveryNoteItem\UpsertReturnDeliveryNoteItemNotReturned;
+use App\Actions\GoodsIn\ReturnDeliveryNoteItem\UpsertReturnDeliveryNoteItemReturned;
+use App\Actions\GoodsIn\ReturnDeliveryNoteItem\UpsertReturnDeliveryNoteItemDamaged;
 use Illuminate\Support\Facades\Route;
 
 Route::name('return_delivery_note_item.')->prefix('return-delivery-note-item/{returnDeliveryNoteItem:id}')->group(function () {
-    Route::patch('not-founded', function () {
-        dd('not_founded');
-    })->name('not_founded');
+    Route::patch('upsert-not-returned', UpsertReturnDeliveryNoteItemNotReturned::class)->name('upsert_not_returned');
+    Route::patch('set-all-not-returned', SetReturnDeliveryNoteItemAsNotReturned::class)->name('set_all_not_returned');
 
-    Route::patch('returned', function () {
-        dd('returned');
-    })->name('returned');
+    Route::patch('upsert-returned', UpsertReturnDeliveryNoteItemReturned::class)->name('upsert_returned');
+    Route::patch('set-all-returned', SetReturnDeliveryNoteItemAsReturned::class)->name('set_all_returned');
 
-    Route::patch('damage', function () {
-        dd('damage');
-    })->name('damage');
+    Route::patch('upsert-damaged', UpsertReturnDeliveryNoteItemDamaged::class)->name('upsert_damaged');
+    Route::patch('set-all-damaged', SetReturnDeliveryNoteItemAsDamaged::class)->name('set_all_damaged');
 });

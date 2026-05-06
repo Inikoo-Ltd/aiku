@@ -280,12 +280,11 @@ watch(isModalPickingBatchCode, (isOpen) => {
                         <ButtonWithLink
                             vxtooltip="trans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_code || '-' })"
                             icon="fal fa-fragile"
-                            :disabled="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
                             :size="screenType != 'mobile' ? 'xs' : 'md'"
                             type="negative"
                             :loading="isProcessing"
                             class="py-0"
-                            :routeTarget="itemValue.picking_all_route"
+                            :routeTarget="itemValue.set_all_damaged_route"
                             :bind-to-link="{
                                 preserveScroll: true,
                                 preserveState: true,
@@ -338,12 +337,11 @@ watch(isModalPickingBatchCode, (isOpen) => {
                         <ButtonWithLink
                             vxtooltip="trans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_code || '-' })"
                             icon="far fa-ghost"
-                            :disabled="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
                             :size="screenType != 'mobile' ? 'xs' : 'md'"
                             type="negative"
                             :loading="isProcessing"
                             class="py-0"
-                            :routeTarget="itemValue.picking_all_route"
+                            :routeTarget="itemValue.set_all_not_returned_route"
                             :bind-to-link="{
                                 preserveScroll: true,
                                 preserveState: true,
@@ -377,7 +375,7 @@ watch(isModalPickingBatchCode, (isOpen) => {
                 :modelValue="itemValue.total_item_returned"
                 @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
                 saveOnForm
-                :routeSubmit="itemValue.upsert_return_route"
+                :routeSubmit="itemValue.upsert_returned_route"
                 :bindToTarget="{
                     step: 1,
                     min: 0,
@@ -396,12 +394,11 @@ watch(isModalPickingBatchCode, (isOpen) => {
                         <ButtonWithLink
                             vxtooltip="trans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_code || '-' })"
                             icon="fal fa-check"
-                            :disabled="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
                             :size="screenType != 'mobile' ? 'xs' : 'md'"
                             type="positive"
                             :loading="isProcessing"
                             class="py-0"
-                            :routeTarget="itemValue.picking_all_route"
+                            :routeTarget="itemValue.set_all_returned_route"
                             :bind-to-link="{
                                 preserveScroll: true,
                                 preserveState: true,

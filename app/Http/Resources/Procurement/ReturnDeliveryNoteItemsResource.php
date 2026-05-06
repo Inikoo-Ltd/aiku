@@ -73,7 +73,12 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
                 $returnDeliveryNoteItem->packed_in
             ),
             'upsert_not_returned_route'              => [
-                'name'       => 'grp.models.return_delivery_note_item.not_founded',
+                'name'       => 'grp.models.return_delivery_note_item.upsert_not_returned',
+                'parameters' => ['returnDeliveryNoteItem' => $this->id],
+                'method'     => 'patch',
+            ],
+            'set_all_not_returned_route'              => [
+                'name'       => 'grp.models.return_delivery_note_item.set_all_not_returned',
                 'parameters' => ['returnDeliveryNoteItem' => $this->id],
                 'method'     => 'patch',
             ],
@@ -89,7 +94,12 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
                 $returnDeliveryNoteItem->packed_in
             ),
             'upsert_damaged_route'              => [
-                'name'       => 'grp.models.return_delivery_note_item.damage',
+                'name'       => 'grp.models.return_delivery_note_item.upsert_damaged',
+                'parameters' => ['returnDeliveryNoteItem' => $this->id],
+                'method'     => 'patch',
+            ],
+            'set_all_damaged_route'              => [
+                'name'       => 'grp.models.return_delivery_note_item.set_all_damaged',
                 'parameters' => ['returnDeliveryNoteItem' => $this->id],
                 'method'     => 'patch',
             ],
@@ -104,8 +114,13 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
                 ),
                 $returnDeliveryNoteItem->packed_in
             ),
-            'upsert_return_route'              => [
-                'name'       => 'grp.models.return_delivery_note_item.returned',
+            'upsert_returned_route'              => [
+                'name'       => 'grp.models.return_delivery_note_item.upsert_returned',
+                'parameters' => ['returnDeliveryNoteItem' => $this->id],
+                'method'     => 'patch',
+            ],
+            'set_all_returned_route'              => [
+                'name'       => 'grp.models.return_delivery_note_item.set_all_returned',
                 'parameters' => ['returnDeliveryNoteItem' => $this->id],
                 'method'     => 'patch',
             ],
