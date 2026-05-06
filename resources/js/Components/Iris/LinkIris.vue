@@ -38,6 +38,10 @@ const emit = defineEmits<{
   (e: "finish"): void
 }>()
 
+defineSlots<{
+  default?: (props: { isLoading: boolean }) => any
+}>()
+
 /**
  * Normalize raw input
  */
