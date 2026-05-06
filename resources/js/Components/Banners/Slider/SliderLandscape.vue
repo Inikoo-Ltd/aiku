@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { get } from 'lodash-es'
 
 
@@ -27,10 +27,10 @@ import CentralStage from "@/Components/Banners/Slider/CentralStage.vue"
 import SlideCorner from "@/Components/Banners/Slider/SlideCorner.vue"
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faEyeSlash } from '@fas'
+import { faEyeSlash, faSpinnerThird } from '@fas'
 import { faExternalLink, faExclamationTriangle } from '@far'
 
-library.add(faExternalLink, faEyeSlash, faExclamationTriangle)
+library.add(faExternalLink, faEyeSlash, faExclamationTriangle, faSpinnerThird)
 
 const props = defineProps<{
     production?: boolean
@@ -199,6 +199,31 @@ const isMounted = ref(false)
 onMounted(() => {
     isMounted.value = true
 })
+
+const loadingSlideUlid = ref<string | null>(null)
+let slideLoadingTimeout: ReturnType<typeof setTimeout> | null = null
+
+const resetSlideNavigation = () => {
+    loadingSlideUlid.value = null
+    if (slideLoadingTimeout) {
+        clearTimeout(slideLoadingTimeout)
+        slideLoadingTimeout = null
+    }
+}
+
+const startSlideNavigation = (ulid?: string | null, href?: string | null) => {
+    if (!ulid || !href || href === '#') return
+    loadingSlideUlid.value = ulid
+    if (slideLoadingTimeout) clearTimeout(slideLoadingTimeout)
+    slideLoadingTimeout = setTimeout(() => {
+        loadingSlideUlid.value = null
+        slideLoadingTimeout = null
+    }, 1800)
+}
+
+onBeforeUnmount(() => {
+    if (slideLoadingTimeout) clearTimeout(slideLoadingTimeout)
+})
 </script>
 
 <template>
@@ -251,8 +276,14 @@ onMounted(() => {
                             </span>
                         </div>
                         <!-- <FontAwesomeIcon v-if="!!component?.layout?.link" icon='far fa-external-link' class='text-gray-300/50 text-xl absolute top-2 right-2' aria-hidden='true' /> -->
-                        <a v-if="!!component?.layout?.link" :href="`https://${useRemoveHttps(component?.layout?.link)}`"
-                            target="_top" class="absolute bg-transparent w-full h-full" />
+                        <a
+                            v-if="!!component?.layout?.link"
+                            :href="`https://${useRemoveHttps(component?.layout?.link)}`"
+                            target="_top"
+                            class="absolute bg-transparent w-full h-full"
+                            @click="startSlideNavigation(component?.ulid, component?.layout?.link)"
+                            @dragstart="resetSlideNavigation"
+                        />
                         <SlideCorner v-for="(slideCorner, position) in filteredNulls(component?.layout?.corners)"
                             :position="position" :corner="slideCorner" :commonCorner="data.common.corners" />
                         <!-- CentralStage: slide-centralstage (prioritize) and common-centralStage -->
@@ -293,6 +324,9 @@ onMounted(() => {
                                             }">
                                                 <a :href="card.button?.link || '#'"
                                                     class="transition-all duration-200 inline-flex items-center justify-center"
+                                                    :class="{ 'pointer-events-none opacity-80': loadingSlideUlid === component?.ulid }"
+                                                    @click="startSlideNavigation(component?.ulid, card.button?.link)"
+                                                    @dragstart="resetSlideNavigation"
                                                     :style="{
                                                         padding: `${card.button?.paddingY ?? 10}px ${card.button?.paddingX ?? 20}px`,
                                                         background: card.button?.bgColor ?? '#000000',
@@ -306,6 +340,14 @@ onMounted(() => {
                                                                     ? (card.button?.customWidth ?? 200) + 'px'
                                                                     : 'auto'
                                                     }">
+                                                    <FontAwesomeIcon
+                                                        v-if="loadingSlideUlid === component?.ulid"
+                                                        icon="fas fa-spinner-third"
+                                                        spin
+                                                        class="mr-2"
+                                                        fixed-width
+                                                        aria-hidden="true"
+                                                    />
                                                     {{ card.button?.text || 'Button' }}
                                                 </a>
                                             </div>
@@ -325,6 +367,19 @@ onMounted(() => {
                             || data.common?.centralStage?.subtitle">
                             <CentralStage :data="data.common.centralStage" />
                         </template>
+
+                        <div
+                            v-if="loadingSlideUlid === component?.ulid"
+                            class="absolute inset-0 z-[20] flex items-center justify-center bg-black/25 pointer-events-none"
+                        >
+                            <FontAwesomeIcon
+                                icon="fas fa-spinner-third"
+                                spin
+                                class="text-3xl text-white"
+                                fixed-width
+                                aria-hidden="true"
+                            />
+                        </div>
 
                     </SwiperSlide>
                     <div v-if="data.navigation?.bottomNav?.value && data.navigation?.bottomNav?.type?.value == 'buttons'"
