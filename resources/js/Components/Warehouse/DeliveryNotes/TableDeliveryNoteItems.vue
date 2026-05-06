@@ -1422,7 +1422,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                             <Link
                                 :href="route('grp.org.warehouses.show.inventory.batch_codes.index', {
                                     organisation: route().params.organisation,
-                                    warehouse: route().params.warehouse,
+                                    warehouse: selectedPickingForBatchCode?.warehouse_slug ?? route().params.warehouse,
                                 })"
                                 class="underline hover:text-blue-700 cursor-pointer"
                             >
