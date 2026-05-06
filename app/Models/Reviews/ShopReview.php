@@ -19,6 +19,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 use App\Models\Ordering\Order;
 use App\Models\Reviews\Traits\IsReviews;
 use App\Models\Traits\HasImage;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\MediaLibrary\HasMedia;
 
 /**
@@ -93,5 +94,11 @@ class ShopReview extends Model implements Auditable, HasMedia
         static::saving(function (ShopReview $model) {
             $model->calculateAverageRating();
         });
+    }
+
+    public function replies(): HasMany
+    {
+        return $this->hasMany(ReviewReply::class, 'reviewable_id')
+            ->where('review_replies.reviewable_type', $this->getTable());
     }
 }

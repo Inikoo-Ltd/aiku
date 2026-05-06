@@ -19,6 +19,7 @@ use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
+use App\Models\Reviews\MasterAssetReviewStat;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
@@ -317,6 +318,11 @@ class MasterAsset extends Model implements Auditable, HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(MasterAssetStats::class);
+    }
+
+    public function reviewStats(): HasOne
+    {
+        return $this->hasOne(MasterAssetReviewStat::class);
     }
 
     public function orderingIntervals(): HasOne

@@ -70,6 +70,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\ShippingCountry;
 use App\Models\Ordering\Transaction;
+use App\Models\Reviews\ShopReviewStat;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Role;
@@ -376,6 +377,11 @@ class Shop extends Model implements HasMedia, Auditable
     public function stats(): HasOne
     {
         return $this->hasOne(ShopStats::class);
+    }
+
+    public function reviewStats(): HasOne
+    {
+        return $this->hasOne(ShopReviewStat::class);
     }
 
     public function accountingStats(): HasOne

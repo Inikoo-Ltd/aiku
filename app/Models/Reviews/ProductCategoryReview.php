@@ -22,6 +22,7 @@ use App\Models\Ordering\Order;
 use App\Models\Reviews\Traits\IsReviews;
 use App\Models\Traits\HasImage;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\MediaLibrary\HasMedia;
 
 /**
@@ -109,5 +110,11 @@ class ProductCategoryReview extends Model implements Auditable, HasMedia
     public function productCategory(): BelongsTo
     {
         return $this->belongsTo(ProductCategory::class, 'product_category_id');
+    }
+
+    public function replies(): HasMany
+    {
+        return $this->hasMany(ReviewReply::class, 'reviewable_id')
+            ->where('review_replies.reviewable_type', $this->getTable());
     }
 }

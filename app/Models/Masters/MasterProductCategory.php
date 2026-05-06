@@ -13,6 +13,7 @@ use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Helpers\Media;
+use App\Models\Reviews\MasterProductCategoryReviewStat;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
@@ -184,6 +185,11 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(MasterProductCategoryStats::class);
+    }
+
+    public function reviewStats(): HasOne
+    {
+        return $this->hasOne(MasterProductCategoryReviewStat::class);
     }
 
     public function productCategories(): HasMany
