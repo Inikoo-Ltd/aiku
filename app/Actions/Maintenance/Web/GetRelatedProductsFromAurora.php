@@ -1,11 +1,10 @@
 <?php
 
 
-
-
 /** @noinspection DuplicatedCode */
 
 namespace App\Actions\Maintenance\Web;
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 05 May 2026 14:32:22 Malaysia Time, Kuala Lumpur, Malaysia
@@ -14,11 +13,13 @@ namespace App\Actions\Maintenance\Web;
 
 
 use AllowDynamicProperties;
+use App\Actions\Masters\MasterProductCategory\SyncMasterProductCategoryRelatedMasterAssets;
 use App\Actions\Traits\WithOrganisationSource;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
-use App\Models\Masters\MasterShop;
-use App\Models\Web\Webpage;
-use Illuminate\Console\Command;
+use App\Models\Masters\MasterProductCategory;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -31,53 +32,70 @@ class GetRelatedProductsFromAurora
     /**
      * @throws \Exception
      */
-    public function handle(Command $command = null): void
+    public function handle(): void
     {
-
-        $masterShop=MasterShop::where('slug','aw')->firstOrFail();
-        $shop=Shop::where('slug','uk')->firstOrFail();
+        $shop = Shop::where('slug', 'uk')->firstOrFail();
 
         $organisation             = $shop->organisation;
         $this->organisationSource = $this->getOrganisationSource($organisation);
         $this->organisationSource->initialisation($organisation);
 
 
-        Webpage::query()
-            ->where(
-                'website_id',
-                $shop->website->id
-            )
-            ->whereNotNull('source_id')
+        foreach ($shop->productCategories as $family) {
+            if ($family->type != ProductCategoryTypeEnum::FAMILY) {
+                continue;
+            }
 
-            //    ->where('id',31890)
-            ->orderBy('id')
-            ->chunkById(1000, function ($webpages) use ($command) {
-                foreach ($webpages as $webpage) {
-                    $sourceData = explode(':', $webpage->source_id);
+            $masterFamily = MasterProductCategory::where('id', $family->master_product_category_id)->first();
+            if (!$masterFamily) {
+                continue;
+            }
 
-                    $auData = DB::connection('aurora')->table('Page Store Dimension')
-                        ->where('Page Key', $sourceData[1])
-                        ->first();
 
-                    if ($auData) {
-                        if ($auData->{'browser_title'} != '') {
-                            $webpage->update(
-                                [
-                                    'title' => $auData->{'browser_title'}
-                                ]
-                            );
-                        }
+            $sourceData = $family->source_family_id;
 
-                        if ($auData->{'Webpage Meta Description'} != '') {
-                            $webpage->update(
-                                [
-                                    'description' => $auData->{'Webpage Meta Description'}
-                                ]
-                            );
+            $masterAssets = [];
+
+            if ($sourceData) {
+                $sourceData     = explode(':', $sourceData);
+                $auroraFamilyId = $sourceData[1];
+
+                $auData = DB::connection('aurora')->table('Page Store Dimension')
+                    ->where('Webpage Scope', 'Category Products')
+                    ->where('Webpage Scope Key', $auroraFamilyId)
+                    ->first();
+
+                if (!$auData) {
+                    continue;
+                }
+
+
+                $rawBlocks = $auData->{'Page Store Content Published Data'};
+
+                $blocks = json_decode($rawBlocks, true);
+
+                foreach (Arr::get($blocks, 'blocks', []) as $block) {
+                    if (Arr::get($block, 'type') == 'products') {
+                        foreach (Arr::get($block, 'items', []) as $productData) {
+                            if (Arr::get($productData, 'type') == 'product') {
+                                $product = Product::where('source_id', '1:'.Arr::get($productData, 'product_id'))->first();
+
+                                if ($product->master_product_id) {
+                                    $masterAssets[] = $product->master_product_id;
+                                }
+                            }
                         }
                     }
                 }
-            }, 'id');
+
+                SyncMasterProductCategoryRelatedMasterAssets::make()->action(
+                    $masterFamily,
+                    [
+                        'master_asset_ids' => $masterAssets
+                    ]
+                );
+            }
+        }
     }
 
 
@@ -86,9 +104,12 @@ class GetRelatedProductsFromAurora
         return 'maintenance:get_aurora_related_products';
     }
 
-    public function asCommand(Command $command): int
+    /**
+     * @throws \Exception
+     */
+    public function asCommand(): int
     {
-        $this->handle($command);
+        $this->handle();
 
         return 0;
     }

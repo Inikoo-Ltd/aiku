@@ -222,7 +222,13 @@ test('UI show offer campaigns', function () {
 });
 
 test('UI Index offers', function () {
-    $response = get(route('grp.org.shops.show.discounts.offers.index', [$this->organisation->slug, $this->shop->slug]));
+    $this->withoutExceptionHandling();
+
+
+    $response = get(route('grp.org.shops.show.discounts.offers.index', [
+        $this->organisation->slug,
+        $this->shop->slug
+    ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page

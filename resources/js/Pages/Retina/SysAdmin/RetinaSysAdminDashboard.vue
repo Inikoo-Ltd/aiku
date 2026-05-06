@@ -52,10 +52,6 @@ const props = defineProps<{
 	}
 }>()
 
-// const locale = inject("locale", aikuLocaleStructure)
-// const layout = inject("layout", layoutStructure)
-
-
 </script>
 
 <template>

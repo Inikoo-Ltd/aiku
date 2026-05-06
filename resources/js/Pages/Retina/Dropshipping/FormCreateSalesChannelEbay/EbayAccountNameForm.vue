@@ -5,12 +5,11 @@
   -->
 
 <script setup lang="ts">
-import { inject, ref, watch, onMounted, provide } from "vue";
-import { router, useForm } from "@inertiajs/vue3";
+import { inject, ref } from "vue";
+import { useForm } from "@inertiajs/vue3";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { trans } from "laravel-vue-i18n";
-import { notify } from "@kyvg/vue3-notification";
 import axios from "axios";
 
 const goNext = inject("goNext");
