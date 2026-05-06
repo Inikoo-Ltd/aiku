@@ -25,7 +25,7 @@ class SyncProductCategoryRelatedProducts extends OrgAction
             ->mapWithKeys(function ($productId) {
                 return [
                     data_get($productId, 'id') => [
-                        'product_id'   => data_get($productId, 'id'),
+                        'product_id' => data_get($productId, 'id'),
                         'position'   => data_get($productId, 'position'),
                     ]
                 ];
@@ -33,7 +33,7 @@ class SyncProductCategoryRelatedProducts extends OrgAction
             ->unique();
 
         $productCategory->relatedProducts()->sync($productIds->all());
-        
+
         foreach ($productCategory->relatedProducts as $product) {
             $key = $product->pivot->id;
             DB::table('product_category_has_related_products')
@@ -47,8 +47,8 @@ class SyncProductCategoryRelatedProducts extends OrgAction
     public function rules(): array
     {
         return [
-            'product_ids'   => ['sometimes', 'array'],
-            'product_ids.*.id' => ['integer', Rule::exists('products', 'id')->where('shop_id', $this->shop->id)],
+            'product_ids'            => ['sometimes', 'array'],
+            'product_ids.*.id'       => ['integer', Rule::exists('products', 'id')->where('shop_id', $this->shop->id)],
             'product_ids.*.position' => ['integer'],
         ];
     }
