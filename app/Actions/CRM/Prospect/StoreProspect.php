@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Validator;
+use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -221,4 +222,20 @@ class StoreProspect extends OrgAction
         return $this->handle($shop, $this->validatedData);
     }
 
+    public function asController(Shop $shop, ActionRequest $request): Prospect
+    {
+        $this->initialisationFromShop($shop, $request);
+        return $this->handle($shop, $this->validatedData);
+    }
+
+    public function htmlResponse(Prospect $prospect): \Symfony\Component\HttpFoundation\Response
+    {
+        return Inertia::location(route(
+            'grp.org.shops.show.crm.prospects.index',
+            [
+                'organisation' => $prospect->organisation->slug,
+                'shop'         => $prospect->shop->slug,
+            ]
+        ));
+    }
 }
