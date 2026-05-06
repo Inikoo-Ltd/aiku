@@ -76,7 +76,7 @@ class MoveOrgStockToOtherLocation extends OrgAction
             ]
         );
 
-        RepairOrgStockMissingLocationIds::dispatch($locationOrgStock->orgStock);
+        RepairOrgStockMissingLocationIds::dispatch($locationOrgStock->org_stock_id)->delay(2);
         OrgStockHydrateQuantityInLocations::dispatch($locationOrgStock->orgStock);
     }
 

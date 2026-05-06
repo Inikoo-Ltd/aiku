@@ -79,7 +79,7 @@ class StoreLocationOrgStock extends OrgAction
             return $locationStock;
         });
 
-        RepairOrgStockMissingLocationIds::dispatch($orgStock)->delay($this->hydratorsDelay);
+        RepairOrgStockMissingLocationIds::dispatch($orgStock->id)->delay(2);
         LocationHydrateStocks::dispatch($location)->delay($this->hydratorsDelay);
         LocationHydrateStockValue::dispatch($location)->delay($this->hydratorsDelay);
         OrgStockHydrateLocations::dispatch($orgStock)->delay($this->hydratorsDelay);

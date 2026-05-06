@@ -71,7 +71,7 @@ class UpdateLocationOrgStock extends OrgAction
             CalculateOrgStockCurrentStockHistories::dispatch($locationOrgStock->org_stock_id);
         }
 
-        RepairOrgStockMissingLocationIds::dispatch($locationOrgStock->orgStock);
+        RepairOrgStockMissingLocationIds::dispatch($locationOrgStock->org_stock_id)->delay(2);
 
         return $locationOrgStock;
     }

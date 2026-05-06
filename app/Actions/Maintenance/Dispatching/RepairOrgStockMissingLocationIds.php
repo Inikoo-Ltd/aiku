@@ -8,22 +8,38 @@
 
 namespace App\Actions\Maintenance\Dispatching;
 
-use App\Actions\Traits\WithActionUpdate;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Collection;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class RepairOrgStockMissingLocationIds
+class RepairOrgStockMissingLocationIds implements ShouldBeUnique
 {
-    use WithActionUpdate;
+    use AsAction;
 
+    public string $jobQueue = 'hydrators-slave';
 
-    public function handle(OrgStock $orgStock): void
+    public function getJobUniqueId(int|null $orgStockId): string
     {
+        return $orgStockId ?? 'empty';
+    }
+
+    public function handle(int|null $orgStockId): void
+    {
+        if (!$orgStockId) {
+            return;
+        }
+        $orgStock = OrgStock::find($orgStockId);
+
+        if (!$orgStock) {
+            return;
+        }
+
         $locationOrgStock = $orgStock->locationOrgStocks->where('picking_priority', 1)->first();
         if ($locationOrgStock) {
             $orgStock->update([
-                'picking_location_id' => $locationOrgStock->location_id,
+                'picking_location_id'              => $locationOrgStock->location_id,
                 'picking_dropshipping_location_id' => $locationOrgStock->location_id,
             ]);
         }
