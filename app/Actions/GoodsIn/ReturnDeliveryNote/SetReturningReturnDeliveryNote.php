@@ -27,12 +27,12 @@ class SetReturningReturnDeliveryNote extends OrgAction
             ]);
         }
         
-        data_set($modelData, 'returning_at', now());
+        $modelData = [];
         data_set($modelData, 'return_state', ReturnDeliveryNoteStateEnum::RETURNING);
         data_set($modelData, 'handler_user_id', $user->id);
 
         $returnDeliveryNote = DB::transaction(function () use ($returnDeliveryNote, $modelData) {
-            $returnDeliveryNote = $this->update($returnDeliveryNote, $modelData);
+            $returnDeliveryNote = UpdateReturnDeliveryNote::make()->action($returnDeliveryNote, $modelData);
 
             foreach ($returnDeliveryNote->returnDeliveryNoteItem as $item) {
                 UpdateReturnDeliveryNoteItem::make()->action($item, [

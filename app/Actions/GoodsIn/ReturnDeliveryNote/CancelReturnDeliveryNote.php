@@ -42,12 +42,12 @@ class CancelReturnDeliveryNote extends OrgAction
 
         $newCancelledRef = $cancelledRef.($cancelledCount > 0 ? '-'.($cancelledCount + 1) : '');
 
+        $modelData = [];
         data_set($modelData, 'reference', $newCancelledRef);
-        data_set($modelData, 'cancelled_at', now());
         data_set($modelData, 'return_state', ReturnDeliveryNoteStateEnum::CANCELLED);
 
         $returnDeliveryNote = DB::transaction(function () use ($returnDeliveryNote, $modelData) {
-            $returnDeliveryNote = $this->update($returnDeliveryNote, $modelData);
+            $returnDeliveryNote = UpdateReturnDeliveryNote::make()->action($returnDeliveryNote, $modelData);
 
             foreach ($returnDeliveryNote->returnDeliveryNoteItem as $item) {
                 UpdateReturnDeliveryNoteItem::make()->action($item, [

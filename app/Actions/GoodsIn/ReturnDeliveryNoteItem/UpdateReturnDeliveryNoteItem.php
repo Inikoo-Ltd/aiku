@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 
 class UpdateReturnDeliveryNoteItem extends OrgAction
@@ -21,13 +22,18 @@ class UpdateReturnDeliveryNoteItem extends OrgAction
 
     public function handle(ReturnDeliveryNoteItem $returnDeliveryNoteItem, array $modelData): ReturnDeliveryNoteItem
     {
-        if ($currState = data_get($modelData, 'return_state')) {
-            if ($currState == ReturnDeliveryNoteItemStateEnum::CANCELLED) {
-                data_set($modelData, 'cancelled_at', now());
-            }
+        
+        if (Arr::has($modelData, 'return_state')) {
+            $returnState = data_get($modelData, 'return_state');
+            $timestampField = match ($returnState) {
+                ReturnDeliveryNoteItemStateEnum::CANCELLED  => 'cancelled_at',
+                ReturnDeliveryNoteItemStateEnum::HANDLING   => 'handled_at',
+                ReturnDeliveryNoteItemStateEnum::PROCESSED  => 'processed_at',
+                default => null,
+            };
 
-            if ($currState == ReturnDeliveryNoteItemStateEnum::HANDLING) {
-                data_set($model_data, 'handled_at', now());
+            if ($timestampField) {
+                data_set($modelData, $timestampField, now());
             }
         }
 
@@ -40,6 +46,7 @@ class UpdateReturnDeliveryNoteItem extends OrgAction
     {
         return [
             'return_state'  => ['sometimes', Rule::enum(ReturnDeliveryNoteItemStateEnum::class)],
+            'handled_at'    => ['sometimes', 'nullable'],
         ];
     }
 

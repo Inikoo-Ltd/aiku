@@ -6,7 +6,7 @@ import DummyComponent from "@/Components/DummyComponent.vue"
 
 import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import type { Component } from 'vue'
 
 import { PageHeadingTypes } from '@/types/PageHeading'
@@ -16,6 +16,12 @@ import BoxNote from '@/Components/Pallet/BoxNote.vue'
 import TableReturnDNItems from '@/Components/Warehouse/DeliveryNotes/TableReturnDNItems.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import BoxStatsDeliveryNote from '@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue'
+import { faBoxOpen, faCheck, faExchangeAlt, faTimes, faUserSlash } from '@fal'
+import { trans } from 'laravel-vue-i18n'
+import { ToggleSwitch } from 'primevue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import { library } from '@fortawesome/fontawesome-svg-core'
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
 
@@ -70,23 +76,73 @@ const component = computed(() => {
 
 })
 
+const isModalToQueue = ref(false);
+
+const pickingView = ref(true);
+
+const storedPickingView = localStorage.getItem('return-delivery-note:pickingView');
+if (storedPickingView !== null) {
+    pickingView.value = storedPickingView === 'true';
+}
+
+// ✅ Watch and persist to localStorage
+watch(pickingView, (val) => {
+    localStorage.setItem('return-delivery-note:pickingView', String(val));
+});
+
+library.add(
+	faUserSlash,
+	faExchangeAlt
+)
+
 </script>
 
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
+    <PageHeading :data="pageHead" isButtonGroupWithBorder>
+		<template #otherBefore>
+			<div
+				v-if="delivery_note.state == 'returning'"
+				class="flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2 rounded-md">
+				<FontAwesomeIcon :icon="faBoxOpen" class="text-gray-400" fixed-width />
+				<div class="flex items-center justify-between w-full">
+					<span class="text-sm text-gray-700 font-medium mx-2">
+						{{ trans("Worker View") }}
+					</span>
+					<ToggleSwitch v-model="pickingView">
+						<template #handle="{ checked }">
+							<FontAwesomeIcon
+								:icon="checked ? faCheck : faTimes"
+								:class="checked ? '' : 'text-red-500'"
+								class="text-xs"
+								fixed-width />
+						</template>
+					</ToggleSwitch>
+				</div>
+			</div>
+		</template>
+		
+		<template #button-group-change-picker="{ action }">
+			<Button
+				@click="isModalToQueue = true"
+				:label="action.label"
+				:icon="action.icon"
+				type="tertiary"
+				class="border-transparent rounded-l-none" />
+		</template>
+
+	</PageHeading>
 
 	<!-- Section: Box Note (TODO: update the routes ) -->
 	<div
-		vxif="
+		v-if="
 			pickingView ||
-			delivery_note_state.value === 'dispatched' ||
-			delivery_note_state.value === 'cancelled'
+			delivery_note.state === 'returned' ||
+			delivery_note.state === 'cancelled'
 		"
 		class="relative">
 		<div
-			xv-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
 			class="p-2 grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
 			<BoxNote
 				v-for="(note, index) in notes.note_list"
@@ -111,7 +167,7 @@ const component = computed(() => {
 	</div>
 
 	<BoxStatsDeliveryNote
-		v-if="box_stats"
+		v-if="box_stats && pickingView"
 		:showChangePickerPacker="showChangePickerPacker"
 		:boxStats="box_stats"
 		:routes
@@ -126,3 +182,9 @@ const component = computed(() => {
 		:tab="currentTab"
 	/>
 </template>
+<style scoped>
+.p-toggleswitch {
+	--p-toggleswitch-checked-background: #10b981;
+	--p-toggleswitch-checked-hover-background: #059669;
+}
+</style>

@@ -26,6 +26,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Http\Resources\CRM\CustomerResource;
@@ -43,6 +44,7 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Helpers\Address;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
@@ -60,6 +62,7 @@ class ShowDeliveryNote extends OrgAction
     use GetPlatformLogo;
 
     private Order|Shop|Warehouse|Customer $parent;
+    private ReturnDeliveryNote|null $return = null;
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
@@ -314,7 +317,6 @@ class ShowDeliveryNote extends OrgAction
                     ],
 
                 ],
-
                 $deliveryNote->pickerUser->id == $request->user()->id
                     ? [
                     'type'    => 'button',
@@ -626,7 +628,7 @@ class ShowDeliveryNote extends OrgAction
                     'shipper_id'   => null
                 ]
             ],
-            'return_dn' => $deliveryNote->returnedDeliveryNote()->select(['id', 'reference', 'slug'])->first()
+            'return_dn' => $this->return?->only(['id', 'reference', 'slug'])
         ];
     }
 
@@ -740,7 +742,7 @@ class ShowDeliveryNote extends OrgAction
         // Disable waiting on DS no?
         $allowWaiting = data_get($this->organisation->settings, 'orders.allow_waiting', false) && $deliveryNote->shop?->type !== ShopTypeEnum::DROPSHIPPING;
 
-        $return = $deliveryNote->returnedDeliveryNote()->first();
+        $this->return = $deliveryNote->returnedDeliveryNote()->whereNot('return_state', ReturnDeliveryNoteStateEnum::CANCELLED)->first();
 
         $props = [
             'title'         => __('Delivery note').' '.$deliveryNote->reference,
@@ -767,14 +769,14 @@ class ShowDeliveryNote extends OrgAction
                 'wrapped_actions' => $this->wrappedActions($deliveryNote),
             ],
             'warning'       => $warning,
-            'hasReturn'     => $return ? [
-                'reference' => $return->reference,
+            'hasReturn'     => $this->return ? [
+                'reference' => $this->return->reference,
                 'route'     => [
                     'name'       => 'grp.org.warehouses.show.incoming.return-delivery-notes.show',
                     'parameters' => [
-                        'organisation'   => $return->organisation->slug,
-                        'warehouse'      => $return->warehouse->slug,
-                        'returnDeliveryNote' => $return->slug,
+                        'organisation'   => $this->return->organisation->slug,
+                        'warehouse'      => $this->return->warehouse->slug,
+                        'returnDeliveryNote' => $this->return->slug,
                     ],
                 ]
             ] : null,

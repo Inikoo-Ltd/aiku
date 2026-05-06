@@ -66,23 +66,6 @@ class ShowReturnDeliveryNote extends OrgAction
         return $this->handle($returnDeliveryNote);
     }
 
-    public function getHandlingActions(ReturnDeliveryNote $returnDeliveryNote): array
-    {
-        $hasUnprocessedItems = ReturnDeliveryNoteItem::where('return_delivery_note_id', $returnDeliveryNote->id)
-            ->whereNotNull('processed_at')
-            ->exists();
-
-        $actions = [];
-        if (!$hasUnprocessedItems) {
-            $actions[] = [
-                'type' => 'button',
-                'key'  => 'trigger-set-as-returned',
-            ];
-        }
-
-        return $actions;
-    }
-
     public function wrappedActions(ReturnDeliveryNote $returnDeliveryNote): array
     {
         $isEditable = false;
@@ -130,6 +113,14 @@ class ShowReturnDeliveryNote extends OrgAction
             return [];
         }
 
+        $hasProcessedItems = ReturnDeliveryNoteItem::where('return_delivery_note_id', $returnDeliveryNote->id)
+            ->where(function ($q) {
+                $q->where('total_item_not_returned', '>', 0)
+                    ->orWhere('total_item_returned', '>', 0)
+                    ->orWhere('total_item_damaged', '>', 0);
+            })
+            ->exists();
+
         return match ($returnDeliveryNote->return_state) {
             ReturnDeliveryNoteStateEnum::RECEIVED => [
                 [
@@ -147,6 +138,38 @@ class ShowReturnDeliveryNote extends OrgAction
                     ],
                 ],
             ],
+            ReturnDeliveryNoteStateEnum::RETURNING => !$hasProcessedItems ? [
+                [
+                    'type'   => 'buttonGroup',
+                    'key'    => 'picker',
+                    'button' => [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'delete',
+                            'tooltip' => __('Remove picker'),
+                            'label'   => __('Remove Picker'),
+                            'icon'    => 'fal fa-user-slash',
+                            'key'     => 'remove-picker',
+                            'route'   => [
+                                'method'     => 'patch',
+                                'name'       => 'grp.models.return_delivery_note.unassign',
+                                'parameters' => [
+                                    'returnDeliveryNote' => $returnDeliveryNote->id
+                                ]
+                            ]
+                        ],
+                        [
+                            'type'    => 'button',
+                            'style'   => 'save',
+                            'tooltip' => __('Change picker'),
+                            'icon'    => 'fal fa-exchange-alt',
+                            'label'   => __('Change Picker'),
+                            'key'     => 'change-picker',
+                        ]
+
+                    ],
+                ],
+            ] : [],
             default => []
         };
     }

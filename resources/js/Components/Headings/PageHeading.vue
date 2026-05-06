@@ -355,17 +355,24 @@ const setError = (e) => {
 										class=""
 										:method="button.route?.method || 'get'"
 										@start="() => (isButtonLoading = 'buttonGroup' + index)"
+										@error="(err) => {
+											console.log(err);
+											let msg = trans('Error processing action.\n')
+											Object.entries(err).forEach(([key, value]) => {
+												msg += value + '. \n'
+											})
+
+											notify({
+												title: 'Failed',
+												text: msg,
+												type: 'error'
+											});
+										}"
 										@finish="
 											() =>
 												button.fullLoading
 													? false
 													: (isButtonLoading = false)
-										"
-										@error="
-											() =>
-												button.fullLoading
-													? (isButtonLoading = false)
-													: false
 										"
 										:as="button.target ? 'a' : 'div'"
 										:target="button.target">
