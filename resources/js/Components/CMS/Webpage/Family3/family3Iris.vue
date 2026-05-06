@@ -142,7 +142,7 @@ console.log("Family2 Workshop Props:", props)
           <div v-html="cleanedDescription" class="text-gray-600 leading-relaxed text-sm md:text-base " />
 
           <!-- COMBINED DISCOUNT + BUTTON -->
-          <div class="mt-4 flex  w-full overflow-hidden discount-wrapper md:items-stretch  md:justify-start justify-center">
+          <div class="mt-3 flex  w-full overflow-hidden md:items-stretch  md:justify-start justify-center">
 
 
               <Button 
