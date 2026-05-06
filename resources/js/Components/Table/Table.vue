@@ -71,11 +71,11 @@ const props = defineProps(
             required: false,
         },
 
-        inputDebounceMs: {
-            type: Number,
-            default: 350,
-            required: false,
-        },
+        // inputDebounceMs: {
+        //     type: Number,
+        //     default: 350,
+        //     required: false,
+        // },
 
         preserveScroll: {
             type: [Boolean, String],
@@ -328,6 +328,12 @@ const immediateSearch = (value: string) => {
     visit(location.pathname + '?' + generateNewQueryString())
 }
 
+const cancelVisitIfInProgress = () => {
+    if (visitCancelToken.value && isVisiting.value) {
+        visitCancelToken.value.cancel()
+    }
+}
+
 function changeFilterValue(key: string, value: string | null) {
     const intKey = findDataKey('filters', key)
     queryBuilderData.value.filters[intKey].value = value || null
@@ -532,7 +538,7 @@ const debouncedFilter = debounce(() => {
     } catch {
         console.error("Can't visit expected path")
     }
-}, 750, {
+}, 600, {
     leading: false,
     trailing: true,
 });
@@ -755,7 +761,7 @@ const isLoading = ref<string | boolean>(false)
                                 <TableFilterSearch v-if="queryBuilderProps.globalSearch" class=""
                                     @resetSearch="() => resetQuery()" :label="queryBuilderProps.globalSearch.label"
                                     :value="queryBuilderProps.globalSearch.value" :on-change="changeGlobalSearchValue"
-                                    :on-enter="immediateSearch" :isVisiting />
+                                    :on-enter="immediateSearch" :on-start-typing="cancelVisitIfInProgress" :isVisiting />
                             </slot>
                         </div>
                     </div>
