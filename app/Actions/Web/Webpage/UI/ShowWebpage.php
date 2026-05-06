@@ -53,8 +53,7 @@ class ShowWebpage extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, ActionRequest $request): Webpage
     {
-        // HELP-1854 | Limiting people accessing other shops website from a different shop
-        if ($shop != $webpage->shop) {
+        if ($shop->id !== $webpage->shop_id) {
             abort(403);
         }
 
