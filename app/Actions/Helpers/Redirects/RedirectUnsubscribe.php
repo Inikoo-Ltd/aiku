@@ -12,6 +12,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -68,11 +69,15 @@ class RedirectUnsubscribe
 
     public function asController(string $encryptedDispatchedEmailID, ActionRequest $request): RedirectResponse
     {
-        $dispatchedEmailID = Crypt::decryptString($encryptedDispatchedEmailID);
-        $dispatchedEmail   = DispatchedEmail::findOrFail($dispatchedEmailID);
+        try {
+            $dispatchedEmailID = Crypt::decryptString($encryptedDispatchedEmailID);
+            $dispatchedEmail   = DispatchedEmail::findOrFail($dispatchedEmailID);
 
-        $tag = $request->get('tag');
+            $tag = $request->get('tag');
 
-        return $this->handle($dispatchedEmail, $tag);
+            return $this->handle($dispatchedEmail, $tag);
+        } catch (DecryptException $e) {
+            return Redirect::route('grp.unsubscribe-error');
+        }
     }
 }

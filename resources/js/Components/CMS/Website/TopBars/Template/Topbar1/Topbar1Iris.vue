@@ -123,7 +123,9 @@ watch(
   { deep: true }
 )
 
+const isLoadingBundle = ref(false)
 const goToBundle = () => {
+    isLoadingBundle.value = true
     const stored = localStorage.getItem('layout_dropshipping')
     const currentPlatform = stored ? JSON.parse(stored)?.currentPlatform : null
     const url = currentPlatform
@@ -211,10 +213,10 @@ const goToBundle = () => {
 
 
             <!-- Section: Profile -->
-            <LinkIris v-if="!layout.offer_data" href="/app/dashboard" :type="'internal'" class="flex items-center justify-center">
+            <LinkIris v-if="!layout.offer_data" href="/app/dashboard" :type="'internal'" class="flex items-center justify-center" v-slot="{isLoading}">
                 <Button
                     v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn))"
-                    
+                    :loading="isLoading"
                     icon="fal fa-user"
                     type="transparent"
                     class="button min-w-max"
@@ -233,11 +235,12 @@ const goToBundle = () => {
             </LinkIris>
 
             <!-- Section: Back in stock -->
-            <LinkIris href="/app/back-in-stocks" :type="'internal'">
+            <LinkIris href="/app/back-in-stocks" :type="'internal'" v-slot="{isLoading}">
                 <Button
                     v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn)"
                     v-tooltip="trans('Reminder back in stock')"
                     type="transparent"
+                    :loading="isLoading"
                     class="button"
                 >
                     <template #icon>
@@ -253,8 +256,8 @@ const goToBundle = () => {
 
             <!-- section redirect to bundle -->
             <Button v-if="isLoggedIn && layout.retina?.type === 'dropshipping' &&  Object.keys(layout.user?.customerSalesChannels || {}).length > 0" v-tooltip="trans('Add Bundles')" type="transparent" class="button"
-                @click="goToBundle">
-                <template #loading>
+                @click="goToBundle" :loading="isLoadingBundle">
+                <template #isLoadingBundle>
                     <span v-show="false" class="button"></span>
                 </template>
 
@@ -264,10 +267,11 @@ const goToBundle = () => {
             </Button>
 
             <!-- Section: Favourite -->
-            <LinkIris href="/app/favourites" :type="'internal'">
+            <LinkIris href="/app/favourites" :type="'internal'" v-slot="{isLoading}">
                 <Button
                     v-if="(checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping')"
                     v-tooltip="trans('Favourites')"
+                    :loading="isLoading"
                     icon="fal fa-heart"
                     type="transparent"
                     class="button"
@@ -288,16 +292,14 @@ const goToBundle = () => {
 
 
             <!-- Section: Basket (cart) -->
-            <LinkIris href="/app/basket" :type="'internal'">
+            <LinkIris href="/app/basket" :type="'internal'" v-slot="{isLoading}">
                 <Button
                     v-if="(checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b')"
                     v-tooltip="trans('Cart count and amount')"  
+                    :loading="isLoading"
                     type="transparent"
                     class="button min-w-max"
                 >
-                    <template #loading>
-                        <span v-show="false" class="button"></span>
-                    </template>
                     <template #label="{ isLoadingVisit }">
                         <span v-tooltip="trans('Number of products line')" class="button -mr-1.5 whitespace-nowrap"
                             v-html="textReplaceVariables(`({{ cart_count }})`, layout.iris_variables)">

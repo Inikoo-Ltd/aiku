@@ -32,7 +32,7 @@ class DeletePickingInAurora implements ShouldBeUnique
      */
     public function handle(int $pickingID, Organisation $organisation, string $name, OrgStock $orgStock): void
     {
-        $apiUrl = $this->getApiUrl($organisation);
+        $apiUrl         = $this->getApiUrl($organisation);
         $auroraApiToken = $this->getApiToken($organisation);
         if (!$auroraApiToken || !app()->environment('production')) {
             return;
@@ -45,7 +45,8 @@ class DeletePickingInAurora implements ShouldBeUnique
                 'picker_name' => $name,
                 'action'      => 'aiku_delete_picking',
                 'part_sku'    => $this->getAuroraObjectKey($orgStock),
-                'picking_key' => $pickingID
+                'picking_key' => $pickingID,
+                'date'        => now()->utc()->toIso8601String(),
 
             ]
         )->get($apiUrl);
