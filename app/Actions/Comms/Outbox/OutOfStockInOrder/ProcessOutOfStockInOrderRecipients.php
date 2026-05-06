@@ -99,9 +99,7 @@ class ProcessOutOfStockInOrderRecipients
             return '';
         }
 
-        $totalProducts = count($productIds);
-        $displayProducts = array_slice($productIds, 0, 5);
-        $remainingCount = $totalProducts - 5;
+        $displayProducts = $productIds;
 
         $html = '';
 
@@ -166,13 +164,6 @@ class ProcessOutOfStockInOrderRecipients
         }
 
         $html .= '</table>';
-
-        // Add "and X more" text if there are remaining products
-        if ($remainingCount > 0) {
-            $html .= '<p style="font-family: Helvetica, Arial, sans-serif; font-size: 14px; color: #555; margin-top: 12px;">';
-            $html .= 'and ' . $remainingCount . ' more' . ($remainingCount > 1 ? 's' : '');
-            $html .= '</p>';
-        }
 
         return $html;
     }

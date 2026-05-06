@@ -69,7 +69,7 @@ class ProcessOutOfStockInOrderPerOutbox
             $join->on('transactions.model_id', '=', 'products.id');
             $join->where('transactions.model_type', $productClass);
             $join->where('products.is_for_sale', true);
-            // $join->where('products.available_quantity_updated_at', '>', $intervalInHours);
+            $join->where('products.available_quantity_updated_at', '>', $intervalInHours);
             $join->whereIn('products.state', [
                 ProductStateEnum::ACTIVE->value,
                 ProductStateEnum::DISCONTINUING->value,
