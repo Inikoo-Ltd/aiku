@@ -321,6 +321,13 @@ const changeGlobalSearchValue = debounce((value?: string) => {
     changeSearchInputValue('global', value);
 }, 100)
 
+const immediateSearch = (value: string) => {
+    changeGlobalSearchValue.cancel()
+    changeSearchInputValue('global', value)
+    debouncedFilter.cancel()
+    visit(location.pathname + '?' + generateNewQueryString())
+}
+
 function changeFilterValue(key: string, value: string | null) {
     const intKey = findDataKey('filters', key)
     queryBuilderData.value.filters[intKey].value = value || null
@@ -748,7 +755,7 @@ const isLoading = ref<string | boolean>(false)
                                 <TableFilterSearch v-if="queryBuilderProps.globalSearch" class=""
                                     @resetSearch="() => resetQuery()" :label="queryBuilderProps.globalSearch.label"
                                     :value="queryBuilderProps.globalSearch.value" :on-change="changeGlobalSearchValue"
-                                    :isVisiting />
+                                    :on-enter="immediateSearch" :isVisiting />
                             </slot>
                         </div>
                     </div>
