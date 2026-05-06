@@ -23,7 +23,7 @@ class ProcessWebsiteTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsAggregatedTimeSeriesQuery;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(int $websiteId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -97,16 +97,12 @@ class ProcessWebsiteTimeSeriesRecords implements ShouldBeUnique
                     'visitors_tablet'      => $result->visitors_tablet,
                 ]
             );
-
-            $processedPeriods[] = $period;
         }
-
-        $this->processPeriodsWithoutData($timeSeries, $from, $to, $processedPeriods);
     }
 
     protected function fetchDailyResults(WebsiteTimeSeries $timeSeries, string $from, string $to): Collection
     {
-        return DB::table('website_visitors')
+        return DB::connection('aiku_no_sticky')->table('website_visitors')
             ->where('first_seen_at', '>=', $from)
             ->where('first_seen_at', '<=', $to)
             ->where('website_id', $timeSeries->website_id)
@@ -148,41 +144,11 @@ class ProcessWebsiteTimeSeriesRecords implements ShouldBeUnique
             DB::raw('SUM(visitors_tablet) as visitors_tablet'),
         ];
 
-        $query = DB::table('website_time_series_records')
+        $query = DB::connection('aiku_no_sticky')->table('website_time_series_records')
             ->where('website_time_series_id', $dailyTimeSeries->id)
             ->where('from', '>=', $from)
             ->where('to', '<=', $to);
 
         return $this->applyAggregatedFrequencyGrouping($query, $timeSeries->frequency, $selects)->get();
-    }
-
-    protected function processPeriodsWithoutData(WebsiteTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
-    {
-        $emptyPeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
-
-        foreach ($emptyPeriods as $periodData) {
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'website_time_series_id' => $timeSeries->id,
-                    'period'                 => $periodData['period'],
-                    'frequency'              => $timeSeries->frequency->singleLetter(),
-                ],
-                [
-                    'from'                 => $periodData['from'],
-                    'to'                   => $periodData['to'],
-                    'visitors'             => 0,
-                    'sessions'             => 0,
-                    'page_views'           => 0,
-                    'avg_session_duration' => 0,
-                    'bounce_rate'          => 0,
-                    'pages_per_session'    => 0,
-                    'new_visitors'         => 0,
-                    'returning_visitors'   => 0,
-                    'visitors_desktop'     => 0,
-                    'visitors_mobile'      => 0,
-                    'visitors_tablet'      => 0,
-                ]
-            );
-        }
     }
 }
