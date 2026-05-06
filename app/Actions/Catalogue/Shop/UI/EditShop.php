@@ -394,7 +394,19 @@ class EditShop extends OrgAction
                         ],
                     ],
                 ],
-                                [
+                [
+                    'label'  => __('Payement info on Email'),
+                    'icon'   => 'fa-light fa-shoe-prints',
+                    'fields' => [
+                        'payment_info_on_email' => [
+                            'type'  => 'textEditor',
+                            'label' => __('Payment info on Email'),
+                            'full'  => true,
+                            'value' => $shop->settings['payment_info_on_email'] ?? ''
+                        ],
+                    ],
+                ],
+                [
                     'label'  => __('Invoices footer'),
                     'icon'   => 'fa-light fa-shoe-prints',
                     'fields' => [

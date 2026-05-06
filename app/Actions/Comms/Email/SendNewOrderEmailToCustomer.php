@@ -16,6 +16,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Email;
 use App\Models\Ordering\Order;
@@ -53,6 +54,9 @@ class SendNewOrderEmailToCustomer extends OrgAction
 
         $order->dispatchedEmails()->attach($dispatchedEmail, ['outbox_id' => $outbox->id]);
 
+        $paymentInfo = $order->to_be_paid_by == OrderToBePaidByEnum::BANK ?
+            $this->generateOrderPaymentByBankTransferHtml($order) : $this->generateOrderPaymentsHtml($order);
+
         return $this->sendEmailWithMergeTags(
             $dispatchedEmail,
             $outbox->emailOngoingRun->sender(),
@@ -62,7 +66,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
             additionalData: [
                 'customer_name' => $order->customer->name,
                 'order' => $this->generateOrderDetailsHtml($order),
-                'pay_info' => $this->generateOrderPaymentsHtml($order),
+                'pay_info' => $paymentInfo,
                 'date' => $order->submitted_at->format('F jS, Y'),
                 'order_link' => $this->getOrderLink($order),
                 'delivery_address' => $order->deliveryAddress->getHtml(),
@@ -169,8 +173,8 @@ class SendNewOrderEmailToCustomer extends OrgAction
                         color: #15803d;
                         margin-top: 4px;
                         font-weight: bold;
-                        max-width: 300px; 
-                        white-space: normal; 
+                        max-width: 300px;
+                        white-space: normal;
                         word-break: break-word;
                     ">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="display: inline-block; margin-right: 2px; vertical-align: -2px;">
@@ -415,6 +419,26 @@ class SendNewOrderEmailToCustomer extends OrgAction
         }
 
         $html .= '</table>';
+
+        return $html;
+    }
+
+    public function generateOrderPaymentByBankTransferHtml(Order $order): string
+    {
+        $paymentInfo = $order->shop->settings['payment_info_on_email'] ?? '';
+
+        if (empty($paymentInfo)) {
+            return '';
+        }
+
+        $html = '';
+        $html .= '<div style="margin-top: 30px;">
+            <h3 style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; color: #555; margin: 0 0 15px 0;">' . __('Bank Transfer Information') . '</h3>
+        </div>';
+
+        $html .= '<div style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; color: #666; line-height: 1.5; padding: 15px; background-color: #f9f9f9; border-radius: 6px; border: 1px solid #e9e9e9;">';
+        $html .= $paymentInfo;
+        $html .= '</div>';
 
         return $html;
     }
