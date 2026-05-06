@@ -20,6 +20,7 @@ const props = withDefaults(defineProps<{
     label?: string;
     value?: string;
     onChange: (value: string) => void;
+    onEnter?: (value: string) => void;
     isVisiting?: boolean;
 }>(), {
     label: "Search on table...",
@@ -60,6 +61,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
             type="text"
             name="global"
             @input="(e) => (querySearch = e?.target?.value, onChange(e?.target?.value))"
+            @keydown.enter="() => onEnter?.(querySearch ?? '')"
             class="border border-gray-300 rounded appearance-none inline pl-[75px] lg:pl-[103px] w-0 text-sm leading-none transition-[width] placeholder:text-gray-400 placeholder:italic ring-0 ring-transparent focus:ring-0 focus:ring-transparent cursor-text"
             :class="[querySearch ? 'bg-gray-500 focus:border-gray-500 text-gray-500 w-full pr-8' : 'pr-4 group-focus-within:w-full group-focus-within:pr-4 focus:border-gray-300']"
             :style="{
