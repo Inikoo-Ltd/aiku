@@ -13,6 +13,7 @@ use App\Http\Resources\HasSelfCall;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\DB;
 
 class ReturnDeliveryNoteItemsResource extends JsonResource
 {
@@ -22,6 +23,30 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
     {
         /** @var ReturnDeliveryNoteItem $returnDeliveryNoteItem */
         $returnDeliveryNoteItem = $this;
+
+        $returnLocation = DB::table('location_org_stocks')
+            ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
+            ->where('org_stock_id', $this->org_stock_id)
+            ->select([
+                'location_org_stocks.id',
+                'location_org_stocks.quantity',
+                'location_org_stocks.type',
+                'locations.id as location_id',
+                'locations.code as location_code',
+                'locations.slug as location_slug',
+            ])
+            ->selectRaw('\''.$returnDeliveryNoteItem->packed_in.'\' as org_stock_packed_in')
+            ->selectRaw(
+                '(
+                    SELECT concat(sum(quantity),\';\',string_agg(id::char,\',\')) FROM pickings
+                    WHERE pickings.location_id = location_org_stocks.location_id
+                    AND pickings.org_stock_id = location_org_stocks.org_stock_id
+                    AND pickings.type = ? AND pickings.delivery_note_item_id = ?
+                ) as pickings_data',
+                ['pick', $this->id]
+            )
+            ->orderBy('picking_priority')
+            ->get();
 
         return [
             'id'                                    => $returnDeliveryNoteItem->id,
@@ -68,6 +93,22 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
             'org_stock_name'                        => $returnDeliveryNoteItem->org_stock_name,
             'org_stock_slug'                        => $returnDeliveryNoteItem->org_stock_slug,
             'packed_in'                             => $returnDeliveryNoteItem->packed_in,
+            'locations'                             => $returnLocation,
+            'upsert_not_returned_route'              => [
+                'name'       => '#',
+                'parameters' => ['returnDeliveryNoteItem' => $this->id],
+                'method'     => 'post',
+            ],
+            'upsert_damaged_route'              => [
+                'name'       => '#',
+                'parameters' => ['returnDeliveryNoteItem' => $this->id],
+                'method'     => 'post',
+            ],
+            'upsert_return_route'              => [
+                'name'       => '#',
+                'parameters' => ['returnDeliveryNoteItem' => $this->id],
+                'method'     => 'post',
+            ],
         ];
     }
 }
