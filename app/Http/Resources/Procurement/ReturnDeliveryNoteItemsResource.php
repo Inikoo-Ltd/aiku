@@ -54,15 +54,6 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
                 ),
                 $returnDeliveryNoteItem->packed_in
             ),
-            'total_item_lost'                       => $returnDeliveryNoteItem->total_item_lost,
-            'total_item_lost_fractional'            =>  riseDivisor(
-                divideWithRemainder(
-                    findSmallestFactors(
-                        $returnDeliveryNoteItem->total_item_lost
-                    )
-                ),
-                $returnDeliveryNoteItem->packed_in
-            ),
             'total_item_returned'                   => $returnDeliveryNoteItem->total_item_returned,
             'total_item_returned_fractional'        =>  riseDivisor(
                 divideWithRemainder(

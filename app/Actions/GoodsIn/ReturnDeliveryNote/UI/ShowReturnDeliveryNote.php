@@ -68,15 +68,15 @@ class ShowReturnDeliveryNote extends OrgAction
 
     public function getHandlingActions(ReturnDeliveryNote $returnDeliveryNote): array
     {
-        $hasUnHandledItems = ReturnDeliveryNoteItem::where('return_delivery_note_id', $returnDeliveryNote->id)
+        $hasUnprocessedItems = ReturnDeliveryNoteItem::where('return_delivery_note_id', $returnDeliveryNote->id)
             ->whereNotNull('processed_at')
             ->exists();
 
         $actions = [];
-        if (!$hasUnHandledItems) {
+        if (!$hasUnprocessedItems) {
             $actions[] = [
                 'type' => 'button',
-                'key'  => 'trigger-set-as-picked',
+                'key'  => 'trigger-set-as-returned',
             ];
         }
 
@@ -136,7 +136,6 @@ class ShowReturnDeliveryNote extends OrgAction
                     'type'    => 'button',
                     'style'   => 'save',
                     'icon'    => 'fas fa-warehouse-alt',
-                    'tooltip' => __('Process this Return'),
                     'label'   => __('Set as Returning'),
                     'key'     => 'start-picking',
                     'route'   => [
@@ -169,6 +168,7 @@ class ShowReturnDeliveryNote extends OrgAction
         //         'name' => $trolley->name,
         //     ];
         // }
+
         // TODO LATER
         $pickedBays = [];
         // foreach ($returnDeliveryNote->pickedBays as $pickedBay) {
@@ -227,8 +227,7 @@ class ShowReturnDeliveryNote extends OrgAction
                 ]
             ],
             'delivery_address'             => AddressResource::make($deliveryNote->deliveryAddress),
-            'picker'                       => $returnDeliveryNote->pickerUser,
-            'packer'                       => $returnDeliveryNote->packerUser,
+            'picker'                       => $returnDeliveryNote->handlerUser,
             'picked_bays'                  => $pickedBays,
             'trolleys'                     => $trolleys,
             'parcels'                      => $deliveryNote->parcels, // TODO IS IT NEEDED?
@@ -269,6 +268,11 @@ class ShowReturnDeliveryNote extends OrgAction
                     'shipper_id'   => null
                 ]
             ],
+            'parentDeliveryNote'    => [
+                'reference' => $deliveryNote->reference,
+                'slug'      => $deliveryNote->slug,
+                'id'        => $deliveryNote->id,
+            ]
         ];
     }
 
@@ -343,7 +347,7 @@ class ShowReturnDeliveryNote extends OrgAction
         //     ];
         // }
 
-        $model = __('Returned Delivery Note');
+        $model = __('Return');
 
         $allowAction = ($returnDeliveryNote->packer_user_id && $returnDeliveryNote->packer_user_id != request()->user()->id);
 
@@ -358,7 +362,7 @@ class ShowReturnDeliveryNote extends OrgAction
         // $returnDeliveryNote->returnDeliveryNoteItem()->whereNotNull('processed_at');
 
         $props = [
-            'title'         => __('Return Delivery note').' '.$returnDeliveryNote->reference,
+            'title'         => __('Return').' '.$returnDeliveryNote->reference,
             'breadcrumbs'   => $this->getBreadcrumbs(
                 $returnDeliveryNote,
                 $request->route()->getName(),
@@ -384,8 +388,11 @@ class ShowReturnDeliveryNote extends OrgAction
             // 'warning'       => $warning,
             // 'isEditable'    => $isEditable,
             'tabs'          => [
-                'current'    => $returnDeliveryNote->return_state !== ReturnDeliveryNoteStateEnum::RECEIVED ? DeliveryNoteTabsEnum::PENDING_ITEMS->value : $this->tab,
-                'navigation' => $returnDeliveryNote->return_state !== ReturnDeliveryNoteStateEnum::RECEIVED
+                'current'    => $returnDeliveryNote->return_state == ReturnDeliveryNoteStateEnum::RETURNING
+                    ? DeliveryNoteTabsEnum::PENDING_ITEMS->value 
+                    : 
+                    $this->tab,
+                'navigation' => $returnDeliveryNote->return_state == ReturnDeliveryNoteStateEnum::RETURNING
                     ?
                     DeliveryNoteTabsEnum::navigation($returnDeliveryNote)
                     :
@@ -405,47 +412,34 @@ class ShowReturnDeliveryNote extends OrgAction
             'notes'               => $this->getDeliveryNoteNotes($returnDeliveryNote),
             'quick_pickers'       => $this->quickGetPickers(),
             'routes'              => [
-                // TODO ALL ROUTE, for now acts as a placeholder
-                'update'                => [
-                    'name'       => 'grp.models.delivery_note.update',
-                    'parameters' => [
-                        'deliveryNote' => $returnDeliveryNote->deliveryNote->id
-                    ]
-                ],
-                'set_queue'             => [
-                    'method'     => 'patch',
-                    'name'       => 'grp.models.delivery_note.state.in_queue',
-                    'parameters' => [
-                        'deliveryNote' => $returnDeliveryNote->deliveryNote->id
-                    ]
-                ],
+                // // TODO ALL ROUTE, for now acts as a placeholder
+                // 'update'                => [
+                //     'name'       => 'grp.models.delivery_note.update',
+                //     'parameters' => [
+                //         'deliveryNote' => $returnDeliveryNote->deliveryNote->id
+                //     ]
+                // ],
+                // 'set_queue'             => [
+                //     'method'     => 'patch',
+                //     'name'       => 'grp.models.delivery_note.state.in_queue',
+                //     'parameters' => [
+                //         'deliveryNote' => $returnDeliveryNote->deliveryNote->id
+                //     ]
+                // ],
                 'pickers_list'          => [
                     'name'       => 'grp.json.employees.picker_users',
                     'parameters' => [
                         'organisation' => $returnDeliveryNote->deliveryNote->organisation->slug
                     ]
                 ],
-                'packers_list'          => [
-                    'name'       => 'grp.json.employees.packers',
-                    'parameters' => [
-                        'organisation' => $returnDeliveryNote->deliveryNote->organisation->slug
-                    ]
-                ],
-                'exportPdfRoute'        => [
-                    'name'       => 'grp.org.accounting.invoices.download',
-                    'parameters' => [
-                        'organisation' => $returnDeliveryNote->deliveryNote->organisation->slug,
-                        'invoice'      => $returnDeliveryNote->deliveryNote->slug
-                    ]
-                ],
-                'assignSelfTemporarily' => [
-                    'name'       => 'grp.org.shops.show.ordering.orders.show.delivery-note.temp-picker',
-                    'parameters' => [
-                        'organisation' => $returnDeliveryNote->deliveryNote->organisation->slug,
-                        'shop'         => $returnDeliveryNote->deliveryNote->shop->slug,
-                        'deliveryNote' => $returnDeliveryNote->deliveryNote->slug,
-                    ]
-                ]
+                // 'assignSelfTemporarily' => [
+                //     'name'       => 'grp.org.shops.show.ordering.orders.show.delivery-note.temp-picker',
+                //     'parameters' => [
+                //         'organisation' => $returnDeliveryNote->deliveryNote->organisation->slug,
+                //         'shop'         => $returnDeliveryNote->deliveryNote->shop->slug,
+                //         'deliveryNote' => $returnDeliveryNote->deliveryNote->slug,
+                //     ]
+                // ]
             ],
             'returned_delivery_note_state' => [
                 'value' => $returnDeliveryNote->return_state,
@@ -558,7 +552,7 @@ class ShowReturnDeliveryNote extends OrgAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Return Delivery Note')
+                            'label' => __('Returns')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],

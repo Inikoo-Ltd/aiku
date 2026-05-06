@@ -18,6 +18,7 @@ class SetReturningReturnDeliveryNote extends OrgAction
 
     public function handle(ReturnDeliveryNote $returnDeliveryNote, array $modelData): ReturnDeliveryNote
     {
+        $user = auth()->user();
         $oldState = $returnDeliveryNote->return_state;
 
         if ($oldState !== ReturnDeliveryNoteStateEnum::RECEIVED) {
@@ -25,9 +26,10 @@ class SetReturningReturnDeliveryNote extends OrgAction
                 'message' => __('Delivery note can not be handled.').' ['.__('Invalid state').': '.$oldState->value.']',
             ]);
         }
-
-        data_set($modelData, 'handling_at', now());
+        
+        data_set($modelData, 'returning_at', now());
         data_set($modelData, 'return_state', ReturnDeliveryNoteStateEnum::RETURNING);
+        data_set($modelData, 'handler_user_id', $user->id);
 
         $returnDeliveryNote = DB::transaction(function () use ($returnDeliveryNote, $modelData) {
             $returnDeliveryNote = $this->update($returnDeliveryNote, $modelData);

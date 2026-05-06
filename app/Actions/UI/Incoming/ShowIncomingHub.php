@@ -52,7 +52,7 @@ class ShowIncomingHub extends OrgAction
 
         // TODO LATER USE STAT INSTEAD
         $return = ReturnDeliveryNote::where('warehouse_id', $warehouse->id)
-            ->whereNotIn('return_state', [ReturnDeliveryNoteStateEnum::RETURNED, ReturnDeliveryNoteStateEnum::CANCELLED])
+            ->whereNotIn('return_state', [ReturnDeliveryNoteStateEnum::RETURNED->value, ReturnDeliveryNoteStateEnum::CANCELLED])
             ->count();
 
 
@@ -95,27 +95,27 @@ class ShowIncomingHub extends OrgAction
                             'tooltip' => __('Fulfilment Deliveries')
                         ]
                     ],
+                    // [
+                    //     'name'  => __('Returns'),
+                    //     'value' => $returnsWaitingToReceive,
+                    //     'route' => [
+                    //         'name'       => 'grp.org.warehouses.show.incoming.returns.index',
+                    //         'parameters' => $request->route()->originalParameters()
+                    //     ],
+                    //     'icon'  => [
+                    //         'icon'    => 'fal fa-undo-alt',
+                    //         'tooltip' => __('Customer Returns')
+                    //     ]
+                    // ],
                     [
                         'name'  => __('Returns'),
-                        'value' => $returnsWaitingToReceive,
-                        'route' => [
-                            'name'       => 'grp.org.warehouses.show.incoming.returns.index',
-                            'parameters' => $request->route()->originalParameters()
-                        ],
-                        'icon'  => [
-                            'icon'    => 'fal fa-undo-alt',
-                            'tooltip' => __('Customer Returns')
-                        ]
-                    ],
-                    [
-                        'name'  => __('Return Delivery Note'),
                         'value' => $return,
                         'route' => [
                             'name'       => 'grp.org.warehouses.show.incoming.return-delivery-notes',
                             'parameters' => $request->route()->originalParameters()
                         ],
                         'icon'  => [
-                            'icon'    => 'fal fa-undo-alt',
+                            'icon'    => 'fal fa-exchange',
                             'tooltip' => __('Return Delivery Notes')
                         ]
                     ],

@@ -62,9 +62,8 @@ class IndexReturnDeliveryNoteItems extends OrgAction
                 'return_delivery_note_items.id',
                 'return_delivery_note_items.return_state',
                 'delivery_note_items.quantity_dispatched as expected_quantity',
-                'return_delivery_note_items.total_item_not_returned',
                 'return_delivery_note_items.total_item_damaged',
-                'return_delivery_note_items.total_item_lost',
+                'return_delivery_note_items.total_item_not_returned',
                 'return_delivery_note_items.total_item_returned',
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
@@ -116,11 +115,12 @@ class IndexReturnDeliveryNoteItems extends OrgAction
             //     $table->column(key: 'quantity_packed_readonly', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             // } else {
             $table->column(key: 'expected_quantity', label: __('Expected Qty'), canBeHidden: false, sortable: false, searchable: false);
-            if ($parent->return_state !== ReturnDeliveryNoteStateEnum::RECEIVED) {
+            if (!in_array($parent->return_state, [ReturnDeliveryNoteStateEnum::RECEIVED, ReturnDeliveryNoteStateEnum::CANCELLED])) {
                 $table->column(key: 'total_item_damaged', label: __('Damaged'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-                $table->column(key: 'total_item_lost', label: __('Lost'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                $table->column(key: 'total_item_not_returned', label: __('Not Returned'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'total_item_returned', label: __('Returned'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             }
+
 
             if (!in_array($parent->return_state, [ReturnDeliveryNoteStateEnum::RECEIVED, ReturnDeliveryNoteStateEnum::CANCELLED])) {
                 $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false, className: 'w-[250px]');

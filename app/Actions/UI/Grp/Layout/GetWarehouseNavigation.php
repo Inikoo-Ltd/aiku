@@ -202,7 +202,7 @@ class GetWarehouseNavigation
                             ]
                         ] : null,
                         $user->hasPermissionTo("incoming.$warehouse->id.view") ? [
-                            'label' => __('D.N. Returns'),
+                            'label' => __('Returns'),
                             'icon'  => ['fal', 'fa-exchange'],
                             'root'  => 'grp.org.warehouses.show.incoming.return-delivery-notes',
                             'route' => [

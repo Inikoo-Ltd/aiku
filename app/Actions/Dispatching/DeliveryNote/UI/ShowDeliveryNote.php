@@ -636,8 +636,8 @@ class ShowDeliveryNote extends OrgAction
                     'deliveryNote' => $deliveryNote->id,
                     'shipper_id'   => null
                 ]
-
             ],
+            'return_dn' => $deliveryNote->returnedDeliveryNote()->select(['id', 'reference', 'slug'])->first()
         ];
     }
 
@@ -751,6 +751,8 @@ class ShowDeliveryNote extends OrgAction
         // Disable waiting on DS no?
         $allowWaiting = data_get($this->organisation->settings, 'orders.allow_waiting', false) && $deliveryNote->shop?->type !== ShopTypeEnum::DROPSHIPPING;
 
+        $return = $deliveryNote->returnedDeliveryNote()->first();
+
         $props = [
             'title'         => __('Delivery note').' '.$deliveryNote->reference,
             'breadcrumbs'   => $this->getBreadcrumbs(
@@ -776,6 +778,17 @@ class ShowDeliveryNote extends OrgAction
                 'wrapped_actions' => $this->wrappedActions($deliveryNote),
             ],
             'warning'       => $warning,
+            'hasReturn'     => $return ? [
+                'reference' => $return->reference,
+                'route'     => [
+                    'name'       => 'grp.org.warehouses.show.incoming.return-delivery-notes.show',
+                    'parameters' => [
+                        'organisation'   => $return->organisation->slug,
+                        'warehouse'      => $return->warehouse->slug,
+                        'returnDeliveryNote' => $return->slug,
+                    ],
+                ]
+            ] : null,
             'is_editable'    => $isEditable,
             'tabs'          => [
                 'current'    => $deliveryNote->state == DeliveryNoteStateEnum::PACKING ? DeliveryNoteTabsEnum::PENDING_ITEMS->value : $this->tab,

@@ -549,11 +549,11 @@ const onSetItemToUndoWaitingWarehouse = () => {
             </span>
         </template>
         
-        <template #cell(total_item_lost)="{ item }">
+        <template #cell(total_item_not_returned)="{ item }">
             <span v-tooltip="item.quantity_required">
-                <FractionDisplay v-if="item.total_item_lost_fractional"
-                    :fractionData="item.total_item_lost_fractional" />
-                <span v-else>{{ item.total_item_lost }}</span>
+                <FractionDisplay v-if="item.total_item_not_returned_fractional"
+                    :fractionData="item.total_item_not_returned_fractional" />
+                <span v-else>{{ item.total_item_not_returned }}</span>
             </span>
         </template>
 

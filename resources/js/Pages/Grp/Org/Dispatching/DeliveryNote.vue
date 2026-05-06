@@ -25,6 +25,7 @@ import {
     faExclamationTriangle,
 	faClipboardCheck,
 	faClipboardListCheck,
+	faExchange,
 } from "@fal";
 import { faArrowRight, faCheck, faEye, faStar, faTimes } from "@fas";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
@@ -78,6 +79,10 @@ const props = defineProps<{
     warning?: {
         text: string
         picking_sessions: routeType
+    }
+	hasReturn?: {
+		reference: string
+        route: routeType
     }
     alert?: {
         status: string
@@ -371,6 +376,18 @@ const processReturn = (routeData: {
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead" isButtonGroupWithBorder>
 		<template #afterTitle2>
+			<FontAwesomeIcon
+				v-if="hasReturn?.reference"
+				:icon="faExchange"
+				v-tooltip="trans('Go to Return')"
+				class="text-gray-500 cursor-pointer hover:animate-pulse"
+				@click="() => {
+					router.visit(route(hasReturn.route.name, hasReturn.route.parameters))
+				}"
+			/>
+			<div class="font-normal text-lg leading-none text-indigo-500" v-if="hasReturn?.reference">
+				{{ trans("Returned") }}
+			</div>
 			<FontAwesomeIcon
 				v-if="delivery_note.is_premium_dispatch"
 				v-tooltip="trans('Priority dispatch')"

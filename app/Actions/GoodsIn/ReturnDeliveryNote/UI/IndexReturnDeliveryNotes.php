@@ -91,7 +91,7 @@ class IndexReturnDeliveryNotes extends OrgAction
         //     $subNavigation = $this->getDeliveryNotesSubNavigation($this->shopType);
         // }
 
-        $title      = __('Returned Delivery Notes');
+        $title      = __('Returns');
         $model      = '';
         $icon       = [
             'icon'  => ['fal', 'fa-exchange'],
@@ -204,7 +204,7 @@ class IndexReturnDeliveryNotes extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __('Returned Delivery notes'),
+                        'label' => __('Returns'),
                         'icon'  => 'fal fa-bars'
                     ],
                     'suffix' => $suffix

@@ -95,24 +95,14 @@ class ReturnDeliveryNote extends Model implements Auditable
         return $this->hasMany(ReturnDeliveryNoteItem::class);
     }
 
-    public function picker(): BelongsTo
+    public function handler(): BelongsTo
     {
-        return $this->belongsTo(Employee::class, 'picker_id');
+        return $this->belongsTo(Employee::class, 'handler_id');
     }
 
-    public function pickerUser(): BelongsTo
+    public function handlerUser(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'picker_user_id');
-    }
-
-    public function packer(): BelongsTo
-    {
-        return $this->belongsTo(Employee::class, 'packer_id');
-    }
-
-    public function packerUser(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'packer_user_id');
+        return $this->belongsTo(User::class, 'handler_user_id');
     }
 
     // TODO
