@@ -58,7 +58,7 @@ const isImageRight = computed(() => valueForField.value === 'Image-right')
 					:class="[ !fieldValue.image.source ? '' : 'h-[250px] sm:h-[300px] md:h-[400px]', isImageRight ? 'order-2' : 'order-1']" 
 					:style="getStyles(fieldValue.image.properties, screenType)"
 				>
-					<template #default="{ isLoading }">
+					<template #default="{ isLoading } = { isLoading: false }">
 						<Image :src="fieldValue.image.source" :imageCover="true"
 							:alt="fieldValue.image.alt || 'Image preview'"
 							class="w-full h-full object-cover md:absolute md:inset-0"
@@ -92,7 +92,7 @@ const isImageRight = computed(() => valueForField.value === 'Image-right')
 							<LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.taget"
 								typeof="button" :type="fieldValue?.button?.link?.type"
 								:canonical_url="fieldValue?.button?.link?.canonical_url">
-								<template #default="{ isLoading }">
+								<template #default="{ isLoading } = { isLoading: false }">
 									<Button
 										:injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
 										:label="fieldValue?.button?.text"
