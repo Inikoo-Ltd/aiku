@@ -28,7 +28,13 @@ class GetWebBlockRecommendationsFromMaster
         $webPublishedLayout = $webpage->website->published_layout;
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
-        data_set($webBlock,'web_block.layout.data.fieldValue.products_recommended', IrisProductsInWebpageResource::collection(GetIrisProductsInRecommendation::run($webpage->model)->toArray(request())));
+        data_set(
+            $webBlock,
+            'web_block.layout.data.fieldValue.products_recommended',
+            IrisProductsInWebpageResource::collection(
+                GetIrisProductsInRecommendation::run($webpage->model)
+            )->toArray(request())
+        );
         
         return $webBlock;
     }

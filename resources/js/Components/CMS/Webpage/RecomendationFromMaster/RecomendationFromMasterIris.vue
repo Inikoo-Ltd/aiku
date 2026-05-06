@@ -49,15 +49,9 @@ const compSwiperOptions = computed(() => {
   return props.fieldValue?.products_recommended ?? []
 })
 
-const sendMessageToParent = (type: string, value: any) => {
-  window.parent.postMessage(
-    {
-      type,
-      value,
-    },
-    '*'
-  )
-}
+console.log('Recommended Products:', compSwiperOptions.value)
+
+
 </script>
 
 <template>
@@ -82,9 +76,6 @@ const sendMessageToParent = (type: string, value: any) => {
     <div
       v-if="compSwiperOptions.length"
       class="relative px-4 py-6"
-      @click="() => {
-        sendMessageToParent('activeBlock', indexBlock)
-      }"
     >
       <!-- Navigation -->
       <button ref="prevEl" class="swiper-nav-button left-0">
