@@ -95,7 +95,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_outboxes_type_chat_notification_to_customer
  * @property int $number_outboxes_type_price_change_notification
  * @property int $number_outboxes_type_invoice_date_changed
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property int $number_outboxes_type_web_user_registration
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCommsStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCommsStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCommsStats query()

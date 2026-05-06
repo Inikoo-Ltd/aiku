@@ -22,7 +22,7 @@ use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
-use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -60,7 +60,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowOrder extends OrgAction
 {
     use IsOrder;
-    use WithOrderingEditAuthorisation;
+    use WithOrderingAuthorisation;
 
     private Shop|Customer|CustomerClient|Purge|CustomerSalesChannel $parent;
     private CustomerSalesChannel $customerSalesChannel;
@@ -172,7 +172,7 @@ class ShowOrder extends OrgAction
                 [
                     "label"       => __("Shipping label message") . ' ('  . __("Customer") . ')',
                     "note"        => $order->shipping_notes ?? '',
-                    "information" => __("This note is from the customer. Will be printed in the shipping label."),
+                    "information" => __("Note from crm. First 34 char. Will be printed on the shipping label."),
                     "editable"    => true,
                     "bgColor"     => "#38bdf8",
                     "field"       => "shipping_notes"
@@ -302,7 +302,7 @@ class ShowOrder extends OrgAction
         return Inertia::render(
             'Org/Ordering/Order',
             [
-                'title'       => __('order'),
+                'title'       => __('Order').' '.$order->reference,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $order,
                     $request->route()->getName(),

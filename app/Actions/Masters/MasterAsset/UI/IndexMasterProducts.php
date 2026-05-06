@@ -38,6 +38,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
+use Illuminate\Support\Collection;
 
 class IndexMasterProducts extends GrpAction
 {
@@ -73,6 +74,7 @@ class IndexMasterProducts extends GrpAction
                         $discontinuedMasterProducts
                     ],
                 ],
+                'default' => 'active',
 
                 'engine' => function ($query, $elements) {
                     if (in_array('discontinued', $elements)) {
@@ -87,7 +89,7 @@ class IndexMasterProducts extends GrpAction
         ];
     }
 
-    public function handle(Group|MasterShop|MasterProductCategory $parent, $prefix = null, $filterInVariant = null): LengthAwarePaginator
+    public function handle(Group|MasterShop|MasterProductCategory $parent, $prefix = null, $filterInVariant = null, $sortByIndex = false): Collection|LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -103,6 +105,7 @@ class IndexMasterProducts extends GrpAction
         $isSalesTab = $prefix === MasterProductsTabsEnum::SALES->value;
 
         $queryBuilder = QueryBuilder::for(MasterAsset::class)
+            ->with(['products.shop'])
             ->leftJoin(
                 'master_asset_stats',
                 'master_assets.id',
@@ -145,7 +148,8 @@ class IndexMasterProducts extends GrpAction
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
                 engine: $elementGroup['engine'],
-                prefix: $prefix
+                prefix: $prefix,
+                default: $elementGroup['default'] ?? null,
             );
         }
 
@@ -275,8 +279,19 @@ class IndexMasterProducts extends GrpAction
 
         $queryBuilder->addSelect('master_assets.mismatch_detected');
 
-        return $queryBuilder
-            ->defaultSort('master_assets.code')
+        $queryBuilder = $queryBuilder
+            ->when(
+                $sortByIndex && $parent instanceof MasterProductCategory,
+                function ($query) {
+                    $query
+                        ->orderBy('master_assets.index_under_master_family')
+                        ->orderBy('master_assets.code');
+                },
+                function ($query) {
+                    $query
+                        ->orderBy('master_assets.code');
+                }
+            )
             ->allowedSorts([
                 'code',
                 'name',
@@ -293,14 +308,22 @@ class IndexMasterProducts extends GrpAction
                 'used_in',
                 'health_rank',
             ])
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([$globalSearch]);
+
+        if ($sortByIndex && $parent instanceof MasterProductCategory) {
+            return $queryBuilder
+                ->addSelect('master_assets.index_under_master_family')
+                ->get();
+        }
+
+        return $queryBuilder
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(Group|MasterShop|MasterProductCategory $parent, ?array $modelOperations = null, $prefix = null, $sales = false): \Closure
+    public function tableStructure(Group|MasterShop|MasterProductCategory $parent, ?array $modelOperations = null, $prefix = null, $sales = false, $sortByIndex = false): \Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent, $sales) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent, $sales, $sortByIndex) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -315,7 +338,8 @@ class IndexMasterProducts extends GrpAction
                 $table->elementGroup(
                     key: $key,
                     label: $elementGroup['label'],
-                    elements: $elementGroup['elements']
+                    elements: $elementGroup['elements'],
+                    default: $elementGroup['default'] ?? null,
                 );
             }
 
@@ -330,40 +354,36 @@ class IndexMasterProducts extends GrpAction
                 );
 
             if ($parent instanceof Group) {
-                $table->column('master_shop_code', __('Shop'), sortable: true);
-                $table->column('master_department_code', __('Department'), sortable: true);
-                $table->column('master_family_code', __('Family'), sortable: true);
+                $table->column('master_shop_code', __('Shop'), sortable: !$sortByIndex);
+                $table->column('master_department_code', __('Department'), sortable: !$sortByIndex);
+                $table->column('master_family_code', __('Family'), sortable: !$sortByIndex);
             }
 
             if ($sales) {
                 $table
-                    ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
-                    ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right')
-                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: !$sortByIndex, searchable: true)
+                    ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: !$sortByIndex, align: 'right')
+                    ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: !$sortByIndex, align: 'right')
+                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: !$sortByIndex, searchable: true, align: 'right')
+                    ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: !$sortByIndex, align: 'right')
+                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: !$sortByIndex, searchable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right')
-                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: !$sortByIndex, type: 'icon');
             } else {
                 $table
                     ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                     ->column(key: 'status_icon', label: '', type: 'icon')
-                    ->column(key: 'code', label: __('Code'), sortable: true);
-
-                // if ($parent instanceof MasterProductCategory && $parent->type == MasterProductCategoryTypeEnum::FAMILY) {
-                //     $table->column(key: 'variant_slug', label: 'Variant');
-                // }
-                $table->column(key: 'variant_slug', label: 'Variant', sortable: true);
+                    ->column(key: 'code', label: __('Code'), sortable: !$sortByIndex);
+                $table->column(key: 'variant_slug', label: 'Variant', sortable: !$sortByIndex);
 
 
                 $table
-                    ->column(key: 'name', label: __('Name'), sortable: true)
-                    ->column(key: 'unit', label: __('Unit'), sortable: true)
-                    ->column(key: 'master_department_code', label: __('M. Department'), sortable: true)
-                    ->column(key: 'master_sub_department_code', label: __('M. Sub-department'), sortable: true)
-                    ->column(key: 'master_family_code', label: __('M. Family'), sortable: true)
-                    ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current products with this master'), sortable: true)
+                    ->column(key: 'name', label: __('Name'), sortable: !$sortByIndex)
+                    ->column(key: 'unit', label: __('Unit'), sortable: !$sortByIndex)
+                    ->column(key: 'master_department_code', label: __('M. Department'), sortable: !$sortByIndex)
+                    ->column(key: 'master_sub_department_code', label: __('M. Sub-department'), sortable: !$sortByIndex)
+                    ->column(key: 'master_family_code', label: __('M. Family'), sortable: !$sortByIndex)
+                    ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current products with this master'), sortable: !$sortByIndex)
                     ->column(key: 'actions', label: __('Actions'), sortable: false)
                     ->defaultSort('code');
             }
@@ -388,6 +408,8 @@ class IndexMasterProducts extends GrpAction
         $shopsData       = null;
         $modelNavigation = [];
         $hideBulkEdit    = false;
+        $exception       = [MasterProductsTabsEnum::INDEX_ORDERING];
+
         if ($this->parent instanceof Group) {
             $model      = '';
             $icon       = [
@@ -451,11 +473,32 @@ class IndexMasterProducts extends GrpAction
                     'icon' => 'fal fa-cube',
                 ];
                 $modelNavigation = GetMasterFamilyNavigation::run($this->parent, $request);
+                $exception       = [];
             }
             $shopsData = OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops'));
         }
 
         $isFamily = $this->parent instanceof MasterProductCategory && $this->parent->type == MasterProductCategoryTypeEnum::FAMILY;
+
+        $actions = [];
+
+        if ($isFamily) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'create',
+                'key'     => 'add-family',
+                'tooltip' => __('Add a master product to this family'),
+                'label'   => __('Master product'),
+            ];
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'primary',
+                'key'     => 'save-order',
+                'tooltip' => __('Save product order'),
+                'label'   => __('Save Order'),
+            ];
+        }
+
 
         return Inertia::render(
             'Masters/MasterProducts',
@@ -482,14 +525,7 @@ class IndexMasterProducts extends GrpAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'subNavigation' => $subNavigation,
-                    'actions'       => $isFamily ? [
-                        [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('Add a master product to this family'),
-                            'label'   => __('Master product'),
-                        ],
-                    ] : [],
+                    'actions'       =>  $actions,
                 ],
                 'variantSlugs'            => $masterAssets->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]),
                 'masterProductCategoryId' => $this->parent->id,
@@ -498,19 +534,25 @@ class IndexMasterProducts extends GrpAction
                 'hide_bulk_edit'          => $hideBulkEdit,
                 'tabs' => [
                     'current'    => $this->tab,
-                    'navigation' => MasterProductsTabsEnum::navigation(),
+                    'navigation' => MasterProductsTabsEnum::navigationExcept($exception),
                 ],
                 MasterProductsTabsEnum::INDEX->value => $this->tab == MasterProductsTabsEnum::INDEX->value ?
                     fn () => MasterProductsResource::collection($masterAssets)
-                    : Inertia::lazy(fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::INDEX->value))),
+                    : Inertia::lazy(fn () => MasterProductsResource::collection($masterAssets)),
+
+                MasterProductsTabsEnum::INDEX_ORDERING->value => $this->tab == MasterProductsTabsEnum::INDEX_ORDERING->value ?
+                    fn () => MasterProductsResource::collection($this->handle($this->parent, MasterProductsTabsEnum::INDEX_ORDERING->value, null, true))
+                    : Inertia::lazy(fn () => MasterProductsResource::collection($this->handle($this->parent, null, null, true))),
 
                 MasterProductsTabsEnum::SALES->value => $this->tab == MasterProductsTabsEnum::SALES->value ?
                     fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::SALES->value))
                     : Inertia::lazy(fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::SALES->value))),
 
             ]
-        )->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::INDEX->value))
-            ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::SALES->value, sales: true));
+        )
+        ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::INDEX->value))
+        ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::INDEX_ORDERING->value, sortByIndex: true))
+        ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::SALES->value, sales: true));
     }
 
     public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, string $routeName, array $routeParameters, ?string $suffix = null): array

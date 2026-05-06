@@ -15,6 +15,9 @@ jobs:
     name: Deploy aiku staging 🎭
     runs-on: ubuntu-latest
     environment: staging
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      SENTRY_LOG_LEVEL: debug
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
@@ -28,7 +31,7 @@ jobs:
         id: composer-cache
         run: |
           echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
@@ -50,12 +53,14 @@ jobs:
           ssh-config: ${{ secrets.DEPLOY_SSH_CONFIG }}
           private-key: ${{ secrets.DEPLOY_PRIVATE_KEY }}
           known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-#      - name: Create Sentry release
-#        uses: getsentry/action-release@v3
-#        env:
-#          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-#          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-#          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECTS }}
-#        with:
-#          environment: staging
-#          release: ${{ steps.date.outputs.date }}
+          verbosity: -vvv
+          deployer-version: '8.0.0'
+      - name: Create Sentry release
+        uses: getsentry/action-release@v3
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: 'inikoo-ltd'
+        with:
+          environment: staging
+          projects: 'aiku'
+          release: ${{ steps.date.outputs.date }}

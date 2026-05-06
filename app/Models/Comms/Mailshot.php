@@ -70,11 +70,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $send_delay_hours
  * @property \Illuminate\Support\Carbon|null $recipients_prepared_at
  * @property int|null $recipients_count
+ * @property string|null $name
+ * @property string|null $preview_text
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\Comms\EmailDeliveryChannel> $channels
  * @property-read Collection<int, \App\Models\Comms\DispatchedEmail> $dispatchedEmails
  * @property-read \App\Models\Comms\Email|null $email
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Comms\Outbox|null $outbox
  * @property-read Model|\Eloquent $parent

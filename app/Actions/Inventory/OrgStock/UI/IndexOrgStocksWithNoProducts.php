@@ -3,7 +3,7 @@
 /*
  * author Louis Perez
  * created on 26-03-2026-17h-09m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
@@ -122,7 +122,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
     {
         return [
             'state' => [
-                'label' => __('State'),
+                'label'    => __('State'),
                 'elements' => array_merge_recursive(
                     OrgStockStateEnum::labels(),
                     OrgStockStateEnum::count($parent)
@@ -175,7 +175,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
             $queryBuilder->where('org_stocks.state', OrgStockStateEnum::DISCONTINUED);
         } elseif ($this->bucket == 'abnormality') {
             $queryBuilder->where('org_stocks.state', OrgStockStateEnum::ABNORMALITY);
-        } elseif (! ($parent instanceof Group)) {
+        } elseif (!($parent instanceof Group)) {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $queryBuilder->whereElementGroup(
                     key: $key,
@@ -186,13 +186,15 @@ class IndexOrgStocksWithNoProducts extends OrgAction
             }
         }
 
-        $queryBuilder->whereRaw("
+        $queryBuilder->whereRaw(
+            "
             (
-                SELECT COUNT(*) 
+                SELECT COUNT(*)
                 FROM product_has_org_stocks
                 WHERE org_stock_id = org_stocks.id
             ) = 0
-        ");
+        "
+        );
 
         $selects = [
             'org_stocks.id',
@@ -200,8 +202,8 @@ class IndexOrgStocksWithNoProducts extends OrgAction
             'org_stocks.name',
             'org_stocks.slug',
             'org_stocks.state',
-            'org_stocks.unit_value',
-            'org_stocks.unit_cost',
+            'org_stocks.sku_value',
+            'org_stocks.current_supplier_sku_cost',
             'org_stocks.quantity_available',
             'org_stocks.value_in_locations',
             'number_locations',
@@ -216,7 +218,8 @@ class IndexOrgStocksWithNoProducts extends OrgAction
             'warehouses.slug as warehouse_slug',
             'org_stock_intervals.dispatched_ytd as dispatched',
             'org_stock_sales_intervals.revenue_org_currency_ytd as revenue',
-            DB::raw("(
+            DB::raw(
+                "(
                 SELECT COALESCE(SUM(os2.quantity_in_locations), 0)
                 FROM org_stocks os2
                 INNER JOIN model_has_trade_units mhtu2 ON mhtu2.model_id = os2.id AND mhtu2.model_type = 'OrgStock'
@@ -226,24 +229,30 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                     WHERE mhtu.model_id = org_stocks.id
                     AND mhtu.model_type = 'OrgStock'
                 )
-            ) as stock_value"),
-            DB::raw("(
+            ) as stock_value"
+            ),
+            DB::raw(
+                "(
                 SELECT COALESCE(SUM(pot.org_net_amount), 0)
                 FROM purchase_order_transactions pot
                 INNER JOIN purchase_orders po ON pot.purchase_order_id = po.id
                 WHERE pot.org_stock_id = org_stocks.id
                 AND po.delivery_state IN ('ready_to_ship', 'dispatched')
                 AND po.state NOT IN ('cancelled', 'not_received')
-            ) as on_the_way_po_value"),
-            DB::raw("(
+            ) as on_the_way_po_value"
+            ),
+            DB::raw(
+                "(
                 SELECT COUNT(DISTINCT po.id)
                 FROM purchase_order_transactions pot
                 INNER JOIN purchase_orders po ON pot.purchase_order_id = po.id
                 WHERE pot.org_stock_id = org_stocks.id
                 AND po.delivery_state IN ('ready_to_ship', 'dispatched')
                 AND po.state NOT IN ('cancelled', 'not_received')
-            ) as on_the_way_po_count"),
-            DB::raw("(
+            ) as on_the_way_po_count"
+            ),
+            DB::raw(
+                "(
                 SELECT
                     CASE
                         WHEN SUM(it.quantity) > 0 THEN
@@ -256,12 +265,15 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                 INNER JOIN invoice_transaction_has_org_stocks ithos ON ithos.invoice_transaction_id = it.id
                 WHERE ithos.org_stock_id = org_stocks.id
                 AND it.deleted_at IS NULL
-            ) as woc"),
-            DB::raw("(
-                SELECT COUNT(*) 
+            ) as woc"
+            ),
+            DB::raw(
+                "(
+                SELECT COUNT(*)
                 FROM product_has_org_stocks
                 WHERE org_stock_id = org_stocks.id
-            ) as product_count")
+            ) as product_count"
+            )
         ];
 
         if ($prefix === OrgStocksTabsEnum::SALES->value) {
@@ -284,7 +296,24 @@ class IndexOrgStocksWithNoProducts extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
-        $allowedSorts = ['code', 'name', 'family_code', 'unit_value', 'unit_cost', 'stock_value', 'discontinued_in_organisation_at', 'organisation_name', 'value_in_locations', 'dispatched', 'revenue', 'quantity_available', 'on_the_way_po_value', 'health_rank', 'woc', 'product_count'];
+        $allowedSorts = [
+            'code',
+            'name',
+            'family_code',
+            'sku_value',
+            'current_supplier_sku_cost',
+            'stock_value',
+            'discontinued_in_organisation_at',
+            'organisation_name',
+            'value_in_locations',
+            'dispatched',
+            'revenue',
+            'quantity_available',
+            'on_the_way_po_value',
+            'health_rank',
+            'woc',
+            'product_count'
+        ];
 
         if ($prefix === OrgStocksTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_grp_currency_external';
@@ -352,8 +381,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
             } else {
                 if ($parent instanceof OrgStockFamily || !$bucket || in_array($bucket, ['active', 'discontinuing'])) {
                     $table
-                        ->column(key: 'unit_cost', label: __('Cost Value'), canBeHidden: false, sortable: true, type: 'currency')
-                        // ->column(key: 'value_in_locations', label: __('Stock value'), canBeHidden: false, sortable: true, type: 'currency') // Todo: fix value_In_locations because mostly 0 or null
+                        ->column(key: 'sku_value', label: __('Sku value'), canBeHidden: false, sortable: true, type: 'currency')
                         ->column(key: 'woc', label: __('WOC'), canBeHidden: false, align: 'right')
                         ->column(key: 'revenue', label: __('Revenue'), sortable: true, type: 'currency')
                         ->column(key: 'dispatched', label: __('Dispatched'), sortable: true);
@@ -362,7 +390,6 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                 if ($bucket == 'discontinued' || $bucket == 'abnormality') {
                     $table->column(key: 'discontinued_in_organisation_at', label: $bucket == 'discontinued' ? __('Discontinued') : __('Last seen'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
                 }
-
             }
             $table->column(key: 'product_count', label: __('Used in Products'), canBeHidden: false, sortable: true, searchable: true, align: 'left');
         };
@@ -384,10 +411,10 @@ class IndexOrgStocksWithNoProducts extends OrgAction
         return [
 
             [
-                'label' => __('Current'),
-                'root' => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.current',
-                'route' => [
-                    'name' => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.current',
+                'label'  => __('Current'),
+                'root'   => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.current',
+                'route'  => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.current',
                     'parameters' => [
                         $this->organisation->slug,
                         $this->warehouse->slug,
@@ -397,44 +424,44 @@ class IndexOrgStocksWithNoProducts extends OrgAction
             ],
 
             [
-                'label' => __('Discontinued'),
-                'root' => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.discontinued',
-                'route' => [
-                    'name' => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.discontinued',
+                'label'  => __('Discontinued'),
+                'root'   => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.discontinued',
+                'route'  => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.discontinued',
                     'parameters' => [
                         $this->organisation->slug,
                         $this->warehouse->slug,
                     ],
                 ],
-                'align' => 'right',
+                'align'  => 'right',
                 'number' => $stats->number_org_stocks_state_discontinued,
             ],
             [
-                'label' => __('Abnormalities'),
-                'root' => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.abnormality',
-                'route' => [
-                    'name' => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.abnormality',
+                'label'  => __('Abnormalities'),
+                'root'   => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.abnormality',
+                'route'  => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.abnormality',
                     'parameters' => [
                         $this->organisation->slug,
                         $this->warehouse->slug,
                     ],
                 ],
-                'align' => 'right',
+                'align'  => 'right',
                 'number' => $stats->number_org_stocks_state_abnormality,
             ],
             [
-                'label' => __('All'),
-                'icon' => 'fal fa-bars',
-                'root' => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.index',
-                'route' => [
-                    'name' => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.index',
+                'label'  => __('All'),
+                'icon'   => 'fal fa-bars',
+                'root'   => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.index',
+                'route'  => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.index',
                     'parameters' => [
                         $this->organisation->slug,
                         $this->warehouse->slug,
                     ],
                 ],
                 'number' => $stats->number_org_stocks,
-                'align' => 'right',
+                'align'  => 'right',
             ],
 
         ];
@@ -442,14 +469,14 @@ class IndexOrgStocksWithNoProducts extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $stocks, ActionRequest $request): Response
     {
-        $title = __('SKUs');
-        $model = '';
-        $icon = [
-            'icon' => ['fal', 'fa-box'],
+        $title      = __('SKUs');
+        $model      = '';
+        $icon       = [
+            'icon'  => ['fal', 'fa-box'],
             'title' => __('SKUs'),
         ];
         $afterTitle = null;
-        $iconRight = null;
+        $iconRight  = null;
 
         $subNavigation = $this->getOrgStocksSubNavigation();
 
@@ -463,10 +490,10 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
-                    '(' . __('Orphan/No Product') .')'
+                    '('.__('Orphan/No Product').')'
                 ),
-                'title'    => $title,
-                'pageHead' => [
+                'title'       => $title,
+                'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
                     'model'         => $model,
@@ -474,7 +501,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                     'iconRight'     => $iconRight,
                     'subNavigation' => $subNavigation,
                 ],
-                'tabs' => [
+                'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => OrgStocksTabsEnum::navigation(),
                 ],
@@ -488,7 +515,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                     : Inertia::lazy(fn () => OrgStocksResource::collection($this->handle(parent: $this->parent, prefix: OrgStocksTabsEnum::SALES->value, bucket: $this->bucket))),
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: OrgStocksTabsEnum::INDEX->value, bucket: $this->bucket))
-         ->table($this->tableStructure(parent: $this->parent, prefix: OrgStocksTabsEnum::SALES->value, bucket: $this->bucket, sales: true));
+            ->table($this->tableStructure(parent: $this->parent, prefix: OrgStocksTabsEnum::SALES->value, bucket: $this->bucket, sales: true));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
@@ -496,11 +523,11 @@ class IndexOrgStocksWithNoProducts extends OrgAction
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
                 [
-                    'type' => 'simple',
+                    'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => 'SKUs',
-                        'icon' => 'fal fa-bars',
+                        'icon'  => 'fal fa-bars',
                     ],
                     'suffix' => $suffix,
                 ],
@@ -512,7 +539,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                 ShowInventoryDashboard::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
-                        'name' => $routeName,
+                        'name'       => $routeName,
                         'parameters' => $routeParameters,
                     ],
                     $suffix
@@ -522,7 +549,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                 ShowInventoryDashboard::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
-                        'name' => $routeName,
+                        'name'       => $routeName,
                         'parameters' => $routeParameters,
                     ],
                     trim('('.__('Current').') '.$suffix)
@@ -532,7 +559,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                 ShowInventoryDashboard::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
-                        'name' => $routeName,
+                        'name'       => $routeName,
                         'parameters' => $routeParameters,
                     ],
                     trim('('.__('Discontinued').') '.$suffix)
@@ -542,7 +569,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                 ShowInventoryDashboard::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
-                        'name' => $routeName,
+                        'name'       => $routeName,
                         'parameters' => $routeParameters,
                     ],
                     trim('('.__('Abnormalities').') '.$suffix)

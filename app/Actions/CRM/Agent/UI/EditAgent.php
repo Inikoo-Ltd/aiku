@@ -157,7 +157,7 @@ class EditAgent extends OrgAction
 
                     'args' => [
                         'updateRoute' => [
-                            'name'       => 'grp.org.crm.agents.update',
+                            'name'       => 'grp.org.chat.agents.update',
                             'parameters' => [
                                 $this->organisation->slug,
                                 $agent->id,

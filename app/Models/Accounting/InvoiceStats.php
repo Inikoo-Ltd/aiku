@@ -30,18 +30,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_offers
  * @property int $number_offer_allowances
  * @property int $number_transactions_with_offers
- * @property string $discounts_amount from % offs
- * @property string $giveaways_value_amount Value of goods given for free
- * @property string $cashback_amount
- * @property string|null $org_giveaways_value_amount
- * @property string|null $org_cashback_amount
- * @property string|null $org_discounts_amount
- * @property string|null $grp_discounts_amount
- * @property string|null $grp_giveaways_value_amount
- * @property string|null $grp_cashback_amount
+ * @property numeric $discounts_amount from % offs
+ * @property numeric $giveaways_value_amount Value of goods given for free
+ * @property numeric $cashback_amount
+ * @property numeric|null $org_giveaways_value_amount
+ * @property numeric|null $org_cashback_amount
+ * @property numeric|null $org_discounts_amount
+ * @property numeric|null $grp_discounts_amount
+ * @property numeric|null $grp_giveaways_value_amount
+ * @property numeric|null $grp_cashback_amount
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Accounting\Invoice $invoice
+ * @property-read \App\Models\Accounting\Invoice|null $invoice
  * @method static Builder<static>|InvoiceStats newModelQuery()
  * @method static Builder<static>|InvoiceStats newQuery()
  * @method static Builder<static>|InvoiceStats query()

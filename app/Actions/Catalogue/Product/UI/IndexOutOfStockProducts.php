@@ -115,9 +115,7 @@ class IndexOutOfStockProducts extends OrgAction
         /** @var Shop $shop */
         $shop = $request->route('shop');
 
-        $navigation    = ProductsTabsEnum::navigation();
-
-        unset($navigation[ProductsTabsEnum::SALES->value]);
+        $navigation    = ProductsTabsEnum::navigationExcept([ProductsTabsEnum::SALES, ProductsTabsEnum::INDEX_ORDERING]);
 
         $title = __('Out Of Stock Products');
 

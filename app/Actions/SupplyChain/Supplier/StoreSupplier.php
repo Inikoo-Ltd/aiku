@@ -12,7 +12,6 @@ use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplierFromSupplierInAgent;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSuppliers;
-use App\Actions\SupplyChain\Supplier\Search\SupplierRecordSearch;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSuppliers;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
@@ -90,8 +89,6 @@ class StoreSupplier extends OrgAction
         if ($supplier->agent_id) {
             AgentHydrateSuppliers::dispatch($supplier->agent)->delay($this->hydratorsDelay);
         }
-
-        SupplierRecordSearch::dispatch($supplier);
 
         return $supplier;
     }

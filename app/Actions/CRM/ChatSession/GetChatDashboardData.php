@@ -5,7 +5,6 @@ namespace App\Actions\CRM\ChatSession;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\Catalogue\Shop;
-use App\Models\CRM\Livechat\ChatAgent;
 use App\Models\CRM\Livechat\ChatMessage;
 use App\Models\CRM\Livechat\ChatSession;
 use App\Models\CRM\Livechat\ShopHasChatAgent;
@@ -21,25 +20,27 @@ class GetChatDashboardData
     public function handle(Organisation $organisation): array
     {
         $openShopIds = Shop::query()
+            ->where('organisation_id', $organisation->id)
             ->where('state', ShopStateEnum::OPEN)
             ->pluck('id');
 
         $chatEnabledOpenShopIds = Shop::query()
+            ->where('organisation_id', $organisation->id)
             ->where('state', ShopStateEnum::OPEN)
             ->where('settings->chat->enable_chat', true)
             ->pluck('id');
 
-        $sessionQuery = ChatSession::query()->whereIn('shop_id', $openShopIds);
+        $sessionQuery = ChatSession::query()->whereIn('shop_id', $openShopIds)->whereHas('messages');
 
         $stats = [
-            'chatEnabledShops'             => $chatEnabledOpenShopIds->count(),
-            'chatAgents'                   => ChatAgent::query()->distinct('user_id')->count('user_id'),
-            'chatSessionsTotal'            => (clone $sessionQuery)->count(),
-            'chatSessionsWaiting'          => (clone $sessionQuery)->where('status', ChatSessionStatusEnum::WAITING)->count(),
-            'chatSessionsActive'           => (clone $sessionQuery)->where('status', ChatSessionStatusEnum::ACTIVE)->count(),
-            'chatSessionsClosed'           => (clone $sessionQuery)->where('status', ChatSessionStatusEnum::CLOSED)->count(),
-            'chatMessagesTotal'            => $this->countMessages($openShopIds),
-            'chatMessagesUnread'           => $this->countUnreadMessages($openShopIds),
+            'chatEnabledShops'    => $chatEnabledOpenShopIds->count(),
+            'chatAgents'          => ShopHasChatAgent::query()->where('organisation_id', $organisation->id)->join('chat_agents', 'chat_agents.id', '=', 'shop_has_chat_agents.chat_agent_id')->whereNull('chat_agents.deleted_at')->distinct('chat_agent_id')->count('chat_agent_id'),
+            'chatSessionsTotal'   => (clone $sessionQuery)->count(),
+            'chatSessionsWaiting' => (clone $sessionQuery)->where('status', ChatSessionStatusEnum::WAITING)->count(),
+            'chatSessionsActive'  => (clone $sessionQuery)->where('status', ChatSessionStatusEnum::ACTIVE)->count(),
+            'chatSessionsClosed'  => (clone $sessionQuery)->where('status', ChatSessionStatusEnum::CLOSED)->count(),
+            'chatMessagesTotal'   => $this->countMessages($openShopIds),
+            'chatMessagesUnread'  => $this->countUnreadMessages($openShopIds),
         ];
 
         $tableRows = $this->getOrganisationShops($organisation);
@@ -54,10 +55,12 @@ class GetChatDashboardData
     private function getOrganisationShops(Organisation $organisation): array
     {
         $agentCounts = ShopHasChatAgent::query()
-            ->select('shop_id')
-            ->selectRaw('COUNT(DISTINCT chat_agent_id) as chat_agents_count')
+            ->select('shop_has_chat_agents.shop_id')
+            ->selectRaw('COUNT(DISTINCT shop_has_chat_agents.chat_agent_id) as chat_agents_count')
+            ->join('chat_agents', 'chat_agents.id', '=', 'shop_has_chat_agents.chat_agent_id')
+            ->whereNull('chat_agents.deleted_at')
             ->where('organisation_id', $organisation->id)
-            ->groupBy('shop_id')
+            ->groupBy('shop_has_chat_agents.shop_id')
             ->get()
             ->keyBy('shop_id');
 
@@ -68,6 +71,7 @@ class GetChatDashboardData
             ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as sessions_waiting', [ChatSessionStatusEnum::WAITING->value])
             ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as sessions_closed', [ChatSessionStatusEnum::CLOSED->value])
             ->whereIn('shop_id', Shop::query()->where('organisation_id', $organisation->id)->pluck('id'))
+            ->whereHas('messages')
             ->groupBy('shop_id')
             ->get()
             ->keyBy('shop_id');
@@ -87,7 +91,6 @@ class GetChatDashboardData
             return [
                 'id'               => $shop->id,
                 'slug'             => $shop->slug,
-                'code'             => $shop->code,
                 'name'             => $shop->name,
                 'chatActive'       => (bool) Arr::get($shop->settings, 'chat.enable_chat', false),
                 'chatAgentsCount'  => (int) $agentCount,
@@ -129,6 +132,16 @@ class GetChatDashboardData
         $intervalValue = 'all';
 
         $headerColumns = [
+            'chat_active' => [
+                'formatted_value'   => '',
+                'raw_value'         => '',
+                'tooltip'           => '',
+                'align'             => 'center',
+                'sortable'          => false,
+                'data_display_type' => 'always',
+                'currency_type'     => 'always',
+                'type'              => 'icon',
+            ],
             'shop' => [
                 'formatted_value'   => __('Shop'),
                 'raw_value'         => '',
@@ -139,24 +152,6 @@ class GetChatDashboardData
                 'currency_type'     => 'always',
                 'frozen'            => true,
                 'alignFrozen'       => 'left',
-            ],
-            'code' => [
-                'formatted_value'   => __('Code'),
-                'raw_value'         => '',
-                'tooltip'           => '',
-                'align'             => 'left',
-                'sortable'          => false,
-                'data_display_type' => 'always',
-                'currency_type'     => 'always',
-            ],
-            'chat_active' => [
-                'formatted_value'   => __('Chat Active'),
-                'raw_value'         => '',
-                'tooltip'           => '',
-                'align'             => 'right',
-                'sortable'          => false,
-                'data_display_type' => 'always',
-                'currency_type'     => 'always',
             ],
             'agents' => [
                 'formatted_value'   => __('Agents'),
@@ -214,13 +209,6 @@ class GetChatDashboardData
                             'formatted_value' => $row['name'],
                             'raw_value'       => $row['name'],
                             'tooltip'         => $row['name'],
-                        ],
-                    ],
-                    'code' => [
-                        $intervalValue => [
-                            'formatted_value' => $row['code'] ?? '-',
-                            'raw_value'       => $row['code'] ?? '',
-                            'tooltip'         => $row['code'] ?? '',
                         ],
                     ],
                     'chat_active' => [

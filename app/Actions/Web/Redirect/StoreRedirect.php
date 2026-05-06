@@ -9,7 +9,9 @@
 
 namespace App\Actions\Web\Redirect;
 
+use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\OrgAction;
+use App\Actions\Web\Website\HydrateRedirect;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebpageTabsEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
@@ -19,10 +21,12 @@ use App\Models\Web\Webpage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect as FacadesRedirect;
 use Illuminate\Validation\Rule;
-use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Validation\Validator;
 
 class StoreRedirect extends OrgAction
 {
+    private Webpage $webpage;
+
     public function handle(Webpage $webpage, array $modelData): Redirect
     {
         data_set($modelData, 'group_id', $webpage->group_id);
@@ -32,14 +36,34 @@ class StoreRedirect extends OrgAction
         data_set($modelData, 'from_url', $webpage->canonical_url);
         data_set($modelData, 'from_path', $webpage->url);
 
-        return $webpage->redirectedTo()->create($modelData);
+        $webpage->update(['redirect_webpage_id' => data_get($modelData, 'to_webpage_id')]);
 
+        /** @var Redirect $redirect */
+        $redirect = $webpage->redirectedTo()->create($modelData);
+        HydrateRedirect::run($webpage);
+        BreakProductInWebpagesCache::make()->breakCache($webpage);
+        return $redirect;
+
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        if ($this->webpage) {
+            $hasRedirect = Redirect::where('from_path', $this->webpage->url)->where('website_id', $this->webpage->website_id)->exists();
+
+            if ($hasRedirect) {
+                $validator->errors()->add('from_url', 'This webpage already have existing redirect');
+            }
+        }
     }
 
     public function rules(): array
     {
         return [
-            'type'                     => ['required', Rule::enum(RedirectTypeEnum::class)],
+            'type'                     => [
+                'required',
+                Rule::enum(RedirectTypeEnum::class)
+            ],
             'to_webpage_id' => [
                 'required',
                 Rule::exists(Webpage::class, 'id')->where('website_id', $this->shop->website->id)->where('state', WebpageStateEnum::LIVE),
@@ -76,18 +100,11 @@ class StoreRedirect extends OrgAction
 
     public function action(Webpage $webpage, array $modelData): Redirect
     {
-        $this->asAction       = true;
+        $this->webpage      = $webpage;
+        $this->asAction     = true;
         $this->initialisationFromShop($webpage->shop, $modelData);
 
         return $this->handle($webpage, $this->validatedData);
     }
-
-    public function inWebpage(Webpage $webpage, ActionRequest $request): Redirect
-    {
-        $this->initialisationFromShop($webpage->shop, $request);
-
-        return $this->handle($webpage, $this->validatedData);
-    }
-
 
 }

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\ProductCategory;
 
-use App\Actions\Catalogue\ProductCategory\Search\ProductCategoryRecordSearch;
 use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -95,10 +94,6 @@ class UpdateProductCategory extends OrgAction
 
         $changes = Arr::except($productCategory->getChanges(), ['updated_at']);
 
-        if (Arr::hasAny($changes, ['code', 'name', 'type'])) {
-            ProductCategoryRecordSearch::dispatch($productCategory);
-        }
-
         if (Arr::has($changes, 'state')) {
             $this->productCategoryHydrators($productCategory);
         }
@@ -164,7 +159,7 @@ class UpdateProductCategory extends OrgAction
         ])) {
             $this->productCategoryHydrators($productCategory);
             if ($productCategory->webpage_id) {
-                ReindexWebpageLuigiData::dispatch($productCategory->webpage->id)->delay(60 * 15);
+                ReindexWebpageLuigiData::dispatch($productCategory->webpage->id)->delay(60);
                 ClearCacheByWildcard::run("irisData:website:{$productCategory->webpage->website_id}:*");
             }
         }

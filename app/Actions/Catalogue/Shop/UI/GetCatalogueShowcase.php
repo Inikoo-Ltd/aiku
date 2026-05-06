@@ -22,6 +22,7 @@ class GetCatalogueShowcase
 
         $stats = [
             $this->buildProductsStat($shop, $orgSlug, $shopSlug),
+            $this->buildBundlesStat($shop, $orgSlug, $shopSlug)
         ];
 
         if ($shop->engine == ShopEngineEnum::AIKU) {
@@ -83,7 +84,7 @@ class GetCatalogueShowcase
             ] : null,
             'metas' => [
                 [
-                    'icon'    => ['tooltip' => 'active', 'icon' => 'fas fa-check-circle', 'class' => 'text-green-500'],
+                    'icon'    => ['icon' => 'fas fa-check-circle', 'class' => 'text-green-500'],
                     'count'   => $shop->stats->number_products_state_active,
                     'tooltip' => __('Active'),
                     'route'   => [
@@ -92,12 +93,12 @@ class GetCatalogueShowcase
                     ],
                 ],
                 [
-                    'icon'    => ['tooltip' => 'discontinuing', 'icon' => 'fas fa-times-circle', 'class' => 'text-amber-500'],
+                    'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-amber-500'],
                     'count'   => $shop->stats->number_products_state_discontinuing,
                     'tooltip' => __('Discontinuing'),
                 ],
                 [
-                    'icon'    => ['tooltip' => 'discontinued', 'icon' => 'fas fa-times-circle', 'class' => 'text-red-500'],
+                    'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-red-500'],
                     'count'   => $shop->stats->number_products_state_discontinued,
                     'tooltip' => __('Discontinued'),
                     'route'   => [
@@ -113,6 +114,49 @@ class GetCatalogueShowcase
                         'name'       => 'grp.org.shops.show.catalogue.products.in_process_products.index',
                         'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
                     ],
+                ],
+                [
+                    'icon'    => ['icon' => 'fas fa-hat-cowboy', 'class' => 'text-red-500 animate-pulse'],
+                    'count'   => 0,
+                    'tooltip' => __('Products with Independent Trade Units'),
+                    'route'   => [
+                        'name'      => 'grp.org.shops.show.catalogue.products.independent_products.all.index',
+                        'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+                    ]
+                ]
+            ],
+        ];
+    }
+
+    private function buildBundlesStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        return [
+            'label' => __('Current Bundles'),
+            'route' => [
+                'name'       => 'grp.org.shops.show.catalogue.products.current_products.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'  => 'fal fa-layer-group',
+            "color" => "#4f46e5",
+            'value'     => $shop->stats->number_bundles,
+            'metas' => [
+                [
+                    "icon"    => [
+                        "tooltip" => "active",
+                        "icon"    => "fas fa-check-circle",
+                        "class"   => "text-green-500"
+                    ],
+                    "count"   => $shop->stats->number_bundles_state_active,
+                    "tooltip" => "Active"
+                ],
+                [
+                    "icon"    => [
+                        "tooltip" => "discontinuing",
+                        "icon"    => "fas fa-times-circle",
+                        "class"   => "text-amber-500"
+                    ],
+                    "count"   => $shop->stats->number_bundles_state_discontinuing,
+                    "tooltip" => "Discontinuing"
                 ],
             ],
         ];

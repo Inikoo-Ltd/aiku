@@ -5,15 +5,20 @@
   -->
 
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import Table from '@/Components/Table/Table.vue'
 import { trans } from 'laravel-vue-i18n'
 import Icon from '@/Components/Icon.vue'
+import { notify } from '@kyvg/vue3-notification';
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { ref } from 'vue';
 
 defineProps<{
     data: {}
     tab?: string
 }>()
+
+const isLoadingDelete = ref(null);
 
 
 function trolleyRoute(trolley: {}) {
@@ -44,6 +49,35 @@ const deliveryNoteRoute = (trolley: {}) => {
             return '#'
     }
 }
+
+
+const deleteTrolley = (trolley: any) => {
+	router.delete(route('grp.models.trolleys.delete', {
+					trolley: trolley.id
+	}), {
+		onStart: () => {
+			isLoadingDelete.value = trolley.id;
+		},
+		onSuccess: () => {
+			notify({
+				title: "Success",
+				text: trans("Trolley has been successfully deleted"),
+				type: "success",
+			})
+		}, 
+		onError: (err) => {
+			const errMsg = err.trolley;
+			notify({
+				title: "Failed",
+				text: errMsg ??  trans("Failed to delete Trolley"),
+				type: "error",
+			})
+		}, 
+		onFinish: () => {
+			isLoadingDelete.value = null;
+		}
+	})
+}
 </script>
 
 <template>
@@ -59,7 +93,6 @@ const deliveryNoteRoute = (trolley: {}) => {
         <template #cell(current_delivery_note)="{ item: trolley }">
             <Link v-if="trolley['current_delivery_note']" :href="deliveryNoteRoute(trolley)" class="primaryLink w-fit">
                 {{ trolley['current_delivery_note']['reference'] }}
-                
                 <Icon :data="trolley['current_delivery_note']['state_icon']" />
                 <span v-tooltip="trans('Number of the total items')" class="tabular-nums">
                     ({{ trolley['current_delivery_note']['number_items'] }}
@@ -70,5 +103,17 @@ const deliveryNoteRoute = (trolley: {}) => {
                 {{ trans('No current delivery note') }}
             </span>
         </template>
+
+		<template #cell(actions)="{item: trolley}">
+			<Button
+				v-if="!trolley.current_delivery_note?.id"
+				v-tooltip="trans('Delete trolley')"
+				@click="deleteTrolley(trolley)"
+				:type="'negative'"
+				icon="fal fa-skull"
+				:size="'xs'"
+				:loading="isLoadingDelete == trolley.id"
+			/>
+		</template>
     </Table>
 </template>

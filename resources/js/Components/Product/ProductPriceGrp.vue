@@ -147,8 +147,9 @@ const closePopover = (): void => {
                 </span>
             </div>
         </div>
+
         <div v-else>
-            <div class="flex justify-between">
+            <div class="flex justify-between gap-x-2 flex-wrap">
                 <div v-tooltip="trans('Wholesale Price')" class="flex items-center gap-1">
                     {{ trans("Price") }}:
                     <span class="font-semibold text-green-600 text-xl">{{ locale.currencyFormat(currency_code,

@@ -113,6 +113,9 @@ class IndexOffers extends OrgAction
             'shops.name as shop_name',
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
+            'offers.duration',
+            'offers.start_at',
+            'offers.end_at',
         ];
 
         $timeSeriesData = $query->withTimeSeriesAggregation(
@@ -143,7 +146,7 @@ class IndexOffers extends OrgAction
 
         return $query->defaultSort('offers.id')
             ->select($selects)
-            ->allowedSorts(['id','code', 'created_at', 'name', 'orders', 'invoices', 'sales_grp_currency_external'])
+            ->allowedSorts(['id', 'code','duration', 'created_at', 'name', 'type', 'orders', 'invoices', 'sales_grp_currency_external'])
             ->allowedFilters([$globalSearch, 'code', 'name'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -179,8 +182,13 @@ class IndexOffers extends OrgAction
             $table->withModelOperations($modelOperations);
 
             $table->column(key: 'state', label: '', type: 'icon', sortable: false);
-            $table->column(key: 'created_at', label: __('Created'), sortable: true, type: 'date');
             $table->column(key: 'name', label: __('Name'), sortable: true);
+            if ($parent instanceof ProductCategory) {
+                $table->column(key: 'type_icon', label: __('Type'), sortable: true, type: 'icon', );
+            } else {
+                $table->column(key: 'type', label: __('Type'), sortable: true);
+            }
+            $table->column(key: 'duration', label: __('Duration'), sortable: true, align: 'right');
             $table->column(key: 'orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right');

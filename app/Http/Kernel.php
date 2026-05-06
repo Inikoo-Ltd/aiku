@@ -11,6 +11,7 @@ namespace App\Http;
 use App\Http\Middleware\AcceptClientHintsMiddleware;
 use App\Http\Middleware\AddSentryBrowserProfilingHeader;
 use App\Http\Middleware\AddVaryHeader;
+use App\Http\Middleware\AddFrameOptionsHeader;
 use App\Http\Middleware\ApiBindGroupInstance;
 use App\Http\Middleware\CorneaAuthenticate;
 use App\Http\Middleware\DisableSSR;
@@ -31,6 +32,7 @@ use App\Http\Middleware\LogUserRequestMiddleware;
 use App\Http\Middleware\EncryptCookies;
 use App\Http\Middleware\ForceJsonResponse;
 use App\Http\Middleware\HandleIrisInertiaRequests;
+use App\Http\Middleware\NewRelicTransactionMiddleware;
 use App\Http\Middleware\ResetUserPasswordMiddleware;
 use App\Http\Middleware\ResetWebUserPasswordMiddleware;
 use App\Http\Middleware\RetinaAuthenticate;
@@ -82,8 +84,10 @@ class Kernel extends HttpKernel
         ValidatePostSize::class,
         TrimStrings::class,
         ConvertEmptyStringsToNull::class,
+        //AddFrameOptionsHeader::class, // add individually to retina, iris ..etc except pupil
         AddSentryBrowserProfilingHeader::class,
         AcceptClientHintsMiddleware::class,
+        NewRelicTransactionMiddleware::class,
     ];
 
     protected $middlewareGroups = [
@@ -92,12 +96,14 @@ class Kernel extends HttpKernel
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
+            AddFrameOptionsHeader::class
         ],
 
         'bk-api' => [
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
+            AddFrameOptionsHeader::class
         ],
 
         'retina-api' => [
@@ -105,7 +111,8 @@ class Kernel extends HttpKernel
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
-            InspectorOctaneMiddleware::class
+            InspectorOctaneMiddleware::class,
+            AddFrameOptionsHeader::class
         ],
 
         'grp-api' => [
@@ -114,7 +121,8 @@ class Kernel extends HttpKernel
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
             ApiBindGroupInstance::class,
-            InspectorOctaneMiddleware::class
+            InspectorOctaneMiddleware::class,
+            AddFrameOptionsHeader::class
         ],
 
         'han' => [
@@ -122,18 +130,21 @@ class Kernel extends HttpKernel
             EnsureFrontendRequestsAreStateful::class,
             SetHanAsAppScope::class,
             SubstituteBindings::class,
+            AddFrameOptionsHeader::class
         ],
 
         'maya' => [
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
+            AddFrameOptionsHeader::class
         ],
 
         'api'         => [
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
+            AddFrameOptionsHeader::class
         ],
         'grp'         => [
             DisableSSR::class,
@@ -149,10 +160,12 @@ class Kernel extends HttpKernel
             HandleInertiaGrpRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             InspectorOctaneMiddleware::class,
+            AddFrameOptionsHeader::class
         ],
         'two_fa'    => [
             \App\Http\Middleware\EnforcesTwoFAMiddleware::class,
             \App\Http\Middleware\TwoFAMiddleware::class,
+            AddFrameOptionsHeader::class
         ],
         'web_errors'  => [
             EncryptCookies::class,
@@ -162,6 +175,7 @@ class Kernel extends HttpKernel
             VerifyCsrfToken::class,
             BindGroupInstance::class,
             SetLocale::class,
+            AddFrameOptionsHeader::class
         ],
         'aiku-public' => [
             DisableSSR::class,
@@ -173,6 +187,8 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
             HandleAikuPublicInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+            AddFrameOptionsHeader::class
+
         ],
         'iris'        => [
             DetectIrisWebsite::class,
@@ -187,10 +203,11 @@ class Kernel extends HttpKernel
             SetWebUserLocale::class,
             HandleIrisInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            //LogWebUserRequestMiddleware::class,
+            LogWebUserRequestMiddleware::class,
             TrackWebsiteVisitor::class,
             InspectorOctaneMiddleware::class,
             //CaptureTrafficSourceMiddleWare::class,
+            AddFrameOptionsHeader::class
         ],
         'retina'      => [
             DisableSSR::class,
@@ -206,10 +223,11 @@ class Kernel extends HttpKernel
             SetWebUserLocale::class,
             HandleRetinaInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            //LogWebUserRequestMiddleware::class,
+            LogWebUserRequestMiddleware::class,
             TrackWebsiteVisitor::class,
             InspectorOctaneMiddleware::class,
             //CaptureTrafficSourceMiddleWare::class,
+            AddFrameOptionsHeader::class
         ],
         'pupil'       => [
             DisableSSR::class,
@@ -235,7 +253,8 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
             HandleCorneaInertiaRequests::class,
             //AddLinkHeadersForPreloadedAssets::class,
-            InspectorOctaneMiddleware::class
+            InspectorOctaneMiddleware::class,
+            AddFrameOptionsHeader::class
         ],
 
         //==== Other Middleware Groups
@@ -247,6 +266,7 @@ class Kernel extends HttpKernel
             VerifyCsrfToken::class,
             BindGroupInstance::class,
             SubstituteBindings::class,
+            AddFrameOptionsHeader::class
         ],
 
         'broadcast' => [
@@ -256,6 +276,7 @@ class Kernel extends HttpKernel
             ShareErrorsFromSession::class,
             VerifyCsrfToken::class,
             SubstituteBindings::class,
+            AddFrameOptionsHeader::class,
             'auth:broadcasting'
         ],
 

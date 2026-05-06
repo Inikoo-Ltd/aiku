@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon $date
  * @property numeric $grp_stock_value
  * @property numeric $grp_stock_commercial_value
- * @property string $grp_value_dormant_stock_1y
+ * @property numeric $grp_value_dormant_stock_1y
  * @property float $percentage_value_dormant_stock_1y
  * @property int $number_stocks
  * @property int $number_org_stocks_no_stock
@@ -31,7 +31,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property bool $is_year
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupStockHistory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupStockHistory newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupStockHistory query()

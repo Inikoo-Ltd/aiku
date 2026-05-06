@@ -21,6 +21,7 @@ import { trans } from "laravel-vue-i18n"
 import RenderProduct from "@/Components/CMS/Webpage/Products/Ecommerce/RenderProduct.vue"
 import Image from "@/Components/Image.vue"
 import ReviewFamily from "@/Components/CMS/Reviews/ReviewFamily.vue"
+import { useFormatTime } from "@/Composables/useFormatTime";
 
 
 const props = defineProps<{
@@ -225,7 +226,7 @@ const handleSearch = () => {
     page.value = 1
     isFetchingOutOfStock.value = false
     updateQueryParams()
-    debFetchProducts(false, true)
+    debFetchProducts(false, false)
 }
 
 
@@ -233,14 +234,14 @@ watch([q, orderBy], () => {
     page.value = 1
     isFetchingOutOfStock.value = false
     updateQueryParams()
-    debFetchProducts(false, true)
+    debFetchProducts(false, false)
 }, { deep: true })
 
 watch(filter, () => {
     page.value = 1
     isFetchingOutOfStock.value = false
     /* updateQueryParams(); */
-    debFetchProducts(false, true)
+    debFetchProducts(false, false)
 }, { deep: true })
 
 
@@ -262,15 +263,20 @@ const sortOptions = computed(() => {
         baseOptions.splice(1, 0, { label: trans("Price"), value: "price" })
         baseOptions.splice(1, 0, { label: trans("RRP"), value: "rrp" })
     }
+    if (props.fieldValue?.sub_type == 'family') {
+        baseOptions.splice(1, 0, { label: trans("Recommended"), value: "recommended" })
+    }
     return baseOptions
 })
 
-const sortKey = ref("created_at")
+const sortKey = ref(props.fieldValue.sub_type == 'family' ? 'recommended' : 'code')
 const isAscending = ref(true)
 
 
 const getArrow = (key: typeof sortKey.value) => {
     if (sortKey.value !== key) return ""
+    if(sortKey.value == 'recommended') return ""
+    if(sortKey.value == 'created_at') return ""
     return isAscending.value ? "↑" : "↓"
 }
 
@@ -344,7 +350,9 @@ const toggleSort = (key: string) => {
         isAscending.value = true
     }
 
-    orderBy.value = isAscending.value ? key : `-${key}`
+    if(props.fieldValue?.sub_type == 'family' && key == 'recommended') orderBy.value = key
+    /* if(key == 'created_at') orderBy.value = `-${key}` */
+    else orderBy.value = isAscending.value ? key : `${key}`
     updateQueryParams()
     handleSearch()
 }

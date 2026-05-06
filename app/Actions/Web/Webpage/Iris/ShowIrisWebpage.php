@@ -70,6 +70,8 @@ class ShowIrisWebpage
                 'model_type'    => $webpage->model_type
             ],
             'webpage_img'  => $webpageImg,
+            'index_page'    => $webpage->index_page,
+            'follow_link'   => $webpage->follow_link
         ];
 
         return array_merge($baseWebpageData, [
@@ -213,8 +215,9 @@ class ShowIrisWebpage
 
             return redirect()->to($webpageData, 301)
                 ->withHeaders([
-                    'x-original-referer' => request()->headers->get('referer', '')
-                ]);
+                    'x-original-referer' => request()->headers->get('referer', ''),
+                ])
+                ->with('from-iris-redirect', true);
         }
 
         $browserTitle = Arr::get($webpageData, 'webpage_data.title', '');
@@ -247,11 +250,14 @@ class ShowIrisWebpage
 
             if ($webpage?->state === WebpageStateEnum::LIVE) {
                 $webpageID = $webpage->id;
-            } elseif ($webpage?->state === WebpageStateEnum::CLOSED) {
-                $webpageID = $webpage->redirectWebpage?->id;
             } else {
-                $webpageID = null;
+                $webpageID = DB::table('redirects')
+                    ->select('to_webpage_id')
+                    ->where('from_path', $path)
+                    ->where('website_id', $website->id)
+                    ->first()?->to_webpage_id;
             }
+
         }
 
 

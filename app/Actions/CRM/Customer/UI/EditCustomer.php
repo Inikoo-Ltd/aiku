@@ -47,8 +47,7 @@ class EditCustomer extends OrgAction
         $isExternal = $customer->shop->type == ShopTypeEnum::EXTERNAL;
 
 
-
-        $contact = [
+        $contact    = [
             'title'  => __('Contact information'),
             'label'  => __('Contact'),
             'fields' => [
@@ -76,21 +75,21 @@ class EditCustomer extends OrgAction
                     ]
                 ],
                 'delivery_address'         => [
-                    'hidden' => $customer->shop->type == ShopTypeEnum::DROPSHIPPING,
-                    'type'    => 'delivery_address',
-                    'label'   => __('Delivery Address'),
-                    'noSaveButton'  => true,
-                    'options' => [
-                        'same_as_contact' => [
-                            'label'         => __('Same as contact address'),
-                            'key_payload'   => 'delivery_address_id',
-                            'payload'       => $customer->address_id
+                    'hidden'       => $customer->shop->type == ShopTypeEnum::DROPSHIPPING,
+                    'type'         => 'delivery_address',
+                    'label'        => __('Delivery Address'),
+                    'noSaveButton' => true,
+                    'options'      => [
+                        'same_as_contact'      => [
+                            'label'       => __('Same as contact address'),
+                            'key_payload' => 'delivery_address_id',
+                            'payload'     => $customer->address_id
                         ],
-                        'countriesAddressData'    => GetAddressData::run()
+                        'countriesAddressData' => GetAddressData::run()
                     ],
-                    'value'   => [
-                        'is_same_as_contact'    => $customer->delivery_address_id == $customer->address_id,
-                        'address'               => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray()
+                    'value'        => [
+                        'is_same_as_contact' => $customer->delivery_address_id == $customer->address_id,
+                        'address'            => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray()
                     ],
                 ],
                 'tax_number'               => [
@@ -99,10 +98,15 @@ class EditCustomer extends OrgAction
                     'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
                     'country' => $customer->address->country_code,
                 ],
-                'eori'             => [
+                'eori'                     => [
                     'type'  => 'input',
-                    'label' => __('EORI'),
+                    'label' => 'EORI',
                     'value' => $customer->eori
+                ],
+                'ukims'                    => [
+                    'type'  => 'input',
+                    'label' => 'UKIMS',
+                    'value' => $customer->ukims
                 ],
                 'is_re'                    => [
                     'type'   => 'toggle',
@@ -123,7 +127,7 @@ class EditCustomer extends OrgAction
             'label'  => __('Accounting'),
             'fields' => [
 
-                'is_credit_customer' => [
+                'is_credit_customer'   => [
                     'type'  => 'toggle',
                     'label' => __('Credit Customer'),
                     'value' => $customer->is_credit_customer,
@@ -136,24 +140,24 @@ class EditCustomer extends OrgAction
                 ],
             ]
         ];
-        $tags =  [
-            'title'  =>  __('Tags'),
+        $tags       = [
+            'title'  => __('Tags'),
             'label'  => __('Tags'),
             'fields' => [
                 'tags' => [
-                    'type'       => 'tags-customer',
-                    'label'      => __('Tags'),
-                    'value'      => $customer->tags->where('scope', TagScopeEnum::ADMIN_CUSTOMER)->pluck('id')->toArray(),
-                    'noSaveButton' => true,
+                    'type'                   => 'tags-customer',
+                    'label'                  => __('Tags'),
+                    'value'                  => $customer->tags->where('scope', TagScopeEnum::ADMIN_CUSTOMER)->pluck('id')->toArray(),
+                    'noSaveButton'           => true,
                     'isWithRefreshFieldForm' => true,
-                    'tag_routes' => [
-                        'index_tag' => [
+                    'tag_routes'             => [
+                        'index_tag'  => [
                             'name'       => 'grp.json.customer.tags.index',
                             'parameters' => [
                                 'customer' => $customer,
                             ]
                         ],
-                        'store_tag' => [
+                        'store_tag'  => [
                             'name'       => 'grp.models.customer.tags.store',
                             'parameters' => [
                                 'customer' => $customer->id,
@@ -164,35 +168,35 @@ class EditCustomer extends OrgAction
                             'parameters' => [
                                 'customer' => $customer->id,
                             ],
-                            'method'    => 'patch'
+                            'method'     => 'patch'
                         ],
                         'delete_tag' => [
                             'name'       => 'grp.models.customer.tags.delete',
                             'parameters' => [
                                 'customer' => $customer->id,
                             ],
-                            'method'    => 'delete'
+                            'method'     => 'delete'
                         ],
                         'attach_tag' => [
                             'name'       => 'grp.models.customer.tags.attach',
                             'parameters' => [
                                 'customer' => $customer->id,
                             ],
-                            'method'    => 'post'
+                            'method'     => 'post'
                         ],
                         'detach_tag' => [
                             'name'       => 'grp.models.customer.tags.detach',
                             'parameters' => [
                                 'customer' => $customer->id,
                             ],
-                            'method'    => 'delete'
+                            'method'     => 'delete'
                         ],
                     ],
                 ],
             ]
         ];
 
-        $blueprint = [];
+        $blueprint   = [];
         $blueprint[] = $contact;
         if (!$isExternal) {
             $blueprint[] = $accounting;

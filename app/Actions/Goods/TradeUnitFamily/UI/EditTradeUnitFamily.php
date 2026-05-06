@@ -46,6 +46,7 @@ class EditTradeUnitFamily extends GrpAction
                     'blueprint' =>
                         [
                             [
+                                'label'  => __('Detail'),
                                 'title'  => __('trade unit family'),
                                 'fields' => [
                                     'code' => [
@@ -86,7 +87,7 @@ class EditTradeUnitFamily extends GrpAction
         return
             ShowTradeUnitFamily::make()->getBreadcrumbs(
                 tradeUnitFamily: $tradeUnitFamily,
-                routeName: preg_replace('/create$/', 'index', $routeName),
+                routeName: preg_replace('/edit$/', 'show', $routeName),
                 routeParameters: $routeParameters,
                 suffix: '(' . __('Editing') . ')'
             );

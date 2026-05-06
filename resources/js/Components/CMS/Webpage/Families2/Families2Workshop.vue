@@ -6,6 +6,7 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { faCube, faLink, faChevronCircleLeft, faChevronCircleRight } from '@fortawesome/free-solid-svg-icons'
 import { faStar, faCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { trans } from "laravel-vue-i18n"
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation, Pagination, Autoplay, Thumbs, FreeMode } from 'swiper/modules'
@@ -189,7 +190,7 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
 </script>
 
 <template>
-  <div id="families-2" :key="refreshTrigger" ref="containerRef">
+  <div  :id="modelValue?.id ? modelValue?.id : 'families-2'+indexBlock" :key="refreshTrigger" ref="containerRef">
     <div v-if="allItems.length" class="px-4 py-10" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(props.modelValue.container?.properties, props.screenType)
@@ -204,15 +205,32 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
             <FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" />
           </button>
 
-          <Swiper 
-            @swiper="(s) => (swiperInstance = s)" 
-            :modules="[Autoplay, Thumbs, FreeMode, Navigation]" 
-            :loop="true"
-            slides-per-view="auto" 
-            :space-between="spaceBetween" 
-            :freeMode="true" 
-            class="w-full swiper-mask"
-          >
+          <Swiper @swiper="(s) => (swiperInstance = s)" :modules="[Autoplay, Thumbs, FreeMode, Navigation]" :loop="true"
+            slides-per-view="auto" :space-between="spaceBetween" :freeMode="true" class="w-full swiper-mask">
+            <SwiperSlide class="!w-auto flex">
+              <LinkIris :href="modelValue?.webpage_data?.overview_url" type="internal" class="h-full flex">
+                <div>
+                  <div class="inline-flex items-center rounded-3xl border border-gray/10
+          justify-center h-auto px-3  sm:py-3
+           text-base font-semibold leading-tight text-center
+           overflow-hidden sm:overflow-visible"  :style="{
+                  background: '#ffff',
+                  ...getStyles(
+                    props.modelValue?.button?.view_more?.properties,
+                    props.screenType
+
+                  ), 
+                }">
+                    <span class="whitespace-normal break-words w-full text-center
+             sm:whitespace-normal sm:max-w-full" :class="{
+              '!w-full !text-xs': screenType === 'mobile'
+            }">
+                      {{ trans("View All") }}
+                    </span>
+                  </div>
+                </div>
+              </LinkIris>
+            </SwiperSlide>
             <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="!w-auto flex">
               <div class="h-full flex">
                 <Family2Render class="family-item h-full flex items-center" :data="item" :style="{
@@ -223,6 +241,7 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
                 }" :screenType="props.screenType" />
               </div>
             </SwiperSlide>
+
           </Swiper>
 
           <!-- NEXT -->
@@ -258,23 +277,18 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
 }
 
 .swiper-mask {
-  --mask-size: 48px;
+ /*  --mask-size: 48px;
 
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    black var(--mask-size),
-    black calc(100% - var(--mask-size)),
-    transparent 100%
-  );
+  -webkit-mask-image: linear-gradient(to right,
+      transparent 0,
+      black var(--mask-size),
+      black calc(100% - var(--mask-size)),
+      transparent 100%);
 
-  mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    black var(--mask-size),
-    black calc(100% - var(--mask-size)),
-    transparent 100%
-  );
+  mask-image: linear-gradient(to right,
+      transparent 0,
+      black var(--mask-size),
+      black calc(100% - var(--mask-size)),
+      transparent 100%); */
 }
-
 </style>

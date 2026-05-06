@@ -33,8 +33,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_orders_handing_type_collection
  * @property int $number_orders_handing_type_shipping
  * @property int $number_item_transactions_out_of_stock_in_basket transactions at the time up submission from basket
- * @property string|null $out_of_stock_in_basket_grp_net_amount
- * @property string|null $out_of_stock_in_basket_org_net_amount
+ * @property numeric|null $out_of_stock_in_basket_grp_net_amount
+ * @property numeric|null $out_of_stock_in_basket_org_net_amount
  * @property int $number_item_transactions transactions including cancelled
  * @property int $number_current_item_transactions transactions excluding cancelled
  * @property int $number_item_transactions_state_creating
@@ -106,8 +106,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_unpaid_invoices
- * @property string $unpaid_invoices_amount_org_currency
- * @property string $unpaid_invoices_amount_grp_currency
+ * @property numeric $unpaid_invoices_amount_org_currency
+ * @property numeric $unpaid_invoices_amount_grp_currency
  * @property int $number_deleted_invoices
  * @property string|null $last_b2b_shop_delivery_note_created_at
  * @property string|null $last_b2b_shop_delivery_note_dispatched_at
@@ -199,32 +199,32 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_dropshipping_shop_delivery_note_items_state_cancelled
  * @property int $number_dropshipping_shop_delivery_note_items_state_out_of_stock
  * @property int $number_dropshipping_shop_delivery_note_items_state_no_dispatche
- * @property string|null $average_historic_clv_amount_org_currency
- * @property string|null $average_historic_clv_amount_grp_currency
- * @property string|null $average_predicted_clv_amount_org_currency
- * @property string|null $average_predicted_clv_amount_grp_currency
- * @property string|null $average_total_clv_amount_org_currency
- * @property string|null $average_total_clv_amount_grp_currency
+ * @property numeric|null $average_historic_clv_amount_org_currency
+ * @property numeric|null $average_historic_clv_amount_grp_currency
+ * @property numeric|null $average_predicted_clv_amount_org_currency
+ * @property numeric|null $average_predicted_clv_amount_grp_currency
+ * @property numeric|null $average_total_clv_amount_org_currency
+ * @property numeric|null $average_total_clv_amount_grp_currency
  * @property float|null $average_churn_interval in days
  * @property float|null $average_churn_risk_prediction
  * @property float|null $average_time_between_orders
- * @property string|null $average_order_value
+ * @property numeric|null $average_order_value
  * @property string|null $expected_date_of_next_order
- * @property string $revenue_amount
- * @property string $revenue_amount_org_currency
- * @property string $revenue_amount_grp_currency
- * @property string $lost_revenue_out_of_stock_amount
- * @property string $lost_revenue_out_of_stock_amount_org_currency
- * @property string $lost_revenue_out_of_stock_amount_grp_currency
- * @property string $lost_revenue_replacements_amount
- * @property string $lost_revenue_replacements_amount_org_currency
- * @property string $lost_revenue_replacements_amount_grp_currency
- * @property string $lost_revenue_compensations_amount
- * @property string $lost_revenue_compensations_amount_org_currency
- * @property string $lost_revenue_compensations_amount_grp_currency
- * @property string $lost_revenue_other_amount
- * @property string $lost_revenue_other_amount_org_currency
- * @property string $lost_revenue_other_amount_grp_currency
+ * @property numeric $revenue_amount
+ * @property numeric $revenue_amount_org_currency
+ * @property numeric $revenue_amount_grp_currency
+ * @property numeric $lost_revenue_out_of_stock_amount
+ * @property numeric $lost_revenue_out_of_stock_amount_org_currency
+ * @property numeric $lost_revenue_out_of_stock_amount_grp_currency
+ * @property numeric $lost_revenue_replacements_amount
+ * @property numeric $lost_revenue_replacements_amount_org_currency
+ * @property numeric $lost_revenue_replacements_amount_grp_currency
+ * @property numeric $lost_revenue_compensations_amount
+ * @property numeric $lost_revenue_compensations_amount_org_currency
+ * @property numeric $lost_revenue_compensations_amount_grp_currency
+ * @property numeric $lost_revenue_other_amount
+ * @property numeric $lost_revenue_other_amount_org_currency
+ * @property numeric $lost_revenue_other_amount_grp_currency
  * @property string|null $last_external_shop_delivery_note_created_at
  * @property string|null $last_external_shop_delivery_note_dispatched_at
  * @property string|null $last_external_shop_delivery_note_type_order_created_at

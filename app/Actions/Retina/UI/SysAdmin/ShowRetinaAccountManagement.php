@@ -18,6 +18,7 @@ use App\Http\Resources\Helpers\TaxNumberResource;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
+use App\Models\Helpers\Tag;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaAccountManagement extends RetinaAction
@@ -45,6 +46,8 @@ class ShowRetinaAccountManagement extends RetinaAction
         if ($this->organisation->country) {
             $isEu = $this->organisation->country->continent == 'EU';
         }
+
+        $show_interest = Tag::where('shop_id', $this->shop->id)->whereNotIn('scope', [TagScopeEnum::SYSTEM_CUSTOMER, TagScopeEnum::ADMIN_CUSTOMER])->get();
 
         return Inertia::render(
             'EditModel',
@@ -113,6 +116,11 @@ class ShowRetinaAccountManagement extends RetinaAction
                                         'label' => 'EORI',
                                         'value' => $customer->eori,
                                     ],
+                                    'ukims'                    => [
+                                        'type'  => 'input',
+                                        'label' => 'UKIMS',
+                                        'value' => $customer->ukims
+                                    ],
                                     'tax_number'       => [
                                         'type'          => 'tax_number',
                                         'label'         => __('Tax number'),
@@ -142,46 +150,48 @@ class ShowRetinaAccountManagement extends RetinaAction
                                     ]
                                 ]
                             ],
-                            [
-                                'title'  => __('Interest'),
-                                'label'  => __('Interest'),
-                                'icon'   => 'fal fa-tags',
-                                'fields' => [
-                                    'tags' => [
-                                        'type'                   => 'retina-tags-customer',
-                                        'label'                  => __('Interest'),
-                                        'value'                  => $customer
-                                            ->tags()
-                                            ->where('tags.scope', TagScopeEnum::USER_CUSTOMER->value)
-                                            ->pluck('tags.id')
-                                            ->toArray(),
-                                        'isWithRefreshFieldForm' => true,
-                                        'tag_routes'             => [
-                                            'index_tag'  => [
-                                                'name'       => 'retina.json.customer.tags.index',
-                                                'parameters' => [
-                                                    'customer' => $customer->id,
-                                                ]
+                             ...($show_interest ? [[
+                            'title'  => __('Interest'),
+                            'label'  => __('Interest'),
+                            'icon'   => 'fal fa-tags',
+                            'fields' => [
+                                'tags' => [
+                                    'type'                   => 'retina-tags-customer',
+                                    'label'                  => __('Interest'),
+                                    'noSaveButton'           => true,
+                                    'full'                   => true,
+                                    'value'                  => $customer
+                                        ->tags()
+                                        ->where('tags.scope', TagScopeEnum::USER_CUSTOMER->value)
+                                        ->pluck('tags.id')
+                                        ->toArray(),
+                                    'isWithRefreshFieldForm' => true,
+                                    'tag_routes'             => [
+                                        'index_tag'  => [
+                                            'name'       => 'retina.json.customer.tags.index',
+                                            'parameters' => [
+                                                'customer' => $customer->id,
+                                            ]
+                                        ],
+                                        'attach_tag' => [
+                                            'name'       => 'retina.models.customer.tags.attach',
+                                            'parameters' => [
+                                                'customer' => $customer->id,
                                             ],
-                                            'attach_tag' => [
-                                                'name'       => 'retina.models.customer.tags.attach',
-                                                'parameters' => [
-                                                    'customer' => $customer->id,
-                                                ],
-                                                'method'     => 'post'
+                                            'method'     => 'post'
+                                        ],
+                                        'detach_tag' => [
+                                            'name'       => 'retina.models.customer.tags.detach',
+                                            'parameters' => [
+                                                'customer' => $customer->id,
                                             ],
-                                            'detach_tag' => [
-                                                'name'       => 'retina.models.customer.tags.detach',
-                                                'parameters' => [
-                                                    'customer' => $customer->id,
-                                                ],
-                                                'method'     => 'delete'
-                                            ],
+                                            'method'     => 'delete'
                                         ],
                                     ],
-                                ]
+                                ],
                             ]
-                        ],
+                        ]] : [])
+                    ],
                     "args"      => [
                         "updateRoute" => [
                             "name"       => "retina.models.customer.update",

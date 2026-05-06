@@ -167,9 +167,11 @@ const fallbackTypeOptions: Record<string, { label: string; category?: string }> 
 	special: { label: "Special Leave", category: "special" },
 }
 
-const fixedHalfDayTypes: Record<string, "Morning" | "Afternoon"> = {
-	"halfday-morning": "Morning",
-	"halfday-afternoon": "Afternoon",
+const isHalfDayLeave = (leave: any): boolean => {
+	const leaveTypeValue =
+		typeof leave?.leave_type_value === "number" ? leave.leave_type_value : 1
+
+	return leaveTypeValue === 0.5
 }
 
 const typeOptions = computed(() => {
@@ -184,6 +186,7 @@ const typeOptions = computed(() => {
 		category: typeof data === "string" ? null : data.category,
 		max_days_per_year:
 			typeof data === "object" && "max_days_per_year" in data ? data.max_days_per_year : null,
+		leave_type_value: typeof data === "object" && "value" in data ? toNumber(data.value) : 1,
 	}))
 })
 
@@ -240,6 +243,10 @@ const maxDaysPerYear = computed(() => {
 	return selectedLeaveType.value?.max_days_per_year ?? null
 })
 
+const selectedLeaveTypeValue = computed(() => {
+	return toNumber(selectedLeaveType.value?.leave_type_value ?? 1)
+})
+
 const calculateBusinessDays = (startDate: string, endDate: string): number => {
 	if (!startDate || !endDate) return 0
 
@@ -269,13 +276,77 @@ const exceedsLimit = computed(() => {
 	return selectedDays > maxDaysPerYear.value
 })
 
-const canSubmitLeave = computed(() => {
-	if (!balanceSummary.value) return true
-	if (leaveForm.type === "annual") {
-		return annualRemaining.value > 0
+const selectedLeaveBucket = computed(() => {
+	const selectedCategory = selectedLeaveType.value?.category
+	const normalizedCategory =
+		typeof selectedCategory === "string"
+			? selectedCategory.toLowerCase()
+			: typeof selectedCategory?.value === "string"
+				? selectedCategory.value.toLowerCase()
+				: ""
+
+	if (normalizedCategory === "annual" || normalizedCategory === "medical" || normalizedCategory === "unpaid") {
+		return normalizedCategory
 	}
 
-	return true
+	const typeCode = typeof leaveForm.type === "string" ? leaveForm.type.toLowerCase() : ""
+	if (typeCode.includes("medical") || typeCode.includes("sick")) {
+		return "medical"
+	}
+	if (typeCode.includes("unpaid")) {
+		return "unpaid"
+	}
+	if (typeCode.includes("annual") || typeCode.includes("holiday")) {
+		return "annual"
+	}
+
+	return null
+})
+
+const requestedLeaveDays = computed(() => {
+	if (!leaveForm.start_date || !leaveForm.end_date) {
+		return 0
+	}
+
+	const businessDays = leaveForm.is_half_day
+		? 1
+		: calculateBusinessDays(leaveForm.start_date, leaveForm.end_date)
+	let requestedDays = businessDays * selectedLeaveTypeValue.value
+
+	if (leaveForm.is_half_day && selectedLeaveTypeValue.value === 1) {
+		requestedDays = 0.5
+	}
+
+	return requestedDays
+})
+
+const selectedBucketRemaining = computed(() => {
+	if (!balanceSummary.value) {
+		return Number.POSITIVE_INFINITY
+	}
+
+	switch (selectedLeaveBucket.value) {
+		case "annual":
+			return toNumber(annualRemaining.value)
+		case "medical":
+			return toNumber(balanceSummary.value.medical_remaining)
+		case "unpaid":
+			return toNumber(balanceSummary.value.unpaid_remaining)
+		default:
+			return Number.POSITIVE_INFINITY
+	}
+})
+
+const canSubmitLeave = computed(() => {
+	if (requestedLeaveDays.value <= 0) {
+		return true
+	}
+
+	if (selectedLeaveBucket.value === "unpaid" || selectedLeaveBucket.value === "medical") {
+		return true
+	}
+
+	return selectedBucketRemaining.value >= requestedLeaveDays.value
 })
 
 const getStatusTheme = (status: string): number => {
@@ -289,6 +360,77 @@ const getStatusTheme = (status: string): number => {
 		default:
 			return 99
 	}
+}
+
+const approvalTotalSteps = (leave: any): number => {
+	return Math.max(0, toNumber(leave.approval_total_steps))
+}
+
+const approvalCompletedSteps = (leave: any): number => {
+	const total = approvalTotalSteps(leave)
+	if (total === 0) {
+		return 0
+	}
+
+	if (leave.status === "approved") {
+		return total
+	}
+
+	return Math.min(Math.max(0, toNumber(leave.approval_completed_steps)), total)
+}
+
+const approvalProgressPercent = (leave: any): number => {
+	const total = approvalTotalSteps(leave)
+	if (total === 0) {
+		return 0
+	}
+
+	return Math.round((approvalCompletedSteps(leave) / total) * 100)
+}
+
+const approvalStatusLabel = (leave: any): string => {
+	if (leave.status === "approved") {
+		return trans("Completed")
+	}
+
+	if (leave.status === "rejected") {
+		return trans("Rejected")
+	}
+
+	return trans("In Progress")
+}
+
+const approvalProgressText = (leave: any): string => {
+	const total = approvalTotalSteps(leave)
+	if (total === 0) {
+		return trans("No steps")
+	}
+
+	if (leave.status === "approved") {
+		return trans(":steps steps completed", { steps: String(total) })
+	}
+
+	const currentStep = Math.min(
+		Math.max(1, toNumber(leave.approval_current_step) || approvalCompletedSteps(leave) + 1),
+		total
+	)
+
+	return trans("Level :current of :total", {
+		current: String(currentStep),
+		total: String(total),
+	})
+}
+
+const approvalBarClass = (leave: any): string => {
+	if (leave.status === "approved") {
+		return "bg-green-500"
+	}
+
+	if (leave.status === "rejected") {
+		return "bg-red-500"
+	}
+
+	return "bg-amber-500"
 }
 
 const formatDate = (date: string) => {
@@ -329,17 +471,7 @@ const closeCreateModal = () => {
 // Watch for changes in leave type to reset half-day settings when switching between types
 watch(
 	() => leaveForm.type,
-	(newValue) => {
-		const halfDaySession = fixedHalfDayTypes[newValue]
-		if (halfDaySession) {
-			leaveForm.is_half_day = true
-			leaveForm.session = halfDaySession
-			if (leaveForm.start_date) {
-				leaveForm.end_date = leaveForm.start_date
-			}
-			return
-		}
-
+	() => {
 		leaveForm.is_half_day = false
 		leaveForm.session = "Full"
 	}
@@ -427,7 +559,7 @@ const submitEdit = () => {
 							{{ displayedMedicalCount }}
 						</p>
 						<p class="text-xs text-gray-400">
-							{{ trans("Requests Submitted") }}
+							{{ trans("Days This Month") }}
 						</p>
 					</div>
 					<div class="text-3xl text-red-200">
@@ -444,7 +576,7 @@ const submitEdit = () => {
 							{{ displayedUnpaidCount }}
 						</p>
 						<p class="text-xs text-gray-400">
-							{{ trans("Request(s) Submitted") }}
+							{{ trans("Days This Month") }}
 						</p>
 					</div>
 					<div class="text-3xl text-gray-200">
@@ -477,10 +609,10 @@ const submitEdit = () => {
 				<template #cell(duration)="{ item: leave }">
 					<span class="whitespace-nowrap block sm:inline">
 						<FontAwesomeIcon
-							v-if="leave.is_half_day"
+							v-if="isHalfDayLeave(leave)"
 							icon="fal fa-clock"
 							class="mr-1 text-blue-500" />
-						{{ leave.is_half_day ? `Half Day (${leave.session})` : "Full Day" }}
+						{{ isHalfDayLeave(leave) ? "Half Day" : "Full Day" }}
 					</span>
 				</template>
 
@@ -492,6 +624,25 @@ const submitEdit = () => {
 							</span>
 						</template>
 					</Tag>
+				</template>
+
+				<template #cell(approval_progress)="{ item: leave }">
+					<div class="min-w-40">
+						<div class="flex items-center justify-between gap-2 text-xs">
+							<span class="font-medium text-gray-700">
+								{{ approvalStatusLabel(leave) }}
+							</span>
+							<span class="text-gray-500">
+								{{ approvalProgressText(leave) }}
+							</span>
+						</div>
+						<div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-gray-200">
+							<div
+								class="h-full rounded-full transition-all duration-300 ease-out"
+								:class="approvalBarClass(leave)"
+								:style="{ width: `${approvalProgressPercent(leave)}%` }" />
+						</div>
+					</div>
 				</template>
 
 				<template #cell(reason)="{ item: leave }">
@@ -671,10 +822,8 @@ const submitEdit = () => {
 					</p>
 				</div>
 
-				<p
-					v-if="leaveForm.type === 'annual' && !canSubmitLeave"
-					class="text-sm text-red-600">
-					{{ trans("Insufficient leave balance for the selected type.") }}
+				<p v-if="!canSubmitLeave" class="text-sm text-red-600">
+					{{ trans("Sorry, your leave balance isn’t enough for this request") }}
 				</p>
 
 				<div class="mt-6 flex justify-end gap-2">
@@ -688,9 +837,7 @@ const submitEdit = () => {
 						nativeType="submit"
 						:label="trans('Submit Request')"
 						:loading="isSubmitting"
-						:disabled="
-							(leaveForm.type === 'annual' && !canSubmitLeave) || exceedsLimit
-						" />
+						:disabled="!canSubmitLeave || exceedsLimit" />
 				</div>
 			</form>
 		</Modal>

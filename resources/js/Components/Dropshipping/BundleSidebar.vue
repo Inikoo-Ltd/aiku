@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useBundle } from '@/Composables/useBundle';
-import { onMounted, ref, watch, computed, inject } from 'vue'
+import { onBeforeUnmount, ref, watch, computed } from 'vue'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import axios from 'axios'
@@ -8,23 +8,26 @@ import { routeType } from '@/types/route'
 import { route } from 'ziggy-js'
 import { debounce } from 'lodash-es'
 import Button from '../Elements/Buttons/Button.vue';
-import { InputText, Select, Dialog, Textarea, Checkbox } from "primevue"
+import { InputText, Select, Dialog, Textarea, Checkbox, Skeleton } from "primevue"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import InformationIcon from '../Utils/InformationIcon.vue';
-import { faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, faMinus } from '@fas'
+import { faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, faMinus, faUpload } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-library.add(faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, faMinus)
+library.add(faLayerGroup, faSparkles, faTrashAlt, faImages, faSpinner, faPlus, faMinus, faUpload)
 import { router } from '@inertiajs/vue3';
+import { useGenerateAIImages } from '@/Composables/useGenerateAIImages';
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import Image from '../Image.vue';
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import { useLocaleStore } from "@/Stores/locale"
 import { useConfirm, ConfirmDialog } from "primevue"
 
 const props = defineProps<{
-    layout: string
+    symbol: string
+    code: string
 }>()
 
 const layout = useIrisLayoutStore()
-
 const mediaGallery = ref<string[]>([])
 const selectedMedia = ref<any[]>([])
 const selectedMediaIds = ref<number[]>([])
@@ -32,7 +35,6 @@ const selectedMediaAIIds = ref<any[]>([])
 const selectedMediaForAI = ref<any[]>([])
 const aiPrompt = ref<string>('')
 
-const isGeneratingAI = ref<boolean>(false)
 const isStoringBundle = ref<boolean>(false)
 const showMediaModal = ref<boolean>(false)
 const isLoadingMedia = ref<boolean>(false)
@@ -55,66 +57,36 @@ const resolveParams = (config: any) => {
     return config.parameters || {}
 }
 
-const generateAIImages = async () => {
-    try {
-        isGeneratingAI.value = true
-
-        const payload = {
-            images: selectedMediaForAI.value.map(m => m.image_id),
-            prompt: aiPrompt.value
-        }
-
-        const routeConfig = bundleRoutes.ai.generate_images
-        
-        const routeParams = {
-            ...resolveParams(routeConfig),
-            product: bundle.product_id.value
-        }
-
-        const res = await axios.post(
-            route(
-                routeConfig.name,
-                routeParams
-            ),
-            payload
-        )
-
-        const media = res.data?.data
-
-        if (media) {
-
-            selectedMedia.value.push({
-                id: media.id,
-                image_id: media.id,
-                url: media.source?.original || media.thumbnail?.original,
-                image: media.thumbnail || media.source,
-                is_ai: true,
-                is_main: false
-            })
-
-        }
-
+const { isGeneratingAI, aiGenerateImagesError, generateAIImages, showGenerateProgressModal, stopEchoListener } = useGenerateAIImages({
+    customerId: () => layout.iris_variables?.customer_id ?? null,
+    onImageGenerated: (media) => {
+        selectedMedia.value.push({
+            id: media.id,
+            image_id: media.id,
+            url: media.source?.original || media.thumbnail?.original,
+            image: media.thumbnail || media.source,
+            is_ai: true,
+            is_main: false
+        })
         showGenerateModalAI.value = false
-
         aiPrompt.value = ''
         selectedMediaForAI.value = []
-
-        notify({
-            title: 'AI Image Generated',
-            type: 'success'
-        })
-
-    } catch (e) {
-        console.error("e", e)
-        notify({
-            title: trans('Error'),
-            text: trans('Failed to generate AI'),
-            type: 'error'
-        })
-    } finally {
-        isGeneratingAI.value = false
     }
+})
+
+const handleGenerateAIImages = () => {
+    const routeConfig = bundleRoutes.ai.generate_images
+    generateAIImages({
+        routeName: routeConfig.name,
+        routeParams: { ...resolveParams(routeConfig), product: bundle.product_id.value },
+        images: selectedMediaForAI.value.map(m => m.image_id),
+        prompt: aiPrompt.value
+    })
 }
+
+onBeforeUnmount(() => {
+    stopEchoListener()
+})
 
 const productIds = computed(() => {
     return bundle.products.value.map(p => p.id)
@@ -337,74 +309,94 @@ const handleStoreBundle = async () => {
     }
 }
 
+const submitError = ref<string | null>(null)
 const submitBundle = async () => {
 
-        const payload = {
-            description: bundle.description.value,
-            images: selectedMedia.value.map(img => ({
-                id: img.image_id,
-                is_main: img.is_main
-            }))
+    const payload = {
+        description: bundle.description.value,
+        images: selectedMedia.value.map(img => ({
+            id: img.image_id,
+            is_main: img.is_main
+        }))
+    }
+
+    const routeConfig = bundleRoutes.update
+
+    const routeParams = {
+        ...resolveParams(routeConfig),
+        bundle: bundle.bundle_id.value
+    }
+
+    router.patch(
+        route(
+            routeConfig.name,
+            routeParams
+        ),
+        payload,
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isStoringBundle.value = true
+                submitError.value = null
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans('Success'),
+                    text: trans('Success submit bundle'),
+                    type: 'success'
+                })
+
+                const selectedChannel = customerChannelOptions.value.find(
+                    c => c.customer_sales_channel_id === customerChannelsId.value
+                )
+                if (selectedChannel) {
+                    localStorage.setItem('layout_dropshipping', JSON.stringify({
+                        currentPlatform: selectedChannel.customer_sales_channel_slug
+                    }))
+                }
+
+                bundle.step.value = 1
+                selectedMedia.value = []
+                selectedMediaIds.value = []
+                selectedMediaForAI.value = []
+                bundle.close()
+                bundle.resetBundle()
+                localStorage.removeItem('iris_bundle_products')
+            },
+            onError: errors => {
+                submitError.value =
+                    errors.description ||
+                    errors.images ||
+                    Object.values(errors)[0] ||
+                    trans("Failed to submit the data, please try again")
+
+                notify({
+                    title: trans("Something went wrong"),
+                    text: submitError.value,
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isStoringBundle.value = false
+            },
         }
-
-        const routeConfig = bundleRoutes.update
-
-        const routeParams = {
-            ...resolveParams(routeConfig),
-            bundle: bundle.bundle_id.value
-        }
-
-        router.patch(
-            route(
-                routeConfig.name,
-                routeParams
-            ),
-            payload,
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onStart: () => {
-					isStoringBundle.value = true
-				},
-                onSuccess: () => {
-                    notify({
-                        title: trans('Success'),
-                        text: trans('Success submit bundle'),
-                        type: 'success'
-                    })
-
-                    bundle.step.value = 1
-                    bundle.close()
-                    bundle.resetBundle()
-                },
-                onError: errors => {
-                                                notify({
-                                                    title: trans("Something went wrong"),
-                                                    text: trans("Failed to submit the data, please try again"),
-                                                    type: "error"
-                                                })
-                                },
-                                 onFinish: () => {
-                                    isStoringBundle.value = false
-                                },
-            }
-        )
-   
+    )
 }
 
 const confirm = useConfirm()
 
-const handleBack = () => {
+const handleClose = () => {
     confirm.require({
-        message: 'Going back will discard this bundle. You’ll need to start again.',
+        message: 'close this modal will discard this bundle. You’ll need to start again.',
         header: 'Discard bundle?',
         acceptLabel: 'Discard',
         rejectLabel: 'Stay',        
         accept: () => {
             handleDelete()
-            bundle.step.value = 1
         },
     })
+    
 }
 
 const handleDelete = () => {
@@ -424,6 +416,13 @@ const handleDelete = () => {
             selectedMediaIds.value = []
             selectedMediaForAI.value = []
             customerChannelsId.value = null
+            bundle.step.value = 1
+            bundle.close()
+            notify({
+                title: trans('Success'),
+                // text: trans('Failed to delete bundle'),
+                type: 'success'
+            })
         },
 
         onError: () => {
@@ -434,6 +433,33 @@ const handleDelete = () => {
             })
         }
     })
+}
+
+const handleBack = () => {
+    bundle.step.value = 1
+    fetchGetBundle()
+}
+
+const fetchGetBundle = async () => {
+    if (!bundle.bundle_id.value) return
+
+    try {
+        await bundle.loadBundle({
+            routeConfig: bundleRoutes.images.edit,
+            bundleId: bundle.bundle_id.value,
+            bundleParamOverride: {
+                ...resolveParams(bundleRoutes.images.edit),
+                bundle: [bundle.bundle_id.value]
+            }
+        })
+    } catch (e) {
+        console.error('[AddBundles] fetchGetBundle failed', e)
+        notify({
+            title: trans('Error'),
+            text: trans('Failed to load bundle'),
+            type: 'error'
+        })
+    }
 }
 
 const bundle = useBundle({
@@ -458,7 +484,7 @@ const bundle = useBundle({
         }
     },
     store: {
-        name: 'iris.models.dropshipping.bundles.store',
+        name: 'iris.models.dropshipping.bundles.store_or_update',
         getParameters: () => ({
             customerSalesChannel: customerChannelsId.value
         })
@@ -484,17 +510,97 @@ const bundle = useBundle({
             getParameters: () => ({
                 customerSalesChannel: customerChannelsId.value
             })
+        },
+        edit: {
+            name: 'iris.catalogue.bundles.show',
+            getParameters: () => ({
+                customerSalesChannel: customerChannelsId.value
+            })
         }
     },
 })
 
 const bundleRoutes = bundle.bundleRoutes
+const isNavigationLocked = computed(() => bundle.open.value && bundle.step.value === 2)
+
+const notifyNavigationLocked = () => {
+    notify({
+        title: trans('Finish bundle first'),
+        text: trans('You cannot leave this page before completing or discarding the bundle.'),
+        type: 'warn'
+    })
+}
+
+const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+    if (!isNavigationLocked.value) return
+
+    event.preventDefault()
+    event.returnValue = ''
+}
+
+let removeNavigationGuard: null | (() => void) = null
+
+const attachNavigationGuard = () => {
+    if (removeNavigationGuard) return
+
+    removeNavigationGuard = router.on('before', (event) => {
+        if (!isNavigationLocked.value) return
+        if (event.detail.visit.method?.toLowerCase() !== 'get') return
+
+        notifyNavigationLocked()
+        return false
+    })
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+}
+
+const detachNavigationGuard = () => {
+    removeNavigationGuard?.()
+    removeNavigationGuard = null
+    window.removeEventListener('beforeunload', handleBeforeUnload)
+}
 
 watch(customerChannelsId, (val) => {
     if (val) {
         bundle.calculateBundle()
     }
 })
+watch(
+    selectedMedia,
+    (val) => {
+        if (!val.length) return
+
+        let found = false
+
+        val.forEach((img, i) => {
+            if (img.is_main && !found) {
+                found = true
+            } else {
+                img.is_main = false
+            }
+        })
+
+        if (!found) {
+            val[0].is_main = true
+        }
+    },
+    { deep: true }
+)
+
+watch(isNavigationLocked, (isLocked) => {
+    if (isLocked) {
+        attachNavigationGuard()
+        return
+    }
+
+    detachNavigationGuard()
+}, { immediate: true })
+
+onBeforeUnmount(() => {
+    detachNavigationGuard()
+})
+
+console.log("layout bundlesibdear", layout)
 </script>
 
 <template>
@@ -503,9 +609,18 @@ watch(customerChannelsId, (val) => {
             <template v-if="bundle.step.value === 1">
                 <!-- HEADER -->
                 <div class="p-4 border-b flex justify-between items-center">
-                    <div class="font-semibold text-lg">
-                        Create Your Bundle
+                    <div class="flex items-center gap-2">
+                        <div class="font-semibold text-lg">
+                            Create Your Bundle
+                        </div>
+
+                        <!-- BETA BADGE -->
+                        <span class="text-[10px] px-2 py-[2px] rounded-full 
+                                    bg-red-500 text-white font-semibold tracking-wide">
+                            {{trans('BETA VERSION')}}
+                        </span>
                     </div>
+
                     <button @click="bundle.close()">✕</button>
                 </div>
 
@@ -537,7 +652,9 @@ watch(customerChannelsId, (val) => {
 
                             <InputText v-model="bundle.title.value" type="text" class="w-full pr-10 text-base p-2"
                                 :placeholder="ctrans('Bundle Title')" required />
-
+                            <div v-if="bundle.aiTitleError" class="text-xs text-red-500 mt-1">
+                                {{ bundle.aiTitleError }}
+                            </div>
                             <!-- AI ICON BUTTON -->
                             <Button icon="fal fa-sparkles" type="button" @click="bundle.generateAITitle" :tooltip="trans('Generate AI')"  :loading="bundle.isGeneratingAI.value"
                                 :disabled="isGeneratingAI || !bundle.products.value.length" class="absolute right-2 top-1/2 -translate-y-1/2 
@@ -549,16 +666,15 @@ watch(customerChannelsId, (val) => {
                     </div>
 
                     <div v-for="item in bundle.products.value" :key="item.id" class="flex gap-3 py-3 border-b border-t">
-                        <img :src="item.web_images?.main?.gallery?.png"
+                        <img :src="item.web_images?.main?.gallery?.png || item.image"
                             class="w-14 h-14 object-contain bg-gray-50 rounded" />
-
                         <div class="flex-1">
                             <div class="text-sm font-semibold">{{ item.name }}</div>
                             <div class="flex gap-2">
                                 <InformationIcon :information="trans('Individual purchased price')" />
                                 <div class="font-semibold text-sm line-through">{{ item.price_per_unit }} {{
-                                    props.layout }}</div>
-                                <div class="font-semibold text-green-600">{{ item.price }} {{ props.layout }}</div>
+                                    props.symbol }}</div>
+                                <div class="font-semibold text-green-600">{{ item.price }} {{ props.symbol }}</div>
                             </div>
                         </div>
 
@@ -566,9 +682,7 @@ watch(customerChannelsId, (val) => {
                             <button @click="bundle.decreaseQty(item.id)"><FontAwesomeIcon icon='fas fa-minus' class="text-xs" fixed-width aria-hidden='true' /></button>
                             <div>{{ item.quantity }}</div>
                             <button @click="bundle.increaseQty(item.id) "><FontAwesomeIcon icon='fas fa-plus' class="text-xs"fixed-width aria-hidden='true' /></button>
-
                             <button @click="bundle.removeProduct(item.id)" v-tooltip="trans('Delete product')"><FontAwesomeIcon icon='fas fa-trash-alt' class="text-sm text-red-500" fixed-width aria-hidden='true' />
-                                <FontAwesomeIcon icon="fal fa-layer-group" class="text-xs" fixed-width />
                             </button>
                         </div>
                     </div>
@@ -582,13 +696,20 @@ watch(customerChannelsId, (val) => {
                 <div class="border-t p-4 space-y-2">
                     <small v-if="!customerChannelsId" class="text-red-500">Please Choose Customer Sales Channel For Calculate Bundle</small>
                     <template v-if="bundle.isSummaryLoading.value">
-                        <div class="text-center text-sm text-gray-400 py-2">Calculating...</div>
+                        <div class="space-y-2 py-1">
+                            <div v-for="idx in 4" :key="idx" class="flex items-center justify-between">
+                                <Skeleton width="8rem" height="0.85rem" />
+                                <Skeleton width="5rem" height="0.85rem" />
+                            </div>
+                        </div>
                     </template>
 
                     <template v-else>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-400">Cost Price (Individual Purchase)</span>
-                            <span>{{ bundle.summary.value.total_price }} {{ props.layout }}</span>
+                            <span class="font-medium">
+                                {{ useLocaleStore().currencyFormat(layout.iris.currency?.code ?? 'usd', bundle.summary.value.total_price ?? 0) }}
+                            </span>
                         </div>
 
                          <div class="flex justify-between text-sm">
@@ -596,17 +717,23 @@ watch(customerChannelsId, (val) => {
                                 <span>Bundle Price</span>
                                 <!-- <span class="text-green-600">({{bundle.summary.value.profit_percentage }}%)</span> -->
                             </div>
-                            <span>{{ bundle.summary.value.total_bundle_price }} {{ props.layout }}</span>
+                            <span>
+                                {{ useLocaleStore().currencyFormat(layout.iris.currency?.code ?? 'usd', bundle.summary.value.total_bundle_price ?? 0) }}
+                            </span>
                         </div>
 
                         <div class="flex justify-between text-sm">
                             <span>RRP</span>
-                            <span>{{ bundle.summary.value.total_rrp }} {{ props.layout }}</span>
+                            <span>
+                                {{ useLocaleStore().currencyFormat(layout.iris.currency?.code ?? 'usd', bundle.summary.value.total_rrp ?? 0) }}
+                            </span>
                         </div>
 
                         <div class="flex justify-between text-xs">
                             <span>Profit</span>
-                            <span>{{ bundle.summary.value.profit }} {{ props.layout }} ({{
+                            <span>
+                                {{ useLocaleStore().currencyFormat(layout.iris.currency?.code ?? 'usd', bundle.summary.value.profit ?? 0) }}
+                                ({{
                                 bundle.summary.value.profit_percentage }}%)</span>
                         </div>
                     </template>
@@ -638,7 +765,7 @@ watch(customerChannelsId, (val) => {
                                 Create Your Bundle
                                 <FontAwesomeIcon
                                     v-tooltip="trans('Bundle generator')"
-                                    icon="fal fa-layer-group"
+                                    icon="fas fa-layer-group"
                                     class="text-gray-500"
                                     fixed-width
                                 />
@@ -651,12 +778,16 @@ watch(customerChannelsId, (val) => {
                         </div>
 
                         <button
-                            @click="bundle.close()"
+                            @click="handleClose"
                             class="text-gray-500 hover:text-red-500"
                         >
                             <FontAwesomeIcon icon="fal fa-times" />
                         </button>
 
+                    </div>
+
+                    <div class="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                        {{ trans('You cannot leave this page while creating a bundle. Complete it or discard it first.') }}
                     </div>
 
                     <!-- DESCRIPTION -->
@@ -667,7 +798,9 @@ watch(customerChannelsId, (val) => {
 
                         <Textarea v-model="bundle.description.value" rows="6" autoResize class="w-full mt-1"
                             placeholder="Input your description" />
-
+                        <div v-if="bundle.aiDescError" class="text-xs text-red-500 mt-1">
+                            {{ bundle.aiDescError }}
+                        </div>
                         <div class="flex justify-between items-center mt-2">
 
                             <div class="text-xs text-gray-400">
@@ -691,7 +824,7 @@ watch(customerChannelsId, (val) => {
                                 text-gray-400 cursor-pointer hover:bg-gray-50 transition" @dragover.prevent
                             @drop.prevent="onDrop" @click="openFilePicker">
 
-                            <FontAwesomeIcon icon='fal fa-upload'
+                            <FontAwesomeIcon icon='fas fa-upload'
                                 class='!border-2 !rounded-full !p-2 !text-xl !text-muted-color' fixed-width
                                 aria-hidden='true' />
 
@@ -724,7 +857,7 @@ watch(customerChannelsId, (val) => {
                     </div>
 
                     <!-- PREVIEW -->
-                    <div class="mb-5">
+                    <div class="mb-2">
                         <label class="text-sm font-semibold">
                             {{ trans('Bundle media') }}
                         </label>
@@ -749,7 +882,10 @@ watch(customerChannelsId, (val) => {
                     </div>
 
                     <!-- SUBMIT -->
-                    <Button @click="submitBundle" :disabled="!bundle.description.value.length || isStoringBundle" class="flex justify-center items-center w-full" icon="fas fa-layer-group" :label="trans('Create Bundle')" type="primary" :loading="isStoringBundle" />
+                    <div v-if="submitError" class="text-md text-red-500 mb-2 italic">
+                        {{ submitError }}
+                    </div>
+                    <Button @click="submitBundle" :disabled="!bundle.description.value.length || isStoringBundle || !selectedMedia.length" class="flex justify-center items-center w-full" icon="fas fa-layer-group" :label="trans('Create Bundle')" type="primary" :loading="isStoringBundle" />
                 </div>
                 <!-- Modal Existing media -->
                 <Dialog v-model:visible="showMediaModal" modal header="Select Images" :style="{ width: '600px' }">
@@ -835,11 +971,34 @@ watch(customerChannelsId, (val) => {
                         <Textarea v-model="aiPrompt" rows="3" class="w-full" placeholder="Input description" />
                     </div>
 
+                    <div v-if="aiGenerateImagesError" class="text-xs text-red-500 mt-1">
+                        {{ aiGenerateImagesError }}
+                    </div>
+
                     <template #footer>
-                        <Button label="Generate" @click="generateAIImages" :loading="isGeneratingAI"
+                        <Button label="Generate" @click="handleGenerateAIImages" :loading="isGeneratingAI"
                             :disabled="!selectedMediaForAI.length || !aiPrompt" />
                     </template>
 
+                </Dialog>
+                 <Dialog
+                    v-model:visible="showGenerateProgressModal"
+                    :header="trans('Generating AI Image')"
+                    modal
+                    :closable="false"
+                    :closeOnEscape="false"
+                    :dismissableMask="false"
+                    :style="{ width: '420px' }"
+                >
+                    <div class="py-6 flex flex-col items-center text-center">
+                        <LoadingIcon class="mb-4" />
+                        <div class="text-sm font-semibold text-gray-800">
+                            {{ trans('Generating your image...') }}
+                        </div>
+                        <div class="text-xs text-gray-500 mt-2">
+                            {{ trans('Please wait while we process your prompt and listen for the result.') }}
+                        </div>
+                    </div>
                 </Dialog>
                 <ConfirmDialog>
                     <template #container="{ message, acceptCallback, rejectCallback }">

@@ -30,6 +30,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Record<string, any>
   screenType: 'mobile' | 'tablet' | 'desktop'
+  indexBlock : number
 }>()
 
 
@@ -127,7 +128,7 @@ onMounted(startAutoMove)
 onBeforeUnmount(stopAutoMove)
 </script>
 <template>
-  <div :id="fieldValue?.id ? fieldValue?.id  : 'slider'"  component="slider" class="relative overflow-hidden">
+  <div :id="fieldValue?.id ? fieldValue?.id  : 'slider'+indexBlock"  component="slider" class="relative overflow-hidden">
     <div :data-refresh="refreshTrigger" :key="keySwiper" :style="containerStyles">
 
       <div

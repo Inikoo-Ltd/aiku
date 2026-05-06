@@ -6,6 +6,7 @@ use App\Actions\OrgAction;
 use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Http\Resources\HumanResources\LeaveResource;
 use App\Models\HumanResources\Employee;
+use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\LeaveApprovalRecord;
@@ -142,6 +143,27 @@ class StoreLeave extends OrgAction
         }
 
         return $days;
+    }
+
+    private function leaveTypeValue(?LeaveType $leaveType): float
+    {
+        if (!$leaveType) {
+            return 1.0;
+        }
+
+        return $leaveType->deductionValue();
+    }
+
+    private function leaveDeduction(Leave $leave): float
+    {
+        $value = $this->leaveTypeValue($leave->leaveType);
+        $deduction = (float) $leave->duration_days * $value;
+
+        if ($leave->is_half_day && $value === 1.0) {
+            return 0.5;
+        }
+
+        return $deduction;
     }
 
     public function rules(): array
@@ -295,33 +317,68 @@ class StoreLeave extends OrgAction
         }
 
         $durationDays = $this->calculateDurationDays($startDate, $endDate, $this->employee);
-        $requestedDays = $isHalfDay ? 0.5 : (float)$durationDays;
+        $requestedDays = (float) $durationDays * $this->leaveTypeValue($this->selectedLeaveType);
+        if ($isHalfDay && $requestedDays === (float) $durationDays) {
+            $requestedDays = 0.5;
+        }
         $balanceYear = $startDate->year;
+        $bucket = LeaveTypeResolver::bucketFromLeaveType($this->selectedLeaveType, (string) $type);
 
-        if (LeaveTypeResolver::bucketFromLeaveType($this->selectedLeaveType, (string)$type) === 'annual') {
-            $annualSubmittedDays = Leave::query()
-                ->where('employee_id', $this->employee->id)
-                ->whereYear('start_date', $balanceYear)
-                ->with('leaveType')
-                ->get()
-                ->filter(function (Leave $leave) {
-                    return $leave->status?->value === LeaveStatusEnum::APPROVED->value;
-                })
-                ->sum(function (Leave $leave) {
-                    if (LeaveTypeResolver::bucketFromLeaveType($leave->leaveType, $leave->type) !== 'annual') {
-                        return 0;
-                    }
+        $balance = EmployeeLeaveBalance::firstOrCreate(
+            [
+                'employee_id' => $this->employee->id,
+                'year'        => $balanceYear,
+            ],
+            [
+                'annual_days'   => $this->employee->organisation->getDefaultAnnualLeaveDays(),
+                'annual_used'   => 0,
+                'medical_days'  => 0,
+                'medical_used'  => 0,
+                'unpaid_days'   => 0,
+                'unpaid_used'   => 0,
+            ]
+        );
 
-                    return $leave->is_half_day ? 0.5 : (float)$leave->duration_days;
-                });
+        $submittedDaysByBucket = Leave::query()
+            ->where('employee_id', $this->employee->id)
+            ->whereYear('start_date', $balanceYear)
+            ->with('leaveType')
+            ->get()
+            ->filter(function (Leave $leave) {
+                return $leave->status?->value !== LeaveStatusEnum::REJECTED->value;
+            })
+            ->sum(function (Leave $leave) use ($bucket) {
+                if (LeaveTypeResolver::bucketFromLeaveType($leave->leaveType, $leave->type) !== $bucket) {
+                    return 0;
+                }
 
-            $orgAnnualAllowance = (float)$this->employee->organisation->getDefaultAnnualLeaveDays();
-            $leaveTypeMaxDays = (float)($this->selectedLeaveType->max_days_per_year ?? PHP_INT_MAX);
-            $annualAllowance = min($orgAnnualAllowance, $leaveTypeMaxDays);
-            $annualRemaining = max(0, $annualAllowance - (float)$annualSubmittedDays);
+                return $this->leaveDeduction($leave);
+            });
+
+        $bucketAllowance = match ($bucket) {
+            'annual' => (float) $balance->annual_days,
+            default => null,
+        };
+
+        if ($bucketAllowance !== null) {
+            $bucketRemaining = max(0, $bucketAllowance - (float) $submittedDaysByBucket);
+            if ($bucketRemaining < $requestedDays) {
+                $validator->errors()->add(
+                    'duration_days',
+                    __('Insufficient leave balance. Remaining balance: :remaining days.', [
+                        'remaining' => $bucketRemaining,
+                    ])
+                );
+            }
+        }
+
+        if ($bucket === 'annual' && !$validator->errors()->has('duration_days')) {
+            $leaveTypeMaxDays = (float) ($this->selectedLeaveType->max_days_per_year ?? PHP_INT_MAX);
+            $annualAllowance = min((float) $balance->annual_days, $leaveTypeMaxDays);
+            $annualRemaining = max(0, $annualAllowance - (float) $submittedDaysByBucket);
 
             if ($annualRemaining < $requestedDays) {
-                $maxDays = $annualAllowance % 1 === 0 ? (int)$annualAllowance : $annualAllowance;
+                $maxDays = $annualAllowance % 1 === 0 ? (int) $annualAllowance : $annualAllowance;
                 $validator->errors()->add(
                     'duration_days',
                     __('Maximum for the selected leave type is :max days.', [
@@ -331,16 +388,15 @@ class StoreLeave extends OrgAction
             }
         }
 
-        if ($this->selectedLeaveType->max_days_per_year !== null &&
-            LeaveTypeResolver::bucketFromLeaveType($this->selectedLeaveType, (string)$type) !== 'annual') {
+        if ($this->selectedLeaveType->max_days_per_year !== null && $bucket !== 'annual' && !$validator->errors()->has('duration_days')) {
             $leaveTypeSubmittedDays = Leave::query()
                 ->where('employee_id', $this->employee->id)
                 ->where('leave_type_id', $this->selectedLeaveType->id)
                 ->whereYear('start_date', $balanceYear)
-                ->where('status', LeaveStatusEnum::APPROVED->value)
+                ->where('status', '!=', LeaveStatusEnum::REJECTED->value)
                 ->get()
                 ->sum(function (Leave $leave) {
-                    return $leave->is_half_day ? 0.5 : (float)$leave->duration_days;
+                    return $this->leaveDeduction($leave);
                 });
 
             $leaveTypeAvailable = max(0, (float)$this->selectedLeaveType->max_days_per_year - (float)$leaveTypeSubmittedDays);

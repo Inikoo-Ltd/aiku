@@ -23,6 +23,7 @@ use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
+use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Catalogue\Product;
@@ -32,6 +33,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -62,6 +64,14 @@ class SubmitOrder extends OrgAction
 
         if ($order->state == OrderStateEnum::CREATING || $order->submitted_at == null) {
             data_set($modelData, 'submitted_at', $date);
+        } else {
+            throw ValidationException::withMessages(
+                [
+                    'order' => [
+                        'favourite' => 'Order has been submitted and cannot be submitted again',
+                    ]
+                ]
+            );
         }
 
         $this->processGrGift($order);
@@ -81,7 +91,6 @@ class SubmitOrder extends OrgAction
                 }
 
                 $transaction->update($transactionData);
-
             }
         }
 
@@ -106,8 +115,15 @@ class SubmitOrder extends OrgAction
         $this->orderHandlingHydrators($order, $oldState);
         $this->orderHandlingHydrators($order, OrderStateEnum::SUBMITTED);
 
-        SendNewOrderEmailToSubscribers::dispatch($order->id);
-        SendNewOrderEmailToCustomer::dispatch($order->id);
+        if (!in_array($order->salesChannel?->type, [
+            SalesChannelTypeEnum::PHONE,
+            SalesChannelTypeEnum::SHOWROOM,
+            SalesChannelTypeEnum::EMAIL,
+            SalesChannelTypeEnum::OTHER
+        ])) {
+            SendNewOrderEmailToSubscribers::dispatch($order->id);
+            SendNewOrderEmailToCustomer::dispatch($order->id);
+        }
 
         if ($order->pay_status == OrderPayStatusEnum::PAID || $order->to_be_paid_by == OrderToBePaidByEnum::CASH_ON_DELIVERY) {
             SendOrderToWarehouse::make()->action($order, []);

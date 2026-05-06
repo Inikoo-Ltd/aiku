@@ -168,9 +168,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
 
         $webpage->refresh();
 
-        if ($command->option('set-description-top')) {
-            $this->setDescriptionWebBlockOnTop($webpage);
-        }
+        $this->reorderDepartmentPageBlocks($webpage, (bool) $command->option('set-description-top'));
 
         if ($command->option('hide-description')) {
             $this->setDescriptionWebBlockHidden($webpage);
@@ -179,7 +177,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         $webpage->refresh();
 
         UpdateWebpageContent::run($webpage);
-        
+
         foreach ($webpage->webBlocks as $webBlock) {
             print $webBlock->webBlockType->code."\n";
         }
@@ -200,29 +198,6 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
                 );
             }
         }
-    }
-
-    public function setDescriptionWebBlockOnTop(Webpage $webpage): void
-    {
-        $departmentDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1')->first()->model_has_web_blocks_id;
-        $webBlocks                     = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
-
-        $runningPosition = 2;
-        foreach ($webBlocks as $key => $position) {
-            if ($key == $departmentDescriptionWebBlock) {
-                $webBlocks[$key] = 1;
-            } else {
-                $webBlocks[$key] = $runningPosition;
-                $runningPosition++;
-            }
-        }
-
-        foreach ($webBlocks as $key => $position) {
-            DB::table('model_has_web_blocks')
-                ->where('id', $key)
-                ->update(['position' => $position]);
-        }
-        UpdateWebpageContent::run($webpage);
     }
 
     public function setDescriptionWebBlockHidden(Webpage $webpage): void
@@ -246,8 +221,6 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         if ($command->option('website_id')) {
             $website   = Website::where('id', $command->option('website_id'))->first();
             $shop = $website->shop;
-        } else {
-
         }
 
         $departmentIds = DB::table('product_categories')

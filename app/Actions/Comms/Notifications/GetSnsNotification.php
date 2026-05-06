@@ -22,7 +22,6 @@ class GetSnsNotification
 
     public function asController(ServerRequestInterface $request): string
     {
-
         $message   = Message::fromPsrRequest($request);
         $validator = new MessageValidator();
         if ($validator->isValid($message)) {
@@ -37,22 +36,22 @@ class GetSnsNotification
                 }
 
                 if ($messageId = Arr::get($messageData, 'mail.messageId')) {
+                    $eventType = Arr::get($messageData, 'eventType', 'unknown');
 
                     $sesNotification = SesNotification::create(
                         [
                             'message_id' => $messageId,
-                            'data'      => $messageData
+                            'data'       => $messageData,
+                            'event_type' => $eventType
                         ]
                     );
-
                     ProcessSesNotification::dispatch($sesNotification);
-
                 }
             }
         }
+
         return 'ok';
     }
-
 
 
 }

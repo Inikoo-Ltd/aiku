@@ -94,7 +94,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $org_stock_movements_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Inventory\OrgStockFamily $orgStockFamily
+ * @property-read \App\Models\Inventory\OrgStockFamily|null $orgStockFamily
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamilyIntervals newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamilyIntervals newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamilyIntervals query()

@@ -53,6 +53,21 @@ class ShowMarketingDashboard extends OrgAction
                         'title' => __('Marketing')
                     ],
                     'title' => $title,
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Settings'),
+                            'icon'  => ["fal", "fa-cog"],
+                            'route' => [
+                                'name'       => "grp.org.shops.show.marketing.mailshot_settings",
+                                'parameters' => [
+                                    $this->organisation->slug,
+                                    $this->shop->slug
+                                ]
+                            ]
+                        ]
+                    ]
                 ],
                 'tabs' => [
                     'current'    => $this->tab,

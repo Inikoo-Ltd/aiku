@@ -81,7 +81,7 @@ class EditDepartment extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('department'),
+                'title'       => __('Department'),
                 ...$warning,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
@@ -185,7 +185,7 @@ class EditDepartment extends OrgAction
                                                     'parameters' => [
                                                         'shop' => $department->shop->slug,
                                                         'organisation' => $department->organisation->slug,
-                                                        'website' => $department->shop->website->slug
+                                                        'website' => $department->shop->website?->slug
                                                     ]
                                                 ],
                                                 'toogle'        => [
@@ -223,7 +223,7 @@ class EditDepartment extends OrgAction
                                                     'parameters' => [
                                                         'shop' => $department->shop->slug,
                                                         'organisation' => $department->organisation->slug,
-                                                        'website' => $department->shop->website->slug
+                                                        'website' => $department->shop->website?->slug
                                                     ]
                                                 ],
                                                 'toogle'  => [
@@ -303,7 +303,7 @@ class EditDepartment extends OrgAction
                                                     'parameters' => [
                                                         'shop' => $department->shop->slug,
                                                         'organisation' => $department->organisation->slug,
-                                                        'website' => $department->shop->website->slug
+                                                        'website' => $department->shop->website?->slug
                                                     ]
                                                 ],
                                                 'toogle'  => [

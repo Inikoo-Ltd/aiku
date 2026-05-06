@@ -33,18 +33,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $delivery_note_item_id
  * @property string|null $notes
  * @property ReturnItemStateEnum $state
- * @property string|null $weight
- * @property string $quantity_expected Expected quantity to be returned
- * @property string|null $quantity_received Actual quantity received
- * @property string|null $quantity_accepted Quantity accepted after inspection
- * @property string|null $quantity_rejected Quantity rejected after inspection
- * @property string|null $quantity_restocked Quantity restocked to inventory
+ * @property numeric|null $weight
+ * @property numeric $quantity_expected Expected quantity to be returned
+ * @property numeric|null $quantity_received Actual quantity received
+ * @property numeric|null $quantity_accepted Quantity accepted after inspection
+ * @property numeric|null $quantity_rejected Quantity rejected after inspection
+ * @property numeric|null $quantity_restocked Quantity restocked to inventory
  * @property numeric $revenue_amount
  * @property numeric $org_revenue_amount
  * @property numeric $grp_revenue_amount
- * @property string|null $refund_amount
- * @property string|null $org_refund_amount
- * @property string|null $grp_refund_amount
+ * @property numeric|null $refund_amount
+ * @property numeric|null $org_refund_amount
+ * @property numeric|null $grp_refund_amount
  * @property \Illuminate\Support\Carbon|null $date
  * @property \Illuminate\Support\Carbon|null $received_at
  * @property \Illuminate\Support\Carbon|null $inspecting_at
@@ -63,11 +63,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $fetched_at
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read OrgStock|null $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\GoodsIn\OrderReturn $return
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\GoodsIn\OrderReturn|null $return
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read Transaction|null $transaction
  * @method static Builder<static>|ReturnItem newModelQuery()
  * @method static Builder<static>|ReturnItem newQuery()

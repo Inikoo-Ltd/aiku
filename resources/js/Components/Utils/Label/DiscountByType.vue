@@ -17,12 +17,14 @@ const props = defineProps<{
             percentage_off: string
         }
     }
+    use_duration: boolean
 }>()
 
 const componentsMap = {
     'Category Quantity Ordered Order Interval': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/OfferPivotGr.vue")),
     'Category Ordered': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryOrdered/OfferPivotCategoryOrdered.vue")),
     'First Order Bonus': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/FirstOrder/OfferPivotFirstOrder.vue")),
+    'Category Amount Ordered': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryOrdered/OfferPivotCategoryOrdered.vue")),
 } as const
 
 const fallbackComponent = null
@@ -51,5 +53,6 @@ const resolvedComponent = computed(() => {
         :is="resolvedComponent"
         :offer="bestOffer"
         :template
+        :use_duration="use_duration"
     />
 </template>

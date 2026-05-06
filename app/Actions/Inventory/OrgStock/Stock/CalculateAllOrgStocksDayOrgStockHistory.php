@@ -17,6 +17,9 @@ class CalculateAllOrgStocksDayOrgStockHistory
     use AsAction;
 
     public string $jobQueue = 'stock-history';
+    public int $jobTries = 3;
+    public int $jobBackoff = 120;
+
 
     public function tags(): array
     {

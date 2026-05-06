@@ -53,7 +53,7 @@ class CheckShopifyPortfolios extends OrgAction
         }
 
         foreach ($query->get()->chunk(200) as $portfolios) {
-            CheckBulkShopifyPortfolios::dispatch($portfolios, $command);
+            CheckBulkShopifyPortfolios::dispatch($portfolios);
         }
     }
 

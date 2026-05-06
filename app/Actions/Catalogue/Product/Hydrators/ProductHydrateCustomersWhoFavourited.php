@@ -19,6 +19,8 @@ class ProductHydrateCustomersWhoFavourited implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
+    public string $jobQueue = 'hydrators-slave';
+
     public function getJobUniqueId(Product $product): string
     {
         return $product->id;

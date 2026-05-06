@@ -21,6 +21,7 @@ const props = defineProps<{
   }
   webpageData?: any;
   blockData?: object;
+  indexBlock:number
   screenType: "mobile" | "tablet" | "desktop";
   routeEditSubDepartment?: routeType;
 }>();
@@ -134,6 +135,7 @@ const textVisible = computed(() => {
 
 <template>
   <div
+     :id="modelValue?.id ? modelValue?.id  : 'sub-department-1'+indexBlock" 
     class="mx-auto editor-class"
     :class="screenClass"
     :style="getStyles(modelValue?.container?.properties, screenType)"

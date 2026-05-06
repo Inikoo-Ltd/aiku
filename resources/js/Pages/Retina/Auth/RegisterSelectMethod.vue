@@ -18,8 +18,6 @@ import { GoogleLogin  } from 'vue3-google-login'
 import RetinaShowIris from "@/Layouts/RetinaShowIris.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import Modal from "@/Components/Utils/Modal.vue"
-import Register from "@/Pages/Retina/Auth/Register.vue";
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { getRefRedirect } from "@/Composables/Retina/useGetRedirectUrl"

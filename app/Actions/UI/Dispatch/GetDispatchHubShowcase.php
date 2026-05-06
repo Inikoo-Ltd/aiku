@@ -9,6 +9,7 @@
 
 namespace App\Actions\UI\Dispatch;
 
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -23,7 +24,51 @@ class GetDispatchHubShowcase
             GetDispatchHubB2BWidget::run($warehouse),
             GetDispatchHubExternalWidget::run($warehouse),
             GetDispatchHubB2CWidget::run($warehouse),
-            GetDispatchHubDropshippingWidget::run($warehouse)
+            GetDispatchHubDropshippingWidget::run($warehouse),
+            'waiting_items_still_picking' => [
+                'count' => $warehouse->deliveryNotes()
+                    ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                    ->where('delivery_note_items.has_waiting_warehouse', true)
+                    ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING)
+                    ->count(),
+                'route' => [
+                    'name' => 'grp.org.warehouses.show.dispatching.waiting_items_still_picking',
+                    'parameters' => request()->route()->originalParameters()
+                ],
+            ],
+            'waiting_items' => [
+                'count' => $warehouse->deliveryNotes()
+                    ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                    ->where('delivery_note_items.has_waiting_warehouse', true)
+                    ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED)
+                    ->count(),
+                'route' => [
+                    'name' => 'grp.org.warehouses.show.dispatching.waiting_items',
+                    'parameters' => request()->route()->originalParameters()
+                ],
+            ],
+            'waiting_crm_items_still_picking' => [
+                'count' => $warehouse->deliveryNotes()
+                    ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                    ->where('delivery_note_items.has_waiting_crm', true)
+                    ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING)
+                    ->count(),
+                'route' => [
+                    'name' => 'grp.org.warehouses.show.dispatching.waiting_crm_items_still_picking',
+                    'parameters' => request()->route()->originalParameters()
+                ],
+            ],
+            'waiting_crm_items' => [
+                'count' => $warehouse->deliveryNotes()
+                    ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+                    ->where('delivery_note_items.has_waiting_crm', true)
+                    ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED)
+                    ->count(),
+                'route' => [
+                    'name' => 'grp.org.warehouses.show.dispatching.waiting_crm_items',
+                    'parameters' => request()->route()->originalParameters()
+                ],
+            ],
         ];
     }
 }

@@ -20,6 +20,8 @@ class ShopHydrateAdjustments implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
+    public string $jobQueue = 'hydrators-slave';
+
     public function getJobUniqueId(Shop $shop): string
     {
         return $shop->id;

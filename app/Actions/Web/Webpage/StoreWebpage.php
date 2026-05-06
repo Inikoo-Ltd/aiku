@@ -15,9 +15,11 @@ use App\Actions\Helpers\Snapshot\StoreWebpageSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
+use App\Actions\Web\Website\Layouts\FetchUsedFamiliesOverviewWebBlock;
 use App\Actions\Web\Website\Layouts\FetchUsedProductsWebBlock;
 use App\Actions\Web\Website\Layouts\FetchUsedProductWebBlock;
 use App\Actions\Web\Website\Layouts\FetchUsedFamiliesWebBlock;
+use App\Actions\Web\Website\Layouts\FetchUsedFamilyDescriptionWebBlock;
 use App\Actions\Web\Website\Layouts\FetchUsedSubDepartmentsWebBlock;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -32,6 +34,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
+use App\Models\Web\Redirect;
 use App\Models\Web\Website;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashSlash;
@@ -118,7 +121,7 @@ class StoreWebpage extends OrgAction
                     'webpage_id' => $webpage->id,
                     'url'        => $webpage->url,
                 ]);
-            } elseif ($model instanceof ProductCategory) {
+            } elseif ($model instanceof ProductCategory && data_get($modelData, 'layout_style') !== 'families-overview') {
                 UpdateProductCategory::make()->action($model, [
                     'webpage_id' => $webpage->id,
                     'url'        => $webpage->url,
@@ -133,10 +136,12 @@ class StoreWebpage extends OrgAction
             $templates = [];
 
             if ($this->strict) {
-                $usedProductsTemplateCode       = FetchUsedProductsWebBlock::run($this->website);
-                $usedProductTemplateCode        = FetchUsedProductWebBlock::run($this->website);
-                $usedFamiliesTemplateCode       = FetchUsedFamiliesWebBlock::run($this->website);
-                $usedSubDepartmentsTemplateCode = FetchUsedSubDepartmentsWebBlock::run($this->website);
+                $usedProductsTemplateCode           = FetchUsedProductsWebBlock::run($this->website);
+                $usedProductTemplateCode            = FetchUsedProductWebBlock::run($this->website);
+                $usedFamiliesTemplateCode           = FetchUsedFamiliesWebBlock::run($this->website);
+                $usedFamiliesOverviewTemplateCode   = FetchUsedFamiliesOverviewWebBlock::run($this->website);
+                $usedFamilyDescriptionTemplateCode  = FetchUsedFamilyDescriptionWebBlock::run($this->website);
+                $usedSubDepartmentsTemplateCode     = FetchUsedSubDepartmentsWebBlock::run($this->website);
 
                 if ($model instanceof Product) {
                     $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::PRODUCT, $usedProductTemplateCode);
@@ -155,7 +160,7 @@ class StoreWebpage extends OrgAction
                     } elseif ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
                         if (data_get($modelData, 'layout_style') == 'families-overview') {
                             $this->createWebBlock($webpage, 'department-description-1');
-                            $this->createWebBlock($webpage, 'families-1-overview');
+                            $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILY_OVERVIEW, $usedFamiliesOverviewTemplateCode);
                         } else {
                             $this->createWebBlock($webpage, 'department-description-1');
                             $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS, $usedSubDepartmentsTemplateCode);
@@ -163,16 +168,10 @@ class StoreWebpage extends OrgAction
                             $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
                         }
                     } elseif ($model->type == ProductCategoryTypeEnum::FAMILY) {
-                        $splitDescription = data_get($webpage->shop->settings, 'website.family_webpage_split_description', false);
-                        if ($splitDescription) {
-                            $this->createWebBlock($webpage, 'family-2');
-                        } else {
-                            $this->createWebBlock($webpage, 'family-1');
+                        foreach ($usedFamilyDescriptionTemplateCode as $code) {
+                            $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILY_DESCRIPTION, $code);
                         }
                         $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
-                        if ($splitDescription) {
-                            $this->createWebBlock($webpage, 'family-2-extra-description');
-                        }
                         $this->createWebBlock($webpage, 'luigi-trends-1');
                         $this->createWebBlock($webpage, 'recommendation-customer-recently-bought-1');
                         $this->createWebBlock($webpage, 'luigi-last-seen-1');
@@ -184,13 +183,14 @@ class StoreWebpage extends OrgAction
                 }
             }
 
-
             UpdateWebpageCanonicalUrl::run($webpage);
+
+            // Delete any existing redirect with the same url if it exists
+            Redirect::where('from_path', $webpage->url)->where('website_id', $this->website->id)->delete();
 
             return $webpage;
         });
 
-        $this->refreshWebpageSearch($webpage);
         $this->dispatchWebpageHydrators($webpage);
 
         return $webpage;

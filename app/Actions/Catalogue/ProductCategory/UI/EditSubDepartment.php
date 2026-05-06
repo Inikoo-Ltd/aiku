@@ -183,7 +183,7 @@ class EditSubDepartment extends OrgAction
                                                     'parameters' => [
                                                         'shop' => $subDepartment->shop->slug,
                                                         'organisation' => $subDepartment->organisation->slug,
-                                                        'website' => $subDepartment->shop->website->slug
+                                                        'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
                                             'toogle'  => [
@@ -204,7 +204,7 @@ class EditSubDepartment extends OrgAction
                                                     'parameters' => [
                                                         'shop' => $subDepartment->shop->slug,
                                                         'organisation' => $subDepartment->organisation->slug,
-                                                        'website' => $subDepartment->shop->website->slug
+                                                        'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
                                             'toogle'  => [
@@ -229,7 +229,7 @@ class EditSubDepartment extends OrgAction
                                                     'parameters' => [
                                                         'shop' => $subDepartment->shop->slug,
                                                         'organisation' => $subDepartment->organisation->slug,
-                                                        'website' => $subDepartment->shop->website->slug
+                                                        'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
                                             'toogle'  => [
@@ -250,7 +250,7 @@ class EditSubDepartment extends OrgAction
                                                     'parameters' => [
                                                         'shop' => $subDepartment->shop->slug,
                                                         'organisation' => $subDepartment->organisation->slug,
-                                                        'website' => $subDepartment->shop->website->slug
+                                                        'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
                                             'toogle'  => [

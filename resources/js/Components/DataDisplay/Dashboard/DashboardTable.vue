@@ -89,11 +89,16 @@ watch(() => props.tableData.current_tab, (newVal) => {
 })
 
 const compTableBody = computed(() => {
-	if (props.settings.model_state_type?.value === 'open') {
-		return props.tableData.tables[localCurrentTab.value].body?.filter(row => row.state === 'active')
+	const table = props.tableData.tables?.[localCurrentTab.value]
+	if (!table) {
+		return []
 	}
 
-	return props.tableData.tables[localCurrentTab.value].body;
+	if (props.settings.model_state_type?.value === 'open') {
+		return table.body?.filter(row => row.state === 'active')
+	}
+
+	return table.body;
 })
 
 
@@ -183,6 +188,7 @@ const updateTab = (value: string) => {
 						:field="colSlug"
 						:frozen="columnHeader.frozen"
 						:alignFrozen="columnHeader.alignFrozen"
+						:style="columnHeader.type === 'icon' ? { width: '1px', whiteSpace: 'nowrap' } : {}"
 					>
 						<template #header>
 							<div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2 font-semibold text-gray-600"
@@ -208,8 +214,8 @@ const updateTab = (value: string) => {
 							<div class="px-2 flex relative" :class="columnHeader.align === 'left' ? '' : 'justify-end text-right'">
 								<DashboardCell
 									:interval="intervals"
-									:cell="props.tableData.tables[localCurrentTab].totals?.columns?.[colSlug]?.[intervals.value]
-										?? props.tableData.tables[localCurrentTab].totals?.columns?.[colSlug]
+									:cell="props.tableData.tables?.[localCurrentTab]?.totals?.columns?.[colSlug]?.[intervals.value]
+										?? props.tableData.tables?.[localCurrentTab]?.totals?.columns?.[colSlug]
 									"
 								/>
 							</div>

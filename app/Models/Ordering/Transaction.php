@@ -8,8 +8,6 @@
 
 namespace App\Models\Ordering;
 
-use App\Enums\Ordering\Transaction\TransactionStateEnum;
-use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\HistoricAsset;
@@ -45,12 +43,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $customer_client_id
  * @property int|null $order_id
  * @property int|null $invoice_id
- * @property \Illuminate\Support\Carbon $date
- * @property \Illuminate\Support\Carbon|null $submitted_at
- * @property \Illuminate\Support\Carbon|null $in_warehouse_at
- * @property \Illuminate\Support\Carbon|null $settled_at
- * @property TransactionStateEnum $state
- * @property TransactionStatusEnum $status
+ * @property string $date
+ * @property string|null $submitted_at
+ * @property string|null $in_warehouse_at
+ * @property string|null $settled_at
+ * @property string $state
+ * @property string $status
  * @property string|null $model_type
  * @property int|null $model_id
  * @property int|null $asset_id
@@ -61,7 +59,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property numeric|null $quantity_fail
  * @property numeric|null $quantity_cancelled
  * @property bool $out_of_stock_in_basket
- * @property \Illuminate\Support\Carbon|null $out_of_stock_in_basket_at
+ * @property string|null $out_of_stock_in_basket_at
  * @property string|null $fail_status
  * @property numeric $gross_amount net amount before discounts
  * @property numeric $net_amount
@@ -70,42 +68,42 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $tax_category_id
  * @property numeric|null $grp_exchange
  * @property numeric|null $org_exchange
- * @property array<array-key, mixed> $data
+ * @property string $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
+ * @property string|null $fetched_at
+ * @property string|null $last_fetched_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
  * @property string|null $source_alt_id to be used in no product transactions
  * @property int|null $estimated_weight grams
  * @property string|null $platform_transaction_id
- * @property string|null $quantity_picked
- * @property string $submitted_quantity_ordered
+ * @property numeric|null $quantity_picked
+ * @property numeric $submitted_quantity_ordered
  * @property array<array-key, mixed>|null $offers_data
- * @property \Illuminate\Support\Carbon|null $dispatched_at
- * @property \Illuminate\Support\Carbon|null $cancelled_at
+ * @property string|null $dispatched_at
+ * @property string|null $cancelled_at
  * @property int|null $family_id
  * @property int|null $department_id
  * @property int|null $sub_department_id
- * @property string|null $discretionary_offer
+ * @property numeric|null $discretionary_offer
  * @property string|null $discretionary_offer_label
  * @property string|null $label
  * @property string|null $marketplace_id
  * @property numeric $commission_amount
- * @property string $profit_amount
- * @property string|null $margin
+ * @property numeric $profit_amount
+ * @property numeric|null $margin
  * @property bool $is_cut_view
  * @property bool $is_gift
- * @property string|null $submitted_gross_amount
- * @property string|null $submitted_net_amount
+ * @property numeric|null $submitted_gross_amount
+ * @property numeric|null $submitted_net_amount
  * @property float $submitted_discount_factor
  * @property float $current_discount_factor
  * @property-read Asset|null $asset
- * @property-read Customer $customer
+ * @property-read Customer|null $customer
  * @property-read Collection<int, DeliveryNoteItem> $deliveryNoteItems
  * @property-read Collection<int, Feedback> $feedbacks
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read HistoricAsset|null $historicAsset
  * @property-read InvoiceTransaction|null $invoiceTransaction
  * @property-read Model|\Eloquent|null $model
@@ -114,7 +112,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read Collection<int, Offer> $offers
  * @property-read \App\Models\Ordering\Order|null $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @method static \Database\Factories\Ordering\TransactionFactory factory($count = null, $state = [])
  * @method static Builder<static>|Transaction newModelQuery()
  * @method static Builder<static>|Transaction newQuery()
@@ -132,40 +130,13 @@ class Transaction extends Model
 
     protected $table = 'transactions';
 
-    protected $casts = [
-        'quantity'                  => 'decimal:3',
-        'data'                      => 'array',
-        'offers_data'               => 'array',
-        'state'                     => TransactionStateEnum::class,
-        'status'                    => TransactionStatusEnum::class,
-        'out_of_stock_in_basket'    => 'boolean',
-        'date'                      => 'datetime',
-        'submitted_at'              => 'datetime',
-        'in_warehouse_at'           => 'datetime',
-        'dispatched_at'             => 'datetime',
-        'cancelled_at'              => 'datetime',
-        'settled_at'                => 'datetime',
-        'out_of_stock_in_basket_at' => 'datetime',
-        'fetched_at'                => 'datetime',
-        'last_fetched_at'           => 'datetime',
-        'quantity_ordered'          => 'decimal:3',
-        'quantity_bonus'            => 'decimal:3',
-        'quantity_dispatched'       => 'decimal:3',
-        'quantity_fail'             => 'decimal:3',
-        'quantity_cancelled'        => 'decimal:3',
-        'gross_amount'              => 'decimal:2',
-        'net_amount'                => 'decimal:2',
-        'commission_amount'         => 'decimal:2',
-        'grp_net_amount'            => 'decimal:2',
-        'org_net_amount'            => 'decimal:2',
-        'grp_exchange'              => 'decimal:4',
-        'org_exchange'              => 'decimal:4',
-        'is_cut_view'               => 'boolean',
-    ];
-
     protected $attributes = [
         'data'        => '{}',
         'offers_data' => '{}',
+    ];
+
+    protected $casts = [
+        'offers_data' => 'array',
     ];
 
     protected $guarded = [];

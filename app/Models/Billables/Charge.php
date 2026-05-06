@@ -12,7 +12,6 @@ use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Models\Catalogue\InAssetModel;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -51,13 +50,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Currency $currency
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Catalogue\HistoricAsset|null $historicAsset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\HistoricAsset> $historicAssets
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Billables\ChargeStats|null $stats
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Charge newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Charge newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Charge onlyTrashed()
@@ -69,7 +67,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Charge extends Model implements Auditable
 {
     use SoftDeletes;
-    use HasUniversalSearch;
     use InAssetModel;
     use HasHistory;
     use HasFactory;

@@ -11,6 +11,11 @@ import type { Links, Meta } from "@/types/Table"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { inject } from "vue"
 import Icon from "@/Components/Icon.vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faTriangle, faEquals, faMinus } from "@fas"
+
+library.add(faTriangle, faEquals, faMinus)
 
 defineProps<{
     data: {
@@ -23,7 +28,6 @@ defineProps<{
 
 
 function shopRoute(charge: {}) {
-    console.log(route().current())
     switch (route().current()) {
         case "grp.org.shops.show.billables.charges.index":
             return route(
@@ -35,7 +39,6 @@ function shopRoute(charge: {}) {
 }
 
 function customersRoute(charge: {}) {
-    console.log(route().current())
     switch (route().current()) {
         case "grp.org.shops.show.billables.charges.index":
             return route(
@@ -46,10 +49,19 @@ function customersRoute(charge: {}) {
     }
 }
 
-
 const locale = inject('locale', aikuLocaleStructure)
 
+const getIntervalChangesIcon = (isPositive: boolean) => {
+    if (isPositive) {
+        return { icon: faTriangle }
+    } else {
+        return { icon: faTriangle, class: 'rotate-180' }
+    }
+}
 
+const getIntervalStateColor = (isPositive: boolean) => {
+    return isPositive ? 'text-green-500' : 'text-red-500'
+}
 </script>
 
 <template>
@@ -62,15 +74,33 @@ const locale = inject('locale', aikuLocaleStructure)
             {{ charge["code"] }}
             </Link>
         </template>
-        <template #cell(customers_invoiced_all)="{ item: charge }">
+        <template #cell(customers_invoiced)="{ item: charge }">
             <Link :href="customersRoute(charge)" class="secondaryLink">
-            {{ charge["customers_invoiced_all"] }}
+            {{ charge["customers_invoiced"] }}
             </Link>
         </template>
-        <template #cell(sales_all)="{ item: charge }">
-            {{ locale.currencyFormat(charge.currency_code, charge.sales_all) }}
+        <template #cell(sales_grp_currency_external)="{ item: charge }">
+            {{ locale.currencyFormat(charge.currency_code, charge.sales_grp_currency_external) }}
         </template>
-
-        
+        <template #cell(sales_grp_currency_external_delta)="{ item: charge }">
+            <div v-if="charge.sales_grp_currency_external_delta">
+                <span>{{ charge.sales_grp_currency_external_delta.formatted }}</span>
+                <FontAwesomeIcon
+                    :icon="getIntervalChangesIcon(charge.sales_grp_currency_external_delta.is_positive)?.icon"
+                    class="text-xxs md:text-sm"
+                    :class="[
+                        getIntervalChangesIcon(charge.sales_grp_currency_external_delta.is_positive).class,
+                        getIntervalStateColor(charge.sales_grp_currency_external_delta.is_positive),
+                    ]"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+            <div v-else>
+                <FontAwesomeIcon :icon="faMinus" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon :icon="faMinus" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon :icon="faEquals" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
+            </div>
+        </template>
     </Table>
 </template>

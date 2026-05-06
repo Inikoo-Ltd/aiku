@@ -189,7 +189,7 @@ watch(
                     <Button :icon="faTimes" type="negative" @click="removeFilter(key)" />
                 </div>
                 <p v-if="filter.config.description" class="text-xs text-gray-600 mb-2">
-                    {{ trans(filter.config.description) }}
+                    {{ filter.config.description }}
                 </p>
                 <span
                     class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 mb-2">
@@ -199,7 +199,7 @@ watch(
                 <template v-if="filter.config.type === 'boolean'" class="mt-2">
                     <template v-if="filter.config.options?.date_range">
                         <label class="block text-xs font-medium text-gray-500 mb-1">
-                            {{ trans(filter.config.options.date_range.label) }}
+                            {{ filter.config.options.date_range.label }}
                         </label>
 
                         <!-- PRESET SELECT (if exists) -->
@@ -217,7 +217,7 @@ watch(
                     <!-- COUNT -->
                     <div v-if="filter.config.options?.count" class="mt-2">
                         <label class="block text-xs font-medium text-gray-500 mb-1">
-                            {{ trans(filter.config.options.count.label) }}
+                            {{ filter.config.options.count.label }}
                         </label>
                         <InputNumber :min="filter.config.options.count.min ?? 1" v-model="filter.value.count"
                             class="w-full" inputClass="w-full" />
@@ -226,7 +226,7 @@ watch(
                     <!-- WEEKS -->
                     <div v-if="filter.config.options?.weeks" class="mt-2">
                         <label class="block text-xs font-medium text-gray-500 mb-1">
-                            {{ trans(filter.config.options.weeks.label) }}
+                            {{ filter.config.options.weeks.label }}
                         </label>
                         <Dropdown v-model="filter.value.mode" :options="filter.config.options.weeks.presets"
                             optionLabel="label" optionValue="value" placeholder="Select time period" class="w-full mb-2"

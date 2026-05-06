@@ -8,45 +8,19 @@
 
 namespace App\Actions\CRM\Customer\Search;
 
-use App\Actions\HydrateModel;
+use App\Actions\Traits\WithScoutReindex;
 use App\Models\CRM\Customer;
-use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexCustomerSearch extends HydrateModel
+class ReindexCustomerSearch
 {
-    public string $commandSignature = 'search:customers {organisations?*} {--s|slugs=}';
+    use AsAction;
+    use WithScoutReindex;
 
+    public string $commandSignature = 'reindex_search:customers';
 
-    public function handle(Customer $customer): void
+    public function handle(bool $reindex = true, bool $reset = false): void
     {
-        CustomerRecordSearch::run($customer);
+        $this->runScoutReindex(Customer::class, $reindex, $reset);
     }
-
-    protected function getModel(string $slug): Customer
-    {
-        return Customer::withTrashed()->where('slug', $slug)->first();
-    }
-
-
-    protected function loopAll(Command $command): void
-    {
-        $command->info("Reindex Customers");
-        $count = Customer::withTrashed()->count();
-
-        $bar = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
-        $bar->start();
-
-        Customer::withTrashed()->chunk(1000, function (Collection $models) use ($bar) {
-            foreach ($models as $model) {
-                $this->handle($model);
-                $bar->advance();
-            }
-        });
-
-        $bar->finish();
-        $command->info("");
-    }
-
 }

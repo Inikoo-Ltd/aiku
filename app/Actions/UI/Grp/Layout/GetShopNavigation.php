@@ -349,6 +349,16 @@ class GetShopNavigation
                                 ],
                             ],
                             [
+                                "label"   => __("Redirects"),
+                                "tooltip" => __("Redirects"),
+                                "icon"    => ["fal", "fa-terminal"],
+                                'root'    => 'grp.org.shops.show.web.redirect.',
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.web.redirect.index",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
+                                ],
+                            ],
+                            [
                                 "label"   => __("Banners"),
                                 "tooltip" => __("Banners"),
                                 "icon"    => ["fal", "fa-sign"],
@@ -358,7 +368,6 @@ class GetShopNavigation
                                     "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
                                 ],
                             ],
-
                             [
                                 "label"   => __("Announcements"),
                                 "tooltip" => __("Announcements"),
@@ -449,14 +458,17 @@ class GetShopNavigation
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
-                        [
-                            "label"   => __("Countries"),
-                            "icon"    => ["fal", "fa-globe"],
-                            "route"   => [
-                                "name"       => "grp.org.shops.show.crm.countries.index",
-                                "parameters" => [$shop->organisation->slug, $shop->slug],
-                            ],
-                        ],
+                        app()->environment('local') ?
+                            [
+                                "label"   => __("Chat"),
+                                "icon"    => ["fal", "fa-comment-alt"],
+                                "root"    => "grp.org.shops.show.crm.chat.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.crm.chat.dashboard",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ]
+                        : [],
                     ],
                 ],
             ];

@@ -19,6 +19,10 @@ use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInBrand;
 use App\Actions\Helpers\Brand\UI\CreateBrand;
 use App\Actions\Helpers\Brand\UI\EditBrand;
 use App\Actions\Helpers\Brand\UI\IndexBrands;
+use App\Actions\Helpers\Brand\UI\ShowBrand;
+use App\Actions\Helpers\Tag\UpdateTag;
+use App\Actions\Helpers\Tag\UI\EditTag;
+use App\Actions\Helpers\Tag\UI\IndexTagsProductProperty;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', ShowTradeUnitsDashboard::class)->name('dashboard');
@@ -48,7 +52,16 @@ Route::prefix('brands')->as('brands.')->group(function () {
     Route::get('/', IndexBrands::class)->name('index');
     Route::get('create', CreateBrand::class)->name('create');
     Route::prefix('{brand:slug}')->group(function () {
+        Route::get('/', ShowBrand::class)->name('show');
         Route::get('edit', EditBrand::class)->name('edit');
         Route::get('trade-units', IndexTradeUnitsInBrand::class)->name('trade_units.index');
+    });
+});
+
+Route::prefix('tags')->as('tags.')->group(function () {
+    Route::get('/', IndexTagsProductProperty::class)->name('index');
+    Route::patch('update/{tag:id}', [UpdateTag::class, 'inProductProperty'])->name('update')->withoutScopedBindings();
+    Route::prefix('{tag:slug}')->group(function () {
+        Route::get('edit', [EditTag::class, 'inProductProperty'])->name('edit');
     });
 });

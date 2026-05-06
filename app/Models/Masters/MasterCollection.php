@@ -17,7 +17,6 @@ use App\Models\Catalogue\Collection;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Model;
@@ -61,13 +60,14 @@ use Spatie\Translatable\HasTranslations;
  * @property HealthRankEnum|null $health_rank
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, Collection> $childrenCollections
- * @property-read Group $group
+ * @property-read array $translatable_columns_from
+ * @property-read Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read LaravelCollection<int, MasterCollection> $masterCollections
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $masterFamilies
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $masterProducts
- * @property-read \App\Models\Masters\MasterShop $masterShop
+ * @property-read \App\Models\Masters\MasterShop|null $masterShop
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Masters\MasterCollectionOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterCollectionOrderingStats|null $orderingStats
@@ -78,7 +78,6 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Masters\MasterCollectionStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterCollectionTimeSeries> $timeSeries
  * @property-read mixed $translations
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection onlyTrashed()
@@ -97,7 +96,6 @@ class MasterCollection extends Model implements Auditable, HasMedia
     use HasSlug;
     use HasHistory;
     use HasImage;
-    use HasUniversalSearch;
     use InGroup;
     use HasTranslations;
 

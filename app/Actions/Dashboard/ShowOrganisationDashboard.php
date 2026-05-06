@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
+use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
 use App\Enums\Dashboards\OrganisationDashboardSalesTableTabsEnum;
@@ -31,6 +32,7 @@ class ShowOrganisationDashboard extends OrgAction
     use WithDashboardIntervalOption;
     use WithDashboardCurrencyTypeSettings;
     use WithTabsBox;
+    use WithPerformanceDateResolution;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -48,27 +50,12 @@ class ShowOrganisationDashboard extends OrgAction
         }
 
         $saved_interval  = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
-
-        $performanceDates = [null, null];
-        if ($saved_interval === DateIntervalEnum::CUSTOM) {
-            $rangeInterval = Arr::get($userSettings, 'range_interval', '');
-            if ($rangeInterval) {
-                $dates = explode('-', $rangeInterval);
-                if (count($dates) === 2) {
-                    $performanceDates = [$dates[0], $dates[1]];
-                }
-            }
-        } elseif ($saved_interval !== DateIntervalEnum::ALL) {
-            $intervalString = DashboardIntervalFilters::run($saved_interval);
-            if ($intervalString) {
-                $dates = explode('-', $intervalString);
-                if (count($dates) === 2) {
-                    $performanceDates = [$dates[0], $dates[1]];
-                }
-            }
-        }
+        $performanceDates = $this->resolvePerformanceDates($saved_interval, $userSettings);
 
         $timeSeriesData = GetOrganisationDashboardTimeSeriesData::run($organisation, $performanceDates[0], $performanceDates[1]);
+
+        $currentTabEnum = OrganisationDashboardSalesTableTabsEnum::from($currentTab);
+        $primaryTables = OrganisationDashboardSalesTableTabsEnum::tablesForTabs($organisation, $timeSeriesData, [$currentTabEnum]);
 
         $tabsBox = $this->getTabsBox($organisation);
 
@@ -92,8 +79,12 @@ class ShowOrganisationDashboard extends OrgAction
                             'type'        => 'table',
                             'current_tab' => $currentTab,
                             'tabs'        => OrganisationDashboardSalesTableTabsEnum::navigation(),
-                            'tables'      => OrganisationDashboardSalesTableTabsEnum::tables($organisation, $timeSeriesData),
+                            'tables'      => $primaryTables,
                             'charts'      => [],
+                            'tab_fetch_route' => [
+                                'name'       => 'grp.org.dashboard.tab-data',
+                                'parameters' => ['organisation' => $organisation->slug],
+                            ],
                         ],
                     ],
                     'tabs_box'  => [

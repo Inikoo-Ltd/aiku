@@ -23,7 +23,6 @@ use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
-use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -44,6 +43,20 @@ class StoreTransaction extends OrgAction
 
     public function handle(Order $order, HistoricAsset $historicAsset, array $modelData, $calculateShipping = true): Transaction
     {
+        if ($this->strict) {
+            if (in_array($order->state, [
+                OrderStateEnum::CREATING,
+                OrderStateEnum::SUBMITTED
+            ])) {
+                $transaction = $order->transactions->where('model_type', 'Product')->where('model_id', $historicAsset->asset->model_id)->where('is_gift', false)->first();
+                if ($transaction) {
+                    return UpdateTransaction::make()->action($transaction, [
+                        'quantity_ordered' => (float)data_get($modelData, 'quantity')
+                    ]);
+                }
+            }
+        }
+
         data_set($modelData, 'tax_category_id', $order->tax_category_id, overwrite: false);
         data_set($modelData, 'model_type', $historicAsset->asset->model_type);
         data_set($modelData, 'model_id', $historicAsset->asset->model_id);
@@ -65,7 +78,9 @@ class StoreTransaction extends OrgAction
 
             $estimatedWeight = $unitWeight * Arr::get($modelData, 'quantity_ordered', 1);
             $estimatedWeight = (int)ceil($estimatedWeight);
-
+            if ($estimatedWeight > 1000000000) {
+                $estimatedWeight = 1000000000;
+            }
 
             data_set($modelData, 'estimated_weight', $estimatedWeight);
         } else {
@@ -131,7 +146,7 @@ class StoreTransaction extends OrgAction
                 url: request()->header('referer') ?? request()->fullUrl(),
                 productId: $transaction->asset_id,
                 quantity: 1
-            );
+            )->delay(now()->addSeconds(2));
         }
 
         return $transaction;
@@ -181,24 +196,13 @@ class StoreTransaction extends OrgAction
         return $rules;
     }
 
-
-    public function afterValidator(Validator $validator, ActionRequest $request): void
-    {
-        if ($this->strict) {
-            $exists = $this->order->itemTransactions()->where('model_id', $this->historicAsset->asset->model_id)->exists();
-            if ($exists) {
-                $validator->errors()->add('quantity_ordered', 'An existing product under order already exists.');
-            }
-        }
-    }
-
     public function action(Order $order, HistoricAsset $historicAsset, array $modelData, int $hydratorsDelay = 0, bool $strict = true): Transaction
     {
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
 
-        $this->order = $order;
+        $this->order         = $order;
         $this->historicAsset = $historicAsset;
 
         $this->initialisationFromShop($order->shop, $modelData);
@@ -208,7 +212,7 @@ class StoreTransaction extends OrgAction
 
     public function asController(Order $order, HistoricAsset $historicAsset, ActionRequest $request): void
     {
-        $this->order = $order;
+        $this->order         = $order;
         $this->historicAsset = $historicAsset;
         $this->initialisationFromShop($order->shop, $request);
         $this->handle($order, $historicAsset, $this->validatedData);

@@ -33,13 +33,14 @@ class LeaveTypeResolver
                     });
             })
             ->orderBy('name')
-            ->get(['code', 'name', 'category', 'max_days_per_year'])
+            ->get(['code', 'name', 'category', 'max_days_per_year', 'settings'])
             ->mapWithKeys(function (LeaveType $leaveType) {
                 return [
                     $leaveType->code => [
                         'label' => $leaveType->name,
                         'category' => $leaveType->category,
-                        'max_days_per_year' => $leaveType->max_days_per_year
+                        'max_days_per_year' => $leaveType->max_days_per_year,
+                        'value' => $leaveType->deductionValue(),
                     ]
                 ];
             })
@@ -68,6 +69,27 @@ class LeaveTypeResolver
         $leaveTypeCode = $leaveType?->code ? strtolower($leaveType->code) : null;
         if ($leaveTypeCode && array_key_exists($leaveTypeCode, self::BUCKET_CODE_MAP)) {
             return self::BUCKET_CODE_MAP[$leaveTypeCode];
+        }
+
+        if (
+            ($normalizedTypeCode && str_contains($normalizedTypeCode, 'unpaid'))
+            || ($leaveTypeCode && str_contains($leaveTypeCode, 'unpaid'))
+        ) {
+            return 'unpaid';
+        }
+
+        if (
+            ($normalizedTypeCode && (str_contains($normalizedTypeCode, 'medical') || str_contains($normalizedTypeCode, 'sick')))
+            || ($leaveTypeCode && (str_contains($leaveTypeCode, 'medical') || str_contains($leaveTypeCode, 'sick')))
+        ) {
+            return 'medical';
+        }
+
+        if (
+            ($normalizedTypeCode && (str_contains($normalizedTypeCode, 'annual') || str_contains($normalizedTypeCode, 'holiday')))
+            || ($leaveTypeCode && (str_contains($leaveTypeCode, 'annual') || str_contains($leaveTypeCode, 'holiday')))
+        ) {
+            return 'annual';
         }
 
         if ($leaveType?->category) {

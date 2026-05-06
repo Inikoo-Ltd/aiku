@@ -52,16 +52,18 @@ class ShowOrdersBacklog extends OrgAction
 
     public function htmlResponse(Group|Organisation|Shop $parent, ActionRequest $request): Response
     {
-        $tabsBox = $this->getTabsBox($parent);
+        $waitingItemsData = $this->buildWaitingItemsData($parent, $request);
+        $tabsBox          = $this->getTabsBox($parent, $waitingItemsData);
+
         return Inertia::render(
             'Ordering/OrdersBacklog',
             [
-                'breadcrumbs' => $this->getBreadcrumbs($parent, $request->route()->originalParameters()),
-                'title'       => __('Orders backlog'),
-                'pageHead'    => [
+                'breadcrumbs'  => $this->getBreadcrumbs($parent, $request->route()->originalParameters()),
+                'title'        => __('Orders backlog'),
+                'pageHead'     => [
                     'title' => __('Orders backlog'),
                 ],
-                'tabs'        => [
+                'tabs'         => [
                     'current'    => $this->tab,
                     'navigation' => $tabsBox
                 ],
@@ -179,4 +181,5 @@ class ShowOrdersBacklog extends OrgAction
             )
         };
     }
+
 }

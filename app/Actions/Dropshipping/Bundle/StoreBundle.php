@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Bundle;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateBundles;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\OrgAction;
@@ -36,6 +37,8 @@ class StoreBundle extends OrgAction
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): Bundle
     {
         return DB::transaction(function () use ($customerSalesChannel, $modelData) {
+            Arr::forget($modelData, 'id');
+
             $productData = [];
             $selectedProducts = Arr::pull($modelData, 'products');
             $shopBundleDiscount = Arr::get($customerSalesChannel->shop->settings, 'discount.bundle_discount_percentage', 10);
@@ -89,7 +92,8 @@ class StoreBundle extends OrgAction
             }
 
             if (! Arr::get($productData, 'code')) {
-                $productData['code'] = 'B-'.$customerSalesChannel->id.'-'.rand(1000, 9999);
+                $bundleCount = $customerSalesChannel->bundles()->count();
+                $productData['code'] = 'B-'.$customerSalesChannel->id.'-'.$bundleCount + 1;
             }
 
             if (! Arr::get($productData, 'name')) {
@@ -128,6 +132,8 @@ class StoreBundle extends OrgAction
                 'bundle_id' => $bundle->id
             ]);
 
+            ShopHydrateBundles::dispatch($customerSalesChannel->shop)->delay($this->hydratorsDelay);
+
             return $bundle;
         });
     }
@@ -144,9 +150,10 @@ class StoreBundle extends OrgAction
     public function rules(): array
     {
         $rules = [
+            'id' => ['nullable'],
             'name'        => ['sometimes', 'nullable', 'string', 'max:255'],
             'code'        => ['nullable', 'string', 'max:64'],
-            'description' => ['sometimes', 'nullable', 'string', 'max:65535'],
+            'description' => ['sometimes', 'nullable', 'string', 'max:15000'],
             'price'       => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'rrp'         => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'products'    => ['required', 'array', 'min:1'],

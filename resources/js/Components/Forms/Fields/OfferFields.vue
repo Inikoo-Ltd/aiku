@@ -8,7 +8,7 @@ import {
 } from "@headlessui/vue"
 import { trans } from "laravel-vue-i18n";
 
-const props = defineProps<{
+defineProps<{
     form: any
     fieldName: string
 }>()

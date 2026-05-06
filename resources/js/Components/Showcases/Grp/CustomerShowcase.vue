@@ -29,7 +29,10 @@ import {
     faStickyNote,
     faClock,
     faListAlt,
-    faTrafficLight
+    faTrafficLight,
+    faTruck,
+    faGlobeEurope,
+    faIslandTropical
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
@@ -39,7 +42,7 @@ import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressMa
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import ModalRejected from "@/Components/Utils/ModalRejected.vue"
 import ButtonPrimeVue from "primevue/button"
-import { Link, useForm } from "@inertiajs/vue3"
+import { Link } from "@inertiajs/vue3"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import CountUp from "vue-countup-v3"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -54,8 +57,10 @@ import { notify } from "@kyvg/vue3-notification"
 import CustomerSalesVsRefunds from "@/Components/CustomerSalesVsRefunds.vue"
 import GoldReward from "@/Components/Utils/GoldReward.vue"
 import CustomerMiniTimeline from "@/Components/Showcases/Grp/CustomerMiniTimeline.vue"
+import BoxNote from "@/Components/Pallet/BoxNote.vue"
+import { PDRNotes } from "@/types/Pallet"
 
-library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight)
+library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight, faTruck, faGlobeEurope, faIslandTropical)
 
 interface Customer {
     slug: string
@@ -76,6 +81,8 @@ interface Customer {
     number_current_customer_clients: number | null
     address: Address
     contact_website?: string | null
+    eori?: string | null
+    ukims?: string | null
     is_dropshipping: boolean
     email_subscriptions?: {
         update_route: {
@@ -136,7 +143,8 @@ const props = defineProps<{
         tag_routes: Record<string, routeType>
         tags: {}[]
         tags_selected_id: number[]
-        note_route: routeType
+        internal_note: PDRNotes
+        update_route: routeType
         orders_route: routeType | null
         last_order: {
             reference: string
@@ -195,19 +203,6 @@ if (props.data.editWebUser) {
     })
 }
 
-
-// Section: Add Note
-const isModalAddNote = ref(false)
-const noteForm = useForm({ note: "" })
-const submitNote = () => {
-    noteForm.post(route(props.data.note_route.name, props.data.note_route.parameters), {
-        onSuccess: () => {
-            isModalAddNote.value = false
-            noteForm.reset()
-            notify({ title: trans("Note added"), type: "success" })
-        }
-    })
-}
 
 // Section: Balance increase and decrease
 const isModalBalanceDecrease = ref(false)
@@ -335,13 +330,12 @@ function tagColorClass(scope?: string) {
 
     <!-- Quick Actions Bar -->
     <div class="px-4 pt-6 md:px-6 lg:px-8 flex flex-wrap gap-3">
-        <button
-            @click="isModalAddNote = true"
-            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-            <FontAwesomeIcon icon="fal fa-sticky-note" class="text-amber-500 text-xs" />
-            {{ trans("Add Note") }}
-        </button>
+        <BoxNote :noteData="data.internal_note" :updateRoute="data.update_route" :alternativeStyle="true">
+            <template #mainIcon>
+                <FontAwesomeIcon icon="fal fa-sticky-note" class="text-amber-500 text-xs" />
+                {{ trans("Add Note") }}
+            </template>
+        </BoxNote>
         <Link
             v-if="data.orders_route"
             :href="route(data.orders_route.name, data.orders_route.parameters)"
@@ -498,17 +492,28 @@ function tagColorClass(scope?: string) {
                                 <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
                             </button>
                         </div>
+
                         <div v-if="data?.customer?.eori" class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="'Economic Operators Registration and Identification (EORI) number'" class="flex-none">
                                 <span class="sr-only">EORI</span>
-                                <FontAwesomeIcon icon="fal fa-traffic-light" class="text-gray-400" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon icon="fal fa-globe-europe" class="text-gray-400" fixed-width aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">
-                                {{ data?.customer?.eori }} <span class="text-xs text-gray-400 ml-1">EORI</span>
+                                {{ data?.customer?.eori }} 
+                                <span class="text-xs text-gray-400">EORI</span>
                             </dd>
-
                         </div>
 
+                        <div v-if="data?.customer?.ukims" class="flex items-center w-full flex-none gap-x-4 px-6">
+                            <dt v-tooltip="'UK Internal Market Scheme (UKIMS) number'" class="flex-none">
+                                <span class="sr-only">UKIMS</span>
+                                <FontAwesomeIcon icon="fal fa-island-tropical" class="text-gray-400" fixed-width aria-hidden="true" />
+                            </dt>
+                            <dd class="text-gray-500">
+                                {{ data?.customer?.ukims }} 
+                                <span class="text-xs text-gray-400">UKIMS</span>
+                            </dd>
+                        </div>
 
                         <!-- Field: Address -->
                         <div v-if="data?.customer?.address"
@@ -811,34 +816,6 @@ function tagColorClass(scope?: string) {
 
     <ModalRejected v-model="isModalUploadOpen" :customerID="customerID" :customerName="customerName" />
 
-    <!-- Modal: Add Note -->
-    <Modal :isOpen="isModalAddNote" @onClose="() => { isModalAddNote = false; noteForm.reset() }" width="max-w-lg w-full">
-        <div class="p-6">
-            <h3 class="text-base font-semibold text-gray-900 mb-4">{{ trans("Add Note") }}</h3>
-            <textarea
-                v-model="noteForm.note"
-                rows="4"
-                :placeholder="trans('Write a note about this customer...')"
-                class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
-            />
-            <div v-if="noteForm.errors.note" class="mt-1 text-xs text-red-600">{{ noteForm.errors.note }}</div>
-            <div class="mt-4 flex justify-end gap-2">
-                <button
-                    @click="() => { isModalAddNote = false; noteForm.reset() }"
-                    class="px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-                >
-                    {{ trans("Cancel") }}
-                </button>
-                <button
-                    @click="submitNote"
-                    :disabled="noteForm.processing || !noteForm.note.trim()"
-                    class="px-3 py-1.5 text-sm font-medium rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {{ noteForm.processing ? trans("Saving...") : trans("Save Note") }}
-                </button>
-            </div>
-        </div>
-    </Modal>
 </template>
 
 <style scoped>

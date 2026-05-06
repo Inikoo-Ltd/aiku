@@ -62,7 +62,7 @@ class CloseChatSession
             BroadcastRealtimeChat::dispatch($systemMessage);
 
             $this->logCloseEvent($chatSession, $agentId, $activeAssignments, $additionalData);
-            SummarizeChatSession::dispatch($chatSession);
+            SummarizeChatSession::dispatch($chatSession)->delay(now()->addSeconds(5));
 
             return $chatSession->fresh();
         });

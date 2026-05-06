@@ -114,6 +114,18 @@ class EditWebpage extends OrgAction
                 "maxLength"   => 150,
                 "counter"     => true,
             ],
+            'index_page'      => [
+                'type'        => 'toggle',
+                'label'       => __('Index Page'),
+                'information' => __('This will be used to determine if the page should be indexed by search engines'),
+                'value'       => $webpage->index_page ?? true,
+            ],
+            'follow_link'      => [
+                'type'        => 'toggle',
+                'label'       => __('Follow Link'),
+                'information' => __('This will be used to determine if the page should be followed by search engines'),
+                'value'       => $webpage->follow ?? true,
+            ],
         ];
 
         $inVariant = false;
@@ -152,15 +164,14 @@ class EditWebpage extends OrgAction
                 ],
             ];
 
-
             $fields = array_merge($fields, $productFields);
         }
 
-        $mainData = [
+        $mainData = $webpage->state !== WebpageStateEnum::CLOSED ? [
             'label'  => $isBlog ? __('Blog') : __('Webpage'),
             'icon'   => 'fal fa-browser',
             'fields' => $fields
-        ];
+        ] : null;
 
         $warning = [];
 
@@ -203,9 +214,9 @@ class EditWebpage extends OrgAction
                     ],
                 ],
                 'formData' => [
-                    'blueprint' => [
+                    'blueprint' => array_values(array_filter([
                         $mainData,
-                        [
+                        $webpage->state !== WebpageStateEnum::CLOSED ? [
                             'label'  => __('Structured data'),
                             'icon'   => 'fal fa-brackets-curly',
                             'fields' => [
@@ -216,7 +227,7 @@ class EditWebpage extends OrgAction
                                     'required' => false,
                                 ],
                             ]
-                        ],
+                        ] : null,
                         $inVariant ? [] : [
                             'label'  => __('Set online/closed'),
                             'icon'   => 'fal fa-broadcast-tower',
@@ -265,7 +276,7 @@ class EditWebpage extends OrgAction
                                 ]
                             ]
                         ]
-                    ],
+                    ])),
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.webpage.update',

@@ -17,6 +17,7 @@ import { routeType } from "@/types/route"
 import { router } from "@inertiajs/vue3"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import payments from "@/Pages/Grp/Overview/Accounting/Payments.vue"
+import MissedOfferFOB from "@/Components/Iris/Offers/MissedOffers/MissedOfferFOB.vue"
 
 const props = defineProps<{
     summary: {
@@ -57,6 +58,7 @@ const props = defineProps<{
     contact_address?: Address | null
     isInBasket?: boolean
     updateRoute: routeType
+    missed_offers: {}
 }>()
 
 const locale = inject('locale', {})
@@ -207,6 +209,26 @@ const updateCollection = (value: boolean) => {
                     </div>
                 </div>
             </div>
+
+            <!-- Section: Missed Offers -->
+            <Transition v-if="layout.app.environment === 'local'" name="slide-to-right">
+                <div v-if="Object.values(missed_offers || {}).length" class="xborder border-red-200 xbg-red-50 rounded-md p-3">
+                    <div class="text-xs text-red-500 font-bold mb-0">
+                        {{ trans('You missed ( :numberMissedOffer ) offers', { numberMissedOffer: Object.values(missed_offers || {}).length }) }}
+                    </div>
+                    <div class="flex flex-col gap-y-2">
+                        <TransitionGroup name="list" tag="ul" class="!m-0">
+                            <li v-for="(missed_offer, misOfferKey) in missed_offers" :key="misOfferKey" class="list-none">
+                                <MissedOfferFOB v-if="misOfferKey === 'fob'" :data="missed_offer" />
+                                <div v-else class="bg-[#2a919e] text-white px-2 py-2 rounded-md text-sm flex items-center gap-x-2">
+                                    <InformationIcon :information="missed_offer.label" class="text-2xl" />
+                                    <div>{{ missed_offer.label }}</div>
+                                </div>
+                            </li>
+                        </TransitionGroup>
+                    </div>
+                </div>
+            </Transition>
         </div>
 
         <!-- Section: amount of balance, charges, shipping, tax -->

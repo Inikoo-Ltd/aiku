@@ -20,6 +20,7 @@ use App\Actions\Catalogue\Product\UI\IndexPendingBackInStockRemindersProducts;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCatalogue;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCollection;
 use App\Actions\Catalogue\Product\UI\IndexProductsInProductCategory;
+use App\Actions\Catalogue\Product\UI\IndexProductsWithIndependentTradeUnit;
 use App\Actions\Catalogue\Product\UI\IndexProductsWithNoFamily;
 use App\Actions\Catalogue\Product\UI\IndexRRPViolationProducts;
 use App\Actions\Catalogue\Product\UI\ShowProduct;
@@ -40,6 +41,7 @@ use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProducts;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Catalogue\Variant\ShowVariant;
+use App\Actions\Discounts\Offer\UI\ShowOffer;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', ShowCatalogue::class)->name('dashboard');
@@ -57,6 +59,52 @@ Route::prefix('products')->as('products.')
                 Route::get('images', GetProductUploadedImages::class)->name('images');
                 Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
                 Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
+            });
+        });
+
+        Route::prefix('independent')->as('independent_products.')->group(function () {
+            Route::prefix('all')->as('all.')->group(function () {
+                Route::get('/', IndexProductsWithIndependentTradeUnit::class)->name('index');
+                Route::get('create', CreateProduct::class)->name('create');
+                Route::prefix('{product}')->group(function () {
+                    Route::get('', ShowProduct::class)->name('show');
+                    Route::get('images', GetProductUploadedImages::class)->name('images');
+                    Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                    Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
+                });
+            });
+
+            Route::prefix('current')->as('current.')->group(function () {
+                Route::get('/', [IndexProductsWithIndependentTradeUnit::class, 'current'])->name('index');
+                Route::get('create', CreateProduct::class)->name('create');
+                Route::prefix('{product}')->group(function () {
+                    Route::get('', ShowProduct::class)->name('show');
+                    Route::get('images', GetProductUploadedImages::class)->name('images');
+                    Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                    Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
+                });
+            });
+
+            Route::prefix('in_process')->as('in_process.')->group(function () {
+                Route::get('/', [IndexProductsWithIndependentTradeUnit::class, 'inProcess'])->name('index');
+                Route::get('create', CreateProduct::class)->name('create');
+                Route::prefix('{product}')->group(function () {
+                    Route::get('', ShowProduct::class)->name('show');
+                    Route::get('images', GetProductUploadedImages::class)->name('images');
+                    Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                    Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
+                });
+            });
+
+            Route::prefix('discontinued')->as('discontinued.')->group(function () {
+                Route::get('/', [IndexProductsWithIndependentTradeUnit::class, 'discontinued'])->name('index');
+                Route::get('create', CreateProduct::class)->name('create');
+                Route::prefix('{product}')->group(function () {
+                    Route::get('', ShowProduct::class)->name('show');
+                    Route::get('images', GetProductUploadedImages::class)->name('images');
+                    Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                    Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
+                });
             });
         });
 
@@ -155,6 +203,11 @@ Route::name("departments.")->prefix('departments')
                     Route::get('edit', [EditCollection::class, 'inDepartment'])->name('edit');
                 });
             });
+
+            Route::prefix('offers')->as('.offers.')->group(function () {
+                Route::get('/{offer}', [ShowOffer::class,'inDepartment'])->name('show');
+            });
+
             Route::prefix('families')->name('.families.')->group(function () {
                 Route::get('', [IndexFamilies::class, 'inDepartment'])->name('index');
                 Route::get('create', [CreateFamily::class, 'inDepartment'])->name('create');
@@ -232,6 +285,9 @@ Route::name("families.")->prefix('families')
             Route::prefix('variant')->as('.variants.')->group(function () {
                 Route::get('/{variant}', [ShowVariant::class,'inShop'])->name('show');
             });
+            Route::prefix('offers')->as('.offers.')->group(function () {
+                Route::get('/{offer}', [ShowOffer::class,'inFamily'])->name('show');
+            });
             Route::prefix('products')->name('.products.')->group(function () {
                 Route::get('', [IndexProductsInProductCategory::class, 'inFamily'])->name('index');
                 Route::get('create', [CreateProduct::class, 'inFamily'])->name('create');
@@ -276,6 +332,11 @@ Route::name("sub_departments.")->prefix('sub-departments')
                     Route::get('edit', [EditCollection::class, 'inSubDepartmentInShop'])->name('edit');
                 });
             });
+
+            Route::prefix('offers')->as('.offers.')->group(function () {
+                Route::get('/{offer}', [ShowOffer::class,'inSubDepartment'])->name('show');
+            });
+
             Route::prefix('families')->name('.families.')->group(function () {
                 Route::get('', [IndexFamilies::class, 'inSubDepartmentInShop'])->name('index');
                 Route::get('create', [CreateFamily::class, 'inSubDepartmentInShop'])->name('create');

@@ -22,7 +22,6 @@ use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InMasterShop;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Model;
@@ -53,7 +52,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $name
  * @property string|null $description
  * @property numeric|null $price price per outer in grp currency
- * @property string $units
+ * @property numeric $units
  * @property string|null $unit
  * @property array<array-key, mixed> $data
  * @property int|null $gross_weight outer weight including packing, grams
@@ -79,7 +78,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $mark_for_discontinued
  * @property string|null $mark_for_discontinued_at
  * @property \Illuminate\Support\Carbon|null $discontinued_at
- * @property string|null $cost_price_ratio
+ * @property numeric|null $cost_price_ratio
  * @property int|null $front_image_id
  * @property int|null $34_image_id
  * @property int|null $left_image_id
@@ -143,6 +142,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $mismatch_detected Have a mismatch trade unit data (picking quantity, linked trade unit) with one or more of its children product
  * @property HealthRankEnum|null $health_rank
  * @property bool|null $mismatch_with_seeder_detected
+ * @property int|null $index_under_master_family
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -153,7 +153,8 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $backImage
  * @property-read Media|null $bottomImage
  * @property-read Media|null $frontImage
- * @property-read Group $group
+ * @property-read array $translatable_columns_from
+ * @property-read Group|null $group
  * @property-read Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read Media|null $leftImage
@@ -179,7 +180,6 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $topImage
  * @property-read LaravelCollection<int, TradeUnit> $tradeUnits
  * @property-read mixed $translations
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset onlyTrashed()
@@ -196,7 +196,6 @@ class MasterAsset extends Model implements Auditable, HasMedia
 {
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use HasHistory;
     use HasImage;
     use HasTranslations;

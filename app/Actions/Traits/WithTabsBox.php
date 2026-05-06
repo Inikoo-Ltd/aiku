@@ -9,17 +9,66 @@
 namespace App\Actions\Traits;
 
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use Lorisleiva\Actions\ActionRequest;
 
 trait WithTabsBox
 {
-    public function getTabsBox(Group|Organisation|Shop $parent): array
+    public function buildWaitingItemsData(Group|Organisation|Shop $parent, ActionRequest $request): array
     {
-        $currency = "";
+        $query = DeliveryNote::where('state', DeliveryNoteStateEnum::HANDLING_BLOCKED)->where('number_items_waiting_crm', '>', 0);
+        if ($parent instanceof Shop) {
+            $query->where('shop_id', $parent->id);
+        } elseif ($parent instanceof Organisation) {
+            $query->where('organisation_id', $parent->id);
+        } else {
+            $query->where('group_id', $parent->id);
+        }
+        $count = $query->count();
+
+        $route = null;
+
+        if ($parent instanceof Shop) {
+            $route = [
+                'name'       => 'grp.org.shops.show.ordering.backlog.waiting_items',
+                'parameters' => $request->route()->originalParameters(),
+            ];
+        }
+
+        return compact('count', 'route');
+    }
+
+    private function getChildRoute(Group|Organisation $parent, mixed $child, string $tabSlug): array
+    {
+        if ($parent instanceof Group) {
+            return [
+                'name'       => 'grp.org.overview.ordering.backlog',
+                'parameters' => [
+                    'organisation' => $child->slug,
+                    'tab'          => $tabSlug,
+                ],
+            ];
+        }
+
+        return [
+            'name'       => 'grp.org.shops.show.ordering.backlog',
+            'parameters' => [
+                'organisation' => $parent->slug,
+                'shop'         => $child->slug,
+                'tab'          => $tabSlug,
+            ],
+        ];
+    }
+
+    public function getTabsBox(Group|Organisation|Shop $parent, ?array $waitingItemsData = null): array
+    {
+        $currency     = "";
         $currencyCode = $parent->currency->code;
 
         if ($parent instanceof Group) {
@@ -70,12 +119,14 @@ trait WithTabsBox
                                 'type'  => 'currency',
                                 'label' => $child->orderHandlingStats?->{"orders_state_creating_amount$childCurrencySuffix"} ?? 0,
                             ],
+                            'route'       => $this->getChildRoute($parent, $child, 'in_basket'),
                         ]
                     ]
                 ])->values()->toArray(),
             ],
             [
                 'label'         => __('Submitted'),
+                'show_total'    => true,
                 'currency_code' => $currencyCode,
                 'tabs'          => [
                     [
@@ -132,6 +183,7 @@ trait WithTabsBox
                                 'type'  => 'currency',
                                 'label' => $child->orderHandlingStats?->{"orders_state_submitted_not_paid_amount$childCurrencySuffix"} ?? 0,
                             ],
+                            'route'       => $this->getChildRoute($parent, $child, 'submitted_unpaid'),
                         ],
                         [
                             'tab_slug'    => 'submitted_paid',
@@ -141,12 +193,14 @@ trait WithTabsBox
                                 'type'  => 'currency',
                                 'label' => $child->orderHandlingStats?->{"orders_state_submitted_paid_amount$childCurrencySuffix"} ?? 0,
                             ],
+                            'route'       => $this->getChildRoute($parent, $child, 'submitted_paid'),
                         ],
                     ]
                 ])->values()->toArray(),
             ],
             [
                 'label'         => __('Warehouse'),
+                'show_total'    => true,
                 'currency_code' => $currencyCode,
                 'tabs'          => [
                     [
@@ -183,7 +237,13 @@ trait WithTabsBox
                         'information' => [
                             'label' => $parent->orderHandlingStats?->{"orders_state_handling_blocked_amount$currency"} ?? 0,
                             'type'  => 'currency',
-                        ]
+                        ],
+                        'warning'     => ($waitingItemsData && ($waitingItemsData['count'] ?? 0) > 0) ? [
+                            'route_target' => $waitingItemsData['route'] ?? null,
+                            'tooltip'      => __('Orders waiting for items'),
+                            'value'        => $waitingItemsData['count'],
+                            'indicator'    => true,
+                        ] : null,
                     ],
                     [
                         'tab_slug'    => 'picked',
@@ -226,33 +286,39 @@ trait WithTabsBox
                             'value'       => $child->orderHandlingStats?->number_orders_state_in_warehouse ?? 0,
                             'type'        => 'number',
                             'information' => ['type' => 'currency', 'label' => $child->orderHandlingStats?->{"orders_state_in_warehouse_amount$childCurrencySuffix"} ?? 0],
+                            'route'       => $this->getChildRoute($parent, $child, 'in_warehouse'),
                         ],
                         [
                             'tab_slug'    => 'handling',
                             'value'       => $child->orderHandlingStats?->number_orders_state_handling ?? 0,
                             'type'        => 'number',
                             'information' => ['type' => 'currency', 'label' => $child->orderHandlingStats?->{"orders_state_handling_amount$childCurrencySuffix"} ?? 0],
+                            'route'       => $this->getChildRoute($parent, $child, 'handling'),
                         ],
                         [
                             'tab_slug'    => 'handling_blocked',
                             'value'       => $child->orderHandlingStats?->number_orders_state_handling_blocked ?? 0,
                             'type'        => 'number',
                             'information' => ['type' => 'currency', 'label' => $child->orderHandlingStats?->{"orders_state_handling_blocked_amount$childCurrencySuffix"} ?? 0],
+                            'route'       => $this->getChildRoute($parent, $child, 'handling_blocked'),
                         ],
                         [
                             'tab_slug'    => 'picked',
                             'value'       => $child->orderHandlingStats?->number_orders_state_picked ?? 0,
                             'information' => ['type' => 'currency', 'label' => $child->orderHandlingStats?->{"orders_state_picked_amount$childCurrencySuffix"} ?? 0],
+                            'route'       => $this->getChildRoute($parent, $child, 'picked'),
                         ],
                         [
                             'tab_slug'    => 'packing',
                             'value'       => $child->orderHandlingStats?->number_orders_state_packing ?? 0,
                             'information' => ['type' => 'currency', 'label' => $child->orderHandlingStats?->{"orders_state_packing_amount$childCurrencySuffix"} ?? 0],
+                            'route'       => $this->getChildRoute($parent, $child, 'packing'),
                         ],
                         [
                             'tab_slug'    => 'packed',
                             'value'       => $child->orderHandlingStats?->number_orders_state_packed ?? 0,
                             'information' => ['type' => 'currency', 'label' => $child->orderHandlingStats?->{"orders_state_packed_amount$childCurrencySuffix"} ?? 0],
+                            'route'       => $this->getChildRoute($parent, $child, 'packed'),
                         ],
                     ]
                 ])->values()->toArray(),
@@ -263,7 +329,7 @@ trait WithTabsBox
                 'tabs'          => [
                     [
                         'tab_slug'    => 'finalised',
-                        'label'       => __('Invoiced'),
+                        'label'       => __('Waiting for dispatch'),
                         'value'       => $parent->orderHandlingStats?->number_orders_state_finalised ?? 0,
                         'icon_data'   => [
                             'icon'    => 'fal fa-box-check',
@@ -284,6 +350,7 @@ trait WithTabsBox
                             'tab_slug'    => 'finalised',
                             'value'       => $child->orderHandlingStats?->number_orders_state_finalised ?? 0,
                             'information' => ['type' => 'currency', 'label' => $child->orderHandlingStats?->{"orders_state_finalised_amount$childCurrencySuffix"} ?? 0],
+                            'route'       => $this->getChildRoute($parent, $child, 'finalised'),
                         ],
                     ]
                 ])->values()->toArray(),
@@ -314,6 +381,7 @@ trait WithTabsBox
                             'value'       => $child->orderHandlingStats?->number_orders_dispatched_today ?? 0,
                             'type'        => 'number',
                             'information' => ['type' => 'currency', 'label' => $child->orderHandlingStats?->{"orders_dispatched_today_amount$childCurrencySuffix"} ?? 0],
+                            'route'       => $this->getChildRoute($parent, $child, 'dispatched_today'),
                         ],
                     ]
                 ])->values()->toArray(),

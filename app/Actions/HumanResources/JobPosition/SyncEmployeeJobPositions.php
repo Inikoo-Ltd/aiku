@@ -10,7 +10,9 @@ namespace App\Actions\HumanResources\JobPosition;
 
 use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateJobPositionsShare;
 use App\Actions\HumanResources\JobPosition\Hydrators\JobPositionHydrateEmployees;
+use App\Actions\SysAdmin\CleanUserCaches;
 use App\Actions\SysAdmin\User\SyncRolesFromJobPositions;
+use App\Actions\UI\Grp\RecacheUserUiProps;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\JobPosition;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -21,12 +23,11 @@ class SyncEmployeeJobPositions
 
     public function handle(Employee $employee, array $jobPositions): void
     {
-
-        $jobPositionsIds = array_keys($jobPositions);
+        $jobPositionsIds     = array_keys($jobPositions);
         $currentJobPositions = $employee->jobPositions()->pluck('job_positions.id')->all();
 
-        $newJobPositionsIds = array_diff($jobPositionsIds, $currentJobPositions);
-        $removeJobPositions = array_diff($currentJobPositions, $jobPositionsIds);
+        $newJobPositionsIds   = array_diff($jobPositionsIds, $currentJobPositions);
+        $removeJobPositions   = array_diff($currentJobPositions, $jobPositionsIds);
         $jobPositionsToUpdate = array_intersect($jobPositionsIds, $currentJobPositions);
 
         $employee->jobPositions()->detach($removeJobPositions);
@@ -43,8 +44,6 @@ class SyncEmployeeJobPositions
             );
         }
 
-
-
         foreach ($jobPositionsToUpdate as $jobPositionId) {
             $employee->jobPositions()->updateExistingPivot(
                 $jobPositionId,
@@ -53,8 +52,6 @@ class SyncEmployeeJobPositions
                 ]
             );
         }
-
-
 
 
         foreach ($employee->users as $user) {
@@ -72,6 +69,17 @@ class SyncEmployeeJobPositions
                 $jobPosition = JobPosition::find($jobPositionId);
                 JobPositionHydrateEmployees::dispatch($jobPosition);
             }
+        }
+
+        foreach ($employee->users as $user) {
+            CleanUserCaches::run(
+                $user,
+                [
+                    'auth-user:'.$user->id.';*',
+                    'grp-first-load-props:'.$user->id.':*'
+                ]
+            );
+            RecacheUserUiProps::dispatch($user);
         }
     }
 }

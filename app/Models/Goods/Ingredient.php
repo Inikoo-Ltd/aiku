@@ -36,9 +36,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed> $source_data
  * @property array<array-key, mixed> $source_extra_ingredients
  * @property string|null $may_contain
- * @property string|null $ration
+ * @property numeric|null $ration
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\TradeUnit> $tradeUnits
  * @method static \Database\Factories\Goods\IngredientFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Ingredient newModelQuery()

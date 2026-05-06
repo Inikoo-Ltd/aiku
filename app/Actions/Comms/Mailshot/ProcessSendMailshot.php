@@ -80,7 +80,7 @@ class ProcessSendMailshot
         );
 
         UpdateMailshotRecipientsStoredAt::run($mailshot);
-        MailshotHydrateDispatchedEmails::dispatch($mailshot->id)->delay(now()->addSeconds());
+        MailshotHydrateDispatchedEmails::dispatch($mailshot->id)->delay(now()->addSeconds(5));
 
         SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
     }

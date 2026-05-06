@@ -47,7 +47,7 @@ class MasterProductsResource extends JsonResource
     {
         $extraField = [];
         // Add this check so that this won't disturb usage in other place. Needed this for the checks done during variant creation.
-        if (isset($this->is_variant_leader)) {
+        if (isset($this->is_variant_leader) && $this->resource->relationLoaded('products')) {
             $allChildHasWeb = true;
             $hasValidProduct = false;
             foreach ($this->products as $product) {
@@ -55,7 +55,7 @@ class MasterProductsResource extends JsonResource
                     continue;
                 }
                 $hasValidProduct = true;
-                if (!$product->webpage()->exists()) {
+                if (!$product->has_live_webpage) {
                     $allChildHasWeb = false;
                     break;
                 }
@@ -72,41 +72,41 @@ class MasterProductsResource extends JsonResource
         }
 
         return [
-            'id'                     => $this->id,
-            'slug'                   => $this->slug,
-            'code'                   => $this->code,
-            'name'                   => $this->name,
-            'master_shop_slug'       => $this->master_shop_slug,
-            'master_shop_code'       => $this->master_shop_code,
-            'master_shop_name'       => $this->master_shop_name,
-            'master_department_slug' => $this->master_department_slug,
-            'master_department_code' => $this->master_department_code,
-            'master_department_name' => $this->master_department_name,
-            'master_family_slug'     => $this->master_family_slug,
-            'master_family_code'     => $this->master_family_code,
-            'master_family_name'     => $this->master_family_name,
-            'master_sub_department_slug' => $this->master_sub_department_slug,
-            'master_sub_department_code' => $this->master_sub_department_code,
-            'master_sub_department_name' => $this->master_sub_department_name,
-            'show_in_website'        => $this->show_in_website,
-            'used_in'                => $this->used_in,
-            'unit'                   => $this->unit,
-            'units'                  => $this->units,
-            'price'                  => $this->price,
-            'rrp'                    => $this->rrp,
-            'status'                 => $this->status,
-            'currency_code'          => $this->currency_code,
-            'sales_grp_currency_external' => $this->sales_grp_currency_external ?? 0,
-            'sales_grp_currency_external_ly' => $this->sales_grp_currency_external_ly ?? 0,
+            'id'                                => $this->id,
+            'slug'                              => $this->slug,
+            'code'                              => $this->code,
+            'name'                              => $this->name,
+            'master_shop_slug'                  => $this->master_shop_slug,
+            'master_shop_code'                  => $this->master_shop_code,
+            'master_shop_name'                  => $this->master_shop_name,
+            'master_department_slug'            => $this->master_department_slug,
+            'master_department_code'            => $this->master_department_code,
+            'master_department_name'            => $this->master_department_name,
+            'master_family_slug'                => $this->master_family_slug,
+            'master_family_code'                => $this->master_family_code,
+            'master_family_name'                => $this->master_family_name,
+            'master_sub_department_slug'        => $this->master_sub_department_slug,
+            'master_sub_department_code'        => $this->master_sub_department_code,
+            'master_sub_department_name'        => $this->master_sub_department_name,
+            'show_in_website'                   => $this->show_in_website,
+            'used_in'                           => $this->used_in,
+            'unit'                              => $this->unit,
+            'units'                             => $this->units,
+            'price'                             => $this->price,
+            'rrp'                               => $this->rrp,
+            'status'                            => $this->status,
+            'currency_code'                     => $this->currency_code,
+            'sales_grp_currency_external'       => $this->sales_grp_currency_external ?? 0,
+            'sales_grp_currency_external_ly'    => $this->sales_grp_currency_external_ly ?? 0,
             'sales_grp_currency_external_delta' => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),
-            'invoices'               => $this->invoices ?? 0,
-            'invoices_ly'            => $this->invoices_ly ?? 0,
-            'invoices_delta'         => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
-            'dropshippers'           => $this->dropshippers ?? 0,
-            'listings'               => $this->listings ?? 0,
-            'sold'                   => $this->sold ?? 0,
-            'image_thumbnail'        => $this->web_images,
-            'status_icon'            => $this->status ? [
+            'invoices'                          => $this->invoices ?? 0,
+            'invoices_ly'                       => $this->invoices_ly ?? 0,
+            'invoices_delta'                    => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'dropshippers'                      => $this->dropshippers ?? 0,
+            'listings'                          => $this->listings ?? 0,
+            'sold'                              => $this->sold ?? 0,
+            'image_thumbnail'                   => $this->web_images,
+            'status_icon'                       => $this->status ? [
                 'tooltip' => __('Active'),
                 'icon'    => 'fas fa-check-circle',
                 'class'   => 'text-green-400'
@@ -115,11 +115,12 @@ class MasterProductsResource extends JsonResource
                 'icon'    => 'fas fa-times-circle',
                 'class'   => 'text-red-400'
             ],
-            'variant_slug'           => $this->variant_slug,
-            'is_variant_leader'      => $this->is_variant_leader,
-            'variant_code'           => $this->variant_code,
-            'mismatch_detected'      => $this->mismatch_detected,
-            'health_rank'       => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
+            'variant_slug'                      => $this->variant_slug,
+            'is_variant_leader'                 => $this->is_variant_leader,
+            'variant_code'                      => $this->variant_code,
+            'mismatch_detected'                 => $this->mismatch_detected,
+            'health_rank'                       => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
+            'index_under_master_family'         => $this->index_under_master_family ?? null,
             ...$extraField
         ];
     }

@@ -9,15 +9,19 @@
 namespace App\Models\Goods;
 
 use App\Enums\Catalogue\HealthRankEnum;
+use App\Models\Helpers\Brand;
+use App\Models\Helpers\Tag;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
+use App\Models\Traits\HasSearch;
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -31,18 +35,19 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $name
  * @property string|null $description
  * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  * @property HealthRankEnum|null $health_rank
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Brand> $brands
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Goods\TradeUnitFamilyStats|null $stats
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Tag> $tags
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\TradeUnitFamilyTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\TradeUnit> $tradeUnits
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily onlyTrashed()
@@ -57,9 +62,9 @@ class TradeUnitFamily extends Model implements Auditable, HasMedia
     use SoftDeletes;
     use InGroup;
     use HasHistory;
-    use HasUniversalSearch;
     use HasFactory;
     use HasAttachments;
+    use HasSearch;
 
     protected $table = 'trade_unit_families';
 
@@ -73,6 +78,29 @@ class TradeUnitFamily extends Model implements Auditable, HasMedia
     ];
 
     protected $guarded = [];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'code',
+                'name',
+                'description',
+                'created_at'
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+
+            'id'          => (string)$this->id,
+            'code'        => $this->code,
+            'name'        => (string)$this->name,
+            'description' => (string)$this->description,
+            'created_at'  => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {
@@ -114,5 +142,27 @@ class TradeUnitFamily extends Model implements Auditable, HasMedia
     public function timeSeries(): HasMany
     {
         return $this->hasMany(TradeUnitFamilyTimeSeries::class);
+    }
+
+    public function brands(): MorphToMany
+    {
+        return $this->morphToMany(Brand::class, 'model', 'model_has_brands');
+    }
+
+    public function brand(): ?Brand
+    {
+        /** @var Brand $brand */
+        $brand = $this->brands()->first();
+
+        return $brand;
+    }
+
+    public function tags(): MorphToMany
+    {
+        return $this->morphToMany(
+            Tag::class,
+            'model',
+            'model_has_tags'
+        )->withTimestamps();
     }
 }

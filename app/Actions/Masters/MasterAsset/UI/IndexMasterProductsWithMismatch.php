@@ -392,7 +392,7 @@ class IndexMasterProductsWithMismatch extends GrpAction
                 'shopsData'               => $shopsData,
                 'tabs' => [
                     'current'    => $this->tab,
-                    'navigation' => MasterProductsTabsEnum::navigationExcept([MasterProductsTabsEnum::SALES]),
+                    'navigation' => MasterProductsTabsEnum::navigationExcept([MasterProductsTabsEnum::SALES, MasterProductsTabsEnum::INDEX_ORDERING]),
                 ],
                 MasterProductsTabsEnum::INDEX->value => $this->tab == MasterProductsTabsEnum::INDEX->value ?
                     fn () => MasterProductsResource::collection($masterAssets)

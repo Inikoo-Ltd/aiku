@@ -8,7 +8,6 @@
 
 namespace App\Actions\Goods\Stock;
 
-use App\Actions\Goods\Stock\Search\StockRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -16,7 +15,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Http\Resources\Inventory\OrgStockResource;
 use App\Models\Goods\Stock;
-use App\Models\Goods\StockFamily;
 use App\Models\Inventory\OrgStockFamily;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
@@ -30,7 +28,6 @@ class UpdateStock extends OrgAction
     use WithNoStrictRules;
     use WithGoodsEditAuthorisation;
 
-    private StockFamily $stockFamily;
 
     private Stock $stock;
 
@@ -39,13 +36,12 @@ class UpdateStock extends OrgAction
         $stock   = $this->update($stock, $modelData, ['data', 'settings']);
         $changes = Arr::except($stock->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        if (Arr::hasAny($changes, ['code', 'name', 'stock_family_id', 'unit_value']) && $stock->state != StockStateEnum::IN_PROCESS) {
+        if (Arr::hasAny($changes, ['code', 'name', 'stock_family_id']) && $stock->state != StockStateEnum::IN_PROCESS) {
             foreach ($stock->orgStocks as $orgStock) {
                 $orgStock->update(
                     [
-                        'code'       => $stock->code,
-                        'name'       => $stock->name,
-                        'unit_value' => $stock->unit_value,
+                        'code' => $stock->code,
+                        'name' => $stock->name,
                     ]
                 );
             }
@@ -67,12 +63,6 @@ class UpdateStock extends OrgAction
                 }
             }
         }
-
-
-        if (count($changes) > 0) {
-            StockRecordSearch::dispatch($stock);
-        }
-
 
         $stock->refresh();
 

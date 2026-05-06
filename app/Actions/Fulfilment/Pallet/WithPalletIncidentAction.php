@@ -8,7 +8,6 @@
 
 namespace App\Actions\Fulfilment\Pallet;
 
-use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
@@ -32,8 +31,6 @@ trait WithPalletIncidentAction
             'date'        => now()
         ]);
 
-        $pallet = UpdatePallet::run($pallet, Arr::except($modelData, 'message'));
-        PalletRecordSearch::dispatch($pallet);
-        return $pallet;
+        return UpdatePallet::run($pallet, Arr::except($modelData, 'message'));
     }
 }

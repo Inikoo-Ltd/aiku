@@ -32,7 +32,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Fulfilment> $fulfilments
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Group> $groups
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Organisation> $organisations
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Production> $productions

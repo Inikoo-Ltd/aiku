@@ -22,13 +22,14 @@ const props = defineProps<{
       card_container: {
         properties?: any
         container_image?: any
-        image_properties?: any
+        image_properties?: any 
       }
     }
   }
   webpageData?: any
   blockData?: Record<string, any>
   screenType: 'mobile' | 'tablet' | 'desktop'
+  indexBlock:number
 }>()
 
 
@@ -36,7 +37,7 @@ const layout: any = inject("layout", {})
 </script>
 
 <template>
-  <div  :id="fieldValue?.id ? fieldValue?.id  : 'carousel-cta'"  component="carousel-cta" >
+  <div  :id="fieldValue?.id ? fieldValue?.id  : 'carousel-cta' + indexBlock"  component="carousel-cta" >
     <div :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue.container?.properties, screenType)

@@ -2,6 +2,7 @@
 import { inject, ref, watch } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus } from "@fal"
+import { faSpinnerThird } from "@fad"
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { faLaptopCode, faLayerGroup } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -20,7 +21,7 @@ import GoldReward from "@/Components/Utils/GoldReward.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 
-library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck, faLayerGroup)
+library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck, faLayerGroup, faSpinnerThird)
 
 const props = defineProps<{
     screenType?: "desktop" | "mobile" | "tablet"
@@ -122,8 +123,15 @@ watch(
   { deep: true }
 )
 
+const isLoadingBundle = ref(false)
 const goToBundle = () => {
-     window.location.href = '/redirect-bundle-to-retina'
+    isLoadingBundle.value = true
+    const stored = localStorage.getItem('layout_dropshipping')
+    const currentPlatform = stored ? JSON.parse(stored)?.currentPlatform : null
+    const url = currentPlatform
+        ? `/redirect-bundle-to-retina?platform=${encodeURIComponent(currentPlatform)}`
+        : '/redirect-bundle-to-retina'
+    window.location.href = url
 }
 </script>
 
@@ -205,10 +213,10 @@ const goToBundle = () => {
 
 
             <!-- Section: Profile -->
-            <LinkIris v-if="!layout.offer_data" href="/app/dashboard" :type="'internal'" class="flex items-center justify-center">
+            <LinkIris v-if="!layout.offer_data" href="/app/dashboard" :type="'internal'" class="flex items-center justify-center" v-slot="{isLoading}">
                 <Button
                     v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn))"
-                    
+                    :loading="isLoading"
                     icon="fal fa-user"
                     type="transparent"
                     class="button min-w-max"
@@ -227,11 +235,12 @@ const goToBundle = () => {
             </LinkIris>
 
             <!-- Section: Back in stock -->
-            <LinkIris href="/app/back-in-stocks" :type="'internal'">
+            <LinkIris href="/app/back-in-stocks" :type="'internal'" v-slot="{isLoading}">
                 <Button
                     v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn)"
                     v-tooltip="trans('Reminder back in stock')"
                     type="transparent"
+                    :loading="isLoading"
                     class="button"
                 >
                     <template #icon>
@@ -247,8 +256,8 @@ const goToBundle = () => {
 
             <!-- section redirect to bundle -->
             <Button v-if="isLoggedIn && layout.retina?.type === 'dropshipping' &&  Object.keys(layout.user?.customerSalesChannels || {}).length > 0" v-tooltip="trans('Add Bundles')" type="transparent" class="button"
-                @click="goToBundle">
-                <template #loading>
+                @click="goToBundle" :loading="isLoadingBundle">
+                <template #isLoadingBundle>
                     <span v-show="false" class="button"></span>
                 </template>
 
@@ -258,10 +267,11 @@ const goToBundle = () => {
             </Button>
 
             <!-- Section: Favourite -->
-            <LinkIris href="/app/favourites" :type="'internal'">
+            <LinkIris href="/app/favourites" :type="'internal'" v-slot="{isLoading}">
                 <Button
                     v-if="(checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping')"
                     v-tooltip="trans('Favourites')"
+                    :loading="isLoading"
                     icon="fal fa-heart"
                     type="transparent"
                     class="button"
@@ -282,16 +292,14 @@ const goToBundle = () => {
 
 
             <!-- Section: Basket (cart) -->
-            <LinkIris href="/app/basket" :type="'internal'">
+            <LinkIris href="/app/basket" :type="'internal'" v-slot="{isLoading}">
                 <Button
                     v-if="(checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b')"
                     v-tooltip="trans('Cart count and amount')"  
+                    :loading="isLoading"
                     type="transparent"
                     class="button min-w-max"
                 >
-                    <template #loading>
-                        <span v-show="false" class="button"></span>
-                    </template>
                     <template #label="{ isLoadingVisit }">
                         <span v-tooltip="trans('Number of products line')" class="button -mr-1.5 whitespace-nowrap"
                             v-html="textReplaceVariables(`({{ cart_count }})`, layout.iris_variables)">
@@ -307,16 +315,16 @@ const goToBundle = () => {
             </LinkIris>
 
             <!-- Section: Register -->
-            <LinkIris href="/app/register" :type="'internal'">
+            <LinkIris href="/app/register" :type="'internal'" v-slot="{ isLoading }">
                 <Button
                     v-if="(checkVisible(model?.register?.visible || null, isLoggedIn))"
+                    :loading="isLoading"
                     icon="fal fa-user-plus"
                     type="transparent"
                     class="button"
                 >
                     <template #icon>
-                        <FontAwesomeIcon icon="fal fa-user-plus" fixed-width
-                            aria-hidden="true" class="button"/>
+                        <FontAwesomeIcon icon="fal fa-user-plus" fixed-width aria-hidden="true" class="button"/>
                     </template>
                     <template #label>
                         <span class="button whitespace-nowrap">
@@ -327,15 +335,16 @@ const goToBundle = () => {
             </LinkIris>
 
             <!-- Section: Login -->
-            <LinkIris :href="urlLoginWithRedirect()" :type="'internal'">
+            <LinkIris :href="urlLoginWithRedirect()" :type="'internal'" v-slot="{ isLoading }">
                 <Button
                     v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
+                    :loading="isLoading"
                     icon="fal fa-sign-in"
                     type="transparent"
                     class="button"
                 >
                     <template #icon>
-                        <FontAwesomeIcon icon="fal fa-sign-in" class="button"  fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-sign-in" class="button" fixed-width aria-hidden="true" />
                     </template>
                     <template #label>
                         <span class="button whitespace-nowrap">

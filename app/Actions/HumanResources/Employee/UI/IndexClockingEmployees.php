@@ -183,24 +183,31 @@ class IndexClockingEmployees extends OrgAction
 
             $organisation = $this->employee->organisation;
             $leaveTypeOptions = LeaveTypeResolver::optionsForOrganisation($organisation->id, true, $organisation->country?->code);
-            $leaveRequests = Leave::query()
+            $leaveRequestsThisYear = Leave::query()
                 ->where('employee_id', $this->employee->id)
                 ->whereYear('start_date', now()->year)
                 ->with('leaveType')
                 ->get();
 
-            $submittedLeaves = $leaveRequests->filter(function (Leave $leave) {
-                return $leave->status?->value !== LeaveStatusEnum::REJECTED->value;
-            });
-            $approvedLeaves = $leaveRequests->filter(function (Leave $leave) {
-                return $leave->status?->value === LeaveStatusEnum::APPROVED->value;
-            });
-            $pendingLeaves = $leaveRequests->filter(function (Leave $leave) {
-                return $leave->status?->value === LeaveStatusEnum::PENDING->value;
+            $leaveRequestsThisMonth = $leaveRequestsThisYear->filter(function (Leave $leave) {
+                return $leave->start_date->month === now()->month;
             });
 
-            $medicalRequestCount = $this->countLeavesByBucket($submittedLeaves, 'medical');
-            $unpaidRequestCount = $this->countLeavesByBucket($submittedLeaves, 'unpaid');
+            $submittedLeaves = $leaveRequestsThisYear->filter(function (Leave $leave) {
+                return $leave->status?->value !== LeaveStatusEnum::REJECTED->value;
+            });
+            $approvedLeaves = $leaveRequestsThisYear->filter(function (Leave $leave) {
+                return $leave->status?->value === LeaveStatusEnum::APPROVED->value;
+            });
+            $submittedLeavesThisMonth = $leaveRequestsThisMonth->filter(function (Leave $leave) {
+                return $leave->status?->value !== LeaveStatusEnum::REJECTED->value;
+            });
+            $approvedLeavesThisMonth = $leaveRequestsThisMonth->filter(function (Leave $leave) {
+                return $leave->status?->value === LeaveStatusEnum::APPROVED->value;
+            });
+
+            $medicalRequestCount = $this->sumLeaveDaysByBucket($submittedLeavesThisMonth, 'medical');
+            $unpaidRequestCount = $this->sumLeaveDaysByBucket($submittedLeavesThisMonth, 'unpaid');
             $balance = EmployeeLeaveBalance::firstOrCreate(
                 [
                     'employee_id' => $this->employee->id,
@@ -216,21 +223,13 @@ class IndexClockingEmployees extends OrgAction
                 ]
             );
 
-            $defaultAnnualDays = $organisation->getDefaultAnnualLeaveDays();
-            if ((int) $balance->annual_days !== $defaultAnnualDays) {
-                $balance->updateQuietly([
-                    'annual_days' => $defaultAnnualDays,
-                ]);
-                $balance->refresh();
-            }
-
             $annualSubmittedDays = $this->sumLeaveDaysByBucket($submittedLeaves, 'annual');
 
             $annualRemainingAfterSubmission = max(0, (float) $balance->annual_days - (float) $annualSubmittedDays);
 
             $approvedAnnualDays = $this->sumLeaveDaysByBucket($approvedLeaves, 'annual');
-            $approvedMedicalDays = $this->sumLeaveDaysByBucket($approvedLeaves, 'medical');
-            $approvedUnpaidDays = $this->sumLeaveDaysByBucket($approvedLeaves, 'unpaid');
+            $approvedMedicalDays = $this->sumLeaveDaysByBucket($approvedLeavesThisMonth, 'medical');
+            $approvedUnpaidDays = $this->sumLeaveDaysByBucket($approvedLeavesThisMonth, 'unpaid');
 
             if ((float) $balance->annual_used !== $approvedAnnualDays
                 || (float) $balance->medical_used !== $approvedMedicalDays
@@ -397,6 +396,7 @@ class IndexClockingEmployees extends OrgAction
                 ->column(key: 'end_date', label: __('End Date'), sortable: true)
                 ->column(key: 'type_label', label: __('Type'))
                 ->column(key: 'duration', label: __('Duration'))
+                ->column(key: 'approval_progress', label: __('Progress Approval'))
                 ->column(key: 'status_label', label: __('Status'))
                 ->column(key: 'reason', label: __('Reason'))
                 ->column(key: 'actions', label: 'Actions');
@@ -512,7 +512,14 @@ class IndexClockingEmployees extends OrgAction
                 return 0;
             }
 
-            return $leave->is_half_day ? 0.5 : (float) $leave->duration_days;
+            $value = $leave->leaveType?->deductionValue() ?? 1.0;
+            $deduction = (float) $leave->duration_days * $value;
+
+            if ($leave->is_half_day && $value === 1.0) {
+                return 0.5;
+            }
+
+            return $deduction;
         });
     }
 

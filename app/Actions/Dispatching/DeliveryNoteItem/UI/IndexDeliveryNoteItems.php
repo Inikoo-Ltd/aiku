@@ -37,9 +37,10 @@ class IndexDeliveryNoteItems extends OrgAction
 
         $query->where('delivery_note_items.delivery_note_id', $parent->id);
 
-        $query->with(['pickings.location.warehouse']);
+        $query->with(['pickings.location.warehouse', 'pickings.batchCode', 'pickings.orgStock.mainBatchCode']);
 
         $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
+        $query->leftJoin('batch_codes', 'delivery_note_items.batch_code_id', '=', 'batch_codes.id');
 
         $query->leftJoin('packings', function ($join) use ($parent) {
             $join->on('packings.delivery_note_item_id', 'delivery_note_items.id');
@@ -71,14 +72,19 @@ class IndexDeliveryNoteItems extends OrgAction
                 'delivery_note_items.quantity_dispatched',
                 'delivery_note_items.quantity_not_picked',
                 'delivery_note_items.is_handled',
-                'delivery_note_items.batch_code',
-                'delivery_note_items.expiry_date',
+                'delivery_note_items.batch_code_id',
+                'delivery_note_items.organisation_id',
+                \Illuminate\Support\Facades\DB::raw('COALESCE(batch_codes.code, delivery_note_items.batch_code) as batch_code'),
+                \Illuminate\Support\Facades\DB::raw('COALESCE(batch_codes.expiry_date, delivery_note_items.expiry_date) as expiry_date'),
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
                 'org_stocks.slug as org_stock_slug',
                 'org_stocks.packed_in as packed_in',
                 'packings.id as packing_id',
+                'delivery_note_items.quantity_waiting_crm',
+                'delivery_note_items.quantity_waiting_warehouse',
+
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state'])
             ->allowedFilters([$globalSearch])
@@ -86,9 +92,9 @@ class IndexDeliveryNoteItems extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(DeliveryNote $parent, $prefix = null): Closure
+    public function tableStructure(DeliveryNote $parent, $prefix = null, bool $isEditable = false): Closure
     {
-        return function (InertiaTable $table) use ($parent, $prefix) {
+        return function (InertiaTable $table) use ($parent, $prefix, $isEditable) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -118,6 +124,7 @@ class IndexDeliveryNoteItems extends OrgAction
 
 
             if (!$parent || !$allowAction) {
+                $table->column(key: 'picking_locations', label: __('Pickings'), canBeHidden: false, sortable: false, searchable: false);
                 $table->column(key: 'quantity_required_readonly', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_picked_readonly', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_packed_readonly', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
@@ -126,7 +133,9 @@ class IndexDeliveryNoteItems extends OrgAction
                 $table->column(key: 'quantity_required', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_picked', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_packed', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-                $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false, className: 'w-[250px]');
+                if ($isEditable) {
+                    $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false, className: 'w-[250px]');
+                }
             }
         };
     }

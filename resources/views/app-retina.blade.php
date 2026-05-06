@@ -60,6 +60,7 @@
                 }
             </style>
         @endif
+        
     </head>
     <body class="font-sans antialiased h-full text-slate-700">
         @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'google_tag_id', ''))

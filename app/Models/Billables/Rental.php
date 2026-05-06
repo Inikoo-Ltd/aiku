@@ -15,7 +15,6 @@ use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\InAssetModel;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -41,7 +40,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $name
  * @property string|null $description
  * @property numeric|null $price
- * @property string $units
+ * @property numeric $units
  * @property RentalUnitEnum $unit
  * @property array<array-key, mixed> $data
  * @property array<array-key, mixed> $settings
@@ -57,12 +56,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Helpers\Currency $currency
  * @property-read Fulfilment|null $fulfilment
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read HistoricAsset|null $historicAsset
  * @property-read \Illuminate\Database\Eloquent\Collection<int, HistoricAsset> $historicAssets
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop|null $shop
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Rental newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Rental newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Rental onlyTrashed()
@@ -74,7 +72,6 @@ use Spatie\Sluggable\SlugOptions;
 class Rental extends Model implements Auditable
 {
     use SoftDeletes;
-    use HasUniversalSearch;
     use InAssetModel;
     use HasHistory;
     use HasSlug;

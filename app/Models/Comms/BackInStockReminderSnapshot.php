@@ -29,11 +29,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $reminder_sent_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read Customer $customer
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read Customer|null $customer
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read Product $product
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read Product|null $product
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BackInStockReminderSnapshot newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BackInStockReminderSnapshot newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BackInStockReminderSnapshot query()

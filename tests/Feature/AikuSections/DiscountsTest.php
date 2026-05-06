@@ -13,7 +13,6 @@ use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Discounts\Offer\DeleteOffer;
 use App\Actions\Discounts\Offer\HydrateOffers;
-use App\Actions\Discounts\Offer\Search\ReindexOfferSearch;
 use App\Actions\Discounts\Offer\SetOfferAsPermanent;
 use App\Actions\Discounts\Offer\StoreFirstOrderBonus;
 use App\Actions\Discounts\Offer\StoreOffer;
@@ -26,7 +25,6 @@ use App\Actions\Discounts\Offer\VolGr\StoreVolumeGRDiscount;
 use App\Actions\Discounts\OfferAllowance\StoreOfferAllowance;
 use App\Actions\Discounts\OfferAllowance\UpdateOfferAllowance;
 use App\Actions\Discounts\OfferCampaign\HydrateOfferCampaigns;
-use App\Actions\Discounts\OfferCampaign\Search\ReindexOfferCampaignSearch;
 use App\Actions\Discounts\OfferCampaign\UpdateOfferCampaign;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
@@ -94,13 +92,13 @@ test('seed offer campaigns', function () {
 
     expect($this->group->discountsStats->number_offer_campaigns)->toBe(11)
         ->and($this->group->discountsStats->number_current_offer_campaigns)->toBe(10)
-        ->and($this->group->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(10)
+        ->and($this->group->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(11)
         ->and($this->organisation->discountsStats->number_offer_campaigns)->toBe(11)
         ->and($this->organisation->discountsStats->number_current_offer_campaigns)->toBe(10)
-        ->and($this->organisation->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(10)
+        ->and($this->organisation->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(11)
         ->and($shop->discountsStats->number_offer_campaigns)->toBe(11)
         ->and($shop->discountsStats->number_current_offer_campaigns)->toBe(10)
-        ->and($shop->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(10);
+        ->and($shop->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(11);
 });
 
 test('update offer campaign', function () {
@@ -209,7 +207,7 @@ test('UI show offer campaigns', function () {
 
     $response->assertInertia(function (AssertableInertia $page) use ($offerCampaign) {
         $page
-            ->component('Org/Discounts/VolumeDiscountCampaign')
+            ->component('Org/Discounts/OrderRecursionCampaign')
             ->has('title')
             ->has(
                 'pageHead',
@@ -224,7 +222,13 @@ test('UI show offer campaigns', function () {
 });
 
 test('UI Index offers', function () {
-    $response = get(route('grp.org.shops.show.discounts.offers.index', [$this->organisation->slug, $this->shop->slug]));
+    $this->withoutExceptionHandling();
+
+
+    $response = get(route('grp.org.shops.show.discounts.offers.index', [
+        $this->organisation->slug,
+        $this->shop->slug
+    ]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -247,20 +251,6 @@ test('UI get section route offer dashboard', function () {
         ->and($sectionScope->model_slug)->toBe($this->shop->slug);
 });
 
-test('offers search', function () {
-    $this->artisan('search:offers')->assertExitCode(0);
-
-    $offer = Offer::first();
-    ReindexOfferSearch::run($offer);
-    expect($offer->universalSearch()->count())->toBe(1);
-});
-
-test('offer campaigns search', function () {
-    $this->artisan('search:offer_campaigns')->assertExitCode(0);
-    $offerCampaign = OfferCampaign::first();
-    ReindexOfferCampaignSearch::run($offerCampaign);
-    expect($offerCampaign->universalSearch()->count())->toBe(1);
-});
 
 test('offer campaigns hydrator', function () {
     $this->artisan('hydrate:offer_campaigns')->assertExitCode(0);

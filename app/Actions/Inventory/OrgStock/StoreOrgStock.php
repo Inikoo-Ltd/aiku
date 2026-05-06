@@ -9,7 +9,6 @@
 namespace App\Actions\Inventory\OrgStock;
 
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateStatusFromOrgStocks;
-use App\Actions\Inventory\OrgStock\Search\OrgStockRecordSearch;
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStocks;
@@ -80,9 +79,6 @@ class StoreOrgStock extends OrgAction
             OrgStockFamilyHydrateOrgStocks::dispatch($orgStock->orgStockFamily)->delay($this->hydratorsDelay);
         }
 
-        OrgStockRecordSearch::dispatch($orgStock);
-
-
         return $orgStock;
     }
 
@@ -109,7 +105,6 @@ class StoreOrgStock extends OrgAction
     {
         $rules = [
             'state'           => ['sometimes', Rule::enum(OrgStockStateEnum::class)],
-            'unit_cost'       => ['sometimes', 'numeric', 'min:0'],
             'quantity_status' => ['sometimes', 'nullable', Rule::enum(OrgStockQuantityStatusEnum::class)],
             'packed_in'       => ['sometimes', 'integer']
         ];

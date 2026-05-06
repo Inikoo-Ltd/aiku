@@ -50,7 +50,7 @@ class LogUserRequestMiddleware
                 $ip,
                 $request->header('User-Agent'),
                 $geoLocation
-            );
+            )->delay(now()->addSeconds(5));
         }
 
         return $next($request);

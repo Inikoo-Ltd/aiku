@@ -22,7 +22,6 @@ use App\Models\Helpers\Snapshot;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -112,16 +111,22 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $unpublished_families_overview_snapshot_id
  * @property int|null $live_families_overview_snapshot_id
  * @property string|null $published_families_overview_checksum
+ * @property int|null $unpublished_family_description_snapshot_id
+ * @property int|null $live_family_description_snapshot_id
+ * @property string|null $published_family_description_checksum
+ * @property int|null $landing_page_id
  * @property-read Collection<int, Announcement> $announcements
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
  * @property-read Media|null $favicon
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
+ * @property-read \App\Models\Web\Webpage|null $landingPage
  * @property-read Snapshot|null $liveCollectionSnapshot
  * @property-read Snapshot|null $liveDepartmentSnapshot
  * @property-read Snapshot|null $liveFamiliesOverviewSnapshot
+ * @property-read Snapshot|null $liveFamilyDescriptionSnapshot
  * @property-read Snapshot|null $liveFamilySnapshot
  * @property-read Snapshot|null $liveFooterSnapshot
  * @property-read Snapshot|null $liveHeaderSnapshot
@@ -136,14 +141,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read Organisation $organisation
  * @property-read Collection<int, \App\Models\Web\Redirect> $redirects
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @property-read Collection<int, Snapshot> $snapshots
  * @property-read \App\Models\Web\Webpage|null $storefront
  * @property-read Collection<int, \App\Models\Web\WebsiteTimeSeries> $timeSeries
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Snapshot|null $unpublishedCollectionSnapshot
  * @property-read Snapshot|null $unpublishedDepartmentSnapshot
  * @property-read Snapshot|null $unpublishedFamiliesOverviewSnapshot
+ * @property-read Snapshot|null $unpublishedFamilyDescriptionSnapshot
  * @property-read Snapshot|null $unpublishedFamilySnapshot
  * @property-read Snapshot|null $unpublishedFooterSnapshot
  * @property-read Snapshot|null $unpublishedHeaderSnapshot
@@ -171,7 +176,6 @@ class Website extends Model implements Auditable, HasMedia
     use HasSlug;
     use SoftDeletes;
     use HasHistory;
-    use HasUniversalSearch;
     use HasFactory;
     use InShop;
     use InteractsWithMedia;
@@ -245,6 +249,11 @@ class Website extends Model implements Auditable, HasMedia
     public function storefront(): BelongsTo
     {
         return $this->belongsTo(Webpage::class, 'storefront_id');
+    }
+
+    public function landingPage(): HasOne
+    {
+        return $this->hasOne(Webpage::class, 'id', 'landing_page_id');
     }
 
     public function logo(): BelongsTo

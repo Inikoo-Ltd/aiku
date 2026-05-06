@@ -25,7 +25,7 @@ class DeleteInvoiceTransaction extends OrgAction
 
         $invoiceTransaction->delete();
 
-        ProcessInvoiceTransactionTimeSeries::run($invoiceTransaction);
+        ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction)->delay(120);
 
         return $invoiceTransaction;
     }

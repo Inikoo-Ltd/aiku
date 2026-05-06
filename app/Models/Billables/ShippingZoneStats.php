@@ -19,12 +19,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_shipping_zones
  * @property int $number_customers
  * @property int $number_orders
- * @property string $amount
- * @property string $org_amount
- * @property string $grp_amount
+ * @property numeric $amount
+ * @property numeric $org_amount
+ * @property numeric $grp_amount
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Billables\ShippingZone $shippingZone
+ * @property-read \App\Models\Billables\ShippingZone|null $shippingZone
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShippingZoneStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShippingZoneStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShippingZoneStats query()

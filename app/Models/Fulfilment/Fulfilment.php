@@ -46,12 +46,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AikuSection> $aikuScopedSections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\PalletDelivery> $deliveries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\FulfilmentCustomer> $fulfilmentCustomers
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\RecurringBill> $recurringBills
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Rental> $rentals
  * @property-read \Illuminate\Database\Eloquent\Collection<int, SerialReference> $serialReferences
- * @property-read Shop $shop
+ * @property-read Shop|null $shop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\Space> $spaces
  * @property-read \App\Models\Fulfilment\FulfilmentStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Warehouse> $warehouses

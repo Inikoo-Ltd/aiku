@@ -4,7 +4,7 @@ import { getStyles } from "@/Composables/styles";
 import { Link } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
-import { inject, watch, ref, onMounted } from 'vue';
+import { inject, ref, onMounted } from 'vue';
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faGalaxy, faTimesCircle, faUserCircle } from "@fas";
 import OverlayBadge from 'primevue/overlaybadge';
@@ -67,100 +67,11 @@ const props = defineProps<{
 const layout = inject('layout', retinaLayoutStructure)
 const isLoggedIn = inject('isPreviewLoggedIn', false)
 // const isLoggedIn = false
-const sidebarMenu = inject('sidebarMenu', null) // come from layout PreviewLayout
+const sidebarMenu = inject('sidebarMenu', null) // come from layout PreviewLayout (workshop), will null if in Iris
+
 const computedSelectedSidebarData = computed(() => {
     return sidebarMenu?.value || layout.iris?.sidebar
 })
-
-const convertToDepartmentStructure = (menusData) => {
-    const dataArray = Array.isArray(menusData) ? menusData : [menusData];
-
-    // Regex untuk menghapus awalan http:// atau https://
-    const removeProtocol = url => {
-        if (!url || typeof url !== 'string') return null;
-        return url.replace(/^https?:\/\//, '');
-    };
-
-    return dataArray.map(menu => {
-        const mainLinkHref = menu?.link?.href;
-        const mainLinkTarget = menu?.link?.type;
-
-        const departmentStructure = {
-            url: removeProtocol(mainLinkHref),
-            name: menu?.label || null,
-            type: mainLinkTarget || null,
-            sub_departments: []
-        };
-
-        if (Array.isArray(menu?.subnavs)) {
-            menu.subnavs.forEach(subnav => {
-                const subLinkHref = subnav?.link?.href;
-                const subLinkTarget = subnav?.link?.type;
-
-                const subDepartment = {
-                    url: removeProtocol(subLinkHref),
-                    name: subnav?.title || null,
-                    type: subLinkTarget || null,
-                    families: []
-                };
-
-                if (Array.isArray(subnav?.links)) {
-                    subnav.links.forEach(link => {
-                        const linkHref = link?.link?.href;
-                        const linkTarget = link?.link?.type;
-
-                        const family = {
-                            url: removeProtocol(linkHref),
-                            name: link?.label || null,
-                            type: linkTarget || null
-                        };
-
-                        subDepartment.families.push(family);
-                    });
-                }
-
-                departmentStructure.sub_departments.push(subDepartment);
-            });
-        }
-
-        return departmentStructure;
-    });
-}
-
-const customMenusBottom = ref([]); // Create a reactive ref to hold the bottom navigation
-const customMenusTop = ref([]); // Create a reactive ref to hold the top navigation
-
-watch(computedSelectedSidebarData,
-    (newValue) => {
-        if (newValue) {
-            const navigationBottomData = newValue?.data?.fieldValue?.navigation_bottom.filter(item => !item.hidden);;
-            const navigationData = newValue?.data?.fieldValue?.navigation.filter(item => !item.hidden);
-
-            // console.log('navigationBottomData', navigationBottomData);
-            // Process navigation_bottom data
-            if (navigationBottomData) {
-                const convertedBottom = convertToDepartmentStructure(navigationBottomData);
-                customMenusBottom.value = [...convertedBottom];
-                // console.log('Bottom menu data:', convertedBottom);
-            } else {
-                customMenusBottom.value = [];
-            }
-            // console.log('navigationData 111', customMenusBottom.value);
-
-            // Process navigation data
-            if (navigationData) {
-                const convertedTop = convertToDepartmentStructure(navigationData);
-                customMenusTop.value = [...convertedTop];
-            } else {
-                customMenusTop.value = [];
-            }
-        } else {
-            customMenusBottom.value = []; // Handle the case where newValue is null or undefined
-            customMenusTop.value = [];
-        }
-    },
-    { immediate: true, deep: true } // Add options for immediate and deep watching
-);
 
 const screenType = inject('screenType', 'desktop')
 
@@ -179,8 +90,11 @@ const getStylesRemoveFontSize = (properties, screenType) => {
             <!-- Section: Hamburger & Search -->
             <div class="flex items-center gap-x-1 w-fit">
                 <!-- Hamburger Sidebar -->
-                <IrisSidebar :header="headerData" :menu="menuData" :productCategories="productCategories"
-                    :custom-menus-bottom="customMenusBottom" :custom-menus-top="customMenusTop" :screenType="screenType"
+                <IrisSidebar
+                    :header="headerData"
+                    :menu="menuData"
+                    :productCategories="productCategories"
+                    :screenType="screenType"
                     :sidebarLogo="computedSelectedSidebarData?.data?.fieldValue?.sidebar_logo"
                     :sidebar="computedSelectedSidebarData"
                     
@@ -195,7 +109,6 @@ const getStylesRemoveFontSize = (properties, screenType) => {
                         />
                     </template>
                 </IrisSidebar>
-                <!-- <pre>{{ getStylesRemoveFontSize(headerData?.mobile?.menu?.container?.properties, screenType) }}</pre> -->
 
                 <!-- Search Bar -->
                 <LuigiSearchMobile v-if="layout.iris?.luigisbox_tracker_id"
@@ -241,7 +154,7 @@ const getStylesRemoveFontSize = (properties, screenType) => {
 
                     <LinkIris href="/app/dashboard" class="px-1">
                         <FontAwesomeIcon
-                            :icon="headerData?.mobile?.profile?.icon || 'fal fa-user-circle'"
+                            :icon="'fal fa-user-circle'"
                             fixed-width
                             aria-hidden="true"
                             class="text-3xl"

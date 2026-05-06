@@ -20,16 +20,12 @@ use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItemBySelectedPurchaseOrderTransaction;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToCheckedStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItem;
-use App\Actions\Procurement\OrgAgent\Search\ReindexOrgAgentSearch;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
-use App\Actions\Procurement\OrgPartner\Search\ReindexOrgPartnerSearch;
 use App\Actions\Procurement\OrgPartner\StoreOrgPartner;
-use App\Actions\Procurement\OrgSupplier\Search\ReindexOrgSupplierSearch;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
 use App\Actions\Procurement\OrgSupplierProducts\StoreOrgSupplierProduct;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrder;
-use App\Actions\Procurement\PurchaseOrder\Search\ReindexPurchaseOrderSearch;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled;
@@ -47,7 +43,6 @@ use App\Actions\SupplyChain\Agent\StoreAgent;
 use App\Actions\SupplyChain\Supplier\HydrateSuppliers;
 use App\Actions\SupplyChain\Supplier\Search\ReindexSupplierSearch;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
-use App\Actions\SupplyChain\SupplierProduct\Search\ReindexSupplierProductsSearch;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
@@ -411,9 +406,9 @@ test('update purchase order', function ($purchaseOrder) {
 })->depends('create purchase order independent supplier');
 
 test('create purchase order by agent', function () {
-    $purchaseOrder = StorePurchaseOrder::make()->action($this->agent, PurchaseOrder::factory()->definition());
+    $purchaseOrder = StorePurchaseOrder::make()->action($this->orgAgent, PurchaseOrder::factory()->definition());
     $this->assertModelExists($purchaseOrder);
-})->todo();
+});
 
 test('change state to submitted purchase order', function ($purchaseOrder) {
     $purchaseOrder->refresh();
@@ -635,59 +630,6 @@ test('check supplier delivery items all correct', function ($stockDeliveryItems)
 })->depends('create supplier delivery items by selected purchase order');
 
 
-test('org suppliers notes search', function () {
-    $this->artisan('search:org_suppliers')->assertExitCode(0);
-
-    $orgSupplier = OrgSupplier::first();
-    ReindexOrgSupplierSearch::run($orgSupplier);
-    expect($orgSupplier->universalSearch()->count())->toBe(1);
-});
-
-test('org agents notes search', function () {
-    $this->artisan('search:org_agents')->assertExitCode(0);
-
-    $orgAgent = OrgAgent::first();
-    if (!$orgAgent) {
-        $orgAgent = StoreOrgAgent::make()->action(
-            $this->organisation,
-            $this->agent,
-            []
-        );
-    }
-    ReindexOrgAgentSearch::run($orgAgent);
-    expect($orgAgent->universalSearch()->count())->toBe(1);
-});
-
-test('org partners notes search', function () {
-    $this->artisan('search:org_partners')->assertExitCode(0);
-
-    $orgPartner = OrgPartner::first();
-    if (!$orgPartner) {
-        $orgPartner = StoreOrgPartner::make()->action(
-            $this->organisation,
-            $this->otherOrganisation,
-        );
-    }
-    ReindexOrgPartnerSearch::run($orgPartner);
-    expect($orgPartner->universalSearch()->count())->toBe(1);
-});
-
-test('purchase orders notes search', function () {
-    $this->artisan('search:purchase_orders')->assertExitCode(0);
-
-    $purchaseOrder = PurchaseOrder::first();
-    ReindexPurchaseOrderSearch::run($purchaseOrder);
-    expect($purchaseOrder->universalSearch()->count())->toBe(1);
-});
-
-test('supplier products notes search', function () {
-    $this->artisan('search:supplier_products')->assertExitCode(0);
-
-    $supplierProduct = SupplierProduct::first();
-    ReindexSupplierProductsSearch::run($supplierProduct);
-    expect($supplierProduct->universalSearch()->count())->toBe(1);
-});
-
 test('hydrate agents', function () {
     $agent = Agent::first();
     HydrateAgents::run($agent);
@@ -707,9 +649,9 @@ test('agents record search', function () {
 });
 
 test('suppliers record search', function () {
-    $supplier = Supplier::first();
-    ReindexSupplierSearch::run($supplier);
-    $this->artisan('search:suppliers')->assertExitCode(0);
+
+    ReindexSupplierSearch::run();
+    $this->artisan('reindex_search:suppliers')->assertExitCode(0);
 });
 
 test('UI show procurement dashboard', function () {

@@ -25,8 +25,8 @@ const props = defineProps<{
         id: number
         slug: string
         currency_code: string
-        organisation: string
-        offercampaign: string
+        organisation?: string
+        offercampaign?: string
     }
     product_category_id?: number
 }>()
@@ -38,15 +38,33 @@ const offerQtyItems = ref<number | null>(null)
 const offerAmount = ref<number | null>(0)
 const discountPercentage = ref<number | null>(null)
 const offerCategoryId = ref<number | null>(null)
+const categoryType = ref<'department' | 'subdepartment' | 'family'>('department')
 const isLoadingSubmit = ref(false)
 const dateType = ref<'permanent' | 'interval'>('permanent')
 const startDate = ref<Date | null>(null)
 const endDate = ref<Date | null>(null)
 
+const categoryRoutes = computed(() => ({
+    department: {
+        name: 'grp.json.shop.departments',
+        parameters: { shop: props.shop_data.slug }
+    },
+    subdepartment: {
+        name: 'grp.json.shop.sub_departments',
+        parameters: { shop: props.shop_data.id }
+    },
+    family: {
+        name: 'grp.json.shop.families',
+        parameters: { shop: props.shop_data.id }
+    }
+}))
+
+const activeCategoryRoute = computed(() => categoryRoutes.value[categoryType.value])
+
 const submitCategoryOffer = () => {
     // Section: Submit
     isLoadingSubmit.value = true
-
+    
     axios.post(
         route('grp.models.category_offer.store', {
             shop: props.shop_data.id,
@@ -113,6 +131,7 @@ const resetForm = () => {
     discountPercentage.value = null
     offerQtyItems.value = null
     offerAmount.value = null
+    categoryType.value = 'department'
     offerCategoryId.value = props.product_category_id ?? null
     dateType.value = 'permanent'
     startDate.value = null
@@ -155,6 +174,12 @@ watch(dateType, (val) => {
     }
 })
 
+watch(categoryType, () => {
+    if (!props.product_category_id) {
+        offerCategoryId.value = null
+    }
+})
+
 resetForm();
 
 </script>
@@ -186,13 +211,31 @@ resetForm();
                         {{ trans('Select category') }}:
                     </label>
 
+                    <div class="flex gap-4">
+                        <div class="flex items-center gap-2">
+                            <RadioButton v-model="categoryType" value="department" inputId="category-type-department" />
+                            <label for="category-type-department">{{ trans('Department') }}</label>
+                        </div>
 
-                    <PureMultiselectInfiniteScroll v-model="offerCategoryId" :fetchRoute="{
-                        name: 'grp.json.shop.product_categories',
-                        parameters: {
-                            shop: props.shop_data.slug
-                        }
-                    }" required :placeholder="trans('Select category from the list')" valueProp="id" />
+                        <div class="flex items-center gap-2">
+                            <RadioButton v-model="categoryType" value="subdepartment" inputId="category-type-subdepartment" />
+                            <label for="category-type-subdepartment">{{ trans('Sub Department') }}</label>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <RadioButton v-model="categoryType" value="family" inputId="category-type-family" />
+                            <label for="category-type-family">{{ trans('Family') }}</label>
+                        </div>
+                    </div>
+
+                    <PureMultiselectInfiniteScroll
+                        :key="categoryType"
+                        v-model="offerCategoryId"
+                        :fetchRoute="activeCategoryRoute"
+                        required
+                        :placeholder="trans('Select category from the list')"
+                        valueProp="id"
+                        labelProp="name" />
 
                 </div>
 
@@ -289,7 +332,7 @@ resetForm();
                             <label class="font-medium mb-2 block">
                                 {{ trans('End Date') }}
                                 <InformationIcon
-                                    :information="trans('If start date is empty, will start immediately')" />:
+                                    :information="trans('If end date is empty, will treat as permanent')" />:
                             </label>
 
                             <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"

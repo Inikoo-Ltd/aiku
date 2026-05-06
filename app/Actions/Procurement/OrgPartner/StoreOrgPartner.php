@@ -9,7 +9,6 @@
 namespace App\Actions\Procurement\OrgPartner;
 
 use App\Actions\OrgAction;
-use App\Actions\Procurement\OrgPartner\Search\OrgPartnerRecordSearch;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\DB;
@@ -34,8 +33,6 @@ class StoreOrgPartner extends OrgAction
 
             return $orgPartner;
         });
-
-        OrgPartnerRecordSearch::dispatch($orgPartner);
 
         return $orgPartner;
     }

@@ -13,6 +13,7 @@ use App\Actions\Traits\Authorisations\Inventory\WithWarehouseSupervisorAuthorisa
 use App\Models\Dispatching\Trolley;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -23,6 +24,8 @@ class DeleteTrolley extends OrgAction
     use WithAttributes;
     use WithWarehouseSupervisorAuthorisation;
 
+    private Trolley $trolley;
+
     public function handle(Trolley $trolley): Trolley
     {
         $trolley->delete();
@@ -30,8 +33,16 @@ class DeleteTrolley extends OrgAction
         return $trolley;
     }
 
+    public function afterValidator(Validator $validator, ActionRequest $request): void
+    {
+        if ($this->trolley->deliveryNotes()->exists()) {
+            $validator->errors()->add('trolley', 'This trolley is still used on several delivery notes');
+        }
+    }
+
     public function asController(Trolley $trolley, ActionRequest $request): Trolley
     {
+        $this->trolley = $trolley;
         $this->initialisationFromWarehouse($trolley->warehouse, $request);
 
         return $this->handle($trolley);

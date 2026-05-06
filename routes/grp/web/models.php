@@ -38,11 +38,13 @@ use App\Actions\Catalogue\Product\MoveFamilyProductToOtherFamily;
 use App\Actions\Catalogue\Product\SetProductOffline;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\SyncProductTradeUnitsToMasterAsset;
+use App\Actions\Catalogue\Product\UI\HydrateProductImagesFromTradeUnits;
 use App\Actions\Catalogue\Product\UpdateBulkProduct;
 use App\Actions\Catalogue\Product\UpdateMultipleProductsFamily;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateTradeUnitsForExternalProduct;
 use App\Actions\Catalogue\Product\UpdateProductImages;
+use App\Actions\Catalogue\Product\UpdateProductIndex;
 use App\Actions\Catalogue\Product\UploadImagesToProduct;
 use App\Actions\Catalogue\Review\GetReviewCustomers;
 use App\Actions\Catalogue\Review\DeleteReview;
@@ -53,6 +55,7 @@ use App\Actions\Catalogue\ProductCategory\AttachFamiliesToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\DeleteImageFromProductCategory;
 use App\Actions\Catalogue\ProductCategory\DeleteProductCategory;
 use App\Actions\Catalogue\ProductCategory\DetachFamilyToSubDepartment;
+use App\Actions\Catalogue\ProductCategory\RehydrateChildProductImages;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
@@ -231,9 +234,11 @@ use App\Actions\Goods\StockFamily\UpdateStockFamily;
 use App\Actions\Goods\TradeUnit\AttachTradeUnitsToTradeUnitFamily;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnitTranslations;
 use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
+use App\Actions\Goods\TradeUnitFamily\UI\AssignBrandTagsToTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UpdateTradeUnitFamily;
 use App\Actions\Helpers\AwsEmail\SendIdentityEmailVerification;
 use App\Actions\Helpers\Brand\AttachBrandToModel;
+use App\Actions\Helpers\Brand\AttachBrandToMultipleModel;
 use App\Actions\Helpers\Brand\DeleteBrand;
 use App\Actions\Helpers\Brand\DetachBrandFromModel;
 use App\Actions\Helpers\Brand\StoreBrand;
@@ -241,6 +246,7 @@ use App\Actions\Helpers\Brand\UpdateBrand;
 use App\Actions\Helpers\GoogleDrive\AuthorizeClientGoogleDrive;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
+use App\Actions\Helpers\Snapshot\ApplyWebsiteMenuSnapshot;
 use App\Actions\Helpers\Snapshot\SetSnapshotAsLive;
 use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
@@ -288,6 +294,7 @@ use App\Actions\Masters\MasterProductCategory\DetachFamilyToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
+use App\Actions\Masters\MasterProductCategory\SyncMasterProductCategoryRelatedMasterAssets;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategoryImages;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategoryTranslations;
@@ -364,7 +371,6 @@ use App\Actions\Web\ModelHasWebBlocks\DuplicateModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\UploadImagesToModelHasWebBlocks;
-use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\Webpage\BreakWebpageCache;
@@ -390,6 +396,7 @@ use Illuminate\Support\Facades\Route;
 use App\Actions\HumanResources\ClockingMachine\GenerateClockingMachineQrCode;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
+use App\Actions\HumanResources\TimeTracker\ClockOutTimeTracker;
 use App\Actions\Masters\MasterAsset\RepairMasterAssetTradeUnitsToChildren;
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\StoreClockingMachineCoordinatePolicy;
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\UpdateClockingMachineCoordinatePolicy;
@@ -397,6 +404,9 @@ use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\DeleteClockingMac
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\StoreClockingMachineCoordinatePolicyRule;
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\UpdateClockingMachineCoordinatePolicyRule;
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\DeleteClockingMachineCoordinatePolicyRule;
+use App\Actions\Masters\MasterAsset\UpdateMasterAssetIndex;
+use App\Actions\Web\Redirect\DeleteRedirect;
+use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
@@ -457,6 +467,13 @@ Route::post('master-product-category/{masterProductCategory:id}/image', UploadIm
 Route::patch('master-product-category/{masterProductCategory:id}/translations', UpdateMasterProductCategoryTranslations::class)->name('master_product_categories.translations.update');
 Route::patch('master-product-category/{masterProductCategory:id}/master-sub-department/parent', UpdateMasterSubDepartmentsMasterDepartment::class)->name('master_product_category.master_sub_department.parent.update');
 
+Route::patch('master-product-category/{masterProductCategory:id}/related-assets', SyncMasterProductCategoryRelatedMasterAssets::class)->name('master_product_category.related_assets.sync')->withoutScopedBindings();
+
+
+
+Route::patch('master-product-category/{masterProductCategory:id}/reorder-index', UpdateMasterAssetIndex::class)->name('master_product_category.reorder_index');
+Route::patch('product-category/{productCategory:id}/reorder-index', UpdateProductIndex::class)->name('product_category.reorder_index');
+
 Route::prefix('stock-family')->name('stock-family.')->group(function () {
     Route::patch('{stockFamily:id}/update', UpdateStockFamily::class)->name('update');
     Route::post('', StoreStockFamily::class)->name('store');
@@ -510,6 +527,7 @@ Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(fun
     Route::post('upload-images', UploadImagesToMasterProduct::class)->name('upload_images');
     Route::delete('delete-images/{media:id}', DeleteImageFromMasterProduct::class)->name('delete_images')->withoutScopedBindings();
 });
+
 Route::patch('master-asset/bulk-update', UpdateBulkMasterProduct::class)->name('master_asset.bulk_update');
 
 Route::patch('products/{product:id}/repair-trade-units-to-master-product', SyncProductTradeUnitsToMasterAsset::class)->name('products.repair_mismatch_trade_units');
@@ -946,6 +964,9 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('llms-txt', StoreLlmsTxt::class)->name('llms_txt.store');
 });
 
+Route::patch('set-snapshot-website/{snapshot:id}/published', ApplyWebsiteMenuSnapshot::class)->name('website.set-snapshot-as-live')->withoutScopedBindings();
+Route::patch('set-snapshot-website/{snapshot:id}/unpublished', [ApplyWebsiteMenuSnapshot::class, 'asUnpublished'])->name('website.set-snapshot-as-unpublished')->withoutScopedBindings();
+
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::patch('', UpdateWebpage::class)->name('update')->withoutScopedBindings();
     Route::patch('web-block-check', WebpageWorkshopCheckWebBlock::class)->name('web_block_check');
@@ -954,12 +975,12 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('web-block', StoreModelHasWebBlock::class)->name('web_block.store');
     Route::post('web-block/{modelHasWebBlock:id}/duplicate', DuplicateModelHasWebBlock::class)->name('web_block.duplicate')->withoutScopedBindings();
     Route::post('reorder-web-blocks', ReorderWebBlocks::class)->name('reorder_web_blocks');
-    Route::post('redirect', [StoreRedirect::class, 'inWebpage'])->name('redirect.store');
     Route::post('set-snapshot/{snapshot:id}', SetSnapshotAsLive::class)->name('set-snapshot-as-live')->withoutScopedBindings();
 });
 
 Route::name('redirect.')->prefix('redirect/{redirect:id}')->group(function () {
     Route::patch('', UpdateRedirect::class)->name('update');
+    Route::delete('', DeleteRedirect::class)->name('delete');
 });
 
 Route::name('model_has_web_block.')->prefix('model-has-web-block')->group(function () {
@@ -1121,6 +1142,10 @@ Route::name('product_category.')->group(function () {
 Route::post('family/{family:id}/move-products', UpdateMultipleProductsFamily::class)->name('family.move_products');
 Route::post('department/{department:id}/move-families', AttachFamiliesToDepartment::class)->name('department.move_families');
 
+Route::patch('product_category/{productCategory:id}/repair-products-images', RehydrateChildProductImages::class)->name('product_category.repair_product_images');
+Route::patch('product/{product:id}/repair-images', HydrateProductImagesFromTradeUnits::class)->name('product.repair_product_images');
+
+
 Route::name('model_has_content.')->prefix('model-has-content/{modelHasContent:id}')->group(function () {
     Route::patch('update', UpdateModelHasContent::class)->name('update');
     Route::delete('delete', DeleteModelHasContent::class)->name('delete');
@@ -1152,6 +1177,7 @@ Route::name('poll.')->prefix('poll')->group(function () {
 });
 
 Route::post('webpage/{webpage:id}/break-cache', BreakWebpageCache::class)->name('webpage.break_cache')->withoutScopedBindings();
+Route::post('webpage/{webpage:id}/redirect', StoreRedirectFromWebpage::class)->name('webpage.redirect.store')->withoutScopedBindings();
 
 Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name('website.break_cache')->withoutScopedBindings();
 Route::post('website/{website:id}/redirect', StoreRedirectFromWebsite::class)->name('website.redirect.store')->withoutScopedBindings();
@@ -1174,6 +1200,7 @@ Route::name('brand.')->prefix('brand')->group(function () {
     Route::post('store', StoreBrand::class)->name('store')->withoutScopedBindings();
     Route::patch('{brand:id}/update', UpdateBrand::class)->name('update')->withoutScopedBindings();
     Route::delete('{brand:id}/delete', DeleteBrand::class)->name('delete')->withoutScopedBindings();
+    Route::patch('{brand:id}/attach-multiple', AttachBrandToMultipleModel::class)->name('brands.attach-multiple')->withoutScopedBindings();
 });
 
 Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function () {
@@ -1182,6 +1209,8 @@ Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function (
     Route::post('{tradeUnitFamily:id}/attach-trade-units', AttachTradeUnitsToTradeUnitFamily::class)->name('attach_trade_units')->withoutScopedBindings();
     Route::post('{tradeUnitFamily:id}/attachment/attach', [AttachAttachmentToModel::class, 'inTradeUnitFamily'])->name('attachment.attach');
     Route::delete('{tradeUnitFamily:id}/attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inTradeUnitFamily'])->name('attachment.detach')->withoutScopedBindings();
+
+    Route::post('{tradeUnitFamily:id}/mass-assign-brand-tags', AssignBrandTagsToTradeUnitFamily::class)->name('mass_assign_brand_tags')->withoutScopedBindings();
 });
 
 Route::prefix('customer-comms/{customerComms:id}')->name('customer_comms.')->group(function () {
@@ -1213,6 +1242,7 @@ Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () 
     Route::post('qr/validate', ValidateClockingMachineQrCode::class)->name('qr.validate');
     Route::patch('clocking/{clocking:id}/notes', UpdateClockingNotes::class)->name('clocking.notes.update');
 });
+Route::patch('time-tracker/{timeTracker:id}/clock-out', ClockOutTimeTracker::class)->name('time-tracker.clock-out');
 Route::patch('trolleys/{trolley:id}', UpdateTrolley::class)->name('trolleys.update');
 
 

@@ -22,6 +22,8 @@ use App\Actions\Ordering\Purge\UI\CreatePurge;
 use App\Actions\Ordering\Purge\UI\EditPurge;
 use App\Actions\Ordering\Purge\UI\IndexPurges;
 use App\Actions\Ordering\Purge\UI\ShowPurge;
+use App\Actions\Ordering\UI\IndexWaitingCrmItemsGrouped;
+use App\Actions\Ordering\WaitingCrmItem\SetWaitingCrmItemAsNotPick;
 use App\Actions\Ordering\UI\ShowOrderingDashboard;
 use App\Actions\Ordering\UI\ShowOrdersBacklog;
 use Illuminate\Support\Facades\Route;
@@ -30,6 +32,9 @@ Route::get('', ShowOrderingDashboard::class)->name('dashboard');
 
 
 Route::get('/backlog', ShowOrdersBacklog::class)->name('backlog');
+Route::get('/backlog/waiting_items', IndexWaitingCrmItemsGrouped::class)->name('backlog.waiting_items');
+Route::post('/backlog/waiting_items/{deliveryNoteItem}/set-as-not-pick', SetWaitingCrmItemAsNotPick::class)->name('backlog.waiting_items.set_as_not_pick');
+
 
 Route::get('/orders/', IndexOrders::class)->name('orders.index');
 

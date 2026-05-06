@@ -593,7 +593,7 @@ onUnmounted(() => {
             
             <div class="mt-2 flex justify-start text-center text-sm text-gray-500">
                 <p>
-                    or{{ ' ' }}
+                    {{ 'or' }}
                     <LinkIris
                         href="/app/basket"
                         class="font-medium text-indigo-600 hover:text-indigo-500"

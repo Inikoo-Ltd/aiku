@@ -44,7 +44,7 @@ const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
                         aria-hidden="true"
                     />
 
-                    <span class="gr-date">
+                    <span class="gr-date" :v-popover="ctrans('Until :amnestyUntil', { amnestyUntil: useFormatTime(layout?.user?.gr_data?.amnesty_until, { formatTime: 'MMM do' }) }) ">
                         ({{ ctrans('Until :amnestyUntil', { 
                             amnestyUntil: useFormatTime(layout?.user?.gr_data?.amnesty_until, { formatTime: 'MMM do' }) 
                         }) }})
@@ -53,7 +53,7 @@ const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
             </template>
 
             <!-- Active -->
-            <template v-else-if="layout?.user?.gr_data?.customer_is_gr">
+            <template v-else-if="layout?.user?.gr_data?.customer_is_gr" v-popover="ctrans('Gold Reward Active')">
                 <span>
                     <span v-if="offer?.max_percentage_discount">
                         {{ Number(offer?.max_percentage_discount) * 100 + ' ' }}% <strong>OFF</strong>
@@ -63,8 +63,10 @@ const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
             </template>
 
             <!-- Inactive -->
-            <template v-else>
-                {{ ctrans('Gold Reward Inactive') }}
+            <template v-else :v-popover="ctrans('Gold Reward Inactive')">
+                <span class="inactive-text">
+                    {{ ctrans('Gold Reward Inactive') }}
+                </span>
             </template>
         </div>
 

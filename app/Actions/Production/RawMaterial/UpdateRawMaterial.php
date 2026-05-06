@@ -3,7 +3,6 @@
 namespace App\Actions\Production\RawMaterial;
 
 use App\Actions\Production\Production\Hydrators\ProductionHydrateRawMaterials;
-use App\Actions\Production\RawMaterial\Hydrators\RawMaterialHydrateUniversalSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRawMaterials;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRawMaterials;
@@ -35,7 +34,6 @@ class UpdateRawMaterial extends OrgAction
             OrganisationHydrateRawMaterials::dispatch($rawMaterial->organisation);
             ProductionHydrateRawMaterials::dispatch($rawMaterial->production);
         }
-        RawMaterialHydrateUniversalSearch::dispatch($rawMaterial);
 
         return $rawMaterial;
     }

@@ -11,6 +11,7 @@ namespace App\Actions\Inventory\OrgStock\UI;
 use App\Actions\Inventory\OrgStockMovement\UI\IndexOrgStockMovements;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Enums\UI\Procurement\OrgStockStockHistoryTabsEnum;
 use App\Http\Resources\Inventory\OrgStockMovementsResource;
 use App\Models\Inventory\OrgStock;
@@ -76,9 +77,14 @@ class ShowOrgStockStockHistory extends OrgAction
                     fn () => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($orgStock, OrgStockStockHistoryTabsEnum::STOCK_HISTORY->value))
                     : Inertia::lazy(fn () => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($orgStock, OrgStockStockHistoryTabsEnum::STOCK_HISTORY->value))),
 
+                OrgStockStockHistoryTabsEnum::PURCHASE_HISTORY->value => $this->tab == OrgStockStockHistoryTabsEnum::PURCHASE_HISTORY->value ?
+                    fn () => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($orgStock, OrgStockStockHistoryTabsEnum::PURCHASE_HISTORY->value, type: OrgStockMovementTypeEnum::PURCHASE))
+                    : Inertia::lazy(fn () => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($orgStock, OrgStockStockHistoryTabsEnum::PURCHASE_HISTORY->value, type: OrgStockMovementTypeEnum::PURCHASE))),
+
             ]
         )
-            ->table(IndexOrgStockMovements::make()->tableStructure($orgStock, prefix: OrgStockStockHistoryTabsEnum::STOCK_HISTORY->value));
+        ->table(IndexOrgStockMovements::make()->tableStructure($orgStock, prefix: OrgStockStockHistoryTabsEnum::STOCK_HISTORY->value))
+        ->table(IndexOrgStockMovements::make()->tableStructure($orgStock, prefix: OrgStockStockHistoryTabsEnum::PURCHASE_HISTORY->value));
     }
 
     public function getBreadcrumbs(OrgStock $orgStock, string $routeName, array $routeParameters): array

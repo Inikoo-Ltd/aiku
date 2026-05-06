@@ -10,7 +10,6 @@ namespace App\Models\SupplyChain;
 
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Helpers\Currency;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
@@ -18,7 +17,6 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InGroup;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -55,7 +53,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed> $sources
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Currency|null $currency
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
@@ -69,7 +67,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\SupplyChain\SupplierProduct> $supplierProducts
  * @property-read Collection<int, \App\Models\SupplyChain\Supplier> $suppliers
  * @property-read Collection<int, \App\Models\SupplyChain\AgentTimeSeries> $timeSeries
- * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\SupplyChain\AgentFactory factory($count = null, $state = [])
  * @method static Builder<static>|Agent newModelQuery()
  * @method static Builder<static>|Agent newQuery()
@@ -83,7 +80,6 @@ class Agent extends Model implements HasMedia, Auditable
 {
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use HasFactory;
     use HasHistory;
     use HasImage;

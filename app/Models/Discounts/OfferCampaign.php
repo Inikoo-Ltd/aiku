@@ -13,7 +13,6 @@ use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Ordering\Transaction;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -48,16 +47,15 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property string|null $bracket
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferAllowance> $offerAllowances
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\Offer> $offers
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Discounts\OfferCampaignStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferCampaignTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Transaction> $transactions
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Discounts\OfferCampaignFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaign newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaign newQuery()
@@ -74,8 +72,6 @@ class OfferCampaign extends Model implements Auditable
     use HasFactory;
     use InShop;
     use HasHistory;
-    use HasUniversalSearch;
-
 
     protected $casts = [
         'data'         => 'array',

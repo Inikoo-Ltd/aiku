@@ -35,7 +35,7 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetBlockSubDepartment::run($webpage, $webBlock);
         } elseif ($webBlockType == 'collection-description-1') {
             $parsedWebBlocks[$key] = GetWebBlockCollection::run($webpage, $webBlock);
-        } elseif ($webBlockType == 'families-overview') {
+        } elseif (str_starts_with($webBlockType, 'families-') &&  str_ends_with($webBlockType, '-overview')) {
             $parsedWebBlocks[$key] = GetWebBlockFamiliesOverview::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'sub-departments-')) {
             $parsedWebBlocks[$key] = GetWebBlockSubDepartments::run($webpage, $webBlock);
@@ -45,9 +45,7 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockProducts::run($webpage, $webBlock, $isLoggedIn);
         } elseif ($webBlockType == 'family-1') {
             $parsedWebBlocks[$key] = GetWebBlockFamilyDescription::run($webpage, $webBlock);
-        } elseif ($webBlockType == 'family-2') {
-            $parsedWebBlocks[$key] = GetWebBlockFamilyDescription::run($webpage, $webBlock);
-        } elseif ($webBlockType == 'family-2-extra-description') {
+        } elseif (in_array($webBlockType, ['family-2', 'family-2-extra-description', 'family-3', 'family-3-extra-description'])) {
             $parsedWebBlocks[$key] = GetWebBlockFamilyDescription::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'product-')) {
             $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock, $isIris);

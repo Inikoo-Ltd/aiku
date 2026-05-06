@@ -574,11 +574,9 @@ test('UI show fulfilment customer web users (tab requests)', function () {
                 fn (AssertableInertia $page) => $page
                     ->where('title', $this->customer->name)
                     ->etc()
-            )
-            ->has('tabs')
-            ->has('requests');
+            );
     });
-})->todo();// Need no move this request tab to ShowWebUser
+});
 
 test('UI show fulfilment customer (agreed prices tab)', function () {
     $response = get('http://app.aiku.test/org/'.$this->organisation->slug.'/fulfilments/'.$this->fulfilment->slug.'/customers/'.$this->customer->fulfilmentCustomer->slug.'?tab=agreed_prices');
@@ -1249,7 +1247,16 @@ test('UI edit pallet', function () {
 });
 
 test('UI Index damaged pallets in warehouse', function () {
-    $response = $this->get(route('grp.org.warehouses.show.inventory.pallets.damaged.index', [$this->organisation->slug, $this->warehouse->slug]));
+    $this->withoutExceptionHandling();
+    $response = $this->get(
+        route(
+            'grp.org.warehouses.show.inventory.pallets.damaged.index',
+            [
+                $this->organisation->slug,
+                $this->warehouse->slug
+            ]
+        )
+    );
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -1266,9 +1273,10 @@ test('UI Index damaged pallets in warehouse', function () {
             )
             ->has('data');
     });
-})->todo();
+});
 
 test('UI Index returned pallets in warehouse', function () {
+    $this->withoutExceptionHandling();
     $response = $this->get(route('grp.org.warehouses.show.inventory.pallets.returned.index', [$this->organisation->slug, $this->warehouse->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
@@ -1286,7 +1294,7 @@ test('UI Index returned pallets in warehouse', function () {
             )
             ->has('data');
     });
-})->todo();
+});
 
 test('UI Index pallets in warehouse', function () {
     $response = $this->get(route('grp.org.warehouses.show.inventory.pallets.current.index', [$this->organisation->slug, $this->warehouse->slug]));
@@ -1326,7 +1334,7 @@ test('UI Index lost pallets in warehouse', function () {
             )
             ->has('data');
     });
-})->todo();
+});
 
 // Pallet Delivery
 
@@ -1845,27 +1853,6 @@ test('UI edit rental agreement', function () {
             ->has('breadcrumbs', 4);
     });
 });
-
-// Billables
-
-test('UI billables dashboard', function () {
-    $this->withoutExceptionHandling();
-    $response = get(route('grp.org.shops.show.billables.dashboard', [$this->organisation->slug, $this->fulfilment->shop->slug]));
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('Org/Billables/BillablesDashboard')
-            ->has('title')
-            ->has('breadcrumbs', 4)
-            ->has(
-                'pageHead',
-                fn (AssertableInertia $page) => $page
-                    ->where('title', 'billables dashboard')
-                    ->etc()
-            )
-            ->has('tabs');
-    });
-})->todo();//permissions issue
-
 
 // Service
 

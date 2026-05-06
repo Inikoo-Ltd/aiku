@@ -20,7 +20,6 @@ class ReindexEmployeeSearch extends HydrateModel
 
     public function handle(Employee $employee): void
     {
-        EmployeeRecordSearch::run($employee);
     }
 
 

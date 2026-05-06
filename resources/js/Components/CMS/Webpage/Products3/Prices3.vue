@@ -221,9 +221,9 @@ const _popoverProfit = ref(null)
 
 
             <!-- GR PRICE -->
-            <div v-if="product.discounted_price" class="grid grid-cols-[auto_1fr] items-center gap-x-2">
+           <div v-if="product.discounted_price" class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2">
 
-                <div v-if="bestOffer.type == 'Category Quantity Ordered Order Interval'"  class="whitespace-nowrap
+                <div v-if="bestOffer?.type == 'Category Quantity Ordered Order Interval'"  class="whitespace-nowrap
             text-[9px]
             sm:text-[10px]
             md:text-[11px]
@@ -262,11 +262,12 @@ const _popoverProfit = ref(null)
 
                 </div>
 
-                <DiscountByType v-if="bestOffer.type == 'Category Ordered'" :offers_data="product?.product_offers_data" template="max_discount" />
-                <DiscountByType v-if="bestOffer.type == 'First Order Bonus'" :offers_data="product?.product_offers_data" template="first-order" />
+                <DiscountByType v-if="bestOffer?.type == 'Category Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false"/>
+                <DiscountByType v-if="bestOffer?.type == 'First Order Bonus'" :offers_data="product?.product_offers_data" template="first-order" />
+                <DiscountByType v-if="bestOffer?.type == 'Category Amount Ordered'" :offers_data="product?.product_offers_data" template="max_discount" :use_duration="false" />
 
 
-                <div class="font-bold text-right min-w-0" :class="bestOffer?.type === 'Category Ordered'
+                <div v-if="bestOffer" class="font-bold text-right min-w-0" :class="bestOffer?.type === 'Category Ordered' || bestOffer?.type === 'Category Amount Ordered'
                         ? 'text-red-700'
                         : bestOffer?.type === 'First Order'
                             ? 'text-[#2a919e]'
@@ -290,14 +291,12 @@ const _popoverProfit = ref(null)
                     <template v-else>
 
                         <div class="flex justify-end items-center gap-1 min-w-0">
-
-                            <span class="whitespace-nowrap">
+                            <span class="truncate min-w-0 font-normal  text-[8px] sm:text-[9px] md:text-[10px]">
                                 {{ locale.currencyFormat(currency?.code, product.discounted_price) }}
                             </span>
-                            <span class="truncate min-w-0 font-normal text-[8px] sm:text-[9px] md:text-[10px]" :title="product.unit">
+                          <!--   <span class="truncate min-w-0 font-normal text-[8px] sm:text-[9px] md:text-[10px]" :title="product.unit">
                                 ({{ locale.currencyFormat(currency?.code, product.discounted_price_per_unit) }}/{{ product.unit }})
-                            </span>
-
+                            </span> -->
                         </div>
 
                     </template>

@@ -17,14 +17,38 @@ use App\Models\HumanResources\Workplace;
 use App\Models\SysAdmin\Organisation;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use App\InertiaTable\InertiaTable;
 use App\Services\QueryBuilder;
 
 class IndexTimeTrackers extends OrgAction
 {
+    private function ensureRequiredColumnsVisible(?string $prefix = null): void
+    {
+        $columnsQueryKey = $prefix ? $prefix.'_columns' : 'columns';
+        $requestedColumns = request()->query($columnsQueryKey);
+
+        if (!$requestedColumns) {
+            return;
+        }
+
+        $columns = is_string($requestedColumns)
+            ? array_filter(explode(',', $requestedColumns))
+            : (is_array($requestedColumns) ? $requestedColumns : []);
+
+        if (empty($columns)) {
+            return;
+        }
+
+        $requiredColumns = ['starts_at', 'ends_at', 'status'];
+        $columns = array_values(array_unique(array_merge($columns, $requiredColumns)));
+
+        request()->query->set($columnsQueryKey, implode(',', $columns));
+    }
+
     public function handle(Organisation|Workplace|ClockingMachine|Timesheet $parent, $prefix = null): LengthAwarePaginator
     {
+        $this->ensureRequiredColumnsVisible($prefix);
+
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -72,9 +96,11 @@ class IndexTimeTrackers extends OrgAction
     }
 
 
-    public function tableStructure(Organisation|Workplace|ClockingMachine|Timesheet $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Organisation|Workplace|ClockingMachine|Timesheet $parent, ?array $modelOperations = null, $prefix = null, bool $showActions = false): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent, $showActions) {
+            $this->ensureRequiredColumnsVisible($prefix);
+
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -91,17 +117,23 @@ class IndexTimeTrackers extends OrgAction
                             class_basename($parent) == 'ClockingMachine' ? $parent->humanResourcesStats?->number_clockings : $parent->stats?->number_clockings,
                     ]
                 )
-                ->column(key: 'starts_at', label: __('clocked in'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'ends_at', label: __('clocked out'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'status', label: 'status', type: 'icon')
-                ->column(key: 'action', label: 'action', type: 'icon')
-                ->defaultSort('starts_at');
+                ->column(key: 'starts_at', label: __('Clocked in'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'ends_at', label: __('Clocked out'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'status', label: 'Status', type: 'icon');
+
+            if ($showActions) {
+                $table->column(key: 'action', label: 'Action', type: 'icon');
+            }
+
+            $table->defaultSort('starts_at');
         };
     }
 
 
-    public function jsonResponse(LengthAwarePaginator $timeTrackers): AnonymousResourceCollection
+    public function jsonResponse(...$args)
     {
+        $timeTrackers = $args[0] ?? collect();
+
         return TimeTrackersResource::collection($timeTrackers);
     }
 

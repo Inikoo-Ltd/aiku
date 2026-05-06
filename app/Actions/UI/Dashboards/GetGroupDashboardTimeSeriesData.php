@@ -15,6 +15,7 @@ use App\Actions\Ordering\SalesChannel\GetSalesChannelTimeSeriesStats;
 use App\Actions\SysAdmin\Organisation\GetOrganisationTimeSeriesStats;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\SysAdmin\Group;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -32,19 +33,47 @@ class GetGroupDashboardTimeSeriesData
 
         $cacheKey = $this->getCacheKey($group, $fromDate, $toDate);
 
-        return Cache::remember($cacheKey, now()->addSeconds(300), function () use ($group, $fromDate, $toDate) {
-            return $this->fetchData($group, $fromDate, $toDate);
-        });
+        return Cache::tags(["dashboard-group-{$group->id}"])
+            ->remember($cacheKey, now()->addSeconds(300), function () use ($group, $fromDate, $toDate) {
+                return $this->fetchData($group, $fromDate, $toDate);
+            });
     }
 
     protected function getCacheKey(Group $group, $fromDate, $toDate): string
     {
+        [$normalizedFromDate, $normalizedToDate] = $this->normalizeDateBounds($fromDate, $toDate);
+
         return sprintf(
             'dashboard:group_timeseries:%s:%s:%s',
             $group->id,
-            $fromDate ?? 'null',
-            $toDate ?? 'null'
+            $normalizedFromDate,
+            $normalizedToDate
         );
+    }
+
+    protected function normalizeDateBounds($fromDate, $toDate): array
+    {
+        if (empty($fromDate) && empty($toDate)) {
+            return ['all', 'all'];
+        }
+
+        return [
+            $this->normalizeDateToken($fromDate),
+            $this->normalizeDateToken($toDate),
+        ];
+    }
+
+    protected function normalizeDateToken($date): string
+    {
+        if (empty($date)) {
+            return 'open';
+        }
+
+        if ($date instanceof Carbon) {
+            return $date->toDateString();
+        }
+
+        return Carbon::parse((string) $date)->toDateString();
     }
 
     protected function fetchData(Group $group, $fromDate, $toDate): array
@@ -89,11 +118,8 @@ class GetGroupDashboardTimeSeriesData
         ];
     }
 
-    public static function clearCache(Group $group, $fromDate = null, $toDate = null): void
+    public static function clearCache(Group $group): void
     {
-        $instance = new static();
-        $cacheKey = $instance->getCacheKey($group, $fromDate, $toDate);
-
-        Cache::forget($cacheKey);
+        Cache::tags(["dashboard-group-{$group->id}"])->flush();
     }
 }

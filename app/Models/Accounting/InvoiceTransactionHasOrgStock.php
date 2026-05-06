@@ -23,8 +23,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric $grp_net_amount
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Accounting\InvoiceTransaction $invoiceTransaction
- * @property-read OrgStock $orgStock
+ * @property-read \App\Models\Accounting\InvoiceTransaction|null $invoiceTransaction
+ * @property-read OrgStock|null $orgStock
  * @property-read OrgStockFamily|null $orgStockFamily
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceTransactionHasOrgStock newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceTransactionHasOrgStock newQuery()

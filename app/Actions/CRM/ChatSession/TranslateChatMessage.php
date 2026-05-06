@@ -19,7 +19,6 @@ class TranslateChatMessage
 {
     use AsAction;
 
-    public string $jobQueue = 'analytics';
     public int $jobTimeout = 300;
     public int $jobTries = 1;
 
@@ -40,7 +39,10 @@ class TranslateChatMessage
             return;
         }
 
-        $textToProcess = $message->original_text ?? $message->message_text;
+        $textToProcess = (string) ($message->original_text ?? $message->message_text ?? '');
+        if (trim($textToProcess) === '') {
+            return;
+        }
         $session = $message->chatSession;
 
         if ($this->isUserMessage($message)) {
@@ -156,8 +158,12 @@ class TranslateChatMessage
             return;
         }
 
-        $targetCode = $targetLang->code;
-        $sourceCode = $originalLang ? $originalLang->code : 'en';
+        $targetCode = (string) ($targetLang->code ?? '');
+        $sourceCode = (string) ($originalLang?->code ?? 'en');
+
+        if ($targetCode === '') {
+            return;
+        }
 
         $translatedText = $this->performTranslationHelper($text, $sourceCode, $targetCode);
 
@@ -203,7 +209,15 @@ class TranslateChatMessage
     private function performTranslationHelper(string $text, string $sourceCode, string $targetCode): ?string
     {
         try {
+            $text = (string) $text;
+            $sourceCode = strtolower(trim((string) $sourceCode));
+            $targetCode = strtolower(trim((string) $targetCode));
+
             if (trim($text) === '' || $sourceCode === $targetCode) {
+                return $text;
+            }
+
+            if ($sourceCode === '' || $targetCode === '') {
                 return $text;
             }
 

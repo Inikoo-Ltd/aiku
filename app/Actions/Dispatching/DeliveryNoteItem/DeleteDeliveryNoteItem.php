@@ -23,7 +23,7 @@ class DeleteDeliveryNoteItem extends OrgAction
     {
 
         foreach ($deliveryNoteItem->pickings as $picking) {
-            DeletePicking::run($picking);
+            DeletePicking::run($picking, null);
         }
         foreach ($deliveryNoteItem->packings as $packing) {
             DeletePacking::run($packing);

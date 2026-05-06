@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\Shop;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateUniversalSearch;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
@@ -19,7 +18,6 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Web\Website\UpdateWebsite;
-use App\Actions\Web\Website\Hydrators\WebsiteReHydrateFamilyWebpage;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
@@ -81,6 +79,8 @@ class UpdateShop extends OrgAction
             );
         }
 
+        // Catalogue Descriptions etc
+
         if (Arr::has($modelData, 'collection_follow_master')) {
             data_set($modelData, 'settings.catalog.collection_follow_master', Arr::pull($modelData, 'collection_follow_master'));
         }
@@ -101,11 +101,18 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.catalog.product_follow_master', Arr::pull($modelData, 'product_follow_master'));
         }
 
-        $updateChildWebsite = false;
-        if (Arr::has($modelData, 'family_webpage_split_description')) {
-            data_set($modelData, 'settings.website.family_webpage_split_description', Arr::pull($modelData, 'family_webpage_split_description'));
-            $updateChildWebsite = true;
+        // Catalogue Indexing etc
+
+        if (Arr::has($modelData, 'family_indexing_follow_master')) {
+            data_set($modelData, 'settings.catalog.family_indexing_follow_master', Arr::pull($modelData, 'family_indexing_follow_master'));
         }
+
+        if (Arr::exists($modelData, 'portal_link')) {
+            if (Arr::get($modelData, 'portal_link') === null) {
+                data_set($modelData, 'portal_link', '');
+            }
+        }
+
 
         foreach ($modelData as $key => $value) {
             data_set(
@@ -167,6 +174,9 @@ class UpdateShop extends OrgAction
 
         if (Arr::exists($modelData, 'widget_key')) {
             $widgetKey = Arr::pull($modelData, 'widget_key');
+            if ($widgetKey === null) {
+                $widgetKey = '';
+            }
             UpdateWebsite::make()->action(
                 website: $shop->website,
                 modelData: ['jira_help_desk_widget' => $widgetKey],
@@ -230,7 +240,7 @@ class UpdateShop extends OrgAction
         if (Arr::exists($modelData, 'download_pdf_columns')) {
             $columnsMap = [];
             foreach (Arr::pull($modelData, 'download_pdf_columns') as $col) {
-                $columnsMap[$col['key']] = (bool) $col['value'];
+                $columnsMap[$col['key']] = (bool)$col['value'];
             }
             data_set($modelData, "settings.invoicing.download_pdf_columns", $columnsMap);
         }
@@ -254,15 +264,6 @@ class UpdateShop extends OrgAction
             if ($oldMasterShop) {
                 MasterShopHydrateShops::dispatch($oldMasterShop)->delay($this->hydratorsDelay);
             }
-        }
-
-
-        if (count($changes) > 0) {
-            ShopHydrateUniversalSearch::dispatch($shop);
-        }
-
-        if ($updateChildWebsite) {
-            WebsiteReHydrateFamilyWebpage::dispatch($shop->website);
         }
 
         return $shop;
@@ -370,8 +371,8 @@ class UpdateShop extends OrgAction
             'wix_access_token'                                        => ['sometimes', 'string'],
             'enable_chat'                                             => ['sometimes', 'boolean'],
             'is_shipping_by_external'                                 => ['sometimes', 'boolean'],
-            'portal_link'                                             => ['sometimes', 'string'],
-            'widget_key'                                              => ['sometimes', 'string'],
+            'portal_link'                                             => ['sometimes', 'nullable', 'string'],
+            'widget_key'                                              => ['sometimes', 'nullable', 'string'],
             'required_approval'                                       => ['sometimes', 'boolean'],
             'required_phone_number'                                   => ['sometimes', 'boolean'],
             'marketing_opt_in_default'                                => ['sometimes', 'boolean'],
@@ -394,6 +395,7 @@ class UpdateShop extends OrgAction
             'sub_department_follow_master'                            => ['sometimes', 'boolean'],
             'family_follow_master'                                    => ['sometimes', 'boolean'],
             'product_follow_master'                                   => ['sometimes', 'boolean'],
+            'family_indexing_follow_master'                           => ['sometimes', 'boolean'],
             'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
             'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
             'family_webpage_split_description'                        => ['sometimes', 'boolean'],

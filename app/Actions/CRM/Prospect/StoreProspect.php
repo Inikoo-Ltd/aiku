@@ -9,7 +9,6 @@
 namespace App\Actions\CRM\Prospect;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProspects;
-use App\Actions\CRM\Prospect\Search\ProspectRecordSearch;
 use App\Actions\Helpers\Query\HydrateModelTypeQueries;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProspects;
@@ -101,7 +100,6 @@ class StoreProspect extends OrgAction
         });
         $prospect->refresh();
 
-        ProspectRecordSearch::dispatch($prospect)->delay($this->hydratorsDelay);
         OrganisationHydrateProspects::dispatch($shop->organisation)->delay($this->hydratorsDelay);
         ShopHydrateProspects::dispatch($shop)->delay($this->hydratorsDelay);
 

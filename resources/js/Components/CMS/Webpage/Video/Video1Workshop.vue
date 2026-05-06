@@ -66,7 +66,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 </script>
 
 <template>
-	<div id="video-1">
+	<div :id="modelValue?.id ? modelValue?.id  : 'video'+indexBlock" >
 		<div class="grid grid-cols-1 md:grid-cols-1 relative" :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(modelValue.container?.properties, screenType)

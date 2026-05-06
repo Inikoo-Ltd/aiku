@@ -47,12 +47,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Collection<int, Invoice> $invoices
  * @property-read Collection<int, Order> $orders
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read Collection<int, \App\Models\Billables\ShippingZone> $shippingZones
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Billables\ShippingZoneSchemaStats|null $stats
  * @method static \Database\Factories\Billables\ShippingZoneSchemaFactory factory($count = null, $state = [])
  * @method static Builder<static>|ShippingZoneSchema newModelQuery()

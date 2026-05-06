@@ -31,7 +31,7 @@ import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import Modal from "@/Components/Utils/Modal.vue"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { faSearch, faBell, faPlus } from '@far'
+import { faSearch, faBell, faPlus, faLayerGroup } from '@far'
 import { faExclamationTriangle as fadExclamationTriangle, faMedal as fadMedal } from '@fad'
 import { initialiseIrisVarnish } from "@/Composables/initialiseIrisVarnish"
 import { setColorStyleRoot } from "@/Composables/useApp"
@@ -40,7 +40,7 @@ import { CustomerIdCollector } from "@/Composables/Unique/LuigiDataCollector"
 import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from 'vue'
 
-library.add(faMedal, fasMedal, faCandleHolder, fadMedal)
+library.add(faMedal, fasMedal, faCandleHolder, fadMedal, faLayerGroup)
 library.add(faStoreAltSlash,faEnvelopeCircleCheck, fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, fasSparkles, faSeedling, faSkull, falCheckCircle, faHeart, faSparkles, faExclamationCircle, faInfo, faCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faExternalLinkAlt)
 library.add(fadExclamationTriangle, faCheckCircle, faNarwhal, falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell, faPlus)
 
@@ -104,7 +104,7 @@ const shootMultipleConfetti = () => {
 watch(() => usePage().props?.flash?.confetti, (newVal) => {
     // console.log('confettixx ret', newVal)
     if (!newVal) return
-    
+
     shootMultipleConfetti()
 }, {
     deep: true,
@@ -253,27 +253,7 @@ const getBgColorDependsOnStatus = (status: string) => {
     }
 }
 
-const isSidebarFetching = ref(false)
-const fetchSidebarOnce = async () => {
-    if (isSidebarFetching.value) return
-
-    isSidebarFetching.value = true
-
-    try {
-        const baseUrl = window.location.origin
-        const { data } = await axios.get(`${baseUrl}/json/sidebar`)
-
-        layout.iris.sidebar = data.sidebar
-        layout.isSidebarLoaded = true
-    } catch (e) {
-        console.error("[IrisSidebar] fetch failed", e)
-    } finally {
-        isSidebarFetching.value = false
-    }
-}
-
 onMounted(() => {
-    fetchSidebarOnce()
     // if (layout.iris?.is_have_gtm) {
     setColorStyleRoot(layout?.app?.theme)
     hideSuperchatWidget()
@@ -284,7 +264,7 @@ const fallbackTheme = useColorTheme[3]
 
 const safeTheme = computed(() => {
     const t = layout?.app?.theme
-    
+
     return (t && t.length >= 8) ? t : fallbackTheme
 })
 </script>
@@ -360,7 +340,7 @@ const safeTheme = computed(() => {
                         <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon='fas fa-exclamation' class="text-orange-500 text-2xl" fixed aria-hidden='true' />
                         <FontAwesomeIcon v-if="selectedModal?.status == 'info'" icon='fas fa-info' class="text-gray-500 text-2xl" fixed-width aria-hidden='true' />
                     </div>
-                    
+
                     <div class="mt-3 text-center sm:mt-5">
                         <div as="h3" class="font-semibold text-2xl">
                             {{ selectedModal?.title }}

@@ -16,8 +16,6 @@ use App\Models\Inventory\Location;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasRetinaSearch;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InFulfilmentCustomer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -83,9 +81,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $deleted_by
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Fulfilment\RecurringBill|null $currentRecurringBill
- * @property-read \App\Models\Fulfilment\Fulfilment $fulfilment
- * @property-read \App\Models\Fulfilment\FulfilmentCustomer $fulfilmentCustomer
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\Fulfilment\Fulfilment|null $fulfilment
+ * @property-read \App\Models\Fulfilment\FulfilmentCustomer|null $fulfilmentCustomer
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Location|null $location
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\MovementPallet> $movements
  * @property-read Organisation $organisation
@@ -95,12 +93,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\PalletStoredItem> $palletStoredItems
  * @property-read Rental|null $rental
  * @property-read \App\Models\Fulfilment\RentalAgreementClause|null $rentalAgreementClause
- * @property-read \App\Models\Helpers\RetinaSearch|null $retinaSearch
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\StoredItemAuditDelta> $storedItemAuditDeltas
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\StoredItemAudit> $storedItemAudits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\StoredItem> $storedItems
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
- * @property-read Warehouse $warehouse
+ * @property-read Warehouse|null $warehouse
  * @method static \Database\Factories\Fulfilment\PalletFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pallet locationId($located)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pallet newModelQuery()
@@ -116,8 +112,6 @@ class Pallet extends Model implements Auditable
     use HasSlug;
     use SoftDeletes;
     use HasFactory;
-    use HasUniversalSearch;
-    use HasRetinaSearch;
     use InFulfilmentCustomer;
     use HasHistory;
 
@@ -229,14 +223,11 @@ class Pallet extends Model implements Auditable
     {
         return DB::table('pallet_stored_items')
             ->leftJoin('stored_items', 'stored_items.id', '=', 'pallet_stored_items.stored_item_id')
-
-
             ->leftJoin('stored_item_audit_deltas', function ($join) use ($palletID, $storedItemAuditId) {
                 $join->on('pallet_stored_items.stored_item_id', '=', 'stored_item_audit_deltas.stored_item_id')
                     ->where('stored_item_audit_deltas.stored_item_audit_id', '=', $storedItemAuditId)
-                  ->where('stored_item_audit_deltas.pallet_id', '=', $palletID);
+                    ->where('stored_item_audit_deltas.pallet_id', '=', $palletID);
             })
-
             ->select(
                 'stored_items.reference  as stored_item_reference',
                 'stored_items.id  as stored_item_id',

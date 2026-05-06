@@ -41,33 +41,36 @@ class OfferResource extends JsonResource
         $basicOfferData = UpdateProductCategoryOffersData::make()->getBasicOfferData($offer);
 
         $customOfferData = [
-            'shop_id'           => $this->shop_id,
-            'offer_campaign_id' => $this->offer_campaign_id,
-            'offer_campaign'    => $this->offerCampaign ? [
-                'id'        => $this->offerCampaign->id,
-                'slug'      => $this->offerCampaign->slug,
-                'name'      => $this->offerCampaign->name,
+            'shop_id'                  => $this->shop_id,
+            'offer_campaign_id'        => $this->offer_campaign_id,
+            'offer_campaign'           => $this->offerCampaign ? [
+                'id'   => $this->offerCampaign->id,
+                'slug' => $this->offerCampaign->slug,
+                'name' => $this->offerCampaign->name,
             ] : null,
-            'slug'              => $this->slug,
-            'type'              => $this->type,
-            'code'              => $this->code,
-            'name'              => $this->name,
-            'data'              => $this->data,
-            'trigger_type'              => $this->trigger_type,
-            'trigger_data'              => $this->trigger_data,
-            'allowance_signature'       => $this->allowance_signature,
-            'settings'              => $this->settings,
-            'created_at'        => $this->created_at,
-            'updated_at'        => $this->updated_at,
+            'slug'                     => $this->slug,
+            'type'                     => $this->type,
+            'code'                     => $this->code,
+            'name'                     => $this->name,
+            'duration'                 => $this->duration?->value,
+            'start_at'                 => $this->start_at,
+            'end_at'                   => $this->end_at,
+            'data'                     => $this->data,
+            'trigger_type'             => $this->trigger_type,
+            'trigger_data'             => $this->trigger_data,
+            'allowance_signature'      => $this->allowance_signature,
+            'settings'                 => $this->settings,
+            'created_at'               => $this->created_at,
+            'updated_at'               => $this->updated_at,
             'data_allowance_signature' => [
-                'percentage_off'    => $percentage_off,
-                'product_category'  => $productCategory ? [
-                    'name'  => $productCategory->name,
-                    'slug'  => $productCategory->slug,
+                'percentage_off'   => $percentage_off,
+                'product_category' => $productCategory ? [
+                    'name' => $productCategory->name,
+                    'slug' => $productCategory->slug,
+                    'type' => $productCategory->type->value,
                 ] : null
             ],
         ];
-
 
 
         return array_merge($customOfferData, $basicOfferData ?? []);

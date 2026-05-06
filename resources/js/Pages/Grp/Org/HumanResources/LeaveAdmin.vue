@@ -6,6 +6,7 @@ import Table from "@/Components/Table/Table.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import ExportModalActions from "@/Components/HumanResources/ExportModalActions.vue"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import RejectLeaveModal from "@/Components/HumanResources/RejectLeaveModal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
@@ -16,9 +17,9 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faEdit, faDownload, faFileExcel, faFileCsv, faPaperclip } from "@fal"
+import { faCheck, faTimes, faEdit, faDownload, faFileExcel, faFileCsv, faPaperclip, faTrash } from "@fal"
 
-library.add(faCheck, faTimes, faEdit, faDownload, faFileExcel, faFileCsv, faPaperclip)
+library.add(faCheck, faTimes, faEdit, faDownload, faFileExcel, faFileCsv, faPaperclip, faTrash)
 
 const props = defineProps<{
 	title: string
@@ -73,6 +74,90 @@ const getStatusTheme = (status: string): number => {
 		default:
 			return 99
 	}
+}
+
+const toNumber = (value: unknown): number => {
+	if (typeof value === "number") {
+		return Number.isFinite(value) ? value : 0
+	}
+
+	if (typeof value === "string") {
+		const parsed = Number(value)
+		return Number.isFinite(parsed) ? parsed : 0
+	}
+
+	return 0
+}
+
+const approvalTotalSteps = (leave: any): number => {
+	return Math.max(0, toNumber(leave.approval_total_steps))
+}
+
+const approvalCompletedSteps = (leave: any): number => {
+	const total = approvalTotalSteps(leave)
+	if (total === 0) {
+		return 0
+	}
+
+	if (leave.status === "approved") {
+		return total
+	}
+
+	return Math.min(Math.max(0, toNumber(leave.approval_completed_steps)), total)
+}
+
+const approvalProgressPercent = (leave: any): number => {
+	const total = approvalTotalSteps(leave)
+	if (total === 0) {
+		return 0
+	}
+
+	return Math.round((approvalCompletedSteps(leave) / total) * 100)
+}
+
+const approvalStatusLabel = (leave: any): string => {
+	if (leave.status === "approved") {
+		return trans("Completed")
+	}
+
+	if (leave.status === "rejected") {
+		return trans("Rejected")
+	}
+
+	return trans("In Progress")
+}
+
+const approvalProgressText = (leave: any): string => {
+	const total = approvalTotalSteps(leave)
+	if (total === 0) {
+		return trans("No steps")
+	}
+
+	if (leave.status === "approved") {
+		return trans(":steps steps completed", { steps: String(total) })
+	}
+
+	const currentStep = Math.min(
+		Math.max(1, toNumber(leave.approval_current_step) || approvalCompletedSteps(leave) + 1),
+		total
+	)
+
+	return trans("Level :current of :total", {
+		current: String(currentStep),
+		total: String(total),
+	})
+}
+
+const approvalBarClass = (leave: any): string => {
+	if (leave.status === "approved") {
+		return "bg-green-500"
+	}
+
+	if (leave.status === "rejected") {
+		return "bg-red-500"
+	}
+
+	return "bg-amber-500"
 }
 
 const openExportModal = () => {
@@ -219,6 +304,25 @@ const closeRejectModal = () => {
 				</Tag>
 			</template>
 
+			<template #cell(approval_progress)="{ item: leave }">
+				<div class="min-w-40">
+					<div class="flex items-center justify-between gap-2 text-xs">
+						<span class="font-medium text-gray-700">
+							{{ approvalStatusLabel(leave) }}
+						</span>
+						<span class="text-gray-500">
+							{{ approvalProgressText(leave) }}
+						</span>
+					</div>
+					<div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-gray-200">
+						<div
+							class="h-full rounded-full transition-all duration-300 ease-out"
+							:class="approvalBarClass(leave)"
+							:style="{ width: `${approvalProgressPercent(leave)}%` }" />
+					</div>
+				</div>
+			</template>
+
 			<template #cell(reason)="{ item: leave }">
 				<div class="max-w-md">
 					<div v-if="leave.reason" class="text-sm text-gray-600 break-words">
@@ -262,7 +366,7 @@ const closeRejectModal = () => {
 			</template>
 
 			<template #cell(actions)="{ item: leave }">
-				<div class="flex gap-2">
+				<div class="flex items-center gap-2">
 					<Button
 						v-if="leave.type === 'medical' && leave.status === 'pending'"
 						type="transparent"
@@ -270,8 +374,11 @@ const closeRejectModal = () => {
 						:icon="faEdit"
 						:label="trans('Edit')"
 						@click="() => openEditModal(leave)" />
+                    <span v-if="leave.status !== 'pending'" class="text-gray-400 text-xs">
+						{{ trans("Processed") }}
+					</span>
 					<ModalConfirmation
-						v-if="leave.status === 'pending'"
+						v-if="leave.status === 'pending' && leave.can_approve_current_user"
 						:routeYes="{
 							name: 'grp.org.hr.leaves.approve',
 							parameters: { ...route().params, leave: leave.id },
@@ -295,15 +402,28 @@ const closeRejectModal = () => {
 						</template>
 					</ModalConfirmation>
 					<Button
-						v-if="leave.status === 'pending'"
+						v-if="leave.status === 'pending' && leave.can_approve_current_user"
 						type="warning"
 						size="xs"
 						:icon="faTimes"
 						:label="trans('Reject')"
 						@click="() => openRejectModal(leave)" />
-					<span v-if="leave.status !== 'pending'" class="text-gray-400 text-xs">
-						{{ trans("Processed") }}
-					</span>
+					<ModalConfirmationDelete
+						:routeDelete="{
+							name: 'grp.org.hr.leaves.delete',
+							parameters: { ...route().params, leave: leave.id },
+						}">
+						<template #default="{ changeModel, isLoadingdelete }">
+							<Button
+								type="negative"
+								size="xs"
+								:icon="faTrash"
+								:label="trans('Delete')"
+								:loading="isLoadingdelete"
+								@click="changeModel" />
+						</template>
+					</ModalConfirmationDelete>
+
 				</div>
 			</template>
 		</Table>

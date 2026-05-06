@@ -34,6 +34,8 @@ class ProductResource extends JsonResource
                 'org_stock_name' => $orgStock->name,
                 'note'           => $orgStock->pivot->note,
                 'is_on_demand'   => $orgStock->is_on_demand,
+                'units_per_sku'  => $orgStock->packed_in,
+                'total_units'    => $orgStock->packed_in * $orgStock->pivot->quantity,
                 'picking_factor' => riseDivisor(
                     divideWithRemainder(findSmallestFactors($orgStock->pivot->quantity)),
                     $orgStock->packed_in
@@ -42,7 +44,6 @@ class ProductResource extends JsonResource
         }
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
-
 
 
         return [

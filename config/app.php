@@ -6,7 +6,6 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-use App\Providers\ElasticSearchServiceProvider;
 use App\Providers\GDriveServiceProvider;
 use App\Providers\NumberMacroServiceProvider;
 use Illuminate\Support\Facades\Facade;
@@ -171,7 +170,6 @@ return [
         App\Providers\HorizonServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         App\Providers\MacroServiceProvider::class,
-        ElasticSearchServiceProvider::class,
         GDriveServiceProvider::class,
         NumberMacroServiceProvider::class,
 
@@ -213,7 +211,7 @@ return [
         App\Providers\HorizonServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         App\Providers\MacroServiceProvider::class,
-        ElasticSearchServiceProvider::class,
+
 
     ],
 */
@@ -236,12 +234,12 @@ return [
     'aurora_image_path' => env('AURORA_IMAGE_PATH'),
 
     'aurora' => [
-        'domain' => env('AURORA_DOMAIN', 'aurora.systems'),
+        'domain'   => env('AURORA_DOMAIN', 'aurora.systems'),
         'api_keys' => [
-                1 => env('AURORA_STOCK_API_KEY_1'),
-                2 => env('AURORA_STOCK_API_KEY_2'),
-                3 => env('AURORA_STOCK_API_KEY_3'),
-                4 => env('AURORA_STOCK_API_KEY_4')
+            1 => env('AURORA_STOCK_API_KEY_1'),
+            2 => env('AURORA_STOCK_API_KEY_2'),
+            3 => env('AURORA_STOCK_API_KEY_3'),
+            4 => env('AURORA_STOCK_API_KEY_4')
         ]
     ],
 
@@ -257,7 +255,7 @@ return [
 
     'analytics' => [
         'cloudflare' => [
-            'api_token'  => env('CLOUDFLARE_ANALYTICS_API_TOKEN'),
+            'api_token' => env('CLOUDFLARE_ANALYTICS_API_TOKEN'),
         ],
         'google'     => [
             'client_oauth_secret' => env('GOOGLE_OAUTH_CLIENT_SECRET'),
@@ -289,12 +287,13 @@ return [
     'help_portal_url' => env('JIRA_HELP_PORTAL'),
 
     'sandbox' => [
+        'translate' => env('TRANSLATE_ON_LOCAL', false),
 
-        'shipper_itd_token' => env('ITD_TOKEN'),
-        'shipper_apc_token' => env('APC_TOKEN'),
-        'shipper_dpd_gb_token' => env('DPD_GB_TOKEN'),
-        'shipper_gls_sk_token' => env('GLS_SK_TOKEN'),
-        'shipper_gls_es_token' => env('GLS_ES_TOKEN'),
+        'shipper_itd_token'            => env('ITD_TOKEN'),
+        'shipper_apc_token'            => env('APC_TOKEN'),
+        'shipper_dpd_gb_token'         => env('DPD_GB_TOKEN'),
+        'shipper_gls_sk_token'         => env('GLS_SK_TOKEN'),
+        'shipper_gls_es_token'         => env('GLS_ES_TOKEN'),
         'shipper_packeta_access_token' => env('PACKETA_ACCESS_TOKEN'),
 
 
@@ -304,10 +303,12 @@ return [
             'secret_key'      => env('CHECKOUT_COM_SECRET_KEY'),
             'payment_channel' => env('CHECKOUT_COM_PAYMENT_CHANNEL'),
         ],
-        'luigisbox' => [
-            'tracker_id'      => env('LS_TRACKER_ID'),
-            'private_key'      => env('LS_PRIVATE_KEY'),
+        'luigisbox'       => [
+            'tracker_id'  => env('LS_TRACKER_ID'),
+            'private_key' => env('LS_PRIVATE_KEY'),
         ],
-    ]
+    ],
+    'master'  => env('MASTER_SERVER', true),
+    'slave'   => env('SLAVE_SERVER', true),
 
 ];

@@ -9,7 +9,6 @@
 namespace App\Actions\Procurement\PurchaseOrder;
 
 use App\Actions\OrgAction;
-use App\Actions\Procurement\PurchaseOrder\Search\PurchaseOrderRecordSearch;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -30,9 +29,7 @@ class UpdatePurchaseOrder extends OrgAction
 
     public function handle(PurchaseOrder $purchaseOrder, array $modelData): PurchaseOrder
     {
-        $purchaseOrder = $this->update($purchaseOrder, $modelData, ['data']);
-        PurchaseOrderRecordSearch::dispatch($purchaseOrder);
-        return $purchaseOrder;
+        return $this->update($purchaseOrder, $modelData, ['data']);
     }
 
     public function authorize(ActionRequest $request): bool

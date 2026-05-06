@@ -10,7 +10,6 @@
 
 namespace App\Actions\Fulfilment\PalletReturn;
 
-use App\Actions\Fulfilment\PalletReturn\Search\PalletReturnRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Fulfilment\PalletReturnResource;
@@ -29,7 +28,6 @@ class AddAddressToPalletReturn extends OrgAction
             'delivery_address_id' => Arr::pull($modelData, 'delivery_address_id'),
             'is_collection'       => false
         ]);
-        PalletReturnRecordSearch::dispatch($palletReturn);
 
         return $palletReturn;
     }

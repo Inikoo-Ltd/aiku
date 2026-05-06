@@ -20,7 +20,7 @@ class RedoTradeUnitTimeSeries implements ShouldBeUnique
 {
     use WithHydrateCommand;
 
-    public string $jobQueue         = 'default-long';
+    public string $jobQueue         = 'default-long-slave';
     public string $commandSignature = 'trade-units:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -36,7 +36,7 @@ class RedoTradeUnitTimeSeries implements ShouldBeUnique
     public function handle(TradeUnit $tradeUnit, bool $async = false, ?string $from = null, ?string $to = null): void
     {
         if (!$from || !$to) {
-            $dateRange = DB::table('invoice_transactions')
+            $dateRange = DB::connection('aiku_no_sticky')->table('invoice_transactions')
                 ->join('invoice_transaction_has_trade_units', 'invoice_transaction_has_trade_units.invoice_transaction_id', '=', 'invoice_transactions.id')
                 ->where('invoice_transaction_has_trade_units.trade_unit_id', $tradeUnit->id)
                 ->whereNull('invoice_transactions.deleted_at')
@@ -53,7 +53,7 @@ class RedoTradeUnitTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessTradeUnitTimeSeriesRecords::dispatch($tradeUnit->id, $frequency, $from, $to)->onQueue('low-priority');
+                ProcessTradeUnitTimeSeriesRecords::dispatch($tradeUnit->id, $frequency, $from, $to)->delay(300);
             } else {
                 ProcessTradeUnitTimeSeriesRecords::run($tradeUnit->id, $frequency, $from, $to);
             }

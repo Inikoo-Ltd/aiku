@@ -8,6 +8,7 @@ use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\InertiaTable\InertiaTable;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\LeaveApprover;
+use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -92,8 +93,25 @@ class IndexLeaveApprovers extends OrgAction
                 'label' => $employee->contact_name ?: $employee->alias ?: __('Employee #:id', ['id' => $employee->id]),
                 'email' => $employee->email,
                 'employee_id' => $employee->id,
-            ])
+            ]);
+
+        $guestOptions = Guest::query()
+            ->where('group_id', $this->parent->group_id)
+            ->whereNotNull('user_id')
+            ->where('status', true)
+            ->orderByRaw('COALESCE(contact_name, company_name, email) asc')
+            ->get(['id', 'user_id', 'contact_name', 'company_name', 'email'])
+            ->map(fn (Guest $guest) => [
+                'value' => $guest->user_id,
+                'label' => $guest->contact_name ?: $guest->company_name ?: "Guest #{$guest->id}",
+                'email' => $guest->email,
+                'employee_id' => null,
+            ]);
+
+        $employeeOptions = $employeeOptions
+            ->concat($guestOptions)
             ->unique('value')
+            ->sortBy('label')
             ->values();
 
         return Inertia::render(

@@ -10,7 +10,6 @@ namespace App\Actions\SupplyChain\Supplier;
 
 use App\Actions\GrpAction;
 use App\Actions\Helpers\Address\UpdateAddress;
-use App\Actions\SupplyChain\Supplier\Search\SupplierRecordSearch;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\SupplyChain\SupplierResource;
@@ -54,8 +53,6 @@ class UpdateSupplier extends GrpAction
                 );
             }
         }
-
-        SupplierRecordSearch::dispatch($supplier);
 
         return $supplier;
     }

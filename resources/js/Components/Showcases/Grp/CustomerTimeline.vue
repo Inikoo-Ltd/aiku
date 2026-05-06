@@ -24,8 +24,10 @@ import {
     faEye,
     faShoppingCart,
     faUndo,
+    faStopwatch,
 } from '@fal'
 import { useFormatTime } from '@/Composables/useFormatTime'
+import { trans } from 'laravel-vue-i18n'
 
 library.add(
     faUserEdit, faStickyNote, faInboxIn, faPaperPlane, faTimesCircle,
@@ -39,6 +41,7 @@ interface TimelineEvent {
     datetime: string
     title: string
     subtitle: string | null
+    comment: string | null
     icon: string[]
     color: string
     metadata: Record<string, unknown>
@@ -192,7 +195,7 @@ const formatMetadataValue = (value: unknown): string => {
                                 <p class="text-sm font-semibold text-gray-900 leading-tight">
                                     {{ event.title }}
                                 </p>
-                                <p v-if="event.subtitle && !(event.type === 'note' && expandedIds.has(event.id))" class="text-sm text-gray-500 mt-0.5 truncate">
+                                <p v-if="event.subtitle" class="text-sm text-gray-500 mt-0.5 truncate">
                                     {{ event.subtitle }}
                                 </p>
                             </div>
@@ -227,7 +230,16 @@ const formatMetadataValue = (value: unknown): string => {
                             >
                                 <!-- Note: full text -->
                                 <template v-if="event.type === 'note'">
-                                    <p class="whitespace-pre-wrap leading-relaxed">{{ event.subtitle }}</p>
+                                    <p class="whitespace-pre-wrap leading-relaxed">{{ event.comment }}</p>
+                                </template>
+
+                                <template v-else-if="['page_view', 'product_view'].includes(event.type)">
+                                    <span v-if="event.metadata?.duration_seconds" class="flex gap-2" v-tooltip="trans('Browsed for :_durationSeconds seconds', {_durationSeconds: event.metadata?.duration_seconds})">
+                                        <FontAwesomeIcon :icon="faStopwatch" class="self-center" /> 
+                                        <span  class="self-center">
+                                            {{ event.metadata?.duration_seconds }} {{ trans('Seconds') }}
+                                        </span>
+                                    </span>
                                 </template>
 
                                 <!-- Account Update: old → new values -->

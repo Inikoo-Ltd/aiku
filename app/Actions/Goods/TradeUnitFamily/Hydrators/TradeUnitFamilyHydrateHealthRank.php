@@ -32,7 +32,7 @@ class TradeUnitFamilyHydrateHealthRank implements ShouldBeUnique
                 SELECT
                     ittu.trade_unit_family_id,
                     MAX(it.date) AS last_sale_date,
-                    SUM(CASE WHEN it.date >= NOW() - INTERVAL '90 days' THEN COALESCE(it.grp_net_amount, 0) ELSE 0 END) AS revenue_3m
+                    SUM(CASE WHEN it.date >= NOW() - INTERVAL '90 days' THEN COALESCE(ittu.grp_net_amount, 0) ELSE 0 END) AS revenue_3m
                 FROM invoice_transaction_has_trade_units ittu
                 JOIN invoice_transactions it ON it.id = ittu.invoice_transaction_id
                 WHERE it.in_process = false

@@ -20,6 +20,7 @@ import { getRefRedirect } from '@/Composables/Retina/useGetRedirectUrl'
 defineOptions({ layout: RetinaShowIris })
 
 defineProps<{
+    login_message : string
     google: {
         client_id: string
     }
@@ -144,10 +145,8 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
                 <LoadingIcon class="text-4xl" />
             </div>
 
-            <div v-if="layout.retina.type !== 'b2b'" class="border border-gray-300 p-5 rounded mb-4 ">
-                <p>  {{ trans('Hey, as you notice we just got a brand new system for our website.') }} </p>
-                <p class="py-3"> {{ trans('You can log in with your old username and password or use your google account to login (if the emails match)') }}.</p>
-                <p>{{ trans('if the password is not working, you can reset it from the forgot password page and all will be ok.') }}</p>
+            <div v-if="login_message" class="border border-gray-300 p-5 rounded mb-4 ">
+              <div v-html="login_message"></div>
             </div>
 
 

@@ -16,6 +16,7 @@ defineProps<{
   id: Number,
   type: String
   properties: {}
+  indexBlock:number
 }>()
 
 
@@ -32,7 +33,7 @@ const onOpenGallery = (index: number) => {
 </script>
 
 <template>
-  <div class="bg-white" :style="getStyles(properties)" :id="fieldValue?.id ? fieldValue?.id  : 'gallery'"  component="gallery" >
+  <div class="bg-white" :style="getStyles(properties)" :id="fieldValue?.id ? fieldValue?.id  : 'gallery'+indexBlock"  component="gallery" >
     <div class="w-full">
 
 

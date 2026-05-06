@@ -8,7 +8,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { computed, inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
-import { faSignIn, faSignOut, faTimesCircle } from '@fas'
+import { faSignIn, faSignOut, faTimesCircle, faSpinnerThird } from '@fas'
 import { faChevronCircleDown } from '@fal'
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -19,7 +19,7 @@ import { router } from '@inertiajs/vue3'
 import { ProductCategoryMenu } from "@/Composables/Iris/useMenu"
 import SidebarMobileNavigation from "./SidebarMobileNavigation.vue"
 
-library.add(faChevronRight, faExternalLink, faSearch, faTimes, faMapMarkerAlt)
+library.add(faChevronRight, faExternalLink, faSearch, faTimes, faMapMarkerAlt, faSpinnerThird)
 
 const props = defineProps<{
     containerStyle: {
@@ -105,6 +105,9 @@ const borderWidth = computed(() => {
 const isLoadingProductCategory = ref(false)
 const isLoadingSubDepartment = ref(false)
 
+// Track which department row is currently navigating
+const loadingCategoryIndex = ref<number | null>(null)
+
 // Handle navigation with loading state
 const handleViewAllProductCategory = (url: string) => {
     isLoadingProductCategory.value = true
@@ -145,7 +148,7 @@ const handleViewAllSubDepartment = (url: string) => {
         <Transition name="slide-absolute-to-right">
             <!-- 3: Families -->
             <div v-if="activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null">
-                <div @click="changeActiveSubIndex(null), changeActiveCustomTopSubIndex(null), changeActiveCustomSubIndex(null)" class="py-1">
+                <div @click="changeActiveSubIndex(null), changeActiveCustomTopSubIndex(null), changeActiveCustomSubIndex(null)" class="py-1 cursor-pointer">
                     <FontAwesomeIcon icon="fal fa-chevron-left" class="text-xs" fixed-width aria-hidden="true" />
                     {{ sortedSubDepartments?.[activeSubIndex]?.name }}
                     {{ customTopSubDepartments?.[activeCustomTopSubIndex]?.name }}
@@ -253,7 +256,7 @@ const handleViewAllSubDepartment = (url: string) => {
             <!-- Column 2: Subdepartments -->
             <div v-else-if="activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null"
                 :class="[(activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null) && 'border-r']">
-                <div @click="setActiveCategory(null), setActiveCustomCategory(null), setActiveCustomTopCategory(null)" class="py-1">
+                <div @click="setActiveCategory(null), setActiveCustomCategory(null), setActiveCustomTopCategory(null)" class="py-1 cursor-pointer">
                     <FontAwesomeIcon icon="fal fa-chevron-left" class="text-xs" fixed-width aria-hidden="true" />
                     <!-- Back to menu list -->
                     {{ sortedProductCategories?.[activeIndex]?.name }}
@@ -386,7 +389,7 @@ const handleViewAllSubDepartment = (url: string) => {
                                 :href="customTopItem.type === 'internal' ? internalHref(customTopItem) : customTopItem.url"
                                 :target="getTarget(customTopItem)"
                                 @success="() => closeSidebar()"
-                                class="font-bold pl-2 py-2 ">
+                                class="font-bold pl-2 py-2 hover:underline">
                                 {{ customTopItem.name }}
                             </LinkIris>
                             <span v-else
@@ -410,17 +413,32 @@ const handleViewAllSubDepartment = (url: string) => {
                         <LinkIris v-if="category?.url !== null"
                             :href="internalHref(category)"
                             :target="getTarget(category)"
+                            @start="loadingCategoryIndex = index"
+                            @finish="loadingCategoryIndex = null"
                             @success="() => closeSidebar()"
-                            class="font-bold">
+                            class="font-bold hover:underline">
                             {{ category.name }}
                         </LinkIris>
                         <span v-else
-                            class="font-bold"  @click="setActiveCategory(index)">
+                            class="font-bold hover:underline"  @click="setActiveCategory(index)">
                             {{ category.name }}
                         </span>
 
-                        <div v-if="!!category.sub_departments?.length" class="text-sm">
-                            <FontAwesomeIcon :icon="faChevronRight" fixed-width  @click="setActiveCategory(index)"/>
+                        <div class="text-sm">
+                            <FontAwesomeIcon
+                                v-if="loadingCategoryIndex === index"
+                                :icon="faSpinnerThird"
+                                spin
+                                fixed-width
+                                aria-hidden="true"
+                            />
+                            <FontAwesomeIcon
+                                v-else-if="!!category.sub_departments?.length"
+                                :icon="faChevronRight"
+                                fixed-width
+                                class="cursor-pointer"
+                                @click="setActiveCategory(index)"
+                            />
                         </div>
                     </div>
 
@@ -446,10 +464,15 @@ const handleViewAllSubDepartment = (url: string) => {
                 </div>
 
                 <!-- Section: List additional links -->
-                <div v-if="props?.fieldValue?.additional_items?.items_list?.length" class="flex flex-col gap-y-3 mb-8">
+                <div v-if="layout.iris.isSidebarLoading" class="flex flex-col gap-y-3 mb-8">
+                    <div v-for="i in 2" class="w-full h-[1.9rem] skeleton">
+
+                    </div>
+                </div>
+                <div v-else-if="props?.fieldValue?.additional_items?.items_list?.length" class="flex flex-col gap-y-3 mb-8">
                     <LinkIris v-for="item in props?.fieldValue?.additional_items?.items_list"
                         :href="item?.url?.href ?? ''"
-                        class="flex gap-x-2 items-center py-1"
+                        class="flex gap-x-2 items-center py-1 hover:underline"
                         :type="item.url?.type"
                         :target="item.url?.target"
                     >

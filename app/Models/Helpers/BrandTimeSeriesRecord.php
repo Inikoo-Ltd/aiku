@@ -8,15 +8,15 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property int $brand_time_series_id
  * @property string $frequency
- * @property string|null $sales_external
- * @property string|null $sales_org_currency_external
- * @property string|null $sales_grp_currency_external
- * @property string|null $sales_internal
- * @property string|null $sales_org_currency_internal
- * @property string|null $sales_grp_currency_internal
- * @property string|null $lost_revenue
- * @property string|null $lost_revenue_org_currency
- * @property string|null $lost_revenue_grp_currency
+ * @property numeric|null $sales_external
+ * @property numeric|null $sales_org_currency_external
+ * @property numeric|null $sales_grp_currency_external
+ * @property numeric|null $sales_internal
+ * @property numeric|null $sales_org_currency_internal
+ * @property numeric|null $sales_grp_currency_internal
+ * @property numeric|null $lost_revenue
+ * @property numeric|null $lost_revenue_org_currency
+ * @property numeric|null $lost_revenue_grp_currency
  * @property int|null $invoices
  * @property int|null $refunds
  * @property int|null $orders
@@ -26,6 +26,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $period
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int|null $organisation_id
+ * @property int|null $shop_id
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BrandTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BrandTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BrandTimeSeriesRecord query()

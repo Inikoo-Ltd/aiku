@@ -51,6 +51,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $product_units
  * @property mixed $quantity_picked
  * @property bool $is_cut_view
+ * @property string|null $batch_codes
  */
 class TransactionsResource extends JsonResource
 {
@@ -108,6 +109,7 @@ class TransactionsResource extends JsonResource
             'quantity_dispatched_fractional'    => $quantityDispatchedFractional,
             'quantity_fail'             => $this->quantity_fail,
             'quantity_cancelled'        => $this->quantity_cancelled,
+            'quantity_not_picked'       => $this->dni_quantity_not_picked,
             'gross_amount'              => $this->gross_amount,
             'net_amount'                => $this->net_amount,
             'price'                     => $this->price,
@@ -127,6 +129,7 @@ class TransactionsResource extends JsonResource
             'product_units'             => $this->product_units,
             'is_cut_view'               => $this->is_cut_view,
             'is_gift'                   => $this->is_gift,
+            'batch_codes'               => $this->batch_codes,
 
 
             'deleteRoute' => $request->user() instanceof User

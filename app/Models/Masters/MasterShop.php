@@ -37,12 +37,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property string $cost_price_ratio
- * @property string $price_rrp_ratio
+ * @property numeric $cost_price_ratio
+ * @property numeric $price_rrp_ratio
  * @property array<array-key, mixed>|null $offers_data
  * @property float $price_rrp_warning_ratio
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $masterAssets
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterCollection> $masterCollections
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $masterProductCategories

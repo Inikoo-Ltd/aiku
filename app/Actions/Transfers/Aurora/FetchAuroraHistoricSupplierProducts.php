@@ -66,11 +66,12 @@ class FetchAuroraHistoricSupplierProducts
         if ($historicSupplierProduct) {
             $this->updateHistoricSupplierProductSources($historicSupplierProduct, $historicProductData['historic_supplier_product']['source_id']);
 
-            $sourceData = explode(':', $historicSupplierProduct->source_id);
-
-            DB::connection('aurora')->table('Supplier Part Historic Dimension')
-                ->where('Supplier Part Historic Key', $sourceData[1])
-                ->update(['aiku_supplier_historic_product_id' => $historicSupplierProduct->id]);
+            if ($historicSupplierProduct->source_id) {
+                $sourceData = explode(':', $historicSupplierProduct->source_id);
+                DB::connection('aurora')->table('Supplier Part Historic Dimension')
+                    ->where('Supplier Part Historic Key', $sourceData[1])
+                    ->update(['aiku_supplier_historic_product_id' => $historicSupplierProduct->id]);
+            }
         }
 
 

@@ -9,16 +9,12 @@
 namespace App\Models\Web;
 
 use App\Actions\Utils\Abbreviate;
-
-;
-
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Enums\Web\Banner\BannerTypeEnum;
 use App\Models\Helpers\Deployment;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Snapshot;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InWebsite;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -60,18 +56,17 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $ratio
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Deployment> $deployments
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read Snapshot|null $liveSnapshot
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Snapshot> $snapshots
  * @property-read \App\Models\Web\BannerStats|null $stats
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Snapshot|null $unpublishedSnapshot
- * @property-read \App\Models\Web\Website $website
+ * @property-read \App\Models\Web\Website|null $website
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Banner newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Banner newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Banner onlyTrashed()
@@ -86,7 +81,6 @@ class Banner extends Model implements HasMedia, Auditable
     use HasSlug;
     use HasFactory;
     use InWebsite;
-    use HasUniversalSearch;
     use InteractsWithMedia;
     use HasHistory;
 

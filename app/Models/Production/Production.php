@@ -13,7 +13,6 @@ use App\Models\Analytics\AikuSection;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\SysAdmin\Role;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -44,7 +43,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AikuSection> $aikuScopedSections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\Artefact> $artefacts
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\JobOrder> $jobOrders
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ManufactureTask> $manufactureTasks
  * @property-read \App\Models\SysAdmin\Organisation $organisation
@@ -52,7 +51,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Role> $roles
  * @property-read \App\Models\Production\ProductionStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, StockDelivery> $stockDeliveries
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Production newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Production newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Production onlyTrashed()
@@ -65,7 +63,6 @@ class Production extends Model implements Auditable
 {
     use HasSlug;
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasHistory;
     use InOrganisation;
 

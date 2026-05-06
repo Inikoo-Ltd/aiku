@@ -11,14 +11,13 @@ use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Accounting\InvoiceTransactionHasTradeUnit;
 use App\Models\Catalogue\Product;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SyncInvoiceTransactionTradeUnitBridges implements ShouldQueue, ShouldBeUnique
+class SyncInvoiceTransactionTradeUnitBridges implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(?int $invoiceTransactionId): string
     {
@@ -47,22 +46,34 @@ class SyncInvoiceTransactionTradeUnitBridges implements ShouldQueue, ShouldBeUni
         }
 
         $tradeUnits   = $product->tradeUnits;
-        $unitCount    = $tradeUnits->count();
         $organisation = $invoiceTransaction->organisation;
 
-        if ($unitCount === 0) {
+        if ($tradeUnits->isEmpty()) {
             return;
         }
 
         $values = [];
         foreach ($tradeUnits as $tradeUnit) {
-            $values[$tradeUnit->id] = GetTradeUnitValue::run($tradeUnit, $organisation, $invoiceTransaction->date);
+            $orgStocks = $tradeUnit->orgStocks()->where('organisation_id', $organisation->id)->get();
+            $total     = 0.0;
+            foreach ($orgStocks as $orgStock) {
+                $total += ($orgStock->pivot->quantity ?? 1) * (float) ($orgStock->sku_value ?? 0);
+            }
+            $values[$tradeUnit->id] = $total;
         }
 
         $totalValue = array_sum($values);
 
+        if ($totalValue <= 0) {
+            return;
+        }
+
         foreach ($tradeUnits as $tradeUnit) {
-            $factor = $totalValue > 0 ? $values[$tradeUnit->id] / $totalValue : 1 / $unitCount;
+            if ($values[$tradeUnit->id] <= 0) {
+                continue;
+            }
+
+            $factor = $values[$tradeUnit->id] / $totalValue;
 
             InvoiceTransactionHasTradeUnit::updateOrCreate(
                 [

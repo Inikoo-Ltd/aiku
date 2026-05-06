@@ -29,7 +29,6 @@ use App\Actions\CRM\Customer\RejectCustomer;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Fulfilment\Fulfilment\UpdateFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\FetchNewWebhookFulfilmentCustomer;
-use App\Actions\Fulfilment\FulfilmentCustomer\Search\ReindexFulfilmentCustomerSearch;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UpdateFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentTransaction\DeleteFulfilmentTransaction;
@@ -229,8 +228,8 @@ test('create fulfilment shop', function () {
         ->and($shopPermissions->count())->toBe(0)
         ->and($fulfilmentRoles->count())->toBe(2)
         ->and($fulfilmentPermissions->count())->toBe(4)
-        ->and($warehouseRoles->count())->toBe(8)
-        ->and($warehousePermissions->count())->toBe(20);
+        ->and($warehouseRoles->count())->toBe(9)
+        ->and($warehousePermissions->count())->toBe(21);
 
     $user = $this->adminGuest->getUser();
     $user->refresh();
@@ -3157,14 +3156,6 @@ test('import pallet with stored items (xlsx) duplicate', function (PalletDeliver
 
 test('hydrate pallet return command', function () {
     $this->artisan('hydrate:pallet_returns  '.$this->organisation->slug)->assertExitCode(0);
-});
-
-test('fulfilment customers search', function () {
-    $this->artisan('search:fulfilment_customers')->assertExitCode(0);
-
-    $fulfilmentCustomers = FulfilmentCustomer::first();
-    ReindexFulfilmentCustomerSearch::run($fulfilmentCustomers);
-    expect($fulfilmentCustomers->universalSearch()->count())->toBe(1);
 });
 
 test('update current recurring bills', function () {

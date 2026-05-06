@@ -26,6 +26,7 @@ use App\Http\Resources\Sales\OrderResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\Discounts\Offer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
@@ -50,7 +51,7 @@ class IndexOrders extends OrgAction
     use WithCustomerSubNavigation;
     use WithOrdersSubNavigation;
 
-    private Group|Organisation|Shop|Customer|CustomerClient $parent;
+    private Group|Organisation|Shop|Customer|CustomerClient|Offer $parent;
     private CustomerSalesChannel $customerSalesChannel;
 
     private string $bucket;
@@ -74,7 +75,7 @@ class IndexOrders extends OrgAction
         ];
     }
 
-    public function handle(Group|Organisation|Shop|Customer|CustomerClient $parent, $prefix = null, $bucket = null): LengthAwarePaginator
+    public function handle(Group|Organisation|Shop|Customer|CustomerClient|Offer $parent, $prefix = null, $bucket = null): LengthAwarePaginator
     {
         if ($bucket) {
             $this->bucket = $bucket;
@@ -102,6 +103,16 @@ class IndexOrders extends OrgAction
             $query->where('orders.group_id', $parent->id);
         } elseif (class_basename($parent) == 'Customer') {
             $query->where('orders.customer_id', $parent->id);
+        } elseif (class_basename($parent) == 'Offer') {
+            $query->whereIn('orders.id', function ($subQuery) use ($parent) {
+                $subQuery->select('transactions.order_id')
+                    ->from('transactions')
+                    ->join('transaction_has_offer_allowances', 'transactions.id', '=', 'transaction_has_offer_allowances.transaction_id')
+                    ->where('transaction_has_offer_allowances.offer_id', $parent->id)
+                    ->whereNotNull('transactions.order_id')
+                    ->whereNull('transactions.deleted_at')
+                    ->distinct();
+            });
         } else {
             $query->where('orders.customer_client_id', $parent->id);
         }
@@ -218,7 +229,7 @@ class IndexOrders extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Organisation|Shop|Customer|CustomerClient $parent, $prefix = null, $bucket = null): Closure
+    public function tableStructure(Group|Organisation|Shop|Customer|CustomerClient|Offer $parent, $prefix = null, $bucket = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $prefix, $bucket) {
             if ($prefix) {
@@ -245,6 +256,9 @@ class IndexOrders extends OrgAction
             } elseif ($parent instanceof Organisation) {
                 $stats     = $parent->orderingStats;
                 $noResults = __("No orders found in organisation");
+            } elseif ($parent instanceof Offer) {
+                $stats     = $parent->stats;
+                $noResults = __("No orders used this offer");
             } else {
                 $stats = $parent->orderingStats;
             }
@@ -427,26 +441,26 @@ class IndexOrders extends OrgAction
                     ?
                     fn () => OrdersResource::collection(
                         IndexOrders::run(
-                            $shop,
+                            $this->parent,
                             OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value,
                             OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value
                         )
                     )
                     : Inertia::lazy(fn () => OrdersResource::collection(
                         IndexOrders::run(
-                            $shop,
+                            $this->parent,
                             OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value,
                             OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value
                         )
                     )),
 
                 OrdersTabsEnum::LAST_ORDERS->value => $this->tab == OrdersTabsEnum::LAST_ORDERS->value ?
-                    fn () => GetLastOrders::run($shop)
-                    : Inertia::lazy(fn () => GetLastOrders::run($shop)),
+                    fn () => GetLastOrders::run($this->parent)
+                    : Inertia::lazy(fn () => GetLastOrders::run($this->parent)),
 
                 OrdersTabsEnum::EXCESS_ORDERS->value => $this->tab == OrdersTabsEnum::EXCESS_ORDERS->value ?
-                    fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($shop, OrdersTabsEnum::EXCESS_ORDERS->value))
-                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($shop, OrdersTabsEnum::EXCESS_ORDERS->value))),
+                    fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($this->parent, OrdersTabsEnum::EXCESS_ORDERS->value))
+                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($this->parent, OrdersTabsEnum::EXCESS_ORDERS->value))),
             ]
         )->table(
             $this->tableStructure($this->parent, OrdersTabsEnum::ORDERS->value, $this->bucket)

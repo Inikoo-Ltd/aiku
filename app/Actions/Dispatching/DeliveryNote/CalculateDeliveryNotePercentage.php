@@ -1,51 +1,28 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 22-05-2025-15h-44m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Kirin
+ * Created: Wed, 14 May 2025 15:44 Malaysia Time, Bali, Indonesia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Dispatching\PickingSession\CalculatePickingSessionPicks;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithDispatchingPercentages;
 use App\Models\Dispatching\DeliveryNote;
+use Illuminate\Console\Command;
 
 class CalculateDeliveryNotePercentage extends OrgAction
 {
     use WithActionUpdate;
+    use WithDispatchingPercentages;
+
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
-        $pickingPercentage = 0;
-        $packingPercentage = 0;
-
-        $pickingRequired = $deliveryNote->deliveryNoteItems()->sum('quantity_required');
-        $pickingPicked = $deliveryNote->deliveryNoteItems()->sum('quantity_picked');
-        $packingPacked = $deliveryNote->deliveryNoteItems()->sum('quantity_packed');
-
-        // Picking percentage: picked vs required
-        if ($pickingRequired > 0) {
-            $pickingPercentage = min(($pickingPicked / $pickingRequired) * 100, 100);
-        }
-
-        // Packing percentage: packed vs picked
-        if ($pickingPicked > 0) {
-            $packingPercentage = min(($packingPacked / $pickingPicked) * 100, 100);
-        }
-
-        // Optionally round them
-        $pickingPercentage = round($pickingPercentage, 2);
-        $packingPercentage = round($packingPercentage, 2);
-
-        $deliveryNote = $this->update($deliveryNote, [
-            'quantity_picked'    =>  $pickingPicked,
-            'quantity_packed'    =>  $packingPacked,
-            'picking_percentage' => $pickingPercentage,
-            'packing_percentage' => $packingPercentage
-        ]);
+        $deliveryNote = $this->update($deliveryNote, $this->getDispatchingPercentages($deliveryNote->deliveryNoteItems()));
 
         if ($deliveryNote->pickingSessions) {
             foreach ($deliveryNote->pickingSessions as $pickingSession) {
@@ -61,5 +38,18 @@ class CalculateDeliveryNotePercentage extends OrgAction
         $this->initialisationFromShop($deliveryNote->shop, []);
 
         return $this->handle($deliveryNote);
+    }
+
+    public function getCommandSignature(): string
+    {
+        return 'delivery-note:calculate-percentage {deliveryNote}';
+    }
+
+    public function asCommand(Command $command): int
+    {
+        $deliveryNote = DeliveryNote::where('slug', $command->argument('deliveryNote'))->firstOrFail();
+        $this->handle($deliveryNote);
+        return 0;
+
     }
 }

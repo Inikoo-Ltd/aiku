@@ -15,6 +15,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 import { get, isPlainObject } from 'lodash-es'
 
+
 library.add(faCube, faLink, faImage)
 
 const props = defineProps<{
@@ -22,6 +23,7 @@ const props = defineProps<{
 	webpageData?: any
 	blockData?: Object,
 	screenType: 'mobile' | 'tablet' | 'desktop'
+	indexBlock : number
 }>()
 
 const layout: any = inject("layout", {})
@@ -39,7 +41,7 @@ const isImageLeft = computed(() => valueForField.value === 'Image-left')
 </script>
 
 <template>
-	<div :id="fieldValue?.id ? fieldValue?.id  : 'cta1'" class="w-full" component="cta1">
+	<div :id="fieldValue?.id ? fieldValue?.id  : 'cta1'+indexBlock" class="w-full" component="cta1">
 		<div :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(fieldValue.container?.properties, screenType),

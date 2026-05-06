@@ -8,46 +8,20 @@
 
 namespace App\Actions\Catalogue\ProductCategory\Search;
 
-use App\Actions\HydrateModel;
+use App\Actions\Traits\WithScoutReindex;
 use App\Models\Catalogue\ProductCategory;
-use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexProductCategorySearch extends HydrateModel
+class ReindexProductCategorySearch
 {
-    public string $commandSignature = 'search:product_categories {organisations?*} {--s|slugs=}';
+    use AsAction;
+    use WithScoutReindex;
 
+    public string $commandSignature = 'reindex_search:product_categories';
 
-    public function handle(ProductCategory $productCategory): void
+    public function handle(bool $reindex = true, bool $reset = false): void
     {
-        ProductCategoryRecordSearch::run($productCategory);
-    }
-
-    protected function getModel(string $slug): ProductCategory
-    {
-        return ProductCategory::withTrashed()->where('slug', $slug)->first();
-    }
-
-    protected function loopAll(Command $command): void
-    {
-        $count = ProductCategory::withTrashed()->count();
-
-        $bar = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
-        $bar->start();
-
-        ProductCategory::withTrashed()->chunk(1000, function (Collection $models) use ($bar) {
-            foreach ($models as $model) {
-                $this->handle($model);
-                $bar->advance();
-            }
-        });
-
-
-        $bar->finish();
-
-
-        $command->info("");
+        $this->runScoutReindex(ProductCategory::class, $reindex, $reset);
     }
 
 }

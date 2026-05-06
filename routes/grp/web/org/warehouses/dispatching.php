@@ -10,6 +10,10 @@ use App\Actions\Dispatching\Box\UI\CreateBox;
 use App\Actions\Dispatching\Box\UI\IndexBoxes;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexWaitingCrmDeliveryNoteItems;
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexWaitingCrmDeliveryNoteItemsStillInPicking;
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexWaitingDeliveryNoteItems;
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexWaitingDeliveryNoteItemsStillInPicking;
 use App\Actions\Dispatching\GoodsOut\UI\IndexWarehousePalletReturns;
 use App\Actions\Dispatching\GoodsOut\UI\ShowWarehousePalletReturn;
 use App\Actions\Dispatching\GoodsOut\UI\ShowWarehouseStoredItemReturn;
@@ -31,6 +35,19 @@ use App\Actions\UI\Dispatch\ShowDispatchHub;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowDispatchHub::class)->name('backlog');
+
+Route::get('/waiting_items', IndexWaitingDeliveryNoteItems::class)->name('waiting_items');
+Route::get('/waiting_items/shop/{shopType}', [IndexWaitingDeliveryNoteItems::class, 'inShopTypes'])->name('waiting_items.shop');
+
+Route::get('/waiting_items_still_picking', IndexWaitingDeliveryNoteItemsStillInPicking::class)->name('waiting_items_still_picking');
+Route::get('/waiting_items_still_picking/shop/{shopType}', [IndexWaitingDeliveryNoteItemsStillInPicking::class, 'inShopTypes'])->name('waiting_items_still_picking.shop');
+
+Route::get('/waiting_crm_items', IndexWaitingCrmDeliveryNoteItems::class)->name('waiting_crm_items');
+Route::get('/waiting_crm_items/shop/{shopType}', [IndexWaitingCrmDeliveryNoteItems::class, 'inShopTypes'])->name('waiting_crm_items.shop');
+
+Route::get('/waiting_crm_items_still_picking', IndexWaitingCrmDeliveryNoteItemsStillInPicking::class)->name('waiting_crm_items_still_picking');
+Route::get('/waiting_crm_items_still_picking/shop/{shopType}', [IndexWaitingCrmDeliveryNoteItemsStillInPicking::class, 'inShopTypes'])->name('waiting_crm_items_still_picking.shop');
+
 
 Route::get('/delivery-notes', IndexDeliveryNotes::class)->name('delivery-notes');
 Route::get('/delivery-notes/shop/{shopType}', [IndexDeliveryNotes::class, 'inShopTypes'])->name('delivery-notes.shop');

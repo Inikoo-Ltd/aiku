@@ -14,7 +14,6 @@ use App\Models\Helpers\SerialReference;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAttachments;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InFulfilment;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -134,9 +133,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_spaces_state_finished
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read \App\Models\Fulfilment\RecurringBill|null $currentRecurringBill
- * @property-read Customer $customer
- * @property-read \App\Models\Fulfilment\Fulfilment $fulfilment
- * @property-read Group $group
+ * @property-read Customer|null $customer
+ * @property-read \App\Models\Fulfilment\Fulfilment|null $fulfilment
+ * @property-read Group|null $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
  * @property-read Organisation $organisation
@@ -151,7 +150,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\StoredItemAudit> $storedItemAudits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\StoredItem> $storedItems
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\FulfilmentTransaction> $transactions
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentCustomer newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentCustomer newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|FulfilmentCustomer onlyTrashed()
@@ -163,7 +161,6 @@ use Spatie\Sluggable\SlugOptions;
 class FulfilmentCustomer extends Model implements HasMedia
 {
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasSlug;
     use InFulfilment;
     use HasAttachments;

@@ -277,7 +277,6 @@ trait WithLayoutNavigation
         if ($user->authTo('org-reports.'.$organisation->id)) {
             $navigation['reports'] = [
                 'label'   => __('Reports'),
-                'tooltip' => __('Reports'),
                 'icon'    => ['fal', 'fa-chart-line'],
                 'root'    => 'grp.org.reports',
 
@@ -356,7 +355,6 @@ trait WithLayoutNavigation
                         [
                             "root"    => "grp.org.warehouses.show.infrastructure.locations.",
                             "label"   => __("Locations"),
-                            "tooltip" => __("Locations"),
                             "icon"    => ["fal", "fa-inventory"],
                             "route"   => [
                                 "name"       => "grp.org.warehouses.show.infrastructure.locations.index",

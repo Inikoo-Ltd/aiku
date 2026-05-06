@@ -10,10 +10,12 @@ namespace App\Actions\SysAdmin\User;
 
 use App\Actions\HumanResources\JobPosition\Hydrators\JobPositionHydrateEmployees;
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithPreparePositionsForValidation;
+use App\Actions\SysAdmin\CleanUserCaches;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithReorganisePositions;
-use App\Http\Resources\SysAdmin\UserResource;
+use App\Actions\UI\Grp\RecacheUserUiProps;
+use App\Http\Resources\SysAdmin\User\UserResource;
 use App\Models\HumanResources\JobPosition;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
@@ -61,6 +63,14 @@ class UpdateUserGroupPseudoJobPositions extends OrgAction
             }
         }
 
+        CleanUserCaches::run(
+            $user,
+            [
+                'auth-user:'.$user->id.';*',
+                'grp-first-load-props:'.$user->id.':*'
+            ]
+        );
+        RecacheUserUiProps::dispatch($user);
         return $user;
     }
 

@@ -17,15 +17,25 @@ class TrackWebsiteVisitor
     {
 
         if ($this->shouldTrack($request)) {
+
+            $geoLocation = [
+                $request->header('CF-IPCountry') ?? 'XX',
+                $request->header('CF-Region'),
+                $request->header('CF-IPCity'),
+                $request->header('CF-IPLongitude'),
+                $request->header('CF-IPLatitude'),
+            ];
+
             ProcessWebsiteVisitorTracking::dispatch(
                 $request->session()->getId(),
                 $request->input('website'),
                 $request->user('retina'),
                 $request->userAgent(),
-                $request->ips(),
+                request()->ip(),
                 $request->fullUrl(),
                 $request->header('referer'),
-            );
+                $geoLocation
+            )->delay(now()->addSeconds(5));
         }
 
         return $next($request);
@@ -34,6 +44,9 @@ class TrackWebsiteVisitor
 
     protected function shouldTrack(Request $request): bool
     {
+        if (app()->isLocal()) {
+            return false;
+        }
 
         if (!$request->input('website')) {
             return false;

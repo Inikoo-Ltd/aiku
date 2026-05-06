@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, inject, nextTick, ref, watch } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router, useForm } from "@inertiajs/vue3"
@@ -29,7 +29,7 @@ import { Address, AddressOptions } from "@/types/PureComponent/Address"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
 	shipments: {
 		id: number
 		name: string
@@ -75,13 +75,29 @@ const props = defineProps<{
 	external_shop?: {
 		engine_value: string
 	} | null
-}>()
+	isEditable?: boolean
+}>(), {
+	isEditable: true
+})
 
 const emits = defineEmits<{
 	(e: "addSuccsess", value: string | number): void
 	(e: "deleteSuccsess", value: string | number): void
 	(e: "editAddressSuccsess", value: string | number): void
 }>()
+
+const openModalAddShipment = inject<ReturnType<typeof ref<boolean>>>("openModalAddShipment")
+if (openModalAddShipment) {
+	watch(openModalAddShipment, async (val) => {
+		if (val) {
+			isModalShipment.value = true
+			await onOpenModalTrackingNumber()
+			nextTick(() => {
+				openModalAddShipment.value = false
+			})
+		}
+	})
+}
 
 // Shipment deletion
 const isDeleteShipment = ref<number | null>(null)
@@ -514,7 +530,7 @@ const onCopyDataCustomer = (field: string) => {
 </ModalConfirmationDelete> -->
 
 						<div
-							v-else
+							v-else-if="isEditable"
 							class="cursor-pointer px-2 py-1 lg:py-0 lg:px-1 absolute top-0 right-0 text-red-400 hover:text-red-700"
 							v-tooltip="trans('Remove shipment')"
 							@click="(e) => confirmdelete(e, shipment)">
@@ -538,30 +554,30 @@ const onCopyDataCustomer = (field: string) => {
 				</li>
 			</ul>
 
-			<div class="gap-2 mb-2 flex">
+			<div v-if="isEditable" class="gap-2 mb-2 flex">
 				<!-- Button: Shipment -->
 				<ButtonWithLink
-					xv-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
 					v-if="!shipments.length && props.shipments_routes?.get_external_shipment_route?.name"
 					:disabled="!props.shipments_routes?.get_external_shipment_route?.name"
-					xv-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
 					:label="props.shipments_routes?.get_external_shipment_route?.label"
 					method="post"
 					:url="route(props.shipments_routes?.get_external_shipment_route?.name, props.shipments_routes?.get_external_shipment_route?.parameters)"
 					icon="fas fa-plus"
 					type="dashed"
-					:size="twBreakPoint().includes('lg') ? 'xs' : undefined" />
+					:size="twBreakPoint().includes('lg') ? 'xs' : undefined"
+				/>
 				<Button
-					xv-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
 					v-if="!shipments.length && props.shipments_routes?.submit_route?.name"
 					:disabled="!props.shipments_routes?.submit_route?.name"
 					@click="() => ((isModalShipment = true), onOpenModalTrackingNumber())"
-					xv-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
 					:label="trans('Shipment')"
 					icon="fas fa-plus"
 					type="dashed"
-					:size="twBreakPoint().includes('lg') ? 'xs' : undefined" />
-
+					:size="twBreakPoint().includes('lg') ? 'xs' : undefined"
+				/>
+			</div>
+			<div v-else-if="!shipments.length" class="italic opacity-70">
+				({{ ctrans("No shipment set yet") }})
 			</div>
 
 		</div>

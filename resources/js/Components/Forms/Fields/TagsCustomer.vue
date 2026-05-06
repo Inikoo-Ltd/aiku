@@ -101,6 +101,7 @@ const fetchTags = async (url?: string) => {
         const res = await axios.get(urlToFetch)
 
         optionsList.value = res?.data?.data
+        console.log(res)
     } catch {
         notify({
             title: trans('Something went wrong.'),
@@ -316,13 +317,13 @@ onMounted(() => {
     <!-- Dialog: edit tag -->
     <Dialog v-model:visible="isModalUpdateTag" modal header="Edit tag" :style="{ width: '600px' }">
         <div class="isolate bg-white px-6 lg:px-8">
-            <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-                <div class="col-span-2">
+            <div class="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+              <!--   <div class="col-span-2">
                     <label class="block text-sm font-medium leading-6">{{ trans('Image') }}</label>
                     <div class="mt-1">
                         <PureImageCrop :src_image="selectedUpdateTag?.image" :aspectRatio="1" @cropped="(e) => (selectedUpdateTag.image = e)" />
                     </div>
-                </div>
+                </div> -->
 
                 <div class="col-span-2">
                     <label class="block text-sm font-medium leading-6">

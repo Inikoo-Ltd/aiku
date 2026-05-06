@@ -46,6 +46,7 @@ class FetchAuroraAction extends FetchAction
                 'fetch:email_tracking_events',
                 'fetch:histories',
                 'fetch:stock_movements',
+                'fetch:purchase_stock_movements',
             ]) and $command->option('order')) {
             $this->orderDesc = (bool)$command->option('order') == 'desc';
         }
@@ -86,6 +87,7 @@ class FetchAuroraAction extends FetchAction
                 'fetch:offer_components',
                 'fetch:product_org_stocks',
                 'fetch:prospects',
+                'fetch:orders_payments',
             ]) and $command->option('shop')) {
             $this->shop = Shop::where('slug', $command->option('shop'))->firstOrFail();
         }

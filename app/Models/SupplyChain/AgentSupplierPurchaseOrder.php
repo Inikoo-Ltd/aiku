@@ -12,14 +12,12 @@ namespace App\Models\SupplyChain;
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderDeliveryStateEnum;
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Models\Helpers\Currency;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InGroup;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,16 +49,16 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $cancelled_at
  * @property string|null $not_received_at
  * @property int $currency_id
- * @property string|null $grp_exchange
- * @property string|null $org_exchange
+ * @property numeric|null $grp_exchange
+ * @property numeric|null $org_exchange
  * @property bool $is_costed
  * @property array<array-key, mixed> $cost_data
- * @property string|null $cost_items
- * @property string|null $cost_extra
- * @property string|null $cost_shipping
- * @property string|null $cost_duties
- * @property string $cost_tax
- * @property string $cost_total
+ * @property numeric|null $cost_items
+ * @property numeric|null $cost_extra
+ * @property numeric|null $cost_shipping
+ * @property numeric|null $cost_duties
+ * @property numeric $cost_tax
+ * @property numeric $cost_total
  * @property int $number_stock_deliveries Number supplier deliveries
  * @property int $number_current_stock_deliveries Number supplier deliveries (except: cancelled and not_received)
  * @property int $number_is_costed_stock_deliveries is_costed=true
@@ -88,11 +86,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Currency $currency
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read PurchaseOrder|null $purchaseOrder
  * @property-read \App\Models\SupplyChain\Supplier|null $supplier
- * @property-read UniversalSearch|null $universalSearch
  * @method static Builder<static>|AgentSupplierPurchaseOrder newModelQuery()
  * @method static Builder<static>|AgentSupplierPurchaseOrder newQuery()
  * @method static Builder<static>|AgentSupplierPurchaseOrder onlyTrashed()
@@ -110,7 +107,6 @@ class AgentSupplierPurchaseOrder extends Model implements HasMedia, Auditable
     use HasHistory;
     use InGroup;
     use HasAttachments;
-    use HasUniversalSearch;
 
     protected $casts = [
         'data'            => 'array',

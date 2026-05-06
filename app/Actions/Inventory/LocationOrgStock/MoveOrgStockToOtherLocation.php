@@ -19,6 +19,7 @@ use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -56,7 +57,7 @@ class MoveOrgStockToOtherLocation extends OrgAction
         $newQuantity  = Arr::pull($modelData, 'quantity');
         $stockDiff    = $newQuantity - $currentStock;
 
-        $costPerSku = $this->getCostPerSku($locationOrgStock->orgStock, now());
+        $costPerSku = $this->getCostPerSku($locationOrgStock->orgStock, Carbon::now());
 
         $exchangeRate = GetCurrencyExchange::run($locationOrgStock->organisation->currency, $locationOrgStock->group->currency);
 

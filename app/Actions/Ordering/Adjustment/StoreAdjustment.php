@@ -51,9 +51,9 @@ class StoreAdjustment extends OrgAction
         /** @var Adjustment $adjustment */
         $adjustment = $shop->adjustments()->create($modelData);
 
-        ShopHydrateAdjustments::dispatch($shop);
-        OrganisationHydrateAdjustments::dispatch($shop->organisation);
-        GroupHydrateAdjustments::dispatch($shop->group);
+        ShopHydrateAdjustments::dispatch($shop)->delay(120);
+        OrganisationHydrateAdjustments::dispatch($shop->organisation)->delay(120);
+        GroupHydrateAdjustments::dispatch($shop->group)->delay(120);
 
 
         return $adjustment;

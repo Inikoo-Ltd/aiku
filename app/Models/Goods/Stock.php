@@ -12,15 +12,12 @@ use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Goods\Stock\StockTradeUnitCompositionEnum;
 use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Media;
-use App\Models\Helpers\UniversalSearch;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\StockIntervals;
-use App\Models\StockSalesInterval;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -32,6 +29,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
@@ -54,19 +53,19 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $raw_material
  * @property int|null $units_per_pack units per pack
  * @property int|null $units_per_carton units per carton
- * @property string|null $unit_value
+ * @property numeric|null $value_in_warehouses
  * @property int|null $image_id
  * @property int|null $gross_weight package weight grams
  * @property array<array-key, mixed> $settings
  * @property array<array-key, mixed> $data
- * @property \Illuminate\Support\Carbon|null $activated_at
- * @property \Illuminate\Support\Carbon|null $discontinuing_at
- * @property \Illuminate\Support\Carbon|null $discontinued_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $fetched_at
- * @property \Illuminate\Support\Carbon|null $last_fetched_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $activated_at
+ * @property Carbon|null $discontinuing_at
+ * @property Carbon|null $discontinued_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $fetched_at
+ * @property Carbon|null $last_fetched_at
+ * @property Carbon|null $deleted_at
  * @property string|null $source_slug
  * @property string|null $source_id
  * @property array<array-key, mixed> $sources
@@ -75,20 +74,18 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $packed_in_data
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Barcode> $barcode
- * @property-read Group $group
+ * @property-read Group|null $group
  * @property-read Media|null $image
  * @property-read MediaCollection<int, Media> $images
  * @property-read StockIntervals|null $intervals
  * @property-read MediaCollection<int, Media> $media
  * @property-read Collection<int, OrgStock> $orgStocks
- * @property-read StockSalesInterval|null $salesIntervals
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Goods\StockStats|null $stats
  * @property-read \App\Models\Goods\StockFamily|null $stockFamily
  * @property-read Collection<int, SupplierProduct> $supplierProducts
  * @property-read Collection<int, \App\Models\Goods\StockTimeSeries> $timeSeries
  * @property-read Collection<int, \App\Models\Goods\TradeUnit> $tradeUnits
- * @property-read UniversalSearch|null $universalSearch
  * @method static \Database\Factories\Goods\StockFactory factory($count = null, $state = [])
  * @method static Builder<static>|Stock newModelQuery()
  * @method static Builder<static>|Stock newQuery()
@@ -102,10 +99,10 @@ class Stock extends Model implements HasMedia, Auditable
 {
     use SoftDeletes;
     use HasSlug;
-    use HasUniversalSearch;
     use HasImage;
     use HasFactory;
     use HasHistory;
+    use HasSearch;
 
     protected $casts = [
         'data'                   => 'array',
@@ -127,6 +124,31 @@ class Stock extends Model implements HasMedia, Auditable
     ];
 
     protected $guarded = [];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'code',
+                'state',
+                'name',
+                'description',
+                'created_at'
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+
+            'id'          => (string)$this->id,
+            'code'        => $this->code,
+            'name'        => $this->name,
+            'state'       => $this->state->value,
+            'description' => (string)$this->description,
+            'created_at'  => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function generateTags(): array
     {
@@ -199,11 +221,6 @@ class Stock extends Model implements HasMedia, Auditable
         return $this->hasOne(StockIntervals::class);
     }
 
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(StockSalesInterval::class);
-    }
-
     public function stockFamily(): BelongsTo
     {
         return $this->belongsTo(StockFamily::class);
@@ -225,11 +242,6 @@ class Stock extends Model implements HasMedia, Auditable
     {
         return $this->belongsToMany(SupplierProduct::class, 'stock_has_supplier_products')
             ->withPivot(['priority', 'status', 'source_id', 'source_slug', 'fetched_at', 'last_fetched_at'])->withTimestamps();
-    }
-
-    public function getMainSupplierProduct(): SupplierProduct
-    {
-        return$this->supplierProducts()->where('available', true)->orderBy('priority', 'desc')->first();
     }
 
     public function timeSeries(): HasMany

@@ -59,6 +59,14 @@ class OrgStockFamiliesResource extends JsonResource
             'invoices'                          => $this->invoices ?? 0,
             'invoices_ly'                       => $this->invoices_ly ?? 0,
             'invoices_delta'                    => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'invoices_route'                    => $this->warehouse_slug ? [
+                'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.invoices.index',
+                'parameters' => [
+                    'organisation'   => $this->organisation_slug,
+                    'warehouse'      => $this->warehouse_slug,
+                    'orgStockFamily' => $this->slug,
+                ],
+            ] : null,
             'health_rank'                  => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
         ];
     }

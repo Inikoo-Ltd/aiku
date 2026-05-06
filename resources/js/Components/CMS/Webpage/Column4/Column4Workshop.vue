@@ -13,6 +13,7 @@ const props = defineProps<{
 	webpageData?: any
 	blockData?: Object
 	screenType: 'mobile' | 'tablet' | 'desktop'
+	indexBlock:number
 }>()
 
 const emits = defineEmits<{
@@ -33,7 +34,7 @@ watch(
 </script>
 
 <template>
-	<div class="grid grid-cols-1 md:grid-cols-4 gap-4"
+	<div :id="modelValue?.id ? modelValue?.id  : 'column-4'+indexBlock"  class="grid grid-cols-1 md:grid-cols-4 gap-4"
 		:style="getStyles(modelValue?.container?.properties,screenType)"
 	>
 		<ColumnWebppage

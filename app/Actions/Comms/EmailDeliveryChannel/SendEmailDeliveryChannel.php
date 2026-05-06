@@ -127,6 +127,7 @@ class SendEmailDeliveryChannel
 
             $subject = ($model instanceof EmailBulkRun) ? $model->outbox->emailOngoingRun->email->subject : $model->subject;
 
+            $previewText = ($model instanceof Mailshot && $model->preview_text) ? $model->preview_text : null;
 
             $additionalData = $dispatchedEmail->data['additional_data'] ?? [];
 
@@ -152,7 +153,8 @@ class SendEmailDeliveryChannel
                 $emailHtmlBody,
                 $unsubscribeUrl,
                 additionalData: $additionalData,
-                senderName: $model->senderName()
+                senderName: $model->senderName(),
+                previewText: $previewText
             );
 
             if ($recipient->recipient_type === class_basename(Prospect::class)) {
@@ -172,11 +174,11 @@ class SendEmailDeliveryChannel
         $model->refresh();
 
         if ($model instanceof Mailshot) {
-            MailshotHydrateDispatchedEmails::dispatch($model->id)->delay(now()->addSeconds());
+            MailshotHydrateDispatchedEmails::dispatch($model->id)->delay(now()->addSeconds(5));
             UpdateMailshotSentState::run($model);
         } elseif ($model instanceof EmailBulkRun) {
             EmailBulkRunHydrateCumulativeDispatchedEmails::run($model, DispatchedEmailStateEnum::SENT);
-            EmailBulkRunHydrateDispatchedEmails::dispatch($model->id);
+            EmailBulkRunHydrateDispatchedEmails::dispatch($model->id)->delay(now()->addSeconds(5));
             UpdateEmailBulkRunSentState::run($model);
         }
     }

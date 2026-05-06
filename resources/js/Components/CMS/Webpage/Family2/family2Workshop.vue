@@ -39,6 +39,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Object
   screenType: "mobile" | "tablet" | "desktop"
+  indexBlock: number
 }>()
 
 const layout: any = inject("layout", {})
@@ -76,11 +77,6 @@ const columnPosition = computed(() => {
 
 const isImageLeft = computed(() => columnPosition.value === "Image-right")
 
-const gridClass = computed(() =>
-  isImageLeft.value
-    ? "md:grid-cols-[40%_60%]"
-    : "md:grid-cols-[60%_40%]"
-)
 
 const imageOrder = computed(() =>
   isImageLeft.value ? "order-1" : "order-2"
@@ -108,6 +104,8 @@ const saveDescription = debounce(async (key: string, value: string) => {
   }
 }, 1000)
 
+const isExpanded = ref(false)
+
 watch(name, async (val) => {
   modelValue.value.family.description_title = val
   saveDescription("description_title", val)
@@ -122,8 +120,10 @@ const autoResize = () => {
   const el = titleRef.value
   if (!el) return
 
-  el.style.height = "0px"
-  el.style.height = el.scrollHeight + "px"
+  requestAnimationFrame(() => {
+    el.style.height = "auto"
+    el.style.height = el.scrollHeight + "px"
+  })
 }
 
 onMounted(async () => {
@@ -134,96 +134,126 @@ onMounted(async () => {
     autoResize()
   })
 })
+
+console.log("Family2 Workshop Props:", props)
 </script>
 
 <template>
-  <div :id="modelValue?.id || 'family-2'" component="family-2" class="w-full">
-
-    <div :style="{
+  <div class="w-full"  :id="modelValue?.id ? modelValue?.id : 'family-3'+indexBlock"  :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(modelValue?.container?.properties, screenType)
     }">
 
-      <div class="grid w-full min-h-[250px] md:min-h-[400px] grid-cols-1" :class="gridClass">
+    <!-- 🔧 LIMIT WIDTH biar tidak melebar di 2xl -->
+    <div class="mx-auto max-w-[2000px] w-full px-4 md:px-8 xl:px-12" >
 
-        <!-- IMAGE (hidden on mobile) -->
-        <div v-if="showImage" class="relative w-full overflow-hidden"
-          :class="[imageOrder, images.length ? 'h-[250px] sm:h-[300px] md:h-[400px]' : '']"
-          :style="getStyles(modelValue?.image?.container?.properties, screenType)">
+      <div class="grid w-full grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
 
-          <div v-if="images.length > 1"
-            class="swiper-btn-prev absolute left-3 top-1/2 -translate-y-1/2 z-10 cursor-pointer">
-            <FontAwesomeIcon icon="far fa-chevron-circle-left" class="text-gray-500 text-3xl" />
+        <!-- IMAGE -->
+        <div
+          v-if="showImage"
+          :style="getStyles(modelValue?.image?.container?.properties, screenType)"
+          class="relative w-full overflow-hidden
+                 aspect-[4/2]
+                 max-h-[500px] md:max-h-[550px] xl:max-h-[600px] 2xl:max-h-[650px]"
+          :class="imageOrder"
+        >
+
+          <!-- NAV -->
+          <div v-if="images.length > 1" class="nav-btn left-3 swiper-btn-prev">
+            <FontAwesomeIcon icon="far fa-chevron-circle-left" />
           </div>
 
-          <div v-if="images.length > 1"
-            class="swiper-btn-next absolute right-3 top-1/2 -translate-y-1/2 z-10 cursor-pointer">
-            <FontAwesomeIcon icon="far fa-chevron-circle-right" class="text-gray-500 text-3xl" />
+          <div v-if="images.length > 1" class="nav-btn right-3 swiper-btn-next">
+            <FontAwesomeIcon icon="far fa-chevron-circle-right" />
           </div>
 
-          <Swiper v-if="images.length > 1" :modules="[Navigation]" :slides-per-view="1" :loop="true" :navigation="{
-            prevEl: '.swiper-btn-prev',
-            nextEl: '.swiper-btn-next'
-          }" class="w-full h-full">
+          <!-- MULTI -->
+          <Swiper
+            v-if="images.length > 1"
+            :modules="[Navigation]"
+            :slides-per-view="1"
+            :loop="true"
+            :navigation="{ prevEl: '.swiper-btn-prev', nextEl: '.swiper-btn-next' }"
+            class="w-full h-full"
+          >
             <SwiperSlide v-for="(img, i) in images" :key="i">
-              <div class="w-full h-full flex items-center justify-center">
-                <Image :src="img.original" :alt="modelValue?.image?.alt || 'Image preview'"
-                  :imgAttributes="modelValue?.image?.attributes" :imageCover="false"
-                  class="w-auto h-full object-contain" />
+              <div class="relative w-full h-full">
+                <Image
+                  :src="img.original"
+                  :imageCover="true"
+                  class="absolute inset-0 w-full h-full object-cover object-center"
+                />
               </div>
             </SwiperSlide>
           </Swiper>
 
-         <div v-else class="absolute inset-0">
-            <Image :src="images[0]?.original" :alt="modelValue?.image?.alt || 'Image preview'"
-              :imgAttributes="modelValue?.image?.attributes" :imageCover="false" class="w-full h-full object-contain" />
+          <!-- SINGLE -->
+          <div v-else class="relative w-full h-full">
+            <Image
+              :src="images[0]?.original"
+              :imageCover="true"
+              class="absolute inset-0 w-full h-full object-cover object-center"
+            />
           </div>
 
         </div>
 
         <!-- TEXT -->
-        <div class="flex flex-col justify-center m-auto items-center md:items-start text-center md:text-left"
-          :class="textOrder" :style="getStyles(modelValue?.text_block?.properties, screenType)">
+        <div
+          class="flex flex-col justify-center items-center text-center px-2 md:px-4
+                 md:items-start md:text-left"
+          :class="textOrder"
+        >
+        <h1 class="mb-3 w-full max-w-xl">
+  <textarea
+    ref="titleRef"
+    v-model="name"
+    @input="autoResize"
+    rows="1"
+    placeholder="Family Title"
+    class="w-full resize-none overflow-hidden bg-transparent border-none p-0 m-0
+           text-2xl md:text-3xl font-semibold text-gray-900
+           leading-tight
+           focus:outline-none focus:ring-0
+           text-center md:text-left"
+  ></textarea>
+</h1>
 
-          <div class="w-full max-w-xl">
+          <div
+            v-if="modelValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
+            class="discount-wrapper"
+          >
+          </div>
 
-            <textarea ref="titleRef" v-model="name" @input="autoResize" rows="1" placeholder="Family Title"
-              class="w-full resize-none overflow-hidden box-border appearance-none bg-transparent border-none p-0 m-0 text-[1.5rem] leading-[2rem] font-semibold text-gray-800 focus:outline-none focus:ring-0 shadow-none text-center md:text-left" />
+          <div
+            v-html="cleanedDescription"
+            class="text-gray-600 leading-relaxed text-sm md:text-base max-w-xl"
+          />
 
-            <EditorV2 v-model="modelValue.family.description" placeholder="Family Description"
-              @update:model-value="(e) => saveDescription('description', e)" :uploadImageRoute="{
-                name: webpageData?.images_upload_route?.name,
-                parameters: { modelHasWebBlocks: blockData?.id }
-              }" />
-
-            <div class="flex justify-center md:justify-start mt-6">
-
+          <div class="btn-wrapper">
               <LinkIris :href="modelValue?.button?.link?.href" :canonical_url="modelValue?.button?.link?.canonical_url"
                 :target="modelValue?.button?.link?.target" :type="modelValue?.button?.link?.type">
                 <Button :label="modelValue?.button?.text"
                   :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)" />
               </LinkIris>
-
             </div>
-
-          </div>
-
         </div>
 
       </div>
     </div>
+
   </div>
 </template>
 
 <style scoped>
-.swiper-btn-prev,
-.swiper-btn-next {
-  opacity: 0.85;
-  transition: opacity 0.2s ease;
+
+.btn-wrapper {
+  @apply flex justify-center md:justify-start mt-6;
 }
 
-.swiper-btn-prev:hover,
-.swiper-btn-next:hover {
-  opacity: 1;
+.nav-btn {
+  @apply absolute top-1/2 -translate-y-1/2 z-10 cursor-pointer
+         text-gray-500 text-3xl opacity-70 hover:opacity-100;
 }
 </style>

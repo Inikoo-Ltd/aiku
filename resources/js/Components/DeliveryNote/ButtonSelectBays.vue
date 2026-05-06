@@ -60,10 +60,11 @@ watch(isOpenModal, (newVal) => {
 const selectedBay = ref<number | null>(null)
 const isLoadingSubmitBay = ref<number|null|undefined>(undefined)
 const submitSelectBay = (bayId?: number|null) => {
+    if (isLoadingSubmitBay.value == bayId) return;
     // Section: Submit
     router.patch(
         route(
-            'grp.models.delivery_note.state.packed_with_picked_bay',
+            'grp.models.delivery_note.state.set_as_picked_with_picked_bay',
             {
                 deliveryNote: props.deliveryNote.id
             }

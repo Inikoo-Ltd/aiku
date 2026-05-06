@@ -17,7 +17,7 @@ class OrganisationHydrateWebUserRequests implements ShouldBeUnique
     use AsAction;
 
 
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'hydrators-slave';
 
     public function getJobUniqueId(int $organisationID): string
     {

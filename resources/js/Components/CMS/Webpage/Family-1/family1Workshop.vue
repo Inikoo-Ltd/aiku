@@ -82,7 +82,7 @@ watch(name, (val) => {
 </script>
 
 <template>
-  <div id="family-1">
+  <div :id="modelValue?.id ? modelValue?.id  : 'family-1-iris'+indexBlock" >
     <div :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), ...getStyles(modelValue?.container?.properties), width: 'auto' }"
       class="py-4  px-[10px] sm:px-[50px]">
 

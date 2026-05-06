@@ -12,6 +12,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Object
   screenType: "mobile" | "tablet" | "desktop"
+  indexBlock:number
 }>()
 
 const layout: any = inject("layout", {})
@@ -19,7 +20,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 </script>
 
 <template>
-  <div id="script">
+  <div  :id="modelValue?.id ? modelValue?.id  : 'script'+indexBlock" >
     <div :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(modelValue.container?.properties, screenType),

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Inventory\Warehouse;
 
-use App\Actions\Inventory\Warehouse\Search\WarehouseRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWarehouses;
 use App\Actions\SysAdmin\Group\Seeders\SeedAikuScopedSections;
@@ -17,6 +16,7 @@ use App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions;
 use App\Actions\SysAdmin\User\UserAddRoles;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseManagementEditAuthorisation;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Actions\UI\Grp\RecacheUserUiProps;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Inventory\Warehouse\WarehouseStateEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
@@ -81,9 +81,8 @@ class StoreWarehouse extends OrgAction
 
         GroupHydrateWarehouses::dispatch($organisation->group)->delay($this->hydratorsDelay);
         OrganisationHydrateWarehouses::dispatch($organisation)->delay($this->hydratorsDelay);
-        WarehouseRecordSearch::dispatch($warehouse);
         SeedJobPositions::dispatch($organisation);
-
+        RecacheUserUiProps::make()->redoAllUsers();
 
         return $warehouse;
     }

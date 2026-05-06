@@ -16,11 +16,11 @@ use App\Models\Helpers\Media;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
-use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -64,7 +64,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $mark_for_discontinued
  * @property string|null $mark_for_discontinued_at
  * @property \Illuminate\Support\Carbon|null $discontinued_at
- * @property string|null $cost_price_ratio
+ * @property numeric|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
  * @property array<array-key, mixed>|null $offers_data
@@ -89,23 +89,24 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $descArt4Image
  * @property-read Media|null $descArt5Image
  * @property-read Media|null $extraDescArt1Image
- * @property-read Group $group
+ * @property-read array $translatable_columns_from
+ * @property-read Group|null $group
  * @property-read Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterCollection> $masterCollections
  * @property-read MasterProductCategory|null $masterDepartment
  * @property-read LaravelCollection<int, MasterProductCategory> $masterProductCategories
- * @property-read \App\Models\Masters\MasterShop $masterShop
+ * @property-read \App\Models\Masters\MasterShop|null $masterShop
  * @property-read MasterProductCategory|null $masterSubDepartment
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterVariant> $masterVariant
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read MasterProductCategory|null $parent
  * @property-read LaravelCollection<int, ProductCategory> $productCategories
+ * @property-read LaravelCollection<int, Asset> $relatedMasterAssets
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Masters\MasterProductCategoryStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategoryTimeSeries> $timeSeries
  * @property-read mixed $translations
- * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory onlyTrashed()
@@ -122,7 +123,6 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
 {
     use HasSlug;
     use SoftDeletes;
-    use HasUniversalSearch;
     use HasHistory;
     use HasImage;
     use InGroup;
@@ -280,6 +280,12 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     public function extraDescArt1Image(): HasOne
     {
         return $this->hasOne(Media::class, 'id', 'extra_desc_art1');
+    }
+
+    public function relatedMasterAssets(): BelongsToMany
+    {
+        return $this->belongsToMany(MasterAsset::class, 'master_product_category_has_related_assets')
+            ->withTimestamps();
     }
 
 }

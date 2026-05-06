@@ -10,7 +10,6 @@ namespace App\Actions\Helpers\RetinaSearch\UI;
 
 use App\Http\Resources\Helpers\RetinaSearchResource;
 use App\Models\CRM\Customer;
-use App\Models\Helpers\RetinaSearch;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
@@ -23,13 +22,8 @@ class IndexRetinalSearch
 
     public function handle(string $query, Customer $customer): Collection
     {
-        $query = trim($query);
-        $query = preg_replace('/(\+|-|=|&&|\|\||>|<|!|\(|\)|\{|}|\[|]|\^|"|~|\*|\?|:|\|\/)/', '\\\\$1', $query);
-        $query = preg_replace('/\b(AND|OR|NOT)\b/', '\\\\$0', $query);
-
-        $query = RetinaSearch::search($query)->where('customer_id', $customer->id);
-
-        return $query->get();
+        //todo use new search here (typesense)
+        return new Collection();
     }
 
     public function asController(ActionRequest $request): AnonymousResourceCollection

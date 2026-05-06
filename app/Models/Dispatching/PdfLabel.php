@@ -8,8 +8,6 @@
 
 namespace App\Models\Dispatching;
 
-use App\Models\Helpers\UniversalSearch;
-use App\Models\Traits\HasUniversalSearch;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -23,7 +21,6 @@ use Spatie\Sluggable\SlugOptions;
  * App\Models\Dispatching\Shipment
  *
  * @property-read \App\Models\Dispatching\Shipper|null $shipper
- * @property-read UniversalSearch|null $universalSearch
  * @method static Builder<static>|PdfLabel newModelQuery()
  * @method static Builder<static>|PdfLabel newQuery()
  * @method static Builder<static>|PdfLabel onlyTrashed()
@@ -36,8 +33,6 @@ class PdfLabel extends Model
 {
     use SoftDeletes;
     use HasSlug;
-
-    use HasUniversalSearch;
     use HasFactory;
 
     protected $casts = [

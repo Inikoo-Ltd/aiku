@@ -2,14 +2,13 @@
 
 /*
  * Author: Ganes <gustiganes@gmail.com>
- * Created on: 03-06-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
- * Copyright: 2025
- *
-*/
+ * Created: Tue, 03 Jun 2025, Bali, Indonesia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\CRM\WebUser\Retina;
 
+use App\Actions\CRM\WebUser\LogWebUserFailLogin;
 use App\Actions\CRM\WebUser\LogWebUserLogin;
 use App\Actions\IrisAction;
 use App\Models\Catalogue\Shop;
@@ -25,15 +24,36 @@ use Google_Client;
 
 class GoogleLoginRetina extends IrisAction
 {
-    public function handle(Shop $shop): array|WebUser
+    public function handle(Shop $shop, ActionRequest $request): array|WebUser
     {
-        $googleUser = $this->google_user ?? [];
+        $websiteId = $request->input('website')->id;
 
-        $webUser = WebUser::where('shop_id', $shop->id)
+        $googleUser = $this->google_user ?? [];
+        $webUser    = WebUser::where('shop_id', $shop->id)
             ->where('email', Arr::get($googleUser, 'email'))
             ->first();
 
+        $geoLocation = [
+            $request->header('CF-IPCountry') ?? 'XX',
+            $request->header('CF-Region'),
+            $request->header('CF-IPCity'),
+            $request->header('CF-IPLongitude'),
+            $request->header('CF-IPLatitude'),
+        ];
+
         if (!$webUser) {
+            LogWebUserFailLogin::dispatch(
+                websiteId: $websiteId,
+                credentials: [
+                    'username' => Arr::get($googleUser, 'email'),
+                ],
+                ip: request()->ip(),
+                userAgent: $request->header('User-Agent'),
+                datetime: now(),
+                geoLocation: $geoLocation,
+                source: 'G'
+            )->delay(now()->addSeconds(5));
+
             return $googleUser;
         }
 
@@ -51,8 +71,8 @@ class GoogleLoginRetina extends IrisAction
     {
         if (is_array($result)) {
             return response()->json([
-                'logged_in'         => false,
-                'google_user'       => $result,
+                'logged_in'           => false,
+                'google_user'         => $result,
                 'google_access_token' => $request->input('google_access_token'),
             ]);
         }
@@ -67,17 +87,28 @@ class GoogleLoginRetina extends IrisAction
     {
         $this->initialisation($request);
 
-        return $this->handle($this->shop);
+        return $this->handle($this->shop, $request);
     }
 
     public function postProcessRetinaLoginGoogle(WebUser $webUser, $request): JsonResponse
     {
+        $geoLocation = [
+            $request->header('CF-IPCountry') ?? 'XX',
+            $request->header('CF-Region'),
+            $request->header('CF-IPCity'),
+            $request->header('CF-IPLongitude'),
+            $request->header('CF-IPLatitude'),
+        ];
+
+
         LogWebUserLogin::dispatch(
             webUser: $webUser,
             ip: request()->ip(),
             userAgent: $request->header('User-Agent'),
-            datetime: now()
-        );
+            datetime: now(),
+            geoLocation: $geoLocation,
+            source: 'G'
+        )->delay(now()->addSeconds(5));
 
 
         $request->session()->regenerate();
@@ -106,7 +137,7 @@ class GoogleLoginRetina extends IrisAction
 
             $client->setAccessToken(['access_token' => $googleAccessToken]);
 
-            $oauth2 = new Oauth2($client);
+            $oauth2     = new Oauth2($client);
             $googleUser = $oauth2->userinfo->get();
 
             return [
@@ -132,7 +163,7 @@ class GoogleLoginRetina extends IrisAction
         $googleCredential = $request->input('google_access_token');
         if ($googleCredential) {
             try {
-                $googleUser = $this->verifyGoogleCredential($googleCredential);
+                $googleUser                        = $this->verifyGoogleCredential($googleCredential);
                 $googleUser['google_access_token'] = $googleCredential;
                 $this->set('google_user', $googleUser);
             } catch (\Exception $e) {

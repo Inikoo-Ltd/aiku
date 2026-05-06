@@ -2,22 +2,20 @@
 import { trans } from "laravel-vue-i18n";
 import { ref, watch } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faExclamationCircle, faCheckCircle } from "@fas";
 import { faUndoAlt } from "@fal";
-import { faSpinnerThird } from "@fad";
+import { faSpinnerThird, faExclamationCircle, faCheckCircle } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import Image from "@/Components/Image.vue";
 import { Cropper } from "vue-advanced-cropper";
 import "vue-advanced-cropper/dist/style.css";
-import Modal from "@/Components/Utils/Modal.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import { Image as ImageProxy } from "@/types/Image";
 
-library.add(faSpinnerThird, faExclamationCircle, faCheckCircle, faSpinnerThird, faUndoAlt);
+// ✅ PrimeVue Dialog
+import Dialog from "primevue/dialog";
 
+library.add(faSpinnerThird, faExclamationCircle, faCheckCircle, faUndoAlt);
 
 const props = defineProps<{
-    src_image?: ImageProxy
+    src_image?: string
     aspectRatio: number
 }>();
 
@@ -25,63 +23,102 @@ const emits = defineEmits<{
     (e: "cropped", value: File): void
 }>();
 
-
 const numbKey = ref(0);
 const tempImgToCrop = ref<string | null>(null);
-const imgAfterCrop = ref<Blob | null | ImageProxy>(props.src_image ?? null);
-const onPickFile = async (file: File) => {
+const imageUrl = ref<string | null>(props.src_image ?? null);
+
+const isOpenModalCrop = ref(false);
+const _cropper = ref<InstanceType<typeof Cropper> | null>(null);
+
+// pick file
+const onPickFile = (file?: File) => {
     if (!file) return;
-    _cropper.value?.reset();
-    isOpenModalCrop.value = true;
+
     const reader = new FileReader();
-    reader.readAsDataURL(file);
+
     reader.onload = (e) => {
-        tempImgToCrop.value = e.target?.result as string;
+        const result = e.target?.result as string;
+
+        imageUrl.value = result;
+        tempImgToCrop.value = result;
+        isOpenModalCrop.value = true;
+
+        setTimeout(() => {
+            _cropper.value?.reset();
+        }, 0);
     };
+
+    reader.readAsDataURL(file);
 };
 
-// Helper
-const dataURLtoBlob = (dataUrl) => {
+// convert dataURL to Blob
+const dataURLtoBlob = (dataUrl: string) => {
     const arr = dataUrl.split(",");
-    const mime = arr[0].match(/:(.*?);/)[1];
+    const mime = arr[0].match(/:(.*?);/)?.[1] || "image/png";
     const bStr = atob(arr[1]);
-    let n = bStr.length;
-    const u8arr = new Uint8Array(n);
+    const u8arr = new Uint8Array(bStr.length);
 
-    while (n--) {
-        u8arr[n] = bStr.charCodeAt(n);
+    for (let i = 0; i < bStr.length; i++) {
+        u8arr[i] = bStr.charCodeAt(i);
     }
 
     return new Blob([u8arr], { type: mime });
 };
 
-const isOpenModalCrop = ref(false);
-const _cropper = ref<InstanceType<typeof Cropper> | null>(null);
+// crop submit
 const submitCrop = () => {
-    const { coordinates, canvas } = _cropper.value?.getResult();
-    if (!canvas) return;
+    const result = _cropper.value?.getResult();
+    if (!result?.canvas) return;
 
-    const imageDataURL = canvas.toDataURL();
-    imgAfterCrop.value = {
-        original: imageDataURL
-    };
-    const imageBlob = dataURLtoBlob(imageDataURL);
-    const imageFile = new File([imageBlob], "img.png", { type: "image/png" });
+    const dataUrl = result.canvas.toDataURL("image/png");
 
-    emits("cropped", imageFile);
+    imageUrl.value = dataUrl;
+
+    const blob = dataURLtoBlob(dataUrl);
+    const file = new File([blob], "cropped.png", { type: "image/png" });
+
+    emits("cropped", file);
 
     isOpenModalCrop.value = false;
 };
 
-
-watch(isOpenModalCrop, (value) => {
-    _cropper.value?.refresh();
+// refresh cropper when dialog open
+watch(isOpenModalCrop, (val) => {
+    if (val) {
+        setTimeout(() => {
+            _cropper.value?.refresh();
+        }, 0);
+    }
 });
+
+watch(() => props.src_image, (val) => {
+    if (!val) {
+        imageUrl.value = null;
+        return;
+    }
+
+    if (typeof val === 'string') {
+        imageUrl.value = val;
+        return;
+    }
+
+    if (val instanceof File) {
+        imageUrl.value = URL.createObjectURL(val);
+    }
+}, { immediate: true });
+
 </script>
 
 <template>
     <div class="w-fit min-w-32">
-        <Modal :isOpen="isOpenModalCrop" @close="isOpenModalCrop = false" width="max-w-xl w-full" :zIndex="999">
+        <!-- ✅ PRIMEVUE DIALOG -->
+        <Dialog
+            v-model:visible="isOpenModalCrop"
+            modal
+            header="Crop Image"
+            :style="{ width: '600px' }"
+            :breakpoints="{ '960px': '90vw' }"
+        >
             <div class="w-full h-[300px] relative bg-gray-700">
                 <Cropper
                     :key="numbKey"
@@ -89,42 +126,64 @@ watch(isOpenModalCrop, (value) => {
                     class="w-full h-full"
                     :src="tempImgToCrop"
                     :stencil-props="{
-                        aspectRatio: 1,
+                        aspectRatio: aspectRatio,
                         minAspectRatio: 0.1,
                         maxAspectRatio: 10
                     }"
                     imageClass="w-full h-full"
                     :auto-zoom="true"
                 />
-                <div @click="() => numbKey++" class="select-none px-2 py-1 cursor-pointer absolute top-2 text-white right-2 border border-gray-300 hover:bg-white/80 hover:text-gray-700 rounded">
-                    <FontAwesomeIcon icon="fal fa-undo-alt" class="" fixed-width aria-hidden="true" />
+
+                <!-- refresh -->
+                <div
+                    @click="numbKey++"
+                    class="absolute top-2 right-2 px-2 py-1 text-white border border-gray-300 rounded cursor-pointer hover:bg-white/80 hover:text-gray-700"
+                >
+                    <FontAwesomeIcon icon="fal fa-undo-alt" />
                     {{ trans("Refresh") }}
                 </div>
             </div>
 
-            <div class="text-gray-500 italic text-xs mt-1">
-                <FontAwesomeIcon icon="fal fa-info-circle" class="" fixed-width aria-hidden="true" />
+            <div class="text-gray-500 italic text-xs mt-2">
                 {{ trans("Use mouse scroll to zoom in and zoom out") }}
             </div>
 
-            <div class="w-full mt-8">
+            <div class="w-full mt-6">
                 <Button @click="submitCrop" label="Crop" full size="xl" />
             </div>
-        </Modal>
+        </Dialog>
 
-        <!-- Avatar Button: Large view -->
-        <div class="bg-gray-100 relative overflow-hidden h-40 min-w-32 w-auto aspect-ratio rounded lg:inline-block ring-1 ring-gray-500 shadow">
-            <Image class="h-full rounded" :src="imgAfterCrop" alt="" />
-            <label id="input-avatar-large-mask" for="input-avatar-large"
-                   class="absolute inset-0 flex h-full w-full items-center justify-center bg-black bg-opacity-50 text-sm font-medium text-white opacity-0 hover:opacity-100">
-                <span>{{ trans("Change") }}</span>
-                <input type="file" @input="onPickFile($event.target.files[0])" id="input-avatar-large" name="input-avatar-large" accept="image/*"
-                       class="absolute inset-0 h-full w-full cursor-pointer rounded-md border-gray-300 opacity-0" />
+        <!-- PREVIEW -->
+        <div class="bg-gray-100 relative overflow-hidden h-40 min-w-32 rounded ring-1 ring-gray-500 shadow">
+            <img
+                v-if="imageUrl"
+                :src="imageUrl"
+                class="h-full w-full object-cover rounded"
+                alt="preview"
+            />
+
+            <div
+                v-else
+                class="flex items-center justify-center h-full text-xs text-gray-400"
+            >
+                No image
+            </div>
+
+            <!-- overlay -->
+            <label
+                for="input-avatar"
+                class="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-sm opacity-0 hover:opacity-100 cursor-pointer"
+            >
+                {{ trans("Change") }}
+
+                <input
+                    id="input-avatar"
+                    type="file"
+                    accept="image/*"
+                    class="hidden"
+                    @change="onPickFile($event.target.files?.[0])"
+                />
             </label>
         </div>
-
-
     </div>
 </template>
-
-

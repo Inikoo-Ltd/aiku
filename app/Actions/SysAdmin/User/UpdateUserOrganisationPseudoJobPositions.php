@@ -9,10 +9,12 @@
 namespace App\Actions\SysAdmin\User;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithPreparePositionsForValidation;
+use App\Actions\SysAdmin\CleanUserCaches;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithReorganisePositions;
-use App\Http\Resources\SysAdmin\UserResource;
+use App\Actions\UI\Grp\RecacheUserUiProps;
+use App\Http\Resources\SysAdmin\User\UserResource;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
@@ -34,6 +36,14 @@ class UpdateUserOrganisationPseudoJobPositions extends OrgAction
         $jobPositions = $this->reorganisePositionsSlugsToIds($jobPositions);
 
         SyncUserPseudoOrganisationJobPositions::run($user, $organisation, $jobPositions);
+        CleanUserCaches::run(
+            $user,
+            [
+                'auth-user:'.$user->id.';*',
+                'grp-first-load-props:'.$user->id.':*'
+            ]
+        );
+        RecacheUserUiProps::dispatch($user);
 
         return $user;
     }
@@ -63,10 +73,9 @@ class UpdateUserOrganisationPseudoJobPositions extends OrgAction
 
     public function action(User $user, Organisation $organisation, $modelData): User
     {
-
         $this->asAction     = true;
         $this->organisation = $organisation;
-        $this->user = $user;
+        $this->user         = $user;
         $this->initialisation($organisation, $modelData);
 
         return $this->handle($user, $organisation, $this->validatedData);
@@ -74,7 +83,6 @@ class UpdateUserOrganisationPseudoJobPositions extends OrgAction
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
-
         if ($this->asAction) {
             $userToUpdate = $this->user;
         } else {
@@ -86,8 +94,6 @@ class UpdateUserOrganisationPseudoJobPositions extends OrgAction
         if ($employee) {
             $validator->errors()->add('permissions', 'User is an employee of the organisation');
         }
-
-
     }
 
     public function prepareForValidation(ActionRequest $request): void
@@ -97,7 +103,6 @@ class UpdateUserOrganisationPseudoJobPositions extends OrgAction
 
     public function asController(User $user, Organisation $organisation, ActionRequest $request): User
     {
-
         $this->initialisation($organisation, $request);
 
         return $this->handle($user, $organisation, $this->validatedData);

@@ -22,8 +22,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric $grp_net_amount
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Accounting\InvoiceTransaction $invoiceTransaction
- * @property-read TradeUnit $tradeUnit
+ * @property-read \App\Models\Accounting\InvoiceTransaction|null $invoiceTransaction
+ * @property-read TradeUnit|null $tradeUnit
  * @property-read TradeUnitFamily|null $tradeUnitFamily
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceTransactionHasTradeUnit newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceTransactionHasTradeUnit newQuery()

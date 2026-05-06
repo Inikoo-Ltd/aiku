@@ -10,6 +10,7 @@ namespace App\Actions\CRM\Prospect\Mailshots\UI;
 
 use App\Actions\Comms\Mailshot\UI\GetMailshotShowcase;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
+use App\Actions\Comms\EmailTemplate\GetEmailTemplates;
 use App\Actions\CRM\Prospect\Mailshots\GetProspectMailshotRecipientsQueryBuilder;
 use App\Actions\CRM\Prospect\UI\IndexProspects;
 use App\Actions\OrgAction;
@@ -56,6 +57,8 @@ class ShowProspectMailshot extends OrgAction
 
         $isShowResume = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::STOPPED]);
 
+        $isShowEditName = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::SENT]);
+
         $isSecondWaveActive = $mailshot->secondWave()->exists() && $mailshot->is_second_wave_enabled;
         $mailshotSecondWave = null;
         if ($isSecondWaveActive) {
@@ -66,6 +69,8 @@ class ShowProspectMailshot extends OrgAction
         $estimatedRecipients = in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY, MailshotStateEnum::SCHEDULED])
             ? (GetProspectMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count('prospects.id') ?? 0)
             : 0;
+
+        $canLoadTemplates = in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS]);
 
         /* NOTE:
          * is_second_wave_enabled is perspective from parent mailshot
@@ -119,7 +124,7 @@ class ShowProspectMailshot extends OrgAction
                                 ]
                             ]
                         ] : [],
-                        $isShowActions ? [
+                        $isShowActions || $isShowEditName ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => __('Edit'),
@@ -260,6 +265,16 @@ class ShowProspectMailshot extends OrgAction
                 'isHasParentMailshot' => $isHasParentMailshot,
                 'isSecondWave' => $mailshot->is_second_wave,
                 'numberSecondWaveRecipients' => $mailshotSecondWave?->recipients?->count() ?? 0,
+                'ownShopTemplates' => $canLoadTemplates ? GetEmailTemplates::make()->action($this->shop, 'own') : [],
+                'otherShopTemplates' => $canLoadTemplates ? GetEmailTemplates::make()->action($this->shop, 'other') : [],
+                'workshopRoute' => [
+                    'name' => "grp.org.shops.show.crm.prospects.mailshots.workshop",
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'shop' => $this->shop->slug,
+                        'mailshot' => $mailshot->slug
+                    ]
+                ],
 
             ]
         )->table(
