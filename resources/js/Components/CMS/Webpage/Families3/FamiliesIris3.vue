@@ -229,7 +229,7 @@ console.log('families',props)
 
             <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="flex h-auto">
 
-              <LinkIris :href="item.url" class="w-full h-full flex" v-slot="{ isLoading }">
+              <LinkIris :href="item.url" class="w-full h-full flex" v-slot="{ isLoading } = { isLoading: false }">
                 <Family3Render
                   class="family-item w-full h-full"
                   :data="item"

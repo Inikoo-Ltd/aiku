@@ -184,7 +184,7 @@ const handleViewAllSubDepartment = (url: string) => {
                         <div v-if="activeSubIndex !== null && sortedFamilies.length">
                             <div class="mt-1 pt-1 pb-2 px-4">
                                 <LinkIris :href="sortedSubDepartments[activeSubIndex].url">
-                                    <template #default="{ isLoading }">
+                                    <template #default="{ isLoading } = { isLoading: false }">
                                         <Button
                                             :label="trans('View all')"
                                             :icon="faExternalLink"
@@ -293,7 +293,7 @@ const handleViewAllSubDepartment = (url: string) => {
                         
                         <div class="mt-1 pt-1 pb-2 px-4">
                             <LinkIris :href="sortedProductCategories[activeIndex].url">
-                                <template #default="{ isLoading }">
+                                <template #default="{ isLoading } = { isLoading: false }">
                                     <Button
                                         :label="trans('View all')"
                                         :icon="faExternalLink"

@@ -59,7 +59,7 @@ const isImageLeft = computed(() => valueForField.value === 'Image-left')
 					isImageLeft ? 'order-1' : 'order-2']"
 					:style="getStyles(fieldValue?.image?.container?.properties, screenType)"
 				>
-					<template #default="{ isLoading }">
+					<template #default="{ isLoading } = { isLoading: false }">
 						<Image :src="fieldValue.image.source" :imageCover="true"
 							:alt="fieldValue.image.alt || 'Image preview'"
 							class="absolute inset-0 w-full h-full object-fill"
@@ -91,7 +91,7 @@ const isImageLeft = computed(() => valueForField.value === 'Image-left')
 								:canonical_url="fieldValue?.button?.link?.canonical_url"
 								:target="fieldValue?.button?.link?.taget" typeof="button"
 								:type="fieldValue?.button?.link?.type">
-								<template #default="{ isLoading }">
+								<template #default="{ isLoading } = { isLoading: false }">
 									<Button
 										:injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
 										:label="fieldValue?.button?.text"
