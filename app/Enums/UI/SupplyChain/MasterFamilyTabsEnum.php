@@ -25,7 +25,6 @@ enum MasterFamilyTabsEnum: string
     case HISTORY   = 'history';
     case VARIANTS   = 'variants';
 
-
     public function blueprint(): array
     {
         return match ($this) {

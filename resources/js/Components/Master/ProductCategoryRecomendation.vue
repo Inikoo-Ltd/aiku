@@ -92,7 +92,7 @@ const SaveOrder = async () => {
         <div class="bg-white border rounded-lg p-4">
 
             <FamilySetOrderingPositionOfProduct 
-                :data="listProducts"
+                :data="listProducts.data"
                 :editable="props.data?.editable"
             >
 

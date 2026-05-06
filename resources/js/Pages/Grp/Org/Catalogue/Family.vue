@@ -182,7 +182,6 @@ const showDialog = ref(false)
 
     <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesData="salesData" />
 
-
     <FormCreateMasterProduct
         :showDialog="showDialog"
         :storeProductRoute="storeProductRoute"

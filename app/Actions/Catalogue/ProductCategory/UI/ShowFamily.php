@@ -22,6 +22,8 @@ use App\Enums\UI\Catalogue\FamilyTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\OffersResource;
 use App\Http\Resources\Catalogue\ProductCategoryTimeSeriesResource;
+use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\Catalogue\ProductsResourceForRecommendation;
 use App\Http\Resources\Catalogue\VariantsResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\History\HistoryResource;
@@ -195,8 +197,16 @@ class ShowFamily extends OrgAction
                 : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))),
 
             FamilyTabsEnum::RECOMMENDATION->value => $this->tab == FamilyTabsEnum::RECOMMENDATION->value ?
-                fn () => GetProductCategoryRecomendation::run($family)
-                : Inertia::lazy(fn () => GetProductCategoryRecomendation::run($family)),
+                fn () => [
+                    'id' => $family->id,
+                    'data' => ProductsResourceForRecommendation::collection(GetProductCategoryRecomendation::run($family)),
+                    'editable' => false
+                ]
+                : Inertia::lazy(fn () => [
+                    'id' => $family->id,
+                    'data' => ProductsResourceForRecommendation::collection(GetProductCategoryRecomendation::run($family)),
+                    'editable' => false
+                ]),
         ];
 
         $tabs[FamilyTabsEnum::VARIANTS->value] =
@@ -277,7 +287,7 @@ class ShowFamily extends OrgAction
                 'url_master'       => $urlMaster,
                 'tabs'             => [
                     'current'    => $this->tab,
-                    'navigation' => FamilyTabsEnum::navigation()
+                    'navigation' => app()->isLocal() ? FamilyTabsEnum::navigation() : FamilyTabsEnum::navigationExcept([FamilyTabsEnum::RECOMMENDATION]),
                 ],
                 'shop_data' => [
                     'id'       => $family->shop->id,
