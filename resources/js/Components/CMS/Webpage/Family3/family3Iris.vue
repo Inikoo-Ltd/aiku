@@ -88,18 +88,16 @@ console.log("Family2 Workshop Props:", props)
           {{ fieldValue?.family?.name }}
         </h1>
 
-        <!-- <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in" class="discount-wrapper">
+        <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in" class="discount-wrapper">
           <div :class="bestOffer?.type === 'Category Quantity Ordered Order Interval'
             ? 'block md:flex md:flex-nowrap md:gap-3'
             : 'discount-grid'">
             <DiscountByType v-if="showTriggers" :offers_data="fieldValue?.family?.offers_data"
               template="triggers_labels" class="discount-item discount-span" />
 
-            <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="bestOffer?.type === 'Category Quantity Ordered Order Interval'
-              ? 'active-inactive-gr'
-              : 'max_discount'" class="discount-item" />
+            <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="'active-inactive-gr'" class="discount-item" />
           </div>
-        </div> -->
+        </div>
 
       </div>
 
@@ -144,7 +142,7 @@ console.log("Family2 Workshop Props:", props)
           <div v-html="cleanedDescription" class="text-gray-600 leading-relaxed text-sm md:text-base " />
 
           <!-- COMBINED DISCOUNT + BUTTON -->
-          <div class="mt-4 flex  w-full overflow-hidden discount-wrapper md:items-stretch  md:justify-start justify-center">
+          <div class="mt-3 flex  w-full overflow-hidden md:items-stretch  md:justify-start justify-center">
 
 
               <Button 
