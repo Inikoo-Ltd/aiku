@@ -453,7 +453,7 @@ class IndexProspects extends OrgAction
                                 'Shop' => [
                                     'type'  => 'button',
                                     'style' => 'create',
-                                    'label' => __('Prospect'),
+                                    'label' => __('Create Prospect'),
                                     'route' => [
                                         'name'       => 'grp.org.shops.show.crm.prospects.create',
                                         'parameters' => $request->route()->originalParameters()
