@@ -5,8 +5,7 @@ namespace App\Actions\Catalogue\Review\UI;
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Review;
-use App\Models\Catalogue\ReviewableRatingStat;
+use App\Models\Reviews\ProductCategoryReview;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -16,24 +15,21 @@ class IndexReviews extends OrgAction
 {
     public function getStats(ProductCategory $parent): array
     {
-        $reviewableStat = ReviewableRatingStat::query()
-            ->where('reviewable_type', $parent->getMorphClass())
-            ->where('reviewable_id', $parent->id)
-            ->first();
+        $reviewStat = $parent->reviewStats()->first();
 
         return [
-            'total' => (int) ($reviewableStat?->reviews_count ?? 0),
-            'average_rating' => (float) ($reviewableStat?->rating_average ?? 0),
-            'verified' => (int) ($reviewableStat?->verified_reviews_count ?? 0),
-            'like_count' => (int) ($reviewableStat?->number_reviews_like ?? 0),
-            'status_approved' => (int) ($reviewableStat?->number_reviews_state_approved ?? 0),
-            'status_pending' => (int) ($reviewableStat?->number_reviews_state_pending ?? 0),
-            'status_rejected' => (int) ($reviewableStat?->number_reviews_state_rejected ?? 0),
-            'number_reviews_rating_1' => (int) ($reviewableStat?->number_reviews_rating_1 ?? 0),
-            'number_reviews_rating_2' => (int) ($reviewableStat?->number_reviews_rating_2 ?? 0),
-            'number_reviews_rating_3' => (int) ($reviewableStat?->number_reviews_rating_3 ?? 0),
-            'number_reviews_rating_4' => (int) ($reviewableStat?->number_reviews_rating_4 ?? 0),
-            'number_reviews_rating_5' => (int) ($reviewableStat?->number_reviews_rating_5 ?? 0),
+            'total' => (int) ($reviewStat?->number_reviews ?? 0),
+            'average_rating' => (float) ($reviewStat?->average_rating_main ?? 0),
+            'verified' => 0,
+            'like_count' => (int) ProductCategoryReview::query()->where('product_category_id', $parent->id)->sum('like_count'),
+            'status_approved' => (int) ($reviewStat?->number_reviews_approved ?? 0),
+            'status_pending' => (int) ($reviewStat?->number_reviews_pending ?? 0),
+            'status_rejected' => (int) ($reviewStat?->number_reviews_rejected ?? 0),
+            'number_reviews_rating_1' => (int) ($reviewStat?->number_rating_1 ?? 0),
+            'number_reviews_rating_2' => (int) ($reviewStat?->number_rating_2 ?? 0),
+            'number_reviews_rating_3' => (int) ($reviewStat?->number_rating_3 ?? 0),
+            'number_reviews_rating_4' => (int) ($reviewStat?->number_rating_4 ?? 0),
+            'number_reviews_rating_5' => (int) ($reviewStat?->number_rating_5 ?? 0),
         ];
     }
 
@@ -49,19 +45,24 @@ class IndexReviews extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        return QueryBuilder::for(Review::class)
-            ->with(['media.media'])
-            ->leftJoin('customers', 'customers.id', '=', 'reviews.customer_id')
-            ->where('reviews.reviewable_type', $parent->getMorphClass())
-            ->where('reviews.reviewable_id', $parent->id)
-            ->defaultSort('-reviews.created_at')
+        return QueryBuilder::for(ProductCategoryReview::class)
+            ->with(['media'])
+            ->leftJoin('customers', 'customers.id', '=', 'product_category_reviews.customer_id')
+            ->where('product_category_reviews.product_category_id', $parent->id)
+            ->defaultSort('-product_category_reviews.created_at')
             ->select([
-                'reviews.id',
-                'reviews.status',
-                'reviews.rating',
-                'reviews.message',
-                'reviews.like_count',
-                'reviews.created_at',
+                'product_category_reviews.id',
+                'product_category_reviews.customer_id',
+                'product_category_reviews.status',
+                'product_category_reviews.rating_main as rating',
+                'product_category_reviews.rating_a',
+                'product_category_reviews.rating_b',
+                'product_category_reviews.rating_c',
+                'product_category_reviews.rating_d',
+                'product_category_reviews.rating_e',
+                'product_category_reviews.message',
+                'product_category_reviews.like_count',
+                'product_category_reviews.created_at',
                 'customers.contact_name as contact_name',
             ])
             ->allowedSorts(['id', 'created_at', 'rating', 'like_count'])

@@ -6,8 +6,10 @@ use App\Enums\Catalogue\Review\ReviewStatusEnum;
 use App\Http\Resources\Catalogue\ReviewsResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Review;
-use App\Models\Catalogue\ReviewableRatingStat;
+use App\Models\Catalogue\Shop;
+use App\Models\Reviews\ProductCategoryReview;
+use App\Models\Reviews\ProductReview;
+use App\Models\Reviews\ShopReview;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -23,19 +25,15 @@ class GetReviews
 
     public function handle(array $filters): LengthAwarePaginator
     {
-        $query = Review::query()
+        $reviewableType = data_get($filters, 'reviewable_type', 'ProductCategory');
+        $query = $this->resolveReviewQuery($reviewableType)
             ->with([
-                'customer:id,name,slug',
-                'media.media:id,name,file_name,mime_type,size',
+                'customer:id,name,contact_name,slug',
+                'media:id,name,file_name,mime_type,size',
             ]);
 
-        $reviewableType = data_get($filters, 'reviewable_type');
-        if ($reviewableType) {
-            $query->where('reviewable_type', $this->resolveReviewableMorphClass($reviewableType));
-        }
-
         if ($reviewableId = data_get($filters, 'reviewable_id')) {
-            $query->where('reviewable_id', (int) $reviewableId);
+            $query->where($this->resolveReviewableColumn($reviewableType), (int) $reviewableId);
         }
 
         if ($reviewId = data_get($filters, 'review_id')) {
@@ -55,8 +53,8 @@ class GetReviews
         $sort = data_get($filters, 'sort', '-created_at');
         match ($sort) {
             'created_at' => $query->orderBy('created_at'),
-            'rating' => $query->orderBy('rating'),
-            '-rating' => $query->orderByDesc('rating'),
+            'rating' => $query->orderBy('rating_main'),
+            '-rating' => $query->orderByDesc('rating_main'),
             default => $query->orderByDesc('created_at'),
         };
 
@@ -78,8 +76,8 @@ class GetReviews
     public function rules(): array
     {
         return [
-            'review_id'       => ['sometimes', 'integer', 'exists:reviews,id'],
-            'reviewable_type' => ['sometimes', Rule::in(['Product', 'ProductCategory'])],
+            'review_id'       => ['sometimes', 'integer', 'min:1'],
+            'reviewable_type' => ['sometimes', Rule::in(['Product', 'ProductCategory', 'Shop'])],
             'reviewable_id'   => ['sometimes', 'integer', 'min:1'],
             'customer_id'     => ['sometimes', 'integer', 'exists:customers,id'],
             'status'          => ['sometimes', Rule::enum(ReviewStatusEnum::class)],
@@ -89,50 +87,50 @@ class GetReviews
         ];
     }
 
-    private function resolveReviewableMorphClass(string $reviewableType): string
+    private function resolveReviewQuery(string $reviewableType): Builder
     {
         return match ($reviewableType) {
-            'Product' => (new Product())->getMorphClass(),
-            'ProductCategory' => (new ProductCategory())->getMorphClass(),
+            'Product' => ProductReview::query(),
+            'Shop' => ShopReview::query(),
+            default => ProductCategoryReview::query(),
+        };
+    }
+
+    private function resolveReviewableColumn(string $reviewableType): string
+    {
+        return match ($reviewableType) {
+            'Product' => 'product_id',
+            'Shop' => 'shop_id',
+            default => 'product_category_id',
         };
     }
 
     private function buildStats(Builder $query, array $filters): array
     {
-        $reviewableType = data_get($filters, 'reviewable_type');
+        $reviewableType = data_get($filters, 'reviewable_type', 'ProductCategory');
         $reviewableId = (int) data_get($filters, 'reviewable_id', 0);
         if ($reviewableType && $reviewableId > 0) {
-            $reviewableStat = ReviewableRatingStat::query()
-                ->where('reviewable_type', $this->resolveReviewableMorphClass($reviewableType))
-                ->where('reviewable_id', $reviewableId)
-                ->first();
+            $reviewable = match ($reviewableType) {
+                'Product' => Product::query()->with('reviewStats')->find($reviewableId),
+                'Shop' => Shop::query()->with('reviewStats')->find($reviewableId),
+                default => ProductCategory::query()->with('reviewStats')->find($reviewableId),
+            };
+
+            $reviewableStat = $reviewable?->reviewStats;
 
             if ($reviewableStat) {
-                $ratingBreakdownFromColumns = [
-                    '1' => (int) ($reviewableStat->number_reviews_rating_1 ?? 0),
-                    '2' => (int) ($reviewableStat->number_reviews_rating_2 ?? 0),
-                    '3' => (int) ($reviewableStat->number_reviews_rating_3 ?? 0),
-                    '4' => (int) ($reviewableStat->number_reviews_rating_4 ?? 0),
-                    '5' => (int) ($reviewableStat->number_reviews_rating_5 ?? 0),
-                ];
-
-                $ratingBreakdown = $reviewableStat->rating_breakdown ?? [];
-                if (empty($ratingBreakdown)) {
-                    $ratingBreakdown = $ratingBreakdownFromColumns;
-                }
-
                 return [
-                    'total' => (int) $reviewableStat->reviews_count,
-                    'average_rating' => (float) $reviewableStat->rating_average,
-                    'like_count' => (int) $reviewableStat->number_reviews_like,
-                    'status_approved' => (int) ($reviewableStat->number_reviews_state_approved ?? 0),
-                    'status_pending' => (int) ($reviewableStat->number_reviews_state_pending ?? 0),
-                    'status_rejected' => (int) ($reviewableStat->number_reviews_state_rejected ?? 0),
-                    'number_reviews_rating_1' => $ratingBreakdownFromColumns['1'],
-                    'number_reviews_rating_2' => $ratingBreakdownFromColumns['2'],
-                    'number_reviews_rating_3' => $ratingBreakdownFromColumns['3'],
-                    'number_reviews_rating_4' => $ratingBreakdownFromColumns['4'],
-                    'number_reviews_rating_5' => $ratingBreakdownFromColumns['5'],
+                    'total' => (int) ($reviewableStat->number_reviews ?? 0),
+                    'average_rating' => (float) ($reviewableStat->average_rating_main ?? 0),
+                    'like_count' => (int) ((clone $query)->sum('like_count')),
+                    'status_approved' => (int) ($reviewableStat->number_reviews_approved ?? 0),
+                    'status_pending' => (int) ($reviewableStat->number_reviews_pending ?? 0),
+                    'status_rejected' => (int) ($reviewableStat->number_reviews_rejected ?? 0),
+                    'number_reviews_rating_1' => (int) ($reviewableStat->number_rating_1 ?? 0),
+                    'number_reviews_rating_2' => (int) ($reviewableStat->number_rating_2 ?? 0),
+                    'number_reviews_rating_3' => (int) ($reviewableStat->number_rating_3 ?? 0),
+                    'number_reviews_rating_4' => (int) ($reviewableStat->number_rating_4 ?? 0),
+                    'number_reviews_rating_5' => (int) ($reviewableStat->number_rating_5 ?? 0),
                 ];
             }
         }
@@ -146,16 +144,16 @@ class GetReviews
 
         return [
             'total' => (int) $total,
-            'average_rating' => round((float) ((clone $query)->avg('rating') ?? 0), 1),
+            'average_rating' => round((float) ((clone $query)->avg('rating_main') ?? 0), 1),
             'like_count' => (int) ((clone $query)->sum('like_count')),
             'status_approved' => (int) ($statusCounts[ReviewStatusEnum::Approved->value] ?? 0),
             'status_pending' => (int) ($statusCounts[ReviewStatusEnum::Pending->value] ?? 0),
             'status_rejected' => (int) ($statusCounts[ReviewStatusEnum::Rejected->value] ?? 0),
-            'number_reviews_rating_1' => (int) ((clone $query)->where('rating', 1)->count()),
-            'number_reviews_rating_2' => (int) ((clone $query)->where('rating', 2)->count()),
-            'number_reviews_rating_3' => (int) ((clone $query)->where('rating', 3)->count()),
-            'number_reviews_rating_4' => (int) ((clone $query)->where('rating', 4)->count()),
-            'number_reviews_rating_5' => (int) ((clone $query)->where('rating', 5)->count()),
+            'number_reviews_rating_1' => (int) ((clone $query)->where('rating_main', 1)->count()),
+            'number_reviews_rating_2' => (int) ((clone $query)->where('rating_main', 2)->count()),
+            'number_reviews_rating_3' => (int) ((clone $query)->where('rating_main', 3)->count()),
+            'number_reviews_rating_4' => (int) ((clone $query)->where('rating_main', 4)->count()),
+            'number_reviews_rating_5' => (int) ((clone $query)->where('rating_main', 5)->count()),
         ];
     }
 }
