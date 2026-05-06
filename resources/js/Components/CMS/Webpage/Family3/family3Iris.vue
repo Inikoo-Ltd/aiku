@@ -144,11 +144,10 @@ console.log("Family2 Workshop Props:", props)
           <!-- COMBINED DISCOUNT + BUTTON -->
           <div class="mt-3 flex  w-full overflow-hidden md:items-stretch  md:justify-start justify-center">
 
-
-              <Button 
-                  :label="fieldValue?.button?.text" 
-                  class="flex leading-none h-full mb-[0.5rem]"
-                  :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" />
+            <LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target">
+              <Button :label="fieldValue?.button?.text" class="flex leading-none h-full mb-[0.5rem]"
+                :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" />
+            </LinkIris>
 
             <!-- DISCOUNT -->
           <!--   <div :class="bestOffer?.type === 'Category Quantity Ordered Order Interval'
