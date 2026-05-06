@@ -35,7 +35,7 @@ class ProcessOutOfStockInOrderPerOutbox
 
         $currentDateTime = Carbon::now()->utc();
 
-        $lastOutBoxSent = $outbox->last_sent_at;
+        $lastOutBoxSent = $outbox->last_sent_at ?? null;
 
         // Check if enough time has passed since last outbox was sent
         if ($lastOutBoxSent && Carbon::parse($lastOutBoxSent)->diffInHours($currentDateTime) < $outbox->interval) {
@@ -58,8 +58,11 @@ class ProcessOutOfStockInOrderPerOutbox
         });
 
         // check Order Item
-        $baseQuery->join('transactions', function ($join) {
+        $baseQuery->join('transactions', function ($join) use ($lastOutBoxSent) {
             $join->on('orders.id', '=', 'transactions.order_id');
+            if ($lastOutBoxSent) {
+                $join->where('transactions.created_at', '>', $lastOutBoxSent);
+            }
             $join->whereNull('transactions.deleted_at');
         });
 

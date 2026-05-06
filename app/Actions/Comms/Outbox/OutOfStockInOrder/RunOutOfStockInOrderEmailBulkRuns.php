@@ -28,6 +28,8 @@ class RunOutOfStockInOrderEmailBulkRuns
         $queryOutbox->where('state', OutboxStateEnum::ACTIVE);
         $queryOutbox->where('is_applicable', true);
         $queryOutbox->whereNotNull('shop_id');
+        $queryOutbox->whereNotNull('interval');
+
         $queryOutbox->select('outboxes.id', 'outboxes.shop_id', 'outboxes.code', 'outboxes.last_sent_at');
         $outboxes = $queryOutbox->get();
 
