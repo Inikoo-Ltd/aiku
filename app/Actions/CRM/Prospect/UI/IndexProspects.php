@@ -448,33 +448,21 @@ class IndexProspects extends OrgAction
                     'icon'          => ['fal', 'fa-user-plus'],
                     'title'         => __('Prospects'),
                     'actions'       => [
-                        $this->canEdit ? [
-                            'type'    => 'buttonGroup',
-                            'buttons' =>
-                                match (class_basename($this->parent)) {
-                                    'Shop' => [
-                                        [
-                                            'style' => 'primary',
-                                            'icon'  => ['fal', 'fa-upload'],
-                                            'label' => 'Upload',
-                                            'route' => [
-                                                'name'       => 'grp.org.models.shop.prospects.upload',
-                                                'parameters' => $this->parent->id
-                                            ],
-                                        ],
-                                        [
-                                            'type'  => 'button',
-                                            'style' => 'create',
-                                            'label' => __('Prospect'),
-                                            'route' => [
-                                                'name'       => 'grp.org.shops.show.prospects.create',
-                                                'parameters' => $request->route()->originalParameters()
-                                            ]
-                                        ]
-                                    ],
-                                    default => []
-                                }
-                        ] : false
+                        $this->canEdit ?
+                            match (class_basename($this->parent)) {
+                                'Shop' => [
+                                    'type'  => 'button',
+                                    'style' => 'create',
+                                    'label' => __('Prospect'),
+                                    'route' => [
+                                        'name'       => 'grp.org.shops.show.crm.prospects.create',
+                                        'parameters' => $request->route()->originalParameters()
+                                    ]
+
+                                ],
+                                default => []
+                            }
+                            : false
                     ],
                     'subNavigation' => $subNavigation,
                 ]),
