@@ -22,12 +22,15 @@ class SyncShopRelatedProductsFromMasterCategory
         foreach ($masterProductCategory->productCategories as $productCategory) {
             $productIds = [];
             foreach ($masterProductCategory->relatedMasterAssets as $masterAsset) {
-                $product = Product::where('shop_id', $productCategory->id)->where('master_product_id', $masterAsset->id)->first();
+                $product = Product::where('shop_id', $productCategory->shop_id)->where('master_product_id', $masterAsset->id)->first();
                 if ($product) {
-                    $productIds[] = $product->id;
+                    $productIds[] = [
+                        'id' => $product->id,
+                        'position' => $masterAsset->pivot->position
+                    ];
                 }
             }
-            SyncProductCategoryRelatedProducts::make()->action($productCategory, $productIds);
+            SyncProductCategoryRelatedProducts::make()->action($productCategory, ['product_ids' => $productIds]);
         }
     }
 }

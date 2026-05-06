@@ -193,6 +193,10 @@ class ShowFamily extends OrgAction
             FamilyTabsEnum::OFFERS->value => $this->tab == FamilyTabsEnum::OFFERS->value ?
                 fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))
                 : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))),
+
+            FamilyTabsEnum::RECOMMENDATION->value => $this->tab == FamilyTabsEnum::RECOMMENDATION->value ?
+                fn () => GetProductCategoryRecomendation::run($family)
+                : Inertia::lazy(fn () => GetProductCategoryRecomendation::run($family)),
         ];
 
         $tabs[FamilyTabsEnum::VARIANTS->value] =

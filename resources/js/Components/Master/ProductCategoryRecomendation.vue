@@ -4,30 +4,34 @@ import FamilySetOrderingPositionOfProduct from "./FamilySetOrderingPositionOfPro
 import { trans } from "laravel-vue-i18n";
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ListSelector from "@/Components/Selector.vue"
-import { router } from "@inertiajs/vue3";
 import { notify } from "@kyvg/vue3-notification";
 import axios from "axios";
 
 const props = defineProps<{
-    data: any
+    data: {
+        data: any[],
+        editable: boolean
+    }
     product_category_id?: number
 }>()
-console.log('Props:', props)
-// ✅ shape sesuai komponen ordering
+
 const listProducts = ref({
     data: props.data?.data ?? []
 })
 
 const productDialog = ref()
 
+const loadingOrder = ref(false)
+
 const openAddProduct = () => {
+    if (!props.data?.editable) return
+
     productDialog.value?.open()
 }
 
-const loadingOrder = ref(false)
-
-
 const SaveOrder = async () => {
+    if (!props.data?.editable) return
+
     loadingOrder.value = true
 
     try {
@@ -63,8 +67,6 @@ const SaveOrder = async () => {
         loadingOrder.value = false
     }
 }
-
-
 </script>
 
 <template>
@@ -77,9 +79,11 @@ const SaveOrder = async () => {
             </div>
 
             <Button 
+                v-if="props.data?.editable"
                 label="Save Order" 
                 @click="SaveOrder" 
                 :disabled="loadingOrder" 
+                :loading="loadingOrder"
                 type="save"
             />
         </div>
@@ -89,14 +93,17 @@ const SaveOrder = async () => {
 
             <FamilySetOrderingPositionOfProduct 
                 :data="listProducts"
-                @update:data="handleUpdateData"
+                :editable="props.data?.editable"
             >
 
                 <!-- TOP ACTION -->
-                <template #before-button-list>
+                <template
+                    v-if="props.data?.editable"
+                    #before-button-list
+                >
                     <div class="flex justify-end mx-3">
                         <Button 
-                            label=" + Add Product" 
+                            label="+ Add Product" 
                             type="tertiary" 
                             size="xs"
                             @click="openAddProduct"
@@ -117,6 +124,7 @@ const SaveOrder = async () => {
                         </div>
 
                         <Button 
+                            v-if="props.data?.editable"
                             class="mt-5" 
                             label="Add Product" 
                             type="create" 
@@ -129,8 +137,9 @@ const SaveOrder = async () => {
 
         </div>
 
-        <!-- SELECTOR (DIALOG CONTROLLER) -->
+        <!-- SELECTOR -->
         <ListSelector
+            v-if="props.data?.editable"
             ref="productDialog"
             v-model="listProducts.data"
             :routeFetch="{

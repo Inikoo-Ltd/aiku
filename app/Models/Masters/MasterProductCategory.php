@@ -285,6 +285,8 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     public function relatedMasterAssets(): BelongsToMany
     {
         return $this->belongsToMany(MasterAsset::class, 'master_product_category_has_related_assets')
+            ->orderByPivot('position')
+            ->withPivot('id', 'position')
             ->withTimestamps();
     }
 

@@ -11,11 +11,7 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\HasBucketDescriptionImages;
-use App\Actions\Traits\HasBucketImages;
-use App\Http\Resources\Helpers\ImagesResource;
 use App\Models\Masters\MasterProductCategory;
-use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetMasterProductCategoryRecomendation extends OrgAction
 {
@@ -23,7 +19,8 @@ class GetMasterProductCategoryRecomendation extends OrgAction
     {
         return [
             'id' => $masterProductCategory->id,
-            'data' => $masterProductCategory->relatedMasterAssets
+            'data' => $masterProductCategory->relatedMasterAssets,
+            'editable' => true
         ];
     }
 }

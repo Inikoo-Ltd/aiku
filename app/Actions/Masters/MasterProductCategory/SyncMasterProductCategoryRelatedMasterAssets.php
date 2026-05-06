@@ -11,6 +11,7 @@ namespace App\Actions\Masters\MasterProductCategory;
 use App\Actions\OrgAction;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -22,20 +23,25 @@ class SyncMasterProductCategoryRelatedMasterAssets extends OrgAction
     {
         $masterAssetIds = collect(Arr::get($modelData, 'master_asset_ids', []));
 
-        if (data_get($masterAssetIds, '*.position')) {
-            $masterAssetIds = $masterAssetIds->sortBy(fn ($masterAssetId) => data_get($masterAssetId, 'position'));
-        }
-
         $masterAssetIds = $masterAssetIds
-            ->map(function ($masterAssetId) {
+            ->mapWithKeys(function ($masterAssetId) {
                 return [
-                    'master_asset_id'   => data_get($masterAssetId, 'id'),
+                    data_get($masterAssetId, 'id') => [
+                        'master_asset_id'   => data_get($masterAssetId, 'id'),
+                        'position'   => data_get($masterAssetId, 'position'),
+                    ]
                 ];
             })
-            ->unique()
-            ->values();
+            ->unique();
 
         $masterProductCategory->relatedMasterAssets()->sync($masterAssetIds->all());
+        
+        foreach ($masterProductCategory->relatedMasterAssets as $masterAsset) {
+            $key = $masterAsset->pivot->id;
+            DB::table('master_product_category_has_related_assets')
+                ->where('id', $key)
+                ->update(['position' => $masterAssetIds->get($masterAsset->id)['position']]);
+        }
 
         SyncShopRelatedProductsFromMasterCategory::dispatch($masterProductCategory);
 
