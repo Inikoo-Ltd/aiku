@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBullhorn, faCameraRetro, faCube, faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faBrowser, faFolderDownload, faQuoteLeft } from "@fal"
+import { faBullhorn, faCameraRetro, faCube, faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faBrowser, faFolderDownload, faQuoteLeft, faPencil, faEye } from "@fal"
 import { faExclamationTriangle, faThumbtack } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -44,7 +44,9 @@ library.add(
     faExclamationTriangle,
     faFolderDownload,
     faQuoteLeft,
-    faThumbtack
+    faThumbtack,
+    faPencil,
+    faEye
 )
 
 
@@ -124,6 +126,11 @@ const reviewCustomers = computed(() => {
     }
 })
 
+const reviewRatingLabels = computed(() => {
+    const reviewsData = props.reviews as Record<string, any> | undefined
+    return Array.isArray(reviewsData?.rating_labels) ? reviewsData.rating_labels : []
+})
+
 const showDialog = ref(false)
 
 
@@ -174,6 +181,7 @@ const showDialog = ref(false)
                 v-if="currentTab === 'reviews'"
                 :product_category_id="props.product_category_id"
                 :customers="reviewCustomers"
+                :rating_labels="reviewRatingLabels"
                 v-tooltip="'Create New Review'"
             />
         </template>
@@ -212,6 +220,7 @@ const showDialog = ref(false)
         :salesData="salesData"
         :product_category_id="props.product_category_id"
         :customers="reviewCustomers"
+        :rating_labels="reviewRatingLabels"
     />
     <component v-else :is="component" :data="currentTabData" :tab="currentTab" :salesData="salesData" />
 

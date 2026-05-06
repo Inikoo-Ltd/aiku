@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\Catalogue\Review\ReviewContextEnum;
+use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -11,8 +13,8 @@ return new class () extends Migration {
             $table->smallIncrements('id');
             $table->string('model_type', 255)->index();
             $table->unsignedSmallInteger('model_id')->index();
-            $table->string('review_context', 255)->index();
-            $table->enum('dimension', ['a', 'b', 'c', 'd', 'e'])->index();
+            $table->enum('review_context', ReviewContextEnum::values())->index();
+            $table->enum('dimension', ReviewRatingDimensionEnum::values())->index();
             $table->string('label');
             $table->text('description')->nullable();
             $table->unsignedTinyInteger('sort_order')->default(0);

@@ -18,6 +18,8 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Web\Website\UpdateWebsite;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
+use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
@@ -25,6 +27,7 @@ use App\Http\Resources\Catalogue\ShopResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\SerialReference;
 use App\Models\Inventory\Warehouse;
+use App\Models\Reviews\ReviewRatingLabel;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
@@ -52,6 +55,10 @@ class UpdateShop extends OrgAction
 
     public function handle(Shop $shop, array $modelData): Shop
     {
+        if (Arr::exists($modelData, 'review_rating_labels')) {
+            $this->syncReviewRatingLabels($shop, Arr::get($modelData, 'review_rating_labels'));
+        }
+
         if (Arr::has($modelData, 'invoice_serial_references')) {
             $shop = $this->updateInvoiceSerialReferences($shop, Arr::pull($modelData, 'invoice_serial_references'));
         }
@@ -137,6 +144,7 @@ class UpdateShop extends OrgAction
                     'enable_chat' => 'settings.chat.enable_chat',
                     'portal_link' => 'settings.portal.link',
                     'reviews' => 'settings.reviews',
+                    'review_rating_labels' => 'settings.reviews.rating_labels',
                     default => $key
                 },
                 $value
@@ -162,6 +170,7 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'wix_access_token');
         data_forget($modelData, 'portal_link');
         data_forget($modelData, 'reviews');
+        data_forget($modelData, 'review_rating_labels');
 
         if (Arr::exists($modelData, 'enable_chat')) {
             $enableChat = Arr::pull($modelData, 'enable_chat');
@@ -306,6 +315,64 @@ class UpdateShop extends OrgAction
         return $shop;
     }
 
+    protected function syncReviewRatingLabels(Shop $shop, ?array $reviewRatingLabels): void
+    {
+        $baseQuery = ReviewRatingLabel::query()
+            ->where('model_type', 'shop')
+            ->where('model_id', $shop->id);
+
+        if ($reviewRatingLabels === null) {
+            $baseQuery->delete();
+
+            return;
+        }
+
+        $keepKeys = [];
+
+        foreach (ReviewContextEnum::values() as $reviewContext) {
+            foreach (ReviewRatingDimensionEnum::values() as $index => $dimension) {
+                $label = trim((string) data_get($reviewRatingLabels, "$reviewContext.$dimension", ''));
+
+                if ($label === '') {
+                    continue;
+                }
+
+                $keepKey            = "$reviewContext:$dimension";
+                $keepKeys[$keepKey] = true;
+
+                ReviewRatingLabel::query()->updateOrCreate(
+                    [
+                        'model_type' => 'shop',
+                        'model_id' => $shop->id,
+                        'review_context' => $reviewContext,
+                        'dimension' => $dimension,
+                    ],
+                    [
+                        'label' => $label,
+                        'sort_order' => $index,
+                        'is_active' => true,
+                    ]
+                );
+            }
+        }
+
+        $baseQuery
+            ->get()
+            ->each(function (ReviewRatingLabel $reviewRatingLabel) use ($keepKeys): void {
+                $reviewContext = $reviewRatingLabel->review_context instanceof ReviewContextEnum
+                    ? $reviewRatingLabel->review_context->value
+                    : (string) $reviewRatingLabel->review_context;
+                $dimension = $reviewRatingLabel->dimension instanceof ReviewRatingDimensionEnum
+                    ? $reviewRatingLabel->dimension->value
+                    : (string) $reviewRatingLabel->dimension;
+                $key = "$reviewContext:$dimension";
+
+                if (!isset($keepKeys[$key])) {
+                    $reviewRatingLabel->delete();
+                }
+            });
+    }
+
     public function rules(): array
     {
         $rules = [
@@ -400,6 +467,9 @@ class UpdateShop extends OrgAction
             'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
             'family_webpage_split_description'                        => ['sometimes', 'boolean'],
             'reviews'                                                 => ['sometimes', 'nullable', 'array'],
+            'review_rating_labels'                                    => ['sometimes', 'nullable', 'array'],
+            'review_rating_labels.*'                                  => ['sometimes', 'array'],
+            'review_rating_labels.*.*'                                => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
 
         $channelIds = SalesChannel::pluck('id');

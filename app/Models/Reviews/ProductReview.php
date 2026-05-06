@@ -97,7 +97,7 @@ class ProductReview extends Model implements Auditable, HasMedia
 
     protected static function booted(): void
     {
-        static::saving(function (ShopReview $model) {
+        static::saving(function (ProductReview $model) {
             $model->calculateAverageRating();
         });
     }

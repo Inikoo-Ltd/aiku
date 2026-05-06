@@ -612,12 +612,43 @@ class EditShop extends OrgAction
                     'fields' => [
                         'reviews' => [
                             'type'  => 'website_reviews',
-                            'label' => __('review'),
+                            'label' => __('Review'),
                             'value' => [
                                 'provider' => $shop->settings['reviews']['provider'] ?? null,
                                 'data' =>  $shop->settings['reviews']['data'] ?? null,
                                 'enabled' => $shop->settings['reviews']['enabled'] ?? true,
                             ],
+                        ],
+                        'review_rating_labels' => [
+                            'type'  => 'review_rating_labels',
+                            'label' => __('Review rating labels'),
+                            'value' => Arr::get(
+                                $shop->settings,
+                                'reviews.rating_labels',
+                                [
+                                    'product_reviews' => [
+                                        'a' => '',
+                                        'b' => '',
+                                        'c' => '',
+                                        'd' => '',
+                                        'e' => '',
+                                    ],
+                                    'shop_reviews' => [
+                                        'a' => '',
+                                        'b' => '',
+                                        'c' => '',
+                                        'd' => '',
+                                        'e' => '',
+                                    ],
+                                    'product_category_reviews' => [
+                                        'a' => '',
+                                        'b' => '',
+                                        'c' => '',
+                                        'd' => '',
+                                        'e' => '',
+                                    ],
+                                ]
+                            ),
                         ],
                     ],
                 ]

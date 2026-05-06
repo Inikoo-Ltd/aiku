@@ -25,6 +25,13 @@ type ReviewTablePayload = TableTS & {
     }
 }
 
+type RatingLabel = {
+    dimension: string
+    label: string
+    is_required?: boolean
+    weight?: number
+}
+
 const props = defineProps<{
     data: ReviewTablePayload
     tab?: string
@@ -44,6 +51,7 @@ const props = defineProps<{
             has_more?: boolean
         }
     }
+    rating_labels?: RatingLabel[]
 }>()
 
 const renderStars = (rating: number): string => {
@@ -86,6 +94,7 @@ const renderStars = (rating: number): string => {
                             :product_category_id="product_category_id ?? 0"
                             :review="item"
                             :customers="customers"
+                            :rating_labels="rating_labels"
                         >
                             <template #trigger="{ openModal }">
                                 <Button type="tertiary" icon="far fa-eye" size="xs" @click="openModal" />
@@ -98,6 +107,7 @@ const renderStars = (rating: number): string => {
                             :product_category_id="product_category_id ?? 0"
                             :review="item"
                             :customers="customers"
+                            :rating_labels="rating_labels"
                         >
                             <template #trigger="{ openModal }">
                                 <Button :style="'edit'" size="xs" @click="openModal" />

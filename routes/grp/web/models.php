@@ -48,8 +48,11 @@ use App\Actions\Catalogue\Product\UpdateProductIndex;
 use App\Actions\Catalogue\Product\UploadImagesToProduct;
 use App\Actions\Catalogue\Review\GetReviewCustomers;
 use App\Actions\Catalogue\Review\DeleteReview;
+use App\Actions\Catalogue\ReviewReply\DeleteReviewReply;
+use App\Actions\Catalogue\ReviewReply\StoreReviewReply;
 use App\Actions\Catalogue\Review\StoreReview;
 use App\Actions\Catalogue\Review\UpdateReview;
+use App\Actions\Catalogue\ReviewReply\UpdateReviewReply;
 use App\Actions\Catalogue\ProductCategory\AttachFamiliesToDepartment;
 use App\Actions\Catalogue\ProductCategory\AttachFamiliesToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\DeleteImageFromProductCategory;
@@ -557,6 +560,9 @@ Route::prefix('/product_category/{productCategory:id}')->name('product_category.
 });
 
 Route::post('review/store', StoreReview::class)->name('review.store');
+Route::post('review/reply/store', StoreReviewReply::class)->name('review.reply.store');
+Route::patch('review/reply/{reviewReply:id}/update', UpdateReviewReply::class)->name('review.reply.update');
+Route::delete('review/reply/{reviewReply:id}/delete', DeleteReviewReply::class)->name('review.reply.delete');
 Route::get('review/customers/{productCategory:id}', GetReviewCustomers::class)->name('review.customers');
 Route::patch('review/{review:id}/update', UpdateReview::class)->name('review.update');
 Route::delete('review/{review:id}/delete', DeleteReview::class)->name('review.delete');

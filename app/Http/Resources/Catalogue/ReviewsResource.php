@@ -2,9 +2,12 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Actions\Helpers\Images\GetPictureSources;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\ReviewableRatingStat;
-use App\Models\CRM\WebUser;
+use App\Models\CRM\Customer;
+use App\Models\Reviews\ProductCategoryReview;
+use App\Models\Reviews\ReviewRatingLabel;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -16,6 +19,7 @@ class ReviewsResource extends JsonResource
         return self::collection($reviews)->additional([
             'stats'     => self::getStats($family),
             'customers' => self::getReviewCustomers($family),
+            'rating_labels' => self::getRatingLabels($family),
         ]);
     }
 
@@ -24,8 +28,8 @@ class ReviewsResource extends JsonResource
         $contactName = $this->contact_name ?? $this->customer?->contact_name ?? $this->customer_name ?? $this->customer?->name;
         $imageThumbnails = $this->relationLoaded('media')
             ? $this->media
-                ->sortBy('sort_order')
-                ->map(fn ($media) => $media->imageSources(48, 48, 'media'))
+                ->sortBy('order_column')
+                ->map(fn ($media) => GetPictureSources::run($media->getImage()->resize(48, 48)))
                 ->filter()
                 ->values()
                 ->all()
@@ -34,22 +38,34 @@ class ReviewsResource extends JsonResource
         return [
             'id'                   => $this->id,
             'customer_id'          => $this->customer_id,
+            'reviewable_type'      => $this->getTable(),
             'contact_name'         => $contactName,
             'customer_name'        => $contactName,
             'status'               => $this->status?->value ?? $this->status,
-            'rating'               => (int) $this->rating,
+            'rating'               => (int) ($this->rating ?? $this->rating_main ?? 0),
+            'rating_a'             => $this->rating_a !== null ? (int) $this->rating_a : null,
+            'rating_b'             => $this->rating_b !== null ? (int) $this->rating_b : null,
+            'rating_c'             => $this->rating_c !== null ? (int) $this->rating_c : null,
+            'rating_d'             => $this->rating_d !== null ? (int) $this->rating_d : null,
+            'rating_e'             => $this->rating_e !== null ? (int) $this->rating_e : null,
             'message'              => $this->message,
             'like_count'           => (int) $this->like_count,
             'image_thumbnail'      => $imageThumbnails[0] ?? null,
             'image_thumbnails'     => $imageThumbnails,
             'update_route'         => [
                 'name'       => 'grp.models.review.update',
-                'parameters' => ['review' => $this->id],
+                'parameters' => [
+                    'review' => $this->id,
+                    'reviewable_type' => $this->getTable(),
+                ],
                 'method'     => 'patch',
             ],
             'delete_route'         => [
                 'name'       => 'grp.models.review.delete',
-                'parameters' => ['review' => $this->id],
+                'parameters' => [
+                    'review' => $this->id,
+                    'reviewable_type' => $this->getTable(),
+                ],
                 'method'     => 'delete',
             ],
             'created_at'           => $this->created_at,
@@ -58,24 +74,21 @@ class ReviewsResource extends JsonResource
 
     private static function getStats(ProductCategory $family): array
     {
-        $reviewableStat = ReviewableRatingStat::query()
-            ->where('reviewable_type', $family->getMorphClass())
-            ->where('reviewable_id', $family->id)
-            ->first();
+        $reviewStat = $family->reviewStats()->first();
 
         return [
-            'total'                   => (int) ($reviewableStat?->reviews_count ?? 0),
-            'average_rating'          => (float) ($reviewableStat?->rating_average ?? 0),
-            'verified'                => (int) ($reviewableStat?->verified_reviews_count ?? 0),
-            'like_count'              => (int) ($reviewableStat?->number_reviews_like ?? 0),
-            'status_approved'         => (int) ($reviewableStat?->number_reviews_state_approved ?? 0),
-            'status_pending'          => (int) ($reviewableStat?->number_reviews_state_pending ?? 0),
-            'status_rejected'         => (int) ($reviewableStat?->number_reviews_state_rejected ?? 0),
-            'number_reviews_rating_1' => (int) ($reviewableStat?->number_reviews_rating_1 ?? 0),
-            'number_reviews_rating_2' => (int) ($reviewableStat?->number_reviews_rating_2 ?? 0),
-            'number_reviews_rating_3' => (int) ($reviewableStat?->number_reviews_rating_3 ?? 0),
-            'number_reviews_rating_4' => (int) ($reviewableStat?->number_reviews_rating_4 ?? 0),
-            'number_reviews_rating_5' => (int) ($reviewableStat?->number_reviews_rating_5 ?? 0),
+            'total'                   => (int) ($reviewStat?->number_reviews ?? 0),
+            'average_rating'          => (float) ($reviewStat?->average_rating_main ?? 0),
+            'verified'                => 0,
+            'like_count'              => (int) ProductCategoryReview::query()->where('product_category_id', $family->id)->sum('like_count'),
+            'status_approved'         => (int) ($reviewStat?->number_reviews_approved ?? 0),
+            'status_pending'          => (int) ($reviewStat?->number_reviews_pending ?? 0),
+            'status_rejected'         => (int) ($reviewStat?->number_reviews_rejected ?? 0),
+            'number_reviews_rating_1' => (int) ($reviewStat?->number_rating_1 ?? 0),
+            'number_reviews_rating_2' => (int) ($reviewStat?->number_rating_2 ?? 0),
+            'number_reviews_rating_3' => (int) ($reviewStat?->number_rating_3 ?? 0),
+            'number_reviews_rating_4' => (int) ($reviewStat?->number_rating_4 ?? 0),
+            'number_reviews_rating_5' => (int) ($reviewStat?->number_rating_5 ?? 0),
         ];
     }
 
@@ -84,33 +97,53 @@ class ReviewsResource extends JsonResource
         return self::paginateReviewCustomers($family, 1, 20);
     }
 
+    private static function getRatingLabels(ProductCategory $family): array
+    {
+        return ReviewRatingLabel::query()
+            ->whereRaw('LOWER(model_type) = ?', ['shop'])
+            ->where('model_id', $family->shop_id)
+            ->whereRaw('LOWER(review_context) = ?', [ReviewContextEnum::ProductCategoryReviews->value])
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('dimension')
+            ->get(['dimension', 'label', 'is_required', 'weight'])
+            ->map(fn (ReviewRatingLabel $reviewRatingLabel): array => [
+                'dimension' => $reviewRatingLabel->dimension?->value ?? (string) $reviewRatingLabel->dimension,
+                'label' => (string) $reviewRatingLabel->label,
+                'is_required' => (bool) $reviewRatingLabel->is_required,
+                'weight' => (float) $reviewRatingLabel->weight,
+            ])
+            ->values()
+            ->all();
+    }
+
     public static function paginateReviewCustomers(ProductCategory $family, int $page = 1, int $perPage = 20, ?string $search = null): array
     {
-        $baseQuery = WebUser::query()
-            ->leftJoin('customers', 'customers.id', '=', 'web_users.customer_id')
+        $baseQuery = Customer::query()
+            ->join('web_users', 'web_users.customer_id', '=', 'customers.id')
             ->where('web_users.shop_id', $family->shop_id)
-            ->whereNotNull('web_users.customer_id')
             ->selectRaw("
-                web_users.customer_id as customer_id,
-                COALESCE(MAX(customers.name), NULLIF(MIN(web_users.contact_name), ''), MIN(web_users.username)) as label,
+                customers.id as customer_id,
+                COALESCE(NULLIF(MAX(customers.contact_name), ''), MAX(customers.name), MIN(web_users.username)) as label,
                 MIN(web_users.contact_name) as contact_name,
                 MIN(web_users.username) as username,
                 MIN(web_users.email) as email
             ")
-            ->groupBy('web_users.customer_id')
+            ->groupBy('customers.id')
             ->orderBy('label')
-            ->orderBy('web_users.customer_id');
+            ->orderBy('customers.id');
 
         if ($search) {
             $baseQuery->where(function ($query) use ($search) {
                 $query
                     ->where('customers.name', 'ilike', "%$search%")
+                    ->orWhere('customers.contact_name', 'ilike', "%$search%")
                     ->orWhere('web_users.contact_name', 'ilike', "%$search%")
                     ->orWhere('web_users.username', 'ilike', "%$search%");
             });
         }
 
-        $total = (clone $baseQuery)->getQuery()->getCountForPagination();
+        $total = (clone $baseQuery)->toBase()->getCountForPagination();
         $rows = (clone $baseQuery)->forPage($page, $perPage)->get();
 
         $items = $rows
