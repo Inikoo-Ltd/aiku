@@ -34,7 +34,6 @@ class ProcessOutOfStockInOrderPerOutbox
         }
 
         $currentDateTime = Carbon::now()->utc();
-        $intervalInHours = Carbon::now()->utc()->subHours(24);
 
         $lastOutBoxSent = $outbox->last_sent_at;
 
@@ -65,11 +64,10 @@ class ProcessOutOfStockInOrderPerOutbox
         });
 
         // check product
-        $baseQuery->join('products', function ($join) use ($intervalInHours, $lastOutBoxSent, $productClass) {
+        $baseQuery->join('products', function ($join) use ($lastOutBoxSent, $productClass) {
             $join->on('transactions.model_id', '=', 'products.id');
             $join->where('transactions.model_type', $productClass);
             $join->where('products.is_for_sale', true);
-            $join->where('products.available_quantity_updated_at', '>', $intervalInHours);
             $join->whereIn('products.state', [
                 ProductStateEnum::ACTIVE->value,
                 ProductStateEnum::DISCONTINUING->value,
