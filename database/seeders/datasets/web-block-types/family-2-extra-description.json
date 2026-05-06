@@ -13,8 +13,8 @@
 			"button": {
 				"link": {
 					"id": null,
-					"url": "#list-products-ecom-iris",
-					"href": "#list-products-ecom-iris",
+					"url": "#family-3-button",
+					"href": "#family-3-button",
 					"type": "external"
 				},
 				"text": "Scroll back to product",
