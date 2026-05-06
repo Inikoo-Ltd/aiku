@@ -130,16 +130,12 @@ onMounted(checkOverflow)
 
           <!-- BUTTON -->
           <div class="mt-5 text-center md:text-left">
-            <LinkIris :href="fieldValue?.button?.link?.href
-              " :target="fieldValue?.button?.link?.target
-                ">
-              <Button :label="fieldValue?.button?.text
-                " :injectStyle="getStyles(
-                  fieldValue?.button
-                    ?.container?.properties,
-                  screenType
-                )
-                  " />
+            <LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target" >
+              <Button 
+                  id="family-2-extra-description-button"
+                  :label="fieldValue?.button?.text" 
+                  :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" 
+              />
             </LinkIris>
           </div>
         </div>

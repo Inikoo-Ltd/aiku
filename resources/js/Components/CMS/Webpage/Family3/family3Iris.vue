@@ -231,6 +231,7 @@ const cleanedDescription = computed(() => {
               :target="fieldValue?.button?.link?.target"
             >
               <Button
+                 id="family-3-button"
                 :label="fieldValue?.button?.text"
                 :injectStyle="
                   getStyles(
