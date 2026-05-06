@@ -14,6 +14,7 @@ use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\CalculateOrderHangingCharges;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\Traits\WithChargeTransactions;
 use App\Actions\RetinaAction;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
@@ -26,6 +27,7 @@ use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Billables\Charge;
 use App\Models\Ordering\Order;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -37,7 +39,7 @@ class SuccessOrderWithPastpay extends RetinaAction
     use WithPastpayConfiguration;
     use WithChargeTransactions;
 
-    public function handle(Order $order, array $modelData): false|string|\Illuminate\Http\RedirectResponse
+    public function handle(Order $order): false|string|RedirectResponse
     {
         /** @var PaymentAccountShop $paymentAccountShop */
         $paymentAccountShop = $order->shop->paymentAccountShops()
@@ -67,7 +69,7 @@ class SuccessOrderWithPastpay extends RetinaAction
                 'type'                    => PaymentTypeEnum::PAYMENT,
                 'payment_account_shop_id' => $paymentAccountShop->id,
                 'data'                    => [
-                    'pastpay' => $modelData
+                    'pastpay' => $order->data
                 ],
             ];
 
@@ -87,6 +89,8 @@ class SuccessOrderWithPastpay extends RetinaAction
                 'amount' => $payment->amount,
             ]);
 
+            SubmitOrder::run($order);
+
             return redirect()->route('retina.ecom.orders.show', $order->slug);
         } catch (\Exception $e) {
             $result = [
@@ -101,20 +105,20 @@ class SuccessOrderWithPastpay extends RetinaAction
         return json_encode($result);
     }
 
-    public function asController(Order $order, ActionRequest $request): false|string|\Illuminate\Http\RedirectResponse
+    public function asController(Order $order, ActionRequest $request): false|string|RedirectResponse
     {
         $this->initialisation($request);
 
-        return $this->handle($order, $this->validatedData);
+        return $this->handle($order);
     }
 
     public string $commandSignature = 'test_success_pastpay';
 
     public function asCommand(): int
     {
-        $order = Order::where('slug', 'awp31048')->first();
+        $order = Order::where('slug', 'awp31151')->first();
 
-        $this->handle($order, ['charges' => 30]);
+        $this->handle($order, []);
 
         return 1;
     }
