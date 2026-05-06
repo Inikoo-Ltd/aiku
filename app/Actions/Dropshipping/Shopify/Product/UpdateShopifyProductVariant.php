@@ -45,6 +45,10 @@ class UpdateShopifyProductVariant extends RetinaAction
 
         UpdateShopifyProduct::run($portfolio);
 
+        if(! $portfolio->sku) {
+            return [false, 'Portfolio does not contains SKU'];
+        }
+
         if (!$productID) {
             Sentry::captureMessage("No Shopify product ID found in portfolio");
 

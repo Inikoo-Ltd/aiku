@@ -48,6 +48,9 @@ class StoreShopifyProductVariant extends RetinaAction
 
         $productID = $portfolio->platform_product_id;
 
+        if(! $portfolio->sku) {
+            return [false, 'Portfolio does not contains SKU'];
+        }
 
         if (!$productID) {
             Sentry::captureMessage("No Shopify product ID found in portfolio");
