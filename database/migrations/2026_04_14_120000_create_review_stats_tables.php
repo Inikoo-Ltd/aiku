@@ -64,7 +64,7 @@ return new class () extends Migration {
     {
         Schema::create('master_product_category_review_stats', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('master_product_category_id');
+            $table->unsignedBigInteger('master_product_category_id');
             $table->unique('master_product_category_id', 'mprs_mpc_id_uq');
             $table->foreign('master_product_category_id', 'mprs_mpc_id_fk')->references('id')->on('master_product_categories')->onUpdate('cascade')->onDelete('cascade');
             $this->addReviewStatsFields($table);
@@ -75,7 +75,7 @@ return new class () extends Migration {
     {
         Schema::create('product_category_review_stats', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('product_category_id');
+            $table->unsignedBigInteger('product_category_id');
             $table->unique('product_category_id', 'pcrs_pc_id_uq');
             $table->foreign('product_category_id', 'pcrs_pc_id_fk')->references('id')->on('product_categories')->onUpdate('cascade')->onDelete('cascade');
             $this->addReviewStatsFields($table);
@@ -86,7 +86,7 @@ return new class () extends Migration {
     {
         Schema::create('master_asset_review_stats', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('master_asset_id');
+            $table->unsignedBigInteger('master_asset_id');
             $table->unique('master_asset_id', 'mars_ma_id_uq');
             $table->foreign('master_asset_id', 'mars_ma_id_fk')->references('id')->on('master_assets')->onUpdate('cascade')->onDelete('cascade');
             $this->addReviewStatsFields($table);
@@ -97,7 +97,7 @@ return new class () extends Migration {
     {
         Schema::create('product_review_stats', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('product_id');
+            $table->unsignedBigInteger('product_id');
             $table->unique('product_id', 'prs_product_id_uq');
             $table->foreign('product_id', 'prs_product_id_fk')->references('id')->on('products')->onUpdate('cascade')->onDelete('cascade');
             $this->addReviewStatsFields($table);

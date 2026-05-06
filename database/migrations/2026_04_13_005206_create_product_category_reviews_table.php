@@ -18,9 +18,9 @@ return new class () extends Migration {
             $table->foreign('customer_id')->references('id')->on('customers')->nullOnDelete();
             $table->unsignedInteger('order_id')->nullable()->index();
             $table->foreign('order_id')->references('id')->on('orders')->nullOnDelete();
-            $table->unsignedSmallInteger('master_product_category_id')->nullable()->index();
+            $table->unsignedBigInteger('master_product_category_id')->nullable()->index();
             $table->foreign('master_product_category_id')->references('id')->on('master_product_categories')->nullOnDelete();
-            $table->unsignedSmallInteger('product_category_id')->nullable()->index();
+            $table->unsignedBigInteger('product_category_id')->nullable()->index();
             $table->foreign('product_category_id')->references('id')->on('product_categories')->nullOnDelete();
             $table->unsignedTinyInteger('rating_main')->index();
             $table->unsignedTinyInteger('rating_a')->index()->nullable();
