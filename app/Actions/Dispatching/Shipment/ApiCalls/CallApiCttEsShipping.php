@@ -294,12 +294,6 @@ class CallApiCttEsShipping extends OrgAction
 
             $apiResponse = $response->json();
             $statusCode  = $response->status();
-
-            dd([
-                'params' => $params,
-                'response' => $apiResponse,
-                'status' => $statusCode,
-            ]);
             
             $modelData = ['api_response' => $apiResponse];
             $errorData = [];
@@ -314,9 +308,16 @@ class CallApiCttEsShipping extends OrgAction
                 $modelData['number_parcels'] = count($parcels);
                 $modelData['label']          = $this->getLabel($shipper, $shippingCode);
             } else {
-                $status                 = 'fail';
-                $errorData['message'][] = Arr::get($apiResponse, 'error.error_description', 'Failed to manifest');
-                $errorData['others'][]  = Arr::get($apiResponse, 'error.error_extended_info.message', '');
+                $status = 'fail';
+                
+                $errorDesc = Arr::get($apiResponse, 'error.error_description', 'Failed to manifest');
+                $extendedMsg = Arr::get($apiResponse, 'error.error_extended_info.message', '');
+                
+                $fullError = trim($errorDesc . ' ' . $extendedMsg);
+                
+                $errorData['address'] = $fullError;
+                $errorData['message'] = $fullError;
+                $errorData['others']  = [$extendedMsg];
             }
 
             return [
