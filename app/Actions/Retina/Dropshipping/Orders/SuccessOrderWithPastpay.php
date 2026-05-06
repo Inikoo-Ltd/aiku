@@ -87,7 +87,7 @@ class SuccessOrderWithPastpay extends RetinaAction
                 'amount' => $payment->amount,
             ]);
 
-            return redirect()->route('retina.orders.show', $order->slug);
+            return redirect()->route('retina.ecom.orders.show', $order->slug);
         } catch (\Exception $e) {
             $result = [
                 'debug'            => 'SuccessOrderWithPastpay.php',
