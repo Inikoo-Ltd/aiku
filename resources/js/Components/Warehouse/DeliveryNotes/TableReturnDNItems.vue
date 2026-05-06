@@ -963,7 +963,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
         </template>
 
         <template #cell(action)="{ item: item }">
-            <template
+            <!-- <template
                 v-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && item.quantity_picked > 0">
 
                 <div class="flex justify-start items-center">
@@ -994,6 +994,42 @@ const onSetItemToUndoWaitingWarehouse = () => {
             <div v-else-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && !(item.quantity_picked > 0)"
                 class="italic text-xs opacity-70">
                 {{ ctrans("Nothing to pack") }}
+            </div> -->
+
+            <div class="flex gap-2">
+                <ButtonWithLink
+                    label="Not founded"
+                    type="negative"
+                    size="xs"
+                    :routeTarget="{
+                        name: 'grp.models.return_delivery_note_item.not_founded',
+                        method: 'patch',
+                        parameters: { returnDeliveryNoteItem: item.id },
+                    }"
+                    :bindToLink="{ preserveScroll: true }"
+                />
+                <ButtonWithLink
+                    label="Returned"
+                    type="secondary"
+                    size="xs"
+                    :routeTarget="{
+                        name: 'grp.models.return_delivery_note_item.returned',
+                        method: 'patch',
+                        parameters: { returnDeliveryNoteItem: item.id },
+                    }"
+                    :bindToLink="{ preserveScroll: true }"
+                />
+                <ButtonWithLink
+                    label="Damage"
+                    type="tertiary"
+                    size="xs"
+                    :routeTarget="{
+                        name: 'grp.models.return_delivery_note_item.damage',
+                        method: 'patch',
+                        parameters: { returnDeliveryNoteItem: item.id },
+                    }"
+                    :bindToLink="{ preserveScroll: true }"
+                />
             </div>
         </template>
     </Table>
