@@ -72,7 +72,7 @@ class AuditLocationOrgStock extends OrgAction
         });
 
         RepairOrgStockMissingLocationIds::dispatch($locationOrgStock->org_stock_id)->delay(2);
-        OrgStockHydrateQuantityInLocations::dispatch($locationOrgStock->orgStock);
+        OrgStockHydrateQuantityInLocations::dispatch($locationOrgStock->org_stock_id)->delay(2);
 
         return $locationOrgStock;
     }

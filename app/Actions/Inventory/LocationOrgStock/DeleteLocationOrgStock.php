@@ -76,10 +76,11 @@ class DeleteLocationOrgStock extends OrgAction
 
 
         RepairOrgStockMissingLocationIds::dispatch($orgStock->id)->delay(2);
+        OrgStockHydrateQuantityInLocations::dispatch($orgStock->id)->delay(2);
+
         LocationHydrateStocks::dispatch($location);
         LocationHydrateStockValue::dispatch($location);
         OrgStockHydrateLocations::dispatch($orgStock);
-        OrgStockHydrateQuantityInLocations::dispatch($orgStock);
         CalculateOrgStockCurrentStockHistories::dispatch($orgStock->id);
     }
 
