@@ -80,7 +80,7 @@ class GetRelatedProductsFromAurora
                             if (Arr::get($productData, 'type') == 'product') {
                                 $product = Product::where('source_id', '1:'.Arr::get($productData, 'product_id'))->first();
 
-                                if ($product->master_product_id) {
+                                if ($product && $product->master_product_id) {
                                     $masterAssets[] = $product->master_product_id;
                                 }
                             }
