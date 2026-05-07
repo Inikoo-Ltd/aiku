@@ -12,6 +12,7 @@ use App\Actions\HydrateModel;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\PalletReturn;
 
 class AutomaticallySetPalletReturnAsPickedIfAllItemsPicked extends HydrateModel
@@ -20,19 +21,25 @@ class AutomaticallySetPalletReturnAsPickedIfAllItemsPicked extends HydrateModel
 
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
-        if ($palletReturn->state == PalletReturnItemStateEnum::PICKING) {
+        $currentState = $palletReturn->state instanceof PalletReturnStateEnum ? $palletReturn->state->value : $palletReturn->state;
+        if ($currentState !== PalletReturnStateEnum::PICKING->value) {
             return $palletReturn;
         }
 
         $baseQuery = $palletReturn->pallets()->whereNot('pallets.state', [PalletStateEnum::DISPATCHED]);
-        $palletCount = $baseQuery->count();
+        $palletCount = (clone $baseQuery)->count();
 
-        $palletPickedCount    = $baseQuery
-            ->wherePivot('state', PalletReturnItemStateEnum::PICKED)->count();
-        $palletNotPickedCount = $baseQuery
-            ->wherePivot('state', PalletReturnItemStateEnum::NOT_PICKED)->count();
+        $palletPickedCount = (clone $baseQuery)
+            ->wherePivot('state', PalletReturnItemStateEnum::PICKED->value)
+            ->count();
+        $palletNotPickedCount = (clone $baseQuery)
+            ->wherePivot('state', PalletReturnItemStateEnum::NOT_PICKED->value)
+            ->count();
+        $palletCancelCount = (clone $baseQuery)
+            ->wherePivot('state', PalletReturnItemStateEnum::CANCEL->value)
+            ->count();
 
-        if (($palletPickedCount + $palletNotPickedCount) == $palletCount) {
+        if (($palletPickedCount + $palletNotPickedCount + $palletCancelCount) == $palletCount) {
             $palletReturn = SetPalletReturnAsPicked::run($palletReturn);
         }
 

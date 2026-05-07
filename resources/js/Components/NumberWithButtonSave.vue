@@ -310,6 +310,7 @@ const onClickPlusButton = () => {
 					name="save"
 					:isProcessing="form.processing"
 					:isDirty="form.isDirty"
+					:quantity="form.quantity"
 					:onSaveViaForm="onSaveViaForm">
 					<LoadingIcon v-if="form.processing || props.isLoading" class="text-xl" />
 					<template v-else>

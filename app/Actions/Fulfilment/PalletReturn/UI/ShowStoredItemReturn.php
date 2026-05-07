@@ -45,7 +45,10 @@ class ShowStoredItemReturn extends OrgAction
 
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
-        return $palletReturn;
+        return $palletReturn->load([
+            'pickerUser:id,contact_name',
+            'packerUser:id,contact_name',
+        ]);
     }
 
 
@@ -93,6 +96,9 @@ class ShowStoredItemReturn extends OrgAction
 
         if ($this->canEdit) {
             $actions = GetPalletReturnActions::run($palletReturn, $this->canEdit);
+            $actions = array_values(array_filter($actions, function (array $action): bool {
+                return !in_array($action['key'] ?? null, ['in process', 'start picking', 'revert-to-picking', 'Dispatching', 'delete_dispatched', 'delete_return', 'finish-picking', 'pdf'], true);
+            }));
         }
 
         $afterTitle = [
@@ -186,6 +192,27 @@ class ShowStoredItemReturn extends OrgAction
                 ],
                 'data'               => PalletReturnResource::make($palletReturn),
                 'address_management' => GetPalletReturnAddressManagement::run(palletReturn: $palletReturn),
+                'picker_packer_routes' => [
+                    'pickers_list' => [
+                        'name'       => 'grp.json.employees.picker_users',
+                        'parameters' => [
+                            'organisation' => $palletReturn->organisation->slug,
+                        ],
+                    ],
+                    'packers_list' => [
+                        'name'       => 'grp.json.employees.packers',
+                        'parameters' => [
+                            'organisation' => $palletReturn->organisation->slug,
+                        ],
+                    ],
+                    'update' => [
+                        'name'       => 'grp.models.pallet-return.update',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id,
+                        ],
+                        'method'     => 'patch',
+                    ],
+                ],
                 'box_stats' => $this->parent instanceof CustomerSalesChannel ? GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $palletReturn->fulfilmentCustomer) : GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $this->parent),
 
                 'notes_data' => GetNotesData::run(model: $palletReturn),
@@ -327,7 +354,7 @@ class ShowStoredItemReturn extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.fulfilments.show.operations.pallet-return-with-stored-items.show' => array_merge(
+            'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.pallet-returns.show' => array_merge(
                 ShowFulfilment::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'fulfilment'])),
                 $headCrumb(
                     $palletReturn,
@@ -337,7 +364,7 @@ class ShowStoredItemReturn extends OrgAction
                             'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'palletReturn'])
                         ],
                         'model' => [
-                            'name'       => 'grp.org.fulfilments.show.operations.pallet-return-with-stored-items.show',
+                            'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.pallet-returns.show',
                             'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'palletReturn'])
                         ]
                     ],

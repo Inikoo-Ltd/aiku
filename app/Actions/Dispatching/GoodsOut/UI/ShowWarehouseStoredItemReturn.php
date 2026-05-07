@@ -17,6 +17,7 @@ use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseAuthorisation;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\UI\Fulfilment\PalletReturnTabsEnum;
@@ -39,7 +40,10 @@ class ShowWarehouseStoredItemReturn extends OrgAction
 
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
-        return $palletReturn;
+        return $palletReturn->load([
+            'pickerUser:id,contact_name',
+            'packerUser:id,contact_name',
+        ]);
     }
 
 
@@ -53,27 +57,49 @@ class ShowWarehouseStoredItemReturn extends OrgAction
     public function getActions(PalletReturn $palletReturn): array
     {
         $actions   = [];
-        $actions[] = [
-            'type'   => 'button',
-            'style'  => 'tertiary',
-            'label'  => 'PDF',
-            'target' => '_blank',
-            'icon'   => 'fal fa-file-pdf',
-            'key'    => 'action',
-            'route'  => [
-                'name'       => 'grp.models.pallet-return.pdf',
-                'parameters' => [
-                    'palletReturn' => $palletReturn->id
-                ]
-            ]
-        ];
+        // $actions[] = [
+        //     'type'   => 'button',
+        //     'style'  => 'tertiary',
+        //     'label'  => 'PDF',
+        //     'target' => '_blank',
+        //     'icon'   => 'fal fa-file-pdf',
+        //     'key'    => 'action',
+        //     'route'  => [
+        //         'name'       => 'grp.models.pallet-return.pdf',
+        //         'parameters' => [
+        //             'palletReturn' => $palletReturn->id
+        //         ]
+        //     ]
+        // ];
         if ($this->canEdit) {
+            if (in_array($palletReturn->state, [
+                PalletReturnStateEnum::IN_PROCESS,
+                PalletReturnStateEnum::SUBMITTED,
+                PalletReturnStateEnum::CONFIRMED,
+                PalletReturnStateEnum::PICKING,
+            ], true)) {
+                $actions[] = [
+                    'type'    => 'button',
+                    'style'   => 'delete',
+                    'label'   => __('Delete'),
+                    'tooltip' => __('Delete return'),
+                    'key'     => 'delete_return',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.pallet-return.delete',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id
+                        ]
+                    ]
+                ];
+            }
+
             if ($palletReturn->state == PalletReturnStateEnum::CONFIRMED) {
                 $actions[] = [
                     'type'    => 'button',
                     'style'   => 'save',
                     'tooltip' => __('Start picking'),
-                    'label'   => __('start picking'),
+                    'label'   => __('Start picking'),
                     'key'     => 'start picking',
                     'route'   => [
                         'method'     => 'post',
@@ -87,13 +113,66 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                     ]
                 ];
             }
+            if ($palletReturn->state == PalletReturnStateEnum::PICKING) {
+                $itemsQuery = $palletReturn->items()->where('type', 'StoredItem');
+                $itemCount = (clone $itemsQuery)->count();
+                $hasPendingItems = (clone $itemsQuery)
+                    ->where('state', '!=', PalletReturnItemStateEnum::CANCEL->value)
+                    ->whereRaw('COALESCE(quantity_picked, 0) + COALESCE(quantity_not_picked, 0) < COALESCE(quantity_ordered, 0)')
+                    ->exists();
+                $canSetAsPicked = $itemCount > 0 && !$hasPendingItems;
+
+                if ($canSetAsPicked) {
+                    $actions[] = [
+                        'type'     => 'button',
+                        'style'    => 'save',
+                        'label'    => __('Finish Picking'),
+                        'key'      => 'finish-picking',
+                        'icon' => 'fas fa-monument',
+                        'iconRight'     => 'fal fa-arrow-right',
+                        'route'    => [
+                            'method'     => 'post',
+                            'name'       => 'grp.models.fulfilment-customer.pallet-return.picked',
+                            'parameters' => [
+                                'organisation'       => $palletReturn->organisation->slug,
+                                'fulfilment'         => $palletReturn->fulfilment->slug,
+                                'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->id,
+                                'palletReturn'       => $palletReturn->id
+                            ]
+                        ],
+                    ];
+                }
+
+            }
 
             if ($palletReturn->state == PalletReturnStateEnum::PICKED) {
                 $actions[] = [
                     'type'    => 'button',
+                    'style'   => 'negative',
+                    'label'   => __('Revert to Picking'),
+                    'tooltip' => __('Send return back to picking'),
+                    'key'     => 'revert-to-picking',
+                    'icon'    => 'fal fa-arrow-alt-left',
+                    'route'   => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.pallet-return.revert-to-picking',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id
+                        ]
+                    ]
+                ];
+
+                $requiresShipmentBeforeDispatch = !$palletReturn->is_collection && !$palletReturn->shipments()->exists();
+                $dispatchTooltip = $requiresShipmentBeforeDispatch
+                    ? __('Please add shipment before dispatch')
+                    : ($palletReturn->is_collection ? __('Set as collected') : __('Set as dispatched'));
+                $dispatchLabel = $palletReturn->is_collection ? __('Set as Collected') : __('Dispatch');
+
+                $actions[] = [
+                    'type'    => 'button',
                     'style'   => 'save',
-                    'tooltip' => __('Set as dispatched'),
-                    'label'   => __('Dispatch'),
+                    'tooltip' => $dispatchTooltip,
+                    'label'   => $dispatchLabel,
                     'key'     => 'Dispatching',
                     'route'   => [
                         'method'     => 'post',
@@ -101,7 +180,8 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                         'parameters' => [
                             'palletReturn' => $palletReturn->id
                         ]
-                    ]
+                    ],
+                    'disabled' => $requiresShipmentBeforeDispatch
                 ];
             }
         }
@@ -123,6 +203,27 @@ class ShowWarehouseStoredItemReturn extends OrgAction
             'label' => '('.__("Customer's SKUs").')'
         ];
 
+        $warning = null;
+        if ($palletReturn->pickingSessions && $palletReturn->pickingSessions->isNotEmpty()) {
+            $pickingSessions = $palletReturn->pickingSessions->map(function ($pickingSession) {
+                return [
+                    'reference' => $pickingSession->reference,
+                    'route'     => [
+                        'name'       => 'grp.org.warehouses.show.dispatching.picking_sessions.fulfilment.show',
+                        'parameters' => [
+                            'organisation'   => $pickingSession->organisation->slug,
+                            'warehouse'      => $pickingSession->warehouse->slug,
+                            'pickingSession' => $pickingSession->slug,
+                        ],
+                    ],
+                ];
+            })->toArray();
+
+            $warning = [
+                'text'             => __('This stored items is being processed in picking session(s)'),
+                'picking_sessions' => $pickingSessions,
+            ];
+        }
 
         $actions = $this->getActions($palletReturn);
 
@@ -163,6 +264,27 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                         'palletReturn' => $palletReturn->id
                     ]
                 ],
+                'picker_packer_routes' => [
+                    'pickers_list' => [
+                        'name'       => 'grp.json.employees.picker_users',
+                        'parameters' => [
+                            'organisation' => $palletReturn->organisation->slug,
+                        ],
+                    ],
+                    'packers_list' => [
+                        'name'       => 'grp.json.employees.packers',
+                        'parameters' => [
+                            'organisation' => $palletReturn->organisation->slug,
+                        ],
+                    ],
+                    'update' => [
+                        'name'       => 'grp.models.pallet-return.update',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id,
+                        ],
+                        'method'     => 'patch',
+                    ],
+                ],
 
 
                 'routeStorePallet' => [
@@ -172,6 +294,7 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                     ]
                 ],
 
+                'warning' => $warning,
 
                 'tabs' => [
                     'current'    => $this->tab,

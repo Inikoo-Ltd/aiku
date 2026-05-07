@@ -12,6 +12,7 @@ namespace App\Http\Resources\Fulfilment;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -33,6 +34,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $pallet_delivery_id
  * @property mixed $pallet_return_id
  * @property mixed $pallet_id
+ * @property mixed $warehouse_slug
  * @property mixed $fulfilment_customer_name
  * @property mixed $fulfilment_customer_slug
  */
@@ -47,8 +49,16 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
             'slug'                   => $this->slug,
             'reference'              => $this->reference,
             'name'                   => $this->name,
+            'warehouse_slug'         => $this->warehouse_slug ?? null,
+            'pallet_return_id'        => $this->pallet_return_id ?? null,
+            'pallet_return_reference' => $this->pallet_return_reference ?? null,
+            'pallet_return_slug'      => $this->pallet_return_slug ?? null,
+            'pallet_return_type'      => $this->pallet_return_type ?? null,
+            'state_icon'              => $this->pallet_return_state
+                ? PalletReturnStateEnum::stateIcon()[$this->pallet_return_state]
+                : null,
             'total_quantity_ordered' => (int) ($this->total_quantity_ordered ?? 0),
-            'is_checked'             => (bool) $this->pallet_return_state === PalletStateEnum::IN_PROCESS->value ? $this->pallet_return_id : false,
+            'is_checked'             => (bool) $this->pallet_return_state === PalletReturnStateEnum::IN_PROCESS->value ? $this->pallet_return_id : false,
             'pallet_return_state'    => $this->pallet_return_state ?? null,
             'pallet_stored_items'    => $storedItem->palletStoredItems()
                 ->whereHas(
@@ -57,7 +67,7 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
                     $q->where('state', PalletStateEnum::STORING)
                 )
                 ->when(
-                    in_array($this->pallet_return_state, [PalletStateEnum::PICKING->value, PalletStateEnum::PICKED->value, PalletStateEnum::DISPATCHED->value]),
+                    in_array($this->pallet_return_state, [PalletReturnStateEnum::PICKING->value, PalletReturnStateEnum::PICKED->value, PalletReturnStateEnum::DISPATCHED->value]),
                     fn ($query) => $query->where(function ($q) {
                         $q->where('state', '!=', PalletStoredItemStateEnum::RETURNED)
                         ->orWhereHas(
@@ -73,19 +83,26 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
                     $palletReturnItem = $palletStoredItem->palletReturnItems
                         ->where('pallet_return_id', $this->pallet_return_id)
                         ->first();
+                    $quantityOrdered = (float) ($palletReturnItem->quantity_ordered ?? 0);
+                    $quantityPicked = (float) ($palletReturnItem->quantity_picked ?? 0);
+                    $quantityNotPicked = (float) ($palletReturnItem->quantity_not_picked ?? 0);
+
                     return [
                         'ordered_quantity'              => (int) $palletStoredItem->quantity_ordered,
                         'id'                         => $palletStoredItem->id,
                         'reference'                  => $palletStoredItem->pallet->reference ?? null,
+                        'pallet_slug'                => $palletStoredItem->pallet?->slug ?? null,
                         'selected_quantity'          => (int) ($palletReturnItem->quantity_ordered ?? 0),
                         'available_quantity'         => (int) $palletStoredItem->quantity,
                         'max_quantity'               => (int) $palletStoredItem->quantity,
                         'quantity_in_pallet'         => (int) $palletStoredItem->quantity,
-                        'available_to_pick_quantity' => (int) ($palletReturnItem->quantity_ordered ?? 0),
+                        'available_to_pick_quantity' => (int) max(0, $quantityOrdered - $quantityPicked - $quantityNotPicked),
                         'picked_quantity'            => (int) ($palletReturnItem->quantity_picked ?? 0),
+                        'not_picked_quantity'        => (int) ($palletReturnItem->quantity_not_picked ?? 0),
                         'pallet_id'                  => $palletStoredItem->pallet_id,
                         'state'                      => $palletReturnItem->state ?? null,
                         'pallet_return_item_id'      => $palletReturnItem->id ?? null,
+                        'picking_session_id'         => $palletReturnItem->picking_session_id ?? null,
                         'all_items_returned' => $palletStoredItem->pallet?->palletStoredItems?->every(fn ($item) => $item->state == PalletStoredItemStateEnum::RETURNED),
                         'is_pallet_returned' => $palletStoredItem->pallet?->status == PalletStatusEnum::RETURNED,
 
@@ -124,6 +141,13 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
                         ],
                         'undoRoute' => [
                             'name'      => 'grp.models.pallet-return-item.undo-picking-stored-item',
+                            'parameters' => [
+                                'palletReturnItem' => $palletReturnItem->id ?? null
+                            ],
+                            'method'    => 'patch'
+                        ],
+                        'notPickedRoute' => [
+                            'name'      => 'grp.models.pallet-return-item.not-picked',
                             'parameters' => [
                                 'palletReturnItem' => $palletReturnItem->id ?? null
                             ],

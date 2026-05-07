@@ -179,7 +179,7 @@ onMounted(checkOverflow)
           </button>
 
           <!-- BUTTON -->
-          <div class="mt-7 text-center md:text-left">
+          <div class="mt-7 text-center md:text-right">
             <LinkIris
               :href="
                 fieldValue?.button?.link?.href
@@ -188,19 +188,10 @@ onMounted(checkOverflow)
                 fieldValue?.button?.link?.target
               "
             >
-              <Button
-                id="family-2-extra-description-button"
-                :label="
-                  fieldValue?.button?.text
-                "
-                :injectStyle="
-                  getStyles(
-                    fieldValue?.button?.container
-                      ?.properties,
-                    screenType
-                  )
-                "
-              />
+            <button id="family-3-button" :label="fieldValue?.button?.text" class="!bg-transparent !shadow-none !border-0 !p-0 !h-auto 
+             text-sm md:text-base font-medium
+             hover:underline underline-offset-4 mr-5 italic
+             transition-all duration-200" >{{ fieldValue?.button?.text }}</button>
             </LinkIris>
           </div>
         </div>

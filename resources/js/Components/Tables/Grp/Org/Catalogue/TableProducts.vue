@@ -575,7 +575,7 @@ const repairTradeUnitFromChildren = async (product) => {
 
         <template #cell(image_thumbnail)="{ item: product }">
             <div class="flex justify-center">
-                <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image :src="product['image_thumbnail']" imageCover class="w-6 aspect-square rounded-full overflow-hidden shadow" />
             </div>
         </template>
 

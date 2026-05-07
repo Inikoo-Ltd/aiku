@@ -9,7 +9,8 @@
 namespace App\Actions\Fulfilment\PalletReturnItem;
 
 use App\Actions\Fulfilment\Pallet\UpdatePallet;
-use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsPickedIfAllItemsPicked;
+use App\Actions\Fulfilment\PickingSession\AutoFinishPickingFulfilmentPickingSession;
+use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
@@ -31,9 +32,15 @@ class NotPickedPalletFromReturn extends OrgAction
 
     public function handle(PalletReturnItem $palletReturnItem, $modelData): PalletReturnItem
     {
+        $requestedNotPicked = Arr::get($modelData, 'quantity_not_picked');
+
         if ($palletReturnItem->type == 'Pallet') {
             $palletReturnItem = $this->update($palletReturnItem, [
-                'state' => PalletReturnItemStateEnum::NOT_PICKED
+                'state'               => PalletReturnItemStateEnum::NOT_PICKED,
+                'quantity_picked'     => 0,
+                'quantity_not_picked' => max(0, (float) $palletReturnItem->quantity_ordered - (float) $palletReturnItem->quantity_picked),
+                'quantity_waiting_crm' => 0,
+                'has_waiting_crm'      => false,
             ], ['data']);
 
             UpdatePallet::run($palletReturnItem->pallet, [
@@ -45,24 +52,29 @@ class NotPickedPalletFromReturn extends OrgAction
                 ]
             ]);
         } else {
-            $storedItems = PalletReturnItem::where('pallet_return_id', $palletReturnItem->pallet_return_id)->where('stored_item_id', $palletReturnItem->stored_item_id)->get();
-            foreach ($storedItems as $storedItem) {
-                $palletReturnItem = $this->update($storedItem, [
-                    'state' => PalletReturnItemStateEnum::NOT_PICKED
-                ], ['data']);
+            $maxNotPicked = max(0, (float) $palletReturnItem->quantity_ordered - (float) $palletReturnItem->quantity_picked);
+            $quantityNotPicked = is_numeric($requestedNotPicked)
+                ? min(max(0, (float) $requestedNotPicked), $maxNotPicked)
+                : $maxNotPicked;
 
-                UpdatePallet::run($storedItem->pallet, [
-                    'state'              => Arr::get($modelData, 'state'),
-                    'status'             => PalletStatusEnum::INCIDENT,
-                    'set_as_incident_at' => now(),
-                    'incident_report'    => [
-                        'notes' => Arr::get($modelData, 'notes')
-                    ]
-                ]);
-            }
+            $palletReturnItem = $this->update($palletReturnItem, [
+                'quantity_not_picked' => $quantityNotPicked,
+                'quantity_waiting_crm' => 0,
+                'has_waiting_crm'      => false,
+            ], ['data']);
         }
 
-        AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($palletReturnItem->palletReturn);
+        $palletReturn = $palletReturnItem->palletReturn;
+        if ($palletReturn) {
+            $palletReturn->update([
+                'number_items_waiting_crm' => $palletReturn->items()->where('has_waiting_crm', true)->count(),
+            ]);
+        }
+
+        if ($palletReturnItem->picking_session_id && $palletReturnItem->pickingSession) {
+            (new CalculateFulfilmentPickingSessionPicks())->action($palletReturnItem->pickingSession);
+            (new AutoFinishPickingFulfilmentPickingSession())->action($palletReturnItem->pickingSession);
+        }
 
         return $palletReturnItem;
     }
@@ -77,9 +89,13 @@ class NotPickedPalletFromReturn extends OrgAction
 
     public function rules(): array
     {
+        $palletReturnItem = request()->route('palletReturnItem');
+        $isPalletType = $palletReturnItem instanceof PalletReturnItem && $palletReturnItem->type == 'Pallet';
+
         return [
-            'state'   => ['required', Rule::enum(PalletStateEnum::class)],
-            'notes'   => ['required', 'string']
+            'state'   => [Rule::requiredIf($isPalletType), Rule::enum(PalletStateEnum::class)],
+            'notes'   => [Rule::requiredIf($isPalletType), 'string'],
+            'quantity_not_picked' => ['nullable', 'numeric', 'min:0']
         ];
     }
 

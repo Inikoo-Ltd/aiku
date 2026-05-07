@@ -18,7 +18,8 @@ trait WithEnumStats
         $enum,
         $models,
         $where = false,
-        $fieldStatsLabel = null
+        $fieldStatsLabel = null,
+        $modelCustomLabel = null,
     ): array {
         $stats = [];
 
@@ -43,7 +44,11 @@ trait WithEnumStats
             ->groupBy($field)
             ->pluck('total', $field)->all();
         foreach ($enum::cases() as $case) {
-            $stats["number_{$model}_{$fieldStatsLabel}_".$case->snake()] = Arr::get($count, $case->value, 0);
+            if ($modelCustomLabel) {
+                $stats["number_{$modelCustomLabel}_{$fieldStatsLabel}_".$case->snake()] = Arr::get($count, $case->value, 0);
+            } else {
+                $stats["number_{$model}_{$fieldStatsLabel}_".$case->snake()] = Arr::get($count, $case->value, 0);
+            }
         }
 
         return $stats;

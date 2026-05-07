@@ -8,6 +8,8 @@
 
 namespace App\Actions\Fulfilment\PalletReturn\UI;
 
+use App\Enums\Fulfilment\Pallet\PalletStateEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
@@ -53,8 +55,10 @@ class GetPalletReturnActions
     public function getPalletReturnInProcessActions(PalletReturn $palletReturn): array
     {
         if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
-            $isDisabled = !($palletReturn->estimated_delivery_date) || $palletReturn->pallets()->count() < 1;
-            if ($palletReturn->pallets()->count() < 1) {
+            $hasSelectedPallet = $palletReturn->pallets()->count() > 0;
+            $isDisabled = !($palletReturn->estimated_delivery_date) || !$hasSelectedPallet;
+
+            if (!$hasSelectedPallet) {
                 $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __('Select pallet before submit');
             } else {
                 $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __('Submit');
@@ -77,12 +81,13 @@ class GetPalletReturnActions
                 'disabled' => $isDisabled
             ];
         } else {
-            $isDisabled = false;
-            if ($palletReturn->pallets()->count() < 1) {
-                $tooltipSubmit = __("Select Customer's SKU before submit");
-                $isDisabled    = true;
+            $hasSelectedStoredItem = $palletReturn->storedItems()->count() > 0;
+            $isDisabled = !($palletReturn->estimated_delivery_date) || !$hasSelectedStoredItem;
+
+            if (!$hasSelectedStoredItem) {
+                $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __("Select Customer's SKU before submit");
             } else {
-                $tooltipSubmit = __('Submit');
+                $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __('Submit');
             }
 
             $buttonSubmit = [
@@ -189,26 +194,57 @@ class GetPalletReturnActions
     public function getPalletReturnPickingActions(PalletReturn $palletReturn): array
     {
         $actions = [];
+        $baseQuery = $palletReturn->pallets()->whereNot('pallets.state', [PalletStateEnum::DISPATCHED]);
+        $palletCount = (clone $baseQuery)->count();
+        $completedPickingCount = (clone $baseQuery)
+            ->wherePivotIn('state', [
+                PalletReturnItemStateEnum::PICKED->value,
+                PalletReturnItemStateEnum::NOT_PICKED->value,
+                PalletReturnItemStateEnum::CANCEL->value,
+            ])
+            ->count();
+        $canSetAsPicked = $palletCount > 0 && $palletCount === $completedPickingCount;
+
+        if ($canSetAsPicked) {
+            $actions[] = [
+                'type'      => 'button',
+                'style'     => 'save',
+                'label'     => __('Finish picking'),
+                'key'       => 'finish-picking',
+                'icon'      => 'fas fa-monument',
+                'iconRight' => 'fal fa-arrow-right',
+                'route'     => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.fulfilment-customer.pallet-return.picked',
+                    'parameters' => [
+                        'organisation'       => $palletReturn->organisation->slug,
+                        'fulfilment'         => $palletReturn->fulfilment->slug,
+                        'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->id,
+                        'palletReturn'       => $palletReturn->id
+                    ]
+                ],
+            ];
+        }
 
         if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
-            $actions[] =
-                [
-                    'type'    => 'button',
-                    'style'   => 'save',
-                    'tooltip' => __('Set all pending as picked'),
-                    'label'   => __('Pick all'),
-                    'key'     => 'pick all',
-                    'route'   => [
-                        'method'     => 'post',
-                        'name'       => 'grp.models.fulfilment-customer.pallet-return.picked',
-                        'parameters' => [
-                            'organisation'       => $palletReturn->organisation->slug,
-                            'fulfilment'         => $palletReturn->fulfilment->slug,
-                            'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->id,
-                            'palletReturn'       => $palletReturn->id
-                        ]
-                    ]
-                ];
+            // $actions[] =
+            //     [
+            //         'type'    => 'button',
+            //         'style'   => 'save',
+            //         'tooltip' => __('Set all pending as picked'),
+            //         'label'   => __('Pick all'),
+            //         'key'     => 'pick all',
+            //         'route'   => [
+            //             'method'     => 'post',
+            //             'name'       => 'grp.models.fulfilment-customer.pallet-return.picked',
+            //             'parameters' => [
+            //                 'organisation'       => $palletReturn->organisation->slug,
+            //                 'fulfilment'         => $palletReturn->fulfilment->slug,
+            //                 'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->id,
+            //                 'palletReturn'       => $palletReturn->id
+            //             ]
+            //         ]
+            //     ];
 
             $actions[] =
                 [
@@ -270,6 +306,7 @@ class GetPalletReturnActions
                         ]
                     ]
                 ];
+
         } elseif ($palletReturn->type == PalletReturnTypeEnum::STORED_ITEM) {
             $actions[] =
                 [
@@ -292,9 +329,32 @@ class GetPalletReturnActions
         $actions[] =
             [
                 'type'    => 'button',
+                'style'   => 'negative',
+                'label'   => __('Revert to Picking'),
+                'tooltip' => __('Send return back to picking'),
+                'key'     => 'revert-to-picking',
+                'icon'    => 'fal fa-arrow-alt-left',
+                'route'   => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.pallet-return.revert-to-picking',
+                    'parameters' => [
+                        'palletReturn' => $palletReturn->id
+                    ]
+                ]
+            ];
+
+        $requiresShipmentBeforeDispatch = !$palletReturn->is_collection && !$palletReturn->shipments()->exists();
+        $dispatchTooltip = $requiresShipmentBeforeDispatch
+            ? __('Please add shipment before dispatch')
+            : ($palletReturn->is_collection ? __('Set as collected') : __('Set as dispatched'));
+        $dispatchLabel = $palletReturn->is_collection ? __('Set as Collected') : __('Dispatch');
+
+        $actions[] =
+            [
+                'type'    => 'button',
                 'style'   => 'save',
-                'tooltip' => __('Set as dispatched'),
-                'label'   => __('Dispatch'),
+                'tooltip' => $dispatchTooltip,
+                'label'   => $dispatchLabel,
                 'key'     => 'Dispatching',
                 'route'   => [
                     'method'     => 'post',
@@ -302,7 +362,8 @@ class GetPalletReturnActions
                     'parameters' => [
                         'palletReturn' => $palletReturn->id
                     ]
-                ]
+                ],
+                'disabled' => $requiresShipmentBeforeDispatch
 
         ];
 
@@ -359,7 +420,9 @@ class GetPalletReturnActions
     {
         if (in_array($palletReturn->state, [
             PalletReturnStateEnum::IN_PROCESS,
-            PalletReturnStateEnum::SUBMITTED
+            PalletReturnStateEnum::SUBMITTED,
+            PalletReturnStateEnum::CONFIRMED,
+            PalletReturnStateEnum::PICKING,
         ])) {
             $actions = array_merge([
                 [

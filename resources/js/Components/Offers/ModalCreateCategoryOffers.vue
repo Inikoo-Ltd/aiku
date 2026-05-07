@@ -34,7 +34,7 @@ const props = defineProps<{
 const isOpenModal = ref(false)
 const offerLabel = ref('')
 const typeOffer = ref('quantity')
-const offerQtyItems = ref<number | null>(null)
+const offerQtyItems = ref<number | null>(1)
 const offerAmount = ref<number | null>(0)
 const discountPercentage = ref<number | null>(null)
 const offerCategoryId = ref<number | null>(null)
@@ -129,8 +129,8 @@ const resetForm = () => {
     offerLabel.value = ''
     typeOffer.value = 'quantity'
     discountPercentage.value = null
-    offerQtyItems.value = null
-    offerAmount.value = null
+    offerQtyItems.value = 1
+    offerAmount.value = 0
     categoryType.value = 'department'
     offerCategoryId.value = props.product_category_id ?? null
     dateType.value = 'permanent'
@@ -162,9 +162,9 @@ const isFormInvalid = computed(() => {
 
 watch(typeOffer, (val) => {
     if (val === 'quantity') {
-        offerAmount.value = null
+        offerAmount.value = 0
     } else if (val === 'amount') {
-        offerQtyItems.value = null
+        offerQtyItems.value = 1
     }
 })
 
@@ -257,7 +257,7 @@ resetForm();
                             </div>
                             <div class="min-h-[40px]">
                             <InputNumber v-model="offerQtyItems" v-show="typeOffer === 'quantity'"  fluid
-                                inputId="offer_quantity_item" :placeholder="trans('Enter number')"
+                                inputId="offer_quantity_item" :placeholder="trans('Enter minimum quantity')"
                                 :disabled="typeOffer !== 'quantity'" :min="0" class="w-full" inputClass="w-full"
                                 :suffix="' ' + ((offerQtyItems ?? 0) > 1 ? trans('items') : trans('item'))" />
                             </div>
@@ -271,7 +271,7 @@ resetForm();
                                     }}</label>
                             </div>
                             <div class="min-h-[40px]">
-                            <InputNumber v-show="typeOffer === 'amount'" v-model="offerAmount"   fluid inputId="offer_amount" mode="currency" inputClass="w-full" :placeholder="trans('Enter number')" 
+                            <InputNumber v-show="typeOffer === 'amount'" v-model="offerAmount"   fluid inputId="offer_amount" mode="currency" inputClass="w-full" :placeholder="trans('Enter minimum amount')" 
                                 :currency="props.shop_data.currency_code" locale="en-US" class="w-full"
                                 :disabled="typeOffer !== 'amount'" />
                                 </div>

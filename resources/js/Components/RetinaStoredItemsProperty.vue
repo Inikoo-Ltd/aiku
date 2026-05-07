@@ -54,7 +54,7 @@ const onDelete = (data : { id : ''}) => {
     sendToServer(finalData)
 }
 
-const sendToServer = async (data : {}, replaceData?: boolean) => {
+const sendToServer = async (data: {}, replaceData?: boolean, onSavedSuccess?: () => void) => {
     // console.log('-=-=-=-=', props.saveRoute.name, props.saveRoute.parameters)
     router.post(route(props.saveRoute.name, props.saveRoute.parameters), replaceData ? data : { stored_item_ids: data }, {
         onError: (e) => {
@@ -67,10 +67,11 @@ const sendToServer = async (data : {}, replaceData?: boolean) => {
                 type: "error"
             })
         },
-        onSuccess: (e) => {
+        onSuccess: () => {
             emits('renderTable')
             isModalOpen.value = false
             form.errors = {}
+            onSavedSuccess?.()
         },
         onBefore: () => {
             form.processing = true
@@ -103,7 +104,7 @@ const sendToServer = async (data : {}, replaceData?: boolean) => {
                         </Tag>
                     </div>
                 </template>
-                
+
                         <div v-else-if="!editable" class="pl-2.5 text-gray-400">
                     -
                 </div>
@@ -117,7 +118,7 @@ const sendToServer = async (data : {}, replaceData?: boolean) => {
                     <RetinaCreateStoredItems
                         :storedItemsRoute="storedItemsRoute"
                         :form="form"
-                        @onSave="sendToServer"
+                        @onSave="(payload, onSavedSuccess) => sendToServer(payload, false, onSavedSuccess)"
                         :stored_items="pallet.stored_items"
                         @closeModal="isModalOpen = false"
                         :title
