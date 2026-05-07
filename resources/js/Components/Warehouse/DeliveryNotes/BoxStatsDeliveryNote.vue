@@ -141,6 +141,7 @@ const props = withDefaults(defineProps<{
     quick_pickers : any
     showChangePickerPacker: boolean
     isEditable: boolean
+    isShowButtonReplaceAll?: boolean
 }>(), {
     isEditable: true
 })
@@ -702,8 +703,8 @@ console.log(layout)
                 </div>
 
                 <!-- Replace All Button for Replacement -->
-                <div v-if="boxStats?.is_replacement" class="mt-3 pl-2">
-                    <Button type="secondary" label="Replace All" @click="onReplaceAll" />
+                <div v-if="boxStats?.is_replacement && isShowButtonReplaceAll" class="mt-3 pl-2">
+                    <Button v-tooltip="ctrans('Set qty resend to same as qty dispatched')" type="secondary" label="Replace All" @click="onReplaceAll" />
                 </div>
             </div>
         </BoxStatPallet>
