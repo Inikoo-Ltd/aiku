@@ -254,6 +254,7 @@ const onCheckAllTable = async (payload: { data: {}[]; allChecked: boolean }) => 
         debounceReloadBoxStats()
         router.reload({ only: ['pallets'], preserveScroll: true })
     } catch (error) {
+        console.log('Failed to check/uncheck all pallets', error)
         notify({
             title: trans('Something went wrong'),
             text: payload.allChecked
