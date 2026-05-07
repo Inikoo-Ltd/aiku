@@ -151,9 +151,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
 
         $webpage->refresh();
 
-        if (count($countFamilyDescriptionBlock) == 0) {
-            $this->setFamilyWebBlockOnTop($webpage, $familyDescriptionBlock);
-        }
+        $this->setFamilyWebBlockOnTop($webpage, $familyDescriptionBlock);
 
         if ($command->option('hide-description')) {
             $this->setDescriptionWebBlockHidden($webpage);
