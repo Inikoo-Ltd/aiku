@@ -40,7 +40,7 @@ const SaveOrder = async () => {
                 masterProductCategory: props.product_category_id
             }),
             {
-                master_asset_ids: listProducts.value.data.map((product: any, index: number) => ({
+                master_asset_ids: listProducts.value.data.data.map((product: any, index: number) => ({
                     id: product.id,
                     code: product.code,
                     position: product.index_under_family ?? index,
@@ -94,6 +94,10 @@ const SaveOrder = async () => {
             <FamilySetOrderingPositionOfProduct 
                 :data="listProducts.data"
                 :editable="props.data?.editable"
+                :useDelete="true"
+                @delete="(item) => {
+                    listProducts.data.data = listProducts.data.data.filter((product: any) => product.id !== item.id)
+                }"
             >
 
                 <!-- TOP ACTION -->
@@ -141,7 +145,7 @@ const SaveOrder = async () => {
         <ListSelector
             v-if="props.data?.editable"
             ref="productDialog"
-            v-model="listProducts.data"
+            v-model="listProducts.data.data"
             :routeFetch="{
                 name: 'grp.masters.master_shops.show.master_products.index',
                 parameters: { masterShop: route().params['masterShop'] }

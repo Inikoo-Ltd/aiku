@@ -19,7 +19,6 @@ import { notify } from "@kyvg/vue3-notification"
 import { usePage } from "@inertiajs/vue3"
 import IrisHeader from "@/Layouts/Iris/Header.vue"
 import IrisFooter from "@/Layouts/Iris/Footer.vue"
-import { isArray } from "lodash-es"
 
 import { confetti } from '@tsparticles/confetti'
 
@@ -307,11 +306,7 @@ const safeTheme = computed(() => {
 
             <slot />
 
-            <IrisFooter
-                v-if="layout.iris?.footer && !isArray(layout.iris.footer)"
-                :data="layout.iris.footer"
-                :colorThemed="irisTheme"
-            />
+            <IrisFooter :colorThemed="irisTheme" />
         </template>
         <!-- <main v-else
             class="bg-gray-50 min-h-screen pt-16 pb-10 mx-auto flex justify-center transition-all px-8 lg:px-0"

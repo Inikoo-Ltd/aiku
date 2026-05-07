@@ -164,10 +164,10 @@ const SaveOrder = () => {
     router.patch(route('grp.models.product_category.reorder_index', {
         productCategory: props.familyId
     }), {
-        products: localData.value.index_ordering.map((product: any, index: number) => ({
+        products: localData.value?.index_ordering?.data.map((product: any, index: number) => ({
             id: product.id,
             code : product.code,
-            index_under_family: product.index_under_family,
+            index_under_family: product.index_under_family || index,
         }))
     }, {
         preserveScroll: true,

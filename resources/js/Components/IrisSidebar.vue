@@ -60,8 +60,10 @@ const activeCustomTopSubIndex = ref<number | null>(null) // active custom menu t
 
 
 const sortedProductCategories = computed(() => {
-	if (!props.productCategories) return []
-	return [...props.productCategories].sort((a, b) =>
+	const fromFetch = (sidebarMenu?.value ?? (irisLayout as any).iris?.sidebar)?.data?.fieldValue?.product_categories
+	const source = Array.isArray(fromFetch) && fromFetch.length ? fromFetch : props.productCategories
+	if (!source) return []
+	return [...source].sort((a, b) =>
 		(a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })
 	)
 })
@@ -406,10 +408,7 @@ const fetchSidebarOnce = async () => {
 		layout.iris.isSidebarLoading = true
 		const baseUrl = window.location.origin
         const { data } = await axios.get(`${baseUrl}/json/sidebar`) as { data: DataJsonSidebar }
-        // const { data } = await axios.get(route("iris.json.sidebar")) as { data: DataJsonSidebar }
-        
-        console.log('ddddddata', data)
-
+        // const { data } = await axios.get(route("iris.json.sidebar")) as { data: DataJsonSidebar }		
         layout.iris.sidebar  = data.sidebar
 
 		layout.iris.isSidebarLoading = false

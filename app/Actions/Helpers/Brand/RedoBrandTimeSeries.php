@@ -3,11 +3,13 @@
 namespace App\Actions\Helpers\Brand;
 
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Helpers\Brand;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Laravel\Telescope\Telescope;
 use Throwable;
@@ -15,8 +17,11 @@ use Throwable;
 class RedoBrandTimeSeries implements ShouldBeUnique
 {
     use WithHydrateCommand;
+    use WithTimeSeriesRedo {
+        WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
+    }
 
-    public string $jobQueue         = 'default-long';
+    public string $jobQueue         = 'default-long-slave';
     public string $commandSignature = 'brands:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -29,9 +34,26 @@ class RedoBrandTimeSeries implements ShouldBeUnique
         return "{$from}_{$to}";
     }
 
-    public function handle(Brand $brand, bool $async = false, ?string $from = null, ?string $to = null): void
+    protected function beforeCommand(Command $command): void
     {
-        $shopIds = DB::table('invoice_transactions')
+        if (class_exists(Telescope::class)) {
+            Telescope::stopRecording();
+        }
+    }
+
+    public function handle(?int $brandId, ?string $from = null, ?string $to = null, bool $async = false): void
+    {
+        if (!$brandId) {
+            return;
+        }
+
+        $brand = Brand::find($brandId);
+
+        if (!$brand) {
+            return;
+        }
+
+        $shopIds = DB::connection('aiku_no_sticky')->table('invoice_transactions')
             ->where('brand_id', $brand->id)
             ->whereNull('deleted_at')
             ->distinct()
@@ -44,7 +66,7 @@ class RedoBrandTimeSeries implements ShouldBeUnique
         }
 
         if (!$from || !$to) {
-            $dateRange = DB::table('invoice_transactions')
+            $dateRange = DB::connection('aiku_no_sticky')->table('invoice_transactions')
                 ->where('brand_id', $brand->id)
                 ->whereNull('deleted_at')
                 ->selectRaw('MIN(date) as first_date, MAX(date) as last_date')
@@ -61,7 +83,7 @@ class RedoBrandTimeSeries implements ShouldBeUnique
         foreach ($shopIds as $shopId) {
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 if ($async) {
-                    ProcessBrandTimeSeriesRecords::dispatch($brand->id, $shopId, $frequency, $from, $to)->onQueue('low-priority');
+                    ProcessBrandTimeSeriesRecords::dispatch($brand->id, $shopId, $frequency, $from, $to);
                 } else {
                     ProcessBrandTimeSeriesRecords::run($brand->id, $shopId, $frequency, $from, $to);
                 }
@@ -74,69 +96,14 @@ class RedoBrandTimeSeries implements ShouldBeUnique
         $tableName = (new $this->model())->getTable();
         $query     = DB::table($tableName)->select('id')->orderBy('id', 'desc');
 
-        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($from, $to) {
-            $ids       = $modelsData->pluck('id')->all();
-            $model     = new $this->model();
-            $instances = $this->hasSoftDeletes($model)
-                ? $model->withTrashed()->whereIn('id', $ids)->get()->keyBy('id')
-                : $model->whereIn('id', $ids)->get()->keyBy('id');
-
+        $query->chunk(1000, function (Collection $modelsData) use ($from, $to) {
             foreach ($modelsData as $modelId) {
-                $instance = $instances->get($modelId->id);
-                if (!$instance) {
-                    continue;
-                }
-
                 try {
-                    $this->handle($instance, false, $from, $to);
+                    $this->handle($modelId->id, $from, $to, false);
                 } catch (Throwable $e) {
                     report($e);
                 }
             }
         });
-    }
-
-    public function asCommand(Command $command): int
-    {
-        if (class_exists(Telescope::class)) {
-            Telescope::stopRecording();
-        }
-
-        $command->info($command->getName());
-        $tableName = (new $this->model())->getTable();
-        $query     = $this->prepareQuery($tableName, $command);
-        $count     = $query->count();
-        $bar       = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
-        $bar->start();
-
-        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($bar, $command) {
-            $ids       = $modelsData->pluck('id')->all();
-            $model     = new $this->model();
-            $instances = $this->hasSoftDeletes($model)
-                ? $model->withTrashed()->whereIn('id', $ids)->get()->keyBy('id')
-                : $model->whereIn('id', $ids)->get()->keyBy('id');
-
-            foreach ($modelsData as $modelId) {
-                $instance = $instances->get($modelId->id);
-                if (!$instance) {
-                    $bar->advance();
-                    continue;
-                }
-
-                try {
-                    $this->handle($instance, (bool) $command->option('async'), $command->option('from'), $command->option('to'));
-                } catch (Throwable $e) {
-                    $command->error($e->getMessage());
-                }
-
-                $bar->advance();
-            }
-        });
-
-        $bar->finish();
-        $command->info('');
-
-        return 0;
     }
 }

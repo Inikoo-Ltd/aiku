@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +41,8 @@ class SyncProductCategoryRelatedProducts extends OrgAction
                 ->where('id', $key)
                 ->update(['position' => $productIds->get($product->id)['position']]);
         }
+
+        BreakWebpageCache::run($productCategory->webpage);
 
         return $productCategory;
     }

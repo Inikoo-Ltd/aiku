@@ -8,7 +8,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Actions\Catalogue\ProductCategory\Json\GetIrisProductCategoryNavigation;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Http\Resources\Helpers\LanguageResource;
@@ -27,19 +26,15 @@ trait WithIrisInertia
         $locale = app()->getLocale();
 
         $cacheKey = "irisData:website:$website->id:locale:".$locale;
-        $ttl      = (int)(config('iris.cache.iris_website_data_ttl') ?? 900);
+        $ttl      = config('iris.cache.iris_website_data_ttl');
 
         $compute = function () use ($website, $locale) {
             $shop = $website->shop;
 
-            $headerLayout    = Arr::get($website->published_layout, 'header');
-            $isHeaderActive  = Arr::get($headerLayout, 'status');
-            $footerLayout    = Arr::get($website->published_layout, 'footer');
-            $isFooterActive  = Arr::get($footerLayout, 'status');
-            $menuLayout      = Arr::get($website->published_layout, 'menu');
-            $isMenuActive    = Arr::get($menuLayout, 'status');
-            /*  $sidebarLayout   = Arr::get($website->published_layout, 'menu'); */
-            /*   $isSidebarActive = Arr::get($sidebarLayout, 'status'); */
+            $headerLayout   = Arr::get($website->published_layout, 'header');
+            $isHeaderActive = Arr::get($headerLayout, 'status');
+            $menuLayout     = Arr::get($website->published_layout, 'menu');
+            $isMenuActive   = Arr::get($menuLayout, 'status');
 
             $migrationRedirect = null;
             if ($website->is_migrating) {
@@ -56,24 +51,11 @@ trait WithIrisInertia
 
             $currentLanguage = Language::where('code', $locale)->first();
 
-
-            $irisProductCategoryNavigation = GetIrisProductCategoryNavigation::run($website);
-
             return [
                 'header'               => array_merge(
                     $isHeaderActive == 'active' ? Arr::get($website->published_layout, 'header') : [],
                 ),
-                'footer'               => array_merge(
-                    $isFooterActive == 'active' ? Arr::get($website->published_layout, 'footer') : [],
-                ),
-                'menu'                 => array_merge(
-                    $isMenuActive == 'active' ? Arr::get($website->published_layout, 'menu') : [],
-                    ['product_categories' => $irisProductCategoryNavigation]
-                ),
-              /*   'sidebar'              => array_merge(
-                    $isSidebarActive == 'active' ? Arr::get($website->published_layout, 'sidebar', []) : [],
-                    ['product_categories' => $irisProductCategoryNavigation]
-                ), */
+                'menu'                 => $isMenuActive == 'active' ? Arr::get($website->published_layout, 'menu') : [],
                 'shop'                 => [
                     'type'                  => $shop->type->value,
                     'id'                    => $shop->id,
@@ -93,7 +75,7 @@ trait WithIrisInertia
                     'symbol' => $shop->currency->symbol,
                     'name'   => $shop->currency->name,
                 ],
-               /*  'announcements'        => AnnouncementResource::collection($website->announcements()->where('status', AnnouncementStatusEnum::ACTIVE)->get())->toArray(request()), */
+                /*  'announcements'        => AnnouncementResource::collection($website->announcements()->where('status', AnnouncementStatusEnum::ACTIVE)->get())->toArray(request()), */
                 'locale'               => $locale,
                 'website_i18n'         => [
                     'current_language' => LanguageResource::make($currentLanguage)->getArray(),

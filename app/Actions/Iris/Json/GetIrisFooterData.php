@@ -1,4 +1,9 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 07 May 2026 11:58:03 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Iris\Json;
 
@@ -9,9 +14,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
-use App\Actions\Catalogue\ProductCategory\Json\GetIrisProductCategoryNavigation;
 
-class GetIrisSidebarData
+class GetIrisFooterData
 {
     use AsAction;
 
@@ -22,25 +26,22 @@ class GetIrisSidebarData
 
         if (!$website) {
             return response()->json([
-                'sidebar' => []
+                'footer' => []
             ]);
         }
 
-        $cacheKey = "irisData:website:$website->id:sideBar";
+        $cacheKey = "irisData:website:$website->id:footer";
         $ttl      = config('iris.cache.iris_website_data_ttl');
 
-        $compute = function () use ($website) {
-            $sidebarLayout = Arr::get($website->published_layout, 'sidebar', []);
-            $isSidebarActive = Arr::get($sidebarLayout, 'status');
 
-            $irisProductCategoryNavigation =
-                GetIrisProductCategoryNavigation::run($website);
+        $compute = function () use ($website) {
+            $footerLayout   = Arr::get($website->published_layout, 'footer');
+            $isFooterActive = Arr::get($footerLayout, 'status');
 
             return [
-                'sidebar' => array_merge(
-                    $isSidebarActive == 'active' ? Arr::get($website->published_layout, 'sidebar', []) : [],
-                    ['product_categories' => $irisProductCategoryNavigation]
-                )
+                'footer' => array_merge(
+                    $isFooterActive == 'active' ? Arr::get($website->published_layout, 'footer') : [],
+                ),
             ];
         };
 

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Website;
 
+use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\Helpers\Deployment\StoreDeployment;
 use App\Actions\Helpers\Snapshot\StoreWebsiteSnapshot;
 use App\Actions\Helpers\Snapshot\UpdateSnapshot;
@@ -16,6 +17,7 @@ use App\Actions\Web\UpdateWebBlockToWebsiteAndChild;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\UpdateDescriptionBlockToWebsiteAndChild;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use App\Models\Helpers\Snapshot;
 use App\Models\Web\Website;
@@ -136,7 +138,14 @@ class PublishWebsiteMarginal extends OrgAction
             UpdateDescriptionBlockToWebsiteAndChild::dispatch($website, $layout, $marginal)->onQueue('low-priority');
         }
 
-        BreakWebsiteCache::run($website);
+        if ($marginal == 'footer') {
+            Cache::forget("irisData:website:$website->id:footer");
+        } elseif ($marginal == 'sidebar') {
+            Cache::forget("irisData:website:$website->id:sideBar");
+        } else {
+            BreakWebsiteCache::run($website);
+        }
+
 
         if ($customAudit) {
             $titleAudit             = ucfirst(str_replace('_', ' ', $marginal));
