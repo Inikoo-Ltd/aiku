@@ -26,7 +26,7 @@ trait WithIrisInertia
         $locale = app()->getLocale();
 
         $cacheKey = "irisData:website:$website->id:locale:".$locale;
-        $ttl      = (int)(config('iris.cache.iris_website_data_ttl') ?? 900);
+        $ttl      = config('iris.cache.iris_website_data_ttl');
 
         $compute = function () use ($website, $locale) {
             $shop = $website->shop;
