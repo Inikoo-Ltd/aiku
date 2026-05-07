@@ -28,6 +28,10 @@ class FulfillOrderToTiktok extends OrgAction
 
     public function handle(Order $order): void
     {
+        if($order->is_shipping_by_external) {
+            return;
+        }
+
         $fulfillOrderId = $order->platform_order_id;
 
         if (! $order->customerSalesChannel->platform_status) {
