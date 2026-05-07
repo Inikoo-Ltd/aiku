@@ -21,21 +21,26 @@ class GetWebBlockRecommendationsFromMaster
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        $permissions =  ['edit', 'hidden'];
+        data_set(
+            $webBlock,
+            'web_block.layout.data.permissions',
+            ['edit', 'hidden']
+        );
 
+        data_set(
+            $webBlock,
+            'web_block.layout.data.fieldValue.recommendation_settings',
+            data_get($webpage, 'website.settings.recommender_web_block', [])
+        );
 
-        $webBlockType = data_get($webBlock, 'type', '');
-        $webPublishedLayout = $webpage->website->published_layout;
-
-        data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set(
             $webBlock,
             'web_block.layout.data.fieldValue.products_recommended',
             IrisProductsInWebpageResource::collection(
                 GetIrisProductsInRecommendation::run($webpage->model)
-            )->toArray(request())
+            )->resolve()
         );
-        
+
         return $webBlock;
     }
 }

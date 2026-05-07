@@ -13,6 +13,7 @@ use App\Actions\IrisAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -20,8 +21,10 @@ class GetIrisProductsInRecommendation extends IrisAction
 {
     use WithIrisProductsInWebpage;
 
-    public function handle(ProductCategory $productCategory, $stockMode = 'all', bool $topSeller = false): LengthAwarePaginator
+    public function handle(ProductCategory $productCategory, $stockMode = 'in_stock', bool $topSeller = false): LengthAwarePaginator|Collection
     {
+        $website = $productCategory->shop->website;    
+
         $queryBuilder = $this->getBaseQuery($stockMode, $topSeller);
         $queryBuilder
             ->whereExists(function ($q) {
@@ -37,6 +40,7 @@ class GetIrisProductsInRecommendation extends IrisAction
                     ->whereNull('products.variant_id')
                     ->orWhere('products.is_variant_leader', true);
             });
+            
         $queryBuilder->select(
             $this->getSelect([
                 DB::raw('products.variant_id IS NOT NULL as is_variant'),
@@ -49,15 +53,17 @@ class GetIrisProductsInRecommendation extends IrisAction
                     ) as is_on_demand')
             ])
         );
-        $perPage = null;
+
+        $perPage = data_get($website->settings, 'recommender_web_block.description_has_overview', 100);
         
         $relatedProduct = $productCategory->relatedProducts()->get();
         $queryBuilder->whereIn('products.id', $relatedProduct->pluck('id'));
-        if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
-            $perPage = 250;
-        }
 
-        return $this->getData($queryBuilder, $perPage);
+        if ($perPage < 10) {
+            return $this->getDataHardLimit($queryBuilder, $perPage);
+        } else {
+            return $this->getData($queryBuilder, $perPage);
+        }
     }
 
 

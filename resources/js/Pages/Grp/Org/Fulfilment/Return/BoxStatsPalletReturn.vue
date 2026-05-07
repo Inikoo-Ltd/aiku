@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import JsBarcode from "jsbarcode"
-import { computed, onMounted, ref, inject, toRaw } from "vue"
+import { computed, onMounted, onUnmounted, ref, inject, toRaw } from "vue"
 import { capitalize } from "@/Composables/capitalize"
 import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressManagementModal.vue"
 import { PalletReturn, BoxStats } from "@/types/Pallet"
@@ -56,6 +56,26 @@ const props = defineProps<{
 	}
 
 }>()
+
+// Section: Box Stats loading state
+const isBoxStatsLoading = ref(false)
+let removeStartListener: (() => void) | null = null
+let removeFinishListener: (() => void) | null = null
+onMounted(() => {
+	removeStartListener = router.on('start', (event) => {
+		if (event.detail.visit.only?.includes('box_stats')) {
+			isBoxStatsLoading.value = true
+		}
+	})
+	removeFinishListener = router.on('finish', () => {
+		isBoxStatsLoading.value = false
+	})
+})
+
+onUnmounted(() => {
+	removeStartListener?.()
+	removeFinishListener?.()
+})
 
 onMounted(() => {
 	JsBarcode("#palletReturnBarcode", route().routeParams.palletReturn, {
@@ -399,6 +419,12 @@ const base64HtmlToPdf = async (base64: string, index) => {
 </script>
 
 <template>
+	<div class="relative">
+	<Transition name="fade">
+		<div v-if="isBoxStatsLoading" class="absolute inset-0 bg-white/60 dark:bg-gray-900/60 flex items-center justify-center z-10 pointer-events-none">
+			<FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-2xl text-gray-400" fixed-width aria-hidden="true" />
+		</div>
+	</Transition>
 	<div
 		class="h-min grid sm:grid-cols-2 lg:grid-cols-4 border-t border-b border-gray-200 divide-x divide-gray-300">
 		<!-- Box: Customer -->
@@ -949,6 +975,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 			</div>
 		</div>
 	</Modal>
+	</div>
 </template>
 
 <style scoped lang="scss">

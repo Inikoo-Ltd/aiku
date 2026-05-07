@@ -26,18 +26,18 @@ class GetIrisSidebarData
             ]);
         }
 
-        $cacheKey = "iris:sidebar:website:{$website->id}";
-        $ttl      = (int)(config('iris.cache.iris_sidebar_ttl') ?? 600);
+        $cacheKey = "irisData:website:$website->id:sideBar:";
+        $ttl      = config('iris.cache.iris_website_data_ttl');
 
         $compute = function () use ($website) {
-            $sidebarLayout   = Arr::get($website->published_layout, 'sidebar', []);
+            $sidebarLayout = Arr::get($website->published_layout, 'sidebar', []);
             $isSidebarActive = Arr::get($sidebarLayout, 'status');
 
             $irisProductCategoryNavigation =
                 GetIrisProductCategoryNavigation::run($website);
 
             return [
-                'sidebar'              => array_merge(
+                'sidebar' => array_merge(
                     $isSidebarActive == 'active' ? Arr::get($website->published_layout, 'sidebar', []) : [],
                     ['product_categories' => $irisProductCategoryNavigation]
                 )

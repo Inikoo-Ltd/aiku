@@ -146,7 +146,38 @@ const debounceReloadBoxStats = debounce(() => {
     router.reload({
         only: ['pageHead', 'box_stats'],
     })
-}, 700)
+}, 500)
+
+// Section: on click 'Select/Unselect all' checkbox
+const isCheckAllLoading = ref(false)
+const onCheckAllTable = async (payload: { data: {}[]; allChecked: boolean }) => {
+    const palletIds = payload.allChecked
+        ? payload.data.map((item: { pallet_id: number }) => item.pallet_id)
+        : []
+
+    if (!props.route_checkmark?.name) {
+        return
+    }
+
+    isCheckAllLoading.value = true
+    try {
+        await axios.post(
+            route(props.route_checkmark.name, props.route_checkmark.parameters),
+            { pallets: palletIds }
+        )
+        debounceReloadBoxStats()
+        router.reload({ only: ['pallets'], preserveScroll: true })
+    } catch (error) {
+        notify({
+            title: trans('Something went wrong'),
+            text: payload.allChecked
+                ? trans('Failed to select all pallets')
+                : trans('Failed to unselect all pallets'),
+            type: 'error',
+        })
+    }
+    isCheckAllLoading.value = false
+}
 
 const onCheckTable = async (item: {}) => {
     if (item.is_checked) {
@@ -277,6 +308,7 @@ const generateLinkPallet = (pallet: {}) => {
         checkboxKey='pallet_id'
         @onChecked="(item) => onCheckTable(item)"
         @onUnchecked="(item) => onCheckTable(item)"
+        @onCheckedAll="(payload) => onCheckAllTable(payload)"
     >
 
         <!-- Column: Type Icon -->

@@ -12,6 +12,7 @@ use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
 use App\Models\Catalogue\Product;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -205,6 +206,16 @@ trait WithIrisProductsInWebpage
             ->allowedFilters($this->getAllowedFilters())
             ->withIrisPaginator($numberOfRecords)
             ->withQueryString();
+    }
+
+    public function getDataHardLimit($queryBuilder, ?int $numberOfRecords = null): Collection
+    {
+        return $queryBuilder
+            ->defaultSort('name')
+            ->allowedSorts($this->getAllowedSorts())
+            ->allowedFilters($this->getAllowedFilters())
+            ->limit($numberOfRecords)
+            ->get();
     }
 
     public function getUnsortedData($queryBuilder, ?int $numberOfRecords = null): LengthAwarePaginator

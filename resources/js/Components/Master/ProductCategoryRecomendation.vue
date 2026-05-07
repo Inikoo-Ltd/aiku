@@ -96,7 +96,6 @@ const SaveOrder = async () => {
                 :editable="props.data?.editable"
                 :useDelete="true"
                 @delete="(item) => {
-                    console.log('Deleted item:', item)
                     listProducts.data.data = listProducts.data.data.filter((product: any) => product.id !== item.id)
                 }"
             >
