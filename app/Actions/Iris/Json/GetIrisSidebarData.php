@@ -26,7 +26,7 @@ class GetIrisSidebarData
             ]);
         }
 
-        $cacheKey = "irisData:website:$website->id:sideBar:";
+        $cacheKey = "irisData:website:$website->id:sideBar";
         $ttl      = config('iris.cache.iris_website_data_ttl');
 
         $compute = function () use ($website) {
