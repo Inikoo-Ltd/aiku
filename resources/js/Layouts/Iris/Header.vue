@@ -93,7 +93,7 @@ provide("onLogout", onClickLogout);
 
   <!-- Section: Mobile Header -->
   <div :style="getStyles(data.header.data.fieldValue.container.properties, screenType)" class="sticky top-0 z-50"> 
-      <MobileHeader :header-data="data.header.data.fieldValue" :menu-data="menu?.data?.fieldValue" :productCategories="menu.product_categories" :screenType="screenType" />
+      <MobileHeader :header-data="data.header.data.fieldValue" :menu-data="menu?.data?.fieldValue" :productCategories="menu?.product_categories ?? []" :screenType="screenType" />
   </div>
 
 </template>
