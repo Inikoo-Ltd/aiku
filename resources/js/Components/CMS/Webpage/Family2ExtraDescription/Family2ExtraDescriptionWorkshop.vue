@@ -64,13 +64,27 @@ const textOrder = computed(() =>
   isImageLeft.value ? "lg:order-2" : "lg:order-1"
 )
 
-const image = computed(() => {
+const images = computed(() => {
   const data =
     props.modelValue?.family?.extra_description_image
 
-  if (!data) return null
+  if (!data) return []
 
-  return data
+  if (Array.isArray(data)) {
+    return data.slice(0, 4)
+  }
+
+  return [data]
+})
+
+const displayImages = computed(() => {
+  const filled = [...images.value]
+
+  while (filled.length < 4) {
+    filled.push(null)
+  }
+
+  return filled
 })
 
 const cleanedDescription = computed(() => {
@@ -112,13 +126,29 @@ onMounted(checkOverflow)
     <div class="w-full px-4 py-6">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
         <!-- IMAGE -->
-        <div class="w-full flex justify-center" :class="imageOrder">
-          <div class="w-full max-w-[500px] aspect-square overflow-hidden rounded-2xl bg-gray-100">
-            <Image v-if="image" :src="image" :alt="modelValue?.family?.name" class="w-full h-full"
-              imgClass="w-full h-full object-cover" />
+            <div
+          class="w-full flex justify-center lg:justify-end"
+          :class="imageOrder"
+        >
+          <div
+            class="grid grid-cols-2 gap-4 w-full max-w-[560px]"
+          >
+            <div
+              v-for="(img, index) in displayImages"
+              :key="index"
+              class="aspect-square overflow-hidden rounded-3xl bg-white border border-gray-200"
+            >
+              <template v-if="img">
+                <Image
+                  :src="img"
+                  :alt="fieldValue?.family?.name"
+                  class="w-full h-full"
+                  imgClass="w-full h-full object-cover transition duration-500 hover:scale-105"
+                />
+              </template>
+            </div>
           </div>
         </div>
-
         <!-- CONTENT -->
         <div class="flex flex-col min-w-0" :class="textOrder">
           <!-- DESCRIPTION -->
@@ -159,20 +189,33 @@ onMounted(checkOverflow)
 
 <style scoped>
 .description-content {
-  @apply text-sm md:text-base text-gray-600 leading-7 text-center md:text-left transition-all duration-300;
+  @apply text-sm
+  md:text-[15px]
+  lg:text-base
+  text-gray-600
+  leading-7
+  lg:leading-8
+  text-center
+  md:text-left
+  transition-all
+  duration-300;
 }
 
 .description-collapsed {
   max-height: 390px;
   overflow: hidden;
 
-  mask-image: linear-gradient(to bottom,
-      black 75%,
-      transparent 100%);
+  mask-image: linear-gradient(
+    to bottom,
+    black 75%,
+    transparent 100%
+  );
 
-  -webkit-mask-image: linear-gradient(to bottom,
-      black 75%,
-      transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black 75%,
+    transparent 100%
+  );
 
   transition:
     max-height 0.35s ease,
@@ -180,25 +223,48 @@ onMounted(checkOverflow)
 }
 
 .description-content :deep(p) {
-  @apply mb-4;
+  @apply mb-5;
 }
 
 .description-content :deep(h2),
 .description-content :deep(h3),
 .description-content :deep(h4) {
-  @apply text-gray-900 font-semibold mt-6 mb-3;
+  @apply text-gray-900
+  font-semibold
+  mt-8
+  mb-4
+  text-xl
+  leading-snug;
 }
 
 .description-content :deep(ul) {
-  @apply list-disc pl-5 space-y-2;
+  @apply list-disc
+  pl-5
+  space-y-2
+  mb-5;
 }
 
 .description-content :deep(ol) {
-  @apply list-decimal pl-5 space-y-2;
+  @apply list-decimal
+  pl-5
+  space-y-2
+  mb-5;
 }
 
+.description-content :deep(img) {
+  @apply rounded-2xl
+  overflow-hidden
+  my-6;
+}
 
 .read-more-btn {
-  @apply mt-4 text-sm font-medium text-gray-900 underline w-fit self-center md:self-start;
+  @apply mt-5
+  text-sm
+  font-medium
+  text-gray-900
+  underline
+  w-fit
+  self-center
+  md:self-start;
 }
 </style>

@@ -6,7 +6,6 @@ import { get, isPlainObject, debounce } from "lodash-es"
 
 import Image from "@/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import LinkIris from "@/Components/Iris/LinkIris.vue"
 
 import { getStyles } from "@/Composables/styles"
 import { getBestOffer } from "@/Composables/useOffers"
@@ -19,7 +18,6 @@ import { Swiper, SwiperSlide } from "swiper/vue"
 import { Navigation } from "swiper/modules"
 import "swiper/css"
 import "swiper/css/navigation"
-import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 
 library.add(
   faCube,
@@ -54,10 +52,6 @@ const name = ref(
   modelValue.value?.family?.name ||
   ""
 )
-
-const bestOffer = computed(() => {
-  return getBestOffer(modelValue.value?.family?.offers_data)
-})
 
 const cleanedDescription = computed(() => {
   const html = modelValue.value?.family?.description || ""
@@ -101,7 +95,6 @@ const saveDescription = debounce(async (key: string, value: string) => {
   }
 }, 1000)
 
-const isExpanded = ref(false)
 
 watch(name, async (val) => {
   modelValue.value.family.description_title = val
@@ -132,7 +125,7 @@ onMounted(async () => {
   })
 })
 
-console.log("Family2 Workshop Props:", props)
+console.log("Family3 Workshop Props:", props)
 </script>
 
 <template>
@@ -324,7 +317,7 @@ console.log("Family2 Workshop Props:", props)
 }
 
 .description-content :deep(p) {
-  @apply mb-4;
+  @apply mb-0;
 }
 
 .description-content :deep(h2),
