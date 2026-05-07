@@ -20,7 +20,9 @@ enum OfferTypeEnum: string
     case AMOUNT = "Amount";
     case CATEGORY_FOR_EVERY_QUANTITY_ANY_PRODUCT_ORDERED = "Category For Every Quantity Any Product Ordered";
     case DEPARTMENT_QUANTITY_ORDERED = "Department Quantity Ordered";
+    case SUB_DEPARTMENT_QUANTITY_ORDERED = "Subdepartment Quantity Ordered";
     case CATEGORY_QUANTITY_ORDERED = "Category Quantity Ordered";
+
     case VOLGR_GIFT = "VolGr Gift";
     case VOUCHER = "Voucher";
     case GR_AMNESTY = "GR Amnesty";
