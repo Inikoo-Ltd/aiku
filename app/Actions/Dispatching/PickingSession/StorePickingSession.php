@@ -17,6 +17,7 @@ use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingSessions;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
+use App\Enums\Dispatching\PickingSession\PickingSessionTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\PickingSession;
@@ -76,6 +77,7 @@ class StorePickingSession extends OrgAction
             );
 
             data_set($modelData, 'state', PickingSessionStateEnum::IN_PROCESS->value);
+            data_set($modelData, 'type', PickingSessionTypeEnum::DROPSHIPPING->value);
 
             $user = request()->user() ?? ($modelData['user_id'] ? User::find($modelData['user_id']) : null);
             data_set($modelData, 'user_id', $user?->id);

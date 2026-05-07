@@ -115,14 +115,18 @@ trait WithShowPalletReturnHelpers
 
     protected function buildPalletReturnBreadcrumbs(string $routeName, array $routeParameters, $suffix = ''): array
     {
-        $headCrumb = function (PalletReturn $palletReturn, array $routeParameters, string $suffix) {
+        $headCrumb = function (PalletReturn $palletReturn, array $routeParameters, string $suffix, string|null $modelLabel = null, string|null $suffixModel = null) {
+
+            $indexModelLabel = $modelLabel ?? __('Pallet returns');
+
             return [
                 [
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
-                            'route' => $routeParameters['index'],
-                            'label' => __('Pallet returns')
+                            'route'     => $routeParameters['index'],
+                            'label'     => $indexModelLabel,
+                            'suffix'    => $suffixModel
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -138,6 +142,44 @@ trait WithShowPalletReturnHelpers
         $palletReturn = PalletReturn::where('slug', $routeParameters['palletReturn'])->first();
 
         return match ($routeName) {
+            'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.pallet-returns.show' => array_merge(
+                ShowFulfilment::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'fulfilment'])),
+                $headCrumb(
+                    $palletReturn,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.wholesale.pallet-returns.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'palletReturn'])
+                        ]
+                    ],
+                    $suffix,
+                    __('Returns Backlog'),
+                    ' (Wholesale)'
+                )
+            ),
+            'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.pallet-returns.show' => array_merge(
+                ShowFulfilment::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'fulfilment'])),
+                $headCrumb(
+                    $palletReturn,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.fulfilments.show.backlogs.pallet-returns-backlog.dropship.pallet-returns.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'palletReturn'])
+                        ]
+                    ],
+                    $suffix,
+                    __('Returns Backlog'),
+                    ' (Dropshipping)'
+                )
+            ),
             'grp.org.fulfilments.show.crm.customers.show.pallet_returns.show' => array_merge(
                 ShowFulfilmentCustomer::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer'])),
                 $headCrumb(

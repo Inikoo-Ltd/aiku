@@ -11,9 +11,11 @@ namespace App\Models\Inventory;
 
 use App\Actions\Utils\Abbreviate;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
+use App\Enums\Dispatching\PickingSession\PickingSessionTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
-use App\Models\Dispatching\Trolley;
+use App\Models\Fulfilment\PalletReturn;
+use App\Models\Fulfilment\PalletReturnItem;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -24,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Dispatching\Trolley;
 
 /**
  * @property int $id
@@ -70,6 +73,7 @@ class PickingSession extends Model
 
     protected $casts = [
         'state'                  => PickingSessionStateEnum::class,
+        'type'                   => PickingSessionTypeEnum::class,
     ];
 
     public function getRouteKeyName(): string
@@ -117,6 +121,21 @@ class PickingSession extends Model
     public function deliveryNotesItems(): HasMany
     {
         return $this->hasMany(DeliveryNoteItem::class);
+    }
+
+    public function palletReturns(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            PalletReturn::class,
+            'picking_session_has_pallet_returns',
+            'picking_session_id',
+            'pallet_return_id'
+        );
+    }
+
+    public function palletReturnItems(): HasMany
+    {
+        return $this->hasMany(PalletReturnItem::class);
     }
 
     public function trolleys(): HasMany
