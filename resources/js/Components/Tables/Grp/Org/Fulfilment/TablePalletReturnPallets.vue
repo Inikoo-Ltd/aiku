@@ -240,7 +240,7 @@ const isFulfilmentOperationsPalletReturnPage = computed(() => {
         || route().current('grp.org.fulfilments.show.crm.customers.show.pallet_returns.show')
 })
 
-const onCheckTable = async (item: {}) => {
+const onCheckTable = async (item: any) => {
     if (item.is_checked) {
         try {
             if(!item.attachRoute?.name) {
@@ -288,6 +288,20 @@ const onCheckTable = async (item: {}) => {
         }
     }
 
+}
+
+const onCheckAllTable = async (payload: { data?: any[]; allChecked?: boolean }) => {
+    const rows = Array.isArray(payload?.data) ? payload.data : []
+    const checkedState = Boolean(payload?.allChecked)
+
+    if (!rows.length) {
+        return
+    }
+
+    await Promise.all(rows.map((row) => onCheckTable({
+        ...row,
+        is_checked: checkedState,
+    })))
 }
 
 const onSaved = async (pallet: { form: {} }, fieldName: string) => {
@@ -410,6 +424,7 @@ const generateLocationRoute = (item: any, picking?: any) => {
         checkboxKey='pallet_id'
         @onChecked="(item) => onCheckTable(item)"
         @onUnchecked="(item) => onCheckTable(item)"
+        @onCheckedAll="(payload) => onCheckAllTable(payload)"
     >
 
         <!-- Column: Type Icon -->
