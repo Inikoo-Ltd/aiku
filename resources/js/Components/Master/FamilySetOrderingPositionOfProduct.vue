@@ -276,9 +276,15 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
             class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <template #item="{ element, index }">
                 <div class="border rounded p-2 bg-white hover:shadow-sm">
-                    <div class="drag-handle text-xs text-gray-400 mb-1">
-                        ☰ {{ index + 1 }}
+                    <div class="flex justify-between">
+                        <div class="drag-handle text-xs text-gray-400 mb-1">
+                            ☰ {{ index + 1 }}
+                        </div>
+                        <Button v-if="useDelete" type="negative" size="xs" @click="removeItem(element)" :icon="faTrash">
+
+                        </Button>
                     </div>
+
 
                     <slot name="card-content" :item="element">
                         <Image :src="element.image_thumbnail?.main?.original"
@@ -292,11 +298,6 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                             {{ element.code }}
                         </div>
 
-
-                        <Button v-if="useDelete" type="negative" size="xs" class="w-full mt-2"
-                            @click="removeItem(element)" :icon="faTrash"> 
-                            
-                        </Button>
                     </slot>
                 </div>
             </template>

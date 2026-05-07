@@ -61,31 +61,27 @@ const sendMessageToParent = (type: string, value: any) => {
 </script>
 
 <template>
-  <div
-    :id="modelValue?.id ? modelValue?.id : 'recomended-master' + indexBlock"
-    class="w-full pb-6"
-    :style="{
+  <div v-if="compSwiperOptions.length > modelValue?.recommendation_settings.min_amt_shown"
+    :id="modelValue?.id ? modelValue?.id : 'recomended-master' + indexBlock" class="w-full pb-6" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(modelValue.container?.properties, screenType),
       width: 'auto'
-    }"
-    :dropdown-type="props.modelValue?.settings?.products_data?.type"
-  >
+    }" :dropdown-type="props.modelValue?.settings?.products_data?.type">
     <!-- Title -->
-    <div class="px-4 py-6 pb-2">
+    <div class="px-4 py-6 pb-2 flex items-center justify-center">
       <div class="text-3xl font-semibold text-gray-800">
-         {{ trans("Recommendations") }}
+        <div v-if="fieldValue?.recommendation_settings.title" v-html="fieldValue?.recommendation_settings.title">
+        </div>
+        <div v-else>
+          {{ trans("Recommendations") }}
+        </div>
       </div>
     </div>
 
     <!-- Products -->
-    <div
-      v-if="compSwiperOptions.length"
-      class="relative px-4 py-6"
-      @click="() => {
-        sendMessageToParent('activeBlock', indexBlock)
-      }"
-    >
+    <div v-if="compSwiperOptions.length" class="relative px-4 py-6" @click="() => {
+      sendMessageToParent('activeBlock', indexBlock)
+    }">
       <!-- Navigation -->
       <button ref="prevEl" class="swiper-nav-button left-0">
         <FontAwesomeIcon :icon="['fas', 'chevron-left']" />
@@ -96,44 +92,19 @@ const sendMessageToParent = (type: string, value: any) => {
       </button>
 
       <!-- Swiper -->
-      <Swiper
-        :modules="[Navigation]"
-        :slides-per-view="slidesPerView"
-        :space-between="20"
-        :navigation="{
-          prevEl,
-          nextEl
-        }"
-        :loop="compSwiperOptions.length > slidesPerView"
-        :auto-height="false"
-        class="w-full"
-      >
-        <SwiperSlide
-          v-for="(product, index) in compSwiperOptions"
-          :key="product?.id || index"
-          class="!h-auto"
-        >
+      <Swiper :modules="[Navigation]" :slides-per-view="slidesPerView" :space-between="20" :navigation="{
+        prevEl,
+        nextEl
+      }" :loop="compSwiperOptions.length > slidesPerView" :auto-height="false" class="w-full">
+        <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product?.id || index" class="!h-auto">
           <div class="h-full flex flex-col">
-            <div
-              v-if="product"
-              class="flex-1 flex flex-col"
-            >
-              <ProductRenderEcom
-                v-if="layout.retina.type === 'b2b'"
-                :product="product"
-              />
+            <div v-if="product" class="flex-1 flex flex-col">
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" />
 
-              <ProductRender
-                v-else
-                :product="product"
-                :productHasPortfolio="[]"
-              />
+              <ProductRender v-else :product="product" :productHasPortfolio="[]" />
             </div>
 
-            <div
-              v-else
-              class="flex-1 flex items-center justify-center text-gray-400"
-            >
+            <div v-else class="flex-1 flex items-center justify-center text-gray-400">
               No Product
             </div>
           </div>
@@ -142,10 +113,7 @@ const sendMessageToParent = (type: string, value: any) => {
     </div>
 
     <!-- Empty -->
-    <div
-      v-else
-      class="px-4 py-10 text-center text-gray-400"
-    >
+    <div v-else class="px-4 py-10 text-center text-gray-400">
       No products available
     </div>
   </div>
