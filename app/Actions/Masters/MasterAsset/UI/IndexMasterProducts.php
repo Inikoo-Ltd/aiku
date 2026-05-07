@@ -286,9 +286,9 @@ class IndexMasterProducts extends GrpAction
         $queryBuilder = $queryBuilder
             ->when(
                 $sortByIndex && $parent instanceof MasterProductCategory,
-                function ($query) {
+                function ($query) use ($parent) {
                     $query
-                        ->orderBy('master_assets.index_under_master_family')
+                        ->orderBy("master_assets.index_under_master_{$parent->type->value}")
                         ->orderBy('master_assets.code');
                 },
                 function ($query) {
@@ -316,7 +316,8 @@ class IndexMasterProducts extends GrpAction
 
         if ($sortByIndex && $parent instanceof MasterProductCategory) {
             return $queryBuilder
-                ->addSelect('master_assets.index_under_master_family')
+                ->addSelect("master_assets.index_under_master_{$parent->type->value}")
+                ->limit(100)
                 ->get();
         }
 
@@ -510,15 +511,14 @@ class IndexMasterProducts extends GrpAction
                 'tooltip' => __('Add a master product to this family'),
                 'label'   => __('Master product'),
             ];
-            $actions[] = [
-                'type'    => 'button',
-                'style'   => 'primary',
-                'key'     => 'save-order',
-                'tooltip' => __('Save product order'),
-                'label'   => __('Save Order'),
-            ];
         }
-
+        $actions[] = [
+            'type'    => 'button',
+            'style'   => 'primary',
+            'key'     => 'save-order',
+            'tooltip' => __('Save product order'),
+            'label'   => __('Save Order'),
+        ];
 
         return Inertia::render(
             'Masters/MasterProducts',
@@ -531,6 +531,7 @@ class IndexMasterProducts extends GrpAction
                 'navigation'              => $modelNavigation,
                 'title'                   => $title,
                 'familyId'                => $familyId,
+                'productCategoryId'       => $this->parent->id,
                 'currency'                => $this->parent instanceof Group ? $this->parent->currency->code : $this->parent->group->currency->code,
                 'storeProductRoute'       => $isFamily ? [
                     'name'       => 'grp.models.master_family.store-assets',

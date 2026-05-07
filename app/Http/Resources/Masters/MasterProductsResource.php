@@ -47,6 +47,7 @@ class MasterProductsResource extends JsonResource
     {
         $extraField = [];
         // Add this check so that this won't disturb usage in other place. Needed this for the checks done during variant creation.
+
         if (isset($this->is_variant_leader) && $this->resource->relationLoaded('products')) {
             $allChildHasWeb = true;
             $hasValidProduct = false;

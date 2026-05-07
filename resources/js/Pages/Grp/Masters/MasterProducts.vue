@@ -47,6 +47,7 @@ const props = defineProps<{
         submit_orphan_route: routeType
     }
     familyId: number
+    productCategoryId : number
     storeProductRoute: routeType
     shopsData?: any
     masterProductCategoryId?: number
@@ -154,10 +155,10 @@ const resetSelectionByScope = {
 }
 
 const loadingOrder = ref(false)
+
 const SaveOrder = () => {
-    console.log(localData)
     router.patch(route('grp.models.master_product_category.reorder_index', {
-        masterProductCategory: props.familyId
+        masterProductCategory: props.masterProductCategoryId
     }), {
         products: localData.value.map((product: any, index: number) => ({
             id: product.id,

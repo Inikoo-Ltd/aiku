@@ -250,7 +250,7 @@ class ShowMasterFamily extends GrpAction
                         ]
                     ],
                 ),
-                'familyId'                => $masterFamily->id,
+                'productCategoryId'       => $masterFamily->id,
                 'currency'                => $masterFamily->group->currency,
                 'storeProductRoute'       => [
                     'name'       => 'grp.models.master_family.store-assets',
