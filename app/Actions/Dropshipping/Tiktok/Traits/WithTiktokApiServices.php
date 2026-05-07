@@ -170,6 +170,15 @@ trait WithTiktokApiServices
         ]);
     }
 
+    public function activateProduct(array $productData): array
+    {
+        $path = '/product/'.$this->version.'/products/activate';
+
+        return $this->makeApiRequest('POST', $path, $productData, true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
     public function getOrders(array $params = [], array $body = []): array
     {
         $path = '/order/'.$this->version.'/orders/search';
