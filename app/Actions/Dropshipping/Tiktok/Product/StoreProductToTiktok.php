@@ -148,6 +148,10 @@ class StoreProductToTiktok extends RetinaAction
 
             $tiktokProduct = $tiktokUser->uploadProductToTiktok($productData);
 
+            /*$result = $tiktokUser->activateProduct([
+                'product_ids' => [Arr::get($tiktokProduct, 'data.product_id')]
+            ]);*/
+
             UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($tiktokProduct, 'data.product_id'),
                 'platform_product_variant_id' => Arr::get($tiktokProduct, 'data.product_id')
