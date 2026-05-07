@@ -30,8 +30,9 @@ class GetIrisFooterData
             ]);
         }
 
-        $cacheKey = "iris:footer:website:{$website->id}";
-        $ttl      = (int)(config('iris.cache.iris_website_data_ttl') ?? 900);
+        $cacheKey = "irisData:website:$website->id:footer";
+        $ttl      = config('iris.cache.iris_website_data_ttl');
+
 
         $compute = function () use ($website) {
             $footerLayout   = Arr::get($website->published_layout, 'footer');
