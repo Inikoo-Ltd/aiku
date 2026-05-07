@@ -21,7 +21,7 @@ class RedoMasterAssetTimeSeries implements ShouldBeUnique
 {
     use WithHydrateCommand;
 
-    public string $jobQueue         = 'default-long';
+    public string $jobQueue         = 'default-long-slave';
     public string $commandSignature = 'master-assets:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -37,8 +37,8 @@ class RedoMasterAssetTimeSeries implements ShouldBeUnique
     public function handle(MasterAsset $masterAsset, bool $async = false, ?string $from = null, ?string $to = null): void
     {
         if (!$from || !$to) {
-            $firstInvoicedDate = DB::table('invoice_transactions')->where('master_asset_id', $masterAsset->id)->whereNull('deleted_at')->min('date');
-            $lastInvoicedDate  = DB::table('invoice_transactions')->where('master_asset_id', $masterAsset->id)->whereNull('deleted_at')->max('date');
+            $firstInvoicedDate = DB::connection('aiku_no_sticky')->table('invoice_transactions')->where('master_asset_id', $masterAsset->id)->whereNull('deleted_at')->min('date');
+            $lastInvoicedDate  = DB::connection('aiku_no_sticky')->table('invoice_transactions')->where('master_asset_id', $masterAsset->id)->whereNull('deleted_at')->max('date');
 
             if (!$firstInvoicedDate) {
                 return;
@@ -50,7 +50,7 @@ class RedoMasterAssetTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessMasterAssetTimeSeriesRecords::dispatch($masterAsset->id, $frequency, $from, $to)->onQueue('low-priority');
+                ProcessMasterAssetTimeSeriesRecords::dispatch($masterAsset->id, $frequency, $from, $to);
             } else {
                 ProcessMasterAssetTimeSeriesRecords::run($masterAsset->id, $frequency, $from, $to);
             }

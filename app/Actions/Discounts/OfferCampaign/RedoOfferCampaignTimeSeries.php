@@ -22,7 +22,7 @@ class RedoOfferCampaignTimeSeries implements ShouldBeUnique
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue = 'default-long';
+    public string $jobQueue = 'default-long-slave';
     public string $commandSignature = 'offer-campaigns:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -39,12 +39,14 @@ class RedoOfferCampaignTimeSeries implements ShouldBeUnique
         return $offerCampaignId.'_'.$from.'_'.$to;
     }
 
-    public function handle(?int $offerCampaignId, bool $async = false, ?string $from = null, ?string $to = null): void
+    public function handle(?int $offerCampaignId, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if (!$offerCampaignId) {
             return;
         }
+
         $offerCampaign = OfferCampaign::find($offerCampaignId);
+
         if (!$offerCampaign) {
             return;
         }
@@ -54,7 +56,7 @@ class RedoOfferCampaignTimeSeries implements ShouldBeUnique
         }
 
         if (!$from || !$to) {
-            $firstTransactionDate = DB::table('invoice_transactions')
+            $firstTransactionDate = DB::connection('aiku_no_sticky')->table('invoice_transactions')
                 ->whereExists(function ($query) use ($offerCampaign) {
                     $query->select(DB::raw(1))
                         ->from('transaction_has_offer_allowances')
@@ -64,7 +66,7 @@ class RedoOfferCampaignTimeSeries implements ShouldBeUnique
                 ->whereNull('deleted_at')
                 ->min('date');
 
-            $lastTransactionDate = DB::table('invoice_transactions')
+            $lastTransactionDate = DB::connection('aiku_no_sticky')->table('invoice_transactions')
                 ->whereExists(function ($query) use ($offerCampaign) {
                     $query->select(DB::raw(1))
                         ->from('transaction_has_offer_allowances')
@@ -84,11 +86,10 @@ class RedoOfferCampaignTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessOfferCampaignTimeSeriesRecords::dispatch($offerCampaign->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessOfferCampaignTimeSeriesRecords::dispatch($offerCampaign->id, $frequency, $from, $to);
             } else {
                 ProcessOfferCampaignTimeSeriesRecords::run($offerCampaign->id, $frequency, $from, $to);
             }
         }
     }
-
 }
