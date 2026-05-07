@@ -59,9 +59,13 @@ sub vcl_init {
         tracking_params_filter.add_string("testb");
 
 
-        new vdir = directors.random();
-        vdir.add_backend(helio,30);
-        vdir.add_backend(boro,70);
+        new logged_in_vdir = directors.random();
+        logged_in_vdir.add_backend(helio,70);
+        logged_in_vdir.add_backend(boro,30);
+
+        new logged_out_vdir = directors.random();
+        logged_out_vdir.add_backend(helio,30);
+        logged_out_vdir.add_backend(boro,70);
 
 }
 
@@ -95,9 +99,6 @@ sub set_login_flag_from_cookie {
 
 sub vcl_recv {
 
-    # Set the backend hint to the director
-    set req.backend_hint = vdir.backend();
-
     # Allow BAN/PURGE from trusted IPs
     if (req.method == "PURGE" || req.method == "BAN") {
         if (client.ip !~ purge) {
@@ -119,6 +120,22 @@ sub vcl_recv {
          }
 
         return (synth(200, "Purged"));
+    }
+
+    # Determine login header (used by app, backend selection, and cache key)
+    # If the warm-up header is present, trust it and bypass cookie derivation
+    if (req.http.X-Warm-Logged-Status) {
+        set req.http.X-Logged-Status = req.http.X-Warm-Logged-Status;
+    } else {
+        # Otherwise derive from cookie
+        call set_login_flag_from_cookie;
+    }
+
+    # Select backend weights based on the derived login status
+    if (req.http.X-Logged-Status == "In") {
+        set req.backend_hint = logged_in_vdir.backend();
+    } else {
+        set req.backend_hint = logged_out_vdir.backend();
     }
 
      # If it's an Inertia request, don't look it up in the cache
@@ -183,17 +200,6 @@ sub vcl_recv {
 
     # Sort query string for better cache hit ratio; keeps semantics
     set req.url = std.querysort(req.url);
-
-    # Determine login header (used by app and cache key)
-    # If the warm-up header is present, trust it and bypass cookie derivation
-    if (req.http.X-Warm-Logged-Status) {
-        set req.http.X-Logged-Status = req.http.X-Warm-Logged-Status;
-    } else {
-        # Otherwise derive from cookie
-        call set_login_flag_from_cookie;
-    }
-
-
 
     # Do not cache static files: always pass through Varnish
     if (req.url ~ "\.(pdf|csv|css|js|mjs|map|jpg|jpeg|png|gif|svg|webp|avif|ico|woff|woff2|ttf|eot|otf)(\?.*)?$") {
