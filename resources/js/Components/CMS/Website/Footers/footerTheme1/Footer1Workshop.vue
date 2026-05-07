@@ -18,7 +18,7 @@ import { faShieldAlt, faPlus, faTrash, faTriangle } from "@fas"
 import { faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faBars } from "@fal"
 import { trans } from "laravel-vue-i18n"
-import previewMode from "@/Components/CMS/Website/Menus/PreviewMode.vue"
+
 
 library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faBars, faPlus, faTrash, faWhatsapp)
 
@@ -27,6 +27,8 @@ const props = defineProps<{
     keyTemplate: String
     colorThemed?: Object
     screenType?: string
+    previewMode: any
+
 }>()
 
 const emits = defineEmits<{
