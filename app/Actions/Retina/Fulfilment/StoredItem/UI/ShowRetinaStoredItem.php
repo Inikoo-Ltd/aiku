@@ -54,7 +54,7 @@ class ShowRetinaStoredItem extends RetinaAction
         return Inertia::render(
             'Storage/RetinaStoredItem',
             [
-                'title'       => __('stored item'),
+                'title'       => __('Stored Item'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     request()->route()->originalParameters()
@@ -63,9 +63,9 @@ class ShowRetinaStoredItem extends RetinaAction
                     'icon'          =>
                         [
                             'icon'  => ['fal', 'fa-narwhal'],
-                            'title' => __('Stored item')
+                            'title' => __('Stored Item')
                         ],
-                    'model'  => 'stored item',
+                    'model'  => 'Stored Item',
                     'title'  => $storedItem->slug,
                 ],
                 'tabs'        => [
