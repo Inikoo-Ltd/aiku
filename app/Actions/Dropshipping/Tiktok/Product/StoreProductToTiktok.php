@@ -52,14 +52,55 @@ class StoreProductToTiktok extends RetinaAction
             }
 
             $recommendCategory = $tiktokUser->recommendCategory([
-                'product_title' => $portfolio->customer_product_name
+                'product_title' => $product->family?->name ?? $product->name
             ]);
 
-            $categories = Arr::get($recommendCategory, 'data.categories', []);
 
-            $availableCategory = collect($categories)->first(function ($category) {
-                return in_array('AVAILABLE', Arr::get($category, 'permission_statuses', []));
-            }) ?? Arr::first($categories);
+            $leafCategoryId = Arr::get($recommendCategory, 'data.leaf_category_id');
+            $leafCategoryId = $this->resolveSafeCategoryId($tiktokUser, $leafCategoryId);
+
+            $categoryRules = $tiktokUser->getCategoryRules($leafCategoryId);
+            $requiredCertifications = collect(Arr::get($categoryRules, 'data.product_certifications', []))
+                ->filter(fn($cert) => Arr::get($cert, 'is_required') === true)
+                ->map(fn($cert) => [
+                    'id'    => Arr::get($cert, 'id'),
+                    'files' => []
+                ])
+                ->values()
+                ->toArray();
+
+            $categoryAttributes = $tiktokUser->getCategoryAttributes($leafCategoryId);
+            $attributes = Arr::get($categoryAttributes, 'data.attributes', []);
+
+            $productAttributes = collect($attributes)
+                ->filter(fn($attribute) => Arr::get($attribute, 'is_requried') === true)
+                ->map(function ($attribute) {
+                    $firstValue = Arr::first(Arr::get($attribute, 'values', []));
+
+                    if ($firstValue) {
+                        return [
+                            'id'     => (string) Arr::get($attribute, 'id'),
+                            'values' => [
+                                [
+                                    'id'   => (string) Arr::get($firstValue, 'id'),
+                                    'name' => Arr::get($firstValue, 'name')
+                                ]
+                            ]
+                        ];
+                    }
+
+                    if (Arr::get($attribute, 'is_customizable')) {
+                        return [
+                            'id'     => (string) Arr::get($attribute, 'id'),
+                            'values' => [['name' => 'N/A']]
+                        ];
+                    }
+
+                    return null;
+                })
+                ->filter()
+                ->values()
+                ->toArray();
 
             $w = max(Arr::get($product->marketing_dimensions, 'w', 1), 20);
             $h = max(Arr::get($product->marketing_dimensions, 'h', 1), 20);
@@ -69,7 +110,7 @@ class StoreProductToTiktok extends RetinaAction
                 'title' => $portfolio->customer_product_name,
                 'description' => $portfolio->customer_description,
                 'price' => (string) $portfolio->customer_price,
-                'category_id' => Arr::get($availableCategory, 'id'),
+                'category_id' => $leafCategoryId,
                 'main_images' => $productImages,
                 'package_weight' => [
                     'value' => (string) ($product->gross_weight / 1000),
@@ -81,31 +122,13 @@ class StoreProductToTiktok extends RetinaAction
                     'height' => (string) ceil($h),
                     'unit' => "CENTIMETER",
                 ],
+                'product_certifications' => $requiredCertifications,
                 'external_product_id' => (string) $portfolio->id,
                 'identifier_code' => [
                     'code' => (string) $product->barcode,
                     'type' => 'EAN'
                 ],
-                'product_attributes' => [
-                    [
-                        'id' => "101710",
-                        'values' => [
-                            [
-                                'id' => "1000059",
-                                'name' => "No"
-                            ]
-                        ]
-                    ],
-                    [
-                        'id' => "100110",
-                        'values' => [
-                            [
-                                'id' => "1000059",
-                                'name' => "No"
-                            ]
-                        ]
-                    ]
-                ],
+                'product_attributes' => $productAttributes,
                 'skus' => [
                     [
                         'sales_attributes' => [],
@@ -168,6 +191,48 @@ class StoreProductToTiktok extends RetinaAction
     {
         $this->initialisation($request);
 
-        $this->handle($tiktokUser, $portfolio);
+        $this->handle($portfolio);
+    }
+
+    private function resolveSafeCategoryId(TiktokUser $tiktokUser, string $categoryId): string
+    {
+        $cacheKey = "tiktok_safe_category_{$tiktokUser->id}";
+
+        $cachedSafeId = cache()->get($cacheKey);
+        if ($cachedSafeId) {
+            return $cachedSafeId;
+        }
+
+        $rules = $tiktokUser->getCategoryRules($categoryId);
+        $hasRequiredCerts = collect(Arr::get($rules, 'data.product_certifications', []))
+            ->filter(fn($cert) => Arr::get($cert, 'is_required') === true)
+            ->isNotEmpty();
+
+        if (!$hasRequiredCerts) {
+            return $categoryId;
+        }
+
+        $allCategories = $tiktokUser->getCategories();
+        $leafAvailable = collect(Arr::get($allCategories, 'data.categories', []))
+            ->filter(fn($cat) =>
+                Arr::get($cat, 'is_leaf') === true &&
+                in_array('AVAILABLE', Arr::get($cat, 'permission_statuses', []))
+            )
+            ->values();
+
+        foreach ($leafAvailable as $cat) {
+            $catId = Arr::get($cat, 'id');
+            $catRules = $tiktokUser->getCategoryRules($catId);
+            $certRequired = collect(Arr::get($catRules, 'data.product_certifications', []))
+                ->filter(fn($cert) => Arr::get($cert, 'is_required') === true)
+                ->isNotEmpty();
+
+            if (!$certRequired) {
+                cache()->put($cacheKey, $catId, now()->addHours(24));
+                return $catId;
+            }
+        }
+
+        return $categoryId;
     }
 }

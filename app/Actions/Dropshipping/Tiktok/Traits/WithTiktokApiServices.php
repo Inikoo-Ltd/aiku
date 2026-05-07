@@ -292,4 +292,31 @@ trait WithTiktokApiServices
             'content-type' => 'application/json'
         ]);
     }
+
+    public function getCategories()
+    {
+        $path = "/product/$this->version/categories";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getCategoryRules(string $leafCategoryId)
+    {
+        $path = "/product/$this->version/categories/$leafCategoryId/rules";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getCategoryAttributes(string $leafCategoryId)
+    {
+        $path = "/product/$this->version/categories/$leafCategoryId/attributes";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
 }
