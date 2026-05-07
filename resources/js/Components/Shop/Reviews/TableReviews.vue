@@ -12,8 +12,6 @@ type ReviewTablePayload = TableTS & {
     stats?: {
         total?: number
         average_rating?: number
-        verified?: number
-        like_count?: number
         status_approved?: number
         status_pending?: number
         status_rejected?: number

@@ -2,15 +2,14 @@
 import { computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCheck, faTimes, faThumbtack, faCircle } from "@fal"
+import { trans } from "laravel-vue-i18n"
+import { faBadgeCheck, faClock, faStar, faTimesCircle, faClipboardList } from "@fal"
 
-library.add(faCircle, faThumbtack, faCheck, faTimes)
+library.add(faClipboardList, faStar, faBadgeCheck, faClock, faTimesCircle)
 
 type ReviewStats = {
     total?: number
     average_rating?: number
-    verified?: number
-    like_count?: number
     status_approved?: number
     status_pending?: number
     status_rejected?: number
@@ -28,8 +27,6 @@ const props = defineProps<{
 const normalizedStats = computed(() => ({
     total: Number(props.stats?.total ?? 0),
     averageRating: Number(props.stats?.average_rating ?? 0).toFixed(1),
-    verified: Number(props.stats?.verified ?? 0),
-    likeCount: Number(props.stats?.like_count ?? 0),
     statusApproved: Number(props.stats?.status_approved ?? 0),
     statusPending: Number(props.stats?.status_pending ?? 0),
     statusRejected: Number(props.stats?.status_rejected ?? 0),
@@ -39,80 +36,77 @@ const normalizedStats = computed(() => ({
     rating4: Number(props.stats?.number_reviews_rating_4 ?? 0),
     rating5: Number(props.stats?.number_reviews_rating_5 ?? 0),
 }))
+
+const ratingBreakdown = computed(() => [
+    { stars: "★★★★★", value: normalizedStats.value.rating5 },
+    { stars: "★★★★", value: normalizedStats.value.rating4 },
+    { stars: "★★★", value: normalizedStats.value.rating3 },
+    { stars: "★★", value: normalizedStats.value.rating2 },
+    { stars: "★", value: normalizedStats.value.rating1 },
+])
 </script>
 
 <template>
-    <div class="rounded-lg border border-gray-200 bg-white p-4">
-        <div class="mb-3 text-base font-semibold">Stats</div>
-        <div class="grid grid-cols-2 gap-2 text-sm">
-            <div class="rounded-md border border-gray-200 p-2">
-                <div class="flex items-center gap-2 text-gray-500">
-                    <FontAwesomeIcon icon="fas fa-circle" class="text-[10px]" />
-                    <span>Total</span>
+    <div class="flex flex-col gap-3">
+        <div class="grid grid-cols-2 gap-3">
+            <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
+                <FontAwesomeIcon icon="fal fa-clipboard-list" class="text-lg text-indigo-400" />
+                <div class="min-w-0">
+                    <div class="text-xs text-gray-500">{{ trans("Total Reviews") }}</div>
+                    <div class="text-sm font-semibold text-gray-800 tabular-nums">
+                        {{ normalizedStats.total }}
+                    </div>
                 </div>
-                <div class="text-lg font-semibold">{{ normalizedStats.total }}</div>
             </div>
-            <div class="rounded-md border border-gray-200 p-2">
-                <div class="flex items-center gap-2 text-gray-500">
-                    <FontAwesomeIcon icon="fas fa-circle" class="text-[10px]" />
-                    <span>Avg Rating</span>
+            <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
+                <FontAwesomeIcon icon="fal fa-star" class="text-lg text-amber-400" />
+                <div class="min-w-0">
+                    <div class="text-xs text-gray-500">{{ trans("Average Rating") }}</div>
+                    <div class="text-sm font-semibold text-gray-800 tabular-nums">
+                        {{ normalizedStats.averageRating }}
+                    </div>
                 </div>
-                <div class="text-lg font-semibold">{{ normalizedStats.averageRating }}</div>
             </div>
-            <div class="rounded-md border border-gray-200 p-2">
-                <div class="flex items-center gap-2 text-gray-500">
-                    <FontAwesomeIcon icon="fas fa-thumbtack" />
-                    <span>Like</span>
+            <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
+                <FontAwesomeIcon icon="fal fa-badge-check" class="text-lg text-emerald-500" />
+                <div class="min-w-0">
+                    <div class="text-xs text-gray-500">{{ trans("Approved") }}</div>
+                    <div class="text-sm font-semibold text-gray-800 tabular-nums">
+                        {{ normalizedStats.statusApproved }}
+                    </div>
                 </div>
-                <div class="text-lg font-semibold">{{ normalizedStats.likeCount }}</div>
             </div>
-            <div class="rounded-md border border-gray-200 p-2">
-                <div class="flex items-center gap-2 text-gray-500">
-                    <FontAwesomeIcon icon="fal fa-check" />
-                    <span>Verified</span>
+            <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
+                <FontAwesomeIcon icon="fal fa-clock" class="text-lg text-amber-500" />
+                <div class="min-w-0">
+                    <div class="text-xs text-gray-500">{{ trans("Pending") }}</div>
+                    <div class="text-sm font-semibold text-gray-800 tabular-nums">
+                        {{ normalizedStats.statusPending }}
+                    </div>
                 </div>
-                <div class="text-lg font-semibold">{{ normalizedStats.verified }}</div>
             </div>
-            <div class="rounded-md border border-gray-200 p-2">
-                <div class="flex items-center gap-2 text-gray-500">
-                    <FontAwesomeIcon icon="fal fa-check" />
-                    <span>Approved</span>
+            <div class="col-span-2 flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
+                <FontAwesomeIcon icon="fal fa-times-circle" class="text-lg text-rose-500" />
+                <div class="min-w-0">
+                    <div class="text-xs text-gray-500">{{ trans("Rejected") }}</div>
+                    <div class="text-sm font-semibold text-gray-800 tabular-nums">
+                        {{ normalizedStats.statusRejected }}
+                    </div>
                 </div>
-                <div class="text-lg font-semibold">{{ normalizedStats.statusApproved }}</div>
             </div>
-            <div class="rounded-md border border-gray-200 p-2">
-                <div class="flex items-center gap-2 text-gray-500">
-                    <FontAwesomeIcon icon="fas fa-circle" class="text-[10px]" />
-                    <span>Pending</span>
+        </div>
+
+        <div class="rounded-lg border border-gray-200 bg-white px-4 py-3">
+            <div class="mb-2 text-xs font-medium text-gray-500">{{ trans("Rating Distribution") }}</div>
+            <div class="flex flex-col gap-2">
+                <div
+                    v-for="row in ratingBreakdown"
+                    :key="row.stars"
+                    class="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2"
+                >
+                    <span class="text-sm text-amber-500">{{ row.stars }}</span>
+                    <span class="text-sm font-semibold text-gray-700 tabular-nums">{{ row.value }}</span>
                 </div>
-                <div class="text-lg font-semibold">{{ normalizedStats.statusPending }}</div>
-            </div>
-            <div class="col-span-2 rounded-md border border-gray-200 p-2">
-                <div class="flex items-center gap-2 text-gray-500">
-                    <FontAwesomeIcon icon="fal fa-times" />
-                    <span>Rejected</span>
-                </div>
-                <div class="text-lg font-semibold">{{ normalizedStats.statusRejected }}</div>
-            </div>
-            <div class="rounded-md border border-gray-200 p-2">
-                <div class="text-yellow-500">★</div>
-                <div class="text-lg font-semibold">{{ normalizedStats.rating1 }}</div>
-            </div>
-            <div class="rounded-md border border-gray-200 p-2">
-                <div class="text-yellow-500">★★</div>
-                <div class="text-lg font-semibold">{{ normalizedStats.rating2 }}</div>
-            </div>
-            <div class="rounded-md border border-gray-200 p-2">
-                <div class="text-yellow-500">★★★</div>
-                <div class="text-lg font-semibold">{{ normalizedStats.rating3 }}</div>
-            </div>
-            <div class="rounded-md border border-gray-200 p-2">
-                <div class="text-yellow-500">★★★★</div>
-                <div class="text-lg font-semibold">{{ normalizedStats.rating4 }}</div>
-            </div>
-            <div class="col-span-2 rounded-md border border-gray-200 p-2">
-                <div class="text-yellow-500">★★★★★</div>
-                <div class="text-lg font-semibold">{{ normalizedStats.rating5 }}</div>
             </div>
         </div>
     </div>

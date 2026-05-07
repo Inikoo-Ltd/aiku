@@ -6,7 +6,6 @@ use App\Actions\Helpers\Images\GetPictureSources;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
-use App\Models\Reviews\ProductCategoryReview;
 use App\Models\Reviews\ReviewRatingLabel;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -79,8 +78,6 @@ class ReviewsResource extends JsonResource
         return [
             'total'                   => (int) ($reviewStat?->number_reviews ?? 0),
             'average_rating'          => (float) ($reviewStat?->average_rating_main ?? 0),
-            'verified'                => 0,
-            'like_count'              => (int) ProductCategoryReview::query()->where('product_category_id', $family->id)->sum('like_count'),
             'status_approved'         => (int) ($reviewStat?->number_reviews_approved ?? 0),
             'status_pending'          => (int) ($reviewStat?->number_reviews_pending ?? 0),
             'status_rejected'         => (int) ($reviewStat?->number_reviews_rejected ?? 0),
