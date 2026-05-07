@@ -239,6 +239,12 @@ class ShowRetinaPalletReturn extends RetinaAction
                         $palletReturn->id
                     ]
                 ],
+                'routeStorePallet'         => [
+                    'name'       => 'retina.models.pallet-return.pallet.store',
+                    'parameters' => [
+                        'palletReturn' => $palletReturn->id
+                    ]
+                ],
                 'pallets_route'            => [
                     'method'     => 'get',
                     'name'       => 'retina.json.pallet-return.pallets.index',
