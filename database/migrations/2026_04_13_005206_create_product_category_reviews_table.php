@@ -22,7 +22,7 @@ return new class () extends Migration {
             $table->foreign('master_product_category_id')->references('id')->on('master_product_categories')->nullOnDelete();
             $table->unsignedBigInteger('product_category_id')->nullable()->index();
             $table->foreign('product_category_id')->references('id')->on('product_categories')->nullOnDelete();
-            $table->unsignedTinyInteger('rating_main')->index();
+            $table->decimal('rating_main', 5, 2)->index();
             $table->unsignedTinyInteger('rating_a')->index()->nullable();
             $table->unsignedTinyInteger('rating_b')->index()->nullable();
             $table->unsignedTinyInteger('rating_c')->index()->nullable();

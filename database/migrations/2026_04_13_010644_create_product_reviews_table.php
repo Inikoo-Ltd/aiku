@@ -22,7 +22,7 @@ return new class () extends Migration {
             $table->foreign('master_product_id')->references('id')->on('master_assets')->nullOnDelete();
             $table->unsignedBigInteger('product_id')->nullable()->index();
             $table->foreign('product_id')->references('id')->on('products')->nullOnDelete();
-            $table->unsignedTinyInteger('rating_main')->index();
+            $table->decimal('rating_main', 5, 2)->index();
             $table->unsignedTinyInteger('rating_a')->index()->nullable();
             $table->unsignedTinyInteger('rating_b')->index()->nullable();
             $table->unsignedTinyInteger('rating_c')->index()->nullable();

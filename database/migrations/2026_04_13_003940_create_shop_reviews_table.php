@@ -20,7 +20,7 @@ return new class () extends Migration {
             $table->foreign('customer_id')->references('id')->on('customers')->nullOnDelete();
             $table->unsignedInteger('order_id')->nullable()->index();
             $table->foreign('order_id')->references('id')->on('orders')->nullOnDelete();
-            $table->unsignedTinyInteger('rating_main')->index();
+            $table->decimal('rating_main', 5, 2)->index();
             $table->unsignedTinyInteger('rating_a')->index()->nullable();
             $table->unsignedTinyInteger('rating_b')->index()->nullable();
             $table->unsignedTinyInteger('rating_c')->index()->nullable();
