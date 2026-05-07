@@ -8,7 +8,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Actions\Catalogue\ProductCategory\Json\GetIrisProductCategoryNavigation;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Http\Resources\Helpers\LanguageResource;
@@ -92,11 +91,11 @@ trait WithIrisInertia
             ];
         };
 
-      //  try {
-      //      $irisData = Cache::remember($cacheKey, $ttl, $compute);
-      //  } catch (Throwable) {
+        try {
+            $irisData = Cache::remember($cacheKey, $ttl, $compute);
+        } catch (Throwable) {
             $irisData = $compute();
-      //  }
+        }
 
         return $irisData;
     }
