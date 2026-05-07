@@ -395,18 +395,6 @@ class EditShop extends OrgAction
                     ],
                 ],
                 [
-                    'label'  => __('Payement info on Email'),
-                    'icon'   => 'fa-light fa-shoe-prints',
-                    'fields' => [
-                        'payment_info_on_email' => [
-                            'type'  => 'textEditor',
-                            'label' => __('Payment info on Email'),
-                            'full'  => true,
-                            'value' => $shop->settings['payment_info_on_email'] ?? ''
-                        ],
-                    ],
-                ],
-                [
                     'label'  => __('Invoices footer'),
                     'icon'   => 'fa-light fa-shoe-prints',
                     'fields' => [
@@ -415,6 +403,19 @@ class EditShop extends OrgAction
                             'label' => __('Invoice footer'),
                             'full'  => true,
                             'value' => $shop->invoice_footer
+                        ],
+                    ],
+                ],
+                [
+                    'label'  => __('Bank Transfer Instructions for Email'),
+                    'icon'   => 'fa-light fa-envelope',
+                    'information' => __('This information will be appended to the order confirmation email when the customer selects bank transfer as the payment method'),
+                    'fields' => [
+                        'bank_transfer_instructions_for_email' => [
+                            'type'  => 'textEditor',
+                            'label' => __('Bank Transfer Instructions for Email'),
+                            'full'  => true,
+                            'value' => $shop->settings['bank_transfer_instructions_for_email'] ?? ''
                         ],
                     ],
                 ],

@@ -137,7 +137,7 @@ class UpdateShop extends OrgAction
                     'enable_chat' => 'settings.chat.enable_chat',
                     'portal_link' => 'settings.portal.link',
                     'reviews' => 'settings.reviews',
-                    'payment_info_on_email' => 'settings.payment_info_on_email',
+                    'bank_transfer_instructions_for_email' => 'settings.bank_transfer_instructions_for_email',
                     default => $key
                 },
                 $value
@@ -163,7 +163,7 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'wix_access_token');
         data_forget($modelData, 'portal_link');
         data_forget($modelData, 'reviews');
-        data_forget($modelData, 'payment_info_on_email');
+        data_forget($modelData, 'bank_transfer_instructions_for_email');
 
         if (Arr::exists($modelData, 'enable_chat')) {
             $enableChat = Arr::pull($modelData, 'enable_chat');
@@ -402,7 +402,7 @@ class UpdateShop extends OrgAction
             'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
             'family_webpage_split_description'                        => ['sometimes', 'boolean'],
             'reviews'                                                 => ['sometimes', 'nullable', 'array'],
-            'payment_info_on_email'                                   => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
         ];
 
         $channelIds = SalesChannel::pluck('id');

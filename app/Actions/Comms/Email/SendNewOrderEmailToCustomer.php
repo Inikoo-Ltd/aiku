@@ -425,7 +425,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
 
     public function generateOrderPaymentByBankTransferHtml(Order $order): string
     {
-        $paymentInfo = $order->shop->settings['payment_info_on_email'] ?? '';
+        $paymentInfo = $order->shop->settings['bank_transfer_instructions_for_email'] ?? '';
 
         if (empty($paymentInfo)) {
             return '';
