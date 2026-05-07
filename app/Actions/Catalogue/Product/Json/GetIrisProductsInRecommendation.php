@@ -20,7 +20,7 @@ class GetIrisProductsInRecommendation extends IrisAction
 {
     use WithIrisProductsInWebpage;
 
-    public function handle(ProductCategory $productCategory, $stockMode = 'all', bool $topSeller = false): LengthAwarePaginator
+    public function handle(ProductCategory $productCategory, $stockMode = 'in_stock', bool $topSeller = false): LengthAwarePaginator
     {
         $queryBuilder = $this->getBaseQuery($stockMode, $topSeller);
         $queryBuilder
@@ -37,6 +37,7 @@ class GetIrisProductsInRecommendation extends IrisAction
                     ->whereNull('products.variant_id')
                     ->orWhere('products.is_variant_leader', true);
             });
+            
         $queryBuilder->select(
             $this->getSelect([
                 DB::raw('products.variant_id IS NOT NULL as is_variant'),
