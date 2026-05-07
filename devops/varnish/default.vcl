@@ -2,7 +2,7 @@ vcl 4.1;
 
 import std;
 import querystring;
-
+import directors;
 
 # Base Varnish 8 configuration for Iris/Laravel
 # - Separates cache by login state using X-Varnish-Logged-In (derived from iris_vua cookie)
@@ -10,7 +10,15 @@ import querystring;
 # - Long TTL for static assets
 # - Safe PURGE (BAN) from localhost/private networks
 
-backend defaultx {
+backend helio {
+    .host = "10.0.0.2";
+    .port = "8080";
+    .connect_timeout = 1s;
+    .first_byte_timeout = 30s;
+    .between_bytes_timeout = 30s;
+}
+
+backend boro {
     .host = "10.0.0.3";
     .port = "8080";
     .connect_timeout = 1s;
@@ -51,6 +59,10 @@ sub vcl_init {
         tracking_params_filter.add_string("testb");
 
 
+        new vdir = directors.random();
+        vdir.add_backend(helio,30);
+        vdir.add_backend(boro,70);
+
 }
 
 
@@ -82,6 +94,9 @@ sub set_login_flag_from_cookie {
 }
 
 sub vcl_recv {
+
+    # Set the backend hint to the director
+    set req.backend_hint = vdir.backend();
 
     # Allow BAN/PURGE from trusted IPs
     if (req.method == "PURGE" || req.method == "BAN") {
