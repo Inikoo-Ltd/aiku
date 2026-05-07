@@ -62,7 +62,7 @@ class RedoProductTimeSeries
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessAssetTimeSeriesRecords::dispatch($product->asset_id, $frequency, $from, $to);
+                ProcessAssetTimeSeriesRecords::dispatch($product->asset_id, $frequency, $from, $to)->onQueue('sales_slave_historic');
             } else {
                 ProcessAssetTimeSeriesRecords::run($product->asset_id, $frequency, $from, $to);
             }

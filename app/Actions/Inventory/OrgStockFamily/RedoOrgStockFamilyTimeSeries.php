@@ -2,7 +2,7 @@
 
 /*
  * Author: stewicca <stewicalf@gmail.com>
- * Created: Tue, 04 Mar 2026, Bali, Indonesia
+ * Created: Wed, 04 Mar 2026, Bali, Indonesia
  * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
@@ -14,9 +14,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Inventory\OrgStockFamily;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 
 class RedoOrgStockFamilyTimeSeries implements ShouldBeUnique
 {
@@ -25,7 +23,7 @@ class RedoOrgStockFamilyTimeSeries implements ShouldBeUnique
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue         = 'default-long-slave';
+    public string $jobQueue = 'default-long-slave';
     public string $commandSignature = 'org-stock-families:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -35,7 +33,7 @@ class RedoOrgStockFamilyTimeSeries implements ShouldBeUnique
 
     public function getJobUniqueId(string $from, string $to): string
     {
-        return "{$from}_{$to}";
+        return "{$from}_$to";
     }
 
     public function handle(?int $orgStockFamilyId, ?string $from = null, ?string $to = null, bool $async = false): void
@@ -68,26 +66,12 @@ class RedoOrgStockFamilyTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessOrgStockFamilyTimeSeriesRecords::dispatch($orgStockFamily->id, $frequency, $from, $to)->delay(300);
+                ProcessOrgStockFamilyTimeSeriesRecords::dispatch($orgStockFamily->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
             } else {
                 ProcessOrgStockFamilyTimeSeriesRecords::run($orgStockFamily->id, $frequency, $from, $to);
             }
         }
     }
 
-    public function asJob(string $from, string $to): void
-    {
-        $tableName = (new $this->model())->getTable();
-        $query     = DB::table($tableName)->select('id')->orderBy('id', 'desc');
 
-        $query->chunk(1000, function (Collection $modelsData) use ($from, $to) {
-            foreach ($modelsData as $modelId) {
-                try {
-                    $this->handle($modelId->id, $from, $to, false);
-                } catch (Throwable $e) {
-                    report($e);
-                }
-            }
-        });
-    }
 }

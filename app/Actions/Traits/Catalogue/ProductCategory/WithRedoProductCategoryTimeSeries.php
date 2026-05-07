@@ -16,9 +16,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 
 trait WithRedoProductCategoryTimeSeries
 {
@@ -29,7 +27,7 @@ trait WithRedoProductCategoryTimeSeries
 
     public function getJobUniqueId(string $from, string $to): string
     {
-        return "{$from}_{$to}";
+        return "{$from}_$to";
     }
 
     protected function modifyQuery(Builder $query): Builder
@@ -67,26 +65,12 @@ trait WithRedoProductCategoryTimeSeries
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessProductCategoryTimeSeriesRecords::dispatch($productCategory->id, $frequency, $from, $to);
+                ProcessProductCategoryTimeSeriesRecords::dispatch($productCategory->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
             } else {
                 ProcessProductCategoryTimeSeriesRecords::run($productCategory->id, $frequency, $from, $to);
             }
         }
     }
 
-    public function asJob(string $from, string $to): void
-    {
-        $tableName = (new $this->model())->getTable();
-        $query     = $this->modifyQuery(DB::table($tableName)->select('id')->orderBy('id', 'desc'));
 
-        $query->chunk(1000, function (Collection $modelsData) use ($from, $to) {
-            foreach ($modelsData as $modelId) {
-                try {
-                    $this->handle($modelId->id, $from, $to, false);
-                } catch (Throwable $e) {
-                    report($e);
-                }
-            }
-        });
-    }
 }
