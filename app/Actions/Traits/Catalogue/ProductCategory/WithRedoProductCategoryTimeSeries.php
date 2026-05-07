@@ -9,23 +9,46 @@
 namespace App\Actions\Traits\Catalogue\ProductCategory;
 
 use App\Actions\Catalogue\ProductCategoryTimeSeries\ProcessProductCategoryTimeSeriesRecords;
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\ProductCategory;
-use Illuminate\Console\Command;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
 trait WithRedoProductCategoryTimeSeries
 {
+    use WithHydrateCommand;
+    use WithTimeSeriesRedo {
+        WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
+    }
+
     public function getJobUniqueId(string $from, string $to): string
     {
         return "{$from}_{$to}";
     }
 
-    public function handle(ProductCategory $productCategory, ?string $from = null, ?string $to = null, bool $async = false): void
+    protected function modifyQuery(Builder $query): Builder
     {
+        return $query->where('type', $this->categoryType->value);
+    }
+
+    public function handle(?int $productCategoryId, ?string $from = null, ?string $to = null, bool $async = false): void
+    {
+        if (!$productCategoryId) {
+            return;
+        }
+
+        $productCategory = ProductCategory::find($productCategoryId);
+
+        if (!$productCategory) {
+            return;
+        }
+
         if ($productCategory->state == ProductCategoryStateEnum::IN_PROCESS) {
             return;
         }
@@ -54,56 +77,16 @@ trait WithRedoProductCategoryTimeSeries
     public function asJob(string $from, string $to): void
     {
         $tableName = (new $this->model())->getTable();
-        $query     = DB::table($tableName)->select('id')->where('type', $this->categoryType->value)->orderBy('id', 'desc');
+        $query     = $this->modifyQuery(DB::table($tableName)->select('id')->orderBy('id', 'desc'));
 
-        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($from, $to) {
+        $query->chunk(1000, function (Collection $modelsData) use ($from, $to) {
             foreach ($modelsData as $modelId) {
-                $instance = ProductCategory::find($modelId->id);
-                if (!$instance) {
-                    continue;
-                }
-
                 try {
-                    $this->handle($instance, $from, $to, false);
+                    $this->handle($modelId->id, $from, $to, false);
                 } catch (Throwable $e) {
                     report($e);
                 }
             }
         });
-    }
-
-    public function asCommand(Command $command): int
-    {
-        $command->info($command->getName());
-        $tableName = (new $this->model())->getTable();
-        $query     = $this->prepareQuery($tableName, $command);
-        $query->where('type', $this->categoryType->value);
-        $count = $query->count();
-        $bar       = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
-        $bar->start();
-
-        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($bar, $command) {
-            foreach ($modelsData as $modelId) {
-                $instance = ProductCategory::find($modelId->id);
-                if (!$instance) {
-                    $bar->advance();
-                    continue;
-                }
-
-                try {
-                    $this->handle($instance, $command->option('from'), $command->option('to'), (bool) $command->option('async'));
-                } catch (Throwable $e) {
-                    $command->error($e->getMessage());
-                }
-
-                $bar->advance();
-            }
-        });
-
-        $bar->finish();
-        $command->info('');
-
-        return 0;
     }
 }
