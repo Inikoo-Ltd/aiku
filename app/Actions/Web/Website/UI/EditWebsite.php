@@ -187,6 +187,31 @@ class EditWebsite extends OrgAction
                 ]
             ];
             $blueprints[] = [
+                'label'  => __('Recommenders Web Block'),
+                'icon'   => 'fad fa-th',
+                'fields' => [
+                    'title_recommender'  => [
+                        'type'          => 'textEditor',
+                        'label'         => __('Title'),
+                        'value'         => data_get($website->settings, 'recommender_web_block.title', null),
+                    ],
+                    'min_amt_shown_recommender'  => [
+                        'type'          => 'input_number',
+                        'label'         => __('Min Amount'),
+                        'min'           => 1,
+                        'information'   => __('If product count is less than min amount, then that web block will not be shown'),
+                        'value'         => data_get($website->settings, 'recommender_web_block.min_amt_shown', 5),
+                    ],
+                    'max_amt_shown_recommender'  => [
+                        'type'          => 'input_number',
+                        'label'         => __('Max Amount'),
+                        'min'           => 1,
+                        'information'   => __('If product count is more than max amount, then the exceeding products will not be shown'),
+                        'value'         => data_get($website->settings, 'recommender_web_block.description_has_overview', 100),
+                    ]
+                ]
+            ];
+            $blueprints[] = [
                 'label'  => __('Registration'),
                 'icon'   => 'fa-light fa-id-card',
                 'fields' => [
