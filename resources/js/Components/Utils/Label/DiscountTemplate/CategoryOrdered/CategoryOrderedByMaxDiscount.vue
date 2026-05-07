@@ -28,7 +28,7 @@ const maxDiscountLabel = computed(() => {
 
     return (val * 100).toFixed(2).replace(/\.00$/, "")
 })
-console.log('maxDiscountLabel', props.offer)
+
 </script>
 
 <template>
