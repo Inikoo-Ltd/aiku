@@ -55,6 +55,7 @@ const _beefree = ref()
 const _unlayer = ref()
 const visibleEmailTestModal = ref(false)
 const visibleSAveEmailTemplateModal = ref(false)
+const visibleUnsubscribeWarningModal = ref(false)
 const email = ref('')
 const templateName = ref('')
 const temporaryData = ref()
@@ -75,11 +76,21 @@ const onSendPublish = async (data) => {
         });
 
         if (response && response.status === 200) {
-            notify({
-                title: "Success",
-                text: "Save and publish email successfully",
-                type: "success",
-            });
+            if (response.data.has_unsubscribelink === false) {
+                visibleUnsubscribeWarningModal.value = true
+
+                notify({
+                    title: "Warning",
+                    text: "Saved successfully, but no unsubscribe link was found.",
+                    type: "warning",
+                });
+            } else {
+                notify({
+                    title: "Success",
+                    text: "Saved successfully",
+                    type: "success",
+                });
+            }
         }
     } catch (error) {
         console.log(error)
@@ -137,6 +148,10 @@ const sendTestToServer = () => {
         temporaryData.value = null
     });
 };
+
+const closeUnsubscribeWarningModal = () => {
+    visibleUnsubscribeWarningModal.value = false
+}
 
 
 const saveTemplate = async () => {
@@ -349,5 +364,20 @@ watch(
         </div>
     </Dialog>
 
+    <Dialog v-model:visible="visibleUnsubscribeWarningModal" modal :closable="false" :showHeader="false"
+        :style="{ width: '30rem' }">
+        <div class="pt-4">
+            <div class="text-center mb-4">
+                <div class="text-amber-500 text-4xl mb-3">⚠️</div>
+                <div class="font-semibold text-lg mb-2">Missing Unsubscribe Link</div>
+                <div class="text-gray-600">This mailshot/newsletter doesn't contain an unsubscribe link. Please consider
+                    adding one to ensure compliance with email regulations and provide recipients with a clear option to
+                    unsubscribe.</div>
+            </div>
+            <div class="flex justify-center mt-4">
+                <Button @click="closeUnsubscribeWarningModal" label="OK" type="primary"></Button>
+            </div>
+        </div>
+    </Dialog>
 
 </template>

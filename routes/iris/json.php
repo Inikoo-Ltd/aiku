@@ -9,6 +9,7 @@
 
 
 use App\Actions\Iris\Basket\GetIrisBasketTransactionProductData;
+use App\Actions\Iris\Json\GetIrisFooterData;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Iris\IrisCollectTrafficSources;
 use App\Actions\Helpers\Tag\Json\GetIrisTags;
@@ -59,12 +60,12 @@ Route::middleware(["retina-auth:retina"])->group(function () {
 
 
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
-
     Route::get('basket-transaction-product-data/{transaction:id}', GetIrisBasketTransactionProductData::class)->name('basket_transaction_product_data');
 
     Route::get('canonical-redirect', GetRedirectUrl::class)->name('canonical_redirect');
 
     Route::get('/sidebar', GetIrisSidebarData::class)->name('sidebar');
+    Route::get('/footer', GetIrisFooterData::class)->name('footer');
 
     Route::get('first-hit', GetIrisFirstHitData::class)->name('first_hit');
     Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');

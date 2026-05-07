@@ -56,7 +56,7 @@ class FulfillOrderToTiktok extends OrgAction
 
         /** @var array $shippingProvider */
         $shippingProvider = collect(Arr::get($shippingProviders, 'data.shipping_providers', []))
-            ->first(fn($provider) => stripos(Arr::get($provider, 'name'), $shipment->shipper->name) !== false);
+            ->first(fn($provider) => stripos(Arr::get($provider, 'name'), $shipment->trade_as) !== false);
 
         $tiktokUser->updateShippingInfo($fulfillOrderId, [
             'tracking_number' => $shipment->tracking,
