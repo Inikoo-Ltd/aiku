@@ -42,7 +42,7 @@ class StoreTiktokOrder extends RetinaAction
 
         $orderData = [
             'customer_client_id'        => $customerClient->id,
-            'is_shipping_by_external'   => true,
+            'is_shipping_by_external'   => Arr::get($tiktokOrders, 'shipping_type') === 'TIKTOK',
             'platform_id'               => $tiktokUser->platform_id,
             'customer_sales_channel_id' => $tiktokUser->customer_sales_channel_id,
             'customer_reference'        => Arr::get($tiktokOrders, 'user_id'),
