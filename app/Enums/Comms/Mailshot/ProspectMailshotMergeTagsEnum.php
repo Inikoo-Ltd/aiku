@@ -18,6 +18,7 @@ enum ProspectMailshotMergeTagsEnum: string
     case PROSPECT_EMAIL = 'Prospect Email';
     case PROSPECT_PHONE = 'Prospect Phone';
     case PROSPECT_COMPANY_NAME = 'Prospect Company Name';
+    case UNSUBSCRIBE = 'Unsubscribe';
 
 
     public static function tags(): array
@@ -38,6 +39,10 @@ enum ProspectMailshotMergeTagsEnum: string
             [
                 'name'  => __('Prospect Company Name'),
                 'value' => '[Prospect Company Name]'
+            ],
+            [
+                'name'  => __('Unsubscribe'),
+                'value' => '[Unsubscribe]'
             ],
         ];
     }
