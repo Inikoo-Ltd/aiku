@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted, onBeforeUnmount, computed , watch} from "vue"
+import { ref, nextTick, onMounted, onBeforeUnmount, computed, watch } from "vue"
 import { Head } from "@inertiajs/vue3"
 import draggable from "vuedraggable"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -7,11 +7,18 @@ import Image from "../Image.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { trans } from "laravel-vue-i18n";
 import { faCheck, faTimes } from "@fas";
-import {isEqual} from 'lodash-es'
+import { isEqual } from 'lodash-es'
+import { faTrash } from "@far";
 
-const props = defineProps<{
-    data: any
-}>()
+const props = withDefaults(
+    defineProps<{
+        data: any
+        useDelete?: boolean
+    }>(),
+    {
+        useDelete: false
+    }
+)
 
 const viewMode = ref<'list' | 'card'>('list')
 const items = ref(
@@ -22,7 +29,12 @@ const items = ref(
 )
 console.log("Items:", items.value)
 
-const emits = defineEmits()
+const emits = defineEmits([
+    "update:data",
+    "delete"
+])
+
+
 
 const sortBy = ref<'name' | 'code'>('name')
 const sortDirection = ref<'asc' | 'desc'>('asc')
@@ -70,6 +82,17 @@ const startEditIndex = async (item: any, index: number) => {
     await nextTick()
     document.querySelector<HTMLInputElement>(".index-input")?.focus()
 }
+
+const removeItem = (item: any) => {
+    saveHistory()
+
+    items.value = items.value.filter(i => i.id !== item.id)
+
+    updateOrder()
+
+    emits("delete", item)
+}
+
 
 const applyNewIndex = (item: any) => {
     if (!tempIndex.value) return
@@ -137,18 +160,18 @@ const getArrow = (type: 'name' | 'code') => {
 
 
 watch(
-  () => props.data?.data,
-  (newData) => {
-    if (!newData) return
+    () => props.data?.data,
+    (newData) => {
+        if (!newData) return
 
-    if (isEqual(newData, items.value)) return
+        if (isEqual(newData, items.value)) return
 
-    items.value = newData.map((item: any, index: number) => ({
-      ...item,
-      order: index + 1,
-    }))
-  },
-  { immediate: true }
+        items.value = newData.map((item: any, index: number) => ({
+            ...item,
+            order: index + 1,
+        }))
+    },
+    { immediate: true }
 )
 
 
@@ -161,8 +184,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
             <div class="flex items-center gap-4">
                 <div class="inline-flex rounded-lg border bg-gray-100 p-1">
                     <button @click="applySort('name')"
-                        class="px-3 py-1.5 text-xs rounded-md transition flex items-center gap-1"
-                        :class="sortBy === 'name'
+                        class="px-3 py-1.5 text-xs rounded-md transition flex items-center gap-1" :class="sortBy === 'name'
                             ? 'bg-white shadow text-gray-900'
                             : 'text-gray-500 hover:text-gray-700'">
                         Name
@@ -170,8 +192,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                     </button>
 
                     <button @click="applySort('code')"
-                        class="px-3 py-1.5 text-xs rounded-md transition flex items-center gap-1"
-                        :class="sortBy === 'code'
+                        class="px-3 py-1.5 text-xs rounded-md transition flex items-center gap-1" :class="sortBy === 'code'
                             ? 'bg-white shadow text-gray-900'
                             : 'text-gray-500 hover:text-gray-700'">
                         Code
@@ -199,45 +220,30 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                 </div>
                 <slot name="after-button-list>"></slot>
             </div>
-           
+
         </div>
 
         <!-- EMPTY STATE -->
         <template v-if="!items.length">
             <slot name="empty">
                 <div class="text-center py-10 text-gray-400 border rounded bg-white">
-                   {{ trans('No products found.') }}
+                    {{ trans('No products found.') }}
                 </div>
             </slot>
         </template>
 
         <!-- LIST -->
-        <draggable
-            v-else-if="viewMode === 'list'"
-            v-model="items"
-            item-key="id"
-            handle=".drag-handle"
-            @end="updateOrder"
-            animation="200"
-            ghost-class="drag-ghost"
-            chosen-class="drag-chosen"
-            drag-class="drag-dragging"
-            class="space-y-2"
-        >
+        <draggable v-else-if="viewMode === 'list'" v-model="items" item-key="id" handle=".drag-handle"
+            @end="updateOrder" animation="200" ghost-class="drag-ghost" chosen-class="drag-chosen"
+            drag-class="drag-dragging" class="space-y-2">
             <template #item="{ element, index }">
                 <div class="flex items-center gap-3 p-2 border rounded bg-white hover:bg-gray-50">
                     <div class="drag-handle cursor-move text-gray-400">☰</div>
 
                     <div class="w-10 text-xs text-gray-400">
-                        <input v-if="editingId === element.id"
-                            v-model.number="tempIndex"
-                            type="number"
-                            :min="1"
-                            :max="items.length"
-                            class="index-input w-full border rounded px-1 text-xs"
-                            @blur="applyNewIndex(element)"
-                            @keyup.enter="applyNewIndex(element)"
-                        />
+                        <input v-if="editingId === element.id" v-model.number="tempIndex" type="number" :min="1"
+                            :max="items.length" class="index-input w-full border rounded px-1 text-xs"
+                            @blur="applyNewIndex(element)" @keyup.enter="applyNewIndex(element)" />
 
                         <span v-else @dblclick="startEditIndex(element, index)">
                             {{ index + 1 }}
@@ -245,36 +251,29 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                     </div>
 
                     <slot name="list-content" :item="element">
-                        <Image :src="element.image_thumbnail?.main?.original"
-                            class="w-10 h-10 object-cover rounded" />
+                        <Image :src="element.image_thumbnail?.main?.original" class="w-10 h-10 object-cover rounded" />
 
                         <div class="flex-1 min-w-0">
                             <div class="text-sm font-medium truncate">
                                 {{ element.code }}
                             </div>
+
                             <div class="text-xs text-gray-400 truncate">
                                 {{ element.name }}
                             </div>
                         </div>
                     </slot>
+
+                    <Button v-if="useDelete" type="negative" size="xs" @click="removeItem(element)" :icon="faTrash">
+                    </Button>
                 </div>
             </template>
         </draggable>
 
         <!-- CARD -->
-        <draggable
-            v-else
-            v-model="items"
-            item-key="id"
-            handle=".drag-handle"
-            @end="updateOrder"
-            animation="200"
-            ghost-class="drag-ghost"
-            chosen-class="drag-chosen"
-            drag-class="drag-dragging"
-            tag="div"
-            class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3"
-        >
+        <draggable v-else v-model="items" item-key="id" handle=".drag-handle" @end="updateOrder" animation="200"
+            ghost-class="drag-ghost" chosen-class="drag-chosen" drag-class="drag-dragging" tag="div"
+            class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <template #item="{ element, index }">
                 <div class="border rounded p-2 bg-white hover:shadow-sm">
                     <div class="drag-handle text-xs text-gray-400 mb-1">
@@ -292,6 +291,12 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                         <div class="text-xs text-gray-400">
                             {{ element.code }}
                         </div>
+
+
+                        <Button v-if="useDelete" type="negative" size="xs" class="w-full mt-2"
+                            @click="removeItem(element)" :icon="faTrash"> 
+                            
+                        </Button>
                     </slot>
                 </div>
             </template>
