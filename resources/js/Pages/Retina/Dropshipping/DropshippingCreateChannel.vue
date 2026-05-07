@@ -752,6 +752,15 @@ provide("goNext", goNext)
 		@onClose="isModalTiktok = false"
 		width="w-full max-w-lg">
 		<div class="flex flex-col gap-6">
+			<div>
+				<div class="text-center font-semibold text-xl">
+					{{ trans('Connect to Tiktok channel') }}
+				</div>
+			</div>
+			<div class="flex items-start gap-3 rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-700">
+				<FontAwesomeIcon icon="fal fa-info-circle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+				<span>{{ trans("TikTok integration is currently in beta testing and may not be fully functional. Please proceed with caution.") }}</span>
+			</div>
 			<ProgressBar />
 			<component :is="stepTiktokComponents[currentStep]" :props="props" />
 		</div>

@@ -276,7 +276,7 @@ const cleanedDescription = computed(() => {
 }
 
 .description-content :deep(p) {
-  @apply mb-4;
+  @apply mb-0;
 }
 
 .description-content :deep(h2),
