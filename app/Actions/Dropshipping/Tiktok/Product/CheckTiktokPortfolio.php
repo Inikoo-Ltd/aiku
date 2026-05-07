@@ -37,7 +37,7 @@ class CheckTiktokPortfolio
         if ($hasValidProductId) {
             $result = CheckIfProductExistInTiktok::run($tiktokUser, $portfolio);
             $productExistsInTiktok = ! blank(Arr::get($result, 'data'));
-            $hasVariantAtLocation   = Arr::get($result, 'data.status') === 'ACTIVATE';
+            $hasVariantAtLocation   = ! blank(Arr::get($result, 'data.id'));
         }
 
         $numberMatches = 0;

@@ -296,6 +296,7 @@ return [
         'shipper_gls_es_token'         => env('GLS_ES_TOKEN'),
         'shipper_packeta_access_token' => env('PACKETA_ACCESS_TOKEN'),
 
+        'shipper_ctt_token'            => json_decode(env('CTT_TOKEN', '{}'), true),
 
         'local_share_url' => env('SANDBOX_SHARE_URL'),
         'checkout_com'    => [

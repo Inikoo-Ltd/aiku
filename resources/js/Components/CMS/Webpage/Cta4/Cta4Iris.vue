@@ -6,16 +6,18 @@
 
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { FieldValue } from "@/types/webpageTypes"
 import { inject, computed } from 'vue'
 import { faCube, faLink, faImage } from "@fal"
+import { faSpinnerThird } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 import { get, isPlainObject } from 'lodash-es'
 
-library.add(faCube, faLink, faImage)
+library.add(faCube, faLink, faImage, faSpinnerThird)
 
 const props = defineProps<{
 	fieldValue: FieldValue
@@ -56,13 +58,28 @@ const isImageRight = computed(() => valueForField.value === 'Image-right')
 					:class="[ !fieldValue.image.source ? '' : 'h-[250px] sm:h-[300px] md:h-[400px]', isImageRight ? 'order-2' : 'order-1']" 
 					:style="getStyles(fieldValue.image.properties, screenType)"
 				>
-					<Image :src="fieldValue.image.source" :imageCover="true"
-						:alt="fieldValue.image.alt || 'Image preview'"
-						class="w-full h-full object-cover md:absolute md:inset-0"
-						:imgAttributes="fieldValue.image.attributes"
-						:height="getStyles(fieldValue?.image?.properties, screenType, false)?.height"
-						:width="getStyles(fieldValue?.image?.properties, screenType, false)?.width"
-						/>
+					<template #default="{ isLoading } = { isLoading: false }">
+						<Image :src="fieldValue.image.source" :imageCover="true"
+							:alt="fieldValue.image.alt || 'Image preview'"
+							class="w-full h-full object-cover md:absolute md:inset-0"
+							:imgAttributes="fieldValue.image.attributes"
+							:height="getStyles(fieldValue?.image?.properties, screenType, false)?.height"
+							:width="getStyles(fieldValue?.image?.properties, screenType, false)?.width"
+							/>
+
+						<div
+							v-if="isLoading"
+							class="absolute inset-0 z-10 flex items-center justify-center bg-black/35 pointer-events-none"
+						>
+							<FontAwesomeIcon
+								icon="fas fa-spinner-third"
+								spin
+								class="text-3xl text-white"
+								fixed-width
+								aria-hidden="true"
+							/>
+						</div>
+					</template>
 				</component>
 
 
@@ -75,10 +92,11 @@ const isImageRight = computed(() => valueForField.value === 'Image-right')
 							<LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.taget"
 								typeof="button" :type="fieldValue?.button?.link?.type"
 								:canonical_url="fieldValue?.button?.link?.canonical_url">
-								<template #default>
+								<template #default="{ isLoading } = { isLoading: false }">
 									<Button
 										:injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
-										:label="fieldValue?.button?.text" />
+										:label="fieldValue?.button?.text"
+										:loading="isLoading" />
 								</template>
 							</LinkIris>
 						</div>

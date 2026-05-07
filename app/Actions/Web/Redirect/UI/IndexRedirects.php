@@ -86,7 +86,7 @@ class IndexRedirects extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('redirects.from_url', $value)
+                $query->whereAnyWordStartWith('redirects.from_path', $value)
                     ->orWhereStartWith('webpages.title', $value);
             });
         });
@@ -110,7 +110,6 @@ class IndexRedirects extends OrgAction
             ->select([
                 'redirects.id',
                 'redirects.type',
-                'redirects.from_url as url',
                 'redirects.from_path as path',
                 'webpages.title as to_webpage_title',
                 'webpages.slug as to_webpage_slug',
@@ -140,6 +139,7 @@ class IndexRedirects extends OrgAction
 
             $table
                 ->withGlobalSearch()
+                ->withLabelRecord([__('redirect'),__('redirects')])
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     match (class_basename($parent)) {
@@ -152,7 +152,7 @@ class IndexRedirects extends OrgAction
 
             $table
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'url', label: __('From URL'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'path', label: __('From path'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($parent instanceof Website) {
                 $table->column(key: 'to_webpage_url', label: __('To Webpage'), canBeHidden: false, sortable: true, searchable: true);

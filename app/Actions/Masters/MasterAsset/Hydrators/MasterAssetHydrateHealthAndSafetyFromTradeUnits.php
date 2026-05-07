@@ -85,8 +85,16 @@ class MasterAssetHydrateHealthAndSafetyFromTradeUnits implements ShouldBeUnique
                 $dataToUpdate[$field] = true;
             } // For non-boolean fields, if we have values, concatenate them with comma separators
             elseif (!empty($values)) {
-                $dataToUpdate[$field] = implode(', ', array_unique($values));
+
+                if($field=='origin_country_id'){
+                    $value = $values[0];
+                }else{
+                    $value= implode(', ', array_unique($values));
+                }
+
+                $dataToUpdate[$field] =$value;
             }
+
         }
 
         if (!empty($dataToUpdate)) {

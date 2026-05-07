@@ -14,6 +14,7 @@ use App\Imports\WithImport;
 use App\Models\Helpers\Upload;
 use App\Models\Catalogue\Shop;
 use Exception;
+use Illuminate\Support\Arr;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithEvents;
@@ -40,13 +41,13 @@ class ProspectImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
 
         try {
             $modelData = [
-                'company_name' => $validatedData['company_name'] ?? null,
-                'contact_name' => $validatedData['contact_name'] ?? null,
-                'email'        => $validatedData['email'] ?? null,
-                'phone'        => $validatedData['phone'] ?? null,
+                'company_name' => Arr::get($validatedData, 'company_name'),
+                'contact_name' => Arr::get($validatedData, 'contact_name'),
+                'email' => Arr::get($validatedData, 'email'),
+                'phone' => Arr::get($validatedData, 'phone'),
             ];
 
-            $prospectKey      = $validatedData['id_prospect_key'] ?? null;
+            $prospectKey = Arr::get($validatedData, 'id_prospect_key');
             $existingProspect = null;
             if (is_numeric($prospectKey)) {
                 $prospectKey      = (int)$prospectKey;

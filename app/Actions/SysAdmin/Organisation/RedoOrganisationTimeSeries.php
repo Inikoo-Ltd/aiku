@@ -22,7 +22,7 @@ class RedoOrganisationTimeSeries implements ShouldBeUnique
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'default-long-slave';
     public string $commandSignature = 'organisations:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -44,15 +44,17 @@ class RedoOrganisationTimeSeries implements ShouldBeUnique
         if (!$organisationId) {
             return;
         }
+
         $organisation = Organisation::find($organisationId);
+
         if (!$organisation) {
             return;
         }
 
         if (!$from || !$to) {
             $dates = collect([
-                DB::table('invoices')->where('organisation_id', $organisation->id)->whereNull('deleted_at')->selectRaw('MIN(date) as min_date, MAX(date) as max_date')->first(),
-                DB::table('customers')->where('organisation_id', $organisation->id)->whereNull('deleted_at')->selectRaw('MIN(registered_at) as min_date, MAX(registered_at) as max_date')->first(),
+                DB::connection('aiku_no_sticky')->table('invoices')->where('organisation_id', $organisation->id)->whereNull('deleted_at')->selectRaw('MIN(date) as min_date, MAX(date) as max_date')->first(),
+                DB::connection('aiku_no_sticky')->table('customers')->where('organisation_id', $organisation->id)->whereNull('deleted_at')->selectRaw('MIN(registered_at) as min_date, MAX(registered_at) as max_date')->first(),
             ]);
 
             $firstActivityDate = $dates->pluck('min_date')->filter()->min();
@@ -68,11 +70,10 @@ class RedoOrganisationTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessOrganisationTimeSeriesRecords::dispatch($organisation->id, $frequency, $from, $to)->onQueue('low-priority');
+                ProcessOrganisationTimeSeriesRecords::dispatch($organisation->id, $frequency, $from, $to);
             } else {
                 ProcessOrganisationTimeSeriesRecords::run($organisation->id, $frequency, $from, $to);
             }
         }
     }
-
 }

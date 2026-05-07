@@ -29,6 +29,8 @@ enum OfferTypeEnum: string
     case VOUCHER_AND_ORDER_NUMBER = "Voucher AND Order Number";
     case PRODUCT_AMOUNT_ORDERED = "Product Amount Ordered";
     case CATEGORY_ORDERED = "Category Ordered";
+    case DEPARTMENT_ORDERED = "Department Ordered";
+    case SUB_DEPARTMENT_ORDERED = "Subdepartment Ordered";
     case PRODUCT_IN_CATEGORY_CARTON = "Product In Category Carton";
     case CATEGORY_AMOUNT_ORDERED = "Category Amount Ordered";
     case AMOUNT_AND_ORDER_NUMBER = "Amount AND Order Number";
@@ -81,6 +83,8 @@ enum OfferTypeEnum: string
                 => $this->orderIcon(),
 
             self::CATEGORY_ORDERED,
+            self::DEPARTMENT_ORDERED,
+            self::SUB_DEPARTMENT_ORDERED,
             self::PRODUCT_IN_CATEGORY_CARTON,
             self::CATEGORY_FOR_EVERY_QUANTITY_ANY_PRODUCT_ORDERED
                 => $this->catalogueIcon(),

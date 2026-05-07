@@ -21,7 +21,7 @@ class RedoCollectionTimeSeries implements ShouldBeUnique
 {
     use WithHydrateCommand;
 
-    public string $jobQueue         = 'default-long';
+    public string $jobQueue         = 'default-long-slave';
     public string $commandSignature = 'collections:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -34,7 +34,7 @@ class RedoCollectionTimeSeries implements ShouldBeUnique
         return "{$from}_{$to}";
     }
 
-    public function handle(Collection $collection, bool $async = false, ?string $from = null, ?string $to = null): void
+    public function handle(Collection $collection, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if ($collection->state == CollectionStateEnum::IN_PROCESS || !$collection->source_id) {
             return;
@@ -43,8 +43,8 @@ class RedoCollectionTimeSeries implements ShouldBeUnique
         if (!$from || !$to) {
             $assetsIDs = $collection->products->pluck('asset_id')->unique()->toArray();
 
-            $firstInvoicedDate = DB::table('invoice_transactions')->whereIn('asset_id', $assetsIDs)->whereNull('deleted_at')->min('date');
-            $lastInvoicedDate  = DB::table('invoice_transactions')->whereIn('asset_id', $assetsIDs)->whereNull('deleted_at')->max('date');
+            $firstInvoicedDate = DB::connection('aiku_no_sticky')->table('invoice_transactions')->whereIn('asset_id', $assetsIDs)->whereNull('deleted_at')->min('date');
+            $lastInvoicedDate  = DB::connection('aiku_no_sticky')->table('invoice_transactions')->whereIn('asset_id', $assetsIDs)->whereNull('deleted_at')->max('date');
 
             if (!$firstInvoicedDate) {
                 return;
@@ -56,7 +56,7 @@ class RedoCollectionTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessCollectionTimeSeriesRecords::dispatch($collection->id, $frequency, $from, $to)->onQueue('low-priority');
+                ProcessCollectionTimeSeriesRecords::dispatch($collection->id, $frequency, $from, $to);
             } else {
                 ProcessCollectionTimeSeriesRecords::run($collection->id, $frequency, $from, $to);
             }
@@ -76,7 +76,7 @@ class RedoCollectionTimeSeries implements ShouldBeUnique
                     : $model->find($modelId->id);
 
                 try {
-                    $this->handle($instance, false, $from, $to);
+                    $this->handle($instance, $from, $to, false);
                 } catch (Throwable $e) {
                     report($e);
                 }
@@ -102,7 +102,7 @@ class RedoCollectionTimeSeries implements ShouldBeUnique
                     : $model->find($modelId->id);
 
                 try {
-                    $this->handle($instance, (bool) $command->option('async'), $command->option('from'), $command->option('to'));
+                    $this->handle($instance, $command->option('from'), $command->option('to'), (bool) $command->option('async'));
                 } catch (Throwable $e) {
                     $command->error($e->getMessage());
                 }

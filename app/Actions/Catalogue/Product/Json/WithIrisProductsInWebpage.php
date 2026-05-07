@@ -52,7 +52,7 @@ trait WithIrisProductsInWebpage
     public function getNewArrivalsFilter(): AllowedFilter
     {
         return AllowedFilter::callback('new_arrivals', function ($query, $value) {
-            $days = is_numeric($value) ? (int) $value : 3;
+            $days = is_numeric($value) ? (int)$value : 3;
             $query->where('products.created_at', '>=', now()->subDays($days));
         });
     }
@@ -62,12 +62,12 @@ trait WithIrisProductsInWebpage
         return AllowedFilter::callback('brands', function ($query, $value) {
             $query->join('model_has_brands', function ($join) {
                 $join->on('products.id', '=', 'model_has_brands.model_id')
-                        ->where('model_has_brands.model_type', 'Product');
+                    ->where('model_has_brands.model_type', 'Product');
             });
 
             $query->join('brands', 'brands.id', 'model_has_brands.brand_id');
 
-            $query->whereIn('brands.id', (array) $value);
+            $query->whereIn('brands.id', (array)$value);
         });
     }
 
@@ -76,18 +76,18 @@ trait WithIrisProductsInWebpage
         return AllowedFilter::callback('tags', function ($query, $value) {
             $query->join('model_has_tags', function ($join) {
                 $join->on('products.id', '=', 'model_has_tags.model_id')
-                        ->where('model_has_tags.model_type', 'Product');
+                    ->where('model_has_tags.model_type', 'Product');
             });
 
             $query->join('tags', 'tags.id', 'model_has_tags.tag_id');
 
-            $query->whereIn('tags.id', (array) $value);
+            $query->whereIn('tags.id', (array)$value);
         });
     }
 
     public function getBaseQuery(string $stockMode, bool $topSeller = false): QueryBuilder
     {
-        $customer = request()->user()?->customer;
+        $customer     = request()->user()?->customer;
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id');
 
@@ -132,11 +132,11 @@ trait WithIrisProductsInWebpage
 
     public function getAllowedFilters(): array
     {
-        $globalSearch     = $this->getGlobalSearch();
-        $priceRangeFilter = $this->getPriceRangeFilter();
+        $globalSearch      = $this->getGlobalSearch();
+        $priceRangeFilter  = $this->getPriceRangeFilter();
         $newArrivalsFilter = $this->getNewArrivalsFilter();
-        $brandsFilter = $this->getBrandsFilter();
-        $tagsFilter = $this->getTagsFilter();
+        $brandsFilter      = $this->getBrandsFilter();
+        $tagsFilter        = $this->getTagsFilter();
 
         return [$globalSearch, $priceRangeFilter, $newArrivalsFilter, $brandsFilter, $tagsFilter];
     }
@@ -182,6 +182,7 @@ trait WithIrisProductsInWebpage
 
         return $select;
     }
+
     public function getAllowedSorts(): array
     {
         return [

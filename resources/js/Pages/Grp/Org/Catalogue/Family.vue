@@ -28,6 +28,7 @@ import TableVariants from "@/Components/Tables/Grp/Org/Catalogue/TableVariants.v
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOffers.vue'
+import ProductCategoryRecomendation from "@/Components/Master/ProductCategoryRecomendation.vue"
 
 library.add(
     faFolder,
@@ -77,6 +78,7 @@ const props = defineProps<{
         currency_code: string
     }
     product_category_id: number
+    recommendation : object
 }>()
 
 const layout = inject("layout", {})
@@ -98,7 +100,8 @@ const component = computed(() => {
         sales: ProductCategoryTimeSeriesTable,
         content: ProductCategoryContent,
         variants: TableVariants,
-        offers: TableOffers
+        offers: TableOffers,
+        recommendation: ProductCategoryRecomendation
     }
     return components[currentTab.value] ?? ModelDetails
 })
@@ -178,7 +181,6 @@ const showDialog = ref(false)
     </div>
 
     <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesData="salesData" />
-
 
     <FormCreateMasterProduct
         :showDialog="showDialog"

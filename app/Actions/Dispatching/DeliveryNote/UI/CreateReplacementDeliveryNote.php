@@ -182,7 +182,19 @@ class CreateReplacementDeliveryNote extends OrgAction
                     'countriesAddressData' => GetAddressData::run()
                 ]
             ],
-            'delivery_address'      => AddressResource::make($deliveryNote->deliveryAddress)
+            'delivery_address'      => AddressResource::make($deliveryNote->deliveryAddress),
+            'shipping_fields'              => [
+                'company_name' => $deliveryNote->company_name,
+                'contact_name' => $deliveryNote->contact_name,
+                'phone'        => $deliveryNote->phone,
+                'email'        => $deliveryNote->email,
+                'address'      => [
+                    'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
+                    'options'  => [
+                        'countriesAddressData' => GetAddressData::run()
+                    ]
+                ]
+            ],
         ];
     }
 

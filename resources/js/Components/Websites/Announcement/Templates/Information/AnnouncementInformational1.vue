@@ -2,6 +2,7 @@
 import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes } from '@fal'
+import { faSpinnerThird } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { ref } from "vue"
 // import { closeIcon } from '@/Composables/useAnnouncement'
@@ -9,7 +10,7 @@ import type { BlockProperties, LinkProperties } from "@/types/Announcement"
 import { uniqueId } from "lodash-es"
 
 import { inject, computed, onMounted, onUnmounted } from "vue";
-library.add(faTimes)
+library.add(faTimes, faSpinnerThird)
 
 const props = defineProps<{
     announcementData?: {
@@ -277,6 +278,7 @@ const onClickOpenFieldWorkshop = (index?: number) => {
 
 const activeIndex = ref(0)
 let intervalId: number | null = null
+let navigationTimeoutId: number | null = null
 
 const isMobile = computed(() => {
     return window.innerWidth < 768
@@ -285,6 +287,31 @@ const isMobile = computed(() => {
 const texts = computed(() => {
     return props.announcementData?.fields?.text_transition_data?.multi_text ?? []
 })
+
+const navigatingIndex = ref<number | null>(null)
+
+const resetNavigationState = () => {
+    if (navigationTimeoutId) {
+        clearTimeout(navigationTimeoutId)
+        navigationTimeoutId = null
+    }
+
+    navigatingIndex.value = null
+}
+
+const onClickAnnouncement = (event: MouseEvent, index: number) => {
+    const anchor = (event.target as HTMLElement)?.closest?.('a[href]') as HTMLAnchorElement | null
+
+    if (!anchor) {
+        return
+    }
+
+    navigatingIndex.value = index
+    navigationTimeoutId = window.setTimeout(() => {
+        navigatingIndex.value = null
+        navigationTimeoutId = null
+    }, 2500)
+}
 
 const startCarousel = () => {
     if (!isMobile.value || texts.value.length <= 1) return
@@ -307,6 +334,7 @@ onMounted(() => {
 
 onUnmounted(() => {
     stopCarousel()
+    resetNavigationState()
 })
 
 defineExpose({
@@ -316,24 +344,30 @@ defineExpose({
 
 <template>
     <div v-if="!isToSelectOnly" :style="getStyles(announcementData?.container_properties)">
-        <div @click="() => onClickOpenFieldWorkshop(1)"
-            class="flex justify-center announcement-component-editable overflow-hidden">
+        <div
+            @click="() => onClickOpenFieldWorkshop(1)"
+            class="flex justify-center announcement-component-editable overflow-hidden"
+        >
             <!-- MOBILE : Carousel -->
-            <div v-if="isMobile" class="flex items-center transition-all duration-500">
-                <FontAwesomeIcon v-if="texts[activeIndex]?.icon" :icon="texts[activeIndex].icon"
+            <div v-if="isMobile" @click.capture="onClickAnnouncement($event, activeIndex)" class="flex items-center transition-all duration-500">
+                <FontAwesomeIcon v-if="texts[activeIndex]?.icon && navigatingIndex !== activeIndex" :icon="texts[activeIndex].icon"
                     class="opacity-50 mr-2" />
                 <span v-html="texts[activeIndex]?.text"></span>
+                <FontAwesomeIcon v-if="navigatingIndex === activeIndex" icon="fad fa-spinner-third" class="opacity-70 ml-2 animate-spin" />
             </div>
 
             <!-- DESKTOP & TABLET : Normal layout -->
-            <div v-else v-for="(abc, idx) in texts" :key="idx" class="flex gap-x-2 items-center transition-all"
-                :class="idx + 1 < texts.length ? 'border-r border-black/20' : ''" :style="{
-                    paddingLeft: announcementData?.fields?.text_transition_data?.gap + 'px',
-                    paddingRight: announcementData?.fields?.text_transition_data?.gap + 'px',
-                }">
-                <FontAwesomeIcon v-if="abc.icon" :icon="abc.icon" class="opacity-50" />
-                <span v-html="abc.text"></span>
-            </div>
+            <template v-else>
+                <div v-for="(abc, idx) in texts" :key="idx" @click.capture="onClickAnnouncement($event, idx)" class="flex gap-x-2 items-center transition-all"
+                    :class="idx + 1 < texts.length ? 'border-r border-black/20' : ''" :style="{
+                        paddingLeft: announcementData?.fields?.text_transition_data?.gap + 'px',
+                        paddingRight: announcementData?.fields?.text_transition_data?.gap + 'px',
+                    }">
+                    <FontAwesomeIcon v-if="abc.icon && navigatingIndex !== idx" :icon="abc.icon" class="opacity-50" />
+                    <FontAwesomeIcon v-if="navigatingIndex === idx" icon="fad fa-spinner-third" class="opacity-70 my-auto animate-spin" />
+                    <span v-html="abc.text"></span>
+                </div>
+            </template>
         </div>
     </div>
 

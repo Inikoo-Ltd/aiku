@@ -4,15 +4,14 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\OrgAction;
 use App\Actions\Web\Webpage\BreakWebpageCache;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Masters\MasterCollection;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateProductIndex extends OrgAction
 {
-    public function handle(ProductCategory|MasterCollection $parent, array $modelData): void
+    public function handle(ProductCategory|Collection $parent, array $modelData): void
     {
         // if ($parent->type !== ProductCategoryTypeEnum::FAMILY) {
         //     abort(403, "Unable to modify this product index");
@@ -23,11 +22,11 @@ class UpdateProductIndex extends OrgAction
 
         foreach ($products as $product) {
             $product->updateQuietly([
-                "index_under_{$parent->type->value}"    => data_get($indexOrders, "{$product->code}.index_under_{$productCategory->type->value}", null)
+                "index_under_{$parent->type->value}"    => data_get($indexOrders, "{$product->code}.index_under_{$parent->type->value}", null)
             ]);
         }
 
-        BreakWebpageCache::run($productCategory->webpage);
+        BreakWebpageCache::run($parent->webpage);
     }
 
     public function rules(): array

@@ -4,6 +4,7 @@ import { ulid } from 'ulid'
 import { inject, ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faImage } from '@fal'
+import { faSpinnerThird } from '@fas'
 import { getStyles } from '@/Composables/styles'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
 
@@ -156,20 +157,28 @@ onBeforeUnmount(stopAutoMove)
                   class="overflow-hidden w-full flex items-center justify-center relative image-hover-wrap"
                   :style="imageStyle"
                 >
-                  <Image
-                    v-if="data?.image?.source"
-                    :src="data.image.source"
-                    :alt="data?.image?.alt || `image-${index}`"
-                    class="slider-image"
-                  />
+                  <template #default="slotProps: any">
+                    <Image
+                      v-if="data?.image?.source"
+                      :src="data.image.source"
+                      :alt="data?.image?.alt || `image-${index}`"
+                      class="slider-image"
+                    />
 
-                  <div
-                    v-else
-                    class="flex items-center justify-center w-full bg-gray-100 h-36 cursor-pointer"
-                  >
-                    <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" />
-                  </div>
+                    <div
+                      v-else
+                      class="flex items-center justify-center w-full bg-gray-100 h-36 cursor-pointer"
+                    >
+                      <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" />
+                    </div>
 
+                    <div
+                      v-if="slotProps?.isLoading"
+                      class="absolute inset-0 bg-black/40 flex items-center justify-center z-10 pointer-events-none"
+                    >
+                      <FontAwesomeIcon :icon="faSpinnerThird" spin class="text-white text-3xl" fixed-width aria-hidden="true" />
+                    </div>
+                  </template>
                 </component>
               </div>
             </div>

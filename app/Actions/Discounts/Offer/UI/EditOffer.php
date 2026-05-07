@@ -189,6 +189,9 @@ class EditOffer extends OrgAction
         if (preg_match('/^all_products_in_product_category(?::(\d+))?:/', $str, $m)) {
             return $m[1] ?? null;
         }
+        if (preg_match('/^all_products_in_department(?::(\d+))?:/', $str, $m)) {
+            return $m[1] ?? null;
+        }
         return null;
     }
 
