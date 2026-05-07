@@ -22,7 +22,7 @@ class RedoShopTimeSeries implements ShouldBeUnique
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue = 'default-long';
+    public string $jobQueue = 'default-long-slave';
     public string $commandSignature = 'shops:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -51,8 +51,8 @@ class RedoShopTimeSeries implements ShouldBeUnique
 
         if (!$from || !$to) {
             $dates = collect([
-                DB::table('invoices')->where('shop_id', $shop->id)->whereNull('deleted_at')->selectRaw('MIN(date) as min_date, MAX(date) as max_date')->first(),
-                DB::table('customers')->where('shop_id', $shop->id)->whereNull('deleted_at')->selectRaw('MIN(registered_at) as min_date, MAX(registered_at) as max_date')->first(),
+                DB::connection('aiku_no_sticky')->table('invoices')->where('shop_id', $shop->id)->whereNull('deleted_at')->selectRaw('MIN(date) as min_date, MAX(date) as max_date')->first(),
+                DB::connection('aiku_no_sticky')->table('customers')->where('shop_id', $shop->id)->whereNull('deleted_at')->selectRaw('MIN(registered_at) as min_date, MAX(registered_at) as max_date')->first(),
             ]);
 
             $firstActivityDate = $dates->pluck('min_date')->filter()->min();
@@ -68,12 +68,10 @@ class RedoShopTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessShopTimeSeriesRecords::dispatch($shop->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessShopTimeSeriesRecords::dispatch($shop->id, $frequency, $from, $to);
             } else {
                 ProcessShopTimeSeriesRecords::run($shop->id, $frequency, $from, $to);
             }
         }
     }
-
-
 }

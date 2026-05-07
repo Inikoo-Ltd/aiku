@@ -20,7 +20,7 @@ class RedoInvoiceCategoryTimeSeries implements ShouldBeUnique
 {
     use WithHydrateCommand;
 
-    public string $jobQueue         = 'default-long';
+    public string $jobQueue         = 'default-long-slave';
     public string $commandSignature = 'invoice-categories:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -33,11 +33,11 @@ class RedoInvoiceCategoryTimeSeries implements ShouldBeUnique
         return "{$from}_{$to}";
     }
 
-    public function handle(InvoiceCategory $invoiceCategory, bool $async = false, ?string $from = null, ?string $to = null): void
+    public function handle(InvoiceCategory $invoiceCategory, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if (!$from || !$to) {
-            $firstInvoicedDate = DB::table('invoices')->where('invoice_category_id', $invoiceCategory->id)->whereNull('deleted_at')->min('date');
-            $lastInvoicedDate  = DB::table('invoices')->where('invoice_category_id', $invoiceCategory->id)->whereNull('deleted_at')->max('date');
+            $firstInvoicedDate = DB::connection('aiku_no_sticky')->table('invoices')->where('invoice_category_id', $invoiceCategory->id)->whereNull('deleted_at')->min('date');
+            $lastInvoicedDate  = DB::connection('aiku_no_sticky')->table('invoices')->where('invoice_category_id', $invoiceCategory->id)->whereNull('deleted_at')->max('date');
 
             if (!$firstInvoicedDate) {
                 return;
@@ -49,7 +49,7 @@ class RedoInvoiceCategoryTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessInvoiceCategoryTimeSeriesRecords::dispatch($invoiceCategory->id, $frequency, $from, $to)->onQueue('low-priority');
+                ProcessInvoiceCategoryTimeSeriesRecords::dispatch($invoiceCategory->id, $frequency, $from, $to);
             } else {
                 ProcessInvoiceCategoryTimeSeriesRecords::run($invoiceCategory->id, $frequency, $from, $to);
             }
@@ -69,7 +69,7 @@ class RedoInvoiceCategoryTimeSeries implements ShouldBeUnique
                     : $model->find($modelId->id);
 
                 try {
-                    $this->handle($instance, false, $from, $to);
+                    $this->handle($instance, $from, $to, false);
                 } catch (Throwable $e) {
                     report($e);
                 }
@@ -95,7 +95,7 @@ class RedoInvoiceCategoryTimeSeries implements ShouldBeUnique
                     : $model->find($modelId->id);
 
                 try {
-                    $this->handle($instance, (bool) $command->option('async'), $command->option('from'), $command->option('to'));
+                    $this->handle($instance, $command->option('from'), $command->option('to'), (bool) $command->option('async'));
                 } catch (Throwable $e) {
                     $command->error($e->getMessage());
                 }

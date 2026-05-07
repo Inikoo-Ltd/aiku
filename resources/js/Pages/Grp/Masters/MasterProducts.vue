@@ -155,14 +155,13 @@ const resetSelectionByScope = {
 
 const loadingOrder = ref(false)
 const SaveOrder = () => {
-    console.log(localData)
     router.patch(route('grp.models.master_product_category.reorder_index', {
         masterProductCategory: props.familyId
     }), {
-        products: localData.value.map((product: any, index: number) => ({
+        products: localData.value.data.map((product: any, index: number) => ({
             id: product.id,
             code : product.code,
-            index_under_master_family: product.index_under_family,
+            index_under_master_family: product.index_under_family || index,
         }))
     }, {
         preserveScroll: true,

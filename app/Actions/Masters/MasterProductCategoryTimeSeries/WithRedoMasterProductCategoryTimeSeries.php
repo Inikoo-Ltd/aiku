@@ -31,19 +31,21 @@ trait WithRedoMasterProductCategoryTimeSeries
         return $masterProductCategoryId.'_'.$from.'_'.$to;
     }
 
-    public function handle(?int $masterProductCategoryId, bool $async = false, ?string $from = null, ?string $to = null): void
+    public function handle(?int $masterProductCategoryId, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if (!$masterProductCategoryId) {
             return;
         }
+
         $masterProductCategory = MasterProductCategory::find($masterProductCategoryId);
+
         if (!$masterProductCategory) {
             return;
         }
 
         if (!$from || !$to) {
-            $firstInvoicedDate = DB::table('invoice_transactions')->where("master_{$this->categoryType->value}_id", $masterProductCategory->id)->whereNull('deleted_at')->min('date');
-            $lastInvoicedDate  = DB::table('invoice_transactions')->where("master_{$this->categoryType->value}_id", $masterProductCategory->id)->whereNull('deleted_at')->max('date');
+            $firstInvoicedDate = DB::connection('aiku_no_sticky')->table('invoice_transactions')->where("master_{$this->categoryType->value}_id", $masterProductCategory->id)->whereNull('deleted_at')->min('date');
+            $lastInvoicedDate  = DB::connection('aiku_no_sticky')->table('invoice_transactions')->where("master_{$this->categoryType->value}_id", $masterProductCategory->id)->whereNull('deleted_at')->max('date');
 
             if (!$firstInvoicedDate) {
                 return;
@@ -55,12 +57,10 @@ trait WithRedoMasterProductCategoryTimeSeries
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessMasterProductCategoryTimeSeriesRecords::dispatch($masterProductCategory->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessMasterProductCategoryTimeSeriesRecords::dispatch($masterProductCategory->id, $frequency, $from, $to);
             } else {
                 ProcessMasterProductCategoryTimeSeriesRecords::run($masterProductCategory->id, $frequency, $from, $to);
             }
         }
     }
-
-
 }

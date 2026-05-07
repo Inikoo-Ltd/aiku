@@ -24,15 +24,15 @@ trait WithRedoProductCategoryTimeSeries
         return "{$from}_{$to}";
     }
 
-    public function handle(ProductCategory $productCategory, bool $async = false, ?string $from = null, ?string $to = null): void
+    public function handle(ProductCategory $productCategory, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if ($productCategory->state == ProductCategoryStateEnum::IN_PROCESS) {
             return;
         }
 
         if (!$from || !$to) {
-            $firstInvoicedDate = DB::table('invoice_transactions')->where("{$this->categoryType->value}_id", $productCategory->id)->whereNull('deleted_at')->min('date');
-            $lastInvoicedDate  = DB::table('invoice_transactions')->where("{$this->categoryType->value}_id", $productCategory->id)->whereNull('deleted_at')->max('date');
+            $firstInvoicedDate = DB::connection('aiku_no_sticky')->table('invoice_transactions')->where("{$this->categoryType->value}_id", $productCategory->id)->whereNull('deleted_at')->min('date');
+            $lastInvoicedDate  = DB::connection('aiku_no_sticky')->table('invoice_transactions')->where("{$this->categoryType->value}_id", $productCategory->id)->whereNull('deleted_at')->max('date');
 
             if (!$firstInvoicedDate) {
                 return;
@@ -44,7 +44,7 @@ trait WithRedoProductCategoryTimeSeries
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessProductCategoryTimeSeriesRecords::dispatch($productCategory->id, $frequency, $from, $to)->onQueue('low-priority');
+                ProcessProductCategoryTimeSeriesRecords::dispatch($productCategory->id, $frequency, $from, $to);
             } else {
                 ProcessProductCategoryTimeSeriesRecords::run($productCategory->id, $frequency, $from, $to);
             }
@@ -64,7 +64,7 @@ trait WithRedoProductCategoryTimeSeries
                 }
 
                 try {
-                    $this->handle($instance, false, $from, $to);
+                    $this->handle($instance, $from, $to, false);
                 } catch (Throwable $e) {
                     report($e);
                 }
@@ -92,7 +92,7 @@ trait WithRedoProductCategoryTimeSeries
                 }
 
                 try {
-                    $this->handle($instance, (bool) $command->option('async'), $command->option('from'), $command->option('to'));
+                    $this->handle($instance, $command->option('from'), $command->option('to'), (bool) $command->option('async'));
                 } catch (Throwable $e) {
                     $command->error($e->getMessage());
                 }

@@ -23,6 +23,7 @@ class RedoProductTimeSeries
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
+    public string $jobQueue         = 'default-long-slave';
     public string $commandSignature = 'products:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -35,7 +36,9 @@ class RedoProductTimeSeries
         if (!$productId) {
             return;
         }
+
         $product = Product::find($productId);
+
         if (!$product) {
             return;
         }
@@ -46,8 +49,8 @@ class RedoProductTimeSeries
         }
 
         if (!$from || !$to) {
-            $firstInvoicedDate = DB::table('invoice_transactions')->where('asset_id', $product->asset_id)->whereNull('deleted_at')->min('date');
-            $lastInvoicedDate  = DB::table('invoice_transactions')->where('asset_id', $product->asset_id)->whereNull('deleted_at')->max('date');
+            $firstInvoicedDate = DB::connection('aiku_no_sticky')->table('invoice_transactions')->where('asset_id', $product->asset_id)->whereNull('deleted_at')->min('date');
+            $lastInvoicedDate  = DB::connection('aiku_no_sticky')->table('invoice_transactions')->where('asset_id', $product->asset_id)->whereNull('deleted_at')->max('date');
 
             if (!$firstInvoicedDate) {
                 return;
@@ -59,12 +62,10 @@ class RedoProductTimeSeries
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessAssetTimeSeriesRecords::dispatch($product->asset_id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessAssetTimeSeriesRecords::dispatch($product->asset_id, $frequency, $from, $to);
             } else {
                 ProcessAssetTimeSeriesRecords::run($product->asset_id, $frequency, $from, $to);
             }
         }
     }
-
-
 }

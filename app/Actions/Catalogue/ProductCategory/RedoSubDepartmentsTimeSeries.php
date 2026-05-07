@@ -22,7 +22,7 @@ class RedoSubDepartmentsTimeSeries implements ShouldBeUnique
 
     protected ?ProductCategoryTypeEnum $categoryType;
 
-    public string $jobQueue         = 'default-long';
+    public string $jobQueue         = 'default-long-slave';
     public string $commandSignature = 'sub-departments:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
