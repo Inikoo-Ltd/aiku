@@ -8,16 +8,27 @@
 namespace App\Actions\Traits;
 
 use Illuminate\Console\Command;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Throwable;
 
 trait WithTimeSeriesRedo
 {
+    protected function modifyQuery(Builder $query): Builder
+    {
+        return $query;
+    }
+
+    protected function beforeCommand(Command $command): void
+    {
+    }
+
     public function asCommand(Command $command): int
     {
+        $this->beforeCommand($command);
         $command->info($command->getName());
-        $tableName = new $this->model()->getTable();
-        $query     = $this->prepareQuery($tableName, $command);
+        $tableName = (new $this->model())->getTable();
+        $query     = $this->modifyQuery($this->prepareQuery($tableName, $command));
         $count     = $query->count();
         $bar       = $command->getOutput()->createProgressBar($count);
         $bar->setFormat('debug');
