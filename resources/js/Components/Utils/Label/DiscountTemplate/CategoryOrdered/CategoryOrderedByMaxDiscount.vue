@@ -14,7 +14,7 @@ const props = withDefaults(defineProps<{
     offer?: Offer
     use_duration?: boolean
 }>(), {
-    use_duration: true
+    use_duration: true   
 })
 
 const _popoverInfoCircle = ref()
