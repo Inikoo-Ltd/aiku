@@ -12,9 +12,11 @@ namespace App\Actions\Dropshipping\Tiktok\Order;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\Shipment;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -37,14 +39,24 @@ class FulfillOrderToTiktok extends OrgAction
 
         /** @var DeliveryNote $deliveryNote */
         $deliveryNote = $order->deliveryNotes->first();
+
+        /** @var Shipment $shipment */
         $shipment = $deliveryNote->shipments()->first();
 
+        $this->fulfillBySeller($tiktokUser, $fulfillOrderId, $order, $shipment);
+    }
+
+    public function fulfillBySeller(TiktokUser $tiktokUser, string $fulfillOrderId, Order $order, Shipment $shipment): void
+    {
         $shippingProviders = $tiktokUser->getShippingProviders(Arr::get($order->data, 'tiktok_order.delivery_option_id'));
-        $shippingProviderId = Arr::get($shippingProviders, 'data.shipping_providers.0.id');
+
+        /** @var array $shippingProvider */
+        $shippingProvider = collect(Arr::get($shippingProviders, 'data.shipping_providers', []))
+            ->first(fn($provider) => stripos(Arr::get($provider, 'name'), $shipment->shipper->name) !== false);
 
         $tiktokUser->updateShippingInfo($fulfillOrderId, [
-            'tracking_number' => (string) $shipment->tracking,
-            'shipping_provider_id' => (string) $shippingProviderId
+            'tracking_number' => $shipment->tracking,
+            'shipping_provider_id' => Arr::get($shippingProvider, 'id')
         ]);
     }
 }
