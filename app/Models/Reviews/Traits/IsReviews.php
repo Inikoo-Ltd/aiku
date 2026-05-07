@@ -20,10 +20,6 @@ trait IsReviews
 
     public function calculateAverageRating(): void
     {
-        if (!empty($this->rating_main)) {
-            return;
-        }
-
         $ratings = [
             $this->rating_a,
             $this->rating_b,
@@ -32,12 +28,15 @@ trait IsReviews
             $this->rating_e,
         ];
 
-        $validRatings = array_filter($ratings, fn ($r) => $r !== null);
+        $validRatings = array_values(array_filter($ratings, fn ($value) => is_numeric($value)));
 
-        if (count($validRatings) === 0) {
+        if (count($validRatings) > 0) {
+            $this->rating_main = round(array_sum($validRatings) / count($validRatings), 2);
             return;
         }
 
-        $this->rating_main = array_sum($validRatings) / count($validRatings);
+        if (is_numeric($this->rating_main)) {
+            $this->rating_main = round((float) $this->rating_main, 2);
+        }
     }
 }

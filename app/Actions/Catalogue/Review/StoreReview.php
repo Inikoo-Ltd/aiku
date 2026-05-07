@@ -105,7 +105,7 @@ class StoreReview
             'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
             'status' => ['sometimes', Rule::enum(ReviewStatusEnum::class)],
             'rating' => ['sometimes', 'integer', 'min:1', 'max:5', 'required_without:rating_main'],
-            'rating_main' => ['sometimes', 'integer', 'min:1', 'max:5', 'required_without:rating'],
+            'rating_main' => ['sometimes', 'numeric', 'min:1', 'max:5', 'required_without:rating'],
             'rating_a' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'rating_b' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'rating_c' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
@@ -169,30 +169,30 @@ class StoreReview
         };
     }
 
-    private function resolveRatingMain(array $modelData): int
+    private function resolveRatingMain(array $modelData): float
     {
-        $ratingMain = data_get($modelData, 'rating_main');
-        if (is_numeric($ratingMain)) {
-            return (int) $ratingMain;
-        }
-
-        $rating = data_get($modelData, 'rating');
-        if (is_numeric($rating)) {
-            return (int) $rating;
-        }
-
         $detailedRatings = collect([
             data_get($modelData, 'rating_a'),
             data_get($modelData, 'rating_b'),
             data_get($modelData, 'rating_c'),
             data_get($modelData, 'rating_d'),
             data_get($modelData, 'rating_e'),
-        ])->filter(fn ($value): bool => is_numeric($value))->map(fn ($value): int => (int) $value)->values();
+        ])->filter(fn ($value): bool => is_numeric($value))->map(fn ($value): float => (float) $value)->values();
 
-        if ($detailedRatings->isEmpty()) {
-            return 5;
+        if ($detailedRatings->isNotEmpty()) {
+            return round((float) $detailedRatings->avg(), 2);
         }
 
-        return (int) round($detailedRatings->avg(), 0);
+        $ratingMain = data_get($modelData, 'rating_main');
+        if (is_numeric($ratingMain)) {
+            return round((float) $ratingMain, 2);
+        }
+
+        $rating = data_get($modelData, 'rating');
+        if (is_numeric($rating)) {
+            return round((float) $rating, 2);
+        }
+
+        return 5;
     }
 }

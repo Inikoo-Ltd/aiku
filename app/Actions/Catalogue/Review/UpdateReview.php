@@ -83,7 +83,7 @@ class UpdateReview
             'customer_id'           => ['sometimes', 'nullable', 'integer', 'exists:customers,id'],
             'status'                => ['sometimes', Rule::enum(ReviewStatusEnum::class)],
             'rating'                => ['sometimes', 'integer', 'min:1', 'max:5'],
-            'rating_main'           => ['sometimes', 'integer', 'min:1', 'max:5'],
+            'rating_main'           => ['sometimes', 'numeric', 'min:1', 'max:5'],
             'rating_a'              => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'rating_b'              => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'rating_c'              => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
