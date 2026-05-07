@@ -60,7 +60,13 @@ class ProcessSendProspectMailshot
                     $prospect,
                     [
                         'outbox_id'     => $outboxId,
-                        'email_address' => $prospect->email
+                        'email_address' => $prospect->email,
+                        'data->additional_data' => [
+                            'prospect_name' => $prospect->name ?? $prospect->contact_name ?? " ",
+                            'prospect_email' => $prospect->email,
+                            'prospect_phone' => $prospect->phone ?? " ",
+                            'prospect_company_name' => $prospect->company_name ?? " ",
+                        ]
                     ]
                 );
 
