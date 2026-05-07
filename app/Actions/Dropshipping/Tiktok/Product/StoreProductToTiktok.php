@@ -51,6 +51,16 @@ class StoreProductToTiktok extends RetinaAction
                 ];
             }
 
+            $recommendCategory = $tiktokUser->recommendCategory([
+                'product_title' => $portfolio->customer_product_name
+            ]);
+
+            $categories = Arr::get($recommendCategory, 'data.categories', []);
+
+            $availableCategory = collect($categories)->first(function ($category) {
+                return in_array('AVAILABLE', Arr::get($category, 'permission_statuses', []));
+            }) ?? Arr::first($categories);
+
             $w = max(Arr::get($product->marketing_dimensions, 'w', 1), 20);
             $h = max(Arr::get($product->marketing_dimensions, 'h', 1), 20);
             $l = max(Arr::get($product->marketing_dimensions, 'l', 1), 80);
@@ -59,7 +69,7 @@ class StoreProductToTiktok extends RetinaAction
                 'title' => $portfolio->customer_product_name,
                 'description' => $portfolio->customer_description,
                 'price' => (string) $portfolio->customer_price,
-                'category_id' => "2348816",
+                'category_id' => Arr::get($availableCategory, 'id'),
                 'main_images' => $productImages,
                 'package_weight' => [
                     'value' => (string) ($product->gross_weight / 1000),

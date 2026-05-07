@@ -283,4 +283,13 @@ trait WithTiktokApiServices
             'content-type' => 'application/json'
         ]);
     }
+
+    public function recommendCategory(array $attributes)
+    {
+        $path = "/product/$this->version/categories/recommend";
+
+        return $this->makeApiRequest('POST', $path, $attributes, true, [
+            'content-type' => 'application/json'
+        ]);
+    }
 }
