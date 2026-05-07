@@ -50,9 +50,17 @@ class PalletReturnResource extends JsonResource
             'is_collection'         => $palletReturn->is_collection,
             'state_label'           => $palletReturn->state->labels()[$palletReturn->state->value],
             'state_icon'            => $palletReturn->state->stateIcon()[$palletReturn->state->value],
-            'type'                  => $palletReturn->type,
+            'type'                  => $palletReturn->type->value,
             'type_label'            => $palletReturn->type->labels()[$palletReturn->type->value],
             'type_icon'             => $palletReturn->type->stateIcon()[$palletReturn->type->value],
+            'picker_user'           => $palletReturn->pickerUser ? [
+                'id'           => $palletReturn->pickerUser->id,
+                'contact_name' => $palletReturn->pickerUser->contact_name,
+            ] : null,
+            'packer_user'           => $palletReturn->packerUser ? [
+                'id'           => $palletReturn->packerUser->id,
+                'contact_name' => $palletReturn->packerUser->contact_name,
+            ] : null,
             'timeline'              => $finalTimeline,
             'estimated_delivery_date' => $palletReturn->estimated_delivery_date,
 

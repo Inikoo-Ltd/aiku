@@ -17,6 +17,7 @@ use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
+use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\SalesChannel;
 use App\Models\SysAdmin\Group;
@@ -37,6 +38,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\SysAdmin\User;
 
 /**
  * App\Models\Fulfilment\PalletDelivery
@@ -192,6 +194,17 @@ class PalletReturn extends Model implements HasMedia
         return $this->belongsTo(Warehouse::class);
     }
 
+    public function pickingSessions(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            PickingSession::class,
+            'picking_session_has_pallet_returns',
+            'pallet_return_id',
+            'picking_session_id'
+        );
+    }
+
+
     public function organisation(): BelongsTo
     {
         return $this->belongsTo(Organisation::class);
@@ -214,7 +227,7 @@ class PalletReturn extends Model implements HasMedia
 
     public function storedItems(): BelongsToMany
     {
-        return $this->belongsToMany(StoredItem::class, 'pallet_return_items')->withPivot('state', 'id', 'pallet_id', 'pallet_stored_item_id', 'quantity_ordered');
+        return $this->belongsToMany(StoredItem::class, 'pallet_return_items')->withPivot('state', 'id', 'pallet_id', 'pallet_stored_item_id', 'quantity_ordered', 'quantity_picked');
     }
 
     public function stats(): HasOne
@@ -286,6 +299,16 @@ class PalletReturn extends Model implements HasMedia
     public function customerSalesChannel(): BelongsTo
     {
         return $this->belongsTo(CustomerSalesChannel::class);
+    }
+
+    public function pickerUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'picker_user_id');
+    }
+
+    public function packerUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'packer_user_id');
     }
 
 }

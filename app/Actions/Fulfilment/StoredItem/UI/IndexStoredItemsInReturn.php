@@ -64,16 +64,29 @@ class IndexStoredItemsInReturn extends OrgAction
                 'stored_items.slug',
                 'stored_items.name',
                 'stored_items.total_quantity',
+                DB::raw("(
+                    SELECT
+                        warehouses.slug
+                    FROM
+                        fulfilment_warehouse
+                    INNER JOIN
+                        warehouses
+                    ON
+                        warehouses.id = fulfilment_warehouse.warehouse_id
+                    WHERE
+                        fulfilment_warehouse.fulfilment_id = stored_items.fulfilment_id
+                    LIMIT 1
+                ) AS warehouse_slug"),
                 'pallet_returns.id as pallet_return_id',
                 'pallet_returns.state as pallet_return_state',
                 DB::raw("(
-                    SELECT 
-                        COALESCE(SUM(quantity_ordered), 0) 
-                    FROM 
-                        pallet_return_items pri 
-                    WHERE 
-                        pri.stored_item_id = stored_items.id 
-                    AND 
+                    SELECT
+                        COALESCE(SUM(quantity_ordered), 0)
+                    FROM
+                        pallet_return_items pri
+                    WHERE
+                        pri.stored_item_id = stored_items.id
+                    AND
                         pri.pallet_return_id = {$parent->id}
                 ) AS total_quantity_ordered"),
             ])
@@ -95,6 +108,9 @@ class IndexStoredItemsInReturn extends OrgAction
     public function tableStructure(PalletReturn $palletReturn, $request, $prefix = null, $modelOperations = []): Closure
     {
         return function (InertiaTable $table) use ($prefix, $modelOperations, $request, $palletReturn) {
+            $currentRouteName = $request->route()?->getName();
+            $isWarehouseDispatchingPalletReturnRoute = $currentRouteName === 'grp.org.warehouses.show.dispatching.pallet-return-with-stored-items.show';
+
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -110,11 +126,34 @@ class IndexStoredItemsInReturn extends OrgAction
 
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'total_quantity', label: __('Current stock'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'pallet_stored_items', label: __('Pallets [Location]'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'total_quantity_ordered', label: __('Requested quantity'), canBeHidden: false, sortable: true, searchable: true);
+
+            if (\in_array($palletReturn->state, [
+                PalletReturnStateEnum::IN_PROCESS,
+                PalletReturnStateEnum::CONFIRMED,
+                PalletReturnStateEnum::SUBMITTED,
+                PalletReturnStateEnum::CANCEL,
+            ], true)) {
+                $table->column(key: 'total_quantity', label: __('Current stock'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'pallet_stored_items', label: __('Pallets [Location]'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'total_quantity_ordered', label: __('Requested quantity'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
             if ($palletReturn->state === PalletReturnStateEnum::PICKING) {
-                $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'pallet_stored_items', label: __('Pallets [Location]'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'required', label: __('Required'), canBeHidden: false);
+                $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
+                if ($isWarehouseDispatchingPalletReturnRoute) {
+                    $table->column(key: 'actions', label: __('To do actions'), canBeHidden: false);
+                }
+            }
+            if (\in_array($palletReturn->state, [
+                PalletReturnStateEnum::PICKED,
+                PalletReturnStateEnum::DISPATCHED,
+            ], true)) {
+                $table->column(key: 'pallet_stored_items', label: __('Pallets [Location]'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'required', label: __('Required'), canBeHidden: false);
+                $table->column(key: 'picked', label: __('Picked'), canBeHidden: false);
             }
 
             $table->defaultSort('reference');

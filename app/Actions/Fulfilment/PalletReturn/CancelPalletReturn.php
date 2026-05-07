@@ -8,6 +8,7 @@
 
 namespace App\Actions\Fulfilment\PalletReturn;
 
+use App\Actions\Fulfilment\PickingSession\AutoFinishPackingFulfilmentPickingSession;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
@@ -27,6 +28,12 @@ use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\Fulfilment\PalletReturnItem;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
+use App\Actions\Fulfilment\PalletReturnItem\UndoPickingPalletFromReturn;
+use App\Models\Fulfilment\PalletStoredItem;
+use App\Models\Fulfilment\StoredItemMovement;
+use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
 
 class CancelPalletReturn extends OrgAction
 {
@@ -40,16 +47,40 @@ class CancelPalletReturn extends OrgAction
             $modelData[PalletReturnStateEnum::CANCEL->value.'_at']    = now();
             $modelData['state']                                       = PalletReturnStateEnum::CANCEL;
 
+            if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
+                $palletItems = PalletReturnItem::where('pallet_return_id', $palletReturn->id)
+                    ->where('type', 'Pallet')
+                    ->get();
+
+                foreach ($palletItems as $palletReturnItem) {
+                    if ($palletReturnItem->state === PalletReturnItemStateEnum::PICKED) {
+                        UndoPickingPalletFromReturn::run($palletReturnItem);
+                    }
+                }
+            }
+
             if ($palletReturn->type == PalletReturnTypeEnum::STORED_ITEM) {
+                StoredItemMovement::where('pallet_return_id', $palletReturn->id)->delete();
                 $palletReturn->storedItems->each(function ($storedItem) {
-                    $storedItem->increment('total_quantity', (float) $storedItem->pivot->quantity_ordered);
+                    $palletStoredItem = PalletStoredItem::find($storedItem->pivot->pallet_stored_item_id);
+                    $storedItem->increment('total_quantity', (float) $storedItem->pivot->quantity_picked);
+                    if ($palletStoredItem) {
+                        $palletStoredItem->increment('quantity', (float) $storedItem->pivot->quantity_picked);
+                        if ($palletStoredItem->state === PalletStoredItemStateEnum::RETURNED) {
+                            $palletStoredItem->update([
+                                'state' => PalletStoredItemStateEnum::ACTIVE,
+                            ]);
+                        }
+                    }
                 });
             }
 
             $palletReturn->pallets()->update([
-                'status' => PalletStatusEnum::STORING,
-                'state'  => PalletStateEnum::STORING,
-                'pallet_return_id'  => null
+                'status'            => PalletStatusEnum::STORING,
+                'state'             => PalletStateEnum::STORING,
+                'pallet_return_id'  => null,
+                'set_as_incident_at' => null,
+                'incident_report'   => [],
             ]);
             $palletReturn = $this->update($palletReturn, $modelData);
             $palletReturn->pallets()->updateExistingPivot($palletReturn->pallets->pluck('id'), [
@@ -68,6 +99,11 @@ class CancelPalletReturn extends OrgAction
             return $palletReturn;
 
         });
+
+        $pickingSessions = $palletReturn->pickingSessions()->get();
+        foreach ($pickingSessions as $pickingSession) {
+            (new AutoFinishPackingFulfilmentPickingSession())->action($pickingSession);
+        }
 
         return $palletReturn;
     }

@@ -27,7 +27,6 @@ enum PalletReturnStateEnum: string
     case PICKING      = 'picking';
     case PICKED       = 'picked';
     case DISPATCHED   = 'dispatched';
-    // case CONSOLIDATED = 'consolidated';
     case CANCEL       = 'cancel';
 
 
@@ -91,16 +90,6 @@ enum PalletReturnStateEnum: string
                 'class'   => 'text-red-500',
                 'color'   => '#FB2C36',
             ],
-            // 'consolidated'     => [
-            //     'tooltip' => __('Consolidated'),
-            //     'icon'    => 'fal fa-times',
-            //     'class'   => 'text-red-500',
-            //     'color'   => 'red',
-            //     'app'     => [
-            //         'name' => 'times',
-            //         'type' => 'font-awesome-5'
-            //     ]
-            // ],
         ];
     }
 
@@ -120,7 +109,6 @@ enum PalletReturnStateEnum: string
             'picked'       => $stats->number_pallet_returns_state_picked,
             'dispatched'   => $stats->number_pallet_returns_state_dispatched,
             'cancel'       => $stats->number_pallet_returns_state_cancel,
-            // 'consolidated' => $stats->number_pallet_returns_state_consolidated,
         ];
     }
 
@@ -155,10 +143,6 @@ enum PalletReturnStateEnum: string
                 'title'    => __("Pallet return :reference cancelled", ['reference' => $reference]),
                 'subtitle' => __('Pallet return has been cancelled')
             ],
-            // 'consolidated'     => [
-            //     'title'    => __("Pallet return :reference consolidated", ['reference' => $reference]),
-            //     'subtitle' => __('Pallet return has been consolidated')
-            // ],
         ];
     }
 }

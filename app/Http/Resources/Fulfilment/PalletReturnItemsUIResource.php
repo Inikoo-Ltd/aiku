@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Fulfilment;
 
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\Pallet;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -41,11 +42,16 @@ class PalletReturnItemsUIResource extends JsonResource
         $pallet = Pallet::find($this->pallet_id);
         $returnFormat = [
             'id'                               => $this->id,
+            'pallet_return_id'                 => $this->pallet_return_id ?? null,
+            'pallet_return_reference'          => $this->pallet_return_reference ?? null,
+            'pallet_return_slug'               => $this->pallet_return_slug ?? null,
+            'pallet_return_type'               => $this->pallet_return_type ?? null,
             'pallet_id'                        => $this->pallet_id,
             'slug'                             => $this->slug,
             'reference'                        => $this->reference,
             'customer_reference'               => (string)$this->customer_reference,
             'fulfilment_customer_name'         => $this->fulfilment_customer_name,
+            'fulfilment_slug'                  => $this->fulfilment_slug,
             'fulfilment_customer_slug'         => $this->fulfilment_customer_slug,
             'fulfilment_customer_id'           => $this->fulfilment_customer_id,
             'notes'                            => (string)$this->notes,
@@ -61,7 +67,27 @@ class PalletReturnItemsUIResource extends JsonResource
             'location'                         => $this->location_slug,
             'location_code'                    => $this->location_code,
             'location_id'                      => $this->location_id,
+            'locationRoute'                    => $this->location_slug ? [
+                'name'       => 'grp.org.warehouses.show.infrastructure.locations.show',
+                'parameters' => [
+                    request()->route('organisation'),
+                    request()->route('warehouse'),
+                    $this->location_slug,
+                ]
+            ] : null,
             'is_checked'                       => $this->pallet_return_state === PalletReturnStateEnum::IN_PROCESS->value ? (bool) $this->pallet_return_id : false,
+            'pickings'                         => in_array($this->pallet_return_state, [PalletReturnStateEnum::PICKED->value, PalletReturnStateEnum::DISPATCHED->value], true)
+                ? ($this->pivot_state === PalletReturnItemStateEnum::NOT_PICKED->value ? [] : [[
+                    'id'            => $this->id,
+                    'type'          => 'pick',
+                    'location_code' => $this->location_code,
+                    'location_slug' => $this->location_slug,
+                ]])
+                : [],
+            'picked'                           => [
+                'picked'     => in_array($this->pivot_state, [PalletReturnItemStateEnum::PICKED->value, PalletReturnItemStateEnum::DISPATCHED->value], true) ? 1 : 0,
+                'not_picked' => $this->pivot_state === PalletReturnItemStateEnum::NOT_PICKED->value ? 1 : 0,
+            ],
             'stored_items'                     => $pallet->storedItems->map(fn ($storedItem) => [
                 'reference' => $storedItem->reference,
                 'quantity'  => (int)$storedItem->pivot->quantity,
@@ -127,6 +153,11 @@ class PalletReturnItemsUIResource extends JsonResource
             'notPickedRoute' => [
                 'method'     => 'patch',
                 'name'       => 'grp.models.pallet-return-item.not-picked',
+                'parameters' => [$this->id]
+            ],
+            'notPickedPalletRoute' => [
+                'method'     => 'patch',
+                'name'       => 'grp.models.pallet-return-item.not-picked-pallet',
                 'parameters' => [$this->id]
             ],
             'deleteRoute' => match (request()->routeIs('retina.*')) {

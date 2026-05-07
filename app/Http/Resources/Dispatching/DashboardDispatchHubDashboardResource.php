@@ -93,7 +93,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                     'value' => $widget[$caseKey] ?? null,
                 ];
 
-                if ($caseData && isset($caseData['route'])) {
+                if (is_array($caseData['route'] ?? null) && isset($caseData['route']['name'])) {
                     $entry['route_target'] = [
                         'name'       => $caseData['route']['name'],
                         'parameters' => $caseData['route']['parameters'] ?? [],
@@ -130,7 +130,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                 if ($caseKey === 'handling' && ($widget['waiting_crm_items_still_picking']['count'] ?? 0) > 0) {
                     $entry['crm_warning'] = [
                         'route_target' => $widget['waiting_crm_items_still_picking']['route'],
-                        'tooltip' => __('CRM waiting items in delivery notes still picking'),
+                        'tooltip' => $widget['waiting_crm_items_still_picking']['tooltip'] ?? __('CRM waiting items in delivery notes still picking'),
                         'value' => $widget['waiting_crm_items_still_picking']['count'],
                     ];
                 }
@@ -152,7 +152,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
             $rowKey            = $widget['slug'] ?? str($widget['label'])->slug()->toString();
             $rowTotals[$rowKey] = ['value' => $widget['total'] ?? 0];
 
-            if (isset($widget['total_route'])) {
+            if (is_array($widget['total_route'] ?? null) && isset($widget['total_route']['name'])) {
                 $rowTotals[$rowKey]['route_target'] = [
                     'name'       => $widget['total_route']['name'],
                     'parameters' => $widget['total_route']['parameters'] ?? [],
@@ -170,11 +170,11 @@ class DashboardDispatchHubDashboardResource extends JsonResource
         foreach ($allCaseKeysForTotals as $caseKey) {
             $totals[$caseKey] = ['value' => $widgets->sum($caseKey)];
 
-            if ($deliveryNotesWidget && isset($deliveryNotesWidget['cases'][$caseKey]['route'])) {
-                $caseRoute                      = $deliveryNotesWidget['cases'][$caseKey]['route'];
+            $caseRoute = $deliveryNotesWidget['cases'][$caseKey]['route'] ?? null;
+            if (is_array($caseRoute) && isset($caseRoute['name'])) {
                 $totals[$caseKey]['route_target'] = [
                     'name'       => str_replace('.shop', '', $caseRoute['name']),
-                    'parameters' => array_slice($caseRoute['parameters'], 0, -1),
+                    'parameters' => array_slice($caseRoute['parameters'] ?? [], 0, -1),
                 ];
             }
 
@@ -197,7 +197,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
             if ($caseKey === 'handling' && $waitingCrmItemsStillPicking['count'] > 0) {
                 $totals[$caseKey]['crm_warning'] = [
                     'route_target' => $waitingCrmItemsStillPicking['route'],
-                    'tooltip'      => __('CRM waiting items in delivery notes still picking'),
+                    'tooltip'      => $waitingCrmItemsStillPicking['tooltip'] ?? __('CRM waiting items in delivery notes still picking'),
                     'value'        => $waitingCrmItemsStillPicking['count'],
                 ];
             }

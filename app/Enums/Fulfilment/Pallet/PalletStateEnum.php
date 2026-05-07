@@ -40,6 +40,9 @@ enum PalletStateEnum: string
     case REQUEST_RETURN_IN_PROCESS = 'request_return_in_process';
     case REQUEST_RETURN_SUBMITTED = 'request_return_submitted';
     case REQUEST_RETURN_CONFIRMED = 'request_return_confirmed';
+
+    case NOT_PICKED = 'not_picked';
+
     case PICKING = 'picking';
     case PICKED = 'picked';
 
@@ -72,6 +75,7 @@ enum PalletStateEnum: string
             'lost'                      => __('Lost'),
             'damaged'                   => __('Damaged'),
             'other_incident'            => __('Other'),
+            'not_picked'                => __('Not Picked'),
         ];
     }
 
@@ -180,6 +184,15 @@ enum PalletStateEnum: string
                 'icon'    => 'fal fa-ghost',
                 'class'   => 'text-red-400',
                 'color'   => '#FF6467',
+            ],
+            'not_picked'                => [
+                'tooltip' => __('Not Picked'),
+                'icon'    => 'fal fa-times',
+                'class'   => 'text-red-400',
+                'color'   => '#FF6467',
+                'app'     => [
+                    'name' => 'times',
+                ]
             ]
         ];
     }

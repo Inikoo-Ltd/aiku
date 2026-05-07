@@ -41,7 +41,7 @@ class DeletePalletReturn extends OrgAction
 
     public function handle(PalletReturn $palletReturn, array $modelData = []): void
     {
-        if (in_array($palletReturn->state, [PalletReturnStateEnum::IN_PROCESS, PalletReturnStateEnum::SUBMITTED])) {
+        if (in_array($palletReturn->state, [PalletReturnStateEnum::IN_PROCESS, PalletReturnStateEnum::SUBMITTED, PalletReturnStateEnum::CONFIRMED, PalletReturnStateEnum::PICKING])) {
             if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
                 $palletIds = $palletReturn->pallets->pluck('id')->toArray();
                 foreach ($palletReturn->pallets as $pallet) {

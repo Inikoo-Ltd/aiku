@@ -42,7 +42,10 @@ class ShowPalletReturn extends OrgAction
 
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
-        return $palletReturn;
+        return $palletReturn->load([
+            'pickerUser:id,contact_name',
+            'packerUser:id,contact_name',
+        ]);
     }
 
 
@@ -80,6 +83,9 @@ class ShowPalletReturn extends OrgAction
         $navigation = $this->buildTabsNavigation($palletReturn, $request);
 
         $actions = GetPalletReturnActions::run($palletReturn, $this->canEdit, $this->isSupervisor);
+        $actions = array_values(array_filter($actions, function (array $action): bool {
+            return !in_array($action['key'] ?? null, ['in process', 'start picking', 'finish-picking', 'revert-to-picking', 'Dispatching', 'delete_dispatched', 'delete_return', 'pdf'], true);
+        }));
 
 
         $afterTitle = $this->computeAfterTitle($palletReturn);
@@ -194,6 +200,27 @@ class ShowPalletReturn extends OrgAction
                 'data' => PalletReturnResource::make($palletReturn),
 
                 'address_management' => GetPalletReturnAddressManagement::run(palletReturn: $palletReturn),
+                'picker_packer_routes' => [
+                    'pickers_list' => [
+                        'name'       => 'grp.json.employees.picker_users',
+                        'parameters' => [
+                            'organisation' => $palletReturn->organisation->slug,
+                        ],
+                    ],
+                    'packers_list' => [
+                        'name'       => 'grp.json.employees.packers',
+                        'parameters' => [
+                            'organisation' => $palletReturn->organisation->slug,
+                        ],
+                    ],
+                    'update' => [
+                        'name'       => 'grp.models.pallet-return.update',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id,
+                        ],
+                        'method'     => 'patch',
+                    ],
+                ],
 
 
                 'box_stats' => GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $this->parent),
