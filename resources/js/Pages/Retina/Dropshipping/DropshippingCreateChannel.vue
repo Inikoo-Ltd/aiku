@@ -466,7 +466,7 @@ provide("goNext", goNext)
                 </div>
             </div>
 
-			<!-- Section: Woocommerce -->
+			<!--Section: Woocommerce-->
 			<div
 				class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
 				<div
