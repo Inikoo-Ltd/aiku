@@ -153,7 +153,7 @@ onMounted(checkOverflow)
           :class="textOrder"
         >
           <!-- DESCRIPTION -->
-          <div class="relative">
+          <div class="relative ">
             <div
               ref="descriptionRef"
               v-html="cleanedDescription"
@@ -201,6 +201,7 @@ onMounted(checkOverflow)
 </template>
 
 <style scoped>
+
 .description-content {
   @apply text-sm
   md:text-[15px]
@@ -213,6 +214,31 @@ onMounted(checkOverflow)
   transition-all
   duration-300;
 }
+
+
+.description-content :deep(p) {
+  @apply mb-0;
+}
+
+.description-content :deep(h2),
+.description-content :deep(h3),
+.description-content :deep(h4) {
+  @apply text-gray-900 font-semibold mt-6 mb-3;
+}
+
+.description-content :deep(ul) {
+  @apply list-disc pl-5 space-y-2;
+}
+
+.description-content :deep(ol) {
+  @apply list-decimal pl-5 space-y-2;
+}
+
+
+.description-content :deep(ul) {
+  @apply list-disc pl-5 ml-0 mt-2 space-y-2 list-outside;
+}
+
 
 .description-collapsed {
   max-height: 390px;
@@ -235,34 +261,6 @@ onMounted(checkOverflow)
     mask-image 0.35s ease;
 }
 
-.description-content :deep(p) {
-  @apply mb-5;
-}
-
-.description-content :deep(h2),
-.description-content :deep(h3),
-.description-content :deep(h4) {
-  @apply text-gray-900
-  font-semibold
-  mt-8
-  mb-4
-  text-xl
-  leading-snug;
-}
-
-.description-content :deep(ul) {
-  @apply list-disc
-  pl-5
-  space-y-2
-  mb-5;
-}
-
-.description-content :deep(ol) {
-  @apply list-decimal
-  pl-5
-  space-y-2
-  mb-5;
-}
 
 .description-content :deep(img) {
   @apply rounded-2xl

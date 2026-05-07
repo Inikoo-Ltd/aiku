@@ -196,7 +196,6 @@ const cleanedDescription = computed(() => {
 }
 
 
-
 .description-content {
   @apply text-sm md:text-base text-gray-600 leading-7 text-center md:text-left;
 }

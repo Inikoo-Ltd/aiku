@@ -220,8 +220,6 @@ const imageCol = computed(() => {
 
     return 4 
 })
-
-console.log("isOpenMenuMobile", isOpenMenuMobile.value)
 </script>
 
 <template>

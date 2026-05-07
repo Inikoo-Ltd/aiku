@@ -286,7 +286,7 @@ class ShowFamily extends OrgAction
                 'url_master'       => $urlMaster,
                 'tabs'             => [
                     'current'    => $this->tab,
-                    'navigation' => app()->isLocal() ? FamilyTabsEnum::navigation() : FamilyTabsEnum::navigationExcept([FamilyTabsEnum::RECOMMENDATION]),
+                    'navigation' => FamilyTabsEnum::navigation(),
                 ],
                 'shop_data' => [
                     'id'       => $family->shop->id,

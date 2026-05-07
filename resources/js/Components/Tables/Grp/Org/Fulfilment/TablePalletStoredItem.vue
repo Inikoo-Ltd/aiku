@@ -89,7 +89,12 @@ function palletRoutes(pallet: Pallet) {
                     route().params['fulfilmentCustomer'],
                     palletSlug
                 ])
-
+        case 'retina.fulfilment.itemised_storage.stored_items.show':
+            return route(
+                'retina.fulfilment.storage.pallets.show',
+                [
+                    palletSlug
+                ])
         default:
             return undefined
     }

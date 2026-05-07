@@ -44,7 +44,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: object
   screenType: 'mobile' | 'tablet' | 'desktop'
-  indexBlock:number
+  indexBlock?:number | string
 }>();
 
 const fallbackPerRow = {

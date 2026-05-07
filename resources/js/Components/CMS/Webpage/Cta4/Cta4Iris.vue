@@ -24,7 +24,7 @@ const props = defineProps<{
 	webpageData?: any
 	blockData?: Object,
 	screenType: 'mobile' | 'tablet' | 'desktop'
-	indexBlock:number
+	indexBlock?:number |string
 }>()
 
 const layout: any = inject("layout", {})

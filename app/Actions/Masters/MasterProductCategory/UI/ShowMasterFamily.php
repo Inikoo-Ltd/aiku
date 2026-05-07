@@ -177,7 +177,7 @@ class ShowMasterFamily extends GrpAction
 
         ];
 
-        $navigation = app()->isLocal() ? MasterFamilyTabsEnum::navigation() : MasterFamilyTabsEnum::navigationExcept([MasterFamilyTabsEnum::RECOMMENDATION]);
+        $navigation = MasterFamilyTabsEnum::navigation();
         $tabs[MasterFamilyTabsEnum::VARIANTS->value] =
             $this->tab === MasterFamilyTabsEnum::VARIANTS->value
                 ? fn () => MasterVariantsResource::collection(

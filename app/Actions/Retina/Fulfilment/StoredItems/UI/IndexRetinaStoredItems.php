@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Fulfilment\StoredItems\UI;
 
 use App\Actions\Retina\Fulfilment\UI\ShowRetinaStorageDashboard;
 use App\Actions\RetinaAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Fulfilment\StoredItemResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -122,6 +123,24 @@ class IndexRetinaStoredItems extends RetinaAction
             ]
         ];
 
+        if ($this->fulfilmentCustomer && $this->website->shop->type == ShopTypeEnum::FULFILMENT) {
+            $actions[] = [
+                'type' => 'button',
+                'style' => 'tertiary',
+                'tooltip' => __("Download PDF"),
+                'label' => __("Download PDF"),
+                'icon'  => 'fal fa-file-pdf',
+                'key' => 'download_pdf',
+                'route' => [
+                    'name' => 'retina.fulfilment.itemised_storage.stored-items.pdf.export',
+                    'parameters' => [
+                        'fulfilmentCustomer'    => $this->fulfilmentCustomer->id,
+                        'type'  => 'pdf',
+                    ]
+                ]
+            ];
+        }
+
         return Inertia::render(
             'Storage/RetinaStoredItems',
             [
@@ -130,9 +149,7 @@ class IndexRetinaStoredItems extends RetinaAction
                 'pageHead'    => [
                     'title'   => __("SKUs"),
                     'actions' => $actions
-
                 ],
-
                 'bulk_edit_upload' => [
                     'title' => [
                         'label' => __("Bulk Edit Customer's SKU"),
