@@ -33,8 +33,6 @@ trait WithIrisInertia
 
             $headerLayout   = Arr::get($website->published_layout, 'header');
             $isHeaderActive = Arr::get($headerLayout, 'status');
-            $footerLayout   = Arr::get($website->published_layout, 'footer');
-            $isFooterActive = Arr::get($footerLayout, 'status');
             $menuLayout     = Arr::get($website->published_layout, 'menu');
             $isMenuActive   = Arr::get($menuLayout, 'status');
 
@@ -56,9 +54,6 @@ trait WithIrisInertia
             return [
                 'header'               => array_merge(
                     $isHeaderActive == 'active' ? Arr::get($website->published_layout, 'header') : [],
-                ),
-                'footer'               => array_merge(
-                    $isFooterActive == 'active' ? Arr::get($website->published_layout, 'footer') : [],
                 ),
                 'menu'                 => $isMenuActive == 'active' ? Arr::get($website->published_layout, 'menu') : [],
                 'shop'                 => [

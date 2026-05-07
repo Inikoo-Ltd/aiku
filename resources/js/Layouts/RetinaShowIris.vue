@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import Notification from '@/Components/Utils/Notification.vue'
 import IrisHeader from '@/Layouts/Iris/Header.vue'
-import { isArray } from 'lodash-es'
 
 import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
@@ -36,7 +35,6 @@ provide('layout', layout)
 
 const header = usePage().props?.iris?.header
 const navigation =  usePage().props?.iris?.menu
-const footer =  usePage().props?.iris?.footer
 const theme =  usePage().props?.iris?.theme ? usePage().props?.iris?.theme :  {color : [...useColorTheme[2]]}
 const useChat = usePage().props?.use_chat
 
@@ -108,7 +106,7 @@ onMounted(() => {
             <main>
                 <slot />
             </main>
-          <Footer v-if="footer && !isArray(footer)" :data="footer" :colorThemed="theme"/>
+          <Footer :colorThemed="theme"/>
         </div>
     </div>
 
