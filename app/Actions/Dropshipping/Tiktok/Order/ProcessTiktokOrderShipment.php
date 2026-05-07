@@ -59,7 +59,7 @@ class ProcessTiktokOrderShipment extends OrgAction
                     $shipper = StoreShipper::make()->action($order->organisation, [
                         'code' => $tiktokPackageShippingCode,
                         'name' => $tiktokPackageShippingName,
-                        'trade_as' => $tiktokPackageShippingName
+                        'trade_as' => Str::substr($tiktokPackageShippingName, 0, 15)
                     ]);
                 }
 
