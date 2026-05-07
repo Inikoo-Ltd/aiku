@@ -130,7 +130,7 @@ const resetForm = () => {
     typeOffer.value = 'quantity'
     discountPercentage.value = null
     offerQtyItems.value = 1
-    offerAmount.value = null
+    offerAmount.value = 0
     categoryType.value = 'department'
     offerCategoryId.value = props.product_category_id ?? null
     dateType.value = 'permanent'
@@ -162,7 +162,7 @@ const isFormInvalid = computed(() => {
 
 watch(typeOffer, (val) => {
     if (val === 'quantity') {
-        offerAmount.value = null
+        offerAmount.value = 0
     } else if (val === 'amount') {
         offerQtyItems.value = 1
     }
