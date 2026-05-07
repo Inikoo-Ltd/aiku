@@ -39,7 +39,6 @@ class CalculateOrderDiscounts
 
         $this->setEnabledOffers($order);
 
-
         if (!empty($this->enabledOffers) || !empty($order->discretionary_offers_data)) {
             $this->transactions = DB::table('transactions')
                 ->select([
@@ -145,6 +144,7 @@ class CalculateOrderDiscounts
                 'ProductCategory'
             ])->get();
         foreach ($offersData as $offerData) {
+
             if ($offerData->type == 'Amount AND Order Number') {
                 list($passAmount, $passOrderNumber, $metadata) = $this->checkAmountAndOrderNumber($order, $offerData);
                 if ($passAmount && $passOrderNumber) {
@@ -168,6 +168,15 @@ class CalculateOrderDiscounts
                         'offer_label' => $offerData->name
                     ];
                 }
+            }elseif ($offerData->type == 'Department Ordered') {
+
+                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'departments_ids', []))) {
+                    $enabledOffers[$offerData->allowance_signature] = [
+                        'offer_id'    => $offerData->id,
+                        'offer_label' => $offerData->name
+                    ];
+                }
+
             } elseif ($offerData->type == 'Category Quantity Ordered') {
                 if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'family_ids', []))) {
                     $triggerData = json_decode($offerData->trigger_data, true);
@@ -318,20 +327,27 @@ class CalculateOrderDiscounts
             $this->processAllowanceAllProductsInOrder($offerData, $allowanceData);
         } elseif ($allowanceData->target_type == 'all_products_in_product_category') {
             $this->processAllowanceAllProductsInProductCategory($offerData, $allowanceData);
+        }elseif ($allowanceData->target_type == 'all_products_in_department') {
+            $this->processAllowanceAllProductsInDepartment($offerData, $allowanceData);
         }
     }
 
     public function processAllowanceAllProductsInProductCategory(array $offerData, $allowanceData): void
     {
-        $this->applyPercentageDiscount($offerData, $allowanceData, true);
+        $this->applyPercentageDiscount($offerData, $allowanceData, 'family');
+    }
+
+    public function processAllowanceAllProductsInDepartment(array $offerData, $allowanceData): void
+    {
+        $this->applyPercentageDiscount($offerData, $allowanceData, 'department');
     }
 
     public function processAllowanceAllProductsInOrder(array $offerData, $allowanceData): void
     {
-        $this->applyPercentageDiscount($offerData, $allowanceData, false);
+        $this->applyPercentageDiscount($offerData, $allowanceData);
     }
 
-    private function applyPercentageDiscount(array $offerData, $allowanceData, bool $filterByCategory): void
+    private function applyPercentageDiscount(array $offerData, $allowanceData, ?string $filterBy=null): void
     {
         $allowanceOpsData = json_decode($allowanceData->data, true) ?? [];
         $percentageOff    = isset($allowanceOpsData['percentage_off']) ? (float)$allowanceOpsData['percentage_off'] : 0.0;
@@ -344,7 +360,10 @@ class CalculateOrderDiscounts
         }
 
         foreach ($this->transactions as $transaction) {
-            if ($filterByCategory && $allowanceOpsData['category_id'] != $transaction->family_id) {
+            if ($filterBy=='family' && $allowanceOpsData['category_id'] != $transaction->family_id) {
+                continue;
+            }
+            if ($filterBy=='department' && $allowanceOpsData['category_id'] != $transaction->department_id) {
                 continue;
             }
 

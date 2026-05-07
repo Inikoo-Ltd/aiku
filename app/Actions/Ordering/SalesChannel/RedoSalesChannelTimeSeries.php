@@ -20,7 +20,7 @@ class RedoSalesChannelTimeSeries implements ShouldBeUnique
 {
     use WithHydrateCommand;
 
-    public string $jobQueue         = 'default-long';
+    public string $jobQueue         = 'default-long-slave';
     public string $commandSignature = 'sales-channels:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -36,8 +36,8 @@ class RedoSalesChannelTimeSeries implements ShouldBeUnique
     public function handle(SalesChannel $salesChannel, bool $async = false, ?string $from = null, ?string $to = null): void
     {
         if (!$from || !$to) {
-            $firstInvoicedDate = DB::table('invoices')->where('sales_channel_id', $salesChannel->id)->whereNull('deleted_at')->min('date');
-            $lastInvoicedDate  = DB::table('invoices')->where('sales_channel_id', $salesChannel->id)->whereNull('deleted_at')->max('date');
+            $firstInvoicedDate = DB::connection('aiku_no_sticky')->table('invoices')->where('sales_channel_id', $salesChannel->id)->whereNull('deleted_at')->min('date');
+            $lastInvoicedDate  = DB::connection('aiku_no_sticky')->table('invoices')->where('sales_channel_id', $salesChannel->id)->whereNull('deleted_at')->max('date');
 
             if (!$firstInvoicedDate) {
                 return;
@@ -49,7 +49,7 @@ class RedoSalesChannelTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessSalesChannelTimeSeriesRecords::dispatch($salesChannel->id, $frequency, $from, $to)->onQueue('low-priority');
+                ProcessSalesChannelTimeSeriesRecords::dispatch($salesChannel->id, $frequency, $from, $to);
             } else {
                 ProcessSalesChannelTimeSeriesRecords::run($salesChannel->id, $frequency, $from, $to);
             }

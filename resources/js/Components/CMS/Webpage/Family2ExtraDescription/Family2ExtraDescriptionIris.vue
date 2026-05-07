@@ -1,6 +1,13 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { computed, inject, ref, onMounted, nextTick, watch, onUnmounted } from "vue"
+import {
+  computed,
+  inject,
+  ref,
+  nextTick,
+  onMounted,
+  watch
+} from "vue"
+
 import { get, isPlainObject } from "lodash-es"
 
 import Image from "@/Components/Image.vue"
@@ -9,199 +16,176 @@ import LinkIris from "@/Components/Iris/LinkIris.vue"
 
 import { getStyles } from "@/Composables/styles"
 
-import { faCube, faLink, faInfoCircle } from "@fal"
-import { faStar, faCircle, faBadgePercent } from "@fas"
-import { faChevronCircleLeft, faChevronCircleRight } from "@far"
-
-library.add(
-  faCube,
-  faLink,
-  faInfoCircle,
-  faStar,
-  faCircle,
-  faBadgePercent,
-  faChevronCircleLeft,
-  faChevronCircleRight
-)
-
 const props = defineProps<{
   fieldValue: any
-  webpageData?: any
-  blockData?: Object
   screenType: "mobile" | "tablet" | "desktop"
   indexBlock: number
 }>()
 
 const layout: any = inject("layout", {})
 
-/* =========================
-   CONTENT CLEANING
-========================= */
+const expanded = ref(false)
+const showReadMore = ref(false)
+
+const descriptionRef = ref<HTMLElement | null>(null)
+
+const MAX_HEIGHT = 420
+
+const columnPosition = computed(() => {
+  const raw = get(props.fieldValue, ["column_position"])
+
+  if (!isPlainObject(raw)) return raw
+
+  return (
+    raw?.[props.screenType] ??
+    raw?.desktop ??
+    "Image-right"
+  )
+})
+
+const isImageLeft = computed(
+  () => columnPosition.value === "Image-right"
+)
+
+const imageOrder = computed(() =>
+  isImageLeft.value ? "lg:order-1" : "lg:order-2"
+)
+
+const textOrder = computed(() =>
+  isImageLeft.value ? "lg:order-2" : "lg:order-1"
+)
+
+const image = computed(() => {
+  const data =
+    props.fieldValue?.family?.extra_description_image
+
+  if (!data) return null
+
+  return data
+})
+
 const cleanedDescription = computed(() => {
-  const html = props.fieldValue?.family?.description_extra || ""
+  const html =
+    props.fieldValue?.family?.description_extra || ""
+
   return html.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
 })
 
-/* =========================
-   LAYOUT LOGIC (TETAP)
-========================= */
-const columnPosition = computed(() => {
-  const rawVal = get(props.fieldValue, ["column_position"])
-  if (!isPlainObject(rawVal)) return rawVal
+const checkOverflow = async () => {
+  await nextTick()
 
-  const view = props.screenType
-  return rawVal?.[view] ?? rawVal?.desktop ?? "Image-right"
-})
+  if (!descriptionRef.value) return
 
-const isImageLeft = computed(() => columnPosition.value === "Image-right")
-
-const containerStyle = computed(() => ({
-  ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
-  ...getStyles(props.fieldValue?.container?.properties, props.screenType)
-}))
-
-/* =========================
-   READ MORE LOGIC
-========================= */
-const imageRef = ref<HTMLElement | null>(null)
-const contentRef = ref<HTMLElement | null>(null)
-
-const maxHeight = ref<number | null>(null)
-const isOverflow = ref(false)
-const expanded = ref(false)
-
-const calculateHeight = () => {
-  if (!imageRef.value || !contentRef.value) return
-
-  const imgHeight = imageRef.value.offsetHeight
-  const contentHeight = contentRef.value.scrollHeight
-
-  maxHeight.value = imgHeight
-  isOverflow.value = contentHeight > imgHeight
+  showReadMore.value =
+    descriptionRef.value.scrollHeight > MAX_HEIGHT
 }
 
-const onImageLoad = () => {
-  calculateHeight()
-}
+watch(cleanedDescription, checkOverflow)
 
-onMounted(async () => {
-  await nextTick()
-  calculateHeight()
-  window.addEventListener("resize", calculateHeight)
-})
-
-onUnmounted(() => {
-  window.removeEventListener("resize", calculateHeight)
-})
-
-watch(() => props.fieldValue, async () => {
-  await nextTick()
-  calculateHeight()
-})
-
+onMounted(checkOverflow)
 </script>
 
 <template>
-  <section
-    :id="fieldValue?.id || 'family-extra-description' + indexBlock"
-    class="w-full bg-gray-100 py-12 lg:py-16"
-    :style="containerStyle"
-  >
-    <div class="max-w-7xl mx-auto px-4 lg:px-8">
-
-      <!-- GRID -->
-      <div
-        class="grid items-center gap-8 lg:gap-12"
-        :class="isImageLeft
-          ? 'lg:grid-cols-[1fr_1.2fr]'
-          : 'lg:grid-cols-[1.2fr_1fr]'"
-      >
-
+  <div :id="fieldValue?.id
+    ? fieldValue?.id
+    : 'family-3' + indexBlock
+    " :style="{
+      ...getStyles(
+        layout?.app?.webpage_layout?.container
+          ?.properties,
+        screenType
+      ),
+      ...getStyles(
+        fieldValue?.container?.properties,
+        screenType
+      )
+    }">
+    <div class="w-full px-4 py-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
         <!-- IMAGE -->
-        <div
-          class="flex justify-center"
-          :class="isImageLeft ? 'order-1' : 'order-2'"
-        >
-          <div
-            ref="imageRef"
-            class="w-full max-w-sm md:max-w-md lg:max-w-lg"
-          >
-            <Image
-              :src="fieldValue?.family?.extra_description_image"
-              :alt="fieldValue?.family?.extra_description_image?.alt || 'Image preview'"
-              :imageCover="false"
-              class="w-full h-auto object-contain"
-              @load="onImageLoad"
-            />
+        <div class="w-full flex justify-center" :class="imageOrder">
+          <div class="w-full max-w-[500px] aspect-square overflow-hidden rounded-2xl bg-gray-100">
+            <Image v-if="image" :src="image" :alt="fieldValue?.family?.name" class="w-full h-full"
+              imgClass="w-full h-full object-cover" />
           </div>
         </div>
 
-        <!-- TEXT -->
-        <div
-          class="flex flex-col justify-center"
-          :class="[
-            isImageLeft ? 'order-2' : 'order-1',
-            screenType === 'mobile' ? 'text-center' : 'text-left'
-          ]"
-        >
-          <div class="max-w-xl mx-auto lg:mx-0 space-y-6">
+        <!-- CONTENT -->
+        <div class="flex flex-col min-w-0" :class="textOrder">
+          <!-- DESCRIPTION -->
+          <div class="relative">
+            <div ref="descriptionRef" v-html="cleanedDescription" class="description-content" :class="{
+              'description-collapsed': !expanded
+            }" />
+          </div>
 
-            <!-- CONTENT WRAPPER -->
-            <div class="relative">
-              <div
-                ref="contentRef"
-                class="text-gray-700 text-sm md:text-base leading-relaxed space-y-4 overflow-hidden transition-all duration-300"
-                :style="!expanded && maxHeight
-                  ? { maxHeight: maxHeight + 'px' }
-                  : {}"
-                v-html="cleanedDescription"
+          <!-- READ MORE -->
+          <button v-if="showReadMore" type="button" class="read-more-btn" @click="expanded = !expanded">
+            {{
+              expanded
+                ? "Read less"
+                : "Read more"
+            }}
+          </button>
+
+          <!-- BUTTON -->
+          <div class="mt-5 text-center md:text-left">
+            <LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target" >
+              <Button 
+                  id="family-2-extra-description-button"
+                  :label="fieldValue?.button?.text" 
+                  :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" 
               />
-
-              <!-- GRADIENT FADE -->
-              <div
-                v-if="isOverflow && !expanded"
-                class="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-gray-300 pointer-events-none"
-              />
-            </div>
-
-            <!-- READ MORE BUTTON -->
-            <div
-              v-if="isOverflow"
-              class="flex"
-              :class="screenType === 'mobile' ? 'justify-center' : 'justify-start'"
-            >
-              <button
-                class="text-sm font-medium underline"
-                @click="expanded = !expanded"
-              >
-                {{ expanded ? 'Show less' : 'Read more' }}
-              </button>
-            </div>
-
-            <!-- ORIGINAL CTA BUTTON (TETAP ADA) -->
-            <div
-              class="flex"
-              :class="screenType === 'mobile' ? 'justify-center' : 'justify-start'"
-            >
-              <LinkIris
-                :href="fieldValue?.button?.link?.href"
-                :canonical_url="fieldValue?.button?.link?.canonical_url"
-                :target="fieldValue?.button?.link?.target"
-                :type="fieldValue?.button?.link?.type"
-                class="flex"
-              >
-                <Button
-                  :label="fieldValue?.button?.text"
-                  class="flex items-center justify-center px-6 py-3 leading-none"
-                  :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
-                />
-              </LinkIris>
-            </div>
-
+            </LinkIris>
           </div>
         </div>
-
       </div>
     </div>
-  </section>
+  </div>
 </template>
+
+<style scoped>
+.description-content {
+  @apply text-sm md:text-base text-gray-600 leading-7 text-center md:text-left transition-all duration-300;
+}
+
+.description-collapsed {
+  max-height: 390px;
+  overflow: hidden;
+
+  mask-image: linear-gradient(to bottom,
+      black 75%,
+      transparent 100%);
+
+  -webkit-mask-image: linear-gradient(to bottom,
+      black 75%,
+      transparent 100%);
+
+  transition:
+    max-height 0.35s ease,
+    mask-image 0.35s ease;
+}
+
+.description-content :deep(p) {
+  @apply mb-4;
+}
+
+.description-content :deep(h2),
+.description-content :deep(h3),
+.description-content :deep(h4) {
+  @apply text-gray-900 font-semibold mt-6 mb-3;
+}
+
+.description-content :deep(ul) {
+  @apply list-disc pl-5 space-y-2;
+}
+
+.description-content :deep(ol) {
+  @apply list-decimal pl-5 space-y-2;
+}
+
+
+.read-more-btn {
+  @apply mt-4 text-sm font-medium text-gray-900 underline w-fit self-center md:self-start;
+}
+</style>

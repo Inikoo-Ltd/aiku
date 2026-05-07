@@ -143,6 +143,12 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             $this->createWebBlock($webpage, 'recommendation-customer-recently-bought-1');
         }
 
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-from-master');
+        if (count($countFamilyWebBlock) == 0) {
+            $this->createWebBlock($webpage, 'recommendation-from-master');
+        }
+
+
         $webpage->refresh();
 
         if (count($countFamilyDescriptionBlock) == 0) {
@@ -208,9 +214,11 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
 
         $productList = $this->getWebpageBlocksByType($webpage, $usedWebBlockTemplateCodes)->first()->model_has_web_blocks_id;
 
-        $trendsWebBlock     = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()->model_has_web_blocks_id;
-        $lastSeenWebBlock   = $this->getWebpageBlocksByType($webpage, 'luigi-last-seen-1')->first()->model_has_web_blocks_id;
-        $lastBoughtWebBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-customer-recently-bought-1')->first()->model_has_web_blocks_id;
+        $trendsWebBlock             = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()->model_has_web_blocks_id;
+        $lastSeenWebBlock           = $this->getWebpageBlocksByType($webpage, 'luigi-last-seen-1')->first()->model_has_web_blocks_id;
+        $lastBoughtWebBlock         = $this->getWebpageBlocksByType($webpage, 'recommendation-customer-recently-bought-1')->first()->model_has_web_blocks_id;
+
+        $recommendationFromMaster   = $this->getWebpageBlocksByType($webpage, 'recommendation-from-master')->first()->model_has_web_blocks_id;
 
 
         $webBlocks = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
@@ -222,7 +230,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         $lastSeenWebBlockPosition   = $count + 103;
 
 
-        $runningPosition = 4;
+        $runningPosition = 5;
         foreach ($webBlocks as $key => $position) {
             if ($key == $familyWebBlock) {
                 $webBlocks[$key] = 1;
@@ -230,6 +238,8 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
                 $webBlocks[$key] = 2;
             } elseif ($key == $familyExtraDesc) {
                 $webBlocks[$key] = 3;
+            } elseif ($key == $recommendationFromMaster){
+                $webBlocks[$key] = 4;
             } elseif ($key == $trendsWebBlock) {
                 $webBlocks[$key] = $trendsWebBlockPosition;
             } elseif ($key == $lastSeenWebBlock) {

@@ -26,6 +26,7 @@ use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\FamiliesResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Masters\MasterProductCategoryTimeSeriesResource;
+use App\Http\Resources\Masters\MasterProductsResource;
 use App\Http\Resources\Masters\MasterVariantsResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -151,6 +152,21 @@ class ShowMasterFamily extends GrpAction
                         fn () => GetMasterProductCategoryImages::run($masterFamily)
                     ),
 
+            MasterFamilyTabsEnum::RECOMMENDATION->value =>
+                $this->tab === MasterFamilyTabsEnum::RECOMMENDATION->value
+                    ? fn () => [
+                        'id' => $masterFamily->id,
+                        'data' => MasterProductsResource::collection(GetMasterProductCategoryRecomendation::run($masterFamily)),
+                        'editable' => true
+                    ]
+                    : Inertia::lazy(
+                        fn () => [
+                            'id' => $masterFamily->id,
+                            'data' => MasterProductsResource::collection(GetMasterProductCategoryRecomendation::run($masterFamily)),
+                            'editable' => true
+                        ]
+                    ),
+
             MasterFamilyTabsEnum::HISTORY->value =>
                 $this->tab == MasterFamilyTabsEnum::HISTORY->value
                     ? fn () => HistoryResource::collection(IndexHistory::run($masterFamily, MasterFamilyTabsEnum::HISTORY->value))
@@ -161,7 +177,7 @@ class ShowMasterFamily extends GrpAction
 
         ];
 
-        $navigation = MasterFamilyTabsEnum::navigation();
+        $navigation = app()->isLocal() ? MasterFamilyTabsEnum::navigation() : MasterFamilyTabsEnum::navigationExcept([MasterFamilyTabsEnum::RECOMMENDATION]);
         $tabs[MasterFamilyTabsEnum::VARIANTS->value] =
             $this->tab === MasterFamilyTabsEnum::VARIANTS->value
                 ? fn () => MasterVariantsResource::collection(

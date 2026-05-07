@@ -22,7 +22,7 @@ class ProcessSalesChannelTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTimeSeriesQuery;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(int $salesChannelId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -55,7 +55,7 @@ class ProcessSalesChannelTimeSeriesRecords implements ShouldBeUnique
     {
         $processedPeriods = [];
 
-        $query = DB::table('invoices')
+        $query = DB::connection('aiku_no_sticky')->table('invoices')
             ->where('invoices.sales_channel_id', $timeSeries->sales_channel_id)
             ->where('invoices.in_process', false)
             ->where('invoices.date', '>=', $from)
@@ -85,38 +85,6 @@ class ProcessSalesChannelTimeSeriesRecords implements ShouldBeUnique
                     'customers_invoiced'          => $result->customers_invoiced,
                     'invoices'                    => $result->invoices,
                     'refunds'                     => $result->refunds,
-                ]
-            );
-
-            $processedPeriods[] = $period;
-        }
-
-        $this->processPeriodsWithoutInvoices($timeSeries, $from, $to, $processedPeriods);
-    }
-
-    protected function processPeriodsWithoutInvoices(SalesChannelTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
-    {
-        $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
-
-        foreach ($nonInvoicePeriods as $periodData) {
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'sales_channel_time_series_id' => $timeSeries->id,
-                    'period'                       => $periodData['period'],
-                    'frequency'                    => $timeSeries->frequency->singleLetter()
-                ],
-                [
-                    'from'                        => $periodData['from'],
-                    'to'                          => $periodData['to'],
-                    'sales_external'              => 0,
-                    'sales_org_currency_external' => 0,
-                    'sales_grp_currency_external' => 0,
-                    'lost_revenue'                => 0,
-                    'lost_revenue_org_currency'   => 0,
-                    'lost_revenue_grp_currency'   => 0,
-                    'customers_invoiced'          => 0,
-                    'invoices'                    => 0,
-                    'refunds'                     => 0,
                 ]
             );
         }

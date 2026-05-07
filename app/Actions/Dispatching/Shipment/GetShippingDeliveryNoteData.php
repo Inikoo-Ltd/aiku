@@ -129,6 +129,10 @@ class GetShippingDeliveryNoteData
         ];
 
         foreach (Arr::except($addressData, ['id', 'country_id']) as $key => $value) {
+            if ($value === null) {
+                $value = '';
+            }
+
             $value = trim($value);
             $value = str_replace("'", '', $value);
             $value = str_replace("`", '', $value);
