@@ -76,7 +76,7 @@ class DispatchOrder extends OrgAction
             $order->refresh();
 
             if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
-                if ($order->customerSalesChannel?->user && app()->isProduction()) {
+                if ($order->customerSalesChannel?->user && !app()->isProduction()) {
                     match ($order->customerSalesChannel->platform->type) {
                         PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
                         PlatformTypeEnum::EBAY => FulfillOrderToEbay::run($order),
