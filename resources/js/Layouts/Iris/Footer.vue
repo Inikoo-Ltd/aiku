@@ -13,6 +13,7 @@ const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 
 onMounted(() => {
     screenType.value = checkScreenType()
+    console.log("screenType:", screenType.value)
 })
 </script>
 
