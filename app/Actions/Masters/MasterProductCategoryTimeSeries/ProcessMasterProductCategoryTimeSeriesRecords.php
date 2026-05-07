@@ -42,6 +42,7 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
         if (!$masterProductCategoryId) {
             return;
         }
+
         $masterProductCategory = MasterProductCategory::find($masterProductCategoryId);
 
         if (!$masterProductCategory) {
@@ -59,6 +60,7 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
                 'type'      => $masterProductCategory->type->value
             ]);
         }
+
         $hasDropshipping = Shop::on('aiku_no_sticky')->where('master_shop_id', $masterProductCategory->master_shop_id)->where('type', ShopTypeEnum::DROPSHIPPING)->exists();
 
         $this->processTimeSeries($timeSeries, $from, $to, $hasDropshipping);
@@ -92,6 +94,7 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
             } else {
                 $metrics = ['dropshippers' => 0, 'listings' => 0];
             }
+
             $timeSeries->records()->updateOrCreate(
                 [
                     'master_product_category_time_series_id' => $timeSeries->id,
@@ -181,7 +184,6 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
         if ($masterAssetIds->isEmpty()) {
             return ['dropshippers' => 0, 'listings' => 0];
         }
-
 
         $productAssetIds = DB::connection('aiku_no_sticky')->table('assets')
             ->whereIn('master_asset_id', $masterAssetIds)

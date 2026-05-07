@@ -22,7 +22,7 @@ class RedoIntrastatExportTimeSeries implements ShouldBeUnique
 {
     use WithHydrateCommand;
 
-    public string $jobQueue         = 'default-long';
+    public string $jobQueue         = 'default-long-slave';
     public string $commandSignature = 'intrastat-export:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -35,10 +35,10 @@ class RedoIntrastatExportTimeSeries implements ShouldBeUnique
         return "{$from}_{$to}";
     }
 
-    public function handle(Organisation $organisation, bool $async = false, ?string $from = null, ?string $to = null): void
+    public function handle(Organisation $organisation, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if (!$from || !$to) {
-            $dates = DB::table('delivery_notes')->where('organisation_id', $organisation->id)->whereNotNull('dispatched_at')->selectRaw('MIN(dispatched_at) as min_date, MAX(dispatched_at) as max_date')->first();
+            $dates = DB::connection('aiku_no_sticky')->table('delivery_notes')->where('organisation_id', $organisation->id)->whereNotNull('dispatched_at')->selectRaw('MIN(dispatched_at) as min_date, MAX(dispatched_at) as max_date')->first();
 
             if (!$dates || !$dates->min_date || !$dates->max_date) {
                 return;
@@ -50,7 +50,7 @@ class RedoIntrastatExportTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessIntrastatExportTimeSeriesRecords::dispatch($organisation->id, $frequency, $from, $to)->onQueue('low-priority');
+                ProcessIntrastatExportTimeSeriesRecords::dispatch($organisation->id, $frequency, $from, $to);
             } else {
                 ProcessIntrastatExportTimeSeriesRecords::run($organisation->id, $frequency, $from, $to);
             }
@@ -70,7 +70,7 @@ class RedoIntrastatExportTimeSeries implements ShouldBeUnique
                     : $model->find($modelId->id);
 
                 try {
-                    $this->handle($instance, false, $from, $to);
+                    $this->handle($instance, $from, $to, false);
                 } catch (Throwable $e) {
                     report($e);
                 }
@@ -97,7 +97,7 @@ class RedoIntrastatExportTimeSeries implements ShouldBeUnique
                     : $model->find($modelId->id);
 
                 try {
-                    $this->handle($instance, (bool) $command->option('async'), $command->option('from'), $command->option('to'));
+                    $this->handle($instance, $command->option('from'), $command->option('to'), (bool) $command->option('async'));
                 } catch (Throwable $e) {
                     $command->error($e->getMessage());
                 }

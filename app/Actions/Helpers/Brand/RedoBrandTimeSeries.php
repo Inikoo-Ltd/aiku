@@ -16,7 +16,7 @@ class RedoBrandTimeSeries implements ShouldBeUnique
 {
     use WithHydrateCommand;
 
-    public string $jobQueue         = 'default-long';
+    public string $jobQueue         = 'default-long-slave';
     public string $commandSignature = 'brands:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -31,7 +31,7 @@ class RedoBrandTimeSeries implements ShouldBeUnique
 
     public function handle(Brand $brand, bool $async = false, ?string $from = null, ?string $to = null): void
     {
-        $shopIds = DB::table('invoice_transactions')
+        $shopIds = DB::connection('aiku_no_sticky')->table('invoice_transactions')
             ->where('brand_id', $brand->id)
             ->whereNull('deleted_at')
             ->distinct()
@@ -44,7 +44,7 @@ class RedoBrandTimeSeries implements ShouldBeUnique
         }
 
         if (!$from || !$to) {
-            $dateRange = DB::table('invoice_transactions')
+            $dateRange = DB::connection('aiku_no_sticky')->table('invoice_transactions')
                 ->where('brand_id', $brand->id)
                 ->whereNull('deleted_at')
                 ->selectRaw('MIN(date) as first_date, MAX(date) as last_date')
@@ -61,7 +61,7 @@ class RedoBrandTimeSeries implements ShouldBeUnique
         foreach ($shopIds as $shopId) {
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 if ($async) {
-                    ProcessBrandTimeSeriesRecords::dispatch($brand->id, $shopId, $frequency, $from, $to)->onQueue('low-priority');
+                    ProcessBrandTimeSeriesRecords::dispatch($brand->id, $shopId, $frequency, $from, $to);
                 } else {
                     ProcessBrandTimeSeriesRecords::run($brand->id, $shopId, $frequency, $from, $to);
                 }
