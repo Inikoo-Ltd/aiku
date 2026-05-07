@@ -81,6 +81,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric $total_weight kg
  * @property int $number_pallets_state_request_return_submitted
  * @property int $number_pallets_state_request_return_confirmed
+ * @property int $number_pallets_state_not_picked
  * @property-read \App\Models\Inventory\Location|null $location
  * @method static Builder<static>|LocationStats newModelQuery()
  * @method static Builder<static>|LocationStats newQuery()

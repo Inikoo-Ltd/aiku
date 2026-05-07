@@ -12,7 +12,6 @@ use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Arr;
 use Carbon\Carbon;
 
 /**

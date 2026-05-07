@@ -16,7 +16,6 @@ use App\Models\Dispatching\Shipment;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -28,7 +27,7 @@ class FulfillOrderToTiktok extends OrgAction
 
     public function handle(Order $order): void
     {
-        if($order->is_shipping_by_external) {
+        if ($order->is_shipping_by_external) {
             return;
         }
 
@@ -56,7 +55,7 @@ class FulfillOrderToTiktok extends OrgAction
 
         /** @var array $shippingProvider */
         $shippingProvider = collect(Arr::get($shippingProviders, 'data.shipping_providers', []))
-            ->first(fn($provider) => stripos(Arr::get($provider, 'name'), $shipment->trade_as) !== false);
+            ->first(fn ($provider) => stripos(Arr::get($provider, 'name'), $shipment->trade_as) !== false);
 
         $tiktokUser->updateShippingInfo($fulfillOrderId, [
             'tracking_number' => $shipment->tracking,

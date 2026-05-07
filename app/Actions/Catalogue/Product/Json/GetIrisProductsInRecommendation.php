@@ -10,7 +10,6 @@
 namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\IrisAction;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -23,7 +22,7 @@ class GetIrisProductsInRecommendation extends IrisAction
 
     public function handle(ProductCategory $productCategory, $stockMode = 'in_stock', bool $topSeller = false): LengthAwarePaginator|Collection
     {
-        $website = $productCategory->shop->website;    
+        $website = $productCategory->shop->website;
 
         $queryBuilder = $this->getBaseQuery($stockMode, $topSeller);
         $queryBuilder
@@ -40,7 +39,7 @@ class GetIrisProductsInRecommendation extends IrisAction
                     ->whereNull('products.variant_id')
                     ->orWhere('products.is_variant_leader', true);
             });
-            
+
         $queryBuilder->select(
             $this->getSelect([
                 DB::raw('products.variant_id IS NOT NULL as is_variant'),
@@ -55,7 +54,7 @@ class GetIrisProductsInRecommendation extends IrisAction
         );
 
         $perPage = data_get($website->settings, 'recommender_web_block.description_has_overview', 100);
-        
+
         $relatedProduct = $productCategory->relatedProducts()->get();
         $queryBuilder->whereIn('products.id', $relatedProduct->pluck('id'));
 

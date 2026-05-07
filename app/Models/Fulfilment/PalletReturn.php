@@ -100,6 +100,9 @@ use App\Models\SysAdmin\User;
  * @property int|null $shipping_zone_schema_id
  * @property int|null $shipping_zone_id
  * @property string|null $platform_order_id
+ * @property int|null $picker_user_id
+ * @property int|null $packer_user_id
+ * @property int $number_items_waiting_crm
  * @property PalletReturnItemNoSetReasonStateEnum $not_setup_reason
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
@@ -115,7 +118,10 @@ use App\Models\SysAdmin\User;
  * @property-read Collection<int, \App\Models\Fulfilment\PalletReturnItem> $items
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Organisation $organisation
+ * @property-read User|null $packerUser
  * @property-read Collection<int, \App\Models\Fulfilment\Pallet> $pallets
+ * @property-read User|null $pickerUser
+ * @property-read Collection<int, PickingSession> $pickingSessions
  * @property-read Platform|null $platform
  * @property-read \App\Models\Fulfilment\RecurringBill|null $recurringBill
  * @property-read SalesChannel|null $salesChannel

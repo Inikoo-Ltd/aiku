@@ -236,7 +236,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
                 $webBlocks[$key] = 2;
             } elseif ($key == $familyExtraDesc) {
                 $webBlocks[$key] = 3;
-            } elseif ($key == $recommendationFromMaster){
+            } elseif ($key == $recommendationFromMaster) {
                 $webBlocks[$key] = 4;
             } elseif ($key == $trendsWebBlock) {
                 $webBlocks[$key] = $trendsWebBlockPosition;

@@ -225,7 +225,7 @@ class CallApiCttEsShipping extends OrgAction
             'sender_phones'               => array_values(
                 array_filter(
                     [Arr::get($parentResource, 'from_phone')],
-                    fn($phone) => filled($phone)
+                    fn ($phone) => filled($phone)
                 )
             ),
 
@@ -242,7 +242,7 @@ class CallApiCttEsShipping extends OrgAction
             'recipient_phones'               => array_values(
                 array_filter(
                     [Arr::get($parentResource, 'to_phone')],
-                    fn($phone) => filled($phone)
+                    fn ($phone) => filled($phone)
                 )
             ),
 

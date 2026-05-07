@@ -61,8 +61,8 @@ class StoreProductToTiktok extends RetinaAction
 
             $categoryRules = $tiktokUser->getCategoryRules($leafCategoryId);
             $requiredCertifications = collect(Arr::get($categoryRules, 'data.product_certifications', []))
-                ->filter(fn($cert) => Arr::get($cert, 'is_required') === true)
-                ->map(fn($cert) => [
+                ->filter(fn ($cert) => Arr::get($cert, 'is_required') === true)
+                ->map(fn ($cert) => [
                     'id'    => Arr::get($cert, 'id'),
                     'files' => []
                 ])
@@ -73,7 +73,7 @@ class StoreProductToTiktok extends RetinaAction
             $attributes = Arr::get($categoryAttributes, 'data.attributes', []);
 
             $productAttributes = collect($attributes)
-                ->filter(fn($attribute) => Arr::get($attribute, 'is_requried') === true)
+                ->filter(fn ($attribute) => Arr::get($attribute, 'is_requried') === true)
                 ->map(function ($attribute) {
                     $firstValue = Arr::first(Arr::get($attribute, 'values', []));
 
@@ -209,7 +209,7 @@ class StoreProductToTiktok extends RetinaAction
 
         $rules = $tiktokUser->getCategoryRules($categoryId);
         $hasRequiredCerts = collect(Arr::get($rules, 'data.product_certifications', []))
-            ->filter(fn($cert) => Arr::get($cert, 'is_required') === true)
+            ->filter(fn ($cert) => Arr::get($cert, 'is_required') === true)
             ->isNotEmpty();
 
         if (!$hasRequiredCerts) {
@@ -218,7 +218,8 @@ class StoreProductToTiktok extends RetinaAction
 
         $allCategories = $tiktokUser->getCategories();
         $leafAvailable = collect(Arr::get($allCategories, 'data.categories', []))
-            ->filter(fn($cat) =>
+            ->filter(
+                fn ($cat) =>
                 Arr::get($cat, 'is_leaf') === true &&
                 in_array('AVAILABLE', Arr::get($cat, 'permission_statuses', []))
             )
@@ -228,7 +229,7 @@ class StoreProductToTiktok extends RetinaAction
             $catId = Arr::get($cat, 'id');
             $catRules = $tiktokUser->getCategoryRules($catId);
             $certRequired = collect(Arr::get($catRules, 'data.product_certifications', []))
-                ->filter(fn($cert) => Arr::get($cert, 'is_required') === true)
+                ->filter(fn ($cert) => Arr::get($cert, 'is_required') === true)
                 ->isNotEmpty();
 
             if (!$certRequired) {
