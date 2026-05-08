@@ -157,6 +157,7 @@ const props = defineProps<{
 			route: routeType
 		}[]
 	}
+	requireShipping?: boolean
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
