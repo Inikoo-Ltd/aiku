@@ -24,6 +24,7 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
@@ -55,18 +56,18 @@ class StoreTiktokOrder extends RetinaAction
 
         foreach ($orderedProducts as $orderedProduct) {
 
-
             $transactionData = [
                 'quantity_ordered'        => $orderedProduct['quantity_ordered'],
                 'platform_transaction_id' => $orderedProduct['platform_transaction_id'],
 
             ];
 
-
             StoreTransaction::make()->action(
                 order: $order,
                 historicAsset: $orderedProduct['historicAsset'],
-                modelData: $transactionData
+                modelData: $transactionData,
+                strict: false,
+                forceHydrators: true,
             );
         }
 
@@ -143,7 +144,7 @@ class StoreTiktokOrder extends RetinaAction
     public function digestTiktokProducts(TiktokUser $tiktokUser, array $tiktokOrderData): array
     {
         $orderedProducts = [];
-        $lineItems = collect(Arr::get($tiktokOrderData, 'line_items', []))
+        /*$lineItems = collect(Arr::get($tiktokOrderData, 'line_items', []))
             ->groupBy('product_id')
             ->map(function ($items) {
                 return [
@@ -152,8 +153,8 @@ class StoreTiktokOrder extends RetinaAction
                     'id' => $items->first()['id']
                 ];
             })
-            ->values();
-        foreach ($lineItems as $item) {
+            ->values();*/
+        foreach (Arr::get($tiktokOrderData, 'line_items', []) as $item) {
             $portfolioData = DB::table('portfolios')->select('item_id')->where('item_type', 'Product')
                 ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)
                 ->where('platform_product_id', $item['product_id'])
@@ -163,7 +164,7 @@ class StoreTiktokOrder extends RetinaAction
                 if ($product) {
                     $orderedProducts[] = [
                         'historicAsset'           => $product->currentHistoricProduct,
-                        'quantity_ordered'        => $item['quantity'],
+                        'quantity_ordered'        => 1,
                         'platform_transaction_id' => $item['id']
                     ];
                 }
