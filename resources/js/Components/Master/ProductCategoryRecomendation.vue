@@ -90,7 +90,7 @@ const SaveOrder = async () => {
                 {{ trans('Product Recommendations Ordering') }}
             </div>
 
-            <Button v-if="props.data?.editable" label="Save Order" :disabled="!saveActive" @click="SaveOrder"   :loading="loadingOrder" type="save" />
+            <Button v-if="props.data?.editable" label="Save" :disabled="!saveActive" @click="SaveOrder"   :loading="loadingOrder" type="save" />
         </div>
 
         <!-- MAIN CONTENT -->

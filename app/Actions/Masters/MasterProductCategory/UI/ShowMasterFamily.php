@@ -152,8 +152,8 @@ class ShowMasterFamily extends GrpAction
                         fn () => GetMasterProductCategoryImages::run($masterFamily)
                     ),
 
-            MasterFamilyTabsEnum::RECOMMENDATION->value =>
-                $this->tab === MasterFamilyTabsEnum::RECOMMENDATION->value
+            MasterFamilyTabsEnum::RELATED_PRODUCTS->value =>
+                $this->tab === MasterFamilyTabsEnum::RELATED_PRODUCTS->value
                     ? fn () => [
                         'id' => $masterFamily->id,
                         'data' => MasterProductsResource::collection(GetMasterProductCategoryRecomendation::run($masterFamily)),
