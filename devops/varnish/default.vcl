@@ -292,11 +292,19 @@ sub vcl_backend_response {
         beresp.status == 301 &&
         beresp.http.X-Aiku-Cacheable-Redirect == "1" &&
         beresp.http.Cache-Control ~ "(?i)public" &&
-        beresp.http.Location
+        beresp.http.Location &&
+        beresp.http.Location != "https://" + bereq.http.host + bereq.url &&
+        beresp.http.Location != "http://" + bereq.http.host + bereq.url
     ) {
         set beresp.ttl = 6h;
         set beresp.grace = 1m;
         unset beresp.http.X-Aiku-Cacheable-Redirect;
+        return (deliver);
+    }
+
+    if (beresp.status == 301) {
+        set beresp.ttl = 0s;
+        set beresp.uncacheable = true;
         return (deliver);
     }
 
