@@ -5,6 +5,7 @@ import ReviewStatsPanel from "@/Components/Shop/Reviews/ReviewStatsPanel.vue"
 import Image from "@/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ModalCreateCategoryReviews from "@/Components/Reviews/ModalCreateCategoryReviews.vue"
+import ModalReviewReply from "@/Components/Reviews/ModalReviewReply.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { trans } from "laravel-vue-i18n"
 
@@ -116,6 +117,23 @@ const renderStars = (rating: number): string => {
                                 <Button :style="'edit'" size="xs" @click="openModal" />
                             </template>
                         </ModalCreateCategoryReviews>
+
+                        <ModalReviewReply
+                            :hideDefaultButton="true"
+                            :review="{
+                                id: item.id,
+                                reviewable_type: item.reviewable_type,
+                                contact_name: item.contact_name,
+                                customer_name: item.customer_name,
+                                rating: item.rating,
+                                message: item.message,
+                                created_at: item.created_at
+                            }"
+                        >
+                            <template #trigger="{ openModal }">
+                                <Button type="tertiary" icon="fal fa-reply" size="xs" @click="openModal" />
+                            </template>
+                        </ModalReviewReply>
 
                         <ModalConfirmationDelete
                             :routeDelete="item.delete_route"
