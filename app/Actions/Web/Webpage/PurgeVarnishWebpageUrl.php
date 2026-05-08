@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Fri, 08 May 2026 23:13:24 Malaysia Time, Kuala Lumpur, Malaysia
@@ -11,21 +12,23 @@ use App\Actions\OrgAction;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
-
+use Illuminate\Support\Str;
 
 class PurgeVarnishWebpageUrl extends OrgAction
 {
-
     /**
      * @throws \Illuminate\Http\Client\ConnectionException
      */
     public function handle(Webpage $webpage, ?Command $command = null): void
     {
-        $url = parse_url($webpage->canonical_url);
+        $canonicalUrl = parse_url($webpage->canonical_url);
 
-        $host = $url['host'];
-        $path = $url['path'] ?? '/';
-        $url  = '/'.$webpage->url;
+        $host = strtolower($canonicalUrl['host']);
+        $path = $canonicalUrl['path'] ?? '/';
+        if (isset($canonicalUrl['query'])) {
+            $path .= '?'.$canonicalUrl['query'];
+        }
+        $webpagePath = Str::start($webpage->url, '/');
 
         foreach (config('iris.cache.varnish_hosts') as $varnishHost) {
             if (!$varnishHost) {
@@ -33,17 +36,19 @@ class PurgeVarnishWebpageUrl extends OrgAction
             }
 
             $response = Http::withHeaders([
-                'Host' => $host,
-            ])->send('PURGE', $varnishHost.$path);
+                'x-ban-host' => $host,
+                'x-ban-url'  => $path,
+            ])->send('BAN', $varnishHost);
 
-            $command?->line("Purge response for $varnishHost$path: ".$response->status().' - '.$response->body());
+            $command?->line("BAN response for $host$path via $varnishHost: ".$response->status().' - '.$response->body());
 
-            if ($url != $path) {
+            if ($webpagePath != $path) {
                 $response = Http::withHeaders([
-                    'Host' => $host,
-                ])->send('PURGE', $varnishHost.$url);
+                    'x-ban-host' => $host,
+                    'x-ban-url'  => $webpagePath,
+                ])->send('BAN', $varnishHost);
 
-                $command?->line("Purge response for $varnishHost$url: ".$response->status().' - '.$response->body());
+                $command?->line("BAN response for $host$webpagePath via $varnishHost: ".$response->status().' - '.$response->body());
             }
         }
     }
