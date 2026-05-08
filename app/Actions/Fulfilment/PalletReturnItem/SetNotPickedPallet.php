@@ -6,7 +6,6 @@ use App\Actions\Fulfilment\Pallet\UpdatePallet;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
-use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
 use App\Http\Resources\Fulfilment\MayaPalletReturnItemUIResource;
 use App\Http\Resources\Fulfilment\PalletReturnItemUIResource;
 use App\Models\Fulfilment\PalletReturnItem;

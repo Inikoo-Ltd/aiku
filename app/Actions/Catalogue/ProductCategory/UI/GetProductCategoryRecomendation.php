@@ -10,9 +10,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
-use App\Actions\Catalogue\Product\UI\IndexProducts;
 use App\Actions\OrgAction;
-use App\Http\Resources\Catalogue\ProductsResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Services\QueryBuilder;
@@ -21,7 +19,6 @@ use Illuminate\Support\Facades\DB;
 
 class GetProductCategoryRecomendation extends OrgAction
 {
-
     public function handle(ProductCategory $productCategory): LengthAwarePaginator
     {
         $productCategory->refresh();

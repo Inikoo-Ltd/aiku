@@ -18,7 +18,7 @@ library.add(faSearch, faTimes)
 const props = defineProps<{
 	header: { logo?: { image: { source: string } } }
 	screenType: string
-	productCategories: Array<any>
+	productCategories?: Array<any>
 	menu?: { data: Array<any> }
 	sidebarLogo: ImageTS
 	sidebar?: {
@@ -138,8 +138,6 @@ watch(
 const customMenusBottom = computed(() => internalCustomMenusBottom.value)
 const customMenusTop = computed(() => internalCustomMenusTop.value)
 
-
-console.log('wwwwww', irisLayout.iris.sidebar)
 const sidebarFieldValue = computed(() =>
     irisLayout.iris.sidebar?.data?.fieldValue ?? props.sidebar?.data?.fieldValue
 )
@@ -250,6 +248,7 @@ const checkMobile = () => {
 };
 
 onMounted(() => {
+	fetchSidebarOnce()
     checkMobile()
     window.addEventListener("resize", checkMobile)
 })

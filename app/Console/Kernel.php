@@ -601,16 +601,45 @@ class Kernel extends ConsoleKernel
 
 
             $schedule->command('queue:prune-failed --hours=168')->daily()->onOneServer();
+
+            $this->logSchedule(
+                $schedule->command('hydrate:fulfilments')->dailyAt('00:30')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'HydrateFulfilments',
+                ),
+                name: 'HydrateFulfilments',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('hydrate:stored_items')->dailyAt('00:40')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'HydrateStoredItems',
+                ),
+                name: 'HydrateStoredItems',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('hydrate:pallet_returns')->dailyAt('00:50')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'HydratePalletReturns',
+                ),
+                name: 'HydratePalletReturns',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('hydrate:pallet_stored_items')->dailyAt('01:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'HydratePalletStoredItems',
+                ),
+                name: 'HydratePalletStoredItems',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
         }
 
-        $this->logSchedule(
-            $schedule->command('hydrate:fulfilments')->dailyAt('00:30')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                monitorSlug: 'HydrateFulfilments',
-            ),
-            name: 'HydrateFulfilments',
-            type: 'command',
-            scheduledAt: now()->format('H:i')
-        );
+
     }
 
     protected function commands(): void

@@ -23,9 +23,9 @@ class ValidateIncomingTiktokOrder extends RetinaAction
 
     public function handle(TiktokUser $tiktokUser, $order = []): void
     {
-        if($tiktokUser->customer->is_fulfilment) {
+        if ($tiktokUser->customer->is_fulfilment) {
             $this->forFulfilment($tiktokUser, $order);
-        } else if ($tiktokUser->customer->is_dropshipping) {
+        } elseif ($tiktokUser->customer->is_dropshipping) {
             $this->forDropshipping($tiktokUser, $order);
         }
     }

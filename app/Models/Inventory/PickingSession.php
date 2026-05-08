@@ -52,10 +52,14 @@ use App\Models\Dispatching\Trolley;
  * @property numeric|null $quantity_packed
  * @property numeric $picking_percentage
  * @property numeric $packing_percentage
+ * @property PickingSessionTypeEnum $type
+ * @property int $number_pallet_returns
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNote> $deliveryNotes
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNoteItem> $deliveryNotesItems
  * @property-read Group|null $group
  * @property-read Organisation $organisation
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, PalletReturnItem> $palletReturnItems
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, PalletReturn> $palletReturns
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Trolley> $trolleys
  * @property-read User|null $user
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse

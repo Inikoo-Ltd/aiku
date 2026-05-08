@@ -45,7 +45,7 @@ class UpdateShopifyProductVariant extends RetinaAction
 
         UpdateShopifyProduct::run($portfolio);
 
-        if(! $portfolio->sku) {
+        if (! $portfolio->sku) {
             return [false, 'Portfolio does not contains SKU'];
         }
 
