@@ -21,6 +21,7 @@ const props = defineProps<{
         customer_id?: number | null
         contact_name?: string | null
         customer_name?: string | null
+        status?: "pending" | "approved" | "rejected" | null
         rating?: number | null
         rating_a?: number | null
         rating_b?: number | null
@@ -59,6 +60,7 @@ const isLoadingSubmit = ref(false)
 const errors = ref<Record<string, string[]>>({})
 const imageFiles = ref<File[]>([])
 const selectedCustomerId = ref<number | null>(null)
+const selectedStatus = ref<"pending" | "approved" | "rejected">("pending")
 const customerOptions = ref<CustomerOption[]>([])
 const customerSearch = ref("")
 const customerPage = ref(1)
@@ -134,6 +136,12 @@ const averageRating = computed(() => {
 
     return Math.round(values.reduce((total, value) => total + value, 0) / values.length)
 })
+
+const reviewStatusOptions = computed(() => [
+    { value: "pending", label: trans("Pending") },
+    { value: "approved", label: trans("Approved") },
+    { value: "rejected", label: trans("Rejected") },
+])
 const normalizeCustomerId = (value: unknown): number | null => {
     if (typeof value === "number") {
         return Number.isFinite(value) && value > 0 ? value : null
@@ -333,6 +341,8 @@ const resetForm = (): void => {
     ratingByDimension.value = nextRatings
     message.value = props.review?.message ?? ""
     selectedCustomerId.value = normalizeCustomerId(props.review?.customer_id)
+    const initialStatus = props.review?.status
+    selectedStatus.value = initialStatus === "approved" || initialStatus === "rejected" ? initialStatus : "pending"
     customerSearch.value = ""
     customerPage.value = 1
     customerHasMore.value = true
@@ -388,6 +398,10 @@ const submitReview = (): void => {
     const payloadCustomerId = selectedCustomerId.value ?? normalizeCustomerId(props.review?.customer_id)
     if (payloadCustomerId !== null) {
         formData.append("customer_id", String(payloadCustomerId))
+    }
+
+    if (selectedStatus.value) {
+        formData.append("status", selectedStatus.value)
     }
 
     imageFiles.value.forEach((file, index) => {
@@ -496,6 +510,20 @@ onBeforeUnmount(() => {
                         @filter="onCustomerFilter"
                     />
                     <div v-if="errors.customer_id?.[0]" class="text-sm text-red-500">{{ errors.customer_id[0] }}</div>
+                </div>
+
+                <div v-if="isUpdateMode || isDetailMode" class="space-y-2">
+                    <label class="font-medium">{{ trans("Status") }}</label>
+                    <Select
+                        v-model="selectedStatus"
+                        :options="reviewStatusOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        class="w-full"
+                        :disabled="isDetailMode"
+                        :placeholder="trans('Select status')"
+                    />
+                    <div v-if="errors.status?.[0]" class="text-sm text-red-500">{{ errors.status[0] }}</div>
                 </div>
 
                 <div class="space-y-2">
