@@ -41,25 +41,29 @@ class ShowMastersDashboard extends OrgAction
 
     public function asController(ActionRequest $request): Group
     {
-        $this->initialisationFromGroup(app('group'), $request);
+        $group = group();
 
-        return $this->handle($this->group);
+        $this->initialisationFromGroup($group, $request);
+
+        return $this->handle($group);
     }
 
     public function htmlResponse(Group $group, ActionRequest $request): Response
     {
         $userSettings = $request->user()->settings;
 
-        $currentTab = Arr::get($userSettings, 'masters_dashboard_tab', Arr::first(MastersDashboardSalesTableTabsEnum::values()));
+        $tabValues = MastersDashboardSalesTableTabsEnum::values();
+        $defaultTab = Arr::first($tabValues);
+        $currentTab = Arr::get($userSettings, 'masters_dashboard_tab', $defaultTab);
+        $currentTabEnum = MastersDashboardSalesTableTabsEnum::tryFrom((string)$currentTab) ?? MastersDashboardSalesTableTabsEnum::from($defaultTab);
+        $currentTab = $currentTabEnum->value;
 
-        if (! in_array($currentTab, MastersDashboardSalesTableTabsEnum::values())) {
-            $currentTab = Arr::first(MastersDashboardSalesTableTabsEnum::values());
-        }
-
-        $saved_interval   = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
+        $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         $performanceDates = $this->resolvePerformanceDates($saved_interval, $userSettings);
 
         $timeSeriesData = GetMastersDashboardTimeSeriesData::run($group, $performanceDates[0], $performanceDates[1]);
+        $tabNavigation = MastersDashboardSalesTableTabsEnum::navigation();
+        $tables = MastersDashboardSalesTableTabsEnum::tablesForTabs($group, $timeSeriesData, [$currentTabEnum]);
 
         $dashboard = [
             'super_blocks' => [
@@ -87,8 +91,8 @@ class ShowMastersDashboard extends OrgAction
                             'id'              => 'sales_table',
                             'type'            => 'table',
                             'current_tab'     => $currentTab,
-                            'tabs'            => MastersDashboardSalesTableTabsEnum::navigation(),
-                            'tables'          => MastersDashboardSalesTableTabsEnum::tablesForTabs($group, $timeSeriesData, [MastersDashboardSalesTableTabsEnum::from($currentTab)]),
+                            'tabs'            => $tabNavigation,
+                            'tables'          => $tables,
                             'charts'          => [],
                             'tab_fetch_route' => [
                                 'name' => 'grp.masters.dashboard.tab-data',
