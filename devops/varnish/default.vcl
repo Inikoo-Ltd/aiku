@@ -262,18 +262,18 @@ sub vcl_hash {
 sub vcl_backend_response {
 
     # Never store responses that the backend marks private or uncacheable.
-    if (beresp.http.Cache-Control ~ "(?i)(private|no-store|no-cache)") {
-        set beresp.ttl = 0s;
-        set beresp.uncacheable = true;
-        return (deliver);
-    }
+ #   if (beresp.http.Cache-Control ~ "(?i)(private|no-store|no-cache)") {
+ #       set beresp.ttl = 0s;
+ #       set beresp.uncacheable = true;
+ #       return (deliver);
+ #   }
 
     # Never store responses that set cookies.
-    if (beresp.http.Set-Cookie) {
-        set beresp.ttl = 0s;
-        set beresp.uncacheable = true;
-        return (deliver);
-    }
+ #   if (beresp.http.Set-Cookie) {
+ #       set beresp.ttl = 0s;
+ #       set beresp.uncacheable = true;
+ #       return (deliver);
+ #   }
 
     # Inertia/version conflict responses should never be stored.
     if (beresp.status == 409) {
@@ -356,6 +356,13 @@ sub vcl_backend_response {
 }
 
 sub vcl_deliver {
+
+ # Strip Set-Cookie on cache hits only
+    if (obj.hits > 0) {
+        unset resp.http.Set-Cookie;
+    }
+
+
     # Add debug headers (can be removed in production)
     if (obj.hits > 0) {
         set resp.http.X-Cache = "HIT";
