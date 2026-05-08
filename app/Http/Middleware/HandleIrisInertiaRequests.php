@@ -8,12 +8,16 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\Announcement\AnnouncementStatusEnum;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Models\Web\Announcement;
+use App\Models\Web\Website;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
-use App\Enums\Comms\Outbox\OutboxCodeEnum;
 
 class HandleIrisInertiaRequests extends Middleware
 {
@@ -29,7 +33,7 @@ class HandleIrisInertiaRequests extends Middleware
             ?->whereIn('code', [OutboxCodeEnum::OOS_NOTIFICATION])
             ->select('id', 'code', 'state')
             ->get()
-            ->mapWithKeys(fn ($item) => [
+            ->mapWithKeys(fn($item) => [
                 $item->code->value => [
                     'id'    => $item->id,
                     'state' => $item->state,
@@ -55,8 +59,9 @@ class HandleIrisInertiaRequests extends Middleware
 
                 'use_chat' => $website->settings['enable_chat'] ?? false,
                 'iris'     => $this->getIrisData($website),
+
                 "retina"   => [
-                    "type" => $request->input('shop_type'),
+                    "type"         => $request->input('shop_type'),
                     "organisation" => $website->organisation->slug,
                 ],
                 "layout"   => [
@@ -64,8 +69,6 @@ class HandleIrisInertiaRequests extends Middleware
                 ],
                 'outboxes' => $outBoxes
             ];
-
-
 
 
             if (Session::get('reloadLayout') == 'remove') {
@@ -80,16 +83,47 @@ class HandleIrisInertiaRequests extends Middleware
         return array_merge(
             $firstLoadOnlyProps,
             [
-                'flash' => [
-                    'notification' => fn () => $request->session()->get('notification'),
-                    'modal'        => fn () => $request->session()->get('modal')
+                'flash'         => [
+                    'notification' => fn() => $request->session()->get('notification'),
+                    'modal'        => fn() => $request->session()->get('modal')
                 ],
-                'ziggy' => [
+                'ziggy'         => [
                     'location' => $request->url(),
                 ],
-
+                'announcements' => $website ? $this->getAnnouncements($website) : [],
             ],
             parent::share($request),
+        );
+    }
+
+    public function getAnnouncements(Website $website): array
+    {
+        $cacheKey = "irisData:website:$website->id:announcements";
+
+        return Cache::remember(
+            $cacheKey,
+            now()->addMinutes(120),
+            function () use ($website) {
+                $announcements = [];
+                /** @var Announcement $announcement */
+                foreach ($website->announcements()->where('status', AnnouncementStatusEnum::ACTIVE)->get() as $announcement) {
+                    $extractedSettings = $announcement->extractSettings($announcement->settings);
+
+                    $announcements[] = [
+                        'name'                 => $announcement->name,
+                        'show_pages'           => $extractedSettings['show_pages'],
+                        'hide_pages'           => $extractedSettings['hide_pages'],
+                        'container_properties' => $announcement->container_properties,
+                        'fields'               => $announcement->fields,
+                        'schedule_at'          => $announcement->schedule_at,
+                        'schedule_finish_at'   => $announcement->schedule_finish_at,
+                        'settings'             => $announcement->settings,
+                        'template_code'        => $announcement->template_code,
+                    ];
+                }
+
+                return $announcements;
+            }
         );
     }
 }

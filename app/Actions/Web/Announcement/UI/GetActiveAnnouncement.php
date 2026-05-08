@@ -5,7 +5,7 @@ namespace App\Actions\Web\Announcement\UI;
 use App\Actions\OrgAction;
 use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Http\Resources\Web\AnnouncementsResource;
-use App\Models\Announcement;
+use App\Models\Web\Announcement;
 use App\Models\Web\Website;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;

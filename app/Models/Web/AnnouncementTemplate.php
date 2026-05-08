@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Web;
 
 use App\Models\Helpers\Media;
 use App\Models\Traits\HasImage;
@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\MediaLibrary\HasMedia;
 
 /**
- * App\Models\AnnouncementTemplate
+ * App\Models\Web\AnnouncementTemplate
  *
  * @property int $id
  * @property int $group_id

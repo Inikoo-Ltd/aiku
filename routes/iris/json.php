@@ -21,7 +21,6 @@ use App\Actions\Helpers\Tag\Json\GetIrisShopTags;
 use App\Actions\Iris\Json\GetRetinaEcomCustomerData;
 use App\Actions\Helpers\Brand\Json\GetIrisShopBrands;
 use App\Actions\CRM\WebUser\Retina\Json\GetRedirectUrl;
-use App\Actions\Catalogue\Product\Json\GetIrisAnnouncements;
 use App\Actions\Catalogue\Product\Json\GetIrisLastOrderedProducts;
 use App\Actions\Catalogue\Product\Json\GetIrisProductEcomOrdering;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
@@ -95,7 +94,6 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('channels', IndexRetinaDropshippingCustomerSalesChannels::class)->name('channels.index');
     Route::get('product/{product:id}', GetIrisProductEcomOrdering::class)->name('product.ecom_ordering_data');
 
-    Route::get('announcements', GetIrisAnnouncements::class)->name('announcements.index');
     Route::get('variant/{variant:id}/products', GetProductsOfVariant::class)->name('products.variant');
     Route::get('variant/{variant:id}', GetVariantAndProducts::class)->name('variant');
     Route::post('luigi-product-recommendation', LuigiBoxRecommendation::class)->name('luigi.product_recommendation');

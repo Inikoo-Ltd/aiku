@@ -10,7 +10,7 @@
 namespace App\Http\Resources\Web;
 
 use App\Http\Resources\HasSelfCall;
-use App\Models\Announcement;
+use App\Models\Web\Announcement;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class AnnouncementIrisResource extends JsonResource
@@ -32,8 +32,6 @@ class AnnouncementIrisResource extends JsonResource
             'state_icon'           => $announcement->state->stateIcon()[$announcement->state->value],
             'show_pages'           => $extractedSettings['show_pages'],
             'hide_pages'           => $extractedSettings['hide_pages'],
-            // 'publisher'            => $announcement->liveSnapshot?->publisher,
-            // 'published_message'    => $announcement->published_message,
             'container_properties' => $announcement->container_properties,
             'created_at'           => $announcement->created_at,
             'fields'               => $announcement->fields,
