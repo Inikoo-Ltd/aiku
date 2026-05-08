@@ -6,30 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     *
-     * @return void
-     */
-    public function up()
+    public function up(): void
     {
-        Schema::table('pallet_return_stats', function (Blueprint $table) {            
-            $table->integer('number_pallets_state_not_picked')->default(0);
-
-        });
+        if (!Schema::hasColumn('pallet_return_stats', 'number_pallets_state_not_picked')) {
+            Schema::table('pallet_return_stats', function (Blueprint $table): void {
+                $table->integer('number_pallets_state_not_picked')->default(0);
+            });
+        }
     }
 
-    /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
-    public function down()
+    public function down(): void
     {
-        Schema::table('pallet_return_stats', function (Blueprint $table) {
-            $table->dropColumn([
-                'number_pallets_state_not_picked'
-            ]);
-        });
+        if (Schema::hasColumn('pallet_return_stats', 'number_pallets_state_not_picked')) {
+            Schema::table('pallet_return_stats', function (Blueprint $table): void {
+                $table->dropColumn('number_pallets_state_not_picked');
+            });
+        }
     }
 };
