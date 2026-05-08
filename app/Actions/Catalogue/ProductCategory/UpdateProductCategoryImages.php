@@ -29,7 +29,12 @@ class UpdateProductCategoryImages extends OrgAction
 
         $this->update($productCategory, $modelData);
 
-        if (Arr::has($modelData, 'extra_desc_art1')) {
+        if (
+            Arr::has($modelData, 'extra_desc_art1') ||
+            Arr::has($modelData, 'extra_desc_art2') ||
+            Arr::has($modelData, 'extra_desc_art3') ||
+            Arr::has($modelData, 'extra_desc_art4')
+        ) {
             $this->updateWebImages($productCategory);
         }
 
@@ -49,6 +54,9 @@ class UpdateProductCategoryImages extends OrgAction
             'desc_art4' => ['sometimes', 'nullable', 'exists:media,id'],
             'desc_art5' => ['sometimes', 'nullable', 'exists:media,id'],
             'extra_desc_art1' => ['sometimes', 'nullable', 'exists:media,id'],
+            'extra_desc_art2' => ['sometimes', 'nullable', 'exists:media,id'],
+            'extra_desc_art3' => ['sometimes', 'nullable', 'exists:media,id'],
+            'extra_desc_art4' => ['sometimes', 'nullable', 'exists:media,id'],
             'desc_video_url' => ['sometimes', 'nullable'],
         ];
     }
