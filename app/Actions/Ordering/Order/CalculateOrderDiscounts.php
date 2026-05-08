@@ -168,7 +168,7 @@ class CalculateOrderDiscounts
                         'offer_label' => $offerData->name
                     ];
                 }
-            }elseif ($offerData->type == 'Department Ordered') {
+            } elseif ($offerData->type == 'Department Ordered') {
 
                 if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'departments_ids', []))) {
                     $enabledOffers[$offerData->allowance_signature] = [
@@ -327,7 +327,7 @@ class CalculateOrderDiscounts
             $this->processAllowanceAllProductsInOrder($offerData, $allowanceData);
         } elseif ($allowanceData->target_type == 'all_products_in_product_category') {
             $this->processAllowanceAllProductsInProductCategory($offerData, $allowanceData);
-        }elseif ($allowanceData->target_type == 'all_products_in_department') {
+        } elseif ($allowanceData->target_type == 'all_products_in_department') {
             $this->processAllowanceAllProductsInDepartment($offerData, $allowanceData);
         }
     }
@@ -347,7 +347,7 @@ class CalculateOrderDiscounts
         $this->applyPercentageDiscount($offerData, $allowanceData);
     }
 
-    private function applyPercentageDiscount(array $offerData, $allowanceData, ?string $filterBy=null): void
+    private function applyPercentageDiscount(array $offerData, $allowanceData, ?string $filterBy = null): void
     {
         $allowanceOpsData = json_decode($allowanceData->data, true) ?? [];
         $percentageOff    = isset($allowanceOpsData['percentage_off']) ? (float)$allowanceOpsData['percentage_off'] : 0.0;
@@ -360,10 +360,10 @@ class CalculateOrderDiscounts
         }
 
         foreach ($this->transactions as $transaction) {
-            if ($filterBy=='family' && $allowanceOpsData['category_id'] != $transaction->family_id) {
+            if ($filterBy == 'family' && $allowanceOpsData['category_id'] != $transaction->family_id) {
                 continue;
             }
-            if ($filterBy=='department' && $allowanceOpsData['category_id'] != $transaction->department_id) {
+            if ($filterBy == 'department' && $allowanceOpsData['category_id'] != $transaction->department_id) {
                 continue;
             }
 

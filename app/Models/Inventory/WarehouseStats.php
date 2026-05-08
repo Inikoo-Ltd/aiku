@@ -214,6 +214,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_picking_sessions_state_handling_blocked
  * @property int $number_picking_sessions_state_picking_finished
  * @property int $number_picking_sessions_state_packing_finished
+ * @property int $number_pallets_state_not_picked
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static Builder<static>|WarehouseStats newModelQuery()
  * @method static Builder<static>|WarehouseStats newQuery()

@@ -22,7 +22,6 @@ use App\Enums\UI\Catalogue\FamilyTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\OffersResource;
 use App\Http\Resources\Catalogue\ProductCategoryTimeSeriesResource;
-use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Catalogue\ProductsResourceForRecommendation;
 use App\Http\Resources\Catalogue\VariantsResource;
 use App\Http\Resources\CRM\CustomersResource;
@@ -287,7 +286,7 @@ class ShowFamily extends OrgAction
                 'url_master'       => $urlMaster,
                 'tabs'             => [
                     'current'    => $this->tab,
-                    'navigation' => app()->isLocal() ? FamilyTabsEnum::navigation() : FamilyTabsEnum::navigationExcept([FamilyTabsEnum::RECOMMENDATION]),
+                    'navigation' => FamilyTabsEnum::navigation(),
                 ],
                 'shop_data' => [
                     'id'       => $family->shop->id,

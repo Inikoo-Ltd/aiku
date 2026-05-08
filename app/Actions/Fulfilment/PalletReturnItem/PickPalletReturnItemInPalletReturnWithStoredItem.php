@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 10-02-2025-13h-08m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -69,8 +69,8 @@ class PickPalletReturnItemInPalletReturnWithStoredItem extends OrgAction
             if ($palletReturnItem->picking_session_id) {
                 $pickingSession = $palletReturnItem->pickingSession;
                 if ($pickingSession) {
-                    (new CalculateFulfilmentPickingSessionPicks())->action($pickingSession);
-                    (new AutoFinishPickingFulfilmentPickingSession())->action($pickingSession);
+                    new CalculateFulfilmentPickingSessionPicks()->action($pickingSession);
+                    new AutoFinishPickingFulfilmentPickingSession()->action($pickingSession);
                 }
             }
 
@@ -96,6 +96,9 @@ class PickPalletReturnItemInPalletReturnWithStoredItem extends OrgAction
         return $this->handle($palletReturnItem, $this->validatedData, $user);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(PalletReturnItem $palletReturnItem, array $modelData): PalletReturnItem
     {
         $this->asAction = true;

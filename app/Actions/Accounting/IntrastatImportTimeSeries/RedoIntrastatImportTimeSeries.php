@@ -2,7 +2,7 @@
 
 /*
  * Author: Steven Wicca <stewicalf@gmail.com>
- * Created: Thu, 13 Feb 2026 16:32:00 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Created: Fri, 13 Feb 2026 16:32:00 Central Indonesia Time, Sanur, Bali, Indonesia
  * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
@@ -16,9 +16,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 
 class RedoIntrastatImportTimeSeries implements ShouldBeUnique
 {
@@ -27,7 +25,7 @@ class RedoIntrastatImportTimeSeries implements ShouldBeUnique
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue         = 'default-long-slave';
+    public string $jobQueue = 'default-long-slave';
     public string $commandSignature = 'intrastat-import:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -37,7 +35,7 @@ class RedoIntrastatImportTimeSeries implements ShouldBeUnique
 
     public function getJobUniqueId(string $from, string $to): string
     {
-        return "{$from}_{$to}";
+        return "{$from}_$to";
     }
 
     protected function modifyQuery(Builder $query): Builder
@@ -70,26 +68,12 @@ class RedoIntrastatImportTimeSeries implements ShouldBeUnique
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessIntrastatImportTimeSeriesRecords::dispatch($organisation->id, $frequency, $from, $to);
+                ProcessIntrastatImportTimeSeriesRecords::dispatch($organisation->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
             } else {
                 ProcessIntrastatImportTimeSeriesRecords::run($organisation->id, $frequency, $from, $to);
             }
         }
     }
 
-    public function asJob(string $from, string $to): void
-    {
-        $tableName = (new $this->model())->getTable();
-        $query     = $this->modifyQuery(DB::table($tableName)->select('id')->orderBy('id', 'desc'));
 
-        $query->chunk(1000, function (Collection $modelsData) use ($from, $to) {
-            foreach ($modelsData as $modelId) {
-                try {
-                    $this->handle($modelId->id, $from, $to, false);
-                } catch (Throwable $e) {
-                    report($e);
-                }
-            }
-        });
-    }
 }

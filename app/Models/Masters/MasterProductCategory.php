@@ -102,7 +102,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read MasterProductCategory|null $parent
  * @property-read LaravelCollection<int, ProductCategory> $productCategories
- * @property-read LaravelCollection<int, Asset> $relatedMasterAssets
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $relatedMasterAssets
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Masters\MasterProductCategoryStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategoryTimeSeries> $timeSeries

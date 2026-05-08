@@ -76,7 +76,7 @@ class ShowRetinaStorageDashboard extends RetinaAction
             ]
         ];
 
-        if(app()->isLocal()) {
+        if (app()->isLocal()) {
             $routeActions[] = [
                 'type'    => 'button',
                 'style'   => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? 'create' : 'gray',
@@ -91,46 +91,7 @@ class ShowRetinaStorageDashboard extends RetinaAction
             ];
         }
 
-        // $routeActions = [
-        //     $fulfilmentCustomer->pallets_storage ? [
-        //         'type'  => 'button',
-        //         'style' => 'create',
-        //         'label' => __('New Goods Delivery'),
-        //         'fullLoading'   => true,
-        //         'route' => [
-        //             'method'     => 'post',
-        //             'name'       => 'retina.models.pallet-delivery.store',
-        //             'parameters' => []
-        //         ]
-        //     ] : false,
-        // ];
 
-        //    if (!app()->environment('production') && $fulfilmentCustomer->pallets_storage) {
-        //        $routeActions = array_merge($routeActions, [
-        //            $fulfilmentCustomer->number_pallets_status_storing ? [
-        //                'type'    => 'button',
-        //                'style'   => 'create',
-        //                'tooltip' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Create new return (whole pallet)') : __('Create new return'),
-        //                'label'   => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('New Return (whole pallet)') : __('Return'),
-        //                'route'   => [
-        //                    'method'     => 'post',
-        //                    'name'       => 'retina.models.pallet-return.store',
-        //                    'parameters' => []
-        //                ]
-        //            ] : false,
-        //            $this->customer->fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? [
-        //                'type'    => 'button',
-        //                'style'   => 'create',
-        //                'tooltip' => __('Create new return (Selected SKUs)'),
-        //                'label'   => __('Return (Selected SKUs)'),
-        //                'route'   => [
-        //                    'method'     => 'post',
-        //                    'name'       => 'retina.models.pallet-return-stored-items.store',
-        //                    'parameters' => []
-        //                ]
-        //            ] : false,
-        //        ]);
-        //    }
         $routeActions = array_filter($routeActions);
 
         return Inertia::render('Storage/RetinaStorageDashboard', [

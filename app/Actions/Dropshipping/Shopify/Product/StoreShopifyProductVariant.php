@@ -48,7 +48,7 @@ class StoreShopifyProductVariant extends RetinaAction
 
         $productID = $portfolio->platform_product_id;
 
-        if(! $portfolio->sku) {
+        if (! $portfolio->sku) {
             return [false, 'Portfolio does not contains SKU'];
         }
 

@@ -87,11 +87,11 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $top_image_id
  * @property int|null $bottom_image_id
  * @property int|null $size_comparison_image_id
- * @property string|null $video_url
  * @property int|null $lifestyle_image_id
- * @property bool|null $bucket_images images following the buckets
+ * @property string|null $video_url
  * @property string|null $description_title
  * @property string|null $description_extra
+ * @property bool|null $bucket_images images following the buckets
  * @property int|null $art1_image_id
  * @property int|null $art2_image_id
  * @property int|null $art3_image_id

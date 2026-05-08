@@ -32,12 +32,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property numeric $quantity_picked
- * @property numeric $quantity_not_picked
  * @property string|null $not_setup_reason
+ * @property int|null $picking_session_id
+ * @property numeric $quantity_waiting_crm
+ * @property bool $has_waiting_crm
+ * @property numeric $quantity_not_picked
  * @property-read \App\Models\Fulfilment\Pallet|null $pallet
  * @property-read \App\Models\Fulfilment\PalletReturn|null $palletReturn
  * @property-read \App\Models\Fulfilment\PalletStoredItem|null $palletStoredItem
  * @property-read Location|null $pickingLocation
+ * @property-read PickingSession|null $pickingSession
  * @property-read \App\Models\Fulfilment\StoredItem|null $storedItem
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturnItem newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturnItem newQuery()

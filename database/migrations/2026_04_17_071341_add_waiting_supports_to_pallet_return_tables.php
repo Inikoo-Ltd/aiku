@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     /**
      * Run the migrations.
      *
@@ -35,7 +34,7 @@ return new class extends Migration
                 'number_items_waiting_crm'
             ]);
         });
-        
+
         Schema::table('pallet_return_items', function (Blueprint $table) {
             $table->dropColumn([
                 'quantity_waiting_crm',

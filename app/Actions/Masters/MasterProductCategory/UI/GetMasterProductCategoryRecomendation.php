@@ -11,7 +11,6 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\OrgAction;
-use App\Http\Resources\Masters\MasterProductsResource;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Services\QueryBuilder;
