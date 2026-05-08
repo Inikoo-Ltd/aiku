@@ -9,9 +9,7 @@
 namespace App\Http\Middleware;
 
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
-use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Http\Resources\Helpers\LanguageResource;
-use App\Http\Resources\Web\AnnouncementResource;
 use App\Http\Resources\Web\WebsiteIrisResource;
 use App\Models\Helpers\Language;
 use App\Models\Web\Website;
@@ -75,7 +73,6 @@ trait WithIrisInertia
                     'symbol' => $shop->currency->symbol,
                     'name'   => $shop->currency->name,
                 ],
-                /*  'announcements'        => AnnouncementResource::collection($website->announcements()->where('status', AnnouncementStatusEnum::ACTIVE)->get())->toArray(request()), */
                 'locale'               => $locale,
                 'website_i18n'         => [
                     'current_language' => LanguageResource::make($currentLanguage)->getArray(),

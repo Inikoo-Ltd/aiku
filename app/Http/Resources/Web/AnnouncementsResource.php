@@ -9,7 +9,7 @@
 namespace App\Http\Resources\Web;
 
 use App\Enums\Announcement\AnnouncementStatusEnum;
-use App\Models\Announcement;
+use App\Models\Web\Announcement;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class AnnouncementsResource extends JsonResource
