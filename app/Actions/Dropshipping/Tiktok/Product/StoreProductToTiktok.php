@@ -138,6 +138,7 @@ class StoreProductToTiktok extends RetinaAction
                                 'warehouse_id' => (string) $tiktokUser->tiktok_warehouse_id
                             ]
                         ],
+                        'seller_sku' => $portfolio->sku,
                         'price' => [
                             'amount' => (string) $portfolio->customer_price,
                             'currency' => $tiktokUser->customer->shop->currency->code
