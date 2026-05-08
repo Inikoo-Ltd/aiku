@@ -70,7 +70,7 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
                                 <table width="100%" cellpadding="0" cellspacing="0" style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0; border-collapse: collapse;">
                                     <tr style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top">
-                                            <strong><span class="fallback-text">Order Number:</span></strong>
+                                            <strong><span class="fallback-text">' . __('Order Number') . ':</span></strong>
                                         </td>
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; text-align: right; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top" align="right">
                                             <a href="' . $orderUrl . '" target="_blank" style="color: #3498DB; text-decoration: underline;"><span class="fallback-text">' . $order->reference . '</span></a>
@@ -87,7 +87,7 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
                                     </tr>' : '') . '
                                     <tr style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top">
-                                            <strong><span class="fallback-text">Shipping to:</span></strong>
+                                            <strong><span class="fallback-text">' . __('Shipping to') . ':</span></strong>
                                         </td>
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; text-align: right; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top" align="right">
                                             <span class="fallback-text">' . ($order->deliveryAddress ? $order->deliveryAddress->getHtml() : 'N/A') . '</span>
@@ -123,10 +123,10 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
 
         $orderHtmlBlock .= ' <tr style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top">
-                                            <strong><span class="fallback-text">Tracking Information:</span></strong>
+                                            <strong><span class="fallback-text">' . __('Tracking Information') . ':</span></strong>
                                         </td>
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; text-align: right; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top" align="right">
-                                            ' . ($shipments ? $this->generateTrackingHtml($shipments) : '<span class="fallback-text">No tracking information available</span>') . '
+                                            ' . ($shipments ? $this->generateTrackingHtml($shipments) : '<span class="fallback-text">'.__('No tracking information available').'</span>') . '
                                         </td>
                                     </tr>
                                 </table>
