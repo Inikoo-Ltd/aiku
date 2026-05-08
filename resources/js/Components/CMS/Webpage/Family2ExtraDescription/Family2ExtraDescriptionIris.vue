@@ -70,7 +70,6 @@ const displayImages = computed(() => {
     data.push(null)
   }
 
-  console.log("data", data)
   return data.slice(0, 4)
 })
 
@@ -94,10 +93,11 @@ watch(cleanedDescription, checkOverflow)
 
 onMounted(checkOverflow)
 
-console.log("fieldValue", props.fieldValue)
+
 </script>
 
 <template>
+<!--   <pre>{{ displayImages }}</pre> -->
   <div
     :id="
       fieldValue?.id
@@ -135,7 +135,7 @@ console.log("fieldValue", props.fieldValue)
             >
               <template v-if="img">
                 <Image
-                  :src="img"
+                  :src="img.original"
                   :alt="fieldValue?.family?.name"
                   class="w-full h-full"
                   imgClass="w-full h-full object-cover transition duration-500 hover:scale-105"

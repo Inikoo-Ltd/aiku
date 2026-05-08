@@ -65,7 +65,7 @@ const textOrder = computed(() =>
   isImageLeft.value ? "lg:order-2" : "lg:order-1"
 )
 const images = computed(() => {
-  return props.modelValue?.family?.extra_description_image || {}
+  return props.fieldValue?.family?.extra_description_image || {}
 })
 
 const displayImages = computed(() => {
