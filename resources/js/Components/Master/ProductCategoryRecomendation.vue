@@ -34,21 +34,27 @@ const SaveOrder = async () => {
 
     loadingOrder.value = true
 
-    console.log('Saving order with the following products:', listProducts.value.data)
+    console.log(
+        'Saving order with the following products:',
+        listProducts.value.data
+    )
+
     try {
         await axios.patch(
             route('grp.models.master_product_category.related_assets.sync', {
                 masterProductCategory: props.product_category_id
             }),
             {
-                master_asset_ids: listProducts.value.data.data.map((product: any, index: number) => ({
-                    id: product.id,
-                    code: product.code,
-                    position:
-                        product.order != null
-                            ? product.order - 1
-                            : index
-                }))
+                master_asset_ids: Object.fromEntries(
+                    listProducts.value.data.data.map(
+                        (product: any, index: number) => [
+                            product.order != null
+                                ? product.order - 1
+                                : index,
+                            product.id
+                        ]
+                    )
+                )
             }
         )
 
@@ -63,7 +69,9 @@ const SaveOrder = async () => {
 
         notify({
             title: trans("Something went wrong"),
-            text: error?.response?.data?.message || trans("Failed to reorder products"),
+            text:
+                error?.response?.data?.message ||
+                trans("Failed to reorder products"),
             type: "error"
         })
 
