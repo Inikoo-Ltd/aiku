@@ -23,6 +23,10 @@ class ValidateIncomingTiktokOrder extends RetinaAction
 
     public function handle(TiktokUser $tiktokUser, $order = []): void
     {
+        $tiktokUser->debugWebhooks()->create([
+            'data' => $order
+        ]);
+
         if ($tiktokUser->customer->is_fulfilment) {
             $this->forFulfilment($tiktokUser, $order);
         } elseif ($tiktokUser->customer->is_dropshipping) {

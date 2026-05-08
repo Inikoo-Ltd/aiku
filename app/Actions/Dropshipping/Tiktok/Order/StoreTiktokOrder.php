@@ -143,7 +143,17 @@ class StoreTiktokOrder extends RetinaAction
     public function digestTiktokProducts(TiktokUser $tiktokUser, array $tiktokOrderData): array
     {
         $orderedProducts = [];
-        foreach (Arr::get($tiktokOrderData, 'line_items', []) as $item) {
+        $lineItems = collect(Arr::get($tiktokOrderData, 'line_items', []))
+            ->groupBy('product_id')
+            ->map(function ($items) {
+                return [
+                    'product_id' => $items->first()['product_id'],
+                    'quantity'   => count($items),
+                    'id' => $items->first()['id']
+                ];
+            })
+            ->values();
+        foreach ($lineItems as $item) {
             $portfolioData = DB::table('portfolios')->select('item_id')->where('item_type', 'Product')
                 ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)
                 ->where('platform_product_id', $item['product_id'])
@@ -153,7 +163,7 @@ class StoreTiktokOrder extends RetinaAction
                 if ($product) {
                     $orderedProducts[] = [
                         'historicAsset'           => $product->currentHistoricProduct,
-                        'quantity_ordered'        => 1,
+                        'quantity_ordered'        => $item['quantity'],
                         'platform_transaction_id' => $item['id']
                     ];
                 }
