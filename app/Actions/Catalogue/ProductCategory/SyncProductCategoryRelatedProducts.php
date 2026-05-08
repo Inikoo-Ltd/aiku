@@ -18,12 +18,19 @@ class SyncProductCategoryRelatedProducts extends OrgAction
 {
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
-        $productIds = collect(Arr::get($modelData, 'product_ids', []))
-            ->map(fn ($productId) => (int)$productId)
-            ->unique()
-            ->values();
+        $productIds = array_unique(Arr::get($modelData, 'product_ids', []));
 
-        $productCategory->relatedProducts()->sync($productIds->all());
+        $relatedProducts = [];
+        $position        = 0;
+        foreach ($productIds as $productId) {
+            $position++;
+            $relatedProducts[$productId] = [
+                'position' => $position
+            ];
+        }
+
+
+        $productCategory->relatedProducts()->sync($relatedProducts);
 
         return $productCategory;
     }

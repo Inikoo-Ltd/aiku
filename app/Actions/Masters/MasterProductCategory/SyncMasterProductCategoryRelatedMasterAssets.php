@@ -11,7 +11,6 @@ namespace App\Actions\Masters\MasterProductCategory;
 use App\Actions\OrgAction;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -21,22 +20,30 @@ class SyncMasterProductCategoryRelatedMasterAssets extends OrgAction
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
-        $masterAssetIds = collect(Arr::get($modelData, 'master_asset_ids', []))
-            ->map(fn ($masterAssetId) => (int)$masterAssetId)
-            ->unique()
-            ->values();
+        $masterAssetIds = array_unique(Arr::get($modelData, 'master_asset_ids', []));
 
-        $masterProductCategory->relatedMasterAssets()->sync($masterAssetIds->all());
+        $relatedMasterAssets = [];
+        $position = 0;
+        foreach ($masterAssetIds as $masterAssetId) {
+            $position++;
+            $relatedMasterAssets[$masterAssetId] = [
+                'position' => $position
+            ];
+        }
+
+        $masterProductCategory->relatedMasterAssets()->sync($relatedMasterAssets);
 
         SyncShopRelatedProductsFromMasterCategory::dispatch($masterProductCategory);
+
 
         return $masterProductCategory;
     }
 
     public function rules(): array
     {
+
         return [
-            'master_asset_ids'   => ['required', 'array'],
+            'master_asset_ids' => ['sometimes', 'array'],
             'master_asset_ids.*' => ['integer', Rule::exists('master_assets', 'id')->where('master_shop_id', $this->masterShopId)],
         ];
     }
