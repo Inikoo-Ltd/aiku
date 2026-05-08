@@ -131,6 +131,15 @@ trait WithTiktokApiServices
         ]);
     }
 
+    public function getShippingTemplates(): array
+    {
+        $path = "/logistics/202510/seller_templates";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
     public function getDeliveryOptions(): array
     {
         $path = "/logistics/$this->version/warehouses/$this->tiktok_warehouse_id/delivery_options";
