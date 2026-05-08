@@ -37,8 +37,13 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
             return null;
         }
 
+        $previousLocale = app()->getLocale();
+        app()->setLocale($order->shop->language->code);
+
         list($emailHtmlBody, $dispatchedEmail) = $this->getEmailBody($order->customer, OutboxCodeEnum::DELIVERY_CONFIRMATION);
         if (!$emailHtmlBody) {
+            app()->setLocale($previousLocale);
+
             return null;
         }
         $outbox = $dispatchedEmail->outbox;
@@ -137,7 +142,7 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
             </tr>
         </table>';
 
-        return $this->sendEmailWithMergeTags(
+        $result = $this->sendEmailWithMergeTags(
             $dispatchedEmail,
             $outbox->emailOngoingRun->sender(),
             $outbox->emailOngoingRun?->email?->subject,
@@ -153,6 +158,10 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
             ],
             senderName: $outbox->emailOngoingRun->senderName()
         );
+
+        app()->setLocale($previousLocale);
+
+        return $result;
     }
 
 
