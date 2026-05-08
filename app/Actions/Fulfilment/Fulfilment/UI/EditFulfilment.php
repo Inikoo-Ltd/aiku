@@ -125,6 +125,18 @@ class EditFulfilment extends OrgAction
 
                         ],
                         [
+                            'label'  => __('Return'),
+                            'icon'   => 'fa-light fa-sign-out',
+                            'fields' => [
+                                'dispatch_require_shipping' => [
+                                    'type'          => 'toggle',
+                                    'label'         => __('Dispatch Require Shipping'),
+                                    'information'   => __('Would toggle dispatch to require shipping or not'),
+                                    'value'         => Arr::get($fulfilment->shop->settings, 'dispatch.require_shipping', true),
+                                ]
+                            ]
+                        ],
+                        [
                             'label'  => __('Contact/details'),
                             'icon'   => 'fa-light fa-user',
                             'fields' => [
@@ -184,7 +196,7 @@ class EditFulfilment extends OrgAction
                             ],
                         ],
                         [
-                            'label'  => __('sender email'),
+                            'label'  => __('Sender Email'),
                             'icon'   => 'fa-light fa-envelope',
                             'fields' => [
                                 'sender_email' => [

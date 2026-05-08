@@ -94,7 +94,6 @@ class DispatchPalletReturn extends OrgAction
             };
         }
 
-
         PalletReturnHydratePallets::dispatch($palletReturn);
         GroupHydratePalletReturns::dispatch($palletReturn->group);
         OrganisationHydratePalletReturns::dispatch($palletReturn->organisation);

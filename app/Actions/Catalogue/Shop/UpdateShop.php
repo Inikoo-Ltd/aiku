@@ -79,6 +79,10 @@ class UpdateShop extends OrgAction
             );
         }
 
+        if (Arr::has($modelData, 'dispatch_require_shipping')) {
+            data_set($modelData, 'settings.dispatch.require_shipping', Arr::pull($modelData, 'dispatch_require_shipping'));
+        }
+
         // Catalogue Descriptions etc
 
         if (Arr::has($modelData, 'collection_follow_master')) {
@@ -400,6 +404,7 @@ class UpdateShop extends OrgAction
             'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
             'family_webpage_split_description'                        => ['sometimes', 'boolean'],
             'reviews'                                                 => ['sometimes', 'nullable', 'array'],
+            'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
         ];
 
         $channelIds = SalesChannel::pluck('id');
