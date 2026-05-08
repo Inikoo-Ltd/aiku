@@ -21,27 +21,12 @@ class SyncMasterProductCategoryRelatedMasterAssets extends OrgAction
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
-        $masterAssetIds = collect(Arr::get($modelData, 'master_asset_ids', []));
-
-        $masterAssetIds = $masterAssetIds
-            ->mapWithKeys(function ($masterAssetId) {
-                return [
-                    data_get($masterAssetId, 'id') => [
-                        'master_asset_id' => data_get($masterAssetId, 'id'),
-                        'position'        => data_get($masterAssetId, 'position'),
-                    ]
-                ];
-            })
-            ->unique();
+        $masterAssetIds = collect(Arr::get($modelData, 'master_asset_ids', []))
+            ->map(fn ($masterAssetId) => (int)$masterAssetId)
+            ->unique()
+            ->values();
 
         $masterProductCategory->relatedMasterAssets()->sync($masterAssetIds->all());
-
-        foreach ($masterProductCategory->relatedMasterAssets as $masterAsset) {
-            $key = $masterAsset->pivot->id;
-            DB::table('master_product_category_has_related_assets')
-                ->where('id', $key)
-                ->update(['position' => $masterAssetIds->get($masterAsset->id)['position']]);
-        }
 
         SyncShopRelatedProductsFromMasterCategory::dispatch($masterProductCategory);
 
@@ -51,9 +36,8 @@ class SyncMasterProductCategoryRelatedMasterAssets extends OrgAction
     public function rules(): array
     {
         return [
-            'master_asset_ids'            => ['sometimes', 'array'],// do not change to require
-            'master_asset_ids.*.id'       => ['integer', Rule::exists('master_assets', 'id')->where('master_shop_id', $this->masterShopId)],
-            'master_asset_ids.*.position' => ['integer'],
+            'master_asset_ids'   => ['required', 'array'],
+            'master_asset_ids.*' => ['integer', Rule::exists('master_assets', 'id')->where('master_shop_id', $this->masterShopId)],
         ];
     }
 
