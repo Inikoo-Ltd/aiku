@@ -19,7 +19,9 @@ class IrisCollectTrafficSources extends IrisAction
 
     public function handle(ActionRequest $request): void
     {
-        //todo collect X-Traffic-Sources  and X-Original-Referer
+
+        //todo collect X-Traffic-Sources  and X-Original-Referer <-- problem we not set this header any more because Varnish, we should put that on the ?query in ShowIrisWebpage
+
     }
 
 
