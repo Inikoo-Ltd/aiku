@@ -42,7 +42,7 @@ class StoreReview
                 'rating_d' => data_get($modelData, 'rating_d'),
                 'rating_e' => data_get($modelData, 'rating_e'),
                 'show_after' => data_get($modelData, 'show_after'),
-                'status' => data_get($modelData, 'status', ReviewStatusEnum::Pending->value),
+                'status' => data_get($modelData, 'status', ReviewStatusEnum::Approved->value),
                 'title' => data_get($modelData, 'title'),
                 'message' => data_get($modelData, 'message'),
                 'like_count' => data_get($modelData, 'like_count', 0),

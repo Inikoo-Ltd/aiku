@@ -18,10 +18,23 @@ type ReviewStats = {
     number_reviews_rating_3?: number
     number_reviews_rating_4?: number
     number_reviews_rating_5?: number
+    category_ratings?: Array<{
+        dimension: string
+        label: string
+        average: number
+    }>
+}
+
+type RatingLabel = {
+    dimension: string
+    label: string
+    is_required?: boolean
+    weight?: number
 }
 
 const props = defineProps<{
     stats?: ReviewStats
+    ratingLabels?: RatingLabel[]
 }>()
 
 const normalizedStats = computed(() => ({
@@ -44,6 +57,32 @@ const ratingBreakdown = computed(() => [
     { stars: "★★", value: normalizedStats.value.rating2 },
     { stars: "★", value: normalizedStats.value.rating1 },
 ])
+
+const categoryRatings = computed(() => {
+    const fromStats = props.stats?.category_ratings ?? []
+    if (fromStats.length > 0) {
+        return fromStats.map((item) => ({
+            key: item.dimension,
+            label: item.label,
+            average: Number(item.average ?? 0).toFixed(2),
+        }))
+    }
+
+    const averagesByDimension: Record<string, number> = {
+        a: Number((props.stats as Record<string, unknown> | undefined)?.average_rating_a ?? 0),
+        b: Number((props.stats as Record<string, unknown> | undefined)?.average_rating_b ?? 0),
+        c: Number((props.stats as Record<string, unknown> | undefined)?.average_rating_c ?? 0),
+        d: Number((props.stats as Record<string, unknown> | undefined)?.average_rating_d ?? 0),
+        e: Number((props.stats as Record<string, unknown> | undefined)?.average_rating_e ?? 0),
+    }
+
+    return (props.ratingLabels ?? [])
+        .map((label) => ({
+            key: label.dimension,
+            label: label.label,
+            average: Number(averagesByDimension[label.dimension] ?? 0).toFixed(2),
+        }))
+})
 </script>
 
 <template>
@@ -106,6 +145,20 @@ const ratingBreakdown = computed(() => [
                 >
                     <span class="text-sm text-amber-500">{{ row.stars }}</span>
                     <span class="text-sm font-semibold text-gray-700 tabular-nums">{{ row.value }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="categoryRatings.length" class="rounded-lg border border-gray-200 bg-white px-4 py-3">
+            <div class="mb-2 text-xs font-medium text-gray-500">{{ trans("Category Ratings") }}</div>
+            <div class="flex flex-col gap-2">
+                <div
+                    v-for="row in categoryRatings"
+                    :key="row.key"
+                    class="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2"
+                >
+                    <span class="text-sm text-gray-600">{{ row.label }}</span>
+                    <span class="text-sm font-semibold text-gray-700 tabular-nums">{{ row.average }}</span>
                 </div>
             </div>
         </div>

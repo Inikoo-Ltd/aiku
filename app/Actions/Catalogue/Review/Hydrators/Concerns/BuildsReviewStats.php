@@ -36,21 +36,26 @@ trait BuildsReviewStats
             ->groupBy('status')
             ->pluck('aggregate', 'status');
 
-        $ratingCounts = (clone $baseQuery)
-            ->selectRaw('rating_main, count(*) as aggregate')
-            ->groupBy('rating_main')
-            ->pluck('aggregate', 'rating_main');
+        $ratingBuckets = (clone $baseQuery)
+            ->selectRaw('
+                count(case when rating_main >= 1 and rating_main < 2 then 1 end) as number_rating_1,
+                count(case when rating_main >= 2 and rating_main < 3 then 1 end) as number_rating_2,
+                count(case when rating_main >= 3 and rating_main < 4 then 1 end) as number_rating_3,
+                count(case when rating_main >= 4 and rating_main < 5 then 1 end) as number_rating_4,
+                count(case when rating_main >= 5 and rating_main <= 5 then 1 end) as number_rating_5
+            ')
+            ->first();
 
         return [
             'number_reviews' => (int) (clone $baseQuery)->count(),
             'number_reviews_pending' => (int) ($statusCounts[ReviewStatusEnum::Pending->value] ?? 0),
             'number_reviews_approved' => (int) ($statusCounts[ReviewStatusEnum::Approved->value] ?? 0),
             'number_reviews_rejected' => (int) ($statusCounts[ReviewStatusEnum::Rejected->value] ?? 0),
-            'number_rating_1' => (int) ($ratingCounts[1] ?? 0),
-            'number_rating_2' => (int) ($ratingCounts[2] ?? 0),
-            'number_rating_3' => (int) ($ratingCounts[3] ?? 0),
-            'number_rating_4' => (int) ($ratingCounts[4] ?? 0),
-            'number_rating_5' => (int) ($ratingCounts[5] ?? 0),
+            'number_rating_1' => (int) ($ratingBuckets?->number_rating_1 ?? 0),
+            'number_rating_2' => (int) ($ratingBuckets?->number_rating_2 ?? 0),
+            'number_rating_3' => (int) ($ratingBuckets?->number_rating_3 ?? 0),
+            'number_rating_4' => (int) ($ratingBuckets?->number_rating_4 ?? 0),
+            'number_rating_5' => (int) ($ratingBuckets?->number_rating_5 ?? 0),
             'average_rating_main' => round((float) ((clone $baseQuery)->avg('rating_main') ?? 0), 2),
             'average_rating_a' => round((float) ((clone $baseQuery)->avg('rating_a') ?? 0), 2),
             'average_rating_b' => round((float) ((clone $baseQuery)->avg('rating_b') ?? 0), 2),

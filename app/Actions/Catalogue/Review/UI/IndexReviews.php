@@ -6,6 +6,7 @@ use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Reviews\ProductCategoryReview;
+use App\Models\Reviews\ReviewRatingLabel;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -16,6 +17,42 @@ class IndexReviews extends OrgAction
     public function getStats(ProductCategory $parent): array
     {
         $reviewStat = $parent->reviewStats()->first();
+        $ratingLabels = ReviewRatingLabel::query()
+            ->whereRaw('LOWER(model_type) = ?', ['shop'])
+            ->where('model_id', $parent->shop_id)
+            ->whereRaw('LOWER(review_context) = ?', ['product_category_reviews'])
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('dimension')
+            ->get(['dimension', 'label'])
+            ->map(fn (ReviewRatingLabel $reviewRatingLabel): array => [
+                'dimension' => $reviewRatingLabel->dimension?->value ?? (string) $reviewRatingLabel->dimension,
+                'label' => (string) $reviewRatingLabel->label,
+            ])
+            ->values()
+            ->all();
+
+        $averageByDimension = [
+            'a' => round((float) ($reviewStat?->average_rating_a ?? 0), 2),
+            'b' => round((float) ($reviewStat?->average_rating_b ?? 0), 2),
+            'c' => round((float) ($reviewStat?->average_rating_c ?? 0), 2),
+            'd' => round((float) ($reviewStat?->average_rating_d ?? 0), 2),
+            'e' => round((float) ($reviewStat?->average_rating_e ?? 0), 2),
+        ];
+
+        $categoryRatings = collect($ratingLabels)
+            ->map(function (array $label) use ($averageByDimension): array {
+                $dimension = strtolower((string) data_get($label, 'dimension'));
+
+                return [
+                    'dimension' => $dimension,
+                    'label' => (string) data_get($label, 'label', strtoupper($dimension)),
+                    'average' => (float) ($averageByDimension[$dimension] ?? 0),
+                ];
+            })
+            ->filter(fn (array $item): bool => in_array($item['dimension'], ['a', 'b', 'c', 'd', 'e'], true))
+            ->values()
+            ->all();
 
         return [
             'total' => (int) ($reviewStat?->number_reviews ?? 0),
@@ -30,6 +67,7 @@ class IndexReviews extends OrgAction
             'number_reviews_rating_3' => (int) ($reviewStat?->number_rating_3 ?? 0),
             'number_reviews_rating_4' => (int) ($reviewStat?->number_rating_4 ?? 0),
             'number_reviews_rating_5' => (int) ($reviewStat?->number_rating_5 ?? 0),
+            'category_ratings' => $categoryRatings,
         ];
     }
 

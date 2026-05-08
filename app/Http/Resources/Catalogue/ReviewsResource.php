@@ -15,10 +15,12 @@ class ReviewsResource extends JsonResource
 {
     public static function collectionWithTabMeta(LengthAwarePaginator $reviews, ProductCategory $family): AnonymousResourceCollection
     {
+        $ratingLabels = self::getRatingLabels($family);
+
         return self::collection($reviews)->additional([
-            'stats'     => self::getStats($family),
+            'stats'     => self::getStats($family, $ratingLabels),
             'customers' => self::getReviewCustomers($family),
-            'rating_labels' => self::getRatingLabels($family),
+            'rating_labels' => $ratingLabels,
         ]);
     }
 
@@ -71,9 +73,31 @@ class ReviewsResource extends JsonResource
         ];
     }
 
-    private static function getStats(ProductCategory $family): array
+    private static function getStats(ProductCategory $family, array $ratingLabels = []): array
     {
         $reviewStat = $family->reviewStats()->first();
+
+        $averageByDimension = [
+            'a' => round((float) ($reviewStat?->average_rating_a ?? 0), 2),
+            'b' => round((float) ($reviewStat?->average_rating_b ?? 0), 2),
+            'c' => round((float) ($reviewStat?->average_rating_c ?? 0), 2),
+            'd' => round((float) ($reviewStat?->average_rating_d ?? 0), 2),
+            'e' => round((float) ($reviewStat?->average_rating_e ?? 0), 2),
+        ];
+
+        $categoryRatings = collect($ratingLabels)
+            ->map(function (array $label) use ($averageByDimension): array {
+                $dimension = strtolower((string) data_get($label, 'dimension'));
+
+                return [
+                    'dimension' => $dimension,
+                    'label' => (string) data_get($label, 'label', strtoupper($dimension)),
+                    'average' => (float) ($averageByDimension[$dimension] ?? 0),
+                ];
+            })
+            ->filter(fn (array $item): bool => in_array($item['dimension'], ['a', 'b', 'c', 'd', 'e'], true))
+            ->values()
+            ->all();
 
         return [
             'total'                   => (int) ($reviewStat?->number_reviews ?? 0),
@@ -86,6 +110,7 @@ class ReviewsResource extends JsonResource
             'number_reviews_rating_3' => (int) ($reviewStat?->number_rating_3 ?? 0),
             'number_reviews_rating_4' => (int) ($reviewStat?->number_rating_4 ?? 0),
             'number_reviews_rating_5' => (int) ($reviewStat?->number_rating_5 ?? 0),
+            'category_ratings'        => $categoryRatings,
         ];
     }
 

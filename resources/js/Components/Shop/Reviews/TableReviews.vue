@@ -20,6 +20,11 @@ type ReviewTablePayload = TableTS & {
         number_reviews_rating_3?: number
         number_reviews_rating_4?: number
         number_reviews_rating_5?: number
+        category_ratings?: Array<{
+            dimension: string
+            label: string
+            average: number
+        }>
     }
 }
 
@@ -127,7 +132,7 @@ const renderStars = (rating: number): string => {
         </div>
 
         <div class="xl:col-span-3">
-            <ReviewStatsPanel :stats="data.stats" />
+            <ReviewStatsPanel :stats="data.stats" :rating-labels="rating_labels" />
         </div>
     </div>
 </template>
