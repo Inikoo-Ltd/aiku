@@ -10,7 +10,6 @@ namespace App\Actions\Helpers\Media;
 
 use App\Actions\Catalogue\Collection\UpdateCollectionWebImages;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryWebImages;
-use App\Models\AnnouncementTemplate;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -26,6 +25,7 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use App\Models\Web\AnnouncementTemplate;
 use App\Models\Web\ModelHasContent;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Webpage;

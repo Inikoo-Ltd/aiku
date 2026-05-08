@@ -9,6 +9,8 @@
 
 namespace App\Providers;
 
+use App\Services\GeocoderService;
+use App\Services\Translation;
 use Gnikyt\BasicShopifyAPI\BasicShopifyAPI;
 use Gnikyt\BasicShopifyAPI\Options;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -17,8 +19,6 @@ use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Lorisleiva\Actions\Facades\Actions;
-use App\Services\GeocoderService;
-use App\Services\Translation;
 use Vemcogroup\Translation\Translation as BaseTranslation;
 
 /**
@@ -302,7 +302,7 @@ class AppServiceProvider extends ServiceProvider
                 'WebBlock'                         => 'App\Models\Web\WebBlock',
                 'WebBlockType'                     => 'App\Models\Web\WebBlockType',
                 'Banner'                           => 'App\Models\Web\Banner',
-                'Announcement'                     => 'App\Models\Announcement',
+                'Announcement'                     => 'App\Models\Web\Announcement',
 
                 //Production
                 'Production'                       => 'App\Models\Production\Production',

@@ -31,14 +31,12 @@ class GetIrisAnnouncements extends IrisAction
         )->resolve();
 
 
-
         $announcementsBottomMenu = AnnouncementIrisResource::collection(
             $website->announcements()
                 ->where('status', AnnouncementStatusEnum::ACTIVE)
                 ->where('settings->position', 'bottom-menu')
                 ->get()
         )->resolve();
-
 
 
         $announcementsTopFooter = AnnouncementIrisResource::collection(
@@ -49,9 +47,9 @@ class GetIrisAnnouncements extends IrisAction
         )->resolve();
 
         return [
-            'top_bar' => $announcementsTopBar,
+            'top_bar'     => $announcementsTopBar,
             'bottom_menu' => $announcementsBottomMenu,
-            'top_footer' => $announcementsTopFooter
+            'top_footer'  => $announcementsTopFooter
         ];
     }
 

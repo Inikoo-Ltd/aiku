@@ -1,13 +1,12 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Web;
 
 use App\Enums\Announcement\AnnouncementStateEnum;
 use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Models\Helpers\Deployment;
 use App\Models\Helpers\Snapshot;
 use App\Models\Traits\HasImage;
-use App\Models\Web\Website;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Spatie\MediaLibrary\HasMedia;
 
 /**
- * App\Models\Announcement
+ * App\Models\Web\Announcement
  *
  * @property int $id
  * @property int|null $customer_id
