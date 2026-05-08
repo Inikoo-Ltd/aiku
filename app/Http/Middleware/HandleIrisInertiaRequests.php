@@ -56,9 +56,8 @@ class HandleIrisInertiaRequests extends Middleware
                     ]);
                 },
 
-                'use_chat'      => $website->settings['enable_chat'] ?? false,
-                'iris'          => $this->getIrisData($website),
-                'announcements' => $this->getAnnouncements($website),
+                'use_chat' => $website->settings['enable_chat'] ?? false,
+                'iris'     => $this->getIrisData($website),
 
                 "retina"   => [
                     "type"         => $request->input('shop_type'),
@@ -83,14 +82,14 @@ class HandleIrisInertiaRequests extends Middleware
         return array_merge(
             $firstLoadOnlyProps,
             [
-                'flash' => [
+                'flash'         => [
                     'notification' => fn () => $request->session()->get('notification'),
                     'modal'        => fn () => $request->session()->get('modal')
                 ],
-                'ziggy' => [
+                'ziggy'         => [
                     'location' => $request->url(),
                 ],
-
+                'announcements' => $website ? $this->getAnnouncements($website) : [],
             ],
             parent::share($request),
         );
@@ -104,18 +103,18 @@ class HandleIrisInertiaRequests extends Middleware
             $extractedSettings = $announcement->extractSettings($announcement->settings);
 
             $announcements[] = [
-                'ulid'                 => $announcement->ulid,
-                'code'                 => $announcement->code,
+                // 'ulid'                 => $announcement->ulid,
+                // 'code'                 => $announcement->code,
                 'name'                 => $announcement->name,
                 'status'               => $announcement->status->statusIcon()[$announcement->status->value],
                 'state_icon'           => $announcement->state->stateIcon()[$announcement->state->value],
                 'show_pages'           => $extractedSettings['show_pages'],
                 'hide_pages'           => $extractedSettings['hide_pages'],
                 'container_properties' => $announcement->container_properties,
-                'created_at'           => $announcement->created_at,
+                // 'created_at'           => $announcement->created_at,
                 'fields'               => $announcement->fields,
-                'id'                   => $announcement->id,
-                'icon'                 => $announcement->icon,
+                // 'id'                   => $announcement->id,
+                // 'icon'                 => $announcement->icon,
                 'schedule_at'          => $announcement->schedule_at,
                 'schedule_finish_at'   => $announcement->schedule_finish_at,
                 'settings'             => $announcement->settings,
