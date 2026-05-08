@@ -19,6 +19,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\TiktokUser;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -52,10 +53,10 @@ class StoreProductToTiktok extends RetinaAction
             }
 
             $recommendCategory = $tiktokUser->recommendCategory([
-                'product_title' => $product->family?->name ?? $product->subDepartment?->name ?? $product->name
+                'product_title' => $product->family?->name ?? Str::words($product->name, 2, '')
             ]);
 
-            $leafCategoryId = Arr::get($recommendCategory, 'data.leaf_category_id');
+            $leafCategoryId = Arr::get($recommendCategory, 'data.leaf_category_id', '600009');
             $leafCategoryId = $this->resolveSafeCategoryId($tiktokUser, $leafCategoryId);
 
             $categoryRules = $tiktokUser->getCategoryRules($leafCategoryId);
@@ -148,6 +149,14 @@ class StoreProductToTiktok extends RetinaAction
 
             $tiktokProduct = $tiktokUser->uploadProductToTiktok($productData);
 
+            if(Arr::get($tiktokProduct, 'error')) {
+                UpdatePortfolio::run($portfolio, [
+                    'errors_response' => [
+                        'message' => Arr::get($tiktokProduct, 'data')
+                    ]
+                ]);
+            }
+
             /*$result = $tiktokUser->activateProduct([
                 'product_ids' => [Arr::get($tiktokProduct, 'data.product_id')]
             ]);*/
@@ -168,7 +177,7 @@ class StoreProductToTiktok extends RetinaAction
             } else {
                 UpdatePlatformPortfolioLog::run($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => $tiktokProduct
+                    'response' => Arr::get($tiktokProduct, 'data')
                 ]);
             }
 

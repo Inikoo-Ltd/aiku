@@ -100,7 +100,8 @@ trait WithTiktokApiServices
             return $response->json();
         } catch (\Exception $e) {
             Log::error('API Request failed: ' . $e->getMessage());
-            throw ValidationException::withMessages(['message' => $e->getMessage()]);
+
+            return ['error' => true, 'data' => $e->getMessage()];
         }
     }
 
