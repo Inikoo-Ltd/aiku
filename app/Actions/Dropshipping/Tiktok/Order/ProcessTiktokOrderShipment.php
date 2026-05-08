@@ -42,32 +42,26 @@ class ProcessTiktokOrderShipment extends OrgAction
                 /** @var TiktokUser $tiktokUser */
                 $tiktokUser = $order->customerSalesChannel->user;
 
+                $getOrder = $tiktokUser->getOrder($fulfillOrderId);
+
+                if($id = Arr::get($getOrder, 'data.orders.0.packages.0.id')) {
+                    $this->packageWasShipped($tiktokUser, $order, $deliveryNote, $id);
+
+                    return;
+                }
+
                 $tiktokPackage = $tiktokUser->createOrderPackage($fulfillOrderId);
                 $tiktokPackageId = Arr::get($tiktokPackage, 'data.package_id');
                 $tiktokPackageDetail = $tiktokUser->getPackageDetail($tiktokPackageId);
-                $tiktokPackageShippingId = Arr::get($tiktokPackageDetail, 'data.shipping_provider_id');
-                $tiktokPackageShippingName = Arr::get($tiktokPackageDetail, 'data.shipping_provider_name');
-                $tiktokPackageShippingCode = Str::slug(substr($tiktokPackageShippingName, 0, 8));
-                $tiktokPackageTrackingNumber = Arr::get($tiktokPackageDetail, 'data.tracking_number');
 
                 $tiktokShippingLabel = $tiktokUser->getOrderLabel($tiktokPackageId);
                 $tiktokShippingLabelUrl = Arr::get($tiktokShippingLabel, 'data.doc_url');
 
-                $shipper = Shipper::where('code', $tiktokPackageShippingCode)->first();
-
-                if (!$shipper) {
-                    $shipper = StoreShipper::make()->action($order->organisation, [
-                        'code' => $tiktokPackageShippingCode,
-                        'name' => $tiktokPackageShippingName,
-                        'trade_as' => Str::substr($tiktokPackageShippingName, 0, 15)
-                    ]);
-                }
-
-                StoreShipment::make()->action($deliveryNote, $shipper, [
-                    'reference' => $tiktokPackageShippingId,
-                    'tracking' => $tiktokPackageTrackingNumber,
-                    'combined_label_url' => $tiktokShippingLabelUrl
-                ]);
+                $this->processShipment($order,
+                    $deliveryNote,
+                    $tiktokPackageDetail,
+                    $tiktokShippingLabelUrl
+                );
 
                 $tiktokUser->shipPackage($tiktokPackageId);
             });
@@ -75,6 +69,48 @@ class ProcessTiktokOrderShipment extends OrgAction
             \Sentry::captureException($th);
             Log::error($th->getMessage());
         }
+    }
+
+    public function packageWasShipped(TiktokUser $tiktokUser, Order $order, DeliveryNote $deliveryNote, $tiktokPackageId): void
+    {
+        $tiktokPackageDetail = $tiktokUser->getPackageDetail($tiktokPackageId);
+
+        $tiktokShippingLabel = $tiktokUser->getOrderLabel($tiktokPackageId);
+        $tiktokShippingLabelUrl = Arr::get($tiktokShippingLabel, 'data.doc_url');
+
+        $this->processShipment($order,
+            $deliveryNote,
+            $tiktokPackageDetail,
+            $tiktokShippingLabelUrl
+        );
+    }
+
+    public function processShipment(Order $order,
+                                    DeliveryNote $deliveryNote,
+                                    $tiktokPackageDetail,
+                                    $tiktokShippingLabelUrl
+    ): void
+    {
+        $tiktokPackageShippingId = Arr::get($tiktokPackageDetail, 'data.shipping_provider_id');
+        $tiktokPackageShippingName = Arr::get($tiktokPackageDetail, 'data.shipping_provider_name');
+        $tiktokPackageShippingCode = Str::slug(substr($tiktokPackageShippingName, 0, 8));
+        $tiktokPackageTrackingNumber = Arr::get($tiktokPackageDetail, 'data.tracking_number');
+
+        $shipper = Shipper::where('code', $tiktokPackageShippingCode)->first();
+
+        if (!$shipper) {
+            $shipper = StoreShipper::make()->action($order->organisation, [
+                'code' => $tiktokPackageShippingCode,
+                'name' => $tiktokPackageShippingName,
+                'trade_as' => Str::substr($tiktokPackageShippingName, 0, 15)
+            ]);
+        }
+
+        StoreShipment::make()->action($deliveryNote, $shipper, [
+            'reference' => $tiktokPackageShippingId,
+            'tracking' => $tiktokPackageTrackingNumber,
+            'combined_label_url' => $tiktokShippingLabelUrl
+        ]);
     }
 
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): void
