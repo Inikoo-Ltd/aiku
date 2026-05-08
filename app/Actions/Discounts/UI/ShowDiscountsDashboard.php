@@ -52,11 +52,24 @@ class ShowDiscountsDashboard extends OrgAction
     {
         $userSettings = $request->user()->settings;
 
-        $saved_interval   = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
+        $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         $performanceDates = $this->resolvePerformanceDates($saved_interval, $userSettings);
 
         $timeSeriesData = GetDiscountsDashboardTimeSeriesData::run($this->shop, $performanceDates[0], $performanceDates[1]);
-        $offerCampaignTimeSeriesStats = $timeSeriesData['offerCampaigns'];
+        $offerCampaignTimeSeriesStats = $timeSeriesData['offerCampaigns'] ?? [];
+        $currentTableTab = 'offer_campaigns';
+        $tableTabs = [
+            $currentTableTab => [
+                'title' => 'Offer Campaigns',
+            ],
+        ];
+        $tables = [
+            $currentTableTab => [
+                'header' => DashboardHeaderOffersResource::make($this->shop)->resolve(),
+                'body'   => DashboardOffersResource::collection($offerCampaignTimeSeriesStats)->resolve(),
+                'totals' => DashboardTotalOffersResource::make($offerCampaignTimeSeriesStats)->resolve(),
+            ],
+        ];
 
         return Inertia::render(
             'Org/Discounts/DiscountsDashboard',
@@ -85,66 +98,21 @@ class ShowDiscountsDashboard extends OrgAction
                     'currency_type'     => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings),
                 ],
                 'tabs'        => [
-                    'current'    => $this->tab,
+                    'current'    => $this->tab ?? DiscountsDashboardTabsEnum::values()[0],
                     'navigation' => DiscountsDashboardTabsEnum::navigation()
                 ],
                 'blocks'      => [
                     'id'          => 'sales_table',
                     'type'        => 'table',
-                    'current_tab' => 'offer_campaigns',
-                    'tabs'        => [
-                        'offer_campaigns' => [
-                            'title' => 'Offer Campaigns',
-                        ],
-                    ],
-                    'tables'      => [
-                        'offer_campaigns' => [
-                            'header' => json_decode(DashboardHeaderOffersResource::make($this->shop)->toJson(), true),
-                            'body'   => json_decode(DashboardOffersResource::collection($offerCampaignTimeSeriesStats)->toJson(), true),
-                            'totals' => json_decode(DashboardTotalOffersResource::make($offerCampaignTimeSeriesStats)->toJson(), true),
-                        ],
-                    ],
+                    'current_tab' => $currentTableTab,
+                    'tabs'        => $tableTabs,
+                    'tables'      => $tables,
                 ],
                 'data'        => [
                     'currency' => $this->shop->currency
                 ]
             ]
         );
-    }
-
-    private function getHeaderActions($offer, array $routeParameters): array
-    {
-        $actions = [];
-
-        if (!$offer) {
-            $actions[] = [
-                'type'     => 'button',
-                'style'    => 'create',
-                'label'    => __('Create First Order Bonus'),
-                'disabled' => true,
-                'route'    => [
-                    'name'       => 'grp.org.shops.show.discounts.offers.create',
-                    'parameters' => $routeParameters
-                ],
-                // 'tooltip' => __('Create First Order Bonus')
-                'tooltip'  => __('Create First Order Bonus (not available yet)')
-            ];
-        } else {
-            $actions[] = [
-                'type'    => 'button',
-                'style'   => 'edit',
-                'label'   => __('Edit First Order Bonus'),
-                'route'   => [
-                    'name'       => 'grp.org.shops.show.discounts.offers.edit',
-                    'parameters' => array_merge($routeParameters, [
-                        'offer' => $offer->slug
-                    ])
-                ],
-                'tooltip' => __('Edit existing First Order Bonus offer')
-            ];
-        }
-
-        return $actions;
     }
 
     public function getBreadcrumbs(array $routeParameters): array

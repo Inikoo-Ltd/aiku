@@ -49,6 +49,14 @@ class GetTradeUnitImages
                     'media'     => ''
                 ],
             ],
+            'update_image_alt_route' => [
+                'method'     => 'patch',
+                'name'       => 'grp.models.trade-unit.update_image_alt',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                    'media'     => ''
+                ],
+            ],
             'images'              => TradeUnitImagesResource::collection(IndexTradeUnitImages::run($tradeUnit))->resolve(),
 
         ];
