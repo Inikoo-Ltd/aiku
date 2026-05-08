@@ -52,9 +52,8 @@ class StoreProductToTiktok extends RetinaAction
             }
 
             $recommendCategory = $tiktokUser->recommendCategory([
-                'product_title' => $product->family?->name ?? $product->name
+                'product_title' => $product->family?->name ?? $product->subDepartment?->name ?? $product->name
             ]);
-
 
             $leafCategoryId = Arr::get($recommendCategory, 'data.leaf_category_id');
             $leafCategoryId = $this->resolveSafeCategoryId($tiktokUser, $leafCategoryId);
